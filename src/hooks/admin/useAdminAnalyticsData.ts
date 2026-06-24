@@ -5,7 +5,7 @@ import {
   fetchAdminAnalyticsRecentUsers,
   fetchAdminAnalyticsStats,
   fetchAdminAnalyticsTopCollectors,
-} from "@/services/admin/admin-analytics-service";
+} from "@/services/admin/analytics/admin-analytics-service";
 
 export function useAdminAnalyticsData() {
   const statsQuery = useQuery({

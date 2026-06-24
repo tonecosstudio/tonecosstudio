@@ -1,31 +1,45 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { currentUserHasAdminAccess } from "@/services/auth/current-user";
+
+type CurrentUserAdminQueryOptions = {
+  currentUserId?: string | null;
+  enabled?: boolean;
+};
 
 /**
  * Custom error for role checking operations
  */
 export class RoleCheckError extends Error {
-  constructor(message: string, public userId?: string, public originalError?: unknown) {
+  constructor(
+    message: string,
+    public currentUserId?: string,
+    public originalError?: unknown,
+  ) {
     super(message);
-    this.name = 'RoleCheckError';
+    this.name = "RoleCheckError";
   }
 }
 
 /**
- * Hook to check if a user has admin role
- * 
+ * Hook to check whether the current authenticated user has admin access.
+ *
  * Features:
  * - Proper error handling with custom error types
  * - Optimized caching to prevent unnecessary refetches
  * - Type-safe implementation
- * 
- * @param userId - The user ID to check
+ *
+ * @param options.currentUserId - Current auth user ID, used only to scope/cache the query
+ * @param options.enabled - Explicit execution gate controlled by the auth state owner
  * @returns Query result with boolean indicating admin status
  */
-export function useIsAdmin(userId?: string) {
+export function useCurrentUserIsAdmin(
+  options: CurrentUserAdminQueryOptions = {},
+) {
+  const { currentUserId, enabled = true } = options;
+
   return useQuery({
-    queryKey: ["is-admin", userId],
-    enabled: !!userId, // Only execute if userId exists
+    queryKey: ["current-user-is-admin", currentUserId ?? null],
+    enabled: enabled && !!currentUserId,
     staleTime: 5 * 60 * 1000, // 5 minutes - prevents unnecessary refetches
     gcTime: 10 * 60 * 1000, // 10 minutes - cache time
     refetchOnMount: false, // Don't refetch on mount if data exists in cache
@@ -34,25 +48,12 @@ export function useIsAdmin(userId?: string) {
     retry: 2, // Retry twice on failure (increased from 1)
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
     queryFn: async () => {
-      if (!userId) {
+      if (!currentUserId) {
         return false;
       }
 
       try {
-        const { data, error } = await supabase.rpc("has_role", { 
-          _user_id: userId, 
-          _role: "admin" 
-        });
-
-        if (error) {
-          throw new RoleCheckError(
-            `Failed to check admin role: ${error.message}`,
-            userId,
-            error
-          );
-        }
-
-        return Boolean(data);
+        return await currentUserHasAdminAccess();
       } catch (error) {
         // Re-throw custom errors
         if (error instanceof RoleCheckError) {
@@ -61,9 +62,9 @@ export function useIsAdmin(userId?: string) {
 
         // Wrap unexpected errors
         throw new RoleCheckError(
-          'Unexpected error while checking admin role',
-          userId,
-          error
+          "Unexpected error while checking admin role",
+          currentUserId,
+          error,
         );
       }
     },

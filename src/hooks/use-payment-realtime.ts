@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { RealtimeChannel } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
+import {
+  subscribeToManualPaymentChanges,
+  type PaymentChangeEvent,
+} from "@/services/realtime/realtime-service";
 import type { ManualPayment, PaymentStatus } from "@/types/manual-payment";
 import {
   DEFAULT_REALTIME_EVENTS,
@@ -14,8 +16,6 @@ import {
   useRealtimeReconnectionConfig,
 } from "./realtime-helpers";
 import type { ReconnectionConfig, RealtimePostgresEvent } from "./realtime-helpers";
-
-type PaymentChangeEvent = "INSERT" | "UPDATE" | "DELETE";
 
 export type { ReconnectionConfig, RealtimePostgresEvent } from "./realtime-helpers";
 
@@ -88,7 +88,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
     onDisconnected,
   } = options;
 
-  const channelRef = useRef<RealtimeChannel | null>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
   const isMountedRef = useRef(true);
@@ -140,9 +140,9 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
   }, [reconnectionConfig]);
 
   const disconnect = useCallback(() => {
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
     }
 
     if (retryTimeoutRef.current) {
@@ -163,9 +163,9 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
   const connect = useCallback(() => {
     if (!isMountedRef.current) return;
 
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
     }
 
     const channelName = `payment-realtime-${paymentId || "all"}-${userId || "all"}-${Date.now()}`;
@@ -176,64 +176,48 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
         error: null,
       }));
 
-      let channel = supabase.channel(channelName);
-      normalizedEvents.forEach((event) => {
-        channel = channel.on(
-          "postgres_changes",
-          {
-            event,
-            schema: "public",
-            table: "manual_payments",
-            filter: paymentFilter,
-          },
-          (payload) => {
-            if (!onPaymentChangeRef.current) return;
+      unsubscribeRef.current = subscribeToManualPaymentChanges({
+        channelName,
+        events: normalizedEvents,
+        filter: paymentFilter,
+        onPaymentChange: (payload) => {
+          onPaymentChangeRef.current?.(payload);
+        },
+        onStatusChange: (realtimeStatus, error) => {
+          if (!isMountedRef.current) return;
 
-            onPaymentChangeRef.current({
-              event: payload.eventType as PaymentChangeEvent,
-              old: payload.old as ManualPayment | null,
-              new: payload.new as ManualPayment | null,
-            });
+          if (realtimeStatus === "SUBSCRIBED") {
+            retryCountRef.current = 0;
+            setConnectionState((prev) => ({
+              ...prev,
+              isConnected: true,
+              isReconnecting: false,
+              retryCount: 0,
+              lastConnectedAt: new Date(),
+              error: null,
+            }));
+            onConnectedRef.current?.();
+            return;
           }
-        );
-      });
 
-      channel.subscribe((realtimeStatus, error) => {
-        if (!isMountedRef.current) return;
+          if (realtimeStatus === "CHANNEL_ERROR" || realtimeStatus === "TIMED_OUT") {
+            const errorObj = error || new Error(`Falha na conexao: ${realtimeStatus}`);
+            setConnectionState((prev) => ({
+              ...prev,
+              isConnected: false,
+              isReconnecting: false,
+              lastDisconnectedAt: new Date(),
+              error: errorObj,
+            }));
 
-        if (realtimeStatus === "SUBSCRIBED") {
-          retryCountRef.current = 0;
-          setConnectionState((prev) => ({
-            ...prev,
-            isConnected: true,
-            isReconnecting: false,
-            retryCount: 0,
-            lastConnectedAt: new Date(),
-            error: null,
-          }));
-          onConnectedRef.current?.();
-          return;
-        }
+            onDisconnectedRef.current?.(errorObj);
 
-        if (realtimeStatus === "CHANNEL_ERROR" || realtimeStatus === "TIMED_OUT") {
-          const errorObj = error || new Error(`Falha na conexao: ${realtimeStatus}`);
-          setConnectionState((prev) => ({
-            ...prev,
-            isConnected: false,
-            isReconnecting: false,
-            lastDisconnectedAt: new Date(),
-            error: errorObj,
-          }));
-
-          onDisconnectedRef.current?.(errorObj);
-
-          if (retryCountRef.current < reconnectionConfig.maxRetries) {
-            scheduleReconnect();
+            if (retryCountRef.current < reconnectionConfig.maxRetries) {
+              scheduleReconnect();
+            }
           }
-        }
+        },
       });
-
-      channelRef.current = channel;
     } catch (error) {
       log.error("Failed to create payment realtime channel", { error });
       setConnectionState((prev) => ({

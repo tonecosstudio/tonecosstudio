@@ -1,27 +1,13 @@
-/**
- * ProgressTimeline Component
- * 
- * Customer-facing visual timeline showing production progress.
- * Displays all stages horizontally with completion status, dates, and animations.
- * 
- * Requirements: 2.4.1 Visual Progress Timeline
- * Task: 5.1.2 Create ProgressTimeline component
- */
-
 import React from "react";
-import { Check, Clock } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Check, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { getProductionStageLabel } from "@/config/production-stages";
+import { cn } from "@/lib/utils";
 import type { ProductionStage } from "@/types/production";
 
 export type { ProductionStage };
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export interface StageInfo {
   name: string;
@@ -37,131 +23,115 @@ export interface ProgressTimelineProps {
   className?: string;
 }
 
-// Stage configuration with emojis and labels
 const STAGE_CONFIG: Record<
   ProductionStage,
-  { label: string; emoji: string; order: number }
+  { label: string; shortCode: string; order: number }
 > = {
-  awaiting_payment: { label: "Aguardando Pagamento", emoji: "💳", order: 1 },
-  payment_confirmed: { label: "Pagamento Confirmado", emoji: "✅", order: 2 },
-  awaiting_choice: { label: "Aguardando Escolha", emoji: "🎭", order: 3 },
-  model_preparation: { label: "Preparação do Modelo", emoji: "📐", order: 4 },
-  printing: { label: "Em Impressão 3D", emoji: "🖨️", order: 5 },
-  post_processing: { label: "Limpeza e Preparação", emoji: "🔧", order: 6 },
-  painting: { label: "Pintura Artesanal", emoji: "🎨", order: 7 },
-  quality_check: { label: "Controle de Qualidade", emoji: "🔍", order: 8 },
-  packaging: { label: "Embalagem", emoji: "📦", order: 9 },
-  ready_to_ship: { label: "Pronto para Envio", emoji: "📮", order: 10 },
-  shipped: { label: "Enviado", emoji: "🚚", order: 11 },
-  delivered: { label: "Entregue", emoji: "🏠", order: 12 },
+  awaiting_payment: { label: "Aguardando Pagamento", shortCode: "PG", order: 1 },
+  payment_confirmed: { label: "Pagamento Confirmado", shortCode: "OK", order: 2 },
+  awaiting_choice: { label: "Aguardando Escolha", shortCode: "CH", order: 3 },
+  model_preparation: { label: "Preparação do Modelo", shortCode: "MD", order: 4 },
+  printing: { label: "Impressão 3D", shortCode: "3D", order: 5 },
+  post_processing: { label: "Limpeza e Preparação", shortCode: "LP", order: 6 },
+  painting: { label: "Pintura Artesanal", shortCode: "PT", order: 7 },
+  quality_check: { label: "Controle de Qualidade", shortCode: "CQ", order: 8 },
+  packaging: { label: "Embalagem", shortCode: "EM", order: 9 },
+  ready_to_ship: { label: "Pronto para Envio", shortCode: "PE", order: 10 },
+  shipped: { label: "Enviado", shortCode: "EV", order: 11 },
+  delivered: { label: "Entregue", shortCode: "ET", order: 12 },
 };
 
 function getStageConfig(stage: StageInfo) {
   const configured = STAGE_CONFIG[stage.name as ProductionStage];
   const stageLabel = getProductionStageLabel(stage.name);
+  const legacyLabelMap: Record<string, string> = {
+    design: "Design",
+    production: "Produção",
+  };
 
   return {
-    label: configured?.label ?? (stageLabel !== stage.name ? stageLabel : stage.displayName || stageLabel),
-    emoji: configured?.emoji ?? "?",
+    label:
+      configured?.label ??
+      legacyLabelMap[stage.name] ??
+      (stageLabel !== stage.name ? stageLabel : stage.displayName || stageLabel),
+    shortCode: configured?.shortCode ?? "ET",
     order: configured?.order ?? stage.order,
   };
 }
 
-// ============================================================================
-// Component
-// ============================================================================
-
-export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
-  stages,
-  className,
-}) => {
-  // Sort stages by order
+export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({ stages, className }) => {
   const sortedStages = [...stages].sort((a, b) => a.order - b.order);
-
-  // Calculate progress percentage
-  const completedCount = sortedStages.filter((s) => s.status === "completed").length;
-  const progressPercentage = sortedStages.length > 0 ? (completedCount / sortedStages.length) * 100 : 0;
+  const completedCount = sortedStages.filter((stage) => stage.status === "completed").length;
+  const progressPercentage =
+    sortedStages.length > 0 ? (completedCount / sortedStages.length) * 100 : 0;
 
   return (
     <div className={cn("w-full", className)}>
-      {/* Desktop/Tablet View */}
       <div className="hidden md:block">
         <div className="relative">
-          {/* Progress line */}
-          <div className="absolute top-8 left-0 right-0 h-1 bg-gray-200">
+          <div className="absolute left-0 right-0 top-8 h-1 bg-[hsl(0,0%,12%)]">
             <div
               className="h-full bg-primary transition-all duration-500 ease-in-out"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
 
-          {/* Stages */}
-          <div className="relative flex justify-between">
+          <div className="relative flex justify-between gap-3">
             {sortedStages.map((stage) => {
               const config = getStageConfig(stage);
               const isCompleted = stage.status === "completed";
               const isCurrent = stage.status === "current";
 
               return (
-                <div
-                  key={stage.name}
-                  className="flex flex-col items-center flex-1 min-w-0"
-                >
-                  {/* Stage circle with emoji */}
+                <div key={stage.name} className="flex min-w-0 flex-1 flex-col items-center">
                   <div
                     className={cn(
-                      "relative z-10 flex items-center justify-center w-16 h-16 rounded-full border-4 border-white transition-all duration-300 shadow-md",
-                      isCompleted && "bg-primary",
-                      isCurrent && "bg-blue-500 ring-4 ring-blue-200 animate-pulse",
-                      !isCompleted && !isCurrent && "bg-gray-300"
+                      "relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-4 border-[hsl(0,0%,4%)] font-mono text-xs font-bold tracking-[0.18em] shadow-md transition-all duration-300",
+                      isCompleted && "bg-primary text-[hsl(0,0%,7%)]",
+                      isCurrent &&
+                        "animate-pulse bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,7%)] ring-4 ring-[hsl(var(--gold-accent)/0.16)]",
+                      !isCompleted && !isCurrent && "bg-[hsl(0,0%,14%)] text-[hsl(0,0%,72%)]"
                     )}
                   >
                     {isCompleted ? (
-                      <Check className="h-8 w-8 text-white" />
+                      <Check className="h-8 w-8 text-[hsl(0,0%,7%)]" />
                     ) : (
-                      <span className="text-2xl" role="img" aria-label={config.label}>
-                        {config.emoji}
+                      <span role="img" aria-label={config.label}>
+                        {config.shortCode}
                       </span>
                     )}
                   </div>
 
-                  {/* Stage label */}
-                  <div className="mt-3 text-center px-2">
+                  <div className="mt-3 px-2 text-center">
                     <div
                       className={cn(
-                        "text-sm font-medium mb-2",
-                        isCurrent && "text-primary font-semibold",
-                        !isCurrent && !isCompleted && "text-muted-foreground"
+                        "mb-2 text-sm font-medium",
+                        isCurrent && "font-semibold text-white",
+                        !isCurrent && !isCompleted && "text-[hsl(0,0%,58%)]"
                       )}
                     >
                       {config.label}
                     </div>
 
-                    {/* Completion date */}
-                    {isCompleted && stage.completedAt && (
+                    {isCompleted && stage.completedAt ? (
                       <Badge variant="secondary" className="text-xs">
-                        {format(new Date(stage.completedAt), "dd/MM/yyyy", {
-                          locale: ptBR,
-                        })}
+                        {format(new Date(stage.completedAt), "dd/MM/yyyy", { locale: ptBR })}
                       </Badge>
-                    )}
+                    ) : null}
 
-                    {/* Current stage indicator */}
-                    {isCurrent && (
+                    {isCurrent ? (
                       <Badge className="text-xs">
-                        <Clock className="h-3 w-3 mr-1" />
+                        <Clock className="mr-1 h-3 w-3" />
                         Em Progresso
                       </Badge>
-                    )}
+                    ) : null}
 
-                    {/* Estimated date for future stages */}
-                    {!isCompleted && !isCurrent && stage.estimatedDate && (
+                    {!isCompleted && !isCurrent && stage.estimatedDate ? (
                       <Badge variant="outline" className="text-xs">
-                        Prev: {format(new Date(stage.estimatedDate), "dd/MM", {
-                          locale: ptBR,
-                        })}
+                        Prev:{" "}
+                        {format(new Date(stage.estimatedDate), "dd/MM", { locale: ptBR })}
                       </Badge>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               );
@@ -170,8 +140,7 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
         </div>
       </div>
 
-      {/* Mobile View - Vertical Timeline */}
-      <div className="md:hidden space-y-4">
+      <div className="space-y-4 md:hidden">
         {sortedStages.map((stage, index) => {
           const config = getStageConfig(stage);
           const isCompleted = stage.status === "completed";
@@ -180,71 +149,64 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
 
           return (
             <div key={stage.name} className="relative flex items-start gap-4">
-              {/* Vertical line */}
-              {!isLast && (
+              {!isLast ? (
                 <div
                   className={cn(
-                    "absolute left-6 top-12 w-1 h-full -ml-0.5",
-                    isCompleted ? "bg-primary" : "bg-gray-200"
+                    "absolute left-6 top-12 h-full w-1 -ml-0.5",
+                    isCompleted ? "bg-primary" : "bg-[hsl(0,0%,12%)]"
                   )}
                 />
-              )}
+              ) : null}
 
-              {/* Stage circle */}
               <div
                 className={cn(
-                  "relative z-10 flex items-center justify-center w-12 h-12 rounded-full border-4 border-white transition-all duration-300 shadow-md flex-shrink-0",
-                  isCompleted && "bg-primary",
-                  isCurrent && "bg-blue-500 ring-4 ring-blue-200 animate-pulse",
-                  !isCompleted && !isCurrent && "bg-gray-300"
+                  "relative z-10 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border-4 border-[hsl(0,0%,4%)] font-mono text-[11px] font-bold tracking-[0.16em] shadow-md transition-all duration-300",
+                  isCompleted && "bg-primary text-[hsl(0,0%,7%)]",
+                  isCurrent &&
+                    "animate-pulse bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,7%)] ring-4 ring-[hsl(var(--gold-accent)/0.16)]",
+                  !isCompleted && !isCurrent && "bg-[hsl(0,0%,14%)] text-[hsl(0,0%,72%)]"
                 )}
               >
                 {isCompleted ? (
-                  <Check className="h-6 w-6 text-white" />
+                  <Check className="h-6 w-6 text-[hsl(0,0%,7%)]" />
                 ) : (
-                  <span className="text-xl" role="img" aria-label={config.label}>
-                    {config.emoji}
+                  <span role="img" aria-label={config.label}>
+                    {config.shortCode}
                   </span>
                 )}
               </div>
 
-              {/* Stage info */}
               <div className="flex-1 pb-4">
                 <div
                   className={cn(
-                    "text-base font-medium mb-1",
-                    isCurrent && "text-primary font-semibold",
-                    !isCurrent && !isCompleted && "text-muted-foreground"
+                    "mb-1 text-base font-medium",
+                    isCurrent && "font-semibold text-white",
+                    !isCurrent && !isCompleted && "text-[hsl(0,0%,58%)]"
                   )}
                 >
                   {config.label}
                 </div>
 
-                {/* Completion date */}
-                {isCompleted && stage.completedAt && (
+                {isCompleted && stage.completedAt ? (
                   <Badge variant="secondary" className="text-xs">
-                    Concluído em {format(new Date(stage.completedAt), "dd/MM/yyyy", {
-                      locale: ptBR,
-                    })}
+                    Concluído em{" "}
+                    {format(new Date(stage.completedAt), "dd/MM/yyyy", { locale: ptBR })}
                   </Badge>
-                )}
+                ) : null}
 
-                {/* Current stage indicator */}
-                {isCurrent && (
+                {isCurrent ? (
                   <Badge className="text-xs">
-                    <Clock className="h-3 w-3 mr-1" />
+                    <Clock className="mr-1 h-3 w-3" />
                     Em Progresso
                   </Badge>
-                )}
+                ) : null}
 
-                {/* Estimated date for future stages */}
-                {!isCompleted && !isCurrent && stage.estimatedDate && (
+                {!isCompleted && !isCurrent && stage.estimatedDate ? (
                   <Badge variant="outline" className="text-xs">
-                    Previsão: {format(new Date(stage.estimatedDate), "dd/MM/yyyy", {
-                      locale: ptBR,
-                    })}
+                    Previsão:{" "}
+                    {format(new Date(stage.estimatedDate), "dd/MM/yyyy", { locale: ptBR })}
                   </Badge>
-                )}
+                ) : null}
               </div>
             </div>
           );

@@ -3,10 +3,10 @@ import {
   completeStage,
   getStageHistory,
   uploadStagePhoto,
-} from "@/services/admin/stage-service";
-import { validateStageTransition } from "@/services/admin/stage-validation";
-import type { ProductionStageRecord, StageType } from "@/services/admin/stage-types";
-import type { StageValidationResult } from "@/services/admin/stage-validation";
+} from "@/services/admin/production/stage-service";
+import { validateStageTransition } from "@/services/admin/production/stage-validation";
+import type { ProductionStageRecord, StageType } from "@/services/admin/production/stage-types";
+import type { StageValidationResult } from "@/services/admin/production/stage-validation";
 
 export type { ProductionStageRecord, StageType };
 

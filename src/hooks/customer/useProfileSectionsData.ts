@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { log } from "@/lib/logger";
 import { useToast } from "@/hooks/use-toast";
@@ -67,12 +67,11 @@ export function useActiveProfileSubscription(userId: string) {
 }
 
 export function useProfileSupport(userId: string) {
-  const [selectedConversation, setSelectedConversation] = useState<SupportConversation | null>(null);
-  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const queryClient = useQueryClient();
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [newSubject, setNewSubject] = useState("");
   const [newFirstMessage, setNewFirstMessage] = useState("");
-  const [sending, setSending] = useState(false);
   const [showNewConversationForm, setShowNewConversationForm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
@@ -82,6 +81,29 @@ export function useProfileSupport(userId: string) {
     enabled: Boolean(userId),
     queryFn: () => listSupportConversations(userId),
   });
+
+  const selectedConversation = useMemo(
+    () =>
+      (conversationsQuery.data ?? []).find((conversation) => conversation.id === selectedConversationId) ??
+      null,
+    [conversationsQuery.data, selectedConversationId]
+  );
+
+  const selectedConversationMessagesQuery = useQuery({
+    queryKey: ["user-support-messages", selectedConversationId],
+    enabled: Boolean(selectedConversationId),
+    queryFn: async () => {
+      if (!selectedConversationId) {
+        return [] as SupportMessage[];
+      }
+
+      const data = await listSupportMessages(selectedConversationId);
+      await markAsRead(selectedConversationId);
+      return data;
+    },
+  });
+
+  const messages = selectedConversationMessagesQuery.data ?? [];
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -99,108 +121,129 @@ export function useProfileSupport(userId: string) {
   }, [userId]);
 
   useEffect(() => {
-  if (!selectedConversation) return;
-
-  let isActive = true;
-  const selectedConversationId = selectedConversation.id;
-
-  async function fetchMessages() {
-    try {
-        const data = await listSupportMessages(selectedConversationId);
-        if (!isActive) return;
-        setMessages(data);
-        scrollToBottom();
-        await markAsRead(selectedConversationId);
-      } catch (error) {
-        log.error("Error loading support messages", {
-          error,
-          conversationId: selectedConversationId,
-        });
-        toast({ title: "Erro ao carregar mensagens", variant: "destructive" });
-      }
-    }
-
-    fetchMessages();
+    if (!selectedConversationId) return;
 
     const unsubscribe = subscribeToSupportMessages(selectedConversationId, (message) => {
-      setMessages((prev) => [...prev, message]);
-      scrollToBottom();
-      markAsRead(selectedConversationId);
+      queryClient.setQueryData<SupportMessage[]>(
+        ["user-support-messages", selectedConversationId],
+        (current = []) => {
+          if (current.some((existing) => existing.id === message.id)) {
+            return current;
+          }
+          return [...current, message];
+        }
+      );
+
+      void markAsRead(selectedConversationId);
+      void conversationsQuery.refetch();
     });
 
     return () => {
-      isActive = false;
       unsubscribe();
     };
-  }, [markAsRead, selectedConversation, toast]);
+  }, [conversationsQuery, markAsRead, queryClient, selectedConversationId]);
 
-  const createConversation = async () => {
-    if (!newSubject.trim() || !newFirstMessage.trim() || !userId) {
-      toast({ title: "Preencha o assunto e a mensagem", variant: "destructive" });
+  useEffect(() => {
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages.length]);
+
+  useEffect(() => {
+    if (!selectedConversationId) {
       return;
     }
 
-    setSending(true);
+    const conversations = conversationsQuery.data ?? [];
+    if (!conversations.some((conversation) => conversation.id === selectedConversationId)) {
+      setSelectedConversationId(null);
+    }
+  }, [conversationsQuery.data, selectedConversationId]);
 
-    try {
-      const conversation = await createSupportConversation({
+  const createConversationMutation = useMutation({
+    mutationFn: async () => {
+      if (!newSubject.trim() || !newFirstMessage.trim() || !userId) {
+        throw new Error("Preencha o assunto e a mensagem");
+      }
+
+      return createSupportConversation({
         userId,
         subject: newSubject.trim(),
         firstMessage: newFirstMessage.trim(),
       });
-
+    },
+    onSuccess: (conversation) => {
       toast({ title: "Mensagem enviada! Responderemos em ate 48h uteis." });
       setNewSubject("");
       setNewFirstMessage("");
-      setSelectedConversation(conversation);
+      setSelectedConversationId(conversation.id);
       setShowNewConversationForm(false);
-      conversationsQuery.refetch();
-    } catch (error) {
+      void conversationsQuery.refetch();
+    },
+    onError: (error) => {
+      if (error instanceof Error && error.message === "Preencha o assunto e a mensagem") {
+        toast({ title: error.message, variant: "destructive" });
+        return;
+      }
+
       log.error("Error creating support conversation", { error, userId });
       toast({ title: "Erro ao enviar mensagem", variant: "destructive" });
-    } finally {
-      setSending(false);
-    }
-  };
+    },
+  });
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !userId) return;
+  const sendMessageMutation = useMutation({
+    mutationFn: async () => {
+      if (!newMessage.trim() || !selectedConversationId || !userId) {
+        return;
+      }
 
-    setSending(true);
-
-    try {
       await sendSupportMessage({
-        conversationId: selectedConversation.id,
+        conversationId: selectedConversationId,
         userId,
         message: newMessage.trim(),
       });
-
+    },
+    onSuccess: () => {
       setNewMessage("");
       toast({ title: "Mensagem enviada!" });
-    } catch (error) {
+    },
+    onError: (error) => {
       log.error("Error sending support message", {
         error,
-        conversationId: selectedConversation.id,
+        conversationId: selectedConversationId,
         userId,
       });
       toast({ title: "Erro ao enviar mensagem", variant: "destructive" });
-    } finally {
-      setSending(false);
-    }
+    },
+  });
+
+  const createConversation = async () => {
+    await createConversationMutation.mutateAsync();
   };
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !selectedConversationId || !userId) return;
+    await sendMessageMutation.mutateAsync();
+  };
+
+  const setSelectedConversation = useCallback((conversation: SupportConversation | null) => {
+    setSelectedConversationId(conversation?.id ?? null);
+  }, []);
 
   return {
     conversations: conversationsQuery.data ?? [],
+    isLoadingConversations: conversationsQuery.isLoading,
     selectedConversation,
     setSelectedConversation,
     messages,
+    isLoadingMessages: selectedConversationMessagesQuery.isLoading,
     newMessage,
     setNewMessage,
     newSubject,
     setNewSubject,
     newFirstMessage,
     setNewFirstMessage,
-    sending,
+    sending: createConversationMutation.isPending || sendMessageMutation.isPending,
     showNewConversationForm,
     setShowNewConversationForm,
     messagesEndRef,

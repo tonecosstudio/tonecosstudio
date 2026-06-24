@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchProductionDeadlinesSettings,
   updateProductionDeadlineSetting,
-} from "@/services/admin/production-deadlines-settings-service";
+} from "@/services/admin/production/production-deadlines-settings-service";
 
 export function useProductionDeadlinesSettings() {
   return useQuery({

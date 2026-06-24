@@ -4,13 +4,13 @@ import {
   getSubscribeCollectionBySlug,
   listSubscribeCollections,
   listSubscribePlans,
-} from "@/services/subscription-checkout-service";
+} from "@/services/subscriptions/subscription-checkout-service";
 
 export type {
   SubscribeCollectionOption,
   SubscribePlan,
   SubscriptionPaymentMethod,
-} from "@/services/subscription-checkout-service";
+} from "@/services/subscriptions/subscription-checkout-service";
 
 export function useSubscribeCollectionCheckout(slug?: string) {
   const plansQuery = useQuery({

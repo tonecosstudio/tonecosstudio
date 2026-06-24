@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import * as adminCreditCharactersService from "@/services/admin/admin-credit-characters-service";
+import * as adminCreditCharactersService from "@/services/admin/choices/admin-credit-characters-service";
 
 export const fetchCatalogCharacters = adminCreditCharactersService.fetchCatalogCharacters;
 export const fetchPriceCategories = adminCreditCharactersService.fetchPriceCategories;

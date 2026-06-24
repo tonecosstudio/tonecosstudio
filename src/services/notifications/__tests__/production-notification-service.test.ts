@@ -46,7 +46,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 }));
 
 // Mock email service
-vi.mock('../../email-service', () => ({
+vi.mock('../email-service', () => ({
   emailService: {
     sendEmail: vi.fn(() => Promise.resolve())
   }

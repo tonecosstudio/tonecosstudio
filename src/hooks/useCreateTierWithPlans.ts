@@ -1,104 +1,33 @@
-/**
- * Hook para criar nível de preço com planos automáticos
- * 
- * Mutation hook que cria um nível e automaticamente cria planos para todas as modalidades ativas.
- * Requisitos: 1.1, 1.2, 8.1, 8.5, 11.3
- * Tarefa: 7.3
- */
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type {
-  CreateTierWithPlansInput,
-  CreateTierWithPlansResult,
-} from "@/types/pricing-restructure";
 import { createTierWithPlansSchema } from "@/lib/validations/pricing-restructure";
+import { createTierWithPlans } from "@/services/pricing/pricing-tier-plan-service";
+import type { CreateTierWithPlansInput } from "@/types/pricing-restructure";
 import { purchaseModesKeys } from "./usePurchaseModes";
 import { tierWithPlansKeys } from "./useTierWithPlans";
 
-type PricingTierRpcError = {
-  message: string;
-};
-
-interface CreateTierWithPlansRpcClient {
-  rpc(
-    name: "create_tier_with_plans",
-    args: {
-      p_name: string;
-      p_description: string | null;
-      p_price_full: number;
-      p_deposit_amount: number;
-      p_pix_discount_percentage?: number;
-      p_is_default?: boolean;
-      p_display_order?: number;
-      p_created_by: string;
-    }
-  ): Promise<{ data: CreateTierWithPlansResult | null; error: PricingTierRpcError | null }>;
-}
-
-const createTierWithPlansRpc = supabase as unknown as CreateTierWithPlansRpcClient;
-
-// =====================================================
-// MUTATIONS
-// =====================================================
-
-/**
- * Hook para criar nível com planos automáticos
- * Cria um nível e automaticamente cria um plano para cada modalidade ativa
- * Requisitos: 1.1, 1.2, 8.1, 8.5, 11.3
- */
 export function useCreateTierWithPlans() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (input: CreateTierWithPlansInput) => {
-      // Validar input
       const validated = createTierWithPlansSchema.parse(input);
-
-      // Obter usuário atual
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      // Chamar função do banco de dados
-      const { data, error } = await createTierWithPlansRpc.rpc("create_tier_with_plans", {
-        p_name: validated.name,
-        p_description: validated.description || null,
-        p_price_full: validated.price_full,
-        p_deposit_amount: validated.deposit_amount,
-        p_pix_discount_percentage: validated.pix_discount_percentage,
-        p_is_default: validated.is_default,
-        p_display_order: validated.display_order,
-        p_created_by: user.id,
-      });
-
-      if (error) {
-        throw new Error(`Erro ao criar nível com planos: ${error.message}`);
-      }
-
-      if (!data) {
-        throw new Error("Nenhum resultado retornado");
-      }
-
-      return data;
+      return createTierWithPlans(validated);
     },
     onSuccess: (result) => {
-      // Invalidar queries relacionadas
       queryClient.invalidateQueries({ queryKey: ["pricing-tiers"] });
       queryClient.invalidateQueries({ queryKey: tierWithPlansKeys.all });
       queryClient.invalidateQueries({ queryKey: purchaseModesKeys.all });
 
       toast({
-        title: "Nível criado com sucesso",
-        description: `Nível criado com ${result.plans_created} planos automáticos.`,
+        title: "Nivel criado com sucesso",
+        description: `Nivel criado com ${result.plans_created} planos automaticos.`,
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao criar nível",
+        title: "Erro ao criar nivel",
         description: error.message,
         variant: "destructive",
       });

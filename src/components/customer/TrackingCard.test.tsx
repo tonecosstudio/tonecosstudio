@@ -1,31 +1,14 @@
-/**
- * TrackingCard Component Tests
- * 
- * Tests for the TrackingCard component including:
- * - Rendering with tracking code
- * - Empty state rendering
- * - Copy functionality
- * - Tracking link opening
- * - Carrier configuration
- * - Date formatting
- */
-
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { CORREIOS_TRACKING_BASE_URL, JADLOG_TRACKING_BASE_URL } from "@/lib/tracking-links";
 import { TrackingCard } from "./TrackingCard";
-import {
-  CORREIOS_TRACKING_BASE_URL,
-  JADLOG_TRACKING_BASE_URL,
-} from "@/lib/tracking-links";
 
-// Mock toast
 const mockToast = vi.fn();
 vi.mock("@/components/ui/use-toast", () => ({
-  toast: (...args: any[]) => mockToast(...args),
+  toast: (...args: unknown[]) => mockToast(...args),
 }));
 
-// Mock clipboard API
 const mockWriteText = vi.fn();
 Object.assign(navigator, {
   clipboard: {
@@ -33,7 +16,6 @@ Object.assign(navigator, {
   },
 });
 
-// Mock window.open
 const mockWindowOpen = vi.fn();
 window.open = mockWindowOpen;
 
@@ -43,7 +25,7 @@ describe("TrackingCard", () => {
   });
 
   describe("Empty State", () => {
-    it("should render empty state when no tracking code is provided", () => {
+    it("renders empty state when no tracking code is provided", () => {
       render(
         <TrackingCard
           trackingCode={null}
@@ -58,7 +40,7 @@ describe("TrackingCard", () => {
       ).toBeInTheDocument();
     });
 
-    it("should not show copy button in empty state", () => {
+    it("does not show copy button in empty state", () => {
       render(
         <TrackingCard
           trackingCode={null}
@@ -67,11 +49,10 @@ describe("TrackingCard", () => {
         />
       );
 
-      const copyButtons = screen.queryAllByRole("button", { name: /copiar/i });
-      expect(copyButtons).toHaveLength(0);
+      expect(screen.queryAllByRole("button", { name: /copiar/i })).toHaveLength(0);
     });
 
-    it("should not show track order button in empty state", () => {
+    it("does not show track order button in empty state", () => {
       render(
         <TrackingCard
           trackingCode={null}
@@ -80,8 +61,9 @@ describe("TrackingCard", () => {
         />
       );
 
-      const trackButtons = screen.queryByRole("button", { name: /rastrear pedido/i });
-      expect(trackButtons).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /rastrear pedido/i })
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -92,74 +74,45 @@ describe("TrackingCard", () => {
       estimatedDeliveryDate: "2024-05-15T00:00:00Z",
     };
 
-    it("should render tracking code", () => {
+    it("renders tracking code", () => {
       render(<TrackingCard {...mockProps} />);
-
       expect(screen.getByText("BR123456789BR")).toBeInTheDocument();
     });
 
-    it("should show 'Enviado' badge", () => {
+    it("shows sent badge", () => {
       render(<TrackingCard {...mockProps} />);
-
       expect(screen.getByText("Enviado")).toBeInTheDocument();
     });
 
-    it("should render copy button", () => {
+    it("renders copy button", () => {
       render(<TrackingCard {...mockProps} />);
-
-      const copyButton = screen.getByRole("button", { name: /copiar código/i });
-      expect(copyButton).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /copiar código/i })
+      ).toBeInTheDocument();
     });
 
-    it("should render track order button", () => {
+    it("renders track order button", () => {
       render(<TrackingCard {...mockProps} />);
-
-      const trackButton = screen.getByRole("button", { name: /rastrear pedido/i });
-      expect(trackButton).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /rastrear pedido/i })
+      ).toBeInTheDocument();
     });
 
-    it("should display carrier name", () => {
+    it("displays carrier name", () => {
       render(<TrackingCard {...mockProps} />);
-
       expect(screen.getByText("Correios")).toBeInTheDocument();
     });
 
-    it("should display estimated delivery date", () => {
+    it("displays estimated delivery date", () => {
       render(<TrackingCard {...mockProps} />);
-
-      // Date is formatted as "14 de maio de 2024" due to UTC conversion
       expect(screen.getByText(/14 de maio de 2024/i)).toBeInTheDocument();
     });
   });
 
   describe("Copy Functionality", () => {
-    it("should show toast notification when copy button is clicked", async () => {
+    it("shows toast notification when copy button is clicked", async () => {
       const user = userEvent.setup();
-      const trackingCode = "BR123456789BR";
-
-      // Mock clipboard writeText to return a resolved promise
       mockWriteText.mockResolvedValue(undefined);
-
-      render(
-        <TrackingCard
-          trackingCode={trackingCode}
-          trackingCarrier="correios"
-          estimatedDeliveryDate="2024-05-15T00:00:00Z"
-        />
-      );
-
-      const copyButton = screen.getByRole("button", { name: /copiar código/i });
-      await user.click(copyButton);
-
-      // Verify toast was called (user-visible behavior)
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "Código Copiado",
-        description: "Código de rastreamento copiado para a área de transferência.",
-      });
-    });
-
-    it("should show toast notification after copying", async () => {
-      const user = userEvent.setup();
 
       render(
         <TrackingCard
@@ -169,18 +122,17 @@ describe("TrackingCard", () => {
         />
       );
 
-      const copyButton = screen.getByRole("button", { name: /copiar código/i });
-      await user.click(copyButton);
+      await user.click(screen.getByRole("button", { name: /copiar código/i }));
 
       expect(mockToast).toHaveBeenCalledWith({
-        title: "Código Copiado",
+        title: "Código copiado",
         description: "Código de rastreamento copiado para a área de transferência.",
       });
     });
   });
 
   describe("Tracking Link", () => {
-    it("should open Correios tracking page when track button is clicked", async () => {
+    it("opens Correios tracking page", async () => {
       const user = userEvent.setup();
       const trackingCode = "BR123456789BR";
 
@@ -192,8 +144,7 @@ describe("TrackingCard", () => {
         />
       );
 
-      const trackButton = screen.getByRole("button", { name: /rastrear pedido/i });
-      await user.click(trackButton);
+      await user.click(screen.getByRole("button", { name: /rastrear pedido/i }));
 
       expect(mockWindowOpen).toHaveBeenCalledWith(
         `${CORREIOS_TRACKING_BASE_URL}?objeto=${trackingCode}`,
@@ -202,7 +153,7 @@ describe("TrackingCard", () => {
       );
     });
 
-    it("should open Jadlog tracking page for Jadlog carrier", async () => {
+    it("opens Jadlog tracking page for Jadlog carrier", async () => {
       const user = userEvent.setup();
       const trackingCode = "JD123456789";
 
@@ -214,8 +165,7 @@ describe("TrackingCard", () => {
         />
       );
 
-      const trackButton = screen.getByRole("button", { name: /rastrear pedido/i });
-      await user.click(trackButton);
+      await user.click(screen.getByRole("button", { name: /rastrear pedido/i }));
 
       expect(mockWindowOpen).toHaveBeenCalledWith(
         `${JADLOG_TRACKING_BASE_URL}/${trackingCode}`,
@@ -224,7 +174,7 @@ describe("TrackingCard", () => {
       );
     });
 
-    it("should open Correios tracking page for Sedex carrier", async () => {
+    it("opens Correios tracking page for Sedex carrier", async () => {
       const user = userEvent.setup();
       const trackingCode = "SD123456789BR";
 
@@ -236,8 +186,7 @@ describe("TrackingCard", () => {
         />
       );
 
-      const trackButton = screen.getByRole("button", { name: /rastrear pedido/i });
-      await user.click(trackButton);
+      await user.click(screen.getByRole("button", { name: /rastrear pedido/i }));
 
       expect(mockWindowOpen).toHaveBeenCalledWith(
         `${CORREIOS_TRACKING_BASE_URL}?objeto=${trackingCode}`,
@@ -248,7 +197,7 @@ describe("TrackingCard", () => {
   });
 
   describe("Carrier Configuration", () => {
-    it("should display Correios carrier with correct logo", () => {
+    it("displays Correios carrier with short code", () => {
       render(
         <TrackingCard
           trackingCode="BR123456789BR"
@@ -258,10 +207,10 @@ describe("TrackingCard", () => {
       );
 
       expect(screen.getByText("Correios")).toBeInTheDocument();
-      expect(screen.getByLabelText("Correios")).toHaveTextContent("🇧🇷");
+      expect(screen.getByLabelText("Correios")).toHaveTextContent("BR");
     });
 
-    it("should display Jadlog carrier with correct logo", () => {
+    it("displays Jadlog carrier with short code", () => {
       render(
         <TrackingCard
           trackingCode="JD123456789"
@@ -271,10 +220,10 @@ describe("TrackingCard", () => {
       );
 
       expect(screen.getByText("Jadlog")).toBeInTheDocument();
-      expect(screen.getByLabelText("Jadlog")).toHaveTextContent("📦");
+      expect(screen.getByLabelText("Jadlog")).toHaveTextContent("JD");
     });
 
-    it("should display Sedex carrier with correct logo", () => {
+    it("displays Sedex carrier with short code", () => {
       render(
         <TrackingCard
           trackingCode="SD123456789BR"
@@ -284,10 +233,10 @@ describe("TrackingCard", () => {
       );
 
       expect(screen.getByText("Sedex")).toBeInTheDocument();
-      expect(screen.getByLabelText("Sedex")).toHaveTextContent("🇧🇷");
+      expect(screen.getByLabelText("Sedex")).toHaveTextContent("SX");
     });
 
-    it("should display default carrier for unknown carrier", () => {
+    it("displays default carrier for unknown carrier", () => {
       render(
         <TrackingCard
           trackingCode="XYZ123456789"
@@ -296,13 +245,12 @@ describe("TrackingCard", () => {
         />
       );
 
-      // Use getAllByText since "Transportadora" appears twice (label and value)
       const transportadoraElements = screen.getAllByText("Transportadora");
       expect(transportadoraElements.length).toBeGreaterThan(0);
-      expect(screen.getByLabelText("Transportadora")).toHaveTextContent("🚚");
+      expect(screen.getByLabelText("Transportadora")).toHaveTextContent("TR");
     });
 
-    it("should handle null carrier gracefully", () => {
+    it("handles null carrier gracefully", () => {
       render(
         <TrackingCard
           trackingCode="XYZ123456789"
@@ -311,12 +259,10 @@ describe("TrackingCard", () => {
         />
       );
 
-      // Use getAllByText since "Transportadora" appears twice (label and value)
-      const transportadoraElements = screen.getAllByText("Transportadora");
-      expect(transportadoraElements.length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Transportadora").length).toBeGreaterThan(0);
     });
 
-    it("should handle carrier name case-insensitively", () => {
+    it("handles carrier name case-insensitively", () => {
       render(
         <TrackingCard
           trackingCode="BR123456789BR"
@@ -330,7 +276,7 @@ describe("TrackingCard", () => {
   });
 
   describe("Estimated Delivery Date", () => {
-    it("should display estimated delivery date when provided", () => {
+    it("displays estimated delivery date when provided", () => {
       render(
         <TrackingCard
           trackingCode="BR123456789BR"
@@ -339,11 +285,10 @@ describe("TrackingCard", () => {
         />
       );
 
-      // Date is formatted as "24 de dezembro de 2024" due to UTC conversion
       expect(screen.getByText(/24 de dezembro de 2024/i)).toBeInTheDocument();
     });
 
-    it("should not display delivery date section when not provided", () => {
+    it("does not display delivery date section when not provided", () => {
       render(
         <TrackingCard
           trackingCode="BR123456789BR"
@@ -352,10 +297,10 @@ describe("TrackingCard", () => {
         />
       );
 
-      expect(screen.queryByText(/Previsão de Entrega/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Previsão de entrega/i)).not.toBeInTheDocument();
     });
 
-    it("should format date in Portuguese", () => {
+    it("formats date in Portuguese", () => {
       render(
         <TrackingCard
           trackingCode="BR123456789BR"
@@ -364,29 +309,12 @@ describe("TrackingCard", () => {
         />
       );
 
-      // Should use Portuguese month name
       expect(screen.getByText(/janeiro/i)).toBeInTheDocument();
     });
   });
 
-  describe("Custom Styling", () => {
-    it("should apply custom className", () => {
-      const { container } = render(
-        <TrackingCard
-          trackingCode="BR123456789BR"
-          trackingCarrier="correios"
-          estimatedDeliveryDate="2024-05-15T00:00:00Z"
-          className="custom-class"
-        />
-      );
-
-      const card = container.querySelector(".custom-class");
-      expect(card).toBeInTheDocument();
-    });
-  });
-
   describe("Accessibility", () => {
-    it("should have accessible button labels", () => {
+    it("has accessible button labels", () => {
       render(
         <TrackingCard
           trackingCode="BR123456789BR"
@@ -399,7 +327,7 @@ describe("TrackingCard", () => {
       expect(screen.getByRole("button", { name: /rastrear pedido/i })).toBeInTheDocument();
     });
 
-    it("should have proper ARIA labels for carrier logo", () => {
+    it("has ARIA labels for carrier marker", () => {
       render(
         <TrackingCard
           trackingCode="BR123456789BR"
@@ -411,7 +339,7 @@ describe("TrackingCard", () => {
       expect(screen.getByLabelText("Correios")).toBeInTheDocument();
     });
 
-    it("should use semantic HTML for tracking code", () => {
+    it("uses semantic HTML for tracking code", () => {
       render(
         <TrackingCard
           trackingCode="BR123456789BR"
@@ -420,8 +348,22 @@ describe("TrackingCard", () => {
         />
       );
 
-      const codeElement = screen.getByText("BR123456789BR");
-      expect(codeElement.tagName).toBe("CODE");
+      expect(screen.getByText("BR123456789BR").tagName).toBe("CODE");
+    });
+  });
+
+  describe("Custom Styling", () => {
+    it("applies custom className", () => {
+      const { container } = render(
+        <TrackingCard
+          trackingCode="BR123456789BR"
+          trackingCarrier="correios"
+          estimatedDeliveryDate="2024-05-15T00:00:00Z"
+          className="custom-class"
+        />
+      );
+
+      expect(container.querySelector(".custom-class")).toBeInTheDocument();
     });
   });
 });

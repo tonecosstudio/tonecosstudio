@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
-import { scheduleGroupMessage } from "@/services/groups-message-service";
+import { scheduleGroupMessage } from "@/services/groups/groups-message-service";
 
 interface ScheduleMessageParams {
   groupId: string;

@@ -3,7 +3,7 @@ import {
   fetchAdminPaymentKeys,
   updateAdminPaymentKey,
   type PaymentKey,
-} from "@/services/admin/admin-payment-keys-service";
+} from "@/services/admin/payments/admin-payment-keys-service";
 
 export function useAdminPaymentKeys() {
   return useQuery({

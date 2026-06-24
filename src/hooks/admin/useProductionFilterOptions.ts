@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchProductionCollectionFilterOptions,
   fetchProductionTeamMemberFilterOptions,
-} from "@/services/admin/production-filter-options-service";
+} from "@/services/admin/production/production-filter-options-service";
 
 export function useProductionCollectionFilterOptions() {
   return useQuery({

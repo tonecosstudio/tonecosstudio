@@ -1,35 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   playAudioNotification,
   requestBrowserNotificationPermission,
   showBrowserNotification,
 } from "@/lib/notifications/browser-notifications";
+import {
+  getUserNotificationSettingsForCurrentUser,
+  listUnreadUserNotificationsForCurrentUser,
+  subscribeToUserNotificationInserts,
+} from "@/services/notifications/live-notifications-service";
+import type { NotificationSoundSettings } from "@/services/notifications/live-notifications-service";
 
-export interface UserNotification {
-  id: string;
-  user_id: string;
-  type: string;
-  priority: "low" | "medium" | "high" | "urgent";
-  title: string;
-  message: string;
-  icon?: string;
-  related_id?: string;
-  related_type?: string;
-  action_url?: string;
-  action_label?: string;
-  is_read: boolean;
-  read_at?: string;
-  created_at: string;
-  metadata?: Record<string, unknown>;
-}
-
-interface NotificationSettings {
-  sound_enabled?: boolean | null;
-  sound_volume?: number | null;
-}
+export type { UserNotification } from "@/services/notifications/live-notifications-service";
 
 interface UseUserNotificationsOptions {
   enableSound?: boolean;
@@ -46,42 +30,13 @@ export function useUserNotifications(options: UseUserNotificationsOptions = {}) 
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["user-notifications-unread"],
-    queryFn: async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return [];
-
-      const { data, error } = await supabase
-        .from("user_notifications")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_read", false)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as UserNotification[];
-    },
+    queryFn: listUnreadUserNotificationsForCurrentUser,
     refetchInterval,
   });
 
-  const { data: settings } = useQuery<NotificationSettings | null>({
+  const { data: settings } = useQuery<NotificationSoundSettings | null>({
     queryKey: ["user-notification-settings"],
-    queryFn: async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data, error } = await supabase
-        .from("user_notification_settings")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (error && error.code !== "PGRST116") throw error;
-      return data as NotificationSettings | null;
-    },
+    queryFn: getUserNotificationSettingsForCurrentUser,
   });
 
   useEffect(() => {
@@ -99,63 +54,41 @@ export function useUserNotifications(options: UseUserNotificationsOptions = {}) 
   }, [settings?.sound_volume, soundEnabled]);
 
   useEffect(() => {
-    let channelRef: ReturnType<typeof supabase.channel> | undefined;
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
 
     async function setupRealtimeNotifications() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user || cancelled) return;
+      unsubscribe = await subscribeToUserNotificationInserts((newNotification) => {
+        queryClient.invalidateQueries({ queryKey: ["user-notifications-unread"] });
+        queryClient.invalidateQueries({ queryKey: ["user-notifications"] });
 
-      const channel = supabase
-        .channel("user-notifications-realtime")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "user_notifications",
-            filter: `user_id=eq.${user.id}`,
-          },
-          (payload) => {
-            const newNotification = payload.new as UserNotification;
+        playNotificationSound();
 
-            queryClient.invalidateQueries({ queryKey: ["user-notifications-unread"] });
-            queryClient.invalidateQueries({ queryKey: ["user-notifications"] });
+        if (enableToast) {
+          toast({
+            title: newNotification.title,
+            description: newNotification.message,
+            variant: newNotification.priority === "urgent" ? "destructive" : "default",
+          });
+        }
 
-            playNotificationSound();
-
-            if (enableToast) {
-              toast({
-                title: newNotification.title,
-                description: newNotification.message,
-                variant: newNotification.priority === "urgent" ? "destructive" : "default",
-              });
-            }
-
-            showBrowserNotification({
-              title: newNotification.title,
-              body: newNotification.message,
-              tag: newNotification.id,
-            });
-          }
-        )
-        .subscribe();
+        showBrowserNotification({
+          title: newNotification.title,
+          body: newNotification.message,
+          tag: newNotification.id,
+        });
+      });
 
       if (cancelled) {
-        supabase.removeChannel(channel);
-        return;
+        unsubscribe();
       }
-
-      channelRef = channel;
     }
 
     setupRealtimeNotifications();
 
     return () => {
       cancelled = true;
-      if (channelRef) supabase.removeChannel(channelRef);
+      unsubscribe?.();
     };
   }, [enableToast, playNotificationSound, queryClient, toast]);
 

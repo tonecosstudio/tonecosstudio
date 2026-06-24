@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { groupService } from "@/lib/services/groupService";
+import { groupService } from "@/services/groups/group-service";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare } from "lucide-react";

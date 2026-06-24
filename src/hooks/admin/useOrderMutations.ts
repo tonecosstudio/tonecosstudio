@@ -3,14 +3,14 @@ import { log } from "@/lib/logger";
 import {
   transitionStandalonePurchaseStatus,
   updateStandaloneTrackingCode,
-} from "@/services/standalone-purchase-service";
-import { updateDeliveryStatus } from "@/services/admin/delivery-detail-service";
+} from "@/services/payments/standalone-purchase-service";
+import { updateDeliveryStatus } from "@/services/admin/delivery/delivery-detail-service";
 import {
   updateManualPaymentStatus,
   updateQuoteTrackingCode,
   updateQuoteStatusRpc,
   updateSubscriptionDeliveryDates,
-} from "@/services/admin/admin-order-status-service";
+} from "@/services/admin/orders/admin-order-status-service";
 import { ORDERS_QUERY_KEY } from "./useOrdersQuery";
 import type { BulkActionResult, OrderStatus, UnifiedOrder } from "@/types/admin/orders";
 import { getOrderStatusLabel } from "@/config/admin-order-status";
@@ -18,7 +18,7 @@ import {
   getValidTransitions as getValidOrderTransitions,
   isFinalStatus as isOrderFinalStatus,
   validateStatusTransition as validateOrderStatusTransition,
-} from "@/services/admin/orders-validator";
+} from "@/services/admin/orders/orders-validator";
 
 type OrderType = UnifiedOrder["type"];
 
@@ -293,7 +293,7 @@ export function useApproveManualPayment() {
 
   return useMutation({
     mutationFn: async (paymentId: string) => {
-      const { approveManualPayment } = await import("@/services/admin/orders-service");
+      const { approveManualPayment } = await import("@/services/admin/orders/orders-service");
       await approveManualPayment(paymentId);
     },
     onSuccess: () => {
@@ -311,7 +311,7 @@ export function useRejectManualPayment() {
 
   return useMutation({
     mutationFn: async (params: { paymentId: string; reason: string }) => {
-      const { rejectManualPayment } = await import("@/services/admin/orders-service");
+      const { rejectManualPayment } = await import("@/services/admin/orders/orders-service");
       await rejectManualPayment(params.paymentId, params.reason);
     },
     onSuccess: () => {
@@ -329,7 +329,7 @@ export function useRequestManualPaymentInfo() {
 
   return useMutation({
     mutationFn: async (params: { paymentId: string; message: string }) => {
-      const { requestManualPaymentInfo } = await import("@/services/admin/orders-service");
+      const { requestManualPaymentInfo } = await import("@/services/admin/orders/orders-service");
       await requestManualPaymentInfo(params.paymentId, params.message);
     },
     onSuccess: () => {

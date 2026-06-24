@@ -122,7 +122,7 @@ interface PhotoItem {
 
 ```tsx
 import { PhotoGalleryComponent } from "@/components/production/PhotoGalleryComponent";
-import { getStageHistory } from "@/services/admin/stage-service";
+import { getStageHistory } from "@/services/admin/production/stage-service";
 
 function StagePhotosView({ productionQueueId }: { productionQueueId: string }) {
   const [stages, setStages] = useState([]);

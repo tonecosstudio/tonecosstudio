@@ -15,12 +15,12 @@ import { StageTransitionModal } from "../StageTransitionModal";
 import type { ProductionStageRecord } from "@/hooks/admin/useProductionStages";
 
 // Mock the services
-vi.mock("@/services/admin/stage-service", () => ({
+vi.mock("@/services/admin/production/stage-service", () => ({
   completeStage: vi.fn(),
   uploadStagePhoto: vi.fn(),
 }));
 
-vi.mock("@/services/admin/stage-validation", () => ({
+vi.mock("@/services/admin/production/stage-validation", () => ({
   validateStageTransition: vi.fn(),
 }));
 
@@ -69,7 +69,7 @@ describe("StageTransitionModal - Validation", () => {
   });
 
   it("should display validation error when stage transition is invalid", async () => {
-    const { validateStageTransition } = await import("@/services/admin/stage-validation");
+    const { validateStageTransition } = await import("@/services/admin/production/stage-validation");
     vi.mocked(validateStageTransition).mockResolvedValue({
       isValid: false,
       error: "Cannot skip stages. Previous stage must be completed first.",
@@ -102,7 +102,7 @@ describe("StageTransitionModal - Validation", () => {
   });
 
   it("should show admin override checkbox when validation fails with override option", async () => {
-    const { validateStageTransition } = await import("@/services/admin/stage-validation");
+    const { validateStageTransition } = await import("@/services/admin/production/stage-validation");
     vi.mocked(validateStageTransition).mockResolvedValue({
       isValid: false,
       error: "Cannot skip stages.",
@@ -132,7 +132,7 @@ describe("StageTransitionModal - Validation", () => {
   });
 
   it("should show justification textarea when override is enabled", async () => {
-    const { validateStageTransition } = await import("@/services/admin/stage-validation");
+    const { validateStageTransition } = await import("@/services/admin/production/stage-validation");
     vi.mocked(validateStageTransition).mockResolvedValue({
       isValid: false,
       error: "Cannot skip stages.",
@@ -169,7 +169,7 @@ describe("StageTransitionModal - Validation", () => {
   });
 
   it("should disable complete button when override is enabled but justification is empty", async () => {
-    const { validateStageTransition } = await import("@/services/admin/stage-validation");
+    const { validateStageTransition } = await import("@/services/admin/production/stage-validation");
     vi.mocked(validateStageTransition).mockResolvedValue({
       isValid: false,
       error: "Cannot skip stages.",
@@ -207,8 +207,8 @@ describe("StageTransitionModal - Validation", () => {
   });
 
   it("should call completeStage with override parameters when justification is provided", async () => {
-    const { validateStageTransition } = await import("@/services/admin/stage-validation");
-    const { completeStage } = await import("@/services/admin/stage-service");
+    const { validateStageTransition } = await import("@/services/admin/production/stage-validation");
+    const { completeStage } = await import("@/services/admin/production/stage-service");
 
     vi.mocked(validateStageTransition).mockResolvedValue({
       isValid: false,

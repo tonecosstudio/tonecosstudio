@@ -8,7 +8,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchProductionQueue, fetchProductionMetrics } from "../production-service";
+import { fetchProductionQueue, fetchProductionMetrics } from "../production/production-service";
 import { useOrderProgressRealtime } from "@/hooks/customer/useOrderProgressRealtime";
 
 // Mock Supabase client with Realtime capabilities
@@ -26,11 +26,65 @@ vi.mock("@/hooks/customer/useOrderProgressRealtime", () => ({
 }));
 
 // Mock notification service
-vi.mock("../../notifications/production-notification-service", () => ({
-  ProductionNotificationService: vi.fn().mockImplementation(() => ({
+vi.mock("@/services/notifications/production-notification-service", () => ({
+  productionNotificationService: {
     sendRealtimeUpdateNotification: vi.fn().mockResolvedValue(undefined),
-  })),
+  },
 }));
+
+type RealtimePayload = {
+  eventType: string;
+  new: Record<string, unknown>;
+  old?: Record<string, unknown>;
+  table: string;
+};
+
+type MockChannel = {
+  name?: string;
+  on: ReturnType<typeof vi.fn>;
+  subscribe: ReturnType<typeof vi.fn>;
+  unsubscribe: ReturnType<typeof vi.fn>;
+};
+
+type MockOrderProgress = {
+  orderId: string;
+  orderNumber: string;
+  collectionName: string;
+  currentStage: string;
+  stageProgress: number;
+  estimatedCompletion: string;
+  estimatedShipping: string;
+  estimatedDelivery: string;
+  canChooseCharacter: boolean;
+  choiceDeadline: string | null;
+  chosenCharacter: {
+    id: string;
+    name: string;
+    imageUrl: string;
+  };
+  trackingCode: string | null;
+  stages: Array<{
+    name: string;
+    displayName: string;
+    status: string;
+    completedAt: string | null;
+  }>;
+};
+
+type MockOrderProgressRealtimeReturn = {
+  progress: MockOrderProgress;
+  isLoading: boolean;
+  error: Error | null;
+  subscribe: () => void;
+  unsubscribe: () => void;
+};
+
+const mockedUseOrderProgressRealtime = vi.mocked(
+  useOrderProgressRealtime as unknown as (
+    orderId: string,
+    customerId: string
+  ) => MockOrderProgressRealtimeReturn
+);
 
 type ProductionQueueQueryResult = {
   data: unknown[];
@@ -106,14 +160,14 @@ describe("Real-Time Updates Integration Test", () => {
     };
 
     // Mock Realtime channel
-    const mockChannel = {
+    const mockChannel: MockChannel = {
       on: vi.fn().mockReturnThis(),
       subscribe: vi.fn().mockResolvedValue(undefined),
       unsubscribe: vi.fn().mockResolvedValue(undefined),
     };
 
     // Mock Supabase channel creation
-    (supabase.channel as any).mockReturnValue(mockChannel);
+    vi.mocked(supabase.channel).mockReturnValue(mockChannel as never);
 
     // Mock fetchProductionQueue to return initial data
     let queueResult: ProductionQueueQueryResult = {
@@ -123,7 +177,7 @@ describe("Real-Time Updates Integration Test", () => {
     };
     const mockQueueQuery = createProductionQueueQuery(() => queueResult);
 
-    (supabase.from as any).mockReturnValue(mockQueueQuery);
+    vi.mocked(supabase.from).mockReturnValue(mockQueueQuery as never);
 
     // Step 1: Initial fetch
     const initialQueue = await fetchProductionQueue({}, { page: 1, pageSize: 10 });
@@ -132,7 +186,7 @@ describe("Real-Time Updates Integration Test", () => {
     // Step 2: Simulate Realtime subscription setup
     // This would normally be done in a React component/hook
     // Configure channel to call callback when update is received
-    mockChannel.on.mockImplementation((event: string, callback: (payload: any) => void) => {
+    mockChannel.on.mockImplementation((event: string, callback: (payload: RealtimePayload) => void) => {
       if (event === "postgres_changes") {
         // Simulate receiving an update after a short delay
         setTimeout(() => {
@@ -147,10 +201,10 @@ describe("Real-Time Updates Integration Test", () => {
       return mockChannel;
     });
 
-    const receivedUpdates: any[] = [];
+    const receivedUpdates: RealtimePayload[] = [];
     await supabase
       .channel("production_queue_changes")
-      .on("postgres_changes", (payload: any) => {
+      .on("postgres_changes", (payload: RealtimePayload) => {
         receivedUpdates.push(payload);
       })
       .subscribe();
@@ -210,9 +264,9 @@ describe("Real-Time Updates Integration Test", () => {
       { data: updatedRows, error: null },
     ];
 
-    (supabase.from as any).mockImplementation(() => ({
+    vi.mocked(supabase.from).mockImplementation((() => ({
       select: vi.fn(() => Promise.resolve(metricsResults.shift() ?? metricsResults[0])),
-    }));
+    })) as never);
 
     // Step 1: Fetch initial metrics
     const initialMetrics = await fetchProductionMetrics();
@@ -281,7 +335,7 @@ describe("Real-Time Updates Integration Test", () => {
     const mockUnsubscribe = vi.fn();
     const mockProgressData = mockInitialProgress;
     
-    (useOrderProgressRealtime as any).mockReturnValue({
+    mockedUseOrderProgressRealtime.mockReturnValue({
       progress: mockProgressData,
       isLoading: false,
       error: null,
@@ -290,7 +344,7 @@ describe("Real-Time Updates Integration Test", () => {
     });
 
     // Step 1: Initialize real-time subscription
-    const { subscribe, progress } = useOrderProgressRealtime(mockOrderId, mockCustomerId);
+    const { subscribe, progress } = mockedUseOrderProgressRealtime(mockOrderId, mockCustomerId);
     
     // Verify initial state
     expect(progress.currentStage).toBe("production");
@@ -303,7 +357,7 @@ describe("Real-Time Updates Integration Test", () => {
     // Step 3: Simulate real-time update
     // In a real app, the hook would update its internal state when Realtime events arrive
     // For this test, we'll simulate the update by mocking the hook to return new data
-    (useOrderProgressRealtime as any).mockReturnValue({
+    mockedUseOrderProgressRealtime.mockReturnValue({
       progress: mockUpdatedProgress,
       isLoading: false,
       error: null,
@@ -312,7 +366,7 @@ describe("Real-Time Updates Integration Test", () => {
     });
 
     // Step 4: Verify updated state
-    const { progress: updatedProgress } = useOrderProgressRealtime(mockOrderId, mockCustomerId);
+    const { progress: updatedProgress } = mockedUseOrderProgressRealtime(mockOrderId, mockCustomerId);
     expect(updatedProgress.currentStage).toBe("quality_check");
     expect(updatedProgress.stageProgress).toBe(75);
     
@@ -324,11 +378,11 @@ describe("Real-Time Updates Integration Test", () => {
 
   it("should handle multiple concurrent real-time subscriptions", async () => {
     // Test scenario with multiple users/subscriptions
-    const mockChannels: any[] = [];
+    const mockChannels: MockChannel[] = [];
     
     // Mock channel factory
-    (supabase.channel as any).mockImplementation((channelName: string) => {
-      const mockChannel = {
+    vi.mocked(supabase.channel).mockImplementation(((channelName: string) => {
+      const mockChannel: MockChannel = {
         name: channelName,
         on: vi.fn().mockReturnThis(),
         subscribe: vi.fn().mockResolvedValue(undefined),
@@ -336,7 +390,7 @@ describe("Real-Time Updates Integration Test", () => {
       };
       mockChannels.push(mockChannel);
       return mockChannel;
-    });
+    }) as never);
 
     // Simulate multiple subscriptions
     const channelNames = [
@@ -400,7 +454,7 @@ describe("Real-Time Updates Integration Test", () => {
       unsubscribe: vi.fn().mockResolvedValue(undefined),
     };
 
-    (supabase.channel as any).mockReturnValue(mockChannel);
+    vi.mocked(supabase.channel).mockReturnValue(mockChannel as never);
 
     // Mock fetchProductionQueue as fallback
     const mockQueueQuery = createProductionQueueQuery(() => ({
@@ -409,7 +463,7 @@ describe("Real-Time Updates Integration Test", () => {
       count: 1,
     }));
 
-    (supabase.from as any).mockReturnValue(mockQueueQuery);
+    vi.mocked(supabase.from).mockReturnValue(mockQueueQuery as never);
 
     // Step 1: Try to subscribe (should fail)
     const channel = supabase.channel("production_queue_changes")
@@ -429,11 +483,11 @@ describe("Real-Time Updates Integration Test", () => {
 
   it("should throttle rapid real-time updates to prevent UI flicker", async () => {
     // Test scenario with rapid successive updates
-    const mockCallbacks: Array<(payload: any) => void> = [];
-    const updateLog: any[] = [];
+    const mockCallbacks: Array<(payload: RealtimePayload) => void> = [];
+    const updateLog: Array<{ timestamp: number; payload: RealtimePayload }> = [];
     
     const mockChannel = {
-      on: vi.fn().mockImplementation((event: string, callback: (payload: any) => void) => {
+      on: vi.fn().mockImplementation((event: string, callback: (payload: RealtimePayload) => void) => {
         if (event === "postgres_changes") {
           mockCallbacks.push(callback);
         }
@@ -443,11 +497,11 @@ describe("Real-Time Updates Integration Test", () => {
       unsubscribe: vi.fn().mockResolvedValue(undefined),
     };
 
-    (supabase.channel as any).mockReturnValue(mockChannel);
+    vi.mocked(supabase.channel).mockReturnValue(mockChannel as never);
 
     // Create channel and subscribe
     supabase.channel("production_queue_changes")
-      .on("postgres_changes", (payload: any) => {
+      .on("postgres_changes", (payload: RealtimePayload) => {
         updateLog.push({
           timestamp: Date.now(),
           payload,

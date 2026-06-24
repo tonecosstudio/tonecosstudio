@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { InfiniteData, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
-import { messageService } from "@/lib/services/messageService";
-import { userHasAdminAccess } from "@/services/auth/current-user";
+import { messageService } from "@/services/support/message-service";
+import { subscribeToGroupBroadcastMessages } from "@/services/realtime/realtime-service";
 import type { EnrichedGroupMessage } from "@/types/groups";
 
 interface UseGroupMessagesOptions {
@@ -25,14 +25,31 @@ function isGroupMessagePayload(payload: unknown): payload is GroupMessagePayload
   return typeof candidate.message?.id === "string";
 }
 
+function appendGroupMessageToCache(
+  cache: InfiniteData<EnrichedGroupMessage[]> | undefined,
+  message: EnrichedGroupMessage
+): InfiniteData<EnrichedGroupMessage[]> | undefined {
+  if (!cache) {
+    return cache;
+  }
+
+  const pages = [...cache.pages];
+  const latestPage = pages[0] ?? [];
+
+  if (latestPage.some((current) => current.id === message.id)) {
+    return cache;
+  }
+
+  pages[0] = [...latestPage, message];
+  return { ...cache, pages };
+}
+
 export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessagesOptions) {
-  const [messages, setMessages] = useState<EnrichedGroupMessage[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const skipAutoScrollRef = useRef(false);
+  const queryClient = useQueryClient();
   const LIMIT = 50;
+  const queryKey = useMemo(() => ["group-messages", groupId], [groupId]);
 
   const scrollToBottom = useCallback(() => {
     if (autoScroll && messagesEndRef.current) {
@@ -40,98 +57,86 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
     }
   }, [autoScroll]);
 
-  const loadMessages = useCallback(
-    async (page: number = 1) => {
+  const groupMessagesQuery = useInfiniteQuery({
+    queryKey,
+    enabled: Boolean(groupId),
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
       if (!groupId) {
-        setMessages([]);
-        return;
+        return {
+          messages: [] as EnrichedGroupMessage[],
+          pagination: {
+            page: 1,
+            total_pages: 0,
+            total: 0,
+            limit: LIMIT,
+            hasMore: false,
+          },
+        };
       }
 
-      try {
-        setLoading(true);
-
-        const user = (await supabase.auth.getUser()).data.user;
-        if (!user) {
-          throw new Error("Usuário não autenticado");
-        }
-
-        const result = await messageService.listGroupMessages(groupId, user.id, {
-          page,
-          limit: LIMIT,
-        });
-
-        setMessages(result.messages);
-        setCurrentPage(result.pagination.page);
-        setTotalPages(result.pagination.total_pages);
-        setHasMore(result.pagination.page < result.pagination.total_pages);
-
-        setTimeout(scrollToBottom, 100);
-      } catch (error) {
-        log.error("Erro ao carregar mensagens do grupo", { error, groupId });
-        toast.error("Erro ao carregar mensagens");
-      } finally {
-        setLoading(false);
-      }
+      return messageService.listCurrentUserGroupMessages(groupId, {
+        page: pageParam,
+        limit: LIMIT,
+      });
     },
-    [groupId, scrollToBottom]
+    getNextPageParam: (lastPage) => {
+      if (lastPage.pagination.page >= lastPage.pagination.total_pages) {
+        return undefined;
+      }
+
+      return lastPage.pagination.page + 1;
+    },
+  });
+
+  const pages = useMemo(() => groupMessagesQuery.data?.pages ?? [], [groupMessagesQuery.data]);
+  const messages = useMemo(
+    () => [...pages].reverse().flatMap((page) => page.messages),
+    [pages]
   );
-
-  const loadMore = useCallback(async () => {
-    if (!groupId || !hasMore || loading) return;
-
-    const nextPage = currentPage + 1;
-    await loadMessages(nextPage);
-  }, [groupId, hasMore, loading, currentPage, loadMessages]);
+  const latestPagination = pages[0]?.pagination;
+  const currentPage = latestPagination?.page ?? 1;
+  const totalPages = latestPagination?.total_pages ?? 0;
+  const hasMore = groupMessagesQuery.hasNextPage ?? false;
 
   useEffect(() => {
-    loadMessages(1);
-  }, [loadMessages]);
+    if (!messages.length || groupMessagesQuery.isFetchingNextPage) {
+      return;
+    }
+
+    if (skipAutoScrollRef.current) {
+      skipAutoScrollRef.current = false;
+      return;
+    }
+
+    setTimeout(scrollToBottom, 100);
+  }, [groupMessagesQuery.isFetchingNextPage, messages.length, scrollToBottom]);
 
   useEffect(() => {
     if (!groupId) return;
 
     const updateLastViewed = async () => {
       try {
-        const user = (await supabase.auth.getUser()).data.user;
-        if (!user) return;
-
-        await messageService.updateLastViewed(groupId, user.id);
-        log.debug("Updated group last viewed timestamp", { groupId, userId: user.id });
+        const userId = await messageService.updateCurrentUserLastViewed(groupId);
+        log.debug("Updated group last viewed timestamp", { groupId, userId });
       } catch (error) {
-        log.error("Erro ao atualizar última visualização do grupo", { error, groupId });
+        log.error("Erro ao atualizar ultima visualizacao do grupo", { error, groupId });
       }
     };
 
-    updateLastViewed();
+    void updateLastViewed();
   }, [groupId]);
 
   useEffect(() => {
     if (!groupId) return;
 
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    let isSubscribed = false;
-
     const setupRealtimeSubscription = async () => {
       try {
-        const user = (await supabase.auth.getUser()).data.user;
-        if (!user) {
-          log.warn("Skipping group realtime setup without authenticated user", { groupId });
-          return;
-        }
+        log.debug("Setting up group realtime subscription", { groupId });
 
-        log.debug("Setting up group realtime subscription", { groupId, userId: user.id });
-
-        channel = supabase.channel(`group:${groupId}`, {
-          config: {
-            broadcast: {
-              self: false,
-              ack: false,
-            },
-          },
-        });
-
-        channel
-          .on("broadcast", { event: "new_message" }, ({ payload }) => {
+        return subscribeToGroupBroadcastMessages({
+          groupId,
+          onNewMessage: (payload) => {
             if (!isGroupMessagePayload(payload)) {
               log.warn("Ignoring invalid group message payload", { groupId, payload });
               return;
@@ -140,87 +145,84 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
             const newMessage = payload.message;
             log.debug("New group message received", { groupId, messageId: newMessage.id });
 
-            setMessages((prev) => {
-              if (prev.some((msg) => msg.id === newMessage.id)) {
-                log.debug("Ignoring duplicate group message", {
-                  groupId,
-                  messageId: newMessage.id,
-                });
-                return prev;
-              }
+            queryClient.setQueryData<InfiniteData<{ messages: EnrichedGroupMessage[]; pagination: { page: number; total_pages: number; total: number; limit: number; hasMore: boolean } }>>(
+              queryKey,
+              (current) => {
+                if (!current) {
+                  return current;
+                }
 
-              return [...prev, newMessage];
-            });
+                return {
+                  ...current,
+                  pages: appendGroupMessageToCache(
+                    {
+                      pageParams: current.pageParams,
+                      pages: current.pages.map((page) => page.messages),
+                    },
+                    newMessage
+                  )!.pages.map((pageMessages, index) => ({
+                    ...current.pages[index],
+                    messages: pageMessages,
+                  })),
+                };
+              }
+            );
 
             setTimeout(scrollToBottom, 100);
 
-            messageService.updateLastViewed(groupId, user.id).catch((error: unknown) => {
+            messageService.updateCurrentUserLastViewed(groupId).catch((error: unknown) => {
               log.error("Error updating group last viewed timestamp", {
                 error,
                 groupId,
-                userId: user.id,
               });
             });
-          })
-          .subscribe((status) => {
+          },
+          onStatusChange: (status) => {
             log.debug("Group realtime subscription status changed", { groupId, status });
-            if (status === "SUBSCRIBED") {
-              isSubscribed = true;
-            }
-          });
+          },
+        });
       } catch (error) {
         log.error("Error setting up group realtime subscription", { error, groupId });
         toast.error(
-          "Erro ao conectar ao chat em tempo real. As mensagens serão atualizadas ao recarregar."
+          "Erro ao conectar ao chat em tempo real. As mensagens serao atualizadas ao recarregar."
         );
       }
     };
 
-    setupRealtimeSubscription();
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    void setupRealtimeSubscription().then((cleanup) => {
+      if (cancelled) {
+        cleanup?.();
+        return;
+      }
+      unsubscribe = cleanup;
+    });
 
     return () => {
-      if (channel && isSubscribed) {
-        log.debug("Removing group realtime subscription", { groupId });
-        supabase.removeChannel(channel);
-      }
+      cancelled = true;
+      log.debug("Removing group realtime subscription", { groupId });
+      unsubscribe?.();
     };
-  }, [groupId, scrollToBottom]);
+  }, [groupId, queryClient, queryKey, scrollToBottom]);
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore || groupMessagesQuery.isFetchingNextPage) return;
+
+    skipAutoScrollRef.current = true;
+    await groupMessagesQuery.fetchNextPage();
+  }, [groupMessagesQuery, hasMore]);
+
+  const refresh = useCallback(async () => {
+    await groupMessagesQuery.refetch();
+  }, [groupMessagesQuery]);
 
   const sendMessage = useCallback(
     async (message: string, attachmentFiles?: File[]) => {
       if (!groupId) return;
 
       try {
-        const user = (await supabase.auth.getUser()).data.user;
-        if (!user) throw new Error("Usuário não autenticado");
-
-        if (!(await userHasAdminAccess(user.id))) {
-          throw new Error("Apenas administradores podem enviar mensagens");
-        }
-
-        const result = await messageService.sendBroadcastMessage(
-          groupId,
-          user.id,
-          message,
-          undefined,
-          attachmentFiles
-        );
-
-        const { data: senderProfile } = await supabase
-          .from("profiles")
-          .select("full_name, email, avatar_url")
-          .eq("id", user.id)
-          .single();
-
-        const enrichedMessage: EnrichedGroupMessage = {
-          ...result,
-          sender_name: senderProfile?.full_name || senderProfile?.email || "Admin",
-          sender_avatar: senderProfile?.avatar_url || null,
-        };
-
-        const { broadcastGroupMessage } = await import("@/lib/realtime/groupBroadcast");
-        await broadcastGroupMessage(groupId, enrichedMessage);
-
+        await messageService.sendCurrentAdminBroadcastMessage(groupId, message, attachmentFiles);
         toast.success("Mensagem enviada com sucesso");
       } catch (error) {
         log.error("Erro ao enviar mensagem do grupo", { error, groupId });
@@ -233,13 +235,13 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
 
   return {
     messages,
-    loading,
+    loading: groupMessagesQuery.isLoading || groupMessagesQuery.isFetchingNextPage,
     hasMore,
     currentPage,
     totalPages,
     loadMore,
     sendMessage,
     messagesEndRef,
-    refresh: () => loadMessages(1),
+    refresh,
   };
 }

@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import {
   removeProductionPhotoFromStorage,
   uploadProductionPhotoToStorage,
-} from "@/services/admin/production-photo-storage-service";
+} from "@/services/admin/production/production-photo-storage-service";
 
 interface UploadPhotoParams {
   bucket: string;

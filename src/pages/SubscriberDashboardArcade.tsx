@@ -1,194 +1,258 @@
-import { Page } from "@/components/layouts/Page";
-import { ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
-import { useAuth } from "@/lib/auth";
 import { Link } from "react-router-dom";
 import {
-  Package, Clock, Truck, CheckCircle2, AlertCircle,
-  ExternalLink, Gift
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  Gift,
+  Package,
+  Truck,
 } from "lucide-react";
+import { ArcadeCard, ArcadeHero, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { CutoffCountdown, useIsBeforeCutoff } from "@/components/CutoffCountdown";
-import {
-  type SubscriberDelivery,
-  useSubscriberDashboardData,
-} from "@/hooks/subscription/useSubscriberDashboardData";
+import { Page } from "@/components/layouts/Page";
 import { AUTH_ROUTES, PUBLIC_ROUTES } from "@/config/routes";
+import { useSubscriberDashboardData, type SubscriberDelivery } from "@/hooks/subscription/useSubscriberDashboardData";
+import { useAuth } from "@/lib/auth";
 import { buildTrackingUrl } from "@/lib/tracking-links";
+
+function formatCurrency(value: number | null | undefined) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(value ?? 0);
+}
+
+function getStatusStyle(status: string) {
+  switch (status) {
+    case "scheduled":
+    case "pending_choice":
+      return { icon: Clock, color: "text-sky-400", label: "Agendada" };
+    case "confirmed":
+      return { icon: CheckCircle2, color: "text-emerald-400", label: "Confirmada" };
+    case "in_production":
+      return { icon: Package, color: "text-amber-300", label: "Em producao" };
+    case "shipped":
+      return { icon: Truck, color: "text-violet-400", label: "Enviada" };
+    case "delivered":
+      return { icon: CheckCircle2, color: "text-emerald-400", label: "Entregue" };
+    default:
+      return { icon: AlertCircle, color: "text-[hsl(0,0%,40%)]", label: status };
+  }
+}
 
 export default function SubscriberDashboardArcade() {
   const { user } = useAuth();
   const isBeforeCutoff = useIsBeforeCutoff();
-  const {
-    subscription: sub,
-    completed,
-    nextDelivery: next,
-    progress,
-  } = useSubscriberDashboardData(user?.id);
+  const { subscription: sub, completed, nextDelivery: next, progress } = useSubscriberDashboardData(user?.id);
   const nextTrackingUrl = buildTrackingUrl(next?.tracking_code, next?.shipping_carrier);
 
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "scheduled": case "pending_choice": return { icon: Clock, color: "text-blue-400", label: "AGENDADA" };
-      case "confirmed": return { icon: CheckCircle2, color: "text-green-400", label: "CONFIRMADA" };
-      case "in_production": return { icon: Package, color: "text-orange-400", label: "EM PRODUÇÃO" };
-      case "shipped": return { icon: Truck, color: "text-purple-400", label: "ENVIADA" };
-      case "delivered": return { icon: CheckCircle2, color: "text-green-400", label: "ENTREGUE" };
-      default: return { icon: AlertCircle, color: "text-[hsl(0,0%,40%)]", label: status.toUpperCase() };
-    }
-  };
-
   return (
-    <Page title="Painel do Assinante | ORDAX" description="Gerencie sua assinatura e acompanhe entregas">
+    <Page title="Painel do Assinante | ORDAX" description="Acompanhe entregas, progresso e pagamentos da assinatura.">
       <ArcadeHero
         badge="SUBSCRIBER PANEL"
         title="MEU PAINEL"
-        subtitle="GERENCIE SUA ASSINATURA E ENTREGAS"
-        stats={sub ? [
-          { value: `${sub.deliveries_completed}/${sub.deliveries_total}`, label: "Entregas" },
-          { value: `${progress}%`, label: "Progresso" },
-          { value: `R$ ${(sub.total_paid || 0).toFixed(0)}`, label: "Total Pago" },
-        ] : []}
+        subtitle="ACOMPANHE ASSINATURA, ENTREGAS E STATUS OPERACIONAL"
+        stats={
+          sub
+            ? [
+                { value: `${sub.deliveries_completed}/${sub.deliveries_total}`, label: "Entregas" },
+                { value: `${progress}%`, label: "Progresso" },
+                { value: formatCurrency(sub.total_paid), label: "Total pago" },
+              ]
+            : []
+        }
       />
 
-      <section className="max-w-6xl mx-auto px-6 pb-16">
+      <section className="mx-auto max-w-6xl px-6 pb-16">
         {!sub ? (
           <ArcadeCard className="p-12 text-center">
-            <Package className="w-16 h-16 text-[hsl(0,0%,20%)] mx-auto mb-4" />
-            <h3 className="text-xl font-bold tracking-wider mb-2" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
+            <Package className="mx-auto mb-4 h-16 w-16 text-[hsl(0,0%,20%)]" />
+            <h3
+              className="mb-2 text-xl font-bold tracking-wider"
+              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+            >
               NENHUMA ASSINATURA ATIVA
             </h3>
-            <p className="font-mono text-xs text-[hsl(0,0%,45%)] tracking-wider mb-6">
-              Assine uma coleção e receba personagens exclusivos todo mês
+            <p className="mb-6 font-mono text-xs tracking-wider text-[hsl(0,0%,45%)]">
+              Explore o universo publicado e acompanhe os modelos disponiveis.
             </p>
             <Link
-              to={PUBLIC_ROUTES.collections}
-              className="inline-flex items-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,7%)] font-mono uppercase tracking-[0.15em] text-xs h-10 px-8 hover:brightness-110 transition-all"
+              to={PUBLIC_ROUTES.catalog}
+              className="inline-flex h-10 items-center gap-2 bg-[hsl(var(--gold-accent))] px-8 font-mono text-xs uppercase tracking-[0.15em] text-[hsl(0,0%,7%)] transition-all hover:brightness-110"
             >
-              EXPLORAR COLEÇÕES
+              EXPLORAR UNIVERSO
             </Link>
           </ArcadeCard>
         ) : (
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
-              {/* Active Sub */}
+            <div className="space-y-6 lg:col-span-2">
               <ArcadeCard className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold tracking-wider" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2
+                    className="text-lg font-bold tracking-wider"
+                    style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+                  >
                     ASSINATURA ATIVA
                   </h2>
-                  <span className="font-mono text-[9px] px-3 py-1 bg-green-500/20 text-green-400 tracking-[0.2em] uppercase border border-green-500/30">
+                  <span className="border border-emerald-500/30 bg-emerald-500/20 px-3 py-1 font-mono text-[9px] uppercase tracking-[0.2em] text-emerald-300">
                     ATIVA
                   </span>
                 </div>
-                <p className="font-mono text-sm text-[hsl(var(--gold-accent))] mb-1">{sub.collections?.name}</p>
-                <p className="font-mono text-[10px] text-[hsl(0,0%,45%)] tracking-wider mb-4">
-                  Plano {sub.plan_type} • {sub.deliveries_completed}/{sub.deliveries_total} entregas
-                </p>
-                {/* Progress bar */}
-                <div className="h-2 bg-[hsl(0,0%,12%)] mb-2 overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-[hsl(var(--gold-accent))] to-[hsl(var(--gold-accent)/0.6)] transition-all duration-1000" style={{ width: `${progress}%` }} />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="mb-1 font-mono text-sm text-[hsl(var(--gold-accent))]">
+                      {sub.collections?.name || "Colecao vinculada"}
+                    </p>
+                    <p className="font-mono text-[10px] tracking-wider text-[hsl(0,0%,45%)]">
+                      Plano {sub.plan_type} • {sub.deliveries_completed}/{sub.deliveries_total} entregas
+                    </p>
+                  </div>
+                  <div className="rounded-sm border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] p-4">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-[hsl(var(--gold-accent)/0.72)]">
+                      Total registrado
+                    </p>
+                    <p className="mt-2 text-2xl font-black uppercase tracking-[0.08em]">
+                      {formatCurrency(sub.total_paid)}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex justify-between font-mono text-[9px] text-[hsl(0,0%,40%)] tracking-widest">
-                  <span>PROGRESSO</span>
-                  <span>{progress}%</span>
+
+                <div className="mt-5">
+                  <div className="mb-2 flex items-center justify-between font-mono text-[9px] tracking-widest text-[hsl(0,0%,40%)]">
+                    <span>PROGRESSO</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden bg-[hsl(0,0%,12%)]">
+                    <div
+                      className="h-full bg-gradient-to-r from-[hsl(var(--gold-accent))] to-[hsl(var(--gold-accent)/0.6)] transition-all duration-1000"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
                 </div>
               </ArcadeCard>
 
-              {/* Next Delivery */}
-              {next && (
-                <ArcadeCard className="p-6 border-[hsl(var(--gold-accent)/0.3)]">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold tracking-wider" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
-                      PRÓXIMA ENTREGA
+              {next ? (
+                <ArcadeCard className="border-[hsl(var(--gold-accent)/0.3)] p-6">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h2
+                      className="text-lg font-bold tracking-wider"
+                      style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+                    >
+                      PROXIMA ENTREGA
                     </h2>
                     {(() => {
-                      const s = getStatusStyle(next.status);
+                      const status = getStatusStyle(next.status);
                       return (
-                        <span className={`font-mono text-[9px] px-3 py-1 tracking-[0.2em] uppercase border border-current/30 ${s.color}`}>
-                          {s.label}
+                        <span
+                          className={`border border-current/30 px-3 py-1 font-mono text-[9px] uppercase tracking-[0.2em] ${status.color}`}
+                        >
+                          {status.label}
                         </span>
                       );
                     })()}
                   </div>
-                  <p className="font-mono text-sm text-[hsl(0,0%,80%)] mb-1">
-                    {next.collections?.name || next.collection_characters?.name || "Personagem não revelado"}
+
+                  <p className="mb-1 font-mono text-sm text-[hsl(0,0%,80%)]">
+                    {next.collections?.name || next.collection_characters?.name || "Personagem ainda nao revelado"}
                   </p>
-                  <p className="font-mono text-[10px] text-[hsl(0,0%,45%)] tracking-wider">
+                  <p className="font-mono text-[10px] tracking-wider text-[hsl(0,0%,45%)]">
                     Entrega #{next.delivery_number || next.delivery_order}
                   </p>
-                  {next.tracking_code && (
-                    <div className="mt-3 flex items-center gap-2">
-                      <Truck className="w-3 h-3 text-[hsl(var(--gold-accent))]" />
+
+                  {next.tracking_code ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Truck className="h-3 w-3 text-[hsl(var(--gold-accent))]" />
                       <span className="font-mono text-xs text-[hsl(0,0%,60%)]">{next.tracking_code}</span>
-                      {nextTrackingUrl && (
+                      {nextTrackingUrl ? (
                         <a
                           href={nextTrackingUrl}
-                          target="_blank" rel="noopener noreferrer"
-                          className="text-[hsl(var(--gold-accent))] text-xs flex items-center gap-1 hover:underline"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs text-[hsl(var(--gold-accent))] hover:underline"
                         >
-                          <ExternalLink className="w-3 h-3" /> Rastrear
+                          <ExternalLink className="h-3 w-3" />
+                          Rastrear
                         </a>
-                      )}
+                      ) : null}
                     </div>
-                  )}
-                  {isBeforeCutoff && (
-                    <div className="mt-4 pt-4 border-t border-[hsl(0,0%,12%)]">
+                  ) : null}
+
+                  {isBeforeCutoff ? (
+                    <div className="mt-4 border-t border-[hsl(0,0%,12%)] pt-4">
                       <CutoffCountdown variant="alert" />
                     </div>
-                  )}
+                  ) : null}
                 </ArcadeCard>
-              )}
+              ) : null}
 
-              {/* Past Deliveries */}
-              {completed.length > 0 && (
+              {completed.length > 0 ? (
                 <ArcadeCard hover={false} className="p-6">
                   <ArcadeSectionTitle>ENTREGAS ANTERIORES</ArcadeSectionTitle>
                   <div className="space-y-2">
                     {completed.map((delivery: SubscriberDelivery) => {
-                      const s = getStatusStyle(delivery.status);
-                      const Icon = s.icon;
+                      const status = getStatusStyle(delivery.status);
+                      const Icon = status.icon;
                       return (
-                        <div key={delivery.id} className="flex items-center gap-3 p-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors">
-                          <Icon className={`w-4 h-4 ${s.color}`} />
-                          <span className="font-mono text-xs text-[hsl(0,0%,70%)] flex-1">
-                            {delivery.collections?.name || delivery.collection_characters?.name || "—"}
+                        <div
+                          key={delivery.id}
+                          className="flex items-center gap-3 border border-[hsl(0,0%,12%)] p-3 transition-colors hover:border-[hsl(var(--gold-accent)/0.3)]"
+                        >
+                          <Icon className={`h-4 w-4 ${status.color}`} />
+                          <span className="flex-1 font-mono text-xs text-[hsl(0,0%,70%)]">
+                            {delivery.collections?.name || delivery.collection_characters?.name || "Sem personagem vinculado"}
                           </span>
-                          <span className="font-mono text-[10px] text-[hsl(0,0%,40%)]">{s.label}</span>
+                          <span className="font-mono text-[10px] text-[hsl(0,0%,40%)]">{status.label}</span>
                         </div>
                       );
                     })}
                   </div>
                 </ArcadeCard>
-              )}
+              ) : null}
             </div>
 
-            {/* Sidebar - Quick Actions */}
             <div className="space-y-6">
               <ArcadeCard className="p-6">
-                <h3 className="font-mono text-[10px] text-[hsl(var(--gold-accent))] tracking-[0.3em] uppercase mb-4">AÇÕES RÁPIDAS</h3>
+                <h3 className="mb-4 font-mono text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--gold-accent))]">
+                  ACOES RAPIDAS
+                </h3>
                 <div className="space-y-2">
-                  <Link to={PUBLIC_ROUTES.collections} className="block w-full text-left font-mono text-xs text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] py-2 px-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors tracking-wider">
-                    → EXPLORAR COLEÇÕES
+                  <Link
+                    to={PUBLIC_ROUTES.catalog}
+                    className="block w-full border border-[hsl(0,0%,12%)] px-3 py-2 text-left font-mono text-xs tracking-wider text-[hsl(0,0%,60%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.3)] hover:text-[hsl(var(--gold-accent))]"
+                  >
+                    → EXPLORAR UNIVERSO
                   </Link>
-                  <Link to={AUTH_ROUTES.payments} className="block w-full text-left font-mono text-xs text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] py-2 px-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors tracking-wider">
+                  <Link
+                    to={AUTH_ROUTES.payments}
+                    className="block w-full border border-[hsl(0,0%,12%)] px-3 py-2 text-left font-mono text-xs tracking-wider text-[hsl(0,0%,60%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.3)] hover:text-[hsl(var(--gold-accent))]"
+                  >
                     → MEUS PAGAMENTOS
                   </Link>
-                  <Link to={AUTH_ROUTES.profile} className="block w-full text-left font-mono text-xs text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] py-2 px-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors tracking-wider">
+                  <Link
+                    to={AUTH_ROUTES.profile}
+                    className="block w-full border border-[hsl(0,0%,12%)] px-3 py-2 text-left font-mono text-xs tracking-wider text-[hsl(0,0%,60%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.3)] hover:text-[hsl(var(--gold-accent))]"
+                  >
                     → MINHA CONTA
                   </Link>
                 </div>
               </ArcadeCard>
 
-              {sub.plan_type === "semestral" && (
-                <ArcadeCard className="p-6 border-purple-500/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Gift className="w-4 h-4 text-purple-400" />
-                    <span className="font-mono text-[10px] text-purple-400 tracking-[0.2em] uppercase">BÔNUS</span>
+              {sub.plan_type === "semestral" ? (
+                <ArcadeCard className="border-purple-500/30 p-6">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Gift className="h-4 w-4 text-purple-400" />
+                    <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-purple-400">
+                      BONUS
+                    </span>
                   </div>
-                  <p className="font-mono text-xs text-[hsl(0,0%,60%)] leading-relaxed">
-                    Peça bônus exclusiva na sua 6ª entrega!
+                  <p className="font-mono text-xs leading-relaxed text-[hsl(0,0%,60%)]">
+                    Peca bonus exclusiva prevista para a sexta entrega do plano.
                   </p>
                 </ArcadeCard>
-              )}
+              ) : null}
             </div>
           </div>
         )}

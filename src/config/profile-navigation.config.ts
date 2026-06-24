@@ -1,9 +1,4 @@
-/**
- * Configuração de Navegação do Perfil do Usuário
- * 
- * Define a estrutura hierárquica das seções do perfil
- * com 5 seções principais consolidadas.
- */
+import { PUBLIC_COLLECTIONS_ENABLED, profileSectionPath } from "./routes";
 
 export interface ProfileSubSection {
   id: string;
@@ -18,142 +13,65 @@ export interface ProfileSection {
   subSections: ProfileSubSection[];
 }
 
-export const profileNavigationConfig: ProfileSection[] = [
+const baseProfileNavigation: ProfileSection[] = [
   {
-    id: 'account',
-    title: 'Minha Conta',
+    id: "account",
+    title: "Conta",
     subSections: [
       {
-        id: 'info',
-        label: 'Informações Básicas',
-        path: '/profile/info',
-        icon: 'User',
-      },
-      {
-        id: 'collector',
-        label: 'Perfil Público',
-        path: '/profile/collector',
-        icon: 'Star',
-      },
-      {
-        id: 'notifications',
-        label: 'Notificações',
-        path: '/profile/notifications',
-        icon: 'Bell',
+        id: "info",
+        label: "Dados da conta",
+        path: profileSectionPath("info"),
+        icon: "User",
       },
     ],
   },
   {
-    id: 'preferences',
-    title: 'Preferências & Coleção',
+    id: "finance",
+    title: "Financeiro",
     subSections: [
       {
-        id: 'preferences',
-        label: 'Preferências de Produtos',
-        path: '/profile/preferences',
-        icon: 'Settings',
-      },
-      {
-        id: 'collection',
-        label: 'Minha Coleção',
-        path: '/profile/collection',
-        icon: 'Grid',
+        id: "payment",
+        label: "Pagamentos",
+        path: profileSectionPath("payment"),
+        icon: "CreditCard",
       },
     ],
   },
   {
-    id: 'delivery',
-    title: 'Endereço & Pagamento',
+    id: "communication",
+    title: "Atendimento",
     subSections: [
       {
-        id: 'address',
-        label: 'Endereço de Entrega',
-        path: '/profile/address',
-        icon: 'MapPin',
+        id: "notifications",
+        label: "Notificacoes",
+        path: profileSectionPath("notifications"),
+        icon: "Bell",
       },
       {
-        id: 'payment',
-        label: 'Métodos de Pagamento',
-        path: '/profile/payment',
-        icon: 'CreditCard',
-      },
-    ],
-  },
-  {
-    id: 'orders',
-    title: 'Pedidos & Assinaturas',
-    subSections: [
-      {
-        id: 'orders',
-        label: 'Meus Pedidos',
-        path: '/profile/orders',
-        icon: 'ShoppingBag',
-      },
-      {
-        id: 'subscriptions',
-        label: 'Minhas Assinaturas',
-        path: '/profile/subscriptions',
-        icon: 'RefreshCw',
-      },
-      {
-        id: 'credits',
-        label: 'Meus Créditos',
-        path: '/painel-creditos',
-        icon: 'CreditCard',
-      },
-    ],
-  },
-  {
-    id: 'support',
-    title: 'Suporte',
-    subSections: [
-      {
-        id: 'support',
-        label: 'Central de Ajuda',
-        path: '/profile/support',
-        icon: 'HelpCircle',
+        id: "support",
+        label: "Suporte",
+        path: profileSectionPath("support"),
+        icon: "HelpCircle",
       },
     ],
   },
 ];
 
-/**
- * Retorna todas as sub-seções em uma lista plana
- */
-export function getAllProfileSubSections(): ProfileSubSection[] {
-  return profileNavigationConfig.flatMap(section => section.subSections);
-}
-
-/**
- * Encontra uma sub-seção pelo path
- */
-export function findProfileSubSectionByPath(path: string): ProfileSubSection | undefined {
-  return getAllProfileSubSections().find(subSection => subSection.path === path);
-}
-
-/**
- * Retorna a seção que contém um determinado path
- */
-export function findProfileSectionByPath(path: string): ProfileSection | undefined {
-  return profileNavigationConfig.find(section =>
-    section.subSections.some(subSection => subSection.path === path)
-  );
-}
-
-/**
- * Mapeia IDs antigos para novos paths (para migração)
- */
-export const legacyProfilePathMapping: Record<string, string> = {
-  'personal': '/profile/info',
-  'info': '/profile/info',
-  'collector': '/profile/collector',
-  'notifications': '/profile/notifications',
-  'preferences': '/profile/preferences',
-  'collection': '/profile/collection',
-  'address': '/profile/address',
-  'payment': '/profile/payment',
-  'orders': '/profile/orders',
-  'subscriptions': '/profile/subscriptions',
-  'credits': '/painel-creditos',
-  'support': '/profile/support',
-};
+export const profileNavigationConfig: ProfileSection[] = PUBLIC_COLLECTIONS_ENABLED
+  ? [
+      ...baseProfileNavigation,
+      {
+        id: "subscriptions",
+        title: "Assinaturas",
+        subSections: [
+          {
+            id: "subscriptions",
+            label: "Minha assinatura",
+            path: profileSectionPath("subscriptions"),
+            icon: "RefreshCw",
+          },
+        ],
+      },
+    ]
+  : baseProfileNavigation;

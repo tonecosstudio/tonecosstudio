@@ -1,472 +1,357 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Package, FileText, Image, CheckCircle2 } from "lucide-react";
-import SEOHead from "@/components/SEOHead";
+import { useMemo, useState } from "react";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
+import SEOHead from "@/components/SEOHead";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { CheckCircle2, FileText, Image, Package } from "lucide-react";
 
-export default function AdminPackaging() {
-  const [packagingConfig, setPackagingConfig] = useState({
-    // Essenciais
-    certificate: true,
-    thankYouCard: true,
-    careManual: true,
-    bubbleWrap: true,
-    box: true,
+type PackagingKey =
+  | "certificate"
+  | "thankYouCard"
+  | "careManual"
+  | "bubbleWrap"
+  | "box"
+  | "postcard"
+  | "sticker"
+  | "qrCode"
+  | "bookmark"
+  | "tissuePaper"
+  | "customSeal"
+  | "handwrittenNote"
+  | "polaroidPhoto"
+  | "surpriseGift";
 
-    // Diferenciais
-    postcard: true,
-    sticker: true,
-    qrCode: true,
-    bookmark: true,
-    tissuePaper: true,
-    customSeal: true,
+interface PackagingOption {
+  key: PackagingKey;
+  label: string;
+  cost?: number;
+}
 
-    // Premium
-    handwrittenNote: false,
-    polaroidPhoto: false,
-    surpriseGift: false,
-  });
+const ESSENTIAL_OPTIONS: PackagingOption[] = [
+  { key: "certificate", label: "Certificado de autenticidade", cost: 1.0 },
+  { key: "thankYouCard", label: "Cartao de agradecimento", cost: 0.5 },
+  { key: "careManual", label: "Manual de cuidados", cost: 0.5 },
+  { key: "bubbleWrap", label: "Plastico bolha", cost: 1.0 },
+  { key: "box", label: "Caixa personalizada", cost: 3.0 },
+];
 
-  const [templates, setTemplates] = useState({
-    thankYouMessage: `🎉 Parabéns, Colecionador!
+const DIFFERENTIAL_OPTIONS: PackagingOption[] = [
+  { key: "postcard", label: "Cartao postal", cost: 1.5 },
+  { key: "sticker", label: "Adesivo da marca", cost: 0.5 },
+  { key: "qrCode", label: "Codigo QR para grupo VIP" },
+  { key: "bookmark", label: "Marcador de pagina", cost: 1.0 },
+  { key: "tissuePaper", label: "Papel de seda", cost: 1.0 },
+  { key: "customSeal", label: "Lacre personalizado", cost: 0.5 },
+];
 
-Você acaba de receber uma peça exclusiva da nossa coleção!
+const PREMIUM_OPTIONS: PackagingOption[] = [
+  { key: "handwrittenNote", label: "Mensagem manuscrita" },
+  { key: "polaroidPhoto", label: "Foto Polaroid do processo" },
+  { key: "surpriseGift", label: "Brinde surpresa" },
+];
 
-Esta miniatura foi cuidadosamente esculpida e pintada à mão.
+interface TemplateState {
+  thankYouMessage: string;
+  certificateText: string;
+  postcardBack: string;
+  careInstructions: string;
+}
 
-Peça: #[NUMERO] de [TOTAL]
+const DEFAULT_TEMPLATES: TemplateState = {
+  thankYouMessage: `Parabens, colecionador!
+
+Voce acaba de receber uma peca exclusiva da nossa colecao.
+
+Esta miniatura foi cuidadosamente esculpida e pintada a mao.
+
+Peca: #[NUMERO] de [TOTAL]
 Personagem: [NOME]
-Série: [SERIE]
+Serie: [SERIE]
 Data: [MES/ANO]
 
-📸 Compartilhe sua coleção!
-Use #MinhaColecao[SERIE]
+Compartilhe sua colecao:
+#MinhaColecao[SERIE]
 
-Obrigado por fazer parte da nossa comunidade!
+Obrigado por fazer parte da comunidade.
 
-Com carinho,
+Assinatura:
 [SUA ASSINATURA]`,
 
-    certificateText: `✨ CERTIFICADO ORDAX
+  certificateText: `CERTIFICADO ORDAX
 
-Este documento certifica que a miniatura é original e faz parte do ciclo Ordax.
+Este documento certifica que a miniatura e original e faz parte do ciclo Ordax.
 
 Personagem: [NOME COMPLETO]
-Série: [NOME DA SERIE]
-Número: #[XXX] de [TOTAL]
+Serie: [NOME DA SERIE]
+Numero: #[XXX] de [TOTAL]
 Material: Resina
-Altura: [XX]cm
-Pintada à mão
-Data de produção: [MES/ANO]`,
+Altura: [XX] cm
+Pintada a mao
+Data de producao: [MES/ANO]`,
 
-    postcardBack: `[NOME] - [TÍTULO]
-[Série] Collection
+  postcardBack: `[NOME] - [TITULO]
+[SERIE] Collection
 
-"[Frase icônica do personagem]"
+"[FRASE DO PERSONAGEM]"
 
-[Descrição breve do personagem em 3-4 linhas]
+[DESCRICAO BREVE DO PERSONAGEM EM 3 OU 4 LINHAS]
 
-📅 [Mês/Ano]
-🎨 Pintada à mão
-⚠️ Produto artístico artesanal. Produto não oficial.
+[MES/ANO]
+Pintada a mao
+Produto artistico artesanal. Produto nao oficial.
 
 www.suamarca.com.br
 @suamarca`,
 
-    careInstructions: `🛡️ GUIA DE CUIDADOS
+  careInstructions: `GUIA DE CUIDADOS
 
 Como cuidar da sua miniatura:
 
-✅ Limpe com pincel macio
-✅ Evite luz solar direta
-✅ Mantenha em local seco
-✅ Não use produtos químicos
-✅ Temperatura ambiente ideal
+- Limpe com pincel macio
+- Evite luz solar direta
+- Mantenha em local seco
+- Nao use produtos quimicos
+- Temperatura ambiente ideal
 
-💡 DICAS DE EXPOSIÇÃO:
-• Use prateleiras com LED
-• Crie cenários temáticos
-• Agrupe por série
-• Fotografe e compartilhe!
+DICAS DE EXPOSICAO:
+- Use prateleiras com LED
+- Crie cenarios tematicos
+- Agrupe por serie
+- Fotografe e compartilhe
 
-⚠️ ATENÇÃO:
-Produto artesanal. Pequenas variações são normais e fazem cada peça única!`,
-  });
+ATENCAO:
+Produto artesanal. Pequenas variacoes sao normais e tornam cada peca unica.`,
+};
 
-  const [costs] = useState({
-    box: 3.0,
-    postcard: 1.5,
-    certificate: 1.0,
-    careManual: 0.5,
-    thankYouCard: 0.5,
-    tissuePaper: 1.0,
-    bubbleWrap: 1.0,
-    sticker: 0.5,
-    bookmark: 1.0,
-    customSeal: 0.5,
-  });
+const DEFAULT_CONFIG: Record<PackagingKey, boolean> = {
+  certificate: true,
+  thankYouCard: true,
+  careManual: true,
+  bubbleWrap: true,
+  box: true,
+  postcard: true,
+  sticker: true,
+  qrCode: true,
+  bookmark: true,
+  tissuePaper: true,
+  customSeal: true,
+  handwrittenNote: false,
+  polaroidPhoto: false,
+  surpriseGift: false,
+};
 
-  const calculateTotalCost = () => {
-    let total = 0;
-    if (packagingConfig.box) total += costs.box;
-    if (packagingConfig.postcard) total += costs.postcard;
-    if (packagingConfig.certificate) total += costs.certificate;
-    if (packagingConfig.careManual) total += costs.careManual;
-    if (packagingConfig.thankYouCard) total += costs.thankYouCard;
-    if (packagingConfig.tissuePaper) total += costs.tissuePaper;
-    if (packagingConfig.bubbleWrap) total += costs.bubbleWrap;
-    if (packagingConfig.sticker) total += costs.sticker;
-    if (packagingConfig.bookmark) total += costs.bookmark;
-    if (packagingConfig.customSeal) total += costs.customSeal;
-    return total.toFixed(2);
+function OptionGroup({
+  title,
+  badgeVariant,
+  options,
+  values,
+  onToggle,
+}: {
+  title: string;
+  badgeVariant: "default" | "secondary" | "outline";
+  options: PackagingOption[];
+  values: Record<PackagingKey, boolean>;
+  onToggle: (key: PackagingKey, checked: boolean) => void;
+}) {
+  return (
+    <div>
+      <h3 className="mb-3 flex items-center gap-2 font-semibold">
+        <Badge variant={badgeVariant}>{title}</Badge>
+      </h3>
+      <div className="space-y-3">
+        {options.map((option) => (
+          <div key={option.key} className="flex items-center space-x-2">
+            <Checkbox
+              id={option.key}
+              checked={values[option.key]}
+              onCheckedChange={(checked) => onToggle(option.key, checked === true)}
+            />
+            <label htmlFor={option.key} className="cursor-pointer text-sm">
+              {option.label}
+              {typeof option.cost === "number" ? ` (R$ ${option.cost.toFixed(2)})` : ""}
+            </label>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TemplateCard({
+  title,
+  value,
+  rows,
+  onChange,
+}: {
+  title: string;
+  value: string;
+  rows: number;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Textarea
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          rows={rows}
+          className="font-mono text-sm"
+        />
+        <Button className="mt-4 w-full">Salvar template</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function AdminPackaging() {
+  const [packagingConfig, setPackagingConfig] = useState(DEFAULT_CONFIG);
+  const [templates, setTemplates] = useState(DEFAULT_TEMPLATES);
+
+  const totalCost = useMemo(() => {
+    const allOptions = [...ESSENTIAL_OPTIONS, ...DIFFERENTIAL_OPTIONS, ...PREMIUM_OPTIONS];
+    return allOptions.reduce((sum, option) => {
+      if (!option.cost || !packagingConfig[option.key]) {
+        return sum;
+      }
+      return sum + option.cost;
+    }, 0);
+  }, [packagingConfig]);
+
+  const updateOption = (key: PackagingKey, checked: boolean) => {
+    setPackagingConfig((current) => ({
+      ...current,
+      [key]: checked,
+    }));
   };
 
   return (
     <>
       <SEOHead
-        title="Admin - Embalagem do Produto"
-        description="Configurar conteúdo e templates da embalagem"
+        title="Admin - Embalagem do produto"
+        description="Configurar conteudo e templates da embalagem"
         noindex={true}
       />
 
       <AdminLayout>
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Embalagem do Produto</h1>
-          <p className="text-muted-foreground mt-2">
-            Configure o conteúdo da caixa e templates de impressão
+          <h1 className="text-3xl font-bold tracking-tight">Embalagem do produto</h1>
+          <p className="mt-2 text-muted-foreground">
+            Configure o conteudo da caixa, os itens opcionais e os templates de impressao.
           </p>
         </div>
 
-        {/* Alert de Custo */}
         <Alert className="mb-6">
           <Package className="h-4 w-4" />
           <AlertDescription>
-            <strong>Custo Total por Embalagem:</strong> R$ {calculateTotalCost()}
+            <strong>Custo total por embalagem:</strong> R$ {totalCost.toFixed(2)}
           </AlertDescription>
         </Alert>
 
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Checklist de Itens */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
-                Itens da Embalagem
+                Itens da embalagem
               </CardTitle>
-              <CardDescription>Selecione o que incluir em cada caixa</CardDescription>
+              <CardDescription>Selecione o que entra em cada caixa.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Essenciais */}
-              <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Badge variant="default">Essenciais</Badge>
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="certificate"
-                      checked={packagingConfig.certificate}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, certificate: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="certificate" className="text-sm cursor-pointer">
-                      Certificado de Autenticidade (R$ {costs.certificate.toFixed(2)})
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="thankYouCard"
-                      checked={packagingConfig.thankYouCard}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, thankYouCard: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="thankYouCard" className="text-sm cursor-pointer">
-                      Cartão de Agradecimento (R$ {costs.thankYouCard.toFixed(2)})
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="careManual"
-                      checked={packagingConfig.careManual}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, careManual: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="careManual" className="text-sm cursor-pointer">
-                      Manual de Cuidados (R$ {costs.careManual.toFixed(2)})
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="bubbleWrap"
-                      checked={packagingConfig.bubbleWrap}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, bubbleWrap: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="bubbleWrap" className="text-sm cursor-pointer">
-                      Plástico Bolha (R$ {costs.bubbleWrap.toFixed(2)})
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="box"
-                      checked={packagingConfig.box}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, box: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="box" className="text-sm cursor-pointer">
-                      Caixa Personalizada (R$ {costs.box.toFixed(2)})
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Diferenciais */}
-              <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Badge variant="secondary">Diferenciais</Badge>
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="postcard"
-                      checked={packagingConfig.postcard}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, postcard: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="postcard" className="text-sm cursor-pointer">
-                      Cartão Postal (R$ {costs.postcard.toFixed(2)})
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="sticker"
-                      checked={packagingConfig.sticker}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, sticker: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="sticker" className="text-sm cursor-pointer">
-                      Adesivo da Marca (R$ {costs.sticker.toFixed(2)})
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="qrCode"
-                      checked={packagingConfig.qrCode}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, qrCode: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="qrCode" className="text-sm cursor-pointer">
-                      Código QR (Grupo VIP)
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="bookmark"
-                      checked={packagingConfig.bookmark}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, bookmark: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="bookmark" className="text-sm cursor-pointer">
-                      Marcador de Página (R$ {costs.bookmark.toFixed(2)})
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="tissuePaper"
-                      checked={packagingConfig.tissuePaper}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, tissuePaper: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="tissuePaper" className="text-sm cursor-pointer">
-                      Papel de Seda (R$ {costs.tissuePaper.toFixed(2)})
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="customSeal"
-                      checked={packagingConfig.customSeal}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, customSeal: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="customSeal" className="text-sm cursor-pointer">
-                      Lacre Personalizado (R$ {costs.customSeal.toFixed(2)})
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Premium */}
-              <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Badge variant="outline">Premium</Badge>
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="handwrittenNote"
-                      checked={packagingConfig.handwrittenNote}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({
-                          ...packagingConfig,
-                          handwrittenNote: checked as boolean,
-                        })
-                      }
-                    />
-                    <label htmlFor="handwrittenNote" className="text-sm cursor-pointer">
-                      Mensagem Manuscrita
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="polaroidPhoto"
-                      checked={packagingConfig.polaroidPhoto}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({
-                          ...packagingConfig,
-                          polaroidPhoto: checked as boolean,
-                        })
-                      }
-                    />
-                    <label htmlFor="polaroidPhoto" className="text-sm cursor-pointer">
-                      Foto Polaroid do Processo
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="surpriseGift"
-                      checked={packagingConfig.surpriseGift}
-                      onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, surpriseGift: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="surpriseGift" className="text-sm cursor-pointer">
-                      Brinde Surpresa
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <Button className="w-full">Salvar Configuração</Button>
+              <OptionGroup
+                title="Essenciais"
+                badgeVariant="default"
+                options={ESSENTIAL_OPTIONS}
+                values={packagingConfig}
+                onToggle={updateOption}
+              />
+              <OptionGroup
+                title="Diferenciais"
+                badgeVariant="secondary"
+                options={DIFFERENTIAL_OPTIONS}
+                values={packagingConfig}
+                onToggle={updateOption}
+              />
+              <OptionGroup
+                title="Premium"
+                badgeVariant="outline"
+                options={PREMIUM_OPTIONS}
+                values={packagingConfig}
+                onToggle={updateOption}
+              />
+              <Button className="w-full">Salvar configuracao</Button>
             </CardContent>
           </Card>
 
-          {/* Templates de Texto */}
           <div className="space-y-6">
-            {/* Cartão de Agradecimento */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Cartão de Agradecimento
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  value={templates.thankYouMessage}
-                  onChange={(e) => setTemplates({ ...templates, thankYouMessage: e.target.value })}
-                  rows={12}
-                  className="font-mono text-sm"
-                />
-                <Button className="w-full mt-4">Salvar Template</Button>
-              </CardContent>
-            </Card>
-
-            {/* Certificado */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Certificado de Autenticidade
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  value={templates.certificateText}
-                  onChange={(e) => setTemplates({ ...templates, certificateText: e.target.value })}
-                  rows={10}
-                  className="font-mono text-sm"
-                />
-                <Button className="w-full mt-4">Salvar Template</Button>
-              </CardContent>
-            </Card>
-
-            {/* Manual de Cuidados */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Manual de Cuidados
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  value={templates.careInstructions}
-                  onChange={(e) => setTemplates({ ...templates, careInstructions: e.target.value })}
-                  rows={12}
-                  className="font-mono text-sm"
-                />
-                <Button className="w-full mt-4">Salvar Template</Button>
-              </CardContent>
-            </Card>
+            <TemplateCard
+              title="Cartao de agradecimento"
+              value={templates.thankYouMessage}
+              rows={12}
+              onChange={(value) => setTemplates((current) => ({ ...current, thankYouMessage: value }))}
+            />
+            <TemplateCard
+              title="Certificado de autenticidade"
+              value={templates.certificateText}
+              rows={10}
+              onChange={(value) => setTemplates((current) => ({ ...current, certificateText: value }))}
+            />
+            <TemplateCard
+              title="Manual de cuidados"
+              value={templates.careInstructions}
+              rows={12}
+              onChange={(value) => setTemplates((current) => ({ ...current, careInstructions: value }))}
+            />
           </div>
         </div>
 
-        {/* Guia de Impressão */}
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Image className="h-5 w-5" />
-              Guia de Impressão
+              Guia de impressao
             </CardTitle>
-            <CardDescription>Especificações técnicas para impressão dos materiais</CardDescription>
+            <CardDescription>Especificacoes tecnicas para cada material impresso.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
-                <h4 className="font-semibold">Cartão de Agradecimento</h4>
+                <h4 className="font-semibold">Cartao de agradecimento</h4>
                 <p className="text-sm text-muted-foreground">
-                  Tamanho: 10x15cm
+                  Tamanho: 10x15 cm
                   <br />
-                  Papel: Couché 250g
+                  Papel: couche 250 g
                   <br />
-                  Impressão: Colorida frente
+                  Impressao: colorida frente
                 </p>
               </div>
               <div className="space-y-2">
                 <h4 className="font-semibold">Certificado</h4>
                 <p className="text-sm text-muted-foreground">
-                  Tamanho: A5 (14,8x21cm)
+                  Tamanho: A5 (14,8x21 cm)
                   <br />
-                  Papel: Vergê 180g
+                  Papel: verge 180 g
                   <br />
-                  Impressão: Colorida frente
+                  Impressao: colorida frente
                 </p>
               </div>
               <div className="space-y-2">
-                <h4 className="font-semibold">Cartão Postal</h4>
+                <h4 className="font-semibold">Cartao postal</h4>
                 <p className="text-sm text-muted-foreground">
-                  Tamanho: 10x15cm
+                  Tamanho: 10x15 cm
                   <br />
-                  Papel: Couché 300g
+                  Papel: couche 300 g
                   <br />
-                  Impressão: Colorida frente/verso
+                  Impressao: frente e verso
                 </p>
               </div>
             </div>

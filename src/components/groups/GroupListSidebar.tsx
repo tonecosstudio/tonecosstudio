@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Users, MessageSquare } from "lucide-react";
-import { groupService } from "@/lib/services/groupService";
-import { metricsService } from "@/lib/services/metricsService";
-import { messageService } from "@/lib/services/messageService";
+import { groupService } from "@/services/groups/group-service";
+import { metricsService } from "@/services/groups/group-metrics-service";
+import { messageService } from "@/services/support/message-service";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";

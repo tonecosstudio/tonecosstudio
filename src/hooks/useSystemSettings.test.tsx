@@ -33,7 +33,7 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
-vi.mock("@/services/admin/admin-config-mutations-service", () => ({
+vi.mock("@/services/admin/config/admin-config-mutations-service", () => ({
   upsertAdminSystemSettings: mocks.upsertAdminSystemSettings,
 }));
 

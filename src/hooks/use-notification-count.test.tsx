@@ -1,6 +1,6 @@
 /**
  * Testes para o hook useNotificationCount
- * 
+ *
  * Requirements: 10.1-10.10
  * Design: .kiro/specs/manual-payment-system/design.md
  */
@@ -9,8 +9,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsAdmin } from "@/lib/roles";
-import { useNotificationCount, useFormattedNotificationCount } from "./use-notification-count";
+import { useCurrentUserIsAdmin } from "@/lib/roles";
+import {
+  useNotificationCount,
+  useFormattedNotificationCount,
+} from "./use-notification-count";
 
 // Mock do Supabase
 vi.mock("@/integrations/supabase/client", () => ({
@@ -48,9 +51,9 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-// Mock do hook useIsAdmin
+// Mock do hook useCurrentUserIsAdmin
 vi.mock("@/lib/roles", () => ({
-  useIsAdmin: vi.fn(() => ({
+  useCurrentUserIsAdmin: vi.fn(() => ({
     data: false,
     isLoading: false,
   })),
@@ -73,45 +76,49 @@ function createSupabaseQuery(result: SupabaseQueryResult): SupabaseFromResult {
   query.single = vi.fn(resolve);
   query.maybeSingle = vi.fn(resolve);
   query.then = (onFulfilled: unknown, onRejected: unknown) =>
-    resolve().then(onFulfilled as Parameters<Promise<SupabaseQueryResult>["then"]>[0], onRejected as Parameters<Promise<SupabaseQueryResult>["then"]>[1]);
+    resolve().then(
+      onFulfilled as Parameters<Promise<SupabaseQueryResult>["then"]>[0],
+      onRejected as Parameters<Promise<SupabaseQueryResult>["then"]>[1],
+    );
 
   return query as SupabaseFromResult;
 }
 
-function mockSupabaseTables(resultsByTable: Record<string, SupabaseQueryResult>) {
+function mockSupabaseTables(
+  resultsByTable: Record<string, SupabaseQueryResult>,
+) {
   vi.mocked(supabase.from).mockImplementation((table: string) =>
-    createSupabaseQuery(resultsByTable[table] ?? { data: [], error: null })
+    createSupabaseQuery(resultsByTable[table] ?? { data: [], error: null }),
   );
 }
 
 // Criar QueryClient para testes
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
     },
-  },
-});
+  });
 
 // Wrapper para testes
 const wrapper = ({ children }: { children: React.ReactNode }) => {
   const queryClient = createTestQueryClient();
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 };
 
 describe("useNotificationCount", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useIsAdmin).mockReturnValue({
+    vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
       data: false,
       isLoading: false,
     });
     mockSupabaseTables({});
-    
+
     // Mock padrão para usuário não autenticado
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
       data: { user: null },
@@ -202,8 +209,8 @@ describe("useNotificationCount", () => {
         error: null,
       });
 
-      // Mock para useIsAdmin retornar true
-      vi.mocked(useIsAdmin).mockReturnValue({
+      // Mock para useCurrentUserIsAdmin retornar true
+      vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
         data: true,
         isLoading: false,
       });
@@ -262,7 +269,7 @@ describe("useNotificationCount", () => {
         error: null,
       });
 
-      vi.mocked(useIsAdmin).mockReturnValue({
+      vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
         data: true,
         isLoading: false,
       });
@@ -293,8 +300,8 @@ describe("useFormattedNotificationCount", () => {
       error: null,
     });
 
-    // Mock para useIsAdmin
-    vi.mocked(useIsAdmin).mockReturnValue({
+    // Mock para useCurrentUserIsAdmin
+    vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
       data: true,
       isLoading: false,
     });
@@ -310,7 +317,9 @@ describe("useFormattedNotificationCount", () => {
       support_messages: { data: [], error: null },
     });
 
-    const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
+    const { result } = renderHook(() => useFormattedNotificationCount(), {
+      wrapper,
+    });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -328,8 +337,8 @@ describe("useFormattedNotificationCount", () => {
       error: null,
     });
 
-    // Mock para useIsAdmin
-    vi.mocked(useIsAdmin).mockReturnValue({
+    // Mock para useCurrentUserIsAdmin
+    vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
       data: false,
       isLoading: false,
     });
@@ -346,7 +355,9 @@ describe("useFormattedNotificationCount", () => {
       support_conversations: { data: [], error: null },
     });
 
-    const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
+    const { result } = renderHook(() => useFormattedNotificationCount(), {
+      wrapper,
+    });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -362,8 +373,8 @@ describe("useFormattedNotificationCount", () => {
       error: null,
     });
 
-    // Mock para useIsAdmin
-    vi.mocked(useIsAdmin).mockReturnValue({
+    // Mock para useCurrentUserIsAdmin
+    vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
       data: false,
       isLoading: false,
     });
@@ -374,7 +385,9 @@ describe("useFormattedNotificationCount", () => {
       support_conversations: { data: [], error: null },
     });
 
-    const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
+    const { result } = renderHook(() => useFormattedNotificationCount(), {
+      wrapper,
+    });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);

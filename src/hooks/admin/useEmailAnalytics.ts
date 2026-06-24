@@ -3,7 +3,7 @@ import {
   fetchEmailLogs,
   fetchEmailStats,
   type EmailLogFilters,
-} from "@/services/admin/email-analytics-service";
+} from "@/services/admin/analytics/email-analytics-service";
 
 export function useEmailStats(timeRange: string) {
   return useQuery({

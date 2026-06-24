@@ -1,12 +1,27 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
-export async function requireAuthenticatedUserId(): Promise<string> {
+export async function getCurrentAuthUser(): Promise<User | null> {
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user) {
+  if (error) {
+    return null;
+  }
+
+  return user ?? null;
+}
+
+export async function getCurrentUserId(): Promise<string | null> {
+  return (await getCurrentAuthUser())?.id ?? null;
+}
+
+export async function requireAuthenticatedUserId(): Promise<string> {
+  const user = await getCurrentAuthUser();
+
+  if (!user) {
     throw new Error("User not authenticated");
   }
 
@@ -23,15 +38,36 @@ export async function assertCurrentUserId(userId: string): Promise<string> {
   return currentUserId;
 }
 
-export async function userHasAdminAccess(userId: string): Promise<boolean> {
+async function checkAdminAccessForUserId(userId: string): Promise<boolean> {
   const { data, error } = await supabase.rpc("has_role", {
     _user_id: userId,
     _role: "admin",
   });
 
   if (error) {
-    return false;
+    throw error;
   }
 
   return data === true;
+}
+
+export async function currentUserHasAdminAccess(): Promise<boolean> {
+  const userId = await getCurrentUserId();
+
+  if (!userId) {
+    return false;
+  }
+
+  return checkAdminAccessForUserId(userId);
+}
+
+export async function requireCurrentUserAdminAccess(): Promise<string> {
+  const userId = await requireAuthenticatedUserId();
+  const isAdmin = await checkAdminAccessForUserId(userId);
+
+  if (!isAdmin) {
+    throw new Error("Admin access required");
+  }
+
+  return userId;
 }

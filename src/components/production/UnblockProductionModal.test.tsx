@@ -63,9 +63,7 @@ describe("UnblockProductionModal", () => {
     renderComponent();
 
     expect(screen.getByText("Desbloquear Producao")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Desbloqueie este item de producao apos resolver o problema/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Retome este item somente depois de resolver a causa do bloqueio/i)).toBeInTheDocument();
   });
 
   it("shows loading state while block info is loading", () => {

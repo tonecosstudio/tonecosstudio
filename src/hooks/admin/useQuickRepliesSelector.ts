@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchActiveQuickReplies } from "@/services/admin/quick-replies-service";
+import { adminQuickReplyQueryKeys } from "@/hooks/admin/admin-quick-reply-query-keys";
+import { fetchActiveQuickReplies } from "@/services/admin/support/quick-replies-service";
+
+export type { QuickReply } from "@/services/admin/support/quick-replies-service";
 
 export function useQuickRepliesSelector(enabled: boolean) {
   return useQuery({
-    queryKey: ["quick-replies-selector", "active"],
+    queryKey: adminQuickReplyQueryKeys.active(),
     queryFn: fetchActiveQuickReplies,
     enabled,
   });

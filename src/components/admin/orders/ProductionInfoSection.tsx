@@ -24,6 +24,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ADMIN_ROUTES } from '@/config/routes';
 import { Link } from 'react-router-dom';
+import { formatDate } from '@/lib/utils';
 
 interface ProductionInfoSectionProps {
   order: UnifiedOrder;
@@ -84,7 +85,7 @@ export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Previsão de Conclusão</span>
                 <span className="text-sm">
-                  {new Date(productionInfo.estimatedCompletionDate).toLocaleDateString('pt-BR')}
+                  {formatDate(productionInfo.estimatedCompletionDate)}
                 </span>
               </div>
             )}
@@ -125,7 +126,7 @@ export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Aprovado em</span>
                     <span className="text-sm">
-                      {new Date(characterChoice.approvedAt).toLocaleDateString('pt-BR')}
+                      {formatDate(characterChoice.approvedAt)}
                     </span>
                   </div>
                 )}

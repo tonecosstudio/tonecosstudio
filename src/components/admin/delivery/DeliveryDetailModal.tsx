@@ -440,7 +440,7 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
                 Coleção Escolhida
               </h3>
               <div className="bg-muted/50 p-4 rounded-lg">
-                <div className="flex items-center justify-between">
+                <div>
                   <div>
                     <p className="font-semibold text-base">
                       {delivery.collections?.name || delivery.subscriptions?.collections?.name || 'Não selecionada'}
@@ -450,12 +450,6 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
                         Mantida Automaticamente
                       </Badge>
                     )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Preço</p>
-                    <p className="text-lg font-bold">
-                      R$ {(delivery.collections?.price || delivery.subscriptions?.collections?.price || 0).toFixed(2)}
-                    </p>
                   </div>
                 </div>
               </div>

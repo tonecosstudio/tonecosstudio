@@ -1,18 +1,15 @@
-/**
- * Hook para gerenciar atribuições de coleções a níveis de preço
- * 
- * Fornece queries e mutations para atribuir, remover e gerenciar
- * atribuições de coleções a níveis de preço.
- */
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import {
   assignCollectionToTierRpc,
   bulkAssignCollectionsToTierRpc,
   unassignCollectionFromTierRpc,
-} from "@/services/admin/admin-config-mutations-service";
+} from "@/services/admin/config/admin-config-mutations-service";
+import {
+  getCollectionTierAssignment,
+  listAvailableCollectionsForTier,
+  listCollectionsByTier,
+} from "@/services/pricing/pricing-tier-read-service";
 import type {
   AssignTierInput,
   BulkAssignTierInput,
@@ -24,10 +21,6 @@ import {
 } from "@/lib/validations/pricing-tiers";
 import { pricingTiersKeys } from "./usePricingTiers";
 
-// =====================================================
-// QUERY KEYS
-// =====================================================
-
 export const collectionTierKeys = {
   all: ["collection-tier-assignments"] as const,
   lists: () => [...collectionTierKeys.all, "list"] as const,
@@ -37,41 +30,13 @@ export const collectionTierKeys = {
   byTier: (tierId: string) => [...collectionTierKeys.all, "tier", tierId] as const,
 };
 
-// =====================================================
-// QUERIES
-// =====================================================
-
 export function useCollectionTierAssignment(collectionId: string | null | undefined) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const query = useQuery({
     queryKey: collectionTierKeys.detail(collectionId || ""),
-    queryFn: async () => {
-      if (!collectionId) return null;
-
-      const { data, error } = await supabase
-        .from("collection_tier_assignments")
-        .select(`
-          *,
-          pricing_tiers (
-            id,
-            name,
-            price_full,
-            price_pix,
-            deposit_amount,
-            is_active
-          )
-        `)
-        .eq("collection_id", collectionId)
-        .maybeSingle();
-
-      if (error) {
-        throw new Error(`Erro ao buscar atribuição: ${error.message}`);
-      }
-
-      return data;
-    },
+    queryFn: () => getCollectionTierAssignment(collectionId),
     enabled: !!collectionId,
     staleTime: 2 * 60 * 1000,
   });
@@ -91,7 +56,7 @@ export function useCollectionTierAssignment(collectionId: string | null | undefi
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao atribuir nível",
+        title: "Erro ao atribuir nivel",
         description: error.message,
         variant: "destructive",
       });
@@ -110,7 +75,7 @@ export function useCollectionTierAssignment(collectionId: string | null | undefi
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao remover nível",
+        title: "Erro ao remover nivel",
         description: error.message,
         variant: "destructive",
       });
@@ -127,37 +92,11 @@ export function useCollectionTierAssignment(collectionId: string | null | undefi
 export function useCollectionsByTier(tierId: string | null | undefined) {
   return useQuery({
     queryKey: collectionTierKeys.byTier(tierId || ""),
-    queryFn: async () => {
-      if (!tierId) return [];
-
-      const { data, error } = await supabase
-        .from("collection_tier_assignments")
-        .select(`
-          *,
-          collections (
-            id,
-            name,
-            slug,
-            is_active,
-            is_price_custom
-          )
-        `)
-        .eq("tier_id", tierId);
-
-      if (error) {
-        throw new Error(`Erro ao buscar coleções do nível: ${error.message}`);
-      }
-
-      return data;
-    },
+    queryFn: () => listCollectionsByTier(tierId),
     enabled: !!tierId,
     staleTime: 2 * 60 * 1000,
   });
 }
-
-// =====================================================
-// MUTATIONS
-// =====================================================
 
 export function useAssignCollectionToTier() {
   const queryClient = useQueryClient();
@@ -181,13 +120,13 @@ export function useAssignCollectionToTier() {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
 
       toast({
-        title: "Nível atribuído",
-        description: "A coleção foi atribuída ao nível com sucesso.",
+        title: "Nivel atribuido",
+        description: "A colecao foi atribuida ao nivel com sucesso.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao atribuir nível",
+        title: "Erro ao atribuir nivel",
         description: error.message,
         variant: "destructive",
       });
@@ -211,13 +150,13 @@ export function useUnassignCollectionFromTier() {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
 
       toast({
-        title: "Nível removido",
-        description: "A atribuição de nível foi removida.",
+        title: "Nivel removido",
+        description: "A atribuicao de nivel foi removida.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao remover nível",
+        title: "Erro ao remover nivel",
         description: error.message,
         variant: "destructive",
       });
@@ -246,18 +185,18 @@ export function useBulkAssignTier() {
       const successCount = result.success.length;
       const failedCount = result.failed.length;
       const message = failedCount > 0
-        ? `${successCount} coleções atribuídas, ${failedCount} falharam.`
-        : `${successCount} coleções atribuídas com sucesso.`;
+        ? `${successCount} colecoes atribuidas, ${failedCount} falharam.`
+        : `${successCount} colecoes atribuidas com sucesso.`;
 
       toast({
-        title: "Atribuição em massa concluída",
+        title: "Atribuicao em massa concluida",
         description: message,
         variant: failedCount > 0 ? "destructive" : "default",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro na atribuição em massa",
+        title: "Erro na atribuicao em massa",
         description: error.message,
         variant: "destructive",
       });
@@ -268,19 +207,7 @@ export function useBulkAssignTier() {
 export function useAvailableCollectionsForTier() {
   return useQuery({
     queryKey: [...collectionTierKeys.all, "available"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select("id, name, slug, is_price_custom")
-        .eq("is_active", true)
-        .order("name", { ascending: true });
-
-      if (error) {
-        throw new Error(`Erro ao buscar coleções disponíveis: ${error.message}`);
-      }
-
-      return data;
-    },
+    queryFn: listAvailableCollectionsForTier,
     staleTime: 2 * 60 * 1000,
   });
 }

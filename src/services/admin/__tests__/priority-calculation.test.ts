@@ -33,7 +33,7 @@ describe("Priority Calculation", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockPriorityScore,
         error: null,
-      } as any);
+      } as never);
 
       // Mock the RPC call to calculate_priority_score
       const result = await supabase.rpc("calculate_priority_score", {
@@ -52,7 +52,7 @@ describe("Priority Calculation", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockPriorityScore,
         error: null,
-      } as any);
+      } as never);
 
       const result = await supabase.rpc("calculate_priority_score", {
         p_order_type: "standalone_purchase",
@@ -70,7 +70,7 @@ describe("Priority Calculation", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockPriorityScore,
         error: null,
-      } as any);
+      } as never);
 
       const result = await supabase.rpc("calculate_priority_score", {
         p_order_type: "subscription_delivery",
@@ -88,7 +88,7 @@ describe("Priority Calculation", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockPriorityScore,
         error: null,
-      } as any);
+      } as never);
 
       const oldDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
       
@@ -108,7 +108,7 @@ describe("Priority Calculation", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockPriorityScore,
         error: null,
-      } as any);
+      } as never);
 
       const result = await supabase.rpc("calculate_priority_score", {
         p_order_type: "standalone_purchase",

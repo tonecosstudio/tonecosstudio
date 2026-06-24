@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchProductionHistory,
   type ProductionHistoryEntry,
-} from "@/services/admin/production-history-service";
+} from "@/services/admin/production/production-history-service";
 
 export function useProductionHistory(productionQueueId: string, enabled: boolean) {
   return useQuery<ProductionHistoryEntry[]>({

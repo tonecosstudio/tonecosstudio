@@ -3,7 +3,7 @@ import {
   deleteCollectionPricingTier,
   fetchCollectionPricingTiers,
   saveCollectionPricingTier,
-} from "@/services/admin/collection-pricing-manager-service";
+} from "@/services/admin/pricing/collection-pricing-manager-service";
 
 export function useCollectionPricingTiers() {
   return useQuery({

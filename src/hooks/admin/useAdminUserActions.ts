@@ -4,8 +4,8 @@ import { openSafeMailtoUrl } from "@/lib/security/safe-open";
 import {
   buildAdminContactMailtoUrl,
   sendAdminPasswordResetEmail,
-} from "@/services/admin/admin-user-actions-service";
-import { promoteAdminByEmail, removeUserRole } from "@/services/admin/admin-users-service";
+} from "@/services/admin/users/admin-user-actions-service";
+import { promoteAdminByEmail, removeUserRole } from "@/services/admin/users/admin-users-service";
 
 export function usePromoteAdminUser() {
   const queryClient = useQueryClient();

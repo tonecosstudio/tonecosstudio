@@ -113,7 +113,7 @@ export default function DashboardArcade() {
                       </div>
                     ))}
                     <Link
-                      to={profileSectionPath("orders")}
+                      to={profileSectionPath("payment")}
                       className="block text-center py-2 border border-[hsl(var(--gold-accent)/0.2)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono text-[10px] uppercase tracking-wider transition-colors"
                     >
                       Ver Todos →
@@ -173,7 +173,7 @@ export default function DashboardArcade() {
             {[
               { label: "Universo", href: PUBLIC_ROUTES.catalog, icon: <Crosshair className="w-5 h-5" /> },
               { label: "Wishlist", href: AUTH_ROUTES.wishlist, icon: <Heart className="w-5 h-5" /> },
-              { label: "Coleções", href: PUBLIC_ROUTES.collections, icon: <Star className="w-5 h-5" /> },
+              { label: "Pagamentos", href: AUTH_ROUTES.payments, icon: <Star className="w-5 h-5" /> },
               { label: "Perfil", href: AUTH_ROUTES.profile, icon: <Trophy className="w-5 h-5" /> },
             ].map((link) => (
               <Link key={link.href} to={link.href}>

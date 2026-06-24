@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchOrderStatusHistory } from "@/services/admin/orders-service";
+import { fetchOrderStatusHistory } from "@/services/admin/orders/orders-service";
 
 export function useOrderStatusHistory(orderId: string, orderType: "subscription_delivery" | "standalone_purchase" | "manual_payment") {
   return useQuery({

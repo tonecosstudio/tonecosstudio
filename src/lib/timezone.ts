@@ -31,7 +31,7 @@ export const BAHIA_TIMEZONE = 'America/Bahia';
  * // Convert user input to UTC
  * const userSelectedDate = new Date('2024-03-20T14:30:00');
  * const utcDate = toUTC(userSelectedDate);
- * await supabase.from('cycles').insert({ open_start: utcDate });
+ * await dbClient.insertCycle({ open_start: utcDate });
  */
 export function toUTC(bahiaDate: Date): Date {
   if (!bahiaDate) {
@@ -58,7 +58,7 @@ export function toUTC(bahiaDate: Date): Date {
  * 
  * @example
  * // Display cycle cutoff time to user
- * const cycle = await supabase.from('cycles').select('open_end').single();
+ * const cycle = await dbClient.getCycleOpenEnd();
  * const bahiaTime = toBahiaTime(new Date(cycle.open_end));
  * return `Cutoff: ${bahiaTime.toLocaleString()}`;
  */

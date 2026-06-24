@@ -2,9 +2,9 @@
  * ProductionPipelineView - Visual Pipeline Layout with Drag & Drop
  * 
  * Layout visual com:
- * - Cada estágio como uma linha horizontal
+ * - Cada estagio como uma linha horizontal
  * - Imagens de personagens agrupadas com badge de quantidade
- * - Drag & drop de cards entre estágios para mover rapidamente
+ * - Drag & drop de cards entre estagios para mover rapidamente
  * - Modal com lista de clientes ao clicar na imagem
  */
 
@@ -56,7 +56,7 @@ interface GroupedCharacter {
   groupKey: string;
 }
 
-// Estágios de produção ativos (excluindo pagamento e entrega final)
+// Estagios de producao ativos (excluindo pagamento e entrega final)
 const PIPELINE_STAGES: ProductionStage[] = [
   "awaiting_choice",
   "model_preparation",
@@ -68,7 +68,7 @@ const PIPELINE_STAGES: ProductionStage[] = [
   "ready_to_ship",
 ];
 
-// Cores por estágio
+// Cores por estagio
 const STAGE_COLORS: Record<ProductionStage, string> = {
   awaiting_payment: "border-muted-foreground/30",
   payment_confirmed: "border-muted-foreground/30",
@@ -129,7 +129,7 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
 
   const { data: queueData, isLoading } = useProductionPipelineQueue(filters);
 
-  // Extrair IDs de personagens únicos para buscar imagens
+  // Extrair IDs de personagens unicos para buscar imagens
   const characterIds = useMemo(() => {
     if (!queueData?.data) return [];
     const ids = new Set<string>();
@@ -141,7 +141,7 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
 
   const { data: characterImages } = useProductionCharacterImages(characterIds);
 
-  // Agrupar itens por estágio e depois por personagem
+  // Agrupar itens por estagio e depois por personagem
   const stageGroups = useMemo(() => {
     if (!queueData?.data) return new Map<ProductionStage, GroupedCharacter[]>();
 
@@ -163,7 +163,7 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
       if (!stageMap.has(key)) {
         stageMap.set(key, {
           characterId: item.characterId,
-          characterName: item.characterName || "Personagem não definido",
+          characterName: item.characterName || "Personagem nao definido",
           collectionId: item.collectionId,
           collectionName: item.collectionName,
           imageUrl: item.characterId ? characterImages?.get(item.characterId) || null : null,
@@ -220,14 +220,14 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
       await moveItemsMutation.mutateAsync({ itemIds, targetStage });
 
       toast({
-        title: "Estágio atualizado",
-        description: `${group.count} ${group.count === 1 ? "item movido" : "itens movidos"} para ${STAGE_LABELS[targetStage]}`,
+        title: "Estagio atualizado",
+        description: `${group.count}x${group.count === 1 ? "item movido" : "itens movidos"} para ${STAGE_LABELS[targetStage]}`,
       });
 
     } catch {
       toast({
         title: "Erro",
-        description: "Não foi possível mover os itens. Tente novamente.",
+        description: "Nao foi possivel mover os itens. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -326,7 +326,7 @@ function StageRow({
         isOver && "bg-opacity-30"
       )}
     >
-      {/* Header do estágio */}
+      {/* Header do estagio */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-sm uppercase tracking-wider">
@@ -364,7 +364,7 @@ function StageRow({
           isOver && "bg-primary/10 border-2 border-dashed border-primary/30"
         )}>
           <Package className="h-4 w-4 mr-2 opacity-50" />
-          {isOver ? "Solte para mover para este estágio" : "Nenhum item neste estágio"}
+          {isOver ? "Solte para mover para este estagio" : "Nenhum item neste estagio"}
         </div>
       )}
     </div>
@@ -478,7 +478,7 @@ function CardContent({ group }: { group: GroupedCharacter }) {
 
       {group.count > 1 && (
         <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center shadow-md">
-          {group.count}×
+          {group.count}x
         </div>
       )}
 
@@ -519,7 +519,7 @@ function CustomerListModal({
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
             {group.characterName || "Personagem"}
-            <Badge variant="secondary">{group.count}×</Badge>
+            <Badge variant="secondary">{group.count}x</Badge>
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
             {group.collectionName}
@@ -570,7 +570,7 @@ function CustomerListModal({
 
 function PriorityBadge({ priority }: { priority: Priority }) {
   const variants: Record<Priority, { label: string; className: string }> = {
-    critical: { label: "Crítico", className: "bg-red-500 text-white" },
+    critical: { label: "Critico", className: "bg-red-500 text-white" },
     high: { label: "Alto", className: "bg-orange-500 text-white" },
     normal: { label: "Normal", className: "bg-muted text-muted-foreground" },
     low: { label: "Baixo", className: "bg-muted/50 text-muted-foreground" },

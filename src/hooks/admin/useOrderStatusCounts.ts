@@ -5,7 +5,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { countOrdersByStatus } from '@/services/admin/orders-service';
+import { countOrdersByStatus } from '@/services/admin/orders/orders-service';
 import type { OrderFilters, OrderStatus } from '@/types/admin/orders';
 
 // ============================================================================

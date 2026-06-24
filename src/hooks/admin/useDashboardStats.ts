@@ -7,9 +7,9 @@ import {
   fetchPreviousPeriodCounts,
   fetchQuotesPerDay,
   fetchRevenueChartData,
-  fetchSubscriptionMetrics,
   getPreviousPeriod,
-} from '@/services/admin/admin-dashboard-stats-service';
+} from '@/services/admin/analytics/admin-dashboard-stats-service';
+import { fetchSubscriptionDashboardSnapshot } from '@/services/admin/analytics/admin-subscription-analytics-service';
 
 export interface DashboardStats {
   models: number;
@@ -106,12 +106,13 @@ export function useDashboardStats(dateRange: DateRange) {
       const toDate = dateRange.to.toISOString();
       const previous = getPreviousPeriod(dateRange);
 
-      const [counts, currentOrders, previousOrders, previousCounts, revenueData] = await Promise.all([
+      const [counts, currentOrders, previousOrders, previousCounts, revenueData, subscriptionSnapshot] = await Promise.all([
         fetchAggregatedCounts(fromDate, toDate),
         fetchOrderCounts(fromDate, toDate),
         fetchOrderCounts(previous.from.toISOString(), previous.to.toISOString()),
         fetchPreviousPeriodCounts(previous),
-        fetchRevenueChartData(),
+        fetchRevenueChartData(dateRange),
+        fetchSubscriptionDashboardSnapshot(dateRange, previous),
       ]);
 
       const quotesPerDay = await fetchQuotesPerDay(fromDate, toDate);
@@ -122,8 +123,6 @@ export function useDashboardStats(dateRange: DateRange) {
         quotes: currentOrders.quotes.total,
         conversions: currentOrders.quotes.completed,
       };
-
-      const subscriptionMetrics = await fetchSubscriptionMetrics(dateRange, previous);
 
       return {
         models: counts.models,
@@ -147,9 +146,9 @@ export function useDashboardStats(dateRange: DateRange) {
         previousQuotes: previousOrders.quotes,
         preorders: currentOrders.preorders,
         subscriptions: {
-          total: counts.subscriptions,
-          current: counts.currentSubscriptions,
-          previous: previousCounts.previousSubscriptionsCount,
+          total: subscriptionSnapshot.counts.totalActive,
+          current: subscriptionSnapshot.counts.createdCurrent,
+          previous: subscriptionSnapshot.counts.createdPrevious,
         },
         queue: counts.queue,
         support: counts.support,
@@ -157,7 +156,7 @@ export function useDashboardStats(dateRange: DateRange) {
         quotesPerDay,
         revenueData,
         funnelData,
-        subscriptionMetrics,
+        subscriptionMetrics: subscriptionSnapshot.metrics,
       };
     },
   });

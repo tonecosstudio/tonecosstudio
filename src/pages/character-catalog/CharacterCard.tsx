@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/auth';
 import { useNavigate } from 'react-router-dom';
 import { BalanceIndicator } from '@/components/character-catalog/BalanceIndicator';
 import { InsufficientBalanceMessage } from '@/components/character-catalog/InsufficientBalanceMessage';
+import { ASSETS } from '@/config/constants';
+import { PUBLIC_ROUTES } from '@/config/routes';
 import {
   Tooltip,
   TooltipContent,
@@ -89,7 +91,7 @@ export function CharacterCard({
       {/* Image */}
       <div className="relative aspect-[3/4] w-full bg-muted overflow-hidden">
         <img
-          src={character.image_url || '/placeholder-character.png'}
+          src={character.image_url || ASSETS.PLACEHOLDER_IMAGE_URL}
           alt={character.name}
           className="h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.02]"
           loading="lazy"
@@ -124,7 +126,7 @@ export function CharacterCard({
                   </p>
                   {priceDetails && (
                     <p className="text-xs text-muted-foreground">
-                      Cálculo: {priceDetails.collection_price} 🪙 (coleção) × {multiplier} = {priceDetails.final_price} 🪙
+                      Calculo: {priceDetails.collection_price} ðŸª™ (base) x {multiplier} = {priceDetails.final_price} ðŸª™🪙
                     </p>
                   )}
                 </TooltipContent>
@@ -147,12 +149,12 @@ export function CharacterCard({
                 <TooltipContent className="max-w-xs">
                   <p className="font-semibold mb-1">Preço com desconto!</p>
                   <p className="text-xs mb-2">
-                    Você está recebendo um desconto especial nesta coleção.
+                    Voce esta recebendo um desconto especial neste contexto.
                   </p>
                   {priceDetails && (
                     <div className="text-xs space-y-1 mb-2">
                       <p className="font-semibold">Breakdown do cálculo:</p>
-                      <p>• Preço da coleção: {priceDetails.collection_price} 🪙</p>
+                      <p>• Preco base: {priceDetails.collection_price} ðŸª™🪙</p>
                       {hasMultiplier && (
                         <p>• Multiplicador do personagem: {multiplier}x</p>
                       )}
@@ -232,7 +234,7 @@ export function CharacterCard({
                             {priceDetails && (
                               <div className="text-xs space-y-1 mb-2">
                                 <p className="font-semibold">Cálculo:</p>
-                                <p>1. Preço da coleção: {priceDetails.collection_price} 🪙</p>
+                                <p>1. Preco base: {priceDetails.collection_price} ðŸª™🪙</p>
                                 {hasMultiplier && (
                                   <p>2. Multiplicador: {multiplier}x ({multiplierBadge?.label})</p>
                                 )}
@@ -245,9 +247,9 @@ export function CharacterCard({
                               O preço é calculado baseado no seu contexto:
                             </p>
                             <ul className="text-xs space-y-1 list-disc list-inside">
-                              <li>Tipo de coleção</li>
-                              <li>Seu plano de assinatura</li>
-                              <li>Coleções que você escolheu</li>
+                              <li>Contexto de publicacao</li>
+                              <li>Configuracao comercial ativa</li>
+                              <li>Regras de disponibilidade</li>
                               {hasMultiplier && <li>Características do personagem</li>}
                             </ul>
                             {hasDiscount && (
@@ -336,7 +338,7 @@ export function CharacterCard({
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-xs">
-                        Você precisa de mais {priceInCoins - availableCredits} 🪙 para comprar este personagem
+                        Você precisa de mais {priceInCoins - availableCredits} 🪙 para acompanhar pagamentos e coins este personagem
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -364,12 +366,10 @@ export function CharacterCard({
                 Comprar por R$ {character.price_cash.toFixed(2)}
               </Button>
 
-              {/* Call to action for subscription */}
+              {/* Secondary account call to action */}
               <p className="text-xs text-center text-muted-foreground">
-                <a href="/plans" className="text-primary hover:underline">
-                  Assine e ganhe créditos
-                </a>{' '}
-                para comprar
+                <a href={PUBLIC_ROUTES.login} className="text-primary hover:underline">Entre na sua conta</a>{' '}
+                para acompanhar pagamentos e coins
               </p>
             </>
           )}

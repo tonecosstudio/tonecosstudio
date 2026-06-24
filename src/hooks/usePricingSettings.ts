@@ -4,9 +4,9 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchPricingSettings, type PricingSettings } from "@/lib/services/pricingService";
+import { fetchPricingSettings, type PricingSettings } from "@/services/pricing/pricing-settings-service";
 
-export { calculateNetValues, formatCurrency, TAX_RATES } from "@/lib/services/pricingService";
+export { calculateNetValues, formatCurrency, TAX_RATES } from "@/services/pricing/pricing-settings-service";
 
 export function usePricingSettings() {
   return useQuery<PricingSettings>({

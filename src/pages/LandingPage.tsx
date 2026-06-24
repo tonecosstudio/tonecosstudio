@@ -25,6 +25,7 @@ import { useLandingCatalogModels } from "@/hooks/catalog/useLandingCatalogModels
 import { useLandingCatalogSummary } from "@/hooks/catalog/useLandingCatalogSummary";
 import { useActiveCollectionPreviews } from "@/hooks/collections/usePublicCollections";
 import {
+  PUBLIC_COLLECTIONS_ENABLED,
   PUBLIC_ROUTES,
   catalogCharacterPath,
   collectionDetailsPath,
@@ -275,14 +276,14 @@ export default function LandingPage() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <button
-              onClick={() => navigate(PUBLIC_ROUTES.collections)}
+              onClick={() => navigate(PUBLIC_ROUTES.catalog)}
               className="group inline-flex items-center gap-3 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all"
             >
               <Crosshair
                 className="w-5 h-5 group-hover:animate-spin"
                 style={{ animationDuration: "3s" }}
               />
-              VER COLECOES
+              EXPLORAR UNIVERSO
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 
@@ -307,7 +308,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ FEATURED COLLECTIONS ═══ */}
-      {collections.length > 0 && (
+      {PUBLIC_COLLECTIONS_ENABLED && collections.length > 0 && (
         <section className="relative py-14 px-6">
           <FloatingParticles />
           <div className="max-w-6xl mx-auto">
@@ -326,7 +327,7 @@ export default function LandingPage() {
             </div>
             <div className="text-center mt-6">
               <button
-                onClick={() => navigate(PUBLIC_ROUTES.collections)}
+                onClick={() => navigate(PUBLIC_ROUTES.catalog)}
                 className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
               >
                 VER TODAS AS COLEÇÕES
@@ -410,10 +411,10 @@ export default function LandingPage() {
         description="Entre para o esquadrão de colecionadores. Peças exclusivas, produção artesanal e acompanhamento total."
         primaryAction={{
           label: "INSERT COIN",
-          href: user ? PUBLIC_ROUTES.collections : PUBLIC_ROUTES.login,
+          href: user ? PUBLIC_ROUTES.catalog : PUBLIC_ROUTES.login,
           icon: <Zap className="w-5 h-5" />,
         }}
-        secondaryAction={{ label: "VER PLANOS", href: PUBLIC_ROUTES.plans }}
+        secondaryAction={{ label: "FALE CONOSCO", href: PUBLIC_ROUTES.contact }}
       />
 
       {/* ═══ FOOTER ═══ */}
@@ -463,4 +464,3 @@ export default function LandingPage() {
     </Page>
   );
 }
-

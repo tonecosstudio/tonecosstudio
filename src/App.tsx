@@ -10,7 +10,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
-import { ChatButton } from "@/components/customer/ChatButton";
+import { CustomerChat } from "@/components/customer/CustomerChat";
 import {
   ADMIN_REDIRECTS,
   ADMIN_ROUTES,
@@ -19,6 +19,7 @@ import {
   PUBLIC_ROUTES,
   adminPaymentDetailsPath,
   catalogModelDetailsPath,
+  profileSectionPath,
   resolveCatalogModelIdFromParam,
 } from "@/config/routes";
 
@@ -46,7 +47,6 @@ const MigratePedido = lazy(() => import("./pages/MigratePedido"));
 
 // Auth-required pages
 const ProfileArcade = lazy(() => import("./pages/ProfileArcade"));
-const MyPaymentsArcade = lazy(() => import("./pages/MyPaymentsArcade"));
 const PaymentDetails = lazy(() => import("./pages/PaymentDetails"));
 const SubscribeCollection = lazy(() => import("./pages/SubscribeCollection"));
 const WishlistArcade = lazy(() => import("./pages/WishlistArcade"));
@@ -197,8 +197,8 @@ function AppContent() {
 
             {/* Auth-required */}
             <Route path={AUTH_ROUTES.profile} element={<RequireAuth><ProfileArcade /></RequireAuth>} />
-            <Route path={AUTH_ROUTES.support} element={<Navigate to={`${AUTH_ROUTES.profile}?section=support`} replace />} />
-            <Route path={AUTH_ROUTES.payments} element={<RequireAuth><MyPaymentsArcade /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.profileSection} element={<RequireAuth><ProfileArcade /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.support} element={<Navigate to={profileSectionPath("support")} replace />} />
             <Route path={AUTH_ROUTES.paymentDetails} element={<RequireAuth><PaymentDetails /></RequireAuth>} />
             <Route
               path={AUTH_ROUTES.subscribeCollection}
@@ -249,7 +249,6 @@ function AppContent() {
                 )
               }
             />
-
             {/* Admin */}
             <Route path={ADMIN_ROUTES.home} element={<RequireAdmin><AdminHome /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.users} element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
@@ -280,7 +279,7 @@ function AppContent() {
         </Suspense>
         </MainLayout>
 
-        <ChatButton />
+        <CustomerChat />
       </BrowserRouter>
     </>
   );

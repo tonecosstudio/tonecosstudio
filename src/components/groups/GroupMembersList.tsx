@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { membershipService } from "@/lib/services/membershipService";
+import { membershipService } from "@/services/groups/membership-service";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Trash2, UserPlus } from "lucide-react";

@@ -10,7 +10,7 @@ const serviceMocks = vi.hoisted(() => ({
 }));
 
 // Mock the production service
-vi.mock("@/services/admin/production-service", () => ({
+vi.mock("@/services/admin/production/production-service", () => ({
   fetchProductionQueue: serviceMocks.fetchProductionQueue,
   updateProductionStage: serviceMocks.updateProductionStage,
   STAGE_LABELS: {

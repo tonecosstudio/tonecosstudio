@@ -3,7 +3,7 @@ import {
   fetchHistoricalCycles,
   type HistoricalCycle,
   type HistoricalCyclesFilters,
-} from "@/services/admin/historical-cycles-service";
+} from "@/services/admin/delivery/historical-cycles-service";
 
 export type { HistoricalCycle, HistoricalCyclesFilters };
 

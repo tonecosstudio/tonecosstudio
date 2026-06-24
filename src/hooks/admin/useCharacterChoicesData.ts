@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchPendingChoices, type ChoiceFilters } from "@/services/admin/choice-service";
+import { fetchPendingChoices, type ChoiceFilters } from "@/services/admin/choices/choice-service";
 
 export type { ChoiceFilters };
 

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Bell, Menu, X } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useIsAdmin } from "@/lib/roles";
+import { useCurrentUserIsAdmin } from "@/lib/roles";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { CoinCounter } from "@/components/arcade/CoinCounter";
 import {
@@ -35,7 +35,7 @@ export function ArcadeNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { data: isAdmin } = useIsAdmin(user?.id);
+  const { data: isAdmin } = useCurrentUserIsAdmin({ currentUserId: user?.id });
   const { data: balanceData, isLoading: balanceLoading } = useCoinsBalance();
   const userBalance = balanceData?.balance ?? 0;
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -45,7 +45,9 @@ export function ArcadeNav() {
       return location.pathname === path;
     }
 
-    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+    return (
+      location.pathname === path || location.pathname.startsWith(`${path}/`)
+    );
   };
 
   const linkClass = (path: string) =>
@@ -113,7 +115,11 @@ export function ArcadeNav() {
             onClick={() => setMobileOpen(!mobileOpen)}
             className="text-[hsl(0,0%,55%)] transition-colors hover:text-[hsl(var(--gold-accent))] lg:hidden"
           >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </button>
         </div>
       </div>

@@ -8,8 +8,8 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchProductionQueue } from "../production-service";
-import { fetchPendingChoices, extendDeadline } from "../choice-service";
+import { fetchProductionQueue } from "../production/production-service";
+import { fetchPendingChoices, extendDeadline } from "../choices/choice-service";
 
 // Mock Supabase client
 vi.mock("@/integrations/supabase/client", () => ({
@@ -20,10 +20,10 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 // Mock notification service
-vi.mock("../../notifications/production-notification-service", () => ({
-  ProductionNotificationService: vi.fn().mockImplementation(() => ({
+vi.mock("@/services/notifications/production-notification-service", () => ({
+  productionNotificationService: {
     sendExpirationNotification: vi.fn().mockResolvedValue(undefined),
-  })),
+  },
 }));
 
 describe("Deadline Expiration Flow Integration Test", () => {
@@ -162,7 +162,7 @@ describe("Deadline Expiration Flow Integration Test", () => {
     };
 
     // Configure supabase.from mock
-    (supabase.from as any)
+    vi.mocked(supabase.from)
       .mockReturnValueOnce(mockQueueQuery) // For fetchProductionQueue
       .mockReturnValueOnce(mockChoicesQuery); // For fetchPendingChoices
 
@@ -211,8 +211,8 @@ describe("Deadline Expiration Flow Integration Test", () => {
       }),
     };
 
-    (supabase.rpc as any).mockResolvedValueOnce({ data: "choice-001", error: null });
-    (supabase.from as any).mockReturnValueOnce(mockExtendedChoicesQuery);
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: "choice-001", error: null } as never);
+    vi.mocked(supabase.from).mockReturnValueOnce(mockExtendedChoicesQuery as never);
 
     // Mock the actual extendDeadline function
     const extendDeadlineResult = await extendDeadline("choice-001", newDeadline.toISOString());
@@ -241,7 +241,7 @@ describe("Deadline Expiration Flow Integration Test", () => {
       }),
     };
 
-    (supabase.from as any)
+    vi.mocked(supabase.from)
       .mockReturnValueOnce(mockUpdatedQueueQuery);
 
     const updatedQueue = await fetchProductionQueue({}, { page: 1, pageSize: 10 });
@@ -307,7 +307,7 @@ describe("Deadline Expiration Flow Integration Test", () => {
       }),
     };
 
-    (supabase.from as any).mockReturnValue(mockQueueQuery);
+    vi.mocked(supabase.from).mockReturnValue(mockQueueQuery as never);
 
     // Fetch queue with expired items
     const queueResult = await fetchProductionQueue({}, { page: 1, pageSize: 10 });
@@ -393,7 +393,7 @@ describe("Deadline Expiration Flow Integration Test", () => {
       count: 2,
     });
 
-    (supabase.from as any).mockReturnValue(mockFilteredQuery);
+    vi.mocked(supabase.from).mockReturnValue(mockFilteredQuery as never);
 
     // Simulate clicking on urgent alert to filter dashboard
     const filters = {

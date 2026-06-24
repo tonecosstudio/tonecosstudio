@@ -47,8 +47,12 @@ import { ValidationFeedback } from "@/components/ui/validation-feedback";
 import { checkRateLimit } from "@/lib/security/rate-limiter";
 import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
 import { useAdminUsersData } from "@/hooks/admin/useAdminUsersData";
-import { usePromoteAdminUser, useRemoveAdminUserRole } from "@/hooks/admin/useAdminUserActions";
 import {
+  usePromoteAdminUser,
+  useRemoveAdminUserRole,
+} from "@/hooks/admin/useAdminUserActions";
+import {
+  formatAdminAccessRoleLabel,
   hasAdminAccessRole,
   hasAnyAdminAccessRole,
   type AdminAccessRole,
@@ -56,7 +60,7 @@ import {
 import { adminUserDetailsPath } from "@/config/routes";
 
 function fmtDate(iso: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "Ã¢â‚¬â€";
   try {
     return new Date(iso).toLocaleString("pt-BR", {
       day: "2-digit",
@@ -74,11 +78,15 @@ export default function AdminUsers() {
   const { toast } = useToast();
 
   // Sanitized input for email field
-  const [emailRaw, setEmailRaw, emailSanitized] = useSanitizedInput("", "email");
+  const [emailRaw, setEmailRaw, emailSanitized] = useSanitizedInput(
+    "",
+    "email",
+  );
   const [emailError, setEmailError] = useState<string>("");
 
   // Sanitized input for search field
-  const [searchTermRaw, setSearchTermRaw, searchTermSanitized] = useSanitizedInput("", "search");
+  const [searchTermRaw, setSearchTermRaw, searchTermSanitized] =
+    useSanitizedInput("", "search");
 
   const [activeTab, setActiveTab] = useState("all");
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
@@ -91,7 +99,7 @@ export default function AdminUsers() {
   const promoteAdminMutation = usePromoteAdminUser();
   const removeRoleMutation = useRemoveAdminUserRole();
 
-  // Função para exportar usuários para CSV
+  // FunÃƒÂ§ÃƒÂ£o para exportar usuÃƒÂ¡rios para CSV
   const exportToCSV = () => {
     const filtered = getFilteredUsers();
     const headers = [
@@ -128,11 +136,11 @@ export default function AdminUsers() {
 
     toast({
       title: "Exportado",
-      description: `${filtered.length} usuários exportados com sucesso.`,
+      description: `${filtered.length} usuÃƒÂ¡rios exportados com sucesso.`,
     });
   };
 
-  // Filtrar usuários por tipo
+  // Filtrar usuÃƒÂ¡rios por tipo
   const getFilteredUsers = () => {
     let filtered = allUsers;
 
@@ -174,13 +182,19 @@ export default function AdminUsers() {
     if (profileFilter !== "all") {
       switch (profileFilter) {
         case "complete":
-          filtered = filtered.filter((u) => (u.profile?.profile_completion || 0) === 100);
+          filtered = filtered.filter(
+            (u) => (u.profile?.profile_completion || 0) === 100,
+          );
           break;
         case "incomplete":
-          filtered = filtered.filter((u) => (u.profile?.profile_completion || 0) < 100);
+          filtered = filtered.filter(
+            (u) => (u.profile?.profile_completion || 0) < 100,
+          );
           break;
         case "empty":
-          filtered = filtered.filter((u) => (u.profile?.profile_completion || 0) === 0);
+          filtered = filtered.filter(
+            (u) => (u.profile?.profile_completion || 0) === 0,
+          );
           break;
       }
     }
@@ -194,7 +208,7 @@ export default function AdminUsers() {
           u.id.toLowerCase().includes(term) ||
           (u.profile?.full_name ?? "").toLowerCase().includes(term) ||
           (u.profile?.phone ?? "").toLowerCase().includes(term) ||
-          (u.profile?.cpf ?? "").toLowerCase().includes(term)
+          (u.profile?.cpf ?? "").toLowerCase().includes(term),
       );
     }
 
@@ -203,20 +217,20 @@ export default function AdminUsers() {
 
   const filteredUsers = getFilteredUsers();
 
-  // Paginação
+  // PaginaÃƒÂ§ÃƒÂ£o
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
-  // Resetar página ao mudar filtros
+  // Resetar pÃƒÂ¡gina ao mudar filtros
   const handleFilterChange = () => {
     setCurrentPage(1);
     setSelectedUsers(new Set());
   };
 
-  // Seleção de usuários
+  // SeleÃƒÂ§ÃƒÂ£o de usuÃƒÂ¡rios
   const toggleUserSelection = (userId: string) => {
     const newSelection = new Set(selectedUsers);
     if (newSelection.has(userId)) {
@@ -236,7 +250,9 @@ export default function AdminUsers() {
   };
 
   // Contar admins
-  const adminCount = (usersQuery.data ?? []).filter((u) => hasAnyAdminAccessRole(u.roles)).length;
+  const adminCount = (usersQuery.data ?? []).filter((u) =>
+    hasAnyAdminAccessRole(u.roles),
+  ).length;
   const isLastAdmin = (roles: string[]) => {
     return hasAnyAdminAccessRole(roles) && adminCount === 1;
   };
@@ -250,18 +266,21 @@ export default function AdminUsers() {
   const promote = async () => {
     // Validate email
     if (!emailSanitized.trim()) {
-      setEmailError("Email é obrigatório");
+      setEmailError("Email ÃƒÂ© obrigatÃƒÂ³rio");
       return;
     }
 
     if (!validateEmail(emailSanitized)) {
-      setEmailError("Formato de email inválido");
+      setEmailError("Formato de email invÃƒÂ¡lido");
       return;
     }
 
     // Check rate limit
     const rateLimitKey = `admin-user-promote:${emailSanitized}`;
-    const rateLimit = checkRateLimit(rateLimitKey, FORM_RATE_LIMITS.adminUserUpdate);
+    const rateLimit = checkRateLimit(
+      rateLimitKey,
+      FORM_RATE_LIMITS.adminUserUpdate,
+    );
 
     if (!rateLimit.allowed) {
       toast({
@@ -276,7 +295,10 @@ export default function AdminUsers() {
 
     try {
       await promoteAdminMutation.mutateAsync(emailSanitized);
-      toast({ title: "Sucesso", description: "Usuário promovido a administrador." });
+      toast({
+        title: "Sucesso",
+        description: "UsuÃƒÂ¡rio promovido a administrador.",
+      });
       setEmailRaw("");
       setEmailError("");
     } catch (e) {
@@ -290,14 +312,14 @@ export default function AdminUsers() {
       // Contar quantos admins existem
       if (hasAdminAccessRole(role)) {
         const adminCount = (usersQuery.data ?? []).filter((u) =>
-          hasAnyAdminAccessRole(u.roles)
+          hasAnyAdminAccessRole(u.roles),
         ).length;
 
         if (adminCount <= 1) {
           toast({
-            title: "Operação bloqueada",
+            title: "OperaÃƒÂ§ÃƒÂ£o bloqueada",
             description:
-              "Não é possível remover o último administrador do sistema. Promova outro usuário primeiro.",
+              "NÃƒÂ£o ÃƒÂ© possÃƒÂ­vel remover o ÃƒÂºltimo administrador do sistema. Promova outro usuÃƒÂ¡rio primeiro.",
             variant: "destructive",
           });
           return;
@@ -316,38 +338,55 @@ export default function AdminUsers() {
     <AdminLayout>
       <div className="mb-8">
         <div className="h-px w-20 bg-foreground mb-6" />
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <h1 className="text-5xl font-bold tracking-tight">Gerenciar Usuários</h1>
-          <Badge variant="secondary" className="border border-border px-4 py-2 text-base">
-            {filteredUsers.length} {filteredUsers.length === 1 ? "usuário" : "usuários"}
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <h1 className="text-5xl font-bold tracking-tight">
+            UsuÃƒÂ¡rios e permissÃƒÂµes
+          </h1>
+          <Badge
+            variant="secondary"
+            className="border border-border px-4 py-2 text-base"
+          >
+            {filteredUsers.length}{" "}
+            {filteredUsers.length === 1 ? "usuÃƒÂ¡rio" : "usuÃƒÂ¡rios"}
           </Badge>
         </div>
         <p className="text-lg text-muted-foreground">
-          Controle de acesso do sistema Ordax (usuários e permissões).
+          Controle de acesso interno, perfis administrativos e visÃƒÂ£o
+          consolidada da base de clientes.
         </p>
       </div>
 
-      {/* Cards de Estatísticas */}
+      {/* Cards de EstatÃƒÂ­sticas */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card className="border border-border bg-card shadow-premium">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total de UsuÃƒÂ¡rios
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{allUsers.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Cadastrados no sistema</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Cadastrados no sistema
+            </p>
           </CardContent>
         </Card>
 
         <Card className="border border-border bg-card shadow-premium">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assinantes Ativos</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Clientes com assinatura
+            </CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalSubscribers || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Com assinaturas ativas</p>
+            <div className="text-2xl font-bold">
+              {stats?.totalSubscribers || 0}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Com assinaturas ativas
+            </p>
           </CardContent>
         </Card>
 
@@ -358,32 +397,40 @@ export default function AdminUsers() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalBuyers || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Com pedidos aprovados</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Com pedidos aprovados
+            </p>
           </CardContent>
         </Card>
 
         <Card className="border border-border bg-card shadow-premium">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Administradores</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Administradores
+            </CardTitle>
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{adminCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Com acesso admin</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Com acesso admin
+            </p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
-        {/* Promover Usuário */}
+        {/* Promover UsuÃƒÂ¡rio */}
         <Card className="border border-border bg-card shadow-premium h-fit">
           <CardHeader className="border-b border-border">
-            <CardTitle className="text-xl font-semibold">Promover Usuário</CardTitle>
+            <CardTitle className="text-xl font-semibold">
+              Conceder acesso administrativo
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">
-                E-mail do usuário
+                E-mail do usuÃƒÂ¡rio
               </Label>
               <Input
                 id="email"
@@ -398,38 +445,49 @@ export default function AdminUsers() {
               />
               <ValidationFeedback
                 error={emailError}
-                info={emailRaw !== emailSanitized && emailRaw.length > 0 ? "Email foi sanitizado para segurança" : undefined}
+                info={
+                  emailRaw !== emailSanitized && emailRaw.length > 0
+                    ? "Email foi sanitizado para seguranÃƒÂ§a"
+                    : undefined
+                }
               />
             </div>
 
             <Button
               className="w-full h-11 bg-foreground text-background hover:bg-foreground/90 font-medium"
               onClick={promote}
-              disabled={!emailSanitized.trim() || promoteAdminMutation.isPending}
+              disabled={
+                !emailSanitized.trim() || promoteAdminMutation.isPending
+              }
             >
-              {promoteAdminMutation.isPending ? "Promovendo…" : "Promover a Admin"}
+              {promoteAdminMutation.isPending
+                ? "Atualizando acesso..."
+                : "Conceder acesso admin"}
             </Button>
 
             <div className="rounded-sm border border-border bg-muted/30 p-3">
               <p className="text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">Nota:</span> O usuário precisa ter
-                criado uma conta antes de ser promovido.
+                <span className="font-semibold text-foreground">Nota:</span> O
+                usuÃƒÂ¡rio precisa ter criado uma conta antes de ser promovido.
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Lista de Usuários */}
+        {/* Lista de UsuÃƒÂ¡rios */}
         <Card className="border border-border bg-card shadow-premium">
           <CardHeader className="border-b border-border space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <CardTitle className="text-xl font-semibold">Usuários</CardTitle>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <CardTitle className="text-xl font-semibold">
+                UsuÃƒÂ¡rios
+              </CardTitle>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={exportToCSV}
                   disabled={filteredUsers.length === 0}
+                  className="w-full md:w-auto"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Exportar CSV
@@ -445,18 +503,22 @@ export default function AdminUsers() {
                 handleFilterChange();
               }}
             >
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid h-auto w-full grid-cols-2 gap-1 md:grid-cols-4">
                 <TabsTrigger value="all">Todos ({allUsers.length})</TabsTrigger>
                 <TabsTrigger value="subscribers">
-                  Assinantes ({stats?.totalSubscribers || 0})
+                  Com assinatura ({stats?.totalSubscribers || 0})
                 </TabsTrigger>
-                <TabsTrigger value="buyers">Compradores ({stats?.totalBuyers || 0})</TabsTrigger>
-                <TabsTrigger value="admins">Admins ({adminCount})</TabsTrigger>
+                <TabsTrigger value="buyers">
+                  Compradores ({stats?.totalBuyers || 0})
+                </TabsTrigger>
+                <TabsTrigger value="admins">
+                  Administradores ({adminCount})
+                </TabsTrigger>
               </TabsList>
             </Tabs>
 
-            {/* Filtros Avançados */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            {/* Filtros AvanÃƒÂ§ados */}
+            <div className="flex flex-col gap-3 md:flex-row">
               <div className="flex-1">
                 <Input
                   placeholder="Buscar por nome, email, telefone ou CPF..."
@@ -467,12 +529,13 @@ export default function AdminUsers() {
                   }}
                   className="h-9"
                 />
-                {searchTermRaw !== searchTermSanitized && searchTermRaw.length > 0 && (
-                  <ValidationFeedback
-                    info="Caracteres especiais foram removidos da busca"
-                    className="mt-1"
-                  />
-                )}
+                {searchTermRaw !== searchTermSanitized &&
+                  searchTermRaw.length > 0 && (
+                    <ValidationFeedback
+                      info="Caracteres especiais foram removidos da busca"
+                      className="mt-1"
+                    />
+                  )}
               </div>
               <Select
                 value={dateFilter}
@@ -481,15 +544,15 @@ export default function AdminUsers() {
                   handleFilterChange();
                 }}
               >
-                <SelectTrigger className="w-full sm:w-[180px] h-9">
+                <SelectTrigger className="h-9 w-full md:w-[180px]">
                   <SelectValue placeholder="Data de cadastro" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as datas</SelectItem>
                   <SelectItem value="today">Hoje</SelectItem>
-                  <SelectItem value="week">Última semana</SelectItem>
-                  <SelectItem value="month">Último mês</SelectItem>
-                  <SelectItem value="year">Último ano</SelectItem>
+                  <SelectItem value="week">ÃƒÅ¡ltima semana</SelectItem>
+                  <SelectItem value="month">ÃƒÅ¡ltimo mÃƒÂªs</SelectItem>
+                  <SelectItem value="year">ÃƒÅ¡ltimo ano</SelectItem>
                 </SelectContent>
               </Select>
               <Select
@@ -499,7 +562,7 @@ export default function AdminUsers() {
                   handleFilterChange();
                 }}
               >
-                <SelectTrigger className="w-full sm:w-[180px] h-9">
+                <SelectTrigger className="h-9 w-full md:w-[180px]">
                   <SelectValue placeholder="Status do perfil" />
                 </SelectTrigger>
                 <SelectContent>
@@ -511,23 +574,39 @@ export default function AdminUsers() {
               </Select>
             </div>
 
-            {/* Ações em Massa */}
+            {/* AÃƒÂ§ÃƒÂµes em Massa */}
             {selectedUsers.size > 0 && (
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+              <div className="flex flex-col gap-3 rounded-lg border bg-muted/50 p-3 md:flex-row md:items-center md:justify-between">
                 <span className="text-sm font-medium">
                   {selectedUsers.size}{" "}
-                  {selectedUsers.size === 1 ? "usuário selecionado" : "usuários selecionados"}
+                  {selectedUsers.size === 1
+                    ? "usuÃƒÂ¡rio selecionado"
+                    : "usuÃƒÂ¡rios selecionados"}
                 </span>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setSelectedUsers(new Set())}>
-                    Limpar seleção
+                <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedUsers(new Set())}
+                    className="w-full md:w-auto"
+                  >
+                    Limpar seleÃƒÂ§ÃƒÂ£o
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
+                    className="w-full md:w-auto"
                     onClick={() => {
-                      const selected = allUsers.filter((u) => selectedUsers.has(u.id));
-                      const headers = ["ID", "Email", "Nome", "CPF", "Telefone"];
+                      const selected = allUsers.filter((u) =>
+                        selectedUsers.has(u.id),
+                      );
+                      const headers = [
+                        "ID",
+                        "Email",
+                        "Nome",
+                        "CPF",
+                        "Telefone",
+                      ];
                       const rows = selected.map((u) => [
                         u.id,
                         u.email || "",
@@ -538,14 +617,16 @@ export default function AdminUsers() {
                       const csv = [headers, ...rows]
                         .map((row) => row.map((cell) => `"${cell}"`).join(","))
                         .join("\n");
-                      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                      const blob = new Blob([csv], {
+                        type: "text/csv;charset=utf-8;",
+                      });
                       const link = document.createElement("a");
                       link.href = URL.createObjectURL(blob);
                       link.download = `usuarios_selecionados_${new Date().toISOString().split("T")[0]}.csv`;
                       link.click();
                       toast({
                         title: "Exportado",
-                        description: `${selected.length} usuários exportados.`,
+                        description: `${selected.length} usuÃƒÂ¡rios exportados.`,
                       });
                     }}
                   >
@@ -559,24 +640,209 @@ export default function AdminUsers() {
             {adminCount === 1 && (
               <div className="rounded-sm border border-amber-500/50 bg-amber-500/10 p-3">
                 <p className="text-xs text-amber-700 dark:text-amber-400">
-                  ⚠️ <span className="font-semibold">Atenção:</span> Existe apenas 1 administrador
-                  no sistema. Promova outro usuário antes de remover permissões de admin.
+                  <span className="font-semibold">Atencao:</span> Existe apenas
+                  1 administrador no sistema. Promova outro usuario antes de
+                  remover permissoes de admin.
                 </p>
               </div>
             )}
           </CardHeader>
           <CardContent className="pt-6">
             {usersQuery.isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Carregando usuários…</div>
+              <div className="text-center py-8 text-muted-foreground">
+                Carregando usuarios...
+              </div>
             ) : filteredUsers.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                {searchTermSanitized || dateFilter !== "all" || profileFilter !== "all"
-                  ? "Nenhum usuário encontrado com os filtros aplicados."
-                  : "Nenhum usuário cadastrado."}
+                {searchTermSanitized ||
+                dateFilter !== "all" ||
+                profileFilter !== "all"
+                  ? "Nenhum usuÃƒÂ¡rio encontrado com os filtros aplicados."
+                  : "Nenhum usuÃƒÂ¡rio cadastrado."}
               </div>
             ) : (
               <>
-                <div className="rounded-sm border border-border overflow-hidden">
+                <div className="space-y-3 md:hidden">
+                  {paginatedUsers.map((user) => {
+                    const roles = user.roles || [];
+                    const profile = user.profile;
+                    const adminRoles = roles.filter(hasAdminAccessRole);
+
+                    return (
+                      <div
+                        key={user.id}
+                        className="rounded-sm border border-border bg-muted/20 p-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={selectedUsers.has(user.id)}
+                            onCheckedChange={() => toggleUserSelection(user.id)}
+                            className="mt-1"
+                          />
+
+                          <div className="min-w-0 flex-1 space-y-3">
+                            <div className="space-y-1">
+                              <div className="truncate text-sm font-semibold">
+                                {profile?.full_name ||
+                                  user.email ||
+                                  "UsuÃƒÂ¡rio sem nome"}
+                              </div>
+                              <div className="truncate text-xs text-muted-foreground">
+                                {user.email ?? "-"}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                ID {user.id.slice(0, 8)}...
+                              </div>
+                            </div>
+
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <div className="space-y-1">
+                                <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                  Contato
+                                </div>
+                                {profile?.phone ? (
+                                  <div className="text-sm">
+                                    Tel: {profile.phone}
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-muted-foreground">
+                                    Sem telefone
+                                  </div>
+                                )}
+                                {profile?.whatsapp && (
+                                  <div className="text-xs text-muted-foreground">
+                                    WhatsApp: {profile.whatsapp}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                  Perfil
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="h-1.5 flex-1 rounded-full bg-muted">
+                                    <div
+                                      className="h-1.5 rounded-full bg-primary transition-all"
+                                      style={{
+                                        width: `${profile?.profile_completion ?? 0}%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-muted-foreground">
+                                    {profile?.profile_completion ?? 0}%
+                                  </span>
+                                </div>
+                                {profile?.cpf && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {profile.cpf}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                Acesso
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {roles.length === 0 ? (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    user
+                                  </Badge>
+                                ) : (
+                                  roles.map((role) => (
+                                    <Badge
+                                      key={role}
+                                      variant={
+                                        hasAdminAccessRole(role) &&
+                                        isLastAdmin(roles)
+                                          ? "default"
+                                          : "secondary"
+                                      }
+                                      className="text-xs"
+                                    >
+                                      {role}
+                                    </Badge>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2 border-t border-border pt-3 md:flex-row md:items-center md:justify-between">
+                              <div className="text-xs text-muted-foreground">
+                                Cadastro em {fmtDate(user.created_at)}
+                              </div>
+
+                              <div className="flex flex-col gap-2 md:flex-row">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  asChild
+                                  className="w-full md:w-auto"
+                                >
+                                  <Link to={adminUserDetailsPath(user.id)}>
+                                    Ver detalhes
+                                  </Link>
+                                </Button>
+
+                                {adminRoles.map((role) => (
+                                  <AlertDialog key={role}>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full text-xs md:w-auto"
+                                        disabled={isLastAdmin(roles)}
+                                        title={
+                                          isLastAdmin(roles)
+                                            ? "Nao e possivel remover o ultimo admin"
+                                            : `Remover permissao de ${role}`
+                                        }
+                                      >
+                                        Remover{" "}
+                                        {formatAdminAccessRoleLabel(role)}
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                          Remover permissao de {role}?
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          O usuario{" "}
+                                          <strong>{user.email}</strong> perdera
+                                          acesso a area administrativa.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>
+                                          Cancelar
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() =>
+                                            removeRole(user.id, role)
+                                          }
+                                        >
+                                          Confirmar
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="hidden overflow-hidden rounded-sm border border-border md:block">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/30">
@@ -589,12 +855,18 @@ export default function AdminUsers() {
                             onCheckedChange={toggleAllUsers}
                           />
                         </TableHead>
-                        <TableHead className="font-semibold">Usuário</TableHead>
+                        <TableHead className="font-semibold">
+                          UsuÃƒÂ¡rio
+                        </TableHead>
                         <TableHead className="font-semibold">Contato</TableHead>
                         <TableHead className="font-semibold">Perfil</TableHead>
                         <TableHead className="font-semibold">Roles</TableHead>
-                        <TableHead className="font-semibold">Cadastro</TableHead>
-                        <TableHead className="font-semibold text-right">Ações</TableHead>
+                        <TableHead className="font-semibold">
+                          Cadastro
+                        </TableHead>
+                        <TableHead className="font-semibold text-right">
+                          AÃƒÂ§ÃƒÂµes
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -606,15 +878,21 @@ export default function AdminUsers() {
                             <TableCell>
                               <Checkbox
                                 checked={selectedUsers.has(user.id)}
-                                onCheckedChange={() => toggleUserSelection(user.id)}
+                                onCheckedChange={() =>
+                                  toggleUserSelection(user.id)
+                                }
                               />
                             </TableCell>
                             <TableCell className="font-medium">
                               <div className="flex flex-col gap-1">
                                 {profile?.full_name && (
-                                  <span className="font-semibold">{profile.full_name}</span>
+                                  <span className="font-semibold">
+                                    {profile.full_name}
+                                  </span>
                                 )}
-                                <span className="text-sm">{user.email ?? "—"}</span>
+                                <span className="text-sm">
+                                  {user.email ?? "Ã¢â‚¬â€"}
+                                </span>
                                 <span className="text-xs text-muted-foreground">
                                   {user.id.slice(0, 8)}...
                                 </span>
@@ -623,7 +901,9 @@ export default function AdminUsers() {
                             <TableCell>
                               <div className="flex flex-col gap-1">
                                 {profile?.cpf && (
-                                  <span className="text-sm font-mono">{profile.cpf}</span>
+                                  <span className="text-sm font-mono">
+                                    {profile.cpf}
+                                  </span>
                                 )}
                                 {profile?.phone && (
                                   <span className="text-xs text-muted-foreground">
@@ -635,9 +915,13 @@ export default function AdminUsers() {
                                     WhatsApp: {profile.whatsapp}
                                   </span>
                                 )}
-                                {!profile?.cpf && !profile?.phone && !profile?.whatsapp && (
-                                  <span className="text-xs text-muted-foreground">—</span>
-                                )}
+                                {!profile?.cpf &&
+                                  !profile?.phone &&
+                                  !profile?.whatsapp && (
+                                    <span className="text-xs text-muted-foreground">
+                                      Ã¢â‚¬â€
+                                    </span>
+                                  )}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -647,7 +931,9 @@ export default function AdminUsers() {
                                     <div className="w-16 bg-muted rounded-full h-1.5">
                                       <div
                                         className="bg-primary h-1.5 rounded-full transition-all"
-                                        style={{ width: `${profile.profile_completion}%` }}
+                                        style={{
+                                          width: `${profile.profile_completion}%`,
+                                        }}
                                       />
                                     </div>
                                     <span className="text-xs text-muted-foreground">
@@ -660,7 +946,10 @@ export default function AdminUsers() {
                             <TableCell>
                               <div className="flex flex-wrap gap-1">
                                 {roles.length === 0 ? (
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
                                     user
                                   </Badge>
                                 ) : (
@@ -668,14 +957,17 @@ export default function AdminUsers() {
                                     <Badge
                                       key={role}
                                       variant={
-                                        hasAdminAccessRole(role) && isLastAdmin(roles)
+                                        hasAdminAccessRole(role) &&
+                                        isLastAdmin(roles)
                                           ? "default"
                                           : "secondary"
                                       }
                                       className="text-xs"
                                     >
                                       {role}
-                                      {hasAdminAccessRole(role) && isLastAdmin(roles) && " 🔒"}
+                                      {hasAdminAccessRole(role) &&
+                                        isLastAdmin(roles) &&
+                                        " Ã°Å¸â€â€™"}
                                     </Badge>
                                   ))
                                 )}
@@ -687,46 +979,57 @@ export default function AdminUsers() {
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
                                 <Button variant="outline" size="sm" asChild>
-                                  <Link to={adminUserDetailsPath(user.id)}>Ver Detalhes</Link>
+                                  <Link to={adminUserDetailsPath(user.id)}>
+                                    Ver detalhes
+                                  </Link>
                                 </Button>
-                                {roles.filter(hasAdminAccessRole).map((role) => (
-                                  <AlertDialog key={role}>
-                                    <AlertDialogTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-xs"
-                                        disabled={isLastAdmin(roles)}
-                                        title={
-                                          isLastAdmin(roles)
-                                            ? "Não é possível remover o último admin"
-                                            : `Remover permissão de ${role}`
-                                        }
-                                      >
-                                        Remover {role === "super_admin" ? "Super Admin" : "Admin"}
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>
-                                          Remover permissão de {role}?
-                                        </AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          O usuário <strong>{user.email}</strong> perderá acesso à
-                                          área administrativa.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => removeRole(user.id, role)}
+                                {roles
+                                  .filter(hasAdminAccessRole)
+                                  .map((role) => (
+                                    <AlertDialog key={role}>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="text-xs"
+                                          disabled={isLastAdmin(roles)}
+                                          title={
+                                            isLastAdmin(roles)
+                                              ? "NÃƒÂ£o ÃƒÂ© possÃƒÂ­vel remover o ÃƒÂºltimo admin"
+                                              : `Remover permissÃƒÂ£o de ${role}`
+                                          }
                                         >
-                                          Confirmar
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                ))}
+                                          Remover{" "}
+                                          {formatAdminAccessRoleLabel(role)}
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>
+                                            Remover permissÃƒÂ£o de {role}?
+                                          </AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            O usuario{" "}
+                                            <strong>{user.email}</strong>{" "}
+                                            perdera acesso a area
+                                            administrativa.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>
+                                            Cancelar
+                                          </AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() =>
+                                              removeRole(user.id, role)
+                                            }
+                                          >
+                                            Confirmar
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  ))}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -736,55 +1039,69 @@ export default function AdminUsers() {
                   </Table>
                 </div>
 
-                {/* Paginação */}
+                {/* PaginaÃƒÂ§ÃƒÂ£o */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4">
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-sm text-muted-foreground">
                       Mostrando {(currentPage - 1) * itemsPerPage + 1} a{" "}
-                      {Math.min(currentPage * itemsPerPage, filteredUsers.length)} de{" "}
-                      {filteredUsers.length} usuários
+                      {Math.min(
+                        currentPage * itemsPerPage,
+                        filteredUsers.length,
+                      )}{" "}
+                      de {filteredUsers.length} usuÃƒÂ¡rios
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
                         disabled={currentPage === 1}
                       >
                         Anterior
                       </Button>
                       <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          let pageNum;
-                          if (totalPages <= 5) {
-                            pageNum = i + 1;
-                          } else if (currentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i;
-                          } else {
-                            pageNum = currentPage - 2 + i;
-                          }
-                          return (
-                            <Button
-                              key={pageNum}
-                              variant={currentPage === pageNum ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setCurrentPage(pageNum)}
-                              className="w-9"
-                            >
-                              {pageNum}
-                            </Button>
-                          );
-                        })}
+                        {Array.from(
+                          { length: Math.min(5, totalPages) },
+                          (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={
+                                  currentPage === pageNum
+                                    ? "default"
+                                    : "outline"
+                                }
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                className="w-9"
+                              >
+                                {pageNum}
+                              </Button>
+                            );
+                          },
+                        )}
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
                         disabled={currentPage === totalPages}
                       >
-                        Próxima
+                        PrÃƒÂ³xima
                       </Button>
                     </div>
                   </div>

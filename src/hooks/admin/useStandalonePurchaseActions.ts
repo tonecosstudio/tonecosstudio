@@ -3,7 +3,7 @@ import {
   cancelStandalonePurchase,
   approvePaymentVoucher,
   rejectPaymentVoucher,
-} from "@/services/standalone-purchase-service";
+} from "@/services/payments/standalone-purchase-service";
 
 export function useStandalonePurchaseActions() {
   return {

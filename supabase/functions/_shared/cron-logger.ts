@@ -9,9 +9,10 @@
  * - 34.8: Send alert notifications for critical errors
  */
 
-import { createClient } from "npm:@supabase/supabase-js@2";
 import { EmailService, getEmailConfig } from "./email.ts";
 import { createEdgeLogger } from "./edge-logger.ts";
+import { ADMIN_ACCESS_ROLES } from "./roles.ts";
+import { getServiceClient } from "./supabase.ts";
 
 const log = createEdgeLogger("cron-logger");
 
@@ -33,14 +34,7 @@ export async function logCronStart(
     throw new Error("jobName is required");
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Supabase environment variables not configured");
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = getServiceClient();
 
   const { data, error } = await supabase.rpc("start_cron_job_log", {
     p_job_name: jobName,
@@ -78,14 +72,7 @@ export async function logCronSuccess(
     throw new Error("logId is required");
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Supabase environment variables not configured");
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = getServiceClient();
 
   const { error } = await supabase.rpc("complete_cron_job_log", {
     p_log_id: logId,
@@ -128,14 +115,7 @@ export async function logCronError(
     throw new Error("error is required");
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Supabase environment variables not configured");
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = getServiceClient();
 
   // Extract error message and stack trace
   const errorMessage = error.message || "Unknown error";
@@ -184,14 +164,7 @@ async function sendCronErrorAlert(
   errorMessage: string,
   errorStack: string,
 ): Promise<void> {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Supabase environment variables not configured");
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = getServiceClient();
 
   // Get the cron job details from the log
   const { data: logData, error: fetchError } = await supabase
@@ -214,7 +187,7 @@ async function sendCronErrorAlert(
   const { data: adminProfiles, error: profileError } = await supabase
     .from("profiles")
     .select("email, full_name")
-    .in("role", ["admin", "super_admin"]);
+    .in("role", ADMIN_ACCESS_ROLES);
 
   if (profileError || !adminProfiles || adminProfiles.length === 0) {
     log.warn("cron_alert_recipients_missing", { error: profileError, logId });

@@ -1,21 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
-import { fetchContacts, type Contact } from "@/services/admin/contacts-service";
-export type { Contact } from "@/services/admin/contacts-service";
+import { useQuery } from "@tanstack/react-query";
+import { fetchContacts, type Contact } from "@/services/admin/customers/contacts-service";
+
+export type { Contact } from "@/services/admin/customers/contacts-service";
 
 export function useContacts() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
+  const query = useQuery({
+    queryKey: ["admin-contacts"],
+    queryFn: fetchContacts,
+  });
 
-  const loadContacts = useCallback(async () => {
-    setLoading(true);
-    const data = await fetchContacts();
-    setContacts(data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    void loadContacts();
-  }, [loadContacts]);
-
-  return { contacts, loading, loadContacts };
+  return {
+    contacts: query.data ?? ([] as Contact[]),
+    loading: query.isLoading,
+    loadContacts: query.refetch,
+  };
 }

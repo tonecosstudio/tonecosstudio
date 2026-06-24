@@ -3,7 +3,7 @@ import {
   getAuditTrailRecords,
   searchAuditTrailByResponsible,
   type AuditRecord,
-} from "@/services/audit-trail-service";
+} from "@/services/system/audit-trail-service";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
 
 export interface AuditTrailFilters {

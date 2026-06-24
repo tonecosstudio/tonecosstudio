@@ -1,31 +1,26 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ADMIN_ROUTES, isSafeInAppPath } from "@/config/routes";
 import {
+  AlertCircle,
+  AlertTriangle,
   Bell,
   Check,
   CheckCheck,
-  FileText,
-  DollarSign,
-  HeadphonesIcon,
-  CreditCard,
-  AlertTriangle,
-  AlertCircle,
-  Users,
   Clock,
-  Package,
+  CreditCard,
+  DollarSign,
+  FileText,
+  HeadphonesIcon,
   MessageSquare,
+  Package,
+  Users,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ADMIN_ROUTES, isSafeInAppPath } from "@/config/routes";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   type AdminNotification,
@@ -33,6 +28,11 @@ import {
   useMarkAllNotificationsAsRead,
   useMarkNotificationAsRead,
 } from "@/hooks/admin/useNotificationCenter";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const iconMap: Record<string, LucideIcon> = {
   FileText,
@@ -64,21 +64,21 @@ export function NotificationCenter() {
   const markAsReadMutation = useMarkNotificationAsRead();
   const markAllAsReadMutation = useMarkAllNotificationsAsRead();
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const unreadCount = notifications.filter((notification) => !notification.read).length;
 
   const handleMarkAllAsRead = () => {
     markAllAsReadMutation.mutate(undefined, {
       onSuccess: (count) => {
         toast({
-          title: "Notificações marcadas como lidas",
-          description: `${count} notificações foram marcadas como lidas.`,
+          title: "Notificacoes marcadas como lidas",
+          description: `${count} notificacoes foram marcadas como lidas.`,
         });
       },
     });
   };
 
   const handleNotificationClick = (notification: AdminNotification) => {
-    if (!notification.is_read) {
+    if (!notification.read) {
       markAsReadMutation.mutate(notification.id);
     }
 
@@ -93,12 +93,11 @@ export function NotificationCenter() {
     return <IconComponent className="h-4 w-4" />;
   };
 
-  const formatTime = (date: string) => {
-    return formatDistanceToNow(new Date(date), {
+  const formatTime = (date: string) =>
+    formatDistanceToNow(new Date(date), {
       addSuffix: true,
       locale: ptBR,
     });
-  };
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -115,9 +114,10 @@ export function NotificationCenter() {
           )}
         </Button>
       </PopoverTrigger>
+
       <PopoverContent className="w-96 p-0" align="end">
         <div className="flex items-center justify-between border-b p-4">
-          <h3 className="font-semibold">Notificações</h3>
+          <h3 className="font-semibold">Notificacoes</h3>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <Button
@@ -136,13 +136,13 @@ export function NotificationCenter() {
           </div>
         </div>
 
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as "all" | "unread")}>
+        <Tabs value={filter} onValueChange={(value) => setFilter(value as "all" | "unread")}>
           <TabsList className="w-full rounded-none border-b">
             <TabsTrigger value="all" className="flex-1">
               Todas
             </TabsTrigger>
             <TabsTrigger value="unread" className="flex-1">
-              Não lidas ({unreadCount})
+              Nao lidas ({unreadCount})
             </TabsTrigger>
           </TabsList>
 
@@ -155,7 +155,7 @@ export function NotificationCenter() {
               ) : notifications.length === 0 ? (
                 <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
                   <Bell className="mb-2 h-12 w-12 opacity-50" />
-                  <p className="text-sm">Nenhuma notificação</p>
+                  <p className="text-sm">Nenhuma notificacao</p>
                 </div>
               ) : (
                 <div className="divide-y">
@@ -164,7 +164,7 @@ export function NotificationCenter() {
                       key={notification.id}
                       className={cn(
                         "cursor-pointer p-4 transition-colors hover:bg-muted/50",
-                        !notification.is_read && "bg-muted/30"
+                        !notification.read && "bg-muted/30"
                       )}
                       onClick={() => handleNotificationClick(notification)}
                     >
@@ -177,14 +177,17 @@ export function NotificationCenter() {
                         >
                           {getIcon(notification)}
                         </div>
+
                         <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-sm font-medium">{notification.title}</p>
-                            {!notification.is_read && (
+                            {!notification.read && (
                               <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                             )}
                           </div>
+
                           <p className="text-muted-foreground mt-1 text-sm">{notification.message}</p>
+
                           <div className="mt-2 flex items-center gap-2">
                             <span className="text-muted-foreground text-xs">
                               {formatTime(notification.created_at)}
@@ -203,13 +206,14 @@ export function NotificationCenter() {
                             )}
                           </div>
                         </div>
-                        {!notification.is_read && (
+
+                        {!notification.read && (
                           <Button
                             variant="ghost"
                             size="icon"
                             className="flex-shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
+                            onClick={(event) => {
+                              event.stopPropagation();
                               markAsReadMutation.mutate(notification.id);
                             }}
                           >
@@ -235,7 +239,7 @@ export function NotificationCenter() {
                 setIsOpen(false);
               }}
             >
-              Ver todas as notificações
+              Ver todas as notificacoes
             </Button>
           </div>
         )}

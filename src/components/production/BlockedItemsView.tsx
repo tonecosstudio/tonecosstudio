@@ -48,7 +48,7 @@ export function BlockedItemsView() {
       <div className="text-center py-12 border rounded-lg bg-green-50 dark:bg-green-950/20">
         <CheckCircle2 className="h-12 w-12 mx-auto text-green-600 dark:text-green-400 mb-4" />
         <h3 className="text-lg font-semibold mb-2 text-green-700 dark:text-green-400">
-          Nenhum Item Bloqueado
+          Nenhum item bloqueado
         </h3>
         <p className="text-muted-foreground">
           Nao ha itens de producao bloqueados no momento.
@@ -63,7 +63,7 @@ export function BlockedItemsView() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
-            <h2 className="text-xl font-semibold">Itens Bloqueados</h2>
+            <h2 className="text-xl font-semibold">Itens bloqueados</h2>
             <Badge variant="destructive" className="ml-2">
               {blockedItems.length}
             </Badge>
@@ -82,7 +82,7 @@ export function BlockedItemsView() {
                 <TableHead>Personagem</TableHead>
                 <TableHead>Estagio</TableHead>
                 <TableHead>Prioridade</TableHead>
-                <TableHead>Motivo do Bloqueio</TableHead>
+                <TableHead>Motivo do bloqueio</TableHead>
                 <TableHead>Bloqueado em</TableHead>
                 <TableHead>Duracao</TableHead>
                 <TableHead>Responsavel</TableHead>
@@ -214,7 +214,7 @@ function BlockedItemsViewSkeleton() {
               <TableHead>Personagem</TableHead>
               <TableHead>Estagio</TableHead>
               <TableHead>Prioridade</TableHead>
-              <TableHead>Motivo do Bloqueio</TableHead>
+              <TableHead>Motivo do bloqueio</TableHead>
               <TableHead>Bloqueado em</TableHead>
               <TableHead>Duracao</TableHead>
               <TableHead>Responsavel</TableHead>

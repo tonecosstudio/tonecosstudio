@@ -24,7 +24,7 @@ import {
 import { Calendar, Package, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { timezoneService } from '@/lib/services/timezoneService';
+import { timezoneService } from '@/services/system/timezone-service';
 import { useNavigate } from 'react-router-dom';
 import { useHistoricalCycles } from '@/hooks/admin/useHistoricalCycles';
 import type { HistoricalCycle as Cycle } from '@/hooks/admin/useHistoricalCycles';

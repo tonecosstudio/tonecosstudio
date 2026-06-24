@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Users, MessageSquare, Eye } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { metricsService } from "@/lib/services/metricsService";
+import { metricsService } from "@/services/groups/group-metrics-service";
 import { cn } from "@/lib/utils";
 
 interface GroupMetricsProps {

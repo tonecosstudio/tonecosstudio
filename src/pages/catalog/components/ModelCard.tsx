@@ -1,11 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart } from "lucide-react";
+import { EyeOff, Heart } from "lucide-react";
 import type { ModelRow } from "../catalogTypes";
 import {
   getCatalogCharacterName,
   getCatalogPublicTags,
+  getCatalogSensitivity,
   getCatalogSourceName,
   getCatalogTitle,
   getCatalogVersionName,
@@ -23,7 +24,20 @@ export function ModelCard(props: {
   const { model: m, imageUrl, variant, isLiked, onToggleLike } = props;
   const title = getCatalogTitle(m);
   const characterName = getCatalogCharacterName(m);
-  const detailsPath = catalogModelDetailsPath(m.id);
+  const detailsPath = catalogModelDetailsPath(
+    m.id,
+    [m.character_name || m.name, m.variant_name].filter(Boolean).join(" "),
+  );
+  const sensitivity = getCatalogSensitivity(m);
+
+  const sensitiveOverlay = sensitivity.shouldBlur ? (
+    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-background/55 px-4 text-center backdrop-blur-sm">
+      <span className="inline-flex items-center gap-2 border border-border bg-popover/95 px-3 py-2 text-xs font-medium text-foreground shadow-elevated">
+        <EyeOff className="h-4 w-4" />
+        {sensitivity.label}
+      </span>
+    </div>
+  ) : null;
 
   if (variant === "forYou") {
     return (
@@ -33,10 +47,13 @@ export function ModelCard(props: {
             <img
               src={imageUrl}
               alt={characterName}
-              className="h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.02]"
+              className={`h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.02] ${
+                sensitivity.shouldBlur ? "scale-[1.03] blur-xl" : ""
+              }`}
               loading="lazy"
             />
           </Link>
+          {sensitiveOverlay}
           <button
             type="button"
             className="absolute right-3 top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-popover/95 text-foreground shadow-elevated backdrop-blur-sm"
@@ -84,10 +101,13 @@ export function ModelCard(props: {
           <img
             src={imageUrl}
             alt={characterName}
-            className="h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.02]"
+            className={`h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.02] ${
+              sensitivity.shouldBlur ? "scale-[1.03] blur-xl" : ""
+            }`}
             loading="lazy"
           />
         </Link>
+        {sensitiveOverlay}
         <div
           className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
           aria-hidden

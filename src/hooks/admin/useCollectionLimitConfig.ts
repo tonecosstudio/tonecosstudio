@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateSubscriptionPlanCollectionLimit } from "@/services/admin/collection-limit-config-service";
+import { updateSubscriptionPlanCollectionLimit } from "@/services/admin/pricing/collection-limit-config-service";
 
 export function useUpdateCollectionLimitConfig() {
   const queryClient = useQueryClient();

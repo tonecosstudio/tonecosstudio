@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { groupService } from "@/lib/services/groupService";
+import { groupService } from "@/services/groups/group-service";
 import { useAuth } from "@/lib/auth";
 import { getGroupTypeLabel } from "@/types/groups";
 import type { GroupWithMetrics } from "@/types/groups";

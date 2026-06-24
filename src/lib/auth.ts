@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
+import {
+  getCurrentAuthSession,
+  subscribeToAuthSessionChanges,
+} from "@/services/auth/auth-session-service";
 
 type AuthState = {
   session: Session | null;
@@ -33,28 +36,15 @@ export function useAuth() {
     let mounted = true;
     let initialLoadDone = false;
 
-    // First, get the current session
-    supabase.auth
-      .getSession()
-      .then(({ data, error }) => {
+    getCurrentAuthSession()
+      .then((session) => {
         if (!mounted || initialLoadDone) return;
         
         initialLoadDone = true;
-        
-        if (error) {
-          log.error('Failed to get session', { error });
-          setState({
-            session: null,
-            user: null,
-            isLoading: false,
-            error: new Error(`Failed to get session: ${error.message}`)
-          });
-          return;
-        }
 
         setState({
-          session: data.session ?? null,
-          user: data.session?.user ?? null,
+          session,
+          user: session?.user ?? null,
           isLoading: false,
           error: null
         });
@@ -73,16 +63,13 @@ export function useAuth() {
         });
       });
 
-    // Then, listen for auth changes
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const unsubscribe = subscribeToAuthSessionChanges((session) => {
       if (!mounted || !initialLoadDone) return;
 
-      // Only update if values actually changed
       setState((prev) => {
         const newUser = session?.user ?? null;
         const prevUser = prev.user;
 
-        // Check if user actually changed
         const userChanged =
           newUser?.id !== prevUser?.id ||
           newUser?.email !== prevUser?.email ||
@@ -103,7 +90,7 @@ export function useAuth() {
 
     return () => {
       mounted = false;
-      sub.subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 

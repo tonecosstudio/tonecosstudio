@@ -4,7 +4,7 @@
  * Provides functions to export data to CSV format.
  */
 
-import type { ProductionQueueItem } from '@/services/admin/production-service';
+import type { ProductionQueueItem } from '@/types/production';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getProductionStageLabel } from '@/config/production-stages';

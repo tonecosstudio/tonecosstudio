@@ -305,7 +305,7 @@ export const StageHistoryPanel: React.FC<StageHistoryPanelProps> = ({
                           </p>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                          {stage.photos.map((photoUrl, photoIndex) => {
+                          {(stage.photos as string[]).map((photoUrl, photoIndex) => {
                             const safePhotoUrl = getSafePhotoUrl(photoUrl);
 
                             if (!safePhotoUrl) return null;

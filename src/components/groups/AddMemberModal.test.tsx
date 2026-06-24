@@ -3,9 +3,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AddMemberModal } from "./AddMemberModal";
-import { membershipService } from "@/lib/services/membershipService";
+import { membershipService } from "@/services/groups/membership-service";
 
-vi.mock("@/lib/services/membershipService");
+vi.mock("@/services/groups/membership-service");
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
@@ -36,7 +36,9 @@ describe("AddMemberModal", () => {
   });
 
   it("does not render when closed", () => {
-    render(<AddMemberModal {...defaultProps} open={false} />, { wrapper: createWrapper() });
+    render(<AddMemberModal {...defaultProps} open={false} />, {
+      wrapper: createWrapper(),
+    });
     expect(screen.queryByText("Adicionar Membro")).not.toBeInTheDocument();
   });
 
@@ -71,7 +73,10 @@ describe("AddMemberModal", () => {
     await user.click(screen.getByRole("button", { name: /^adicionar$/i }));
 
     await waitFor(() => {
-      expect(membershipService.addMember).toHaveBeenCalledWith("group-1", "user-123");
+      expect(membershipService.addMember).toHaveBeenCalledWith(
+        "group-1",
+        "user-123",
+      );
     });
   });
 
@@ -133,7 +138,9 @@ describe("AddMemberModal", () => {
   });
 
   it("disables buttons while submitting", async () => {
-    vi.mocked(membershipService.addMember).mockReturnValue(new Promise(() => {}));
+    vi.mocked(membershipService.addMember).mockReturnValue(
+      new Promise(() => {}),
+    );
 
     const user = userEvent.setup();
     render(<AddMemberModal {...defaultProps} />, { wrapper: createWrapper() });
@@ -142,13 +149,17 @@ describe("AddMemberModal", () => {
     await user.click(screen.getByRole("button", { name: /^adicionar$/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /adicionando/i })).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: /adicionando/i }),
+      ).toBeDisabled();
       expect(screen.getByRole("button", { name: /cancelar/i })).toBeDisabled();
     });
   });
 
   it("shows loading text while submitting", async () => {
-    vi.mocked(membershipService.addMember).mockReturnValue(new Promise(() => {}));
+    vi.mocked(membershipService.addMember).mockReturnValue(
+      new Promise(() => {}),
+    );
 
     const user = userEvent.setup();
     render(<AddMemberModal {...defaultProps} />, { wrapper: createWrapper() });

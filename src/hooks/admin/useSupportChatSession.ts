@@ -1,8 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  fetchSupportChatCurrentUser,
-  getSupportAttachmentPublicUrl,
-} from "@/services/admin/support-chat-session-service";
+import { fetchSupportChatCurrentUser } from "@/services/admin/support/support-chat-session-service";
+import { getSupportAttachmentPublicUrl } from "@/services/support/support-attachment-url-service";
 
 export function useSupportChatCurrentUser() {
   return useQuery({

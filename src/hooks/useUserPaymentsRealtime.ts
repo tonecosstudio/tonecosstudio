@@ -1,7 +1,6 @@
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
-import { assertCurrentUserId } from "@/services/auth/current-user";
+import { subscribeToCurrentUserPaymentUpdates } from "@/services/realtime/realtime-service";
 
 interface UseUserPaymentsRealtimeOptions {
   userId?: string;
@@ -16,40 +15,27 @@ export function useUserPaymentsRealtime({
     if (!userId) return;
 
     let cancelled = false;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let unsubscribe: (() => void) | null = null;
 
     const subscribe = async () => {
       try {
-        await assertCurrentUserId(userId);
+        unsubscribe = await subscribeToCurrentUserPaymentUpdates(userId, onPaymentUpdate);
       } catch (error) {
         log.warn("Blocked payment realtime subscription for non-current user", { error, userId });
         return;
       }
 
-      if (cancelled) return;
-
-      channel = supabase
-        .channel("payments-arcade")
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "manual_payments",
-            filter: `user_id=eq.${userId}`,
-          },
-          onPaymentUpdate
-        )
-        .subscribe();
+      if (cancelled) {
+        unsubscribe();
+        unsubscribe = null;
+      }
     };
 
     void subscribe();
 
     return () => {
       cancelled = true;
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      unsubscribe?.();
     };
   }, [onPaymentUpdate, userId]);
 }

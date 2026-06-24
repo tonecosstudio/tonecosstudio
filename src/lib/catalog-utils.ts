@@ -520,7 +520,7 @@ function getCatalogVariantFallback(
   const storagePath = model?.storage_path || null;
   if (!storagePath) return null;
 
-  const normalizedPath = storagePath.replaceAll("\\", "/").toLowerCase();
+  const normalizedPath = storagePath.replace(/\\/g, "/").toLowerCase();
   const fileName = normalizedPath.split("/").pop() || "";
   const stem = fileName.replace(/\.[^.]+$/, "");
   if (!stem) return null;

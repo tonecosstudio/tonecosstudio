@@ -1,30 +1,16 @@
-/**
- * DeliveryConfirmation Component
- * 
- * Allows customers to confirm delivery of their order with optional feedback.
- * Shows "Mark as Delivered" button, delivery date picker, and feedback form.
- * 
- * Requirements: 2.4.4 Order Tracking (AC5: Show delivery confirmation when received)
- * Task: 5.3.2 Create DeliveryConfirmation component
- */
-
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CheckCircle2, Package, Calendar as CalendarIcon, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Calendar as CalendarIcon, CheckCircle2, MessageSquare, Package } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
 import { log } from "@/lib/logger";
 import { cn } from "@/lib/utils";
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export interface DeliveryConfirmationProps {
   orderId: string;
@@ -35,9 +21,8 @@ export interface DeliveryConfirmationProps {
   className?: string;
 }
 
-// ============================================================================
-// Main Component
-// ============================================================================
+const cardClassName =
+  "border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] text-white shadow-none";
 
 export const DeliveryConfirmation: React.FC<DeliveryConfirmationProps> = ({
   orderId,
@@ -54,9 +39,10 @@ export const DeliveryConfirmation: React.FC<DeliveryConfirmationProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(isDelivered);
 
-  // Handle delivery confirmation
   const handleConfirmDelivery = async () => {
-    if (!selectedDate) return;
+    if (!selectedDate) {
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -71,82 +57,79 @@ export const DeliveryConfirmation: React.FC<DeliveryConfirmationProps> = ({
     }
   };
 
-  // If already delivered, show confirmation message
   if (showConfirmation) {
     return (
-      <Card className={className} data-order-id={orderId}>
+      <Card className={cn(cardClassName, className)} data-order-id={orderId}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-green-600">
+          <CardTitle className="flex items-center gap-2 text-emerald-200">
             <CheckCircle2 className="h-5 w-5" />
-            Entrega Confirmada
+            Entrega confirmada
           </CardTitle>
-          <CardDescription>
-            Obrigado por confirmar o recebimento do seu pedido
+          <CardDescription className="text-zinc-400">
+            Obrigado por confirmar o recebimento do seu pedido.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <Alert className="bg-green-50 border-green-200">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-900">
+          <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-100">
+            <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+            <AlertDescription>
               Seu pedido #{orderNumber} foi marcado como entregue.
             </AlertDescription>
           </Alert>
 
           {selectedDate && (
-            <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-              <CalendarIcon className="h-8 w-8 text-muted-foreground" />
+            <div className="flex items-center gap-3 rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03] p-3">
+              <CalendarIcon className="h-8 w-8 text-[hsl(42,100%,55%)]" />
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Data de Entrega</p>
-                <p className="font-semibold">
-                  {format(selectedDate, "dd 'de' MMMM 'de' yyyy", {
-                    locale: ptBR,
-                  })}
+                <p className="text-sm text-zinc-400">Data de entrega</p>
+                <p className="font-semibold text-white">
+                  {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                 </p>
               </div>
             </div>
           )}
 
           {feedback && (
-            <div className="p-3 rounded-lg border bg-card">
-              <p className="text-sm text-muted-foreground mb-2">Seu Feedback</p>
-              <p className="text-sm">{feedback}</p>
+            <div className="rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03] p-3">
+              <p className="mb-2 text-sm text-zinc-400">Seu feedback</p>
+              <p className="text-sm text-zinc-200">{feedback}</p>
             </div>
           )}
 
-          <p className="text-xs text-muted-foreground text-center">
-            Esperamos que você tenha gostado do seu pedido!
+          <p className="text-center text-xs text-zinc-500">
+            Esperamos que voce tenha gostado do seu pedido.
           </p>
         </CardContent>
       </Card>
     );
   }
 
-  // Show delivery confirmation form
   return (
-    <Card className={className} data-order-id={orderId}>
+    <Card className={cn(cardClassName, className)} data-order-id={orderId}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Package className="h-5 w-5" />
-          Confirmar Entrega
+        <CardTitle className="flex items-center gap-2 text-white">
+          <Package className="h-5 w-5 text-[hsl(42,100%,55%)]" />
+          Confirmar entrega
         </CardTitle>
-        <CardDescription>
-          Recebeu seu pedido? Confirme a entrega abaixo
+        <CardDescription className="text-zinc-400">
+          Recebeu seu pedido? Confirme a entrega abaixo.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Delivery Date Picker */}
         <div className="space-y-2">
-          <Label htmlFor="delivery-date">Data de Entrega</Label>
+          <Label htmlFor="delivery-date" className="text-zinc-200">
+            Data de entrega
+          </Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 id="delivery-date"
                 variant="outline"
                 className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !selectedDate && "text-muted-foreground"
+                  "w-full justify-start border-[hsl(0,0%,16%)] bg-[hsl(0,0%,8%)] text-left font-normal text-white hover:bg-[hsl(0,0%,10%)]",
+                  !selectedDate && "text-zinc-500"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -157,7 +140,10 @@ export const DeliveryConfirmation: React.FC<DeliveryConfirmationProps> = ({
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent
+              className="w-auto border-[hsl(0,0%,14%)] bg-[hsl(0,0%,7%)] p-0 text-white"
+              align="start"
+            >
               <Calendar
                 mode="single"
                 selected={selectedDate}
@@ -168,44 +154,37 @@ export const DeliveryConfirmation: React.FC<DeliveryConfirmationProps> = ({
               />
             </PopoverContent>
           </Popover>
-          <p className="text-xs text-muted-foreground">
-            Selecione o dia em que você recebeu o pedido
-          </p>
+          <p className="text-xs text-zinc-500">Selecione o dia em que voce recebeu o pedido.</p>
         </div>
 
-        {/* Optional Feedback Form */}
         <div className="space-y-2">
-          <Label htmlFor="feedback" className="flex items-center gap-2">
+          <Label htmlFor="feedback" className="flex items-center gap-2 text-zinc-200">
             <MessageSquare className="h-4 w-4" />
-            Feedback (Opcional)
+            Feedback opcional
           </Label>
           <Textarea
             id="feedback"
-            placeholder="Conte-nos sobre sua experiência com o pedido..."
+            placeholder="Conte sobre sua experiencia com o pedido..."
             value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
+            onChange={(event) => setFeedback(event.target.value)}
             rows={4}
             maxLength={500}
-            className="resize-none"
+            className="resize-none border-[hsl(0,0%,16%)] bg-[hsl(0,0%,8%)] text-white placeholder:text-zinc-500"
           />
-          <p className="text-xs text-muted-foreground">
-            {feedback.length}/500 caracteres
-          </p>
+          <p className="text-xs text-zinc-500">{feedback.length}/500 caracteres</p>
         </div>
 
-        {/* Confirmation Button */}
         <Button
           onClick={handleConfirmDelivery}
           disabled={!selectedDate || isSubmitting}
-          className="w-full"
+          className="w-full bg-[hsl(42,100%,50%)] text-black hover:bg-[hsl(42,100%,58%)]"
         >
-          <CheckCircle2 className="h-4 w-4 mr-2" />
-          {isSubmitting ? "Confirmando..." : "Marcar como Entregue"}
+          <CheckCircle2 className="mr-2 h-4 w-4" />
+          {isSubmitting ? "Confirmando..." : "Marcar como entregue"}
         </Button>
 
-        {/* Help Text */}
-        <p className="text-xs text-muted-foreground text-center">
-          Ao confirmar, você está indicando que recebeu seu pedido #{orderNumber} em boas condições.
+        <p className="text-center text-xs text-zinc-500">
+          Ao confirmar, voce indica que recebeu seu pedido #{orderNumber} em boas condicoes.
         </p>
       </CardContent>
     </Card>

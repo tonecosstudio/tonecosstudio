@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { UnifiedOrder } from "@/types/admin/orders";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   useApproveManualPayment,
   useRejectManualPayment,
@@ -158,7 +158,7 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Data do Pagamento</span>
               <span className="text-sm font-medium">
-                {new Date(paymentData.paymentDate).toLocaleDateString('pt-BR')}
+                {formatDate(paymentData.paymentDate)}
               </span>
             </div>
           )}
@@ -188,7 +188,7 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Confirmado em</span>
               <span className="text-sm font-medium text-green-600">
-                {new Date(paymentData.confirmedAt).toLocaleDateString('pt-BR')}
+                {formatDate(paymentData.confirmedAt)}
               </span>
             </div>
           )}

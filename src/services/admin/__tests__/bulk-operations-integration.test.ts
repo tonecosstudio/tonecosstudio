@@ -12,8 +12,8 @@ import {
   bulkAssignProduction, 
   bulkUpdateStage,
   BulkOperationResult 
-} from "../bulk-operations-service";
-import { fetchProductionQueue } from "../production-service";
+} from "../operations/bulk-operations-service";
+import { fetchProductionQueue } from "../production/production-service";
 
 // Mock Supabase client
 vi.mock("@/integrations/supabase/client", () => ({
@@ -27,22 +27,29 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 // Mock notification service
-vi.mock("../../notifications/production-notification-service", () => ({
-  ProductionNotificationService: vi.fn().mockImplementation(() => ({
+vi.mock("@/services/notifications/production-notification-service", () => ({
+  productionNotificationService: {
     sendBulkAssignmentNotification: vi.fn().mockResolvedValue(undefined),
     sendBulkStageUpdateNotification: vi.fn().mockResolvedValue(undefined),
-  })),
+  },
 }));
+
+interface MockDefaultQuery {
+  select: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  eq: ReturnType<typeof vi.fn>;
+  single: ReturnType<typeof vi.fn>;
+}
 
 describe("Bulk Operations Integration Test", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(supabase.from).mockReset();
     vi.mocked(supabase.rpc).mockReset();
-    (supabase.rpc as any).mockResolvedValue({
+    vi.mocked(supabase.rpc).mockResolvedValue({
       data: { id: "updated-production-item" },
       error: null,
-    });
+    } as never);
   });
 
   it("should handle bulk assignment of multiple items to a team member", async () => {
@@ -100,7 +107,7 @@ describe("Bulk Operations Integration Test", () => {
 
     // Configure supabase.from mock
     let callCount = 0;
-    (supabase.from as any).mockImplementation((table: string) => {
+    vi.mocked(supabase.from).mockImplementation(((table: string) => {
       callCount++;
       
       if (table === "profiles") {
@@ -134,8 +141,8 @@ describe("Bulk Operations Integration Test", () => {
         update: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockReturnThis(),
-      };
-    });
+      } as MockDefaultQuery;
+    }) as never);
 
     // Execute bulk assignment
     const result: BulkOperationResult = await bulkAssignProduction(itemIds, teamMemberId);
@@ -166,7 +173,7 @@ describe("Bulk Operations Integration Test", () => {
     const teamMemberId = "team-789";
     
     // Mock user fetch (successful)
-    (supabase.rpc as any)
+    vi.mocked(supabase.rpc)
       .mockResolvedValueOnce({ data: { id: itemIds[0] }, error: null })
       .mockResolvedValueOnce({ data: null, error: { message: "Database constraint violation" } })
       .mockResolvedValueOnce({ data: { id: itemIds[2] }, error: null });
@@ -181,7 +188,7 @@ describe("Bulk Operations Integration Test", () => {
 
     // Configure supabase.from mock with mixed success/failure
     let callCount = 0;
-    (supabase.from as any).mockImplementation((table: string) => {
+    vi.mocked(supabase.from).mockImplementation(((table: string) => {
       callCount++;
       
       if (table === "profiles") {
@@ -223,8 +230,8 @@ describe("Bulk Operations Integration Test", () => {
         update: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockReturnThis(),
-      };
-    });
+      } as MockDefaultQuery;
+    }) as never);
 
     // Execute bulk assignment
     const result: BulkOperationResult = await bulkAssignProduction(itemIds, teamMemberId);
@@ -280,7 +287,7 @@ describe("Bulk Operations Integration Test", () => {
     });
 
     // Configure supabase.from mock
-    (supabase.from as any)
+    vi.mocked(supabase.from)
       .mockReturnValueOnce(mockFetchQuery) // First call: fetch items for validation
       .mockReturnValueOnce({ // Second call: update first valid item
         update: vi.fn().mockReturnValue({
@@ -378,7 +385,7 @@ describe("Bulk Operations Integration Test", () => {
 
     // Configure supabase.from mock
     let callCount = 0;
-    (supabase.from as any).mockImplementation((table: string) => {
+    vi.mocked(supabase.from).mockImplementation(((table: string) => {
       callCount++;
       
       if (table === "profiles") {
@@ -396,8 +403,8 @@ describe("Bulk Operations Integration Test", () => {
         update: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockReturnThis(),
-      };
-    });
+      } as MockDefaultQuery;
+    }) as never);
 
     // Step 1: Fetch filtered items
     const filters = {
@@ -453,7 +460,7 @@ describe("Bulk Operations Integration Test", () => {
     // Track which operations completed
     const completedOperations: string[] = [];
     
-    (supabase.from as any).mockImplementation((table: string) => {
+    vi.mocked(supabase.from).mockImplementation(((table: string) => {
       if (table === "profiles") {
         return { select: vi.fn().mockReturnValue(mockUserQuery1) };
       }
@@ -473,10 +480,10 @@ describe("Bulk Operations Integration Test", () => {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockReturnThis(),
-      };
-    });
+      } as MockDefaultQuery;
+    }) as never);
 
-    (supabase.rpc as any).mockImplementation((name: string, args: Record<string, string>) => {
+    vi.mocked(supabase.rpc).mockImplementation(((name: string, args: Record<string, string>) => {
       if (name === "admin_assign_production") {
         completedOperations.push(`assignment-${args.p_queue_id}`);
       }
@@ -489,7 +496,7 @@ describe("Bulk Operations Integration Test", () => {
         data: { id: args.p_queue_id },
         error: null,
       });
-    });
+    }) as never);
 
     // Execute concurrent bulk operations (simulated)
     const assignmentPromise = bulkAssignProduction(itemIds, teamMember1Id);

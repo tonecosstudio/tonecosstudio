@@ -1,20 +1,14 @@
-/**
- * CustomerMessageInput - Input de mensagens para clientes
- * RECRIADO DO ZERO - Versão simplificada e funcional
- * ATUALIZADO: Optimistic updates para anexos + Typing indicator
- */
-
 import { useState } from "react";
 import type { ChangeEvent, KeyboardEvent } from "react";
-import { Send, Paperclip, X } from "lucide-react";
+import { Paperclip, Send, X } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
-import { messageService } from "@/lib/services/messageService";
-import { fileUploadService } from "@/lib/services/fileUploadService";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { fileUploadService } from "@/services/support/file-upload-service";
+import { messageService } from "@/services/support/message-service";
 import { log } from "@/lib/logger";
 import { validateMessage } from "@/lib/validations/support";
-import { useTypingIndicator } from "@/hooks/useTypingIndicator";
-import { useCreateCustomerSupportConversation } from "@/hooks/customer/useCustomerSupportConversationActions";
-import { toast } from "sonner";
 
 type OptimisticAttachmentStatus = "uploading" | "uploaded" | "error";
 
@@ -29,14 +23,16 @@ interface CustomerMessageInputProps {
   conversationId: string;
   currentUserId: string;
   currentUserName: string;
-  isClosed?: boolean; // Indica se a conversa está encerrada
-  onMessageSent?: () => void; // Callback após enviar mensagem (DEPRECATED - será removido)
+  isClosed?: boolean;
+  onMessageSent?: () => void;
   addOptimisticAttachment?: (messageId: string, file: File) => string;
   updateOptimisticAttachment?: (
     messageId: string,
     tempId: string,
     updates: OptimisticAttachmentUpdate
   ) => void;
+  onCreateConversation?: () => void | Promise<void>;
+  isCreatingConversation?: boolean;
 }
 
 export function CustomerMessageInput({
@@ -47,50 +43,51 @@ export function CustomerMessageInput({
   onMessageSent,
   addOptimisticAttachment,
   updateOptimisticAttachment,
+  onCreateConversation,
+  isCreatingConversation = false,
 }: CustomerMessageInputProps) {
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const { createConversation, isCreating } = useCreateCustomerSupportConversation(currentUserId);
 
-  // Typing indicator
   const { startTyping, stopTyping } = useTypingIndicator({
     conversationId,
     currentUserId,
     currentUserName,
   });
 
-  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
     const validFiles: File[] = [];
 
     for (const file of files) {
       const validTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
+
       if (!validTypes.includes(file.type)) {
-        toast.error(`Arquivo ${file.name} não é suportado. Use JPEG, PNG ou PDF.`);
+        toast.error(`Arquivo ${file.name} nao e suportado. Use JPEG, PNG ou PDF.`);
         continue;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        toast.error(`Arquivo ${file.name} é muito grande. Máximo 5MB.`);
+        toast.error(`Arquivo ${file.name} e muito grande. Maximo 5 MB.`);
         continue;
       }
 
       validFiles.push(file);
     }
 
-    setSelectedFiles((prev) => [...prev, ...validFiles]);
-    e.target.value = "";
+    setSelectedFiles((current) => [...current, ...validFiles]);
+    event.target.value = "";
   };
 
   const handleRemoveFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setSelectedFiles((current) => current.filter((_, currentIndex) => currentIndex !== index));
   };
 
   const handleSend = async () => {
     if (!newMessage.trim() && selectedFiles.length === 0) {
-      toast.error("Digite uma mensagem ou anexe um arquivo");
+      toast.error("Digite uma mensagem ou anexe um arquivo.");
       return;
     }
 
@@ -102,21 +99,17 @@ export function CustomerMessageInput({
       }
     }
 
+    if (!currentUserId) {
+      toast.error("Voce precisa estar autenticado.");
+      return;
+    }
+
     try {
       setIsSending(true);
       setIsUploading(selectedFiles.length > 0);
-
-      // Stop typing indicator immediately when sending
       stopTyping();
 
-      if (!currentUserId) {
-        toast.error("Você precisa estar autenticado");
-        return;
-      }
-
       const messageText = newMessage.trim() || (selectedFiles.length > 0 ? "(anexo)" : "");
-
-      // Enviar mensagem primeiro
       const messageData = await messageService.sendMessage({
         conversation_id: conversationId,
         sender_id: currentUserId,
@@ -125,12 +118,10 @@ export function CustomerMessageInput({
         is_internal: false,
       });
 
-      // Limpar input imediatamente para melhor UX
       setNewMessage("");
       const filesToUpload = [...selectedFiles];
       setSelectedFiles([]);
 
-      // Upload de anexos com optimistic updates
       if (filesToUpload.length > 0 && addOptimisticAttachment && updateOptimisticAttachment) {
         log.debug("Sending customer attachments with optimistic updates", {
           conversationId,
@@ -138,7 +129,6 @@ export function CustomerMessageInput({
         });
 
         for (const file of filesToUpload) {
-          // Criar optimistic attachment
           const tempId = addOptimisticAttachment(messageData.id, file);
 
           try {
@@ -149,14 +139,6 @@ export function CustomerMessageInput({
               currentUserId
             );
 
-            log.debug("Customer attachment uploaded", {
-              conversationId,
-              messageId: messageData.id,
-              fileName: file.name,
-              url: uploadResult.public_url,
-            });
-
-            // Marcar como uploaded (será substituído pelo real via Realtime)
             updateOptimisticAttachment(messageData.id, tempId, {
               status: "uploaded",
               progress: 100,
@@ -170,7 +152,6 @@ export function CustomerMessageInput({
               fileName: file.name,
             });
 
-            // Marcar como erro
             updateOptimisticAttachment(messageData.id, tempId, {
               status: "error",
               error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -180,11 +161,11 @@ export function CustomerMessageInput({
           }
         }
       } else if (filesToUpload.length > 0) {
-        // Fallback: upload sem optimistic updates (compatibilidade)
         log.debug("Sending customer attachments in compatibility mode", {
           conversationId,
           count: filesToUpload.length,
         });
+
         for (const file of filesToUpload) {
           try {
             await fileUploadService.uploadFile(file, conversationId, messageData.id, currentUserId);
@@ -200,87 +181,84 @@ export function CustomerMessageInput({
         }
       }
 
-      toast.success("Mensagem enviada");
+      toast.success("Mensagem enviada.");
 
-      // DEPRECATED: Callback será removido em versão futura
       if (onMessageSent) {
         log.warn("CustomerMessageInput onMessageSent callback is deprecated");
         onMessageSent();
       }
     } catch (error) {
       log.error("Erro ao enviar mensagem customer", { error, conversationId, currentUserId });
-      toast.error("Erro ao enviar mensagem");
+      toast.error("Erro ao enviar mensagem.");
     } finally {
       setIsSending(false);
       setIsUploading(false);
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void handleSend();
     }
   };
 
-  // Se a conversa está encerrada, mostrar mensagem com opção de nova solicitação
   if (isClosed) {
     return (
-      <div className="bg-muted border-t p-6 text-center">
-        <div className="text-muted-foreground mb-4">
-          <p className="font-medium mb-1">Atendimento Encerrado</p>
-          <p className="text-sm">Esta conversa foi encerrada. Precisa de ajuda?</p>
+      <div className="border-t border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] p-6 text-center">
+        <div className="mb-4 text-zinc-400">
+          <p className="mb-1 font-medium">Atendimento encerrado</p>
+          <p className="text-sm">Esta conversa foi encerrada. Se precisar, abra uma nova.</p>
         </div>
         <Button
           variant="default"
-          onClick={createConversation}
-          disabled={isCreating}
+          onClick={() => void onCreateConversation?.()}
+          disabled={!onCreateConversation || isCreatingConversation}
         >
-          {isCreating ? "Criando..." : "Nova Solicitação"}
+          {isCreatingConversation ? "Criando..." : "Nova solicitacao"}
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="bg-background">
-      {/* Preview de arquivos */}
+    <div className="bg-[hsl(0,0%,5%)]">
       {selectedFiles.length > 0 && (
-        <div className="px-4 pt-3 pb-2 border-b bg-muted/20">
+        <div className="border-b border-[hsl(0,0%,12%)] bg-white/[0.02] px-4 pb-2 pt-3">
           <div className="flex flex-wrap gap-2">
             {selectedFiles.map((file, index) => {
               const isImage = file.type.startsWith("image/");
               const previewUrl = isImage ? URL.createObjectURL(file) : null;
 
               return (
-                <div key={index} className="relative inline-block">
+                <div key={`${file.name}-${index}`} className="relative inline-block">
                   {isImage && previewUrl ? (
                     <div className="relative">
                       <img
                         src={previewUrl}
                         alt={file.name}
-                        className="w-20 h-20 object-cover rounded-lg border-2 bg-white"
+                        className="h-20 w-20 rounded-lg border-2 border-[hsl(0,0%,16%)] bg-[hsl(0,0%,8%)] object-cover"
                       />
                       <button
                         type="button"
                         onClick={() => handleRemoveFile(index)}
-                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md hover:bg-destructive/90"
+                        className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-md hover:bg-destructive/90"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="h-3 w-3" />
                       </button>
-                      <span className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-1 py-0.5 truncate rounded-b-lg">
+                      <span className="absolute bottom-0 left-0 right-0 truncate rounded-b-lg bg-black/50 px-1 py-0.5 text-xs text-white">
                         {file.name}
                       </span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border-2 pr-8">
-                      <span className="text-sm truncate max-w-[120px]">{file.name}</span>
+                    <div className="flex items-center gap-2 rounded-lg border-2 border-[hsl(0,0%,16%)] bg-[hsl(0,0%,8%)] px-3 py-2 pr-8 text-zinc-100">
+                      <span className="max-w-[120px] truncate text-sm">{file.name}</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveFile(index)}
-                        className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground rounded"
+                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded hover:bg-destructive hover:text-destructive-foreground"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="h-3 w-3" />
                       </button>
                     </div>
                   )}
@@ -291,17 +269,15 @@ export function CustomerMessageInput({
         </div>
       )}
 
-      {/* Input area */}
       <div className="p-4">
-        <div className="flex gap-2 mb-2">
+        <div className="mb-2 flex gap-2">
           <textarea
             placeholder="Digite sua mensagem..."
             value={newMessage}
-            onChange={(e) => {
-              const value = e.target.value;
+            onChange={(event) => {
+              const value = event.target.value;
               setNewMessage(value);
 
-              // Start typing indicator if text is not empty
               if (value.trim()) {
                 startTyping();
               } else {
@@ -312,17 +288,17 @@ export function CustomerMessageInput({
             onBlur={stopTyping}
             rows={3}
             disabled={isSending}
-            className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 resize-none rounded-md border border-[hsl(0,0%,16%)] bg-[hsl(0,0%,8%)] px-3 py-2 text-sm text-white ring-offset-black placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(42,100%,55%)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
           <div className="flex flex-col gap-2">
             <button
               type="button"
               disabled={isSending}
               onClick={() => document.getElementById("file-input-customer")?.click()}
-              title="Anexar arquivo (JPEG, PNG, PDF até 5MB)"
-              className="w-10 h-10 flex items-center justify-center border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md disabled:opacity-50 disabled:pointer-events-none"
+              title="Anexar arquivo (JPEG, PNG ou PDF ate 5 MB)"
+              className="flex h-10 w-10 items-center justify-center rounded-md border border-[hsl(0,0%,16%)] bg-[hsl(0,0%,8%)] text-zinc-100 hover:bg-[hsl(0,0%,10%)] disabled:pointer-events-none disabled:opacity-50"
             >
-              <Paperclip className="w-4 h-4" />
+              <Paperclip className="h-4 w-4" />
             </button>
             <input
               id="file-input-customer"
@@ -334,25 +310,24 @@ export function CustomerMessageInput({
             />
             <button
               type="button"
-              onClick={handleSend}
+              onClick={() => void handleSend()}
               disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0)}
-              className="w-10 h-10 flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 rounded-md disabled:opacity-50 disabled:pointer-events-none"
+              className="flex h-10 w-10 items-center justify-center rounded-md bg-[hsl(42,100%,50%)] text-black hover:bg-[hsl(42,100%,58%)] disabled:pointer-events-none disabled:opacity-50"
             >
-              <Send className="w-4 h-4" />
+              <Send className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {/* Info */}
-        <div className="flex justify-between text-xs text-muted-foreground">
+        <div className="flex justify-between text-xs text-zinc-500">
           <span>
             {newMessage.length}/2000 caracteres
-            {selectedFiles.length > 0 && ` • ${selectedFiles.length} arquivo(s)`}
+            {selectedFiles.length > 0 && ` | ${selectedFiles.length} arquivo(s)`}
           </span>
           <span>
             {isUploading
               ? "Enviando arquivos..."
-              : "Enter para enviar, Shift+Enter para quebra de linha"}
+              : "Enter para enviar. Shift+Enter para quebra de linha."}
           </span>
         </div>
       </div>

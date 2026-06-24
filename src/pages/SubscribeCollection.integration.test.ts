@@ -10,11 +10,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getActiveCollections, getRotationSchedule } from '@/services/collection-service';
+import { getActiveCollections, getRotationSchedule } from '@/services/collections/collection-service';
 import { nowInBahia } from '@/lib/timezone';
 
 // Mock the services
-vi.mock('@/services/collection-service');
+vi.mock('@/services/collections/collection-service');
 vi.mock('@/lib/timezone');
 
 describe('SubscribeCollection - Collection Rotation Integration', () => {

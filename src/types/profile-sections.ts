@@ -12,10 +12,17 @@ export type ProfilePaymentMethod = {
 export type ActiveSubscription = {
   id: string;
   user_id: string;
+  collection_id: string | null;
   plan_type: string | null;
-  status: string | null;
+  status: string;
   created_at: string;
   updated_at: string;
+  next_delivery_at: string | null;
+  started_at: string | null;
+  deliveries_completed: number;
+  deliveries_total: number | null;
+  total_paid: number | null;
+  payment_method: string | null;
 };
 
 export type SupportConversation = {

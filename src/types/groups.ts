@@ -58,6 +58,7 @@ export interface GroupAttachment {
   message_id: string;
   file_name: string;
   file_path: string;
+  access_url?: string | null;
   file_size: number;
   file_type: string;
   thumbnail_path: string | null;

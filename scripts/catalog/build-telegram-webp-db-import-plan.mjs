@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { defaultTelegramWebpOutput } from "./telegram-paths.mjs";
 
 function argValue(name, fallback = null) {
   const equalsArg = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -14,7 +15,7 @@ const OUTPUT = path.resolve(
   argValue(
     "output",
     process.env.ORDAX_WEBP_OUTPUT ||
-      "C:/Users/Casa/Downloads/ordax-catalogo-webp-final",
+      defaultTelegramWebpOutput(),
   ),
 );
 const SITE_PLAN = path.resolve(
@@ -38,6 +39,18 @@ const TAG_POLICY_PATH = path.resolve(
 
 const IMPORT_SOURCE_TYPE = argValue("source-type", "bulk_import");
 const IMPORT_SLUG = argValue("slug", "telegram-webp-final-marvel-dc-2026-06-04");
+const STORAGE_BUCKET = argValue(
+  "storage-bucket",
+  process.env.CLOUDFLARE_CATALOG_STORAGE_BUCKET ||
+    process.env.CLOUDFLARE_R2_PUBLIC_BUCKET_NAME ||
+    "cloudflare-r2",
+);
+const ASSET_BASE_URL = argValue(
+  "asset-base-url",
+  process.env.VITE_CATALOG_ASSET_BASE_URL ||
+    process.env.CATALOG_ASSET_BASE_URL ||
+    "https://ordax.com.br",
+).replace(/\/+$/, "");
 const SOURCE_FOLDER_ID = argValue("source-folder-id", "telegram-2370335738-images");
 const SOURCE_FOLDER_NAME = argValue("source-folder-name", "telegram-2370335738-images");
 const SOURCE_DRIVE_PATH = argValue(
@@ -186,9 +199,96 @@ function normalizeRelpath(value) {
   return String(value || "").replaceAll("\\", "/").replace(/^\/+/, "");
 }
 
+function publicAssetUrl(storagePath) {
+  const cleanPath = normalizeRelpath(storagePath);
+  return cleanPath ? `${ASSET_BASE_URL}/${cleanPath}` : null;
+}
+
+function deriveIdentityStemFromPath(filePath) {
+  const normalizedPath = normalizeRelpath(filePath).toLowerCase();
+  if (!normalizedPath) return "";
+
+  const segments = normalizedPath.split("/");
+  const fileName = segments.pop() || "";
+  const directory = segments.slice(-4, -1).filter(Boolean);
+  const stem = fileName.replace(/\.[^.]+$/, "");
+  if (!stem) return "";
+
+  const withoutObjectId = stem.replace(/-\d+$/, "");
+  const withoutAngle = withoutObjectId.replace(/-\d+$/, "");
+  const productStem = withoutAngle || withoutObjectId || stem;
+  return [...directory, productStem].join("|");
+}
+
+const VARIANT_PHRASE_LABELS = {
+  "final form": "Forma Final",
+  throne: "No Trono",
+  "figura pair": "Dupla",
+  pair: "Dupla",
+  "mecha figura": "Mecha",
+  "wall figura": "Painel",
+};
+
+const GENERIC_VARIANT_WORDS = new Set([
+  "figura",
+  "estatua",
+  "miniatura",
+  "modelo",
+  "pose",
+  "default",
+]);
+
+function titleCaseWords(value) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function deriveVariantNameFromPaths(item) {
+  const basePath = item.storage_path || item.display_relpath || "";
+  const normalizedPath = normalizeRelpath(basePath).toLowerCase();
+  if (!normalizedPath) return null;
+
+  const fileName = normalizedPath.split("/").pop() || "";
+  const stem = fileName.replace(/\.[^.]+$/, "");
+  if (!stem) return null;
+
+  const withoutObjectId = stem.replace(/-\d+$/, "");
+  const withoutAngle = withoutObjectId.replace(/-\d+$/, "");
+  const productStem = withoutAngle || withoutObjectId || stem;
+  const characterSlug = slugish(item.character_name || item.name);
+
+  let remainder = productStem;
+  if (characterSlug && remainder.startsWith(`${characterSlug}-`)) {
+    remainder = remainder.slice(characterSlug.length + 1);
+  } else if (characterSlug && remainder === characterSlug) {
+    remainder = "";
+  }
+
+  if (!remainder) return null;
+
+  const normalizedRemainder = remainder.replace(/-/g, " ").trim();
+  if (!normalizedRemainder) return null;
+  if (/^\d+$/.test(normalizedRemainder)) return `Versao ${normalizedRemainder}`;
+  if (VARIANT_PHRASE_LABELS[normalizedRemainder]) {
+    return VARIANT_PHRASE_LABELS[normalizedRemainder];
+  }
+
+  const meaningfulWords = normalizedRemainder
+    .split(/\s+/)
+    .filter((word) => word && !GENERIC_VARIANT_WORDS.has(word));
+  if (meaningfulWords.length === 0) return null;
+  return titleCaseWords(meaningfulWords.join(" "));
+}
+
 function normalizePublicTag(value) {
   const normalized = normalizeComparable(value);
-  return publicTagAliases[normalized] || normalized;
+  const aliased = publicTagAliases[normalized] || normalized;
+  if (aliased === "sensitive blur") return "sensitive-blur";
+  if (aliased === "x 23") return "x-23";
+  return aliased.replace(/\s+/g, "-");
 }
 
 function isPublicTag(tag) {
@@ -248,7 +348,91 @@ function publicTags(item) {
   return tags.slice(0, 20);
 }
 
+function sensitivityTags(item) {
+  const text = [
+    item.source_file_name,
+    item.name,
+    item.proposed_name,
+    item.character_name,
+    item.variant_name,
+    item.source_title,
+    item.category,
+    item.subcategory,
+    item.taxonomy_slug,
+    item.storage_path,
+    item.display_relpath,
+    ...(Array.isArray(item.tags) ? item.tags : []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/[_-]+/g, " ");
+
+  const tags = [];
+  const blurPatterns = [
+    /\bnude\b/i,
+    /\bnaked\b/i,
+    /\btopless\b/i,
+    /\bnsfw\b/i,
+    /\bexplicit\b/i,
+    /\blewd\b/i,
+    /\bsexy\b/i,
+    /\bhentai\b/i,
+    /\btentacle\b/i,
+    /\bpinup\b/i,
+    /\bbondage\b/i,
+    /\blingerie\b/i,
+    /\bhanging\b/i,
+  ];
+  const reviewPatterns = [
+    /\bbikini\b/i,
+    /\bswimsuit\b/i,
+    /\bbunny\b/i,
+    /\bmaid\b/i,
+    /\bshirtless\b/i,
+    /\bthicc\b/i,
+    /\bbreast\b/i,
+    /\bboob/i,
+  ];
+  const ageAmbiguousPatterns = [
+    /\bchibi\b/i,
+    /\bschool\b/i,
+    /\bschoolgirl\b/i,
+    /\bchild\b/i,
+    /\bkid\b/i,
+    /\banya\b/i,
+    /\barale\b/i,
+    /\bsakura kinomoto\b/i,
+  ];
+
+  if (blurPatterns.some((pattern) => pattern.test(text))) {
+    tags.push("nsfw");
+    tags.push("sensitive-blur");
+  } else if (reviewPatterns.some((pattern) => pattern.test(text))) {
+    tags.push("sensitive-review");
+  }
+
+  if (ageAmbiguousPatterns.some((pattern) => pattern.test(text))) {
+    tags.push("age-ambiguous-review");
+  }
+
+  return tags;
+}
+
+function catalogTags(item) {
+  return Array.from(new Set([...publicTags(item), ...sensitivityTags(item)])).slice(
+    0,
+    24,
+  );
+}
+
 function canonicalIdentityKey(item) {
+  const storageIdentity =
+    deriveIdentityStemFromPath(item.storage_path) ||
+    deriveIdentityStemFromPath(item.display_relpath);
+  if (storageIdentity) {
+    return storageIdentity;
+  }
+
   return [
     item.source_title,
     item.character_name || item.name,
@@ -295,9 +479,14 @@ function buildQueueRow(item, uploadByImportId) {
   const displayUpload = upload.display || {};
   const thumbUpload = upload.thumb || {};
   const mediaType = normalizeMediaType(item.media_type, item.category);
-  const tags = publicTags({ ...item, media_type: mediaType });
+  const tags = catalogTags({ ...item, media_type: mediaType });
   const name = cleanName(item.proposed_name || item.name);
   const characterName = cleanName(item.character_name || item.proposed_name || item.name);
+  const variantName = cleanName(item.variant_name) || deriveVariantNameFromPaths({
+    ...item,
+    character_name: characterName,
+    name,
+  });
   const sourceTitle = cleanName(item.source_title);
   const sourceFileName = item.source_file_name || path.posix.basename(item.display_relpath || "");
   const thumbPath = normalizeRelpath(item.thumbnail_storage_path);
@@ -312,14 +501,14 @@ function buildQueueRow(item, uploadByImportId) {
     file_name: sourceFileName,
     mime_type: "image/webp",
     original_size_bytes: null,
-    storage_bucket: item.storage_bucket || "catalog",
+    storage_bucket: STORAGE_BUCKET,
     storage_path: normalizeRelpath(item.storage_path),
-    thumbnail_url: null,
+    thumbnail_url: publicAssetUrl(thumbPath),
     image_hash: displayUpload.sha256 || item.original_sha256 || null,
     status: "approved",
     proposed_name: name,
     character_name: characterName || name,
-    variant_name: cleanName(item.variant_name) || null,
+    variant_name: variantName || null,
     variant_type: item.variant_type || "default",
     source_title: sourceTitle || null,
     media_type: mediaType,
@@ -467,7 +656,9 @@ async function main() {
     source_type_policy:
       "Usa bulk_import porque o schema atual de catalog_import_items nao aceita telegram_webp_final como source_type.",
     thumbnail_policy:
-      "O schema atual publica display em storage_path. O caminho thumb fica preservado neste plano para schema futuro ou URL publica substituida antes da importacao.",
+      "O schema atual publica display em storage_path e usa thumbnail_url publica para o thumb WebP.",
+    storage_bucket: STORAGE_BUCKET,
+    asset_base_url: ASSET_BASE_URL,
     ready_import_items: readyItems.length,
     queue_rows: queueRows.length,
     publish_payloads: publishPayloads.length,
@@ -476,6 +667,17 @@ async function main() {
     by_media_type: countBy(queueRows, "media_type"),
     by_category: countBy(queueRows, "category"),
     by_subcategory: countBy(queueRows, "subcategory"),
+    by_sensitive_tag: {
+      "sensitive-blur": queueRows.filter((row) =>
+        row.tags.includes("sensitive-blur"),
+      ).length,
+      "sensitive-review": queueRows.filter((row) =>
+        row.tags.includes("sensitive-review"),
+      ).length,
+      "age-ambiguous-review": queueRows.filter((row) =>
+        row.tags.includes("age-ambiguous-review"),
+      ).length,
+    },
     batch: buildBatch(sitePlan.summary || {}, readyItems.length),
     outputs: {
       json: JSON_OUT,

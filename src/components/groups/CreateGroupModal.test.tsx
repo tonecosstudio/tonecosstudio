@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderWithProviders, screen, waitFor } from "@/test/utils/test-utils";
 import userEvent from "@testing-library/user-event";
 import { CreateGroupModal } from "./CreateGroupModal";
-import { groupService } from "@/lib/services/groupService";
+import { groupService } from "@/services/groups/group-service";
 import { supabase } from "@/integrations/supabase/client";
 import { mockQuerySuccess } from "@/test/utils/supabase-mocks";
 
 // Mock dos serviços
-vi.mock("@/lib/services/groupService");
+vi.mock("@/services/groups/group-service");
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({
     toast: vi.fn(),
@@ -27,7 +27,7 @@ describe("CreateGroupModal", () => {
   const selectOption = async (
     user: ReturnType<typeof userEvent.setup>,
     fieldName: string,
-    optionName: string
+    optionName: string,
   ) => {
     await user.click(screen.getByRole("combobox", { name: fieldName }));
     await user.click(await screen.findByRole("option", { name: optionName }));
@@ -54,13 +54,13 @@ describe("CreateGroupModal", () => {
           mockQuerySuccess([
             { id: "col-1", name: "Coleção 1" },
             { id: "col-2", name: "Coleção 2" },
-          ])
+          ]),
         );
         return Promise.resolve(
           mockQuerySuccess([
             { id: "col-1", name: "Coleção 1" },
             { id: "col-2", name: "Coleção 2" },
-          ])
+          ]),
         );
       }),
     } as any);
@@ -68,7 +68,11 @@ describe("CreateGroupModal", () => {
 
   it("deve renderizar o modal quando aberto", () => {
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     expect(screen.getByText("Criar Novo Grupo")).toBeInTheDocument();
@@ -78,7 +82,11 @@ describe("CreateGroupModal", () => {
 
   it("não deve renderizar quando fechado", () => {
     renderWithProviders(
-      <CreateGroupModal open={false} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={false}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     expect(screen.queryByText("Criar Novo Grupo")).not.toBeInTheDocument();
@@ -88,7 +96,11 @@ describe("CreateGroupModal", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     const nameInput = screen.getByLabelText("Nome do Grupo");
@@ -98,7 +110,9 @@ describe("CreateGroupModal", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText("Nome deve ter pelo menos 3 caracteres")).toBeInTheDocument();
+      expect(
+        screen.getByText("Nome deve ter pelo menos 3 caracteres"),
+      ).toBeInTheDocument();
     });
   });
 
@@ -106,7 +120,11 @@ describe("CreateGroupModal", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     const nameInput = screen.getByLabelText("Nome do Grupo");
@@ -116,7 +134,9 @@ describe("CreateGroupModal", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText("Nome deve ter no maximo 100 caracteres")).toBeInTheDocument();
+      expect(
+        screen.getByText("Nome deve ter no maximo 100 caracteres"),
+      ).toBeInTheDocument();
     });
   });
 
@@ -136,7 +156,11 @@ describe("CreateGroupModal", () => {
     });
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     // Preencher nome
@@ -166,7 +190,11 @@ describe("CreateGroupModal", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     // Selecionar tipo assinantes
@@ -200,7 +228,11 @@ describe("CreateGroupModal", () => {
     });
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     // Preencher nome
@@ -239,7 +271,11 @@ describe("CreateGroupModal", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     // Selecionar tipo coleção
@@ -256,7 +292,11 @@ describe("CreateGroupModal", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     // Preencher nome
@@ -280,7 +320,11 @@ describe("CreateGroupModal", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     // Selecionar tipo lancamentos
@@ -312,7 +356,11 @@ describe("CreateGroupModal", () => {
     });
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     // Preencher nome
@@ -349,7 +397,11 @@ describe("CreateGroupModal", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     // Selecionar tipo pedidos
@@ -384,7 +436,11 @@ describe("CreateGroupModal", () => {
     });
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     // Preencher nome
@@ -429,7 +485,11 @@ describe("CreateGroupModal", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     const cancelButton = screen.getByRole("button", { name: /cancelar/i });
@@ -443,11 +503,15 @@ describe("CreateGroupModal", () => {
 
     // Mock que demora para resolver
     vi.mocked(groupService.createGroup).mockImplementation(
-      () => new Promise((resolve) => setTimeout(resolve, 1000))
+      () => new Promise((resolve) => setTimeout(resolve, 1000)),
     );
 
     renderWithProviders(
-      <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
+      <CreateGroupModal
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSuccess={mockOnSuccess}
+      />,
     );
 
     // Preencher formulário

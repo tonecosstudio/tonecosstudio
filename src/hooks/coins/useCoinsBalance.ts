@@ -1,41 +1,18 @@
-/**
- * Hook unificado para gerenciar saldo de coins
- * 
- * Este hook substitui implementações duplicadas e fornece
- * uma interface consistente para acessar o saldo de coins.
- * 
- * @module hooks/coins/useCoinsBalance
- */
-
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { assertCurrentUserId, requireAuthenticatedUserId } from '@/services/auth/current-user';
-import { initializeCurrentUserCoinBalanceRpc } from '@/services/coins-mutations-service';
-import { invalidateCoinsTransactions } from './useCoinsTransactions';
-import type {
-  CoinsBalanceResponse,
-  CoinsAmount,
-  UserId,
-} from '@/types/coins';
-
-// ============================================================================
-// QUERY KEYS
-// ============================================================================
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { assertCurrentUserId } from "@/services/auth/current-user";
+import { fetchCoinsBalance } from "@/services/coins/coins-balance-service";
+import { initializeCurrentUserCoinBalanceRpc } from "@/services/coins/coins-mutations-service";
+import { invalidateCoinsTransactions } from "./useCoinsTransactions";
+import type { CoinsAmount, CoinsBalanceResponse, UserId } from "@/types/coins";
 
 export const coinsBalanceKeys = {
-  all: ['coins', 'balance'] as const,
+  all: ["coins", "balance"] as const,
   user: (userId: UserId) => [...coinsBalanceKeys.all, userId] as const,
 };
 
-// ============================================================================
-// CONFIGURAÇÃO DE CACHE
-// ============================================================================
-
 const CACHE_CONFIG = {
-  /** Tempo que dados são considerados "frescos" (30 segundos) */
   STALE_TIME: 30 * 1000,
-  /** Tempo que dados ficam em cache (5 minutos) */
   CACHE_TIME: 5 * 60 * 1000,
 };
 
@@ -43,76 +20,12 @@ interface UseCoinsBalanceOptions {
   enabled?: boolean;
 }
 
-// ============================================================================
-// HOOK PRINCIPAL
-// ============================================================================
-
-/**
- * Hook para buscar saldo de coins de um usuário
- * 
- * @param userId - ID do usuário (opcional, usa usuário logado se não fornecido)
- * @returns Query com saldo de coins
- * 
- * @example
- * ```tsx
- * function MyComponent() {
- *   const { data: balance, isLoading } = useCoinsBalance();
- *   
- *   if (isLoading) return <Loading />;
- *   
- *   return <div>Você tem {balance?.balance} coins</div>;
- * }
- * ```
- */
 export function useCoinsBalance(userId?: UserId | null, options: UseCoinsBalanceOptions = {}) {
   const { enabled = true } = options;
 
   return useQuery({
     queryKey: userId ? coinsBalanceKeys.user(userId) : coinsBalanceKeys.all,
-    queryFn: async (): Promise<CoinsBalanceResponse> => {
-      // Se userId não foi fornecido, busca usuário logado
-      let targetUserId = userId;
-      
-      if (!targetUserId) {
-        targetUserId = await requireAuthenticatedUserId();
-      } else {
-        await assertCurrentUserId(targetUserId);
-      }
-      
-      // Busca saldo de coins
-      const { data, error } = await supabase
-        .from('user_coins')
-        .select('balance, total_earned, total_spent, updated_at')
-        .eq('user_id', targetUserId)
-        .maybeSingle();
-      
-      if (error) {
-        throw new Error(`Erro ao buscar saldo de coins: ${error.message}`);
-      }
-      
-      // Se usuário não tem registro de coins, retorna saldo zero
-      if (!data) {
-        const now = new Date().toISOString();
-
-        return {
-          user_id: targetUserId,
-          balance: 0,
-          total_earned: 0,
-          total_spent: 0,
-          last_updated: now,
-          updated_at: now,
-        };
-      }
-      
-      return {
-        user_id: targetUserId,
-        balance: data.balance,
-        total_earned: data.total_earned,
-        total_spent: data.total_spent,
-        last_updated: data.updated_at,
-        updated_at: data.updated_at,
-      };
-    },
+    queryFn: (): Promise<CoinsBalanceResponse> => fetchCoinsBalance(userId),
     enabled,
     staleTime: CACHE_CONFIG.STALE_TIME,
     gcTime: CACHE_CONFIG.CACHE_TIME,
@@ -120,38 +33,14 @@ export function useCoinsBalance(userId?: UserId | null, options: UseCoinsBalance
   });
 }
 
-// ============================================================================
-// HOOK DE VALIDAÇÃO
-// ============================================================================
-
-/**
- * Hook para verificar se usuário tem saldo suficiente
- * 
- * @param userId - ID do usuário
- * @param requiredAmount - Quantidade de coins necessária
- * @returns Query com resultado da validação
- * 
- * @example
- * ```tsx
- * function PurchaseButton({ price }: { price: number }) {
- *   const { data: hasSufficient } = useHasSufficientBalance(null, price);
- *   
- *   return (
- *     <button disabled={!hasSufficient}>
- *       Comprar ({price} coins)
- *     </button>
- *   );
- * }
- * ```
- */
 export function useHasSufficientBalance(
   userId: UserId | null,
-  requiredAmount: CoinsAmount
+  requiredAmount: CoinsAmount,
 ) {
   const { data: balance } = useCoinsBalance(userId);
-  
+
   return useQuery({
-    queryKey: ['coins', 'sufficient', userId, requiredAmount],
+    queryKey: ["coins", "sufficient", userId, requiredAmount],
     queryFn: async (): Promise<boolean> => {
       if (!balance) return false;
       return balance.balance >= requiredAmount;
@@ -161,87 +50,29 @@ export function useHasSufficientBalance(
   });
 }
 
-// ============================================================================
-// HOOK DE SALDO APÓS COMPRA (PREVIEW)
-// ============================================================================
-
-/**
- * Hook para calcular saldo após uma compra (preview)
- * 
- * Útil para mostrar ao usuário quanto sobrará após a compra
- * 
- * @param userId - ID do usuário
- * @param price - Preço do item
- * @returns Saldo após compra (ou null se insuficiente)
- * 
- * @example
- * ```tsx
- * function PurchasePreview({ price }: { price: number }) {
- *   const { data: balanceAfter } = useBalanceAfterPurchase(null, price);
- *   
- *   if (balanceAfter === null) {
- *     return <div>Saldo insuficiente</div>;
- *   }
- *   
- *   return <div>Após a compra você terá {balanceAfter} coins</div>;
- * }
- * ```
- */
 export function useBalanceAfterPurchase(
   userId: UserId | null,
-  price: CoinsAmount
+  price: CoinsAmount,
 ) {
   const { data: balance } = useCoinsBalance(userId);
-  
+
   return useQuery({
-    queryKey: ['coins', 'balance-after', userId, price],
+    queryKey: ["coins", "balance-after", userId, price],
     queryFn: async (): Promise<CoinsAmount | null> => {
       if (!balance) return null;
-      
+
       const balanceAfter = balance.balance - price;
-      
-      // Se saldo ficaria negativo, retorna null
-      if (balanceAfter < 0) return null;
-      
-      return balanceAfter;
+      return balanceAfter < 0 ? null : balanceAfter;
     },
     enabled: !!balance && price > 0,
     staleTime: CACHE_CONFIG.STALE_TIME,
   });
 }
 
-// ============================================================================
-// HOOK DE INICIALIZAÇÃO DE SALDO
-// ============================================================================
-
-/**
- * Hook para criar o registro de saldo de coins de um usuario
- * 
- * Usado quando o usuario ainda nao tem linha em user_coins.
- * Creditos positivos devem passar por admin_add_coins_to_user.
- * 
- * @returns Mutation para criar saldo zero
- * 
- * @example
- * ```tsx
- * function EnsureCoinBalance() {
- *   const initBalance = useInitializeBalance();
- *   
- *   const handleClaim = () => {
- *     initBalance.mutate({
- *       userId: user.id,
- *       description: 'Bootstrap de saldo'
- *     });
- *   };
- *   
- *   return <button onClick={handleClaim}>Preparar saldo</button>;
- * }
- * ```
- */
 export function useInitializeBalance() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: async (params: {
       userId: UserId;
@@ -257,37 +88,25 @@ export function useInitializeBalance() {
     onSuccess: (data, variables) => {
       invalidateCoinsBalance(queryClient, variables.userId);
       invalidateCoinsTransactions(queryClient);
-      
+
       toast({
-        title: 'Saldo preparado!',
+        title: "Saldo preparado!",
         description: `Saldo atual: ${data.balance} coins.`,
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erro ao inicializar saldo',
+        title: "Erro ao inicializar saldo",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 }
 
-// ============================================================================
-// UTILITÁRIOS
-// ============================================================================
-
-/**
- * Invalida cache de saldo de coins
- * 
- * Útil após operações que modificam o saldo
- * 
- * @param queryClient - Cliente do React Query
- * @param userId - ID do usuário (opcional, invalida todos se não fornecido)
- */
 export function invalidateCoinsBalance(
   queryClient: ReturnType<typeof useQueryClient>,
-  userId?: UserId
+  userId?: UserId,
 ) {
   queryClient.invalidateQueries({
     queryKey: coinsBalanceKeys.all,
@@ -300,32 +119,24 @@ export function invalidateCoinsBalance(
   }
 }
 
-/**
- * Atualiza cache de saldo otimisticamente
- * 
- * Útil para feedback imediato ao usuário
- * 
- * @param queryClient - Cliente do React Query
- * @param userId - ID do usuário
- * @param newBalance - Novo saldo
- */
 export function updateCoinsBalanceCache(
   queryClient: ReturnType<typeof useQueryClient>,
   userId: UserId,
-  newBalance: CoinsAmount
+  newBalance: CoinsAmount,
 ) {
   queryClient.setQueryData<CoinsBalanceResponse>(
     coinsBalanceKeys.user(userId),
     (old) => {
       if (!old) return old;
+
       const now = new Date().toISOString();
-      
+
       return {
         ...old,
         balance: newBalance,
         last_updated: now,
         updated_at: now,
       };
-    }
+    },
   );
 }

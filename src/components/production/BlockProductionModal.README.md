@@ -101,8 +101,8 @@ When a resolution time is provided:
 ### Backend Service
 
 The component integrates with:
-- `blockProduction(id, reason)` from `@/services/admin/production-service`
-- `calculateEstimatedCompletion(productionQueueId)` from `@/services/admin/stage-service`
+- `blockProduction(id, reason)` from `@/services/admin/production/production-service`
+- `calculateEstimatedCompletion(productionQueueId)` from `@/services/admin/production/stage-service`
 
 ### Query Invalidation
 

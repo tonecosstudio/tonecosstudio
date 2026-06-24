@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchProductionGlobalLimitSetting,
   updateProductionGlobalLimitSetting,
-} from "@/services/admin/production-global-limit-settings-service";
+} from "@/services/admin/production/production-global-limit-settings-service";
 
 export function useProductionGlobalLimitSetting() {
   return useQuery({

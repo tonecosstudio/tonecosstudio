@@ -98,14 +98,14 @@ describe("BlockedItemsView", () => {
 
     renderComponent();
 
-    expect(screen.getByText("Nenhum Item Bloqueado")).toBeInTheDocument();
+    expect(screen.getByText("Nenhum item bloqueado")).toBeInTheDocument();
     expect(screen.getByText("Nao ha itens de producao bloqueados no momento.")).toBeInTheDocument();
   });
 
   it("displays blocked items from the hook", () => {
     renderComponent();
 
-    expect(screen.getByText("Itens Bloqueados")).toBeInTheDocument();
+    expect(screen.getByText("Itens bloqueados")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("Joao Silva")).toBeInTheDocument();
     expect(screen.getByText("Ana Costa")).toBeInTheDocument();

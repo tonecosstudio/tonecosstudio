@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Eye, EyeOff, Sparkles } from "lucide-react";
+import { ASSETS } from "@/config/constants";
 
 type RotationType = 'fixed' | 'odd_months' | 'even_months';
 
@@ -77,7 +78,7 @@ export function CollectionDetailModal({
           {/* Large Image */}
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
             <img
-              src={collection.image_url || '/placeholder-collection.jpg'}
+              src={collection.image_url || ASSETS.PLACEHOLDER_IMAGE_URL}
               alt={collection.name}
               className="w-full h-full object-cover"
             />

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { sendPaymentLink } from "@/services/admin/send-payment-link-service";
+import { sendPaymentLink } from "@/services/admin/payments/send-payment-link-service";
 
 export function useSendPaymentLink(quoteId: string) {
   const qc = useQueryClient();

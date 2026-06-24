@@ -41,6 +41,7 @@ interface FileUploadComponentProps {
   onUploadComplete?: (files: PaymentFile[]) => void;
   onError?: (error: Error) => void;
   disabled?: boolean;
+  embedded?: boolean;
 }
 
 interface UploadFile {
@@ -61,6 +62,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
   onUploadComplete,
   onError,
   disabled = false,
+  embedded = false,
 }) => {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -80,7 +82,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
     // Validate file size
     if (file.size > maxSizeBytes) {
       errors.push(
-        `"${file.name}" is too large. Maximum size is ${Math.round(maxSizeBytes / (1024 * 1024))}MB.`
+        `"${file.name}" excede o limite. O tamanho maximo e ${Math.round(maxSizeBytes / (1024 * 1024))}MB.`
       );
     }
 
@@ -91,7 +93,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
 
     if (!isValidType) {
       errors.push(
-        `"${file.name}" has an invalid file type. Accepted types: ${acceptedTypes.join(", ")}.`
+        `"${file.name}" tem um tipo invalido. Tipos aceitos: ${acceptedTypes.join(", ")}.`
       );
     }
 
@@ -99,13 +101,13 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
     const extension = file.name.split(".").pop()?.toLowerCase();
     const allowedExtensions = ["jpg", "jpeg", "png", "pdf"];
     if (extension && !allowedExtensions.includes(extension)) {
-      errors.push(`"${file.name}" has an unsupported file extension.`);
+      errors.push(`"${file.name}" tem uma extensao nao suportada.`);
     }
 
     // Reject executable files
     const executableExtensions = ["exe", "sh", "bat", "cmd", "com", "app", "dmg"];
     if (extension && executableExtensions.includes(extension)) {
-      errors.push(`"${file.name}" is an executable file and is not allowed for security reasons.`);
+      errors.push(`"${file.name}" e um executavel e nao e permitido por seguranca.`);
     }
 
     return errors;
@@ -126,7 +128,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
 
       if (currentFileCount + newFileCount > maxFiles) {
         setValidationErrors([
-          `Maximum of ${maxFiles} files allowed. You have ${currentFileCount} files and tried to add ${newFileCount} more.`,
+          `Limite de ${maxFiles} arquivos. Existem ${currentFileCount} arquivos na fila e voce tentou adicionar mais ${newFileCount}.`,
         ]);
         return;
       }
@@ -184,7 +186,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
       log.error("Camera access error", { error, paymentId });
       setValidationErrors((prev) => [
         ...prev,
-        "Unable to access camera. Please check permissions.",
+        "Nao foi possivel acessar a camera. Verifique as permissoes.",
       ]);
     }
   };
@@ -287,7 +289,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
               ? {
                   ...f,
                   status: "error",
-                  error: error instanceof Error ? error.message : "Upload failed",
+                  error: error instanceof Error ? error.message : "Falha no upload",
                 }
               : f
           )
@@ -335,35 +337,24 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
   ).length;
   const canUpload = pendingCount > 0 && !isUploading && !disabled;
 
-  return (
-    <Card className="w-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-          <Upload className="h-5 w-5" />
-          Upload Payment Proof
-        </CardTitle>
-        <CardDescription className="text-sm sm:text-base">
-          Upload images or PDFs of your payment confirmation. Maximum {maxFiles} files,{" "}
-          {Math.round(maxSizeBytes / (1024 * 1024))}MB each.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+  const uploadBody = (
+    <div className="space-y-4 text-white">
         {/* File Stats */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="text-xs sm:text-sm">
-              {files.length} / {maxFiles} files
+            <Badge variant="outline" className="border-[hsl(0,0%,18%)] text-xs text-zinc-200 sm:text-sm">
+              {files.length} / {maxFiles} arquivos
             </Badge>
             {completedCount > 0 && (
-              <Badge variant="secondary" className="gap-1 text-xs sm:text-sm">
+              <Badge className="gap-1 bg-emerald-500/15 text-xs text-emerald-100 sm:text-sm">
                 <CheckCircle className="h-3 w-3" />
-                {completedCount} uploaded
+                {completedCount} enviados
               </Badge>
             )}
             {errorCount > 0 && (
               <Badge variant="destructive" className="gap-1 text-xs sm:text-sm">
                 <AlertCircle className="h-3 w-3" />
-                {errorCount} failed
+                {errorCount} com falha
               </Badge>
             )}
           </div>
@@ -374,11 +365,11 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
               size="sm"
               onClick={clearAllFiles}
               disabled={isUploading}
-              className="mt-2 sm:mt-0"
+              className="mt-2 text-zinc-300 hover:bg-white/10 hover:text-white sm:mt-0"
             >
               <X className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">Clear All</span>
-              <span className="sm:hidden">Clear</span>
+              <span className="hidden sm:inline">Limpar fila</span>
+              <span className="sm:hidden">Limpar</span>
             </Button>
           )}
         </div>
@@ -403,10 +394,10 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
             }
           }}
           className={cn(
-            "border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer transition-colors",
+            "cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors sm:p-8",
             isDragOver
-              ? "border-primary bg-primary/5"
-              : "border-muted-foreground/25 hover:border-muted-foreground/50",
+              ? "border-[hsl(42,100%,55%)] bg-[hsl(42,100%,55%)]/10"
+              : "border-[hsl(0,0%,18%)] bg-[hsl(0,0%,7%)] hover:border-[hsl(42,100%,55%)]/70",
             (disabled || isUploading || files.length >= maxFiles) && "opacity-50 cursor-not-allowed"
           )}
           onClick={() => {
@@ -434,15 +425,15 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
           />
 
           <div className="flex flex-col items-center gap-4">
-            <div className="rounded-full bg-muted p-3 sm:p-4">
-              <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+            <div className="rounded-full bg-[hsl(42,100%,55%)]/10 p-3 sm:p-4">
+              <Upload className="h-6 w-6 text-[hsl(42,100%,55%)] sm:h-8 sm:w-8" />
             </div>
 
             <div className="text-center">
-              <p className="text-base sm:text-lg font-medium">
-                {isDragOver ? "Drop files here" : "Drag & drop files here"}
+              <p className="text-base font-medium text-white sm:text-lg">
+                {isDragOver ? "Solte os arquivos aqui" : "Arraste os arquivos para esta area"}
               </p>
-              <p className="text-sm text-muted-foreground mt-1">or click to browse files</p>
+              <p className="mt-1 text-sm text-zinc-400">ou clique para selecionar arquivos</p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
@@ -455,11 +446,11 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
                   fileInputRef.current?.click();
                 }}
                 disabled={disabled || isUploading || files.length >= maxFiles}
-                className="w-full sm:w-auto"
+                className="w-full border-[hsl(0,0%,18%)] bg-[hsl(0,0%,8%)] text-zinc-100 hover:bg-[hsl(0,0%,10%)] sm:w-auto"
               >
                 <File className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Browse Files</span>
-                <span className="sm:hidden">Browse</span>
+                <span className="hidden sm:inline">Selecionar arquivos</span>
+                <span className="sm:hidden">Selecionar</span>
               </Button>
 
               {isMobileCameraSupported && (
@@ -472,17 +463,17 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
                     handleCameraCapture();
                   }}
                   disabled={disabled || isUploading || files.length >= maxFiles}
-                  className="w-full sm:w-auto"
+                  className="w-full border-[hsl(0,0%,18%)] bg-[hsl(0,0%,8%)] text-zinc-100 hover:bg-[hsl(0,0%,10%)] sm:w-auto"
                 >
                   <Camera className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Take Photo</span>
+                  <span className="hidden sm:inline">Usar camera</span>
                   <span className="sm:hidden">Camera</span>
                 </Button>
               )}
             </div>
 
-            <p className="text-xs sm:text-sm text-muted-foreground text-center">
-              Supported: JPG, PNG, PDF • Max {Math.round(maxSizeBytes / (1024 * 1024))}MB each
+            <p className="text-center text-xs text-zinc-500 sm:text-sm">
+              Suporta JPG, PNG e PDF. Limite de {Math.round(maxSizeBytes / (1024 * 1024))}MB por arquivo
             </p>
           </div>
         </div>
@@ -504,10 +495,13 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
         {/* File List */}
         {files.length > 0 && (
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Selected Files</h4>
+            <h4 className="text-sm font-medium">Arquivos selecionados</h4>
             <div className="space-y-2">
               {files.map((uploadFile) => (
-                <div key={uploadFile.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                <div
+                  key={uploadFile.id}
+                  className="flex items-center gap-3 rounded-lg border border-[hsl(0,0%,14%)] bg-[hsl(0,0%,7%)] p-3"
+                >
                   {/* File Preview/Icon */}
                   <div className="flex-shrink-0">
                     {uploadFile.preview ? (
@@ -520,16 +514,16 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
                         />
                         {uploadFile.status === "complete" && (
                           <div className="absolute -top-1 -right-1">
-                            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 fill-green-500/20" />
+                            <CheckCircle className="h-3 w-3 fill-emerald-500/20 text-emerald-400 sm:h-4 sm:w-4" />
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded bg-muted flex items-center justify-center">
+                      <div className="flex h-10 w-10 items-center justify-center rounded bg-white/[0.05] sm:h-12 sm:w-12">
                         {uploadFile.file.type === "application/pdf" ? (
-                          <File className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+                          <File className="h-5 w-5 text-zinc-400 sm:h-6 sm:w-6" />
                         ) : (
-                          <ImageIcon className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+                          <ImageIcon className="h-5 w-5 text-zinc-400 sm:h-6 sm:w-6" />
                         )}
                       </div>
                     )}
@@ -543,7 +537,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6"
+                        className="h-6 w-6 text-zinc-400 hover:bg-white/10 hover:text-white"
                         onClick={() => removeFile(uploadFile.id)}
                         disabled={uploadFile.status === "uploading"}
                       >
@@ -552,28 +546,28 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-1 gap-1 sm:gap-0">
-                      <p className="text-xs text-muted-foreground">
-                        {Math.round(uploadFile.file.size / 1024)} KB •{" "}
-                        {uploadFile.file.type.split("/")[1]?.toUpperCase() || "File"}
+                      <p className="text-xs text-zinc-500">
+                        {Math.round(uploadFile.file.size / 1024)} KB -{" "}
+                        {uploadFile.file.type.split("/")[1]?.toUpperCase() || "Arquivo"}
                       </p>
 
                       <div className="flex items-center gap-2">
                         {uploadFile.status === "error" && (
                           <Badge variant="destructive" className="text-xs">
-                            <span className="hidden sm:inline">{uploadFile.error || "Error"}</span>
-                            <span className="sm:hidden">Error</span>
+                            <span className="hidden sm:inline">{uploadFile.error || "Erro"}</span>
+                            <span className="sm:hidden">Erro</span>
                           </Badge>
                         )}
                         {uploadFile.status === "complete" && (
-                          <Badge variant="secondary" className="text-xs">
-                            <span className="hidden sm:inline">Uploaded</span>
-                            <span className="sm:hidden">Done</span>
+                          <Badge className="bg-emerald-500/15 text-xs text-emerald-100">
+                            <span className="hidden sm:inline">Enviado</span>
+                            <span className="sm:hidden">OK</span>
                           </Badge>
                         )}
                         {uploadFile.status === "uploading" && (
-                          <Badge variant="outline" className="text-xs">
-                            <span className="hidden sm:inline">Uploading...</span>
-                            <span className="sm:hidden">Upload</span>
+                          <Badge variant="outline" className="border-[hsl(0,0%,18%)] text-xs text-zinc-200">
+                            <span className="hidden sm:inline">Enviando...</span>
+                            <span className="sm:hidden">Envio</span>
                           </Badge>
                         )}
                       </div>
@@ -583,7 +577,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
                     {uploadFile.status === "uploading" && (
                       <div className="mt-2">
                         <Progress value={uploadFile.progress} className="h-1" />
-                        <p className="text-xs text-muted-foreground text-right mt-1">
+                        <p className="mt-1 text-right text-xs text-zinc-500">
                           {uploadFile.progress}%
                         </p>
                       </div>
@@ -601,22 +595,41 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
             type="button"
             onClick={uploadFiles}
             disabled={!canUpload}
-            className="min-w-[120px]"
+            className="min-w-[120px] bg-[hsl(42,100%,50%)] text-black hover:bg-[hsl(42,100%,58%)]"
           >
             {isUploading ? (
               <>
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                Uploading...
+                Enviando...
               </>
             ) : (
               <>
                 <Upload className="h-4 w-4 mr-2" />
-                Upload Files
+                Enviar arquivos
               </>
             )}
           </Button>
         </div>
-      </CardContent>
+    </div>
+  );
+
+  if (embedded) {
+    return uploadBody;
+  }
+
+  return (
+    <Card className="w-full border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] text-white shadow-none">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+          <Upload className="h-5 w-5 text-[hsl(42,100%,55%)]" />
+          Enviar comprovantes
+        </CardTitle>
+        <CardDescription className="text-sm text-zinc-400 sm:text-base">
+          Envie imagens ou PDFs do comprovante. Limite de {maxFiles} arquivos e{" "}
+          {Math.round(maxSizeBytes / (1024 * 1024))}MB por arquivo.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>{uploadBody}</CardContent>
     </Card>
   );
 };

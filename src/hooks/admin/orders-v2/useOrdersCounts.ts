@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchOrdersCounts } from '@/services/admin/orders-counts-service';
+import { fetchOrdersCounts } from '@/services/admin/orders/orders-counts-service';
 
 export function useOrdersCounts() {
   return useQuery({

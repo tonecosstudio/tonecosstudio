@@ -189,9 +189,9 @@ export default function ContactArcade() {
       <ArcadeCTA
         badge="Explore"
         title="VOLTAR AO ARSENAL"
-        description="Confira nosso catalogo e colecoes disponiveis."
+        description="Confira o universo publicado e fale com a equipe."
         primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog }}
-        secondaryAction={{ label: "VER COLECOES", href: PUBLIC_ROUTES.collections }}
+        secondaryAction={undefined}
       />
     </Page>
   );

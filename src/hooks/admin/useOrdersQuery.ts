@@ -13,7 +13,7 @@ import {
   countOrdersByStatus,
   fetchOrderById,
   fetchUnifiedOrders,
-} from '@/services/admin/orders-service';
+} from '@/services/admin/orders/orders-service';
 import type {
   UnifiedOrder,
   OrderFilters,

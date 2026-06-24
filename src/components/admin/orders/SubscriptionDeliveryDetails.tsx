@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import type { UnifiedOrder } from '@/types/admin/orders';
 import { isSubscriptionDelivery } from '@/types/admin/orders';
+import { formatDate } from '@/lib/utils';
 
 interface SubscriptionDeliveryDetailsProps {
   order: UnifiedOrder;
@@ -217,7 +218,7 @@ export function SubscriptionDeliveryDetails({ order }: SubscriptionDeliveryDetai
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Data de Revelação</span>
                 <span className="text-sm font-medium">
-                  {new Date(subscriptionDelivery.revealDate).toLocaleDateString('pt-BR')}
+                  {formatDate(subscriptionDelivery.revealDate)}
                 </span>
               </div>
             </div>

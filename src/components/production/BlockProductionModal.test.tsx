@@ -12,11 +12,11 @@ const productionService = vi.hoisted(() => ({
   blockProduction: vi.fn(),
 }));
 
-vi.mock("@/services/admin/production-service", () => ({
+vi.mock("@/services/admin/production/production-service", () => ({
   blockProduction: productionService.blockProduction,
 }));
 
-vi.mock("@/services/admin/stage-service", () => ({
+vi.mock("@/services/admin/production/stage-service", () => ({
   calculateEstimatedCompletion: vi.fn(),
 }));
 

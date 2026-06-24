@@ -167,7 +167,7 @@ export default function CoinsPurchaseArcade() {
         <ArcadeSectionTitle>POR QUE COMPRAR COINS?</ArcadeSectionTitle>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { icon: Coins, title: "PREÇOS CONTEXTUAIS", desc: "Preços variam por assinatura e coleção" },
+            { icon: Coins, title: "PREÇOS CONTEXTUAIS", desc: "Valores podem variar conforme o contexto comercial do item" },
             { icon: Sparkles, title: "BÔNUS GENEROSOS", desc: "Pacotes maiores = mais coins grátis" },
             { icon: TrendingUp, title: "MELHOR VALOR", desc: "Até 40% de bônus em pacotes maiores" },
           ].map((b, i) => (

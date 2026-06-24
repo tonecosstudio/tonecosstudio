@@ -43,7 +43,7 @@ export default function AdminPayments() {
         <p className="text-muted-foreground mt-2">
           {paymentId
             ? "Visualizando detalhes do pagamento"
-            : "Dashboard de pagamentos pendentes para revisão"}
+            : "Painel de pagamentos pendentes para revisão"}
         </p>
       </div>
 
@@ -51,7 +51,7 @@ export default function AdminPayments() {
         <div className="space-y-4">
           <Button variant="outline" onClick={handleBackToDashboard} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Dashboard
+            Voltar para o painel
           </Button>
 
           <PaymentDetailsView

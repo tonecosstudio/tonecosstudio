@@ -12,14 +12,16 @@ import {
   collectionDetailsPath,
   isSafeInAppPath,
   paymentDetailsPath,
+  profileSectionPath,
   publicProfilePath,
   resolveCatalogModelIdFromParam,
+  resolveProfileSectionId,
   subscribeCollectionPath,
 } from "./routes";
 
 describe("route helpers", () => {
   it("builds encoded app paths from route templates", () => {
-    expect(paymentDetailsPath("pay 1")).toBe("/pagamentos/pay%201");
+    expect(paymentDetailsPath("pay 1")).toBe("/perfil/pagamentos/pay%201");
     expect(adminPaymentDetailsPath("pay/1")).toBe("/admin/pagamentos/pay%2F1?tab=payments");
     expect(adminUserDetailsPath("user/1")).toBe("/admin/users/user%2F1");
     expect(collectionDetailsPath("my collection")).toBe("/colecoes/my%20collection");
@@ -60,8 +62,18 @@ describe("route helpers", () => {
     ).toBe("43e97b32-c0af-4b88-a49d-1d454f077b46");
   });
 
+  it("keeps profile section routing canonical in Portuguese", () => {
+    expect(profileSectionPath("info")).toBe("/perfil/conta");
+    expect(profileSectionPath("payment")).toBe("/perfil/pagamentos");
+    expect(profileSectionPath("support")).toBe("/perfil/suporte");
+    expect(resolveProfileSectionId("pagamentos")).toBe("payment");
+    expect(resolveProfileSectionId("suporte")).toBe("support");
+    expect(resolveProfileSectionId("payments")).toBeNull();
+    expect(resolveProfileSectionId("orders")).toBeNull();
+  });
+
   it("accepts only bounded internal action paths", () => {
-    expect(isSafeInAppPath("/pagamentos?status=pending")).toBe(true);
+    expect(isSafeInAppPath("/perfil/pagamentos?status=pending")).toBe(true);
     expect(isSafeInAppPath("//evil.example")).toBe(false);
     expect(isSafeInAppPath("https://evil.example")).toBe(false);
     expect(isSafeInAppPath("/ok\nLocation: https://evil.example")).toBe(false);

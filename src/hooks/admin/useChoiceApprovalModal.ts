@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchAlternativeCharacters,
   fetchCharacterStock,
-} from "@/services/admin/choice-approval-modal-service";
+} from "@/services/admin/choices/choice-approval-modal-service";
 
 export function useCharacterStock(characterId?: string, enabled = true) {
   return useQuery({

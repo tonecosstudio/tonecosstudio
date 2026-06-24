@@ -4,7 +4,7 @@
  */
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchOrdersByUserId } from "@/services/admin/orders-service";
+import { fetchOrdersByUserId } from "@/services/admin/orders/orders-service";
 
 interface UseUserOrdersProps {
   userId: string | undefined;

@@ -1,28 +1,7 @@
-/**
- * ProgressNotification Component
- * 
- * Provides a reusable notification system for production progress updates.
- * Wraps the toast system with consistent styling and behavior for production events.
- * 
- * Features:
- * - Consistent notification interface for production updates
- * - Support for different notification types (stage change, choice approved, choice rejected, shipped)
- * - Uses shadcn/ui toast system
- * - Optional sound notifications (user preference)
- * - All text in Portuguese (pt-BR)
- * 
- * Requirements: 2.4.5 Progress Notifications
- * Task: 5.2.2 Create ProgressNotification component
- */
-
+import { getProductionStageLabel } from "@/config/production-stages";
 import { useToast } from "@/hooks/use-toast";
 import { log } from "@/lib/logger";
 import type { ProductionStage } from "@/types/production";
-import { getProductionStageLabel } from "@/config/production-stages";
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export type NotificationType =
   | "stage_change"
@@ -47,14 +26,6 @@ interface WebkitAudioWindow extends Window {
   webkitAudioContext?: typeof AudioContext;
 }
 
-// ============================================================================
-// Sound Notification
-// ============================================================================
-
-/**
- * Play a notification sound
- * Uses Web Audio API to play a simple beep
- */
 function playNotificationSound(): void {
   try {
     const AudioContextConstructor = window.AudioContext || (window as WebkitAudioWindow).webkitAudioContext;
@@ -69,13 +40,10 @@ function playNotificationSound(): void {
 
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-
-    oscillator.frequency.value = 800; // Frequency in Hz
+    oscillator.frequency.value = 800;
     oscillator.type = "sine";
-
     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.5);
   } catch (error) {
@@ -83,40 +51,30 @@ function playNotificationSound(): void {
   }
 }
 
-// ============================================================================
-// Hook
-// ============================================================================
-
-/**
- * Hook to show progress notifications with consistent styling
- * 
- * @returns Object with showNotification function
- */
 export function useProgressNotification() {
   const { toast } = useToast();
 
-  /**
-   * Show a progress notification
-   * 
-   * @param options - Notification options
-   */
   const showNotification = (options: ProgressNotificationOptions): void => {
-    const { type, stage, characterName, trackingCode, rejectionReason, blockReason, playSound = false } = options;
+    const {
+      type,
+      stage,
+      characterName,
+      trackingCode,
+      rejectionReason,
+      blockReason,
+      playSound = false,
+    } = options;
 
-    // Play sound if enabled
     if (playSound) {
       playNotificationSound();
     }
 
-    // Generate notification content based on type
     switch (type) {
       case "stage_change":
         if (stage) {
-          const stageName = getProductionStageLabel(stage);
-          
           toast({
-            title: "Pedido Atualizado",
-            description: `Seu pedido avançou para: ${stageName}`,
+            title: "Pedido atualizado",
+            description: `Seu pedido avancou para: ${getProductionStageLabel(stage)}.`,
             duration: 5000,
           });
         }
@@ -125,65 +83,57 @@ export function useProgressNotification() {
       case "choice_approved":
         if (characterName) {
           toast({
-            title: "✅ Escolha Aprovada!",
-            description: `Sua escolha do personagem "${characterName}" foi aprovada. A produção começará em breve!`,
+            title: "Escolha aprovada",
+            description: `Sua escolha do personagem "${characterName}" foi aprovada. A producao comecara em breve.`,
             duration: 8000,
           });
         }
         break;
 
-      case "choice_rejected":
-        {
-          const reason = rejectionReason || "Motivo não especificado";
-          toast({
-            title: "Escolha Rejeitada",
-            description: `Sua escolha foi rejeitada. Motivo: ${reason}. Por favor, escolha outro personagem.`,
-            variant: "destructive",
-            duration: 10000,
-          });
-        }
+      case "choice_rejected": {
+        const reason = rejectionReason || "Motivo nao especificado";
+        toast({
+          title: "Escolha rejeitada",
+          description: `Sua escolha foi rejeitada. Motivo: ${reason}. Escolha outro personagem para continuar.`,
+          variant: "destructive",
+          duration: 10000,
+        });
         break;
+      }
 
       case "shipped":
-        if (trackingCode) {
-          toast({
-            title: "🎉 Pedido Enviado!",
-            description: `Seu pedido foi enviado. Código de rastreamento: ${trackingCode}`,
-            duration: 8000,
-          });
-        } else {
-          toast({
-            title: "🎉 Pedido Enviado!",
-            description: "Seu pedido foi enviado. O código de rastreamento será disponibilizado em breve.",
-            duration: 8000,
-          });
-        }
+        toast({
+          title: "Pedido enviado",
+          description: trackingCode
+            ? `Seu pedido foi enviado. Codigo de rastreamento: ${trackingCode}.`
+            : "Seu pedido foi enviado. O codigo de rastreamento sera disponibilizado em breve.",
+          duration: 8000,
+        });
         break;
 
       case "choice_locked":
         toast({
-          title: "Escolha Confirmada",
-          description: "Sua escolha foi confirmada e a produção foi iniciada!",
+          title: "Escolha confirmada",
+          description: "Sua escolha foi confirmada e a producao foi iniciada.",
           duration: 5000,
         });
         break;
 
-      case "production_blocked":
-        {
-          const reason = blockReason || "Motivo não especificado";
-          toast({
-            title: "⚠️ Produção Pausada",
-            description: `A produção do seu pedido foi temporariamente pausada. Motivo: ${reason}. Entraremos em contato em breve.`,
-            variant: "destructive",
-            duration: 10000,
-          });
-        }
+      case "production_blocked": {
+        const reason = blockReason || "Motivo nao especificado";
+        toast({
+          title: "Producao pausada",
+          description: `A producao do seu pedido foi pausada temporariamente. Motivo: ${reason}. Entraremos em contato em breve.`,
+          variant: "destructive",
+          duration: 10000,
+        });
         break;
+      }
 
       case "production_unblocked":
         toast({
-          title: "✅ Produção Retomada",
-          description: "A produção do seu pedido foi retomada. Obrigado pela paciência!",
+          title: "Producao retomada",
+          description: "A producao do seu pedido foi retomada. Obrigado pela paciencia.",
           duration: 5000,
         });
         break;
@@ -195,17 +145,3 @@ export function useProgressNotification() {
 
   return { showNotification };
 }
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * NOTA: As funções helper showStageChangeNotification, showChoiceApprovedNotification,
- * showChoiceRejectedNotification e showShippedNotification foram removidas.
- * 
- * Use o hook useProgressNotification() diretamente nos componentes:
- * 
- * const { showNotification } = useProgressNotification();
- * showNotification({ type: "stage_change", stage, playSound });
- */

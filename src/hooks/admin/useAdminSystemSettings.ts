@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchAdminSystemSettings,
   updateAdminSystemSettings,
-} from "@/services/admin/admin-system-settings-service";
+} from "@/services/admin/config/admin-system-settings-service";
 
 export function useAdminSystemSettings() {
   return useQuery({

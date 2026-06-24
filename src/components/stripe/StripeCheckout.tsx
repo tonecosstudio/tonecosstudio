@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 interface StripeCheckoutProps {
   /** Valor em centavos (ex: 10000 = R$ 100.00) */
@@ -120,10 +121,10 @@ function CheckoutForm({ amount, currency, onSuccess, onError }: StripeCheckoutPr
             Processando...
           </>
         ) : (
-          `Pagar ${new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: currency || 'BRL',
-          }).format(amount / 100)}`
+          `Pagar ${formatCurrency(
+            amount / 100,
+            currency ? { currency: currency.toUpperCase() } : undefined
+          )}`
         )}
       </Button>
     </form>

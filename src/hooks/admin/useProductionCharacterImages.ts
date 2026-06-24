@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchProductionCharacterImages } from "@/services/admin/production-character-images-service";
+import { fetchProductionCharacterImages } from "@/services/admin/production/production-character-images-service";
 
 export function useProductionCharacterImages(characterIds: string[]) {
   return useQuery({

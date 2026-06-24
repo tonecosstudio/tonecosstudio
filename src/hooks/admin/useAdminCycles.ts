@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchAdminCyclesByYear,
   type AdminCycle,
-} from "@/services/admin/admin-cycles-service";
+} from "@/services/admin/delivery/admin-cycles-service";
 
 export type { AdminCycle };
 

@@ -13,6 +13,7 @@ import { OrderTypeIndicator } from './OrderTypeIndicator';
 import { ProductionStatusBadge } from './ProductionStatusBadge';
 import { highlightText } from '@/lib/highlight-text';
 import { useProductionInfo } from '@/hooks/admin/useProductionInfo';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface OrderRowProps {
   order: UnifiedOrder;
@@ -104,12 +105,12 @@ export function OrderRow({
 
       {/* Data de criação */}
       <TableCell className="text-sm text-muted-foreground">
-        {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+        {formatDate(order.createdAt)}
       </TableCell>
 
       {/* Valor */}
       <TableCell className="text-right font-medium">
-        R$ {order.amount.toFixed(2)}
+        {formatCurrency(order.amount)}
       </TableCell>
 
       {/* Botão de ações */}

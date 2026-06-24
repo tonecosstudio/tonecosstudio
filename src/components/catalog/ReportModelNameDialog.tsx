@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { AlertTriangle, Flag, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { createSupportConversationRpc } from "@/lib/services/supportConversationMutationsService";
+import { createSupportConversationRpc } from "@/services/support/support-conversation-mutations-service";
 import { CONTACT } from "@/config/constants";
 import { loginReturnToPath } from "@/config/routes";
 import { Button } from "@/components/ui/button";

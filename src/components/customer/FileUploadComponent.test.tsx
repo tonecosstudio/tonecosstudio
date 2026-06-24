@@ -74,37 +74,38 @@ describe("FileUploadComponent", () => {
       />
     );
 
-    expect(screen.getByText("Upload Payment Proof")).toBeInTheDocument();
+    expect(screen.getByText("Enviar comprovantes")).toBeInTheDocument();
     expect(
-      screen.getByText(/Upload images or PDFs of your payment confirmation/)
+      screen.getByText(/Envie imagens ou PDFs do comprovante/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/Maximum 5 files, 5MB each/)).toBeInTheDocument();
+    expect(screen.getByText(/Limite de 5 arquivos/)
+    ).toBeInTheDocument();
   });
 
   it("displays file stats badge when no files are selected", () => {
     render(<FileUploadComponent paymentId={mockPaymentId} />);
 
-    expect(screen.getByText("0 / 5 files")).toBeInTheDocument();
+    expect(screen.getByText("0 / 5 arquivos")).toBeInTheDocument();
   });
 
   it("shows browse files and take photo buttons when camera is supported", () => {
     render(<FileUploadComponent paymentId={mockPaymentId} />);
 
-    expect(screen.getByText("Browse Files")).toBeInTheDocument();
-    expect(screen.getByText("Take Photo")).toBeInTheDocument();
+    expect(screen.getByText("Selecionar arquivos")).toBeInTheDocument();
+    expect(screen.getByText("Usar camera")).toBeInTheDocument();
   });
 
   it("displays supported file types information", () => {
     render(<FileUploadComponent paymentId={mockPaymentId} />);
 
-    expect(screen.getByText(/Supported: JPG, PNG, PDF/)).toBeInTheDocument();
-    expect(screen.getByText(/Max 5MB each/)).toBeInTheDocument();
+    expect(screen.getByText(/Suporta JPG, PNG e PDF/)).toBeInTheDocument();
+    expect(screen.getByText(/Limite de 5MB por arquivo/)).toBeInTheDocument();
   });
 
   it("disables upload button when no files are selected", () => {
     render(<FileUploadComponent paymentId={mockPaymentId} />);
 
-    expect(screen.getByRole("button", { name: /Upload Files/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Enviar arquivos/i })).toBeDisabled();
   });
 
   it("shows clear all button when files are selected", async () => {
@@ -115,7 +116,7 @@ describe("FileUploadComponent", () => {
     });
 
     expect(await screen.findByText("proof.pdf")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Clear All/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Limpar fila/i })).toBeInTheDocument();
   });
 
   it("handles file validation errors for oversized files", async () => {
@@ -127,7 +128,7 @@ describe("FileUploadComponent", () => {
       target: { files: [createFile("large.pdf", "application/pdf", 11)] },
     });
 
-    expect(await screen.findByText(/large\.pdf.*too large/i)).toBeInTheDocument();
+    expect(await screen.findByText(/large\.pdf.*excede o limite/i)).toBeInTheDocument();
   });
 
   it("handles file validation errors for invalid file types", async () => {
@@ -137,8 +138,8 @@ describe("FileUploadComponent", () => {
       target: { files: [createFile("script.txt", "text/plain")] },
     });
 
-    expect(await screen.findByText(/script\.txt.*invalid file type/i)).toBeInTheDocument();
-    expect(screen.getByText(/script\.txt.*unsupported file extension/i)).toBeInTheDocument();
+    expect(await screen.findByText(/script\.txt.*tipo invalido/i)).toBeInTheDocument();
+    expect(screen.getByText(/script\.txt.*extensao nao suportada/i)).toBeInTheDocument();
   });
 
   it("prevents selecting more than max files", async () => {
@@ -153,7 +154,7 @@ describe("FileUploadComponent", () => {
       },
     });
 
-    expect(await screen.findByText(/Maximum of 1 files allowed/)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Limite de 1 arquivos/)).length).toBeGreaterThan(0);
   });
 
   it("calls onUploadComplete when files are uploaded successfully", async () => {
@@ -170,7 +171,7 @@ describe("FileUploadComponent", () => {
     fireEvent.change(getPrimaryFileInput(container), {
       target: { files: [createFile("proof.pdf", "application/pdf")] },
     });
-    await user.click(await screen.findByRole("button", { name: /Upload Files/i }));
+    await user.click(await screen.findByRole("button", { name: /Enviar arquivos/i }));
 
     await waitFor(() => {
       expect(fileUploadService.upload).toHaveBeenCalledWith(
@@ -200,7 +201,7 @@ describe("FileUploadComponent", () => {
     fireEvent.change(getPrimaryFileInput(container), {
       target: { files: [createFile("proof.pdf", "application/pdf")] },
     });
-    await user.click(await screen.findByRole("button", { name: /Upload Files/i }));
+    await user.click(await screen.findByRole("button", { name: /Enviar arquivos/i }));
 
     await waitFor(() => {
       expect(onError).toHaveBeenCalledWith(uploadError);
@@ -223,7 +224,7 @@ describe("FileUploadComponent", () => {
     fireEvent.change(getPrimaryFileInput(container), {
       target: { files: [createFile("proof.pdf", "application/pdf")] },
     });
-    await user.click(await screen.findByRole("button", { name: /Upload Files/i }));
+    await user.click(await screen.findByRole("button", { name: /Enviar arquivos/i }));
 
     expect(await screen.findByText("50%")).toBeInTheDocument();
 
@@ -233,7 +234,7 @@ describe("FileUploadComponent", () => {
   it("disables component when disabled prop is true", () => {
     render(<FileUploadComponent paymentId={mockPaymentId} disabled />);
 
-    const dropzone = screen.getByRole("button", { name: /Drag & drop files here/i });
+    const dropzone = screen.getByRole("button", { name: /Arraste os arquivos para esta area/i });
     expect(dropzone).toHaveAttribute("aria-disabled", "true");
     expect(dropzone).toHaveClass("cursor-not-allowed");
     expect(dropzone).toHaveClass("opacity-50");
@@ -244,6 +245,6 @@ describe("FileUploadComponent", () => {
 
     render(<FileUploadComponent paymentId={mockPaymentId} />);
 
-    expect(screen.queryByText("Take Photo")).not.toBeInTheDocument();
+    expect(screen.queryByText("Usar camera")).not.toBeInTheDocument();
   });
 });

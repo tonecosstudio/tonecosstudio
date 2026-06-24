@@ -3,7 +3,7 @@ import {
   blockProduction,
   updateProductionNotes,
   updateProductionSchedule,
-} from "@/services/admin/production-service";
+} from "@/services/admin/production/production-service";
 
 interface UseBlockProductionOptions {
   productionQueueId: string;

@@ -135,7 +135,7 @@ export function BlockProductionModal({
             Bloquear Producao
           </DialogTitle>
           <DialogDescription>
-            Bloqueie este item quando houver problemas que impecam o progresso.
+            Use este bloqueio quando houver um impedimento real para continuar a producao.
           </DialogDescription>
         </DialogHeader>
 
@@ -145,6 +145,7 @@ export function BlockProductionModal({
             <AlertTitle>Atencao</AlertTitle>
             <AlertDescription>
               O bloqueio pausa o fluxo deste item e dispara notificacao para o cliente.
+              Use apenas quando o prazo ou a execucao realmente precisarem ser interrompidos.
             </AlertDescription>
           </Alert>
 
@@ -164,7 +165,7 @@ export function BlockProductionModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="resolution-time">Tempo estimado de resolucao (opcional)</Label>
+            <Label htmlFor="resolution-time">Tempo estimado de resolucao</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="resolution-time"

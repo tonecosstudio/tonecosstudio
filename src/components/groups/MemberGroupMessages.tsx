@@ -8,7 +8,6 @@ import { useGroupMessages } from "@/hooks/useGroupMessages";
 import { RefreshCw, Loader2 } from "lucide-react";
 import { sanitizeText } from "@/lib/utils/sanitize";
 import { sanitizeURL } from "@/lib/security/input-sanitizer";
-import { useGroupAttachmentPublicUrl } from "@/hooks/groups/useGroupAttachmentPublicUrl";
 import { GroupErrorBoundary } from "./GroupErrorBoundary";
 
 interface MemberGroupMessagesProps {
@@ -23,11 +22,7 @@ function getSafeAttachmentUrl(url: string): string | null {
   }
 }
 
-/**
- * Converte file_path para URL pública do Supabase Storage
- */
 function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
-  const getGroupAttachmentPublicUrl = useGroupAttachmentPublicUrl();
   const { messages, loading, messagesEndRef, refresh } = useGroupMessages({
     groupId,
     autoScroll: true,
@@ -88,15 +83,16 @@ function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {message.attachments.map((attachment) => {
-                        const publicUrl = getGroupAttachmentPublicUrl(attachment.file_path);
-                        const safePublicUrl = getSafeAttachmentUrl(publicUrl);
+                        const safeAccessUrl = attachment.access_url
+                          ? getSafeAttachmentUrl(attachment.access_url)
+                          : null;
 
-                        if (!safePublicUrl) return null;
+                        if (!safeAccessUrl) return null;
 
                         return (
                         <a
                           key={attachment.id}
-                          href={safePublicUrl}
+                          href={safeAccessUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-primary hover:underline block"

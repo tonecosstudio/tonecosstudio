@@ -1,4 +1,4 @@
-import { submitOrderMigrationRequestRpc } from "@/services/customer-account-mutations-service";
+import { submitOrderMigrationRequestRpc } from "@/services/customer/customer-account-mutations-service";
 
 export type OrderMigrationSubmission = {
   fullName: string;

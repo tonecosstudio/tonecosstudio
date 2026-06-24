@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import {
   listActiveSubscriberSubscriptions,
   listSubscriberDeliveries,
-} from "@/services/subscriber-dashboard-service";
+} from "@/services/customer/subscriber-dashboard-service";
 
-export type { SubscriberDelivery } from "@/services/subscriber-dashboard-service";
+export type { SubscriberDelivery } from "@/services/customer/subscriber-dashboard-service";
 
 export function useSubscriberDashboardData(userId?: string) {
   const subscriptionsQuery = useQuery({

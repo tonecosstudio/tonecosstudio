@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateBasePrices, updateContextMultipliers } from "@/services/admin/coins-pricing-admin-service";
+import { updateBasePrices, updateContextMultipliers } from "@/services/admin/pricing/coins-pricing-admin-service";
 
 export function useUpdateBasePrices() {
   const queryClient = useQueryClient();

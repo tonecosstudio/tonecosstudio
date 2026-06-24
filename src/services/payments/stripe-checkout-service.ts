@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { callAuthenticatedEdgeFunction } from "@/services/supabase/edge-function-client";
 
 export interface CreatePaymentIntentInput {
   amount: number;
@@ -13,18 +13,16 @@ export async function createStripePaymentIntent({
   description,
   metadata,
 }: CreatePaymentIntentInput): Promise<string> {
-  const { data, error } = await supabase.functions.invoke("create-payment-intent", {
-    body: {
+  const data = await callAuthenticatedEdgeFunction<{ clientSecret?: string }>(
+    "create-payment-intent",
+    {
       amount,
       currency: currency || "brl",
       description,
       metadata,
     },
-  });
-
-  if (error) {
-    throw new Error(error.message);
-  }
+    "Erro ao criar pagamento",
+  );
 
   if (!data?.clientSecret) {
     throw new Error("Resposta de pagamento invalida");

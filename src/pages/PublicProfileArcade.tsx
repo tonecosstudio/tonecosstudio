@@ -97,7 +97,7 @@ export default function PublicProfileArcade() {
                 alt=""
                 className="w-full h-full object-cover"
                 loading="eager"
-                fetchPriority="high"
+                {...({ fetchpriority: "high" } as Record<string, string>)}
               />
             ) : (
               <div className="w-full h-full bg-[hsl(0,0%,12%)] flex items-center justify-center font-mono text-2xl text-[hsl(var(--gold-accent))]">

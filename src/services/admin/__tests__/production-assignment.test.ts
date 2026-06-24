@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { assignProduction } from "../production-service";
+import { assignProduction } from "../production/production-service";
 import { supabase } from "@/integrations/supabase/client";
-import { ProductionNotificationService } from "@/services/notifications/production-notification-service";
+import { productionNotificationService } from "@/services/notifications/production-notification-service";
+import log from "@/lib/logger";
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -10,10 +11,20 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+const notificationMocks = vi.hoisted(() => ({
+  sendAssignmentNotification: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/services/notifications/production-notification-service", () => ({
-  ProductionNotificationService: vi.fn().mockImplementation(() => ({
-    sendAssignmentNotification: vi.fn().mockResolvedValue(undefined),
-  })),
+  productionNotificationService: {
+    sendAssignmentNotification: notificationMocks.sendAssignmentNotification,
+  },
+}));
+
+vi.mock("@/lib/logger", () => ({
+  default: {
+    error: vi.fn(),
+  },
 }));
 
 function productionRow(overrides: Record<string, unknown> = {}) {
@@ -59,14 +70,14 @@ function mockCurrentAssignment(current: Record<string, unknown> | null) {
         single: vi.fn().mockResolvedValue({ data: current, error: null }),
       }),
     }),
-  } as any);
+  } as never);
 }
 
 describe("Production Assignment Logic", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCurrentAssignment({ assigned_to: null, assigned_to_name: null });
-    vi.mocked(supabase.rpc).mockResolvedValue({ data: productionRow(), error: null } as any);
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: productionRow(), error: null } as never);
   });
 
   it("assigns production through the centralized admin RPC", async () => {
@@ -97,19 +108,22 @@ describe("Production Assignment Logic", () => {
     vi.mocked(supabase.rpc).mockResolvedValue({
       data: null,
       error: { message: "Update failed" },
-    } as any);
+    } as never);
 
     await expect(assignProduction("prod-123", "user-456")).rejects.toThrow("Update failed");
   });
 
   it("continues when assignment notification fails", async () => {
-    vi.mocked(ProductionNotificationService).mockImplementationOnce(
-      () =>
-        ({
-          sendAssignmentNotification: vi.fn().mockRejectedValue(new Error("Notification failed")),
-        }) as any
+    notificationMocks.sendAssignmentNotification.mockRejectedValueOnce(
+      new Error("Notification failed")
     );
 
     await expect(assignProduction("prod-123", "user-456")).resolves.toBeDefined();
+    expect(productionNotificationService.sendAssignmentNotification).toHaveBeenCalledWith(
+      "prod-123",
+      "user-456",
+      false
+    );
+    expect(log.error).toHaveBeenCalled();
   });
 });

@@ -4,10 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { GroupMembersList } from "./GroupMembersList";
-import { membershipService } from "@/lib/services/membershipService";
+import { membershipService } from "@/services/groups/membership-service";
 import type { PaginatedMembers } from "@/types/groups";
 
-vi.mock("@/lib/services/membershipService", () => ({
+vi.mock("@/services/groups/membership-service", () => ({
   membershipService: {
     listMembers: vi.fn(),
     removeMember: vi.fn(),
@@ -31,7 +31,9 @@ const createWrapper = () => {
   );
 };
 
-const paginatedMembers = (members: PaginatedMembers["members"]): PaginatedMembers => ({
+const paginatedMembers = (
+  members: PaginatedMembers["members"],
+): PaginatedMembers => ({
   members,
   pagination: {
     limit: 50,
@@ -68,10 +70,12 @@ describe("GroupMembersList", () => {
     vi.mocked(membershipService.listMembers).mockReturnValue(
       new Promise((resolve) => {
         resolveMembers = resolve;
-      })
+      }),
     );
 
-    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    render(<GroupMembersList groupId="group-1" />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getByText(/carregando membros/i)).toBeInTheDocument();
 
@@ -80,17 +84,27 @@ describe("GroupMembersList", () => {
   });
 
   it("renders empty state when no members", async () => {
-    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers([]));
+    vi.mocked(membershipService.listMembers).mockResolvedValue(
+      paginatedMembers([]),
+    );
 
-    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    render(<GroupMembersList groupId="group-1" />, {
+      wrapper: createWrapper(),
+    });
 
-    expect(await screen.findByText(/nenhum membro neste grupo/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/nenhum membro neste grupo/i),
+    ).toBeInTheDocument();
   });
 
   it("renders member list", async () => {
-    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers(mockMembers));
+    vi.mocked(membershipService.listMembers).mockResolvedValue(
+      paginatedMembers(mockMembers),
+    );
 
-    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    render(<GroupMembersList groupId="group-1" />, {
+      wrapper: createWrapper(),
+    });
 
     expect(await screen.findByText("user1@example.com")).toBeInTheDocument();
     expect(screen.getByText("user2@example.com")).toBeInTheDocument();
@@ -100,49 +114,68 @@ describe("GroupMembersList", () => {
 
   it("shows add member button when onAddMember provided", async () => {
     const onAddMember = vi.fn();
-    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers([]));
+    vi.mocked(membershipService.listMembers).mockResolvedValue(
+      paginatedMembers([]),
+    );
 
     render(<GroupMembersList groupId="group-1" onAddMember={onAddMember} />, {
       wrapper: createWrapper(),
     });
 
-    expect(await screen.findByRole("button", { name: /adicionar membro/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /adicionar membro/i }),
+    ).toBeInTheDocument();
   });
 
   it("calls onAddMember when button clicked", async () => {
     const onAddMember = vi.fn();
     const user = userEvent.setup();
-    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers([]));
+    vi.mocked(membershipService.listMembers).mockResolvedValue(
+      paginatedMembers([]),
+    );
 
     render(<GroupMembersList groupId="group-1" onAddMember={onAddMember} />, {
       wrapper: createWrapper(),
     });
 
-    await user.click(await screen.findByRole("button", { name: /adicionar membro/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /adicionar membro/i }),
+    );
 
     expect(onAddMember).toHaveBeenCalledOnce();
   });
 
   it("removes member by group and user id", async () => {
     const user = userEvent.setup();
-    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers([mockMembers[0]]));
+    vi.mocked(membershipService.listMembers).mockResolvedValue(
+      paginatedMembers([mockMembers[0]]),
+    );
     vi.mocked(membershipService.removeMember).mockResolvedValue(undefined);
 
-    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    render(<GroupMembersList groupId="group-1" />, {
+      wrapper: createWrapper(),
+    });
 
     expect(await screen.findByText("user1@example.com")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Remover User One" }));
 
     await waitFor(() => {
-      expect(membershipService.removeMember).toHaveBeenCalledWith("group-1", "user-1");
+      expect(membershipService.removeMember).toHaveBeenCalledWith(
+        "group-1",
+        "user-1",
+      );
     });
   });
 
   it("displays member count", async () => {
-    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers(mockMembers));
+    vi.mocked(membershipService.listMembers).mockResolvedValue(
+      paginatedMembers(mockMembers),
+    );
 
-    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    render(<GroupMembersList groupId="group-1" />, {
+      wrapper: createWrapper(),
+    });
 
     expect(await screen.findByText(/membros \(2\)/i)).toBeInTheDocument();
   });

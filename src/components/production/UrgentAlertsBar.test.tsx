@@ -8,7 +8,7 @@ const productionService = vi.hoisted(() => ({
   fetchProductionMetrics: vi.fn(),
 }));
 
-vi.mock("@/services/admin/production-service", () => ({
+vi.mock("@/services/admin/production/production-service", () => ({
   fetchProductionMetrics: productionService.fetchProductionMetrics,
 }));
 

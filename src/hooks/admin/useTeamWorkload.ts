@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { assignProduction } from "@/services/admin/production-service";
+import { assignProduction } from "@/services/admin/production/production-service";
 import {
   fetchTeamWorkload,
   type TeamMemberWorkload,
   type TeamWorkloadItem,
-} from "@/services/admin/team-workload-service";
+} from "@/services/admin/production/team-workload-service";
 
 export type { TeamMemberWorkload, TeamWorkloadItem };
 

@@ -13,12 +13,14 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import type { RealtimeChannel } from "@supabase/supabase-js";
 
-import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
+import {
+  subscribeToTypingIndicator,
+  type TypingEventPayload,
+  type TypingIndicatorSubscription,
+} from "@/services/realtime/realtime-service";
 
-type TypingAction = "start" | "stop";
 type TimerHandle = ReturnType<typeof setTimeout>;
 
 interface TypingUser {
@@ -41,12 +43,6 @@ interface UseTypingIndicatorReturn {
   isTyping: boolean;
   startTyping: () => void;
   stopTyping: () => void;
-}
-
-interface TypingEventPayload {
-  userId: string;
-  userName: string;
-  action: TypingAction;
 }
 
 function isTypingEventPayload(payload: unknown): payload is TypingEventPayload {
@@ -74,22 +70,14 @@ export function useTypingIndicator({
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<TimerHandle>();
   const stopTypingTimeoutRef = useRef<TimerHandle>();
-  const channelRef = useRef<RealtimeChannel>();
+  const subscriptionRef = useRef<TypingIndicatorSubscription>();
 
   useEffect(() => {
     log.debug("Setting up typing indicator channel", { conversationId });
 
-    const channel = supabase.channel(`typing:${conversationId}`, {
-      config: {
-        broadcast: {
-          self: false,
-          ack: false,
-        },
-      },
-    });
-
-    channel
-      .on("broadcast", { event: "typing" }, ({ payload }) => {
+    const subscription = subscribeToTypingIndicator({
+      conversationId,
+      onTypingEvent: (payload) => {
         if (!isTypingEventPayload(payload)) {
           log.warn("Ignoring invalid typing indicator payload", { conversationId, payload });
           return;
@@ -107,16 +95,18 @@ export function useTypingIndicator({
         }
 
         setTypingUsers((prev) => prev.filter((user) => user.userId !== userId));
-      })
-      .subscribe((status) => {
+      },
+      onStatusChange: (status) => {
         log.debug("Typing indicator channel status changed", { conversationId, status });
-      });
+      },
+    });
 
-    channelRef.current = channel;
+    subscriptionRef.current = subscription;
 
     return () => {
       log.debug("Cleaning up typing indicator channel", { conversationId });
-      supabase.removeChannel(channel);
+      subscription.unsubscribe();
+      subscriptionRef.current = undefined;
     };
   }, [conversationId]);
 
@@ -161,14 +151,10 @@ export function useTypingIndicator({
 
     log.debug("Broadcasting typing stop", { conversationId, currentUserId });
     setIsTyping(false);
-    channelRef.current?.send({
-      type: "broadcast",
-      event: "typing",
-      payload: {
-        userId: currentUserId,
-        userName: currentUserName,
-        action: "stop",
-      },
+    subscriptionRef.current?.sendTypingEvent({
+      userId: currentUserId,
+      userName: currentUserName,
+      action: "stop",
     });
   }, [conversationId, currentUserId, currentUserName, isTyping]);
 
@@ -181,14 +167,10 @@ export function useTypingIndicator({
       if (!isTyping) {
         log.debug("Broadcasting typing start", { conversationId, currentUserId });
         setIsTyping(true);
-        channelRef.current?.send({
-          type: "broadcast",
-          event: "typing",
-          payload: {
-            userId: currentUserId,
-            userName: currentUserName,
-            action: "start",
-          },
+        subscriptionRef.current?.sendTypingEvent({
+          userId: currentUserId,
+          userName: currentUserName,
+          action: "start",
         });
       }
 
@@ -206,12 +188,12 @@ export function useTypingIndicator({
       return "";
     }
     if (typingUsers.length === 1) {
-      return `${typingUsers[0].userName} está digitando...`;
+      return `${typingUsers[0].userName} esta digitando...`;
     }
     if (typingUsers.length === 2) {
-      return `${typingUsers[0].userName} e ${typingUsers[1].userName} estão digitando...`;
+      return `${typingUsers[0].userName} e ${typingUsers[1].userName} estao digitando...`;
     }
-    return `${typingUsers[0].userName} e outras ${typingUsers.length - 1} pessoas estão digitando...`;
+    return `${typingUsers[0].userName} e outras ${typingUsers.length - 1} pessoas estao digitando...`;
   }, [typingUsers]);
 
   return {

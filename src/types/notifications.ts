@@ -1,14 +1,3 @@
-export interface NotificationCenterItem {
-  id: string;
-  user_id: string;
-  type: string | null;
-  title: string;
-  message: string;
-  link: string | null;
-  is_read: boolean | null;
-  created_at: string;
-}
-
 export type UserNotificationPriority = "low" | "medium" | "high" | "critical";
 
 export interface UserNotificationCenterItem {

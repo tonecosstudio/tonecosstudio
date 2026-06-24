@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchBlockedProductionItems } from "@/services/admin/blocked-production-service";
+import { fetchBlockedProductionItems } from "@/services/admin/production/blocked-production-service";
 
 export function useBlockedProductionItems() {
   return useQuery({

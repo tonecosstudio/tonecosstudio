@@ -1,4 +1,4 @@
-import { getCurrentAdminPaymentsUserId } from "@/services/admin/admin-payments-auth-service";
+import { getCurrentAdminPaymentsUserId } from "@/services/admin/payments/admin-payments-auth-service";
 
 export function useAdminPaymentsAuth() {
   return {

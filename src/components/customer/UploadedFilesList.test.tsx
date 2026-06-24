@@ -72,8 +72,8 @@ describe("UploadedFilesList", () => {
   it("should render loading state when isLoading is true", () => {
     render(<UploadedFilesList paymentId={mockPaymentId} isLoading={true} />);
 
-    expect(screen.getByText("Uploaded Files")).toBeInTheDocument();
-    expect(screen.getByText("Loading files...")).toBeInTheDocument();
+    expect(screen.getByText("Comprovantes enviados")).toBeInTheDocument();
+    expect(screen.getByText("Carregando arquivos...")).toBeInTheDocument();
     // Check that loading skeletons are shown (3 skeleton items)
     const skeletonContainers = screen.getAllByText((content, element) => {
       return element?.className?.includes("animate-pulse") || false;
@@ -87,10 +87,10 @@ describe("UploadedFilesList", () => {
     render(<UploadedFilesList paymentId={mockPaymentId} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Uploaded Files")).toBeInTheDocument();
-      expect(screen.getByText("No files uploaded yet")).toBeInTheDocument();
+      expect(screen.getByText("Comprovantes enviados")).toBeInTheDocument();
+      expect(screen.getByText("Nenhum arquivo enviado ainda")).toBeInTheDocument();
       expect(
-        screen.getByText("No payment proof files have been uploaded yet.")
+        screen.getByText("Nenhum comprovante foi enviado para este pagamento.")
       ).toBeInTheDocument();
     });
   });
@@ -101,8 +101,8 @@ describe("UploadedFilesList", () => {
     render(<UploadedFilesList paymentId={mockPaymentId} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Uploaded Files")).toBeInTheDocument();
-      expect(screen.getByText("2 files uploaded")).toBeInTheDocument();
+      expect(screen.getByText("Comprovantes enviados")).toBeInTheDocument();
+      expect(screen.getByText("2 arquivos enviados")).toBeInTheDocument();
       expect(screen.getByText("payment-proof.jpg")).toBeInTheDocument();
       expect(screen.getByText("receipt.pdf")).toBeInTheDocument();
       expect(screen.getByText("1 MB")).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe("UploadedFilesList", () => {
     render(<UploadedFilesList paymentId={mockPaymentId} />);
 
     await waitFor(() => {
-      const thumbnail = screen.getByAltText("Thumbnail of payment-proof.jpg");
+      const thumbnail = screen.getByAltText("Miniatura de payment-proof.jpg");
       expect(thumbnail).toBeInTheDocument();
       expect(thumbnail).toHaveAttribute("src", mockThumbnailUrl);
     });
@@ -159,7 +159,7 @@ describe("UploadedFilesList", () => {
     render(<UploadedFilesList paymentId={mockPaymentId} />);
 
     await waitFor(() => {
-      const viewButton = screen.getByTitle("View full size");
+      const viewButton = screen.getByTitle("Ver imagem");
       expect(viewButton).toBeInTheDocument();
       expect(viewButton.querySelector("svg")).toHaveClass("lucide-eye");
     });
@@ -171,7 +171,7 @@ describe("UploadedFilesList", () => {
     render(<UploadedFilesList paymentId={mockPaymentId} />);
 
     await waitFor(() => {
-      const downloadButton = screen.getByTitle("Download PDF");
+      const downloadButton = screen.getByTitle("Baixar PDF");
       expect(downloadButton).toBeInTheDocument();
       expect(downloadButton.querySelector("svg")).toHaveClass("lucide-download");
     });
@@ -214,7 +214,7 @@ describe("UploadedFilesList", () => {
     );
 
     await waitFor(() => {
-      const deleteButton = screen.getByTitle("Delete file");
+      const deleteButton = screen.getByTitle("Remover arquivo");
       expect(deleteButton).toBeInTheDocument();
       expect(deleteButton.querySelector("svg")).toHaveClass("lucide-x");
     });
@@ -234,7 +234,7 @@ describe("UploadedFilesList", () => {
     );
 
     await waitFor(() => {
-      const deleteButton = screen.getByTitle("Delete file");
+      const deleteButton = screen.getByTitle("Remover arquivo");
       fireEvent.click(deleteButton);
     });
 
@@ -251,9 +251,9 @@ describe("UploadedFilesList", () => {
     render(<UploadedFilesList paymentId={mockPaymentId} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Error loading files")).toBeInTheDocument();
+      expect(screen.getByText("Erro ao carregar arquivos")).toBeInTheDocument();
       expect(screen.getByText("Failed to load files")).toBeInTheDocument();
-      expect(screen.getByText("Try Again")).toBeInTheDocument();
+      expect(screen.getByText("Tentar novamente")).toBeInTheDocument();
     });
   });
 

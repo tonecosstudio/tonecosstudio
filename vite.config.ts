@@ -1,13 +1,22 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
+import os from "os";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+
+const catalogWebpOutput = path.resolve(
+  process.env.CATALOG_WEBP_OUTPUT ||
+    path.join(os.homedir(), "Downloads", "ordax-catalogo-webp-final"),
+);
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    fs: {
+      allow: [path.resolve(__dirname), catalogWebpOutput],
+    },
     hmr: {
       overlay: false,
     },

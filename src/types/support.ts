@@ -53,7 +53,7 @@ export interface Conversation {
   subscription_id?: string;
   payment_id?: string;
 
-  // Dados computados (não vêm do banco)
+  // Dados computados (nao vem do banco)
   user_email?: string;
   user_name?: string;
   unread_count?: number;
@@ -273,7 +273,7 @@ export const PRODUCTION_STAGES: ProductionStage[] = [
 ];
 
 // REMOVED: ORDER_STATUSES - use status arrays from @/types/admin/orders instead
-// REMOVED: getOrderStatusLabel - use getStatusLabel from @/services/admin/orders-validator instead
+// REMOVED: getOrderStatusLabel - use getStatusLabel from @/services/admin/orders/orders-validator instead
 
 // Helper functions
 export function getStatusLabel(status: ConversationStatus): string {
@@ -290,9 +290,9 @@ export function getStatusLabel(status: ConversationStatus): string {
 export function getTagLabel(tag: ConversationTag): string {
   const labels: Record<ConversationTag, string> = {
     pedido: "Pedido",
-    orcamento: "Orçamento",
-    duvida: "Dúvida",
-    reclamacao: "Reclamação",
+    orcamento: "Orcamento",
+    duvida: "Duvida",
+    reclamacao: "Reclamacao",
     assinatura: "Assinatura",
     urgente: "Urgente",
   };
@@ -302,7 +302,7 @@ export function getTagLabel(tag: ConversationTag): string {
 export function getRiskFlagLabel(flag: RiskFlag): string {
   const labels: Record<RiskFlag, string> = {
     cliente_conflito: "Cliente em Conflito",
-    atraso_critico: "Atraso Crítico",
+    atraso_critico: "Atraso Critico",
     pagamento_problema: "Problema de Pagamento",
   };
   return labels[flag];
@@ -311,9 +311,9 @@ export function getRiskFlagLabel(flag: RiskFlag): string {
 export function getProductionStageLabel(stage: ProductionStage): string {
   const labels: Record<ProductionStage, string> = {
     molde_pronto: "Molde Pronto",
-    impressao_iniciada: "Impressão Iniciada",
+    impressao_iniciada: "Impressao Iniciada",
     pintura_iniciada: "Pintura Iniciada",
-    finalizacao: "Finalização",
+    finalizacao: "Finalizacao",
   };
   return labels[stage];
 }

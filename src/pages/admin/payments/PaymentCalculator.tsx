@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calculator, DollarSign, TrendingDown, TrendingUp, Package } from "lucide-react";
 import { PRICING, PLANS } from "@/config/constants";
 import { calculateNetValues, formatCurrency, TAX_RATES, usePricingSettings } from "@/hooks/usePricingSettings";
-import { listActiveSubscriptionPlans } from "@/services/subscription-plans-service";
+import { listActiveSubscriptionPlans } from "@/services/subscriptions/subscription-plans-service";
 
 type Preset = {
   label: string;

@@ -91,10 +91,10 @@ export function isCriticalNotification(notificationType: string): boolean {
  */
 export function getNotificationLabel(key: keyof NotificationPreferences): string {
   const labels: Record<keyof NotificationPreferences, string> = {
-    production_stage_updates: 'Production Stage Updates',
-    item_shipped: 'Shipping Notifications',
-    item_delivered: 'Delivery Confirmations',
-    marketing_emails: 'Marketing & Promotional Emails',
+    production_stage_updates: 'Atualizacoes de producao',
+    item_shipped: 'Avisos de envio',
+    item_delivered: 'Confirmacoes de entrega',
+    marketing_emails: 'Novidades e promocoes',
   };
   return labels[key];
 }
@@ -104,10 +104,10 @@ export function getNotificationLabel(key: keyof NotificationPreferences): string
  */
 export function getNotificationDescription(key: keyof NotificationPreferences): string {
   const descriptions: Record<keyof NotificationPreferences, string> = {
-    production_stage_updates: 'Receive updates when your order moves through production stages (design, production, quality check, packaging)',
-    item_shipped: 'Get notified when your item is shipped with tracking information',
-    item_delivered: 'Receive confirmation when your item is delivered',
-    marketing_emails: 'Receive promotional emails, special offers, and new collection announcements',
+    production_stage_updates: 'Receba avisos quando seu pedido avancar pelas etapas de design, producao, qualidade e embalagem.',
+    item_shipped: 'Receba notificacoes quando seu item for enviado com codigo de rastreamento.',
+    item_delivered: 'Receba confirmacoes quando a entrega for concluida.',
+    marketing_emails: 'Receba novidades, ofertas especiais e anuncios futuros do catalogo.',
   };
   return descriptions[key];
 }

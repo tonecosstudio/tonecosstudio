@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { broadcastGroupMessage, verifyGroupMembership } from "./groupBroadcast";
 
 type SupabaseChannel = ReturnType<typeof supabase.channel>;
+type AuthUserResponse = Awaited<ReturnType<typeof supabase.auth.getUser>>;
 type SupabaseFromResult = ReturnType<typeof supabase.from>;
 type BroadcastMessage = GroupMessage & {
   sender_name: string;
@@ -13,6 +14,9 @@ type BroadcastMessage = GroupMessage & {
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
+    auth: {
+      getUser: vi.fn(),
+    },
     channel: vi.fn(),
     from: vi.fn(),
   },
@@ -26,7 +30,9 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
-function createMessage(overrides: Partial<BroadcastMessage> = {}): BroadcastMessage {
+function createMessage(
+  overrides: Partial<BroadcastMessage> = {},
+): BroadcastMessage {
   const now = new Date().toISOString();
 
   return {
@@ -49,7 +55,17 @@ function mockBroadcastChannel(send: ReturnType<typeof vi.fn>): void {
   } as unknown as SupabaseChannel);
 }
 
-function mockMembershipQuery(result: { data: { id: string } | null; error: unknown }): {
+function mockCurrentUser(userId: string | null): void {
+  vi.mocked(supabase.auth.getUser).mockResolvedValue({
+    data: { user: userId ? { id: userId } : null },
+    error: null,
+  } as unknown as AuthUserResponse);
+}
+
+function mockMembershipQuery(result: {
+  data: { id: string } | null;
+  error: unknown;
+}): {
   from: ReturnType<typeof vi.fn>;
   firstEq: ReturnType<typeof vi.fn>;
   secondEq: ReturnType<typeof vi.fn>;
@@ -61,7 +77,9 @@ function mockMembershipQuery(result: { data: { id: string } | null; error: unkno
   const select = vi.fn().mockReturnValue({ eq: firstEq });
   const from = vi.fn().mockReturnValue({ select });
 
-  vi.mocked(supabase.from).mockImplementation(from as unknown as typeof supabase.from);
+  vi.mocked(supabase.from).mockImplementation(
+    from as unknown as typeof supabase.from,
+  );
 
   return { from, firstEq, secondEq, maybeSingle };
 }
@@ -72,7 +90,9 @@ function mockMembershipQueryError(error: Error): void {
   const firstEq = vi.fn().mockReturnValue({ eq: secondEq });
   const select = vi.fn().mockReturnValue({ eq: firstEq });
 
-  vi.mocked(supabase.from).mockReturnValue({ select } as unknown as SupabaseFromResult);
+  vi.mocked(supabase.from).mockReturnValue({
+    select,
+  } as unknown as SupabaseFromResult);
 }
 
 describe("groupBroadcast", () => {
@@ -90,7 +110,10 @@ describe("groupBroadcast", () => {
 
       await broadcastGroupMessage(groupId, message);
 
-      expect(supabase.channel).toHaveBeenCalledWith(`group:${groupId}`);
+      expect(supabase.channel).toHaveBeenCalledWith(
+        `group:${groupId}`,
+        undefined,
+      );
       expect(send).toHaveBeenCalledWith({
         type: "broadcast",
         event: "new_message",
@@ -104,7 +127,9 @@ describe("groupBroadcast", () => {
 
       mockBroadcastChannel(send);
 
-      await expect(broadcastGroupMessage(groupId, createMessage({ group_id: groupId }))).resolves.not.toThrow();
+      await expect(
+        broadcastGroupMessage(groupId, createMessage({ group_id: groupId })),
+      ).resolves.not.toThrow();
     });
 
     it("includes attachments in broadcast payload", async () => {
@@ -137,39 +162,51 @@ describe("groupBroadcast", () => {
         payload: { message },
       });
       expect(send.mock.calls[0][0].payload.message.attachments).toHaveLength(1);
-      expect(send.mock.calls[0][0].payload.message.attachments[0].file_name).toBe("test.pdf");
+      expect(
+        send.mock.calls[0][0].payload.message.attachments[0].file_name,
+      ).toBe("test.pdf");
     });
   });
 
   describe("verifyGroupMembership", () => {
     it("returns true for valid member", async () => {
+      mockCurrentUser("user-1");
       const { from } = mockMembershipQuery({
         data: { id: "membership-1" },
         error: null,
       });
 
-      await expect(verifyGroupMembership("group-1", "user-1")).resolves.toBe(true);
+      await expect(verifyGroupMembership("group-1", "user-1")).resolves.toBe(
+        true,
+      );
       expect(from).toHaveBeenCalledWith("chat_group_members");
     });
 
     it("returns false for non-member", async () => {
+      mockCurrentUser("user-2");
       mockMembershipQuery({
         data: null,
         error: { message: "Not found" },
       });
 
-      await expect(verifyGroupMembership("group-1", "user-2")).resolves.toBe(false);
+      await expect(verifyGroupMembership("group-1", "user-2")).resolves.toBe(
+        false,
+      );
     });
 
     it("returns false on database error", async () => {
+      mockCurrentUser("user-1");
       mockMembershipQueryError(new Error("Database error"));
 
-      await expect(verifyGroupMembership("group-1", "user-1")).resolves.toBe(false);
+      await expect(verifyGroupMembership("group-1", "user-1")).resolves.toBe(
+        false,
+      );
     });
 
     it("verifies correct group and user IDs", async () => {
       const groupId = "group-123";
       const userId = "user-456";
+      mockCurrentUser(userId);
       const { firstEq, secondEq } = mockMembershipQuery({
         data: { id: "membership-1" },
         error: null,
@@ -179,6 +216,19 @@ describe("groupBroadcast", () => {
 
       expect(firstEq).toHaveBeenCalledWith("group_id", groupId);
       expect(secondEq).toHaveBeenCalledWith("user_id", userId);
+    });
+
+    it("returns false when expected user does not match current session", async () => {
+      mockCurrentUser("current-user");
+      const { from } = mockMembershipQuery({
+        data: { id: "membership-1" },
+        error: null,
+      });
+
+      await expect(
+        verifyGroupMembership("group-1", "other-user"),
+      ).resolves.toBe(false);
+      expect(from).not.toHaveBeenCalled();
     });
   });
 });

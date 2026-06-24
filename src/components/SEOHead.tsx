@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { CONTACT } from "@/config/constants";
+import { ASSETS, CONTACT } from "@/config/constants";
 
 interface SEOHeadProps {
   title?: string;
@@ -16,7 +16,7 @@ export default function SEOHead({
   title,
   description = "Tonecos Studios - Estatuetas premium artesanais feitas à mão. Produção sob encomenda de colecionáveis de alta qualidade com pintura artística.",
   keywords = ["estatuetas", "colecionáveis", "premium", "artesanal", "tonecos", "collectibles"],
-  image = "/placeholder.svg",
+  image = ASSETS.PLACEHOLDER_IMAGE_URL,
   url,
   type = "website",
   noindex = false,

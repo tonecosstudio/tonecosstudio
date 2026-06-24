@@ -51,29 +51,13 @@ export default tseslint.config(
   },
   {
     files: ["src/components/**/*.{ts,tsx}", "src/pages/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"],
     rules: {
-      "no-restricted-imports": ["warn", {
+      "no-restricted-imports": ["error", {
         patterns: [
           {
             group: ["@/integrations/*"],
             message: "UI nao deve acessar integrations diretamente. Use hooks/services.",
-          },
-          {
-            group: ["@/lib/services/*"],
-            message: "UI nao deve depender de lib/services diretamente. Use hooks/application layer.",
-          },
-        ],
-      }],
-    },
-  },
-  {
-    files: ["src/components/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": ["warn", {
-        patterns: [
-          {
-            group: ["@/services/*"],
-            message: "Components devem evitar acesso direto a services. Preferir hooks por dominio.",
           },
         ],
       }],

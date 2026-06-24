@@ -1,5 +1,5 @@
-import { conversationService } from "@/lib/services/conversationService";
-import { messageService } from "@/lib/services/messageService";
+import { conversationService } from "@/services/support/conversation-service";
+import { messageService } from "@/services/support/message-service";
 import { assertCurrentUserId } from "@/services/auth/current-user";
 
 export interface CustomerContactSubmission {

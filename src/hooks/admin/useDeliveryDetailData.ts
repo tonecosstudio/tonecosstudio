@@ -5,7 +5,7 @@ import {
   fetchSubscriberAddress,
   updateDeliveryStatus,
   type UpdateDeliveryStatusInput,
-} from '@/services/admin/delivery-detail-service';
+} from '@/services/admin/delivery/delivery-detail-service';
 
 export function useDeliveryDetail(deliveryId: string | null, open: boolean) {
   return useQuery({

@@ -1,18 +1,6 @@
-/**
- * ProgressTimeline Component Tests
- * 
- * Tests for the customer-facing production progress timeline component.
- * 
- * Task: 5.1.2 Create ProgressTimeline component
- */
-
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { ProgressTimeline, type StageInfo, type ProductionStage } from "./ProgressTimeline";
-
-// ============================================================================
-// Test Data
-// ============================================================================
+import { describe, expect, it } from "vitest";
+import { ProgressTimeline, type ProductionStage, type StageInfo } from "./ProgressTimeline";
 
 const createStageInfo = (
   name: ProductionStage,
@@ -40,13 +28,9 @@ const getStageOrder = (stage: ProductionStage): number => {
   return orders[stage];
 };
 
-// ============================================================================
-// Tests
-// ============================================================================
-
 describe("ProgressTimeline", () => {
   describe("Stage Display", () => {
-    it("should display all stages horizontally", () => {
+    it("displays all stages", () => {
       const stages: StageInfo[] = [
         createStageInfo("awaiting_choice", "completed", "2024-01-01"),
         createStageInfo("design", "completed", "2024-01-05"),
@@ -58,7 +42,6 @@ describe("ProgressTimeline", () => {
 
       render(<ProgressTimeline stages={stages} />);
 
-      // Check all stage labels are present (both desktop and mobile views)
       expect(screen.getAllByText("Aguardando Escolha").length).toBeGreaterThan(0);
       expect(screen.getAllByText("Design").length).toBeGreaterThan(0);
       expect(screen.getAllByText("Produção").length).toBeGreaterThan(0);
@@ -67,7 +50,7 @@ describe("ProgressTimeline", () => {
       expect(screen.getAllByText("Enviado").length).toBeGreaterThan(0);
     });
 
-    it("should show completed stages with checkmarks", () => {
+    it("shows completed stages with checkmarks", () => {
       const stages: StageInfo[] = [
         createStageInfo("awaiting_choice", "completed", "2024-01-01"),
         createStageInfo("design", "completed", "2024-01-05"),
@@ -77,16 +60,11 @@ describe("ProgressTimeline", () => {
         createStageInfo("shipped", "upcoming"),
       ];
 
-      const { container } = render(
-        <ProgressTimeline stages={stages} />
-      );
-
-      // Check for checkmark icons (lucide-react Check component)
-      const checkIcons = container.querySelectorAll('svg.lucide-check');
-      expect(checkIcons.length).toBeGreaterThan(0);
+      const { container } = render(<ProgressTimeline stages={stages} />);
+      expect(container.querySelectorAll("svg.lucide-check").length).toBeGreaterThan(0);
     });
 
-    it("should highlight current stage with animation", () => {
+    it("highlights current stage with animation", () => {
       const stages: StageInfo[] = [
         createStageInfo("awaiting_choice", "completed", "2024-01-01"),
         createStageInfo("design", "current"),
@@ -96,19 +74,12 @@ describe("ProgressTimeline", () => {
         createStageInfo("shipped", "upcoming"),
       ];
 
-      const { container } = render(
-        <ProgressTimeline stages={stages} />
-      );
-
-      // Check for "Em Progresso" badge
+      const { container } = render(<ProgressTimeline stages={stages} />);
       expect(screen.getAllByText("Em Progresso")[0]).toBeInTheDocument();
-
-      // Check for animation class (animate-pulse)
-      const animatedElements = container.querySelectorAll('.animate-pulse');
-      expect(animatedElements.length).toBeGreaterThan(0);
+      expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
     });
 
-    it("should show completion dates for completed stages", () => {
+    it("shows completion dates for completed stages", () => {
       const stages: StageInfo[] = [
         createStageInfo("awaiting_choice", "completed", "2024-01-15T10:00:00Z"),
         createStageInfo("design", "completed", "2024-01-20T14:30:00Z"),
@@ -120,12 +91,11 @@ describe("ProgressTimeline", () => {
 
       render(<ProgressTimeline stages={stages} />);
 
-      // Check for formatted dates (dd/MM/yyyy format)
       expect(screen.getByText("15/01/2024")).toBeInTheDocument();
       expect(screen.getByText("20/01/2024")).toBeInTheDocument();
     });
 
-    it("should show estimated dates for future stages", () => {
+    it("shows estimated dates for future stages", () => {
       const stages: StageInfo[] = [
         createStageInfo("awaiting_choice", "completed", "2024-01-01"),
         createStageInfo("design", "current"),
@@ -136,15 +106,12 @@ describe("ProgressTimeline", () => {
       ];
 
       render(<ProgressTimeline stages={stages} />);
-
-      // Check for "Prev:" or "Previsão:" text (depending on viewport)
-      const estimatedDates = screen.getAllByText(/Prev:|Previsão:/);
-      expect(estimatedDates.length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Prev:|Previsão:/).length).toBeGreaterThan(0);
     });
   });
 
   describe("Stage Order", () => {
-    it("should display stages in correct order", () => {
+    it("displays stages in correct order", () => {
       const stages: StageInfo[] = [
         createStageInfo("shipped", "upcoming"),
         createStageInfo("awaiting_choice", "completed", "2024-01-01"),
@@ -154,28 +121,23 @@ describe("ProgressTimeline", () => {
         createStageInfo("production", "current"),
       ];
 
-      render(
-        <ProgressTimeline stages={stages} />
-      );
+      render(<ProgressTimeline stages={stages} />);
 
-      // Check all expected stages are present (both desktop and mobile views render them)
-      const expectedOrder = [
+      [
         "Aguardando Escolha",
         "Design",
         "Produção",
         "Controle de Qualidade",
         "Embalagem",
         "Enviado",
-      ];
-
-      expectedOrder.forEach((label) => {
+      ].forEach((label) => {
         expect(screen.getAllByText(label).length).toBeGreaterThan(0);
       });
     });
   });
 
   describe("Progress Calculation", () => {
-    it("should calculate progress percentage correctly", () => {
+    it("calculates progress percentage correctly", () => {
       const stages: StageInfo[] = [
         createStageInfo("awaiting_choice", "completed", "2024-01-01"),
         createStageInfo("design", "completed", "2024-01-05"),
@@ -185,17 +147,11 @@ describe("ProgressTimeline", () => {
         createStageInfo("shipped", "upcoming"),
       ];
 
-      const { container } = render(
-        <ProgressTimeline stages={stages} />
-      );
-
-      // Check for progress bar (should be 50% - 3 out of 6 completed)
-      const progressBar = container.querySelector('.bg-primary.transition-all');
-      expect(progressBar).toBeInTheDocument();
-      expect(progressBar).toHaveStyle({ width: '50%' });
+      const { container } = render(<ProgressTimeline stages={stages} />);
+      expect(container.querySelector(".bg-primary.transition-all")).toHaveStyle({ width: "50%" });
     });
 
-    it("should show 0% progress when no stages completed", () => {
+    it("shows 0% progress when no stages are completed", () => {
       const stages: StageInfo[] = [
         createStageInfo("awaiting_choice", "current"),
         createStageInfo("design", "upcoming"),
@@ -205,15 +161,11 @@ describe("ProgressTimeline", () => {
         createStageInfo("shipped", "upcoming"),
       ];
 
-      const { container } = render(
-        <ProgressTimeline stages={stages} />
-      );
-
-      const progressBar = container.querySelector('.bg-primary.transition-all');
-      expect(progressBar).toHaveStyle({ width: '0%' });
+      const { container } = render(<ProgressTimeline stages={stages} />);
+      expect(container.querySelector(".bg-primary.transition-all")).toHaveStyle({ width: "0%" });
     });
 
-    it("should show 100% progress when all stages completed", () => {
+    it("shows 100% progress when all stages are completed", () => {
       const stages: StageInfo[] = [
         createStageInfo("awaiting_choice", "completed", "2024-01-01"),
         createStageInfo("design", "completed", "2024-01-05"),
@@ -223,17 +175,13 @@ describe("ProgressTimeline", () => {
         createStageInfo("shipped", "completed", "2024-01-15"),
       ];
 
-      const { container } = render(
-        <ProgressTimeline stages={stages} />
-      );
-
-      const progressBar = container.querySelector('.bg-primary.transition-all');
-      expect(progressBar).toHaveStyle({ width: '100%' });
+      const { container } = render(<ProgressTimeline stages={stages} />);
+      expect(container.querySelector(".bg-primary.transition-all")).toHaveStyle({ width: "100%" });
     });
   });
 
   describe("Accessibility", () => {
-    it("should have proper ARIA labels for emojis", () => {
+    it("has proper ARIA labels for stage markers", () => {
       const stages: StageInfo[] = [
         createStageInfo("awaiting_choice", "current"),
         createStageInfo("design", "upcoming"),
@@ -243,22 +191,15 @@ describe("ProgressTimeline", () => {
         createStageInfo("shipped", "upcoming"),
       ];
 
-      const { container } = render(
-        <ProgressTimeline stages={stages} />
-      );
-
-      // Check for role="img" and aria-label on emoji spans
-      const emojiElements = container.querySelectorAll('span[role="img"]');
-      expect(emojiElements.length).toBeGreaterThan(0);
-
-      emojiElements.forEach((emoji) => {
-        expect(emoji).toHaveAttribute('aria-label');
-      });
+      const { container } = render(<ProgressTimeline stages={stages} />);
+      const stageMarkers = container.querySelectorAll('span[role="img"]');
+      expect(stageMarkers.length).toBeGreaterThan(0);
+      stageMarkers.forEach((marker) => expect(marker).toHaveAttribute("aria-label"));
     });
   });
 
   describe("Mobile Responsiveness", () => {
-    it("should render without errors on mobile viewport", () => {
+    it("renders both mobile and desktop containers", () => {
       const stages: StageInfo[] = [
         createStageInfo("awaiting_choice", "completed", "2024-01-01"),
         createStageInfo("design", "current"),
@@ -268,46 +209,27 @@ describe("ProgressTimeline", () => {
         createStageInfo("shipped", "upcoming"),
       ];
 
-      const { container } = render(
-        <ProgressTimeline stages={stages} />
-      );
-
-      // Check for mobile-specific classes (md:hidden for mobile view)
-      const mobileView = container.querySelector('.md\\:hidden');
-      expect(mobileView).toBeInTheDocument();
-
-      // Check for desktop-specific classes (hidden md:block for desktop view)
-      const desktopView = container.querySelector('.hidden.md\\:block');
-      expect(desktopView).toBeInTheDocument();
+      const { container } = render(<ProgressTimeline stages={stages} />);
+      expect(container.querySelector(".md\\:hidden")).toBeInTheDocument();
+      expect(container.querySelector(".hidden.md\\:block")).toBeInTheDocument();
     });
   });
 
   describe("Edge Cases", () => {
-    it("should handle empty stages array", () => {
-      const stages: StageInfo[] = [];
-
-      const { container } = render(
-        <ProgressTimeline stages={stages} />
-      );
-
-      // Should render without crashing
+    it("handles empty stages array", () => {
+      const { container } = render(<ProgressTimeline stages={[]} />);
       expect(container).toBeInTheDocument();
     });
 
-    it("should handle single stage", () => {
-      const stages: StageInfo[] = [
-        createStageInfo("awaiting_choice", "current"),
-      ];
-
-      render(<ProgressTimeline stages={stages} />);
-
+    it("handles single stage", () => {
+      render(<ProgressTimeline stages={[createStageInfo("awaiting_choice", "current")]} />);
       expect(screen.getAllByText("Aguardando Escolha").length).toBeGreaterThan(0);
       expect(screen.getAllByText("Em Progresso")[0]).toBeInTheDocument();
     });
 
-    it("should handle missing completion dates gracefully", () => {
+    it("handles missing completion dates gracefully", () => {
       const stages: StageInfo[] = [
-        createStageInfo("awaiting_choice", "completed", null), // No completion date
+        createStageInfo("awaiting_choice", "completed", null),
         createStageInfo("design", "current"),
         createStageInfo("production", "upcoming"),
         createStageInfo("quality_check", "upcoming"),
@@ -315,25 +237,14 @@ describe("ProgressTimeline", () => {
         createStageInfo("shipped", "upcoming"),
       ];
 
-      const { container } = render(
-        <ProgressTimeline stages={stages} />
-      );
-
-      // Should render without crashing
+      const { container } = render(<ProgressTimeline stages={stages} />);
       expect(container).toBeInTheDocument();
       expect(screen.getAllByText("Aguardando Escolha").length).toBeGreaterThan(0);
     });
 
-    it("should handle custom className prop", () => {
-      const stages: StageInfo[] = [
-        createStageInfo("awaiting_choice", "current"),
-      ];
-
+    it("handles custom className prop", () => {
       const { container } = render(
-        <ProgressTimeline
-          stages={stages}
-          className="custom-class"
-        />
+        <ProgressTimeline stages={[createStageInfo("awaiting_choice", "current")]} className="custom-class" />
       );
 
       expect(container.firstChild).toHaveClass("custom-class");

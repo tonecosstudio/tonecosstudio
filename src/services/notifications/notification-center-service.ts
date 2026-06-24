@@ -1,26 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizePostgrestSearchTerm } from "@/lib/postgrest-search";
-import {
-  assertCurrentUserId,
-  requireAuthenticatedUserId,
-} from "@/services/auth/current-user";
+import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 import type {
-  NotificationCenterItem,
   UserNotificationPriority,
   UserNotificationCenterItem,
   UserNotificationFilter,
 } from "@/types/notifications";
-
-type NotificationRow = {
-  id: string;
-  user_id: string;
-  type: string | null;
-  title: string;
-  message: string;
-  is_read: boolean;
-  read_at: string | null;
-  created_at: string;
-};
 
 type UserNotificationRow = {
   id: string;
@@ -46,19 +31,6 @@ const USER_NOTIFICATION_PRIORITIES: readonly UserNotificationPriority[] = [
   "high",
   "critical",
 ];
-
-function toNotificationCenterItem(row: NotificationRow): NotificationCenterItem {
-  return {
-    id: row.id,
-    user_id: row.user_id,
-    type: row.type,
-    title: row.title,
-    message: row.message,
-    link: null,
-    is_read: row.is_read,
-    created_at: row.created_at,
-  };
-}
 
 function toUserNotificationPriority(value: string): UserNotificationPriority {
   return USER_NOTIFICATION_PRIORITIES.includes(value as UserNotificationPriority)
@@ -87,48 +59,6 @@ function toUserNotificationCenterItem(row: UserNotificationRow): UserNotificatio
         ? (row.metadata as Record<string, unknown>)
         : undefined,
   };
-}
-
-export async function listNotifications(userId: string): Promise<NotificationCenterItem[]> {
-  await assertCurrentUserId(userId);
-
-  const { data, error } = await supabase
-    .from("notifications")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  if (error) throw error;
-  return ((data ?? []) as NotificationRow[]).map(toNotificationCenterItem);
-}
-
-export async function markNotificationAsRead(notificationId: string): Promise<void> {
-  await requireAuthenticatedUserId();
-
-  const { error } = await supabase.rpc("mark_notification_as_read", {
-    notification_id: notificationId,
-  });
-
-  if (error) throw error;
-}
-
-export async function markAllNotificationsAsRead(): Promise<void> {
-  await requireAuthenticatedUserId();
-
-  const { error } = await supabase.rpc("mark_all_notifications_as_read");
-
-  if (error) throw error;
-}
-
-export async function deleteNotification(notificationId: string): Promise<void> {
-  await requireAuthenticatedUserId();
-
-  const { error } = await supabase.rpc("delete_user_notification", {
-    p_notification_id: notificationId,
-  });
-
-  if (error) throw error;
 }
 
 export async function listUserNotifications(

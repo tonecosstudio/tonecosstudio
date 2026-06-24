@@ -5,7 +5,7 @@
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchUnifiedOrders } from '@/services/admin/orders-service';
+import { fetchUnifiedOrders } from '@/services/admin/orders/orders-service';
 import type {
   OrderFilters,
   PaginationParams,

@@ -27,19 +27,19 @@ import {
   type CatalogSort,
 } from "@/hooks/catalog/useCatalogCharacters";
 import type { CatalogCharacterRow } from "@/types/catalog";
-import { getCatalogPublicTags } from "@/lib/catalog-utils";
-
 const SOURCE_TYPE_LABELS: Record<string, string> = {
   anime: "Anime",
   manga: "Manga",
   movie: "Filme",
-  series: "Serie",
+  series: "Series",
   game: "Game",
   comic: "HQ",
   tokusatsu: "Tokusatsu",
   original: "Original",
   other: "Outro",
 };
+
+const EMPTY_CHARACTER_ROWS: CatalogCharacterRow[] = [];
 
 function buildVisiblePageIndexes(currentPage: number, hasNext: boolean) {
   const knownLastPage = currentPage + (hasNext ? 1 : 0);
@@ -194,7 +194,7 @@ export default function CharacterSelect() {
     sort,
   });
 
-  const rows = charactersQuery.data?.rows ?? [];
+  const rows = charactersQuery.data?.rows ?? EMPTY_CHARACTER_ROWS;
   const hasNext = charactersQuery.data?.hasNext ?? false;
   const visiblePageIndexes = useMemo(
     () => buildVisiblePageIndexes(page, hasNext),
@@ -220,13 +220,13 @@ export default function CharacterSelect() {
   return (
     <Page
       title="Personagens | ORDAX"
-      description="Diretorio publico de personagens com acesso rapido aos modelos de cada um."
+      description="Character archive com acesso rapido aos modelos do universo ORDAX."
       keywords={["personagens", "universo", "catalogo", "modelos", "ordax"]}
     >
       <ArcadeHero
-        badge="Diretorio Publico"
-        title="PERSONAGENS"
-        subtitle=">> ENCONTRE O PERSONAGEM. ABRA A PAGINA. NAVEGUE PELOS MODELOS."
+        badge="Public Archive"
+        title="CHARACTER ARCHIVE"
+        subtitle=">> FIND THE CHARACTER. OPEN THE PAGE. BROWSE THE MODELS."
         stats={[
           { value: stats.characters, label: stats.characters === 1 ? "Personagem" : "Personagens" },
           { value: stats.models, label: stats.models === 1 ? "Modelo" : "Modelos" },
@@ -239,10 +239,10 @@ export default function CharacterSelect() {
         <div className="mb-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_180px]">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[hsl(0,0%,40%)]" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar personagem..."
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search characters"
               className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] pl-11 pr-10 font-mono text-sm tracking-wider text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] transition-colors focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none"
             />
             {q && (
@@ -258,7 +258,7 @@ export default function CharacterSelect() {
           <input
             value={franchise}
             onChange={(e) => setFranchise(e.target.value)}
-            placeholder="Filtrar obra"
+            placeholder="Filter by title"
             className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-4 font-mono text-sm tracking-wider text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] transition-colors focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none"
           />
 
@@ -291,7 +291,7 @@ export default function CharacterSelect() {
           )}
         </div>
 
-        <ArcadeSectionTitle>Diretorio de personagens</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Character archive</ArcadeSectionTitle>
 
         {charactersQuery.isLoading ? (
           <ArcadeCard hover={false} className="p-8 text-center">

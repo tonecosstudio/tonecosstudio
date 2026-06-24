@@ -32,7 +32,7 @@ vi.mock('@/hooks/use-toast', () => ({
 }));
 
 // Mock production service
-vi.mock('@/services/admin/production-service', () => ({
+vi.mock('@/services/admin/production/production-service', () => ({
   updateProductionSchedule: vi.fn().mockResolvedValue({}),
 }));
 

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { subscriptionCreditAPI } from "@/services/subscription-credit-api";
+import { subscriptionCreditAPI } from "@/services/subscriptions/subscription-credit-api";
 
 export function useSubscriptionCreditTransactions(enabled: boolean) {
   return useQuery({

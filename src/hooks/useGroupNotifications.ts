@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   playAudioNotification,
   requestBrowserNotificationPermission,
   showBrowserNotification,
 } from "@/lib/notifications/browser-notifications";
+import { subscribeToGroupMessageNotifications } from "@/services/realtime/realtime-service";
 
 interface UseGroupNotificationsOptions {
   groupId: string;
@@ -14,11 +14,6 @@ interface UseGroupNotificationsOptions {
   enabled?: boolean;
   playSound?: boolean;
   showToast?: boolean;
-}
-
-interface GroupMessageNotificationPayload {
-  sender_id: string;
-  message?: string | null;
 }
 
 export function useGroupNotifications({
@@ -35,18 +30,9 @@ export function useGroupNotifications({
 
     requestBrowserNotificationPermission();
 
-    const channel = supabase
-      .channel(`group-messages:${groupId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_group_messages",
-          filter: `group_id=eq.${groupId}`,
-        },
-        (payload) => {
-          const newMessage = payload.new as GroupMessageNotificationPayload;
+    return subscribeToGroupMessageNotifications({
+      groupId,
+      onInsert: (newMessage) => {
           if (newMessage.sender_id === userId) return;
 
           queryClient.invalidateQueries({ queryKey: ["group-messages", groupId] });
@@ -68,25 +54,11 @@ export function useGroupNotifications({
             body: newMessage.message?.substring(0, 100) || "Nova mensagem",
             tag: `group-${groupId}`,
           });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "chat_group_messages",
-          filter: `group_id=eq.${groupId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["group-messages", groupId] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      },
+      onUpdate: () => {
+        queryClient.invalidateQueries({ queryKey: ["group-messages", groupId] });
+      },
+    });
   }, [enabled, groupId, playSound, queryClient, showToast, userId]);
 
   return {

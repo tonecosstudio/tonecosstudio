@@ -1,10 +1,17 @@
 /// <reference lib="deno.window" />
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
-import { getClaims, getServiceClient } from "../_shared/supabase.ts";
+import {
+  callServiceRoleFunction,
+  getClaims,
+  getServiceClient,
+} from "../_shared/supabase.ts";
 import { nowInBahia, isBeforeCutoff } from "../_shared/timezone.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
-import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import {
+  checkContentLength,
+  PAYLOAD_LIMITS,
+} from "../_shared/payload-guard.ts";
 import { validateOrReject, type Schema } from "../_shared/validation.ts";
 import { escapeHtml, sanitizeEmailSubject } from "../_shared/email.ts";
 
@@ -43,7 +50,7 @@ interface PauseRpcResult {
 }
 
 function toPauseRpcResult(value: unknown): PauseRpcResult {
-  return value && typeof value === "object" ? value as PauseRpcResult : {};
+  return value && typeof value === "object" ? (value as PauseRpcResult) : {};
 }
 
 function pauseErrorToStatus(message: string): number {
@@ -75,7 +82,12 @@ serve(async (req: Request) => {
     }
 
     // Rate limit: standard operations
-    const rateLimited = await checkRateLimit(req, "pause-subscription", RATE_LIMITS.STANDARD, userId);
+    const rateLimited = await checkRateLimit(
+      req,
+      "pause-subscription",
+      RATE_LIMITS.STANDARD,
+      userId,
+    );
     if (rateLimited) return rateLimited;
 
     // Payload size guard
@@ -95,7 +107,8 @@ serve(async (req: Request) => {
       return new Response(
         JSON.stringify({
           error: "CUTOFF_PASSED",
-          message: "Nao e possivel pausar apos o prazo limite (dia 15 as 23:59:59)",
+          message:
+            "Nao e possivel pausar apos o prazo limite (dia 15 as 23:59:59)",
         }),
         {
           status: 400,
@@ -128,10 +141,12 @@ serve(async (req: Request) => {
     }
 
     const pauseResult = toPauseRpcResult(pauseData);
-    const pauseCount = typeof pauseResult.pauseCount === "number" ? pauseResult.pauseCount : 0;
-    const pausesRemaining = typeof pauseResult.pausesRemaining === "number"
-      ? pauseResult.pausesRemaining
-      : Math.max(2 - pauseCount, 0);
+    const pauseCount =
+      typeof pauseResult.pauseCount === "number" ? pauseResult.pauseCount : 0;
+    const pausesRemaining =
+      typeof pauseResult.pausesRemaining === "number"
+        ? pauseResult.pausesRemaining
+        : Math.max(2 - pauseCount, 0);
     const updatedDeliveries = Array.isArray(pauseResult.deliverySchedule)
       ? pauseResult.deliverySchedule
       : [];
@@ -153,7 +168,7 @@ serve(async (req: Request) => {
           user.email,
           user.full_name || "Cliente",
           pauseCount,
-          updatedDeliveries || []
+          updatedDeliveries || [],
         );
         console.log(`Pause confirmation email sent to ${user.email}`);
       } catch (emailError) {
@@ -179,11 +194,15 @@ serve(async (req: Request) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error pausing subscription:", msg);
-    const status = msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
-    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const status =
+      msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
+    return new Response(
+      JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }),
+      {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
 
@@ -198,7 +217,7 @@ async function sendPauseConfirmationEmail(
   deliveries: Array<{
     delivery_number: number;
     expected_delivery_date: string | null;
-  }>
+  }>,
 ): Promise<void> {
   const pausesRemaining = 2 - pauseCount;
   const supportEmail = getSupportEmail();
@@ -210,10 +229,13 @@ async function sendPauseConfirmationEmail(
   const deliveryScheduleHtml = deliveries
     .map((delivery) => {
       const date = delivery.expected_delivery_date
-        ? new Date(delivery.expected_delivery_date).toLocaleDateString("pt-BR", {
-            month: "long",
-            year: "numeric",
-          })
+        ? new Date(delivery.expected_delivery_date).toLocaleDateString(
+            "pt-BR",
+            {
+              month: "long",
+              year: "numeric",
+            },
+          )
         : "A definir";
       return `<li>Entrega ${delivery.delivery_number}: ${escapeHtml(date)}</li>`;
     })
@@ -239,9 +261,11 @@ async function sendPauseConfirmationEmail(
     <p><strong>Pausas utilizadas:</strong> ${pauseCount} de 2</p>
     <p><strong>Pausas restantes:</strong> ${pausesRemaining}</p>
     <p style="color: #666; font-size: 14px; margin-top: 10px;">
-      ${pausesRemaining > 0 
-        ? `Você ainda pode pausar sua assinatura ${pausesRemaining} ${pausesRemaining === 1 ? 'vez' : 'vezes'}.`
-        : 'Você atingiu o limite de pausas para esta assinatura.'}
+      ${
+        pausesRemaining > 0
+          ? `Você ainda pode pausar sua assinatura ${pausesRemaining} ${pausesRemaining === 1 ? "vez" : "vezes"}.`
+          : "Você atingiu o limite de pausas para esta assinatura."
+      }
     </p>
   </div>
 
@@ -275,31 +299,18 @@ async function sendPauseConfirmationEmail(
 </html>
   `;
 
-  // Call the send-email edge function
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Missing Supabase configuration for email sending");
-  }
-
-  const response = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${serviceRoleKey}`,
+  const emailPayload = {
+    to: email,
+    subject: sanitizeEmailSubject("Sua assinatura ORDAX foi pausada"),
+    html,
+    emailType: "pause_confirmation",
+    metadata: {
+      pause_count: pauseCount,
+      pauses_remaining: pausesRemaining,
     },
-    body: JSON.stringify({
-      to: email,
-      subject: sanitizeEmailSubject("Sua assinatura ORDAX foi pausada"),
-      html,
-      emailType: "pause_confirmation",
-      metadata: {
-        pause_count: pauseCount,
-        pauses_remaining: pausesRemaining,
-      },
-    }),
-  });
+  };
+
+  const response = await callServiceRoleFunction("send-email", emailPayload);
 
   if (!response.ok) {
     const errorText = await response.text();

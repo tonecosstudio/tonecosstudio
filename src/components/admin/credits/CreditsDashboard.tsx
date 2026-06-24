@@ -1,25 +1,19 @@
-/**
- * Credits Dashboard Component
- *
- * Overview dashboard for the credits system showing key metrics.
- */
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Coins, RefreshCw, Wallet, TrendingUp, Users, Package } from "lucide-react";
+import { type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCreditsDashboardMetrics } from "@/hooks/admin/useCreditsDashboardMetrics";
+import { Coins, Package, RefreshCw, TrendingUp, Users, Wallet } from "lucide-react";
 import { ADMIN_ROUTES } from "@/config/routes";
+import { useCreditsDashboardMetrics } from "@/hooks/admin/useCreditsDashboardMetrics";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface MetricCardProps {
   title: string;
   value: string | number;
   description?: string;
-  icon: React.ReactNode;
-  trend?: string;
+  icon: ReactNode;
 }
 
-function MetricCard({ title, value, description, icon, trend }: MetricCardProps) {
+function MetricCard({ title, value, description, icon }: MetricCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -28,13 +22,7 @@ function MetricCard({ title, value, description, icon, trend }: MetricCardProps)
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
-        {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
-        {trend && (
-          <p className="mt-1 flex items-center gap-1 text-xs text-green-600">
-            <TrendingUp className="h-3 w-3" />
-            {trend}
-          </p>
-        )}
+        {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
       </CardContent>
     </Card>
   );
@@ -48,65 +36,65 @@ export function CreditsDashboard() {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <MetricCard
-          title="Coins em Circulação"
+          title="Coins em circulacao"
           value={metrics?.coins.total?.toLocaleString() || "0"}
-          description="Saldo líquido (créditos - débitos)"
+          description="Saldo liquido entre creditos e debitos"
           icon={<Coins className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
-          title="Assinantes Ativos"
+          title="Assinantes ativos"
           value={metrics?.subscribers.active || 0}
-          description={`${metrics?.subscribers.total || 0} total`}
+          description={`${metrics?.subscribers.total || 0} assinaturas registradas`}
           icon={<Users className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
-          title="Usuários com Coins"
+          title="Usuarios com coins"
           value={metrics?.coinUsers.count || 0}
-          description="Possuem saldo de coins"
+          description="Contas com saldo disponivel"
           icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
-          title="Ciclos Ativos"
+          title="Ciclos ativos"
           value={metrics?.cycles.active || 0}
-          description="Em produção"
+          description="Frentes de producao abertas"
           icon={<RefreshCw className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
-          title="Níveis de Preço"
+          title="Niveis de preco"
           value={metrics?.tiers.active || 0}
-          description="Tiers ativos"
+          description="Tiers ativos no momento"
           icon={<Wallet className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
-          title="Pacotes de Coins"
+          title="Pacotes de coins"
           value={metrics?.packages.active || 0}
-          description="Disponíveis para venda"
+          description="Disponiveis para venda"
           icon={<Package className="h-4 w-4 text-muted-foreground" />}
         />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Ações Rápidas</CardTitle>
-          <CardDescription>Acesso rápido às funcionalidades mais usadas</CardDescription>
+          <CardTitle>Acoes rapidas</CardTitle>
+          <CardDescription>Atalhos para as areas operacionais mais usadas.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.credits}?tab=coins`)}>
               <Coins className="mr-2 h-4 w-4" />
-              Gerenciar Coins
+              Gerenciar coins
             </Button>
             <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.credits}?tab=cycles`)}>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Ver Ciclos
+              Ver ciclos
             </Button>
             <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.credits}?tab=plans`)}>
               <Wallet className="mr-2 h-4 w-4" />
-              Configurar Planos
+              Configurar planos
             </Button>
             <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.orders}?type=subscription`)}>
               <Users className="mr-2 h-4 w-4" />
-              Ver Pedidos
+              Ver pedidos
             </Button>
           </div>
         </CardContent>
@@ -114,29 +102,29 @@ export function CreditsDashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Status do Sistema</CardTitle>
-          <CardDescription>Visão geral do sistema de créditos</CardDescription>
+          <CardTitle>Status do sistema</CardTitle>
+          <CardDescription>Leitura rapida da saude operacional do modulo de creditos.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Sistema de Coins</span>
+                <span className="text-sm">Sistema de coins</span>
               </div>
               <span className="text-sm font-medium text-green-600">Operacional</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Ciclos de Produção</span>
+                <span className="text-sm">Ciclos de producao</span>
               </div>
               <span className="text-sm font-medium text-green-600">Operacional</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Wallet className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Níveis de Preço</span>
+                <span className="text-sm">Niveis de preco</span>
               </div>
               <span className="text-sm font-medium text-green-600">Operacional</span>
             </div>

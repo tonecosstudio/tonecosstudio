@@ -1,25 +1,18 @@
-/**
- * ChatHeader - Cabeçalho da interface de chat com informações da conversa
- *
- * Requirements: 23.5, 12.2
- * Design: .kiro/specs/advanced-chat-support-system/design.md
- *
- * Exibe informações da conversa e permite agendar lembretes.
- * O nome do usuário é clicável para abrir o sidebar com dados completos.
- * Permite editar status, tags, data prometida e flags de risco.
- */
-
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Bell, User, PanelRightOpen } from "lucide-react";
-import { ReminderScheduler } from "./ReminderScheduler";
-import { PromisedDatePicker } from "../delivery/PromisedDatePicker";
-import { RiskFlagManager } from "../notifications/RiskFlagManager";
-import { ConversationStatusSelector } from "./ConversationStatusSelector";
-import { ConversationTagsSelector } from "./ConversationTagsSelector";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { AlertTriangle, Bell, Clock3, MessageSquare, PanelRightOpen, User } from "lucide-react";
 import type { ConversationReminder } from "@/lib/reminder-service";
 import type { Conversation } from "@/types/support";
+import { getStatusLabel } from "@/types/support";
 import { log } from "@/lib/logger";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { PromisedDatePicker } from "../delivery/PromisedDatePicker";
+import { RiskFlagManager } from "../notifications/RiskFlagManager";
+import { ReminderScheduler } from "./ReminderScheduler";
+import { ConversationStatusSelector } from "./ConversationStatusSelector";
+import { ConversationTagsSelector } from "./ConversationTagsSelector";
 
 interface ChatHeaderProps {
   conversationId: string;
@@ -50,25 +43,31 @@ export function ChatHeader({
     onConversationUpdate?.();
   };
 
+  const unreadCount = conversation?.unread_count || 0;
+  const hasUnread = unreadCount > 0;
+  const hasRisk = (conversation?.risk_flags || []).length > 0;
+  const isOverdue = Boolean(conversation?.is_overdue);
+  const lastActivityLabel = conversation?.last_message_at
+    ? formatDistanceToNow(new Date(conversation.last_message_at), {
+        addSuffix: true,
+        locale: ptBR,
+      })
+    : null;
+
   return (
     <>
       <div className="border-b bg-background">
-        {/* Linha 1: Informações do usuário */}
-        <div className="flex items-center justify-between p-4 pb-2">
+        <div className="flex flex-col gap-3 p-4 pb-2 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h2
                 className={`text-lg font-semibold ${
                   conversation?.user_id && onUserClick
-                    ? "cursor-pointer hover:text-primary transition-colors"
+                    ? "cursor-pointer transition-colors hover:text-primary"
                     : ""
                 }`}
                 onClick={handleUserClick}
-                title={
-                  conversation?.user_id && onUserClick
-                    ? "Clique para ver dados do cliente"
-                    : undefined
-                }
+                title={conversation?.user_id && onUserClick ? "Abrir ficha do cliente" : undefined}
               >
                 {conversation?.user_name || conversation?.user_email || "Conversa"}
               </h2>
@@ -79,9 +78,35 @@ export function ChatHeader({
             {conversation?.subject && (
               <p className="text-sm text-muted-foreground">{conversation.subject}</p>
             )}
+            {conversation && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                <Badge variant="secondary">{getStatusLabel(conversation.status)}</Badge>
+                {hasUnread && (
+                  <Badge variant="default">
+                    <MessageSquare className="mr-1 h-3 w-3" />
+                    {unreadCount} nova{unreadCount > 1 ? "s" : ""}
+                  </Badge>
+                )}
+                {hasRisk && (
+                  <Badge variant="destructive">
+                    <AlertTriangle className="mr-1 h-3 w-3" />
+                    Com risco
+                  </Badge>
+                )}
+                {isOverdue && (
+                  <Badge variant="destructive">
+                    <Clock3 className="mr-1 h-3 w-3" />
+                    Prazo atrasado
+                  </Badge>
+                )}
+                {lastActivityLabel && (
+                  <span className="text-muted-foreground">Ultima atividade {lastActivityLabel}</span>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {conversation?.status !== "closed" && (
               <Button
                 variant="destructive"
@@ -89,12 +114,11 @@ export function ChatHeader({
                 onClick={async () => {
                   if (
                     confirm(
-                      "Deseja realmente encerrar este atendimento? O cliente não poderá mais enviar mensagens."
+                      "Deseja encerrar este atendimento? O cliente deixara de enviar novas mensagens ate que a conversa seja reaberta."
                     )
                   ) {
                     try {
-                      const { conversationService } =
-                        await import("@/lib/services/conversationService");
+                      const { conversationService } = await import("@/services/support/conversation-service");
                       await conversationService.updateStatus(conversationId, "closed");
                       handleUpdate();
                     } catch (error) {
@@ -104,7 +128,7 @@ export function ChatHeader({
                 }}
                 className="gap-2"
               >
-                Encerrar Atendimento
+                Encerrar atendimento
               </Button>
             )}
 
@@ -115,7 +139,7 @@ export function ChatHeader({
               className="gap-2"
             >
               <Bell className="h-4 w-4" />
-              Agendar Lembrete
+              Agendar lembrete
             </Button>
 
             {onToggleSidebar && (
@@ -131,8 +155,7 @@ export function ChatHeader({
           </div>
         </div>
 
-        {/* Linha 2: Controles da conversa */}
-        <div className="flex items-center gap-2 px-4 pb-3 flex-wrap">
+        <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
           {conversation && (
             <>
               <ConversationStatusSelector

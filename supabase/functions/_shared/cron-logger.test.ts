@@ -4,13 +4,13 @@
  * Tests the cron job logging utility functions
  */
 
-import { assertRejects } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assertRejects } from "https://deno.land/std@0.224.0/testing/asserts.ts";
 import {
   describe,
   it,
   beforeEach,
   afterEach,
-} from "https://deno.land/std@0.168.0/testing/bdd.ts";
+} from "https://deno.land/std@0.224.0/testing/bdd.ts";
 
 // Mock environment variables
 const originalEnv = {

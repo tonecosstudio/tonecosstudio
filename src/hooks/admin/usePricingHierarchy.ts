@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   deletePricingTier,
   fetchPricingHierarchyData,
-} from "@/services/admin/pricing-hierarchy-service";
+} from "@/services/admin/pricing/pricing-hierarchy-service";
 
 export function usePricingHierarchy() {
   return useQuery({

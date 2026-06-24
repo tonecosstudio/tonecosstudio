@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +23,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -27,40 +40,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, GripVertical, Save, X } from "lucide-react";
-import { toast } from "sonner";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { Textarea } from "@/components/ui/textarea";
+import { log } from "@/lib/logger";
 import { useQuickRepliesManager } from "@/hooks/admin/useQuickRepliesManager";
 import type { QuickReply } from "@/hooks/admin/useQuickRepliesManager";
-import { log } from "@/lib/logger";
 
 const CATEGORIES = [
-  { value: "saudacao", label: "SaudaÃ§Ã£o" },
+  { value: "saudacao", label: "Saudacao" },
   { value: "pedido", label: "Pedido" },
   { value: "pagamento", label: "Pagamento" },
   { value: "rastreamento", label: "Rastreamento" },
-  { value: "orcamento", label: "OrÃ§amento" },
-  { value: "duvida", label: "DÃºvida" },
+  { value: "orcamento", label: "Orcamento" },
+  { value: "duvida", label: "Duvida" },
+  { value: "tecnico", label: "Tecnico" },
   { value: "despedida", label: "Despedida" },
   { value: "outro", label: "Outro" },
 ];
+
+type QuickReplyFormData = {
+  category: string;
+  title: string;
+  message: string;
+  shortcut: string;
+};
 
 interface SortableRowProps {
   reply: QuickReply;
@@ -82,34 +84,50 @@ function SortableRow({ reply, onEdit, onDelete, onToggleActive }: SortableRowPro
   return (
     <TableRow ref={setNodeRef} style={style}>
       <TableCell {...attributes} {...listeners}>
-        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+        <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" />
       </TableCell>
       <TableCell>
         <Badge variant="outline">
-          {CATEGORIES.find((c) => c.value === reply.category)?.label || reply.category}
+          {CATEGORIES.find((category) => category.value === reply.category)?.label || reply.category}
         </Badge>
       </TableCell>
       <TableCell className="font-medium">{reply.title}</TableCell>
       <TableCell className="max-w-md truncate">{reply.message}</TableCell>
       <TableCell>
+        {reply.shortcut ? (
+          <Badge variant="secondary">{reply.shortcut}</Badge>
+        ) : (
+          <span className="text-sm text-muted-foreground">Sem atalho</span>
+        )}
+      </TableCell>
+      <TableCell>
         <Button variant="ghost" size="sm" onClick={() => onToggleActive(reply)}>
           <Badge variant={reply.is_active ? "default" : "secondary"}>
-            {reply.is_active ? "Ativo" : "Inativo"}
+            {reply.is_active ? "Ativa" : "Inativa"}
           </Badge>
         </Button>
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={() => onEdit(reply)}>
+          <Button variant="ghost" size="sm" onClick={() => onEdit(reply)} aria-label={`Editar ${reply.title}`}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => onDelete(reply.id)}>
+          <Button variant="ghost" size="sm" onClick={() => onDelete(reply.id)} aria-label={`Excluir ${reply.title}`}>
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
       </TableCell>
     </TableRow>
   );
+}
+
+function getEmptyFormData(): QuickReplyFormData {
+  return {
+    category: "",
+    title: "",
+    message: "",
+    shortcut: "",
+  };
 }
 
 export function QuickRepliesManager() {
@@ -125,12 +143,8 @@ export function QuickRepliesManager() {
   } = useQuickRepliesManager();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingReply, setEditingReply] = useState<QuickReply | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [formData, setFormData] = useState({
-    category: "",
-    title: "",
-    message: "",
-  });
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [formData, setFormData] = useState<QuickReplyFormData>(getEmptyFormData());
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -141,7 +155,7 @@ export function QuickRepliesManager() {
 
   const handleCreate = () => {
     setEditingReply(null);
-    setFormData({ category: "", title: "", message: "" });
+    setFormData(getEmptyFormData());
     setIsDialogOpen(true);
   };
 
@@ -151,54 +165,59 @@ export function QuickRepliesManager() {
       category: reply.category,
       title: reply.title,
       message: reply.message,
+      shortcut: reply.shortcut ?? "",
     });
     setIsDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!formData.category || !formData.title || !formData.message) {
-      toast.error("Preencha todos os campos obrigatÃ³rios");
+    if (!formData.category || !formData.title.trim() || !formData.message.trim()) {
+      toast.error("Preencha os campos obrigatorios.");
       return;
     }
 
     try {
-      await saveReply(editingReply?.id || null, formData);
+      await saveReply(editingReply?.id || null, {
+        category: formData.category,
+        title: formData.title.trim(),
+        message: formData.message.trim(),
+        shortcut: formData.shortcut.trim() || null,
+      });
+
       toast.success(
-        editingReply
-          ? "Resposta rÃ¡pida atualizada com sucesso"
-          : "Resposta rÃ¡pida criada com sucesso"
+        editingReply ? "Resposta rapida atualizada com sucesso." : "Resposta rapida criada com sucesso."
       );
       setIsDialogOpen(false);
       await reload();
     } catch (error) {
       log.error("Erro ao salvar resposta rapida", { error, replyId: editingReply?.id });
-      toast.error("Erro ao salvar resposta rÃ¡pida");
+      toast.error("Erro ao salvar resposta rapida.");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja deletar esta resposta rÃ¡pida?")) {
+    if (!confirm("Tem certeza de que deseja excluir esta resposta rapida?")) {
       return;
     }
 
     try {
       await removeReply(id);
-      toast.success("Resposta rÃ¡pida deletada com sucesso");
+      toast.success("Resposta rapida excluida com sucesso.");
       await reload();
     } catch (error) {
-      log.error("Erro ao deletar resposta rapida", { error, replyId: id });
-      toast.error("Erro ao deletar resposta rÃ¡pida");
+      log.error("Erro ao excluir resposta rapida", { error, replyId: id });
+      toast.error("Erro ao excluir resposta rapida.");
     }
   };
 
   const handleToggleActive = async (reply: QuickReply) => {
     try {
       await toggleReplyActive(reply);
-      toast.success(reply.is_active ? "Resposta desativada" : "Resposta ativada");
+      toast.success(reply.is_active ? "Resposta desativada." : "Resposta ativada.");
       await reload();
     } catch (error) {
       log.error("Erro ao alterar status da resposta rapida", { error, replyId: reply.id });
-      toast.error("Erro ao alterar status");
+      toast.error("Erro ao alterar status.");
     }
   };
 
@@ -226,14 +245,15 @@ export function QuickRepliesManager() {
       const update = updates.find((item) => item.id === reply.id);
       return update ? { ...reply, display_order: update.display_order } : reply;
     });
+
     setQuickReplies(optimisticReplies);
 
     try {
       await reorderReplies(updates);
-      toast.success("Ordem atualizada com sucesso");
+      toast.success("Ordem atualizada com sucesso.");
     } catch (error) {
       log.error("Erro ao reordenar respostas rapidas", { error, count: updates.length });
-      toast.error("Erro ao reordenar respostas");
+      toast.error("Erro ao reordenar respostas.");
       await reload();
     }
   };
@@ -246,24 +266,25 @@ export function QuickRepliesManager() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <CardTitle>Gerenciar Respostas RÃ¡pidas</CardTitle>
+              <CardTitle>Respostas rapidas</CardTitle>
               <CardDescription>
-                Crie, edite e organize respostas rÃ¡pidas para o chat de suporte
+                Centralize textos padrao do atendimento em uma unica base administrativa.
               </CardDescription>
             </div>
             <Button onClick={handleCreate}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Resposta
+              <Plus className="mr-2 h-4 w-4" />
+              Nova resposta
             </Button>
           </div>
         </CardHeader>
+
         <CardContent>
           <div className="mb-4">
             <Label>Filtrar por categoria</Label>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[220px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -277,11 +298,7 @@ export function QuickRepliesManager() {
             </Select>
           </div>
 
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext
               items={filteredReplies.map((reply) => reply.id)}
               strategy={verticalListSortingStrategy}
@@ -289,12 +306,13 @@ export function QuickRepliesManager() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead className="w-[50px]" />
                     <TableHead>Categoria</TableHead>
-                    <TableHead>TÃ­tulo</TableHead>
+                    <TableHead>Titulo</TableHead>
                     <TableHead>Mensagem</TableHead>
+                    <TableHead>Atalho</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                    <TableHead className="text-right">Acoes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -313,8 +331,8 @@ export function QuickRepliesManager() {
           </DndContext>
 
           {filteredReplies.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhuma resposta rÃ¡pida encontrada
+            <div className="py-8 text-center text-muted-foreground">
+              Nenhuma resposta rapida encontrada.
             </div>
           )}
         </CardContent>
@@ -323,12 +341,10 @@ export function QuickRepliesManager() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>
-              {editingReply ? "Editar Resposta RÃ¡pida" : "Nova Resposta RÃ¡pida"}
-            </DialogTitle>
+            <DialogTitle>{editingReply ? "Editar resposta rapida" : "Nova resposta rapida"}</DialogTitle>
             <DialogDescription>
               Preencha os campos abaixo para {editingReply ? "atualizar" : "criar"} uma resposta
-              rÃ¡pida
+              reutilizavel do atendimento.
             </DialogDescription>
           </DialogHeader>
 
@@ -337,7 +353,7 @@ export function QuickRepliesManager() {
               <Label htmlFor="category">Categoria *</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                onValueChange={(value) => setFormData((current) => ({ ...current, category: value }))}
               >
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Selecione uma categoria" />
@@ -352,14 +368,33 @@ export function QuickRepliesManager() {
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="title">TÃ­tulo *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(event) => setFormData({ ...formData, title: event.target.value })}
-                placeholder="Ex: Boas-vindas"
-              />
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
+              <div>
+                <Label htmlFor="title">Titulo *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(event) =>
+                    setFormData((current) => ({ ...current, title: event.target.value }))
+                  }
+                  placeholder="Ex: Boas-vindas"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="shortcut">Atalho</Label>
+                <Input
+                  id="shortcut"
+                  value={formData.shortcut}
+                  onChange={(event) =>
+                    setFormData((current) => ({ ...current, shortcut: event.target.value }))
+                  }
+                  placeholder="Ex: Ctrl+1"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Opcional. Use o mesmo formato exibido no atendimento.
+                </p>
+              </div>
             </div>
 
             <div>
@@ -367,21 +402,25 @@ export function QuickRepliesManager() {
               <Textarea
                 id="message"
                 value={formData.message}
-                onChange={(event) => setFormData({ ...formData, message: event.target.value })}
-                placeholder="Digite a mensagem que serÃ¡ inserida no chat"
+                onChange={(event) =>
+                  setFormData((current) => ({ ...current, message: event.target.value }))
+                }
+                placeholder="Digite a mensagem que sera inserida no chat."
                 rows={6}
               />
-              <p className="text-xs text-muted-foreground mt-1">{formData.message.length} caracteres</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {formData.message.length} caracteres
+              </p>
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              <X className="h-4 w-4 mr-2" />
+              <X className="mr-2 h-4 w-4" />
               Cancelar
             </Button>
             <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="mr-2 h-4 w-4" />
               Salvar
             </Button>
           </DialogFooter>

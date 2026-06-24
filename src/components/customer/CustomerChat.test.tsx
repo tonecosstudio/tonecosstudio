@@ -3,7 +3,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CustomerChat } from "./CustomerChat";
 import { supabase } from "@/integrations/supabase/client";
-import * as customerChatService from "@/services/customer-chat-button-service";
+import * as customerChatService from "@/services/customer/customer-chat-button-service";
 import { renderWithProviders } from "@/test/utils/test-utils";
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -31,11 +31,11 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-vi.mock("@/services/customer-chat-button-service", () => ({
+vi.mock("@/services/customer/customer-chat-button-service", () => ({
   countUnreadCustomerSupportMessages: vi.fn(),
   createCustomerSupportConversation: vi.fn(),
   listCustomerSupportConversations: vi.fn(),
-  subscribeToCustomerChatUpdates: vi.fn(() => ({})),
+  subscribeToCustomerChatUpdates: vi.fn(),
   unsubscribeFromCustomerChatUpdates: vi.fn(),
 }));
 
@@ -62,8 +62,19 @@ describe("CustomerChat", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(customerChatService.countUnreadCustomerSupportMessages).mockResolvedValue(0);
-    vi.mocked(customerChatService.listCustomerSupportConversations).mockResolvedValue([]);
+    vi.mocked(
+      customerChatService.countUnreadCustomerSupportMessages,
+    ).mockResolvedValue(0);
+    vi.mocked(
+      customerChatService.listCustomerSupportConversations,
+    ).mockResolvedValue([]);
+    vi.mocked(
+      customerChatService.subscribeToCustomerChatUpdates,
+    ).mockResolvedValue(
+      {} as Awaited<
+        ReturnType<typeof customerChatService.subscribeToCustomerChatUpdates>
+      >,
+    );
   });
 
   function mockAuthSession(user: typeof authenticatedUser | null) {
@@ -99,7 +110,9 @@ describe("CustomerChat", () => {
 
   it("should display unread count badge when there are unread messages", async () => {
     mockAuthSession(authenticatedUser);
-    vi.mocked(customerChatService.countUnreadCustomerSupportMessages).mockResolvedValue(3);
+    vi.mocked(
+      customerChatService.countUnreadCustomerSupportMessages,
+    ).mockResolvedValue(3);
 
     renderWithProviders(<CustomerChat />);
 
@@ -110,7 +123,9 @@ describe("CustomerChat", () => {
 
   it("should open chat panel when button is clicked", async () => {
     mockAuthSession(authenticatedUser);
-    vi.mocked(customerChatService.listCustomerSupportConversations).mockResolvedValue([
+    vi.mocked(
+      customerChatService.listCustomerSupportConversations,
+    ).mockResolvedValue([
       {
         id: "conv-1",
         user_id: "user-123",
@@ -141,7 +156,9 @@ describe("CustomerChat", () => {
 
   it("should display empty state when user has no conversations", async () => {
     mockAuthSession(authenticatedUser);
-    vi.mocked(customerChatService.listCustomerSupportConversations).mockResolvedValue([]);
+    vi.mocked(
+      customerChatService.listCustomerSupportConversations,
+    ).mockResolvedValue([]);
 
     renderWithProviders(<CustomerChat />);
 
@@ -153,7 +170,9 @@ describe("CustomerChat", () => {
     await user.click(screen.getByRole("button"));
 
     await waitFor(() => {
-      expect(screen.getByText(/Voce ainda nao tem conversas/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Voce ainda nao tem conversas/i),
+      ).toBeInTheDocument();
     });
   });
 });

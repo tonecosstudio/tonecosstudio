@@ -4,7 +4,7 @@ import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import { useNavigate } from "react-router-dom";
 import { useActiveCollectionPreviews } from "@/hooks/collections/usePublicCollections";
 import { ArrowRight, Sparkles, Package, Shield, Zap } from "lucide-react";
-import { PUBLIC_ROUTES } from "@/config/routes";
+import { PUBLIC_COLLECTIONS_ENABLED, PUBLIC_ROUTES } from "@/config/routes";
 import { PRICING } from "@/config/constants";
 import { usePricingSettings } from "@/hooks/usePricingSettings";
 
@@ -16,17 +16,17 @@ export default function PreLaunchArcade() {
   const depositAmount = pricingSettings?.defaultDepositAmount ?? PRICING.DEFAULT_DEPOSIT_AMOUNT;
 
   const benefits = [
-    { icon: Zap, title: "ACESSO PRIORITÁRIO", desc: "Seja o primeiro a escolher personagens" },
-    { icon: Shield, title: "PREÇO GARANTIDO", desc: "Seu voucher mantém o valor original" },
-    { icon: Package, title: "COLEÇÕES EXCLUSIVAS", desc: "Acesso a coleções limitadas" },
-    { icon: Sparkles, title: "BÔNUS DE FUNDADOR", desc: "Badge exclusiva de fundador" },
+    { icon: Zap, title: "ACESSO PRIORITARIO", desc: "Seja o primeiro a acompanhar os modelos liberados" },
+    { icon: Shield, title: "PRECO GARANTIDO", desc: "Seu voucher mantem o valor original" },
+    { icon: Package, title: "UNIVERSO ANTECIPADO", desc: "Acompanhe os primeiros modelos publicados" },
+    { icon: Sparkles, title: "BONUS DE FUNDADOR", desc: "Badge exclusiva de fundador" },
   ];
 
   return (
     <Page
       title={`Voucher ORDAX R$ ${depositAmount.toFixed(0)}`}
-      description="Garanta seu voucher e acesso prioritário às coleções exclusivas"
-      keywords={["pré-lançamento", "voucher", "coleções", "ordax"]}
+      description="Garanta seu voucher e acesso prioritario ao universo ORDAX."
+      keywords={["pre-lancamento", "voucher", "universo", "ordax"]}
     >
       {/* Hero */}
       <section className="relative py-20 md:py-32 px-6 overflow-hidden">
@@ -67,10 +67,10 @@ export default function PreLaunchArcade() {
               GARANTIR MEU VOUCHER <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={() => navigate(PUBLIC_ROUTES.plans)}
+              onClick={() => navigate(PUBLIC_ROUTES.catalog)}
               className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono uppercase tracking-[0.15em] text-xs h-11 px-8 transition-all"
             >
-              VER PLANOS
+              VER UNIVERSO
             </button>
           </div>
         </div>
@@ -108,7 +108,7 @@ export default function PreLaunchArcade() {
         </div>
 
         {/* Collections Preview */}
-        {collections && collections.length > 0 && (
+        {PUBLIC_COLLECTIONS_ENABLED && collections && collections.length > 0 && (
           <>
             <ArcadeSectionTitle>COLEÇÕES DISPONÍVEIS</ArcadeSectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

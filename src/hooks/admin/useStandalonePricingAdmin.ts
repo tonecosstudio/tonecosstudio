@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchStandalonePricing,
   updateStandalonePricing,
-} from "@/services/admin/standalone-pricing-admin-service";
+} from "@/services/admin/pricing/standalone-pricing-admin-service";
 
 export function useStandalonePricing() {
   return useQuery({

@@ -33,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/utils";
 import {
   CheckSquare,
   Square,
@@ -274,14 +275,6 @@ export function BulkOperationsToolbar({
       message: messageText,
       adminId: user.id,
     });
-  };
-
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(amount);
   };
 
   // Get status icon

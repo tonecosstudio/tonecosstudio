@@ -3,11 +3,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuditRecord } from "@/services/audit-trail-service";
-import * as auditTrailService from "@/services/audit-trail-service";
+import type { AuditRecord } from "@/services/system/audit-trail-service";
+import * as auditTrailService from "@/services/system/audit-trail-service";
 import AuditTrail from "./AuditTrail";
 
-vi.mock("@/services/audit-trail-service");
+vi.mock("@/services/system/audit-trail-service");
 
 vi.mock("@/components/admin/shared/AdminLayout", () => ({
   AdminLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

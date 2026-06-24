@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import type { PricingTierWithStats } from "@/types/pricing-tiers";
 import { CollectionTierAssignmentDialog } from "./CollectionTierAssignmentDialog";
 
@@ -43,12 +44,7 @@ export function TierHierarchyCard({
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(price);
-  };
+  const formatPrice = (price: number) => formatCurrency(price);
 
   return (
     <>

@@ -1,50 +1,35 @@
-/**
- * ChoiceChangeModal Component
- * 
- * Modal for customers to change their previously approved character choice.
- * Shows current choice, allows selecting a new character, requires a reason,
- * displays remaining changes allowed (max 3), and validates deadline/approval status.
- * 
- * Requirements: 2.2.5
- * Task: 3.2.3 Create ChoiceChangeModal component
- */
-
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Edit,
+  Package,
+  XCircle,
+} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { 
-  AlertCircle,
-  CheckCircle2, 
-  Package,
-  AlertTriangle,
-  XCircle,
-  Edit
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
-import { 
-  getAvailableCharactersAction,
+import {
   changeCharacterChoiceAction,
-  type CharacterEntity
+  getAvailableCharactersAction,
+  type CharacterEntity,
 } from "@/hooks/customer/useChoiceActions";
-
-// ============================================================================
-// Types
-// ============================================================================
+import { cn } from "@/lib/utils";
 
 export interface ChoiceChangeModalProps {
   open: boolean;
@@ -61,69 +46,59 @@ export interface ChoiceChangeModalProps {
   onSuccess?: () => void;
 }
 
-// ============================================================================
-// Sub-Components
-// ============================================================================
-
-/**
- * CurrentChoiceDisplay - Shows the current character choice
- */
 interface CurrentChoiceDisplayProps {
   name: string;
   imageUrl: string | null;
 }
 
-const CurrentChoiceDisplay: React.FC<CurrentChoiceDisplayProps> = ({ name, imageUrl }) => {
+function CurrentChoiceDisplay({ name, imageUrl }: CurrentChoiceDisplayProps) {
   return (
-    <div className="p-4 border rounded-lg bg-card">
-      <h3 className="text-sm font-medium text-muted-foreground mb-3">Escolha Atual</h3>
+    <div className="rounded-sm border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] p-4">
+      <h3 className="mb-3 font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(0,0%,48%)]">
+        Escolha Atual
+      </h3>
       <div className="flex items-center gap-3">
-        {imageUrl && (
-          <img
-            src={imageUrl}
-            alt={name}
-            className="w-20 h-20 object-cover rounded"
-          />
+        {imageUrl ? (
+          <img src={imageUrl} alt={name} className="h-20 w-20 rounded-sm object-cover" />
+        ) : (
+          <div className="flex h-20 w-20 items-center justify-center rounded-sm border border-[hsl(0,0%,14%)] bg-[hsl(0,0%,10%)]">
+            <Package className="h-8 w-8 text-[hsl(0,0%,42%)]" />
+          </div>
         )}
-        <div className="flex-1">
-          <p className="font-semibold text-lg">{name}</p>
-          <p className="text-sm text-muted-foreground">Personagem atual</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-lg font-semibold text-white">{name}</p>
+          <p className="text-sm text-[hsl(0,0%,58%)]">Personagem atual</p>
         </div>
       </div>
     </div>
   );
-};
-
-/**
- * RemainingChangesAlert - Shows remaining changes counter
- */
-interface RemainingChangesAlertProps {
-  remaining: number;
 }
 
-const RemainingChangesAlert: React.FC<RemainingChangesAlertProps> = ({ remaining }) => {
-  let variant: "default" | "destructive" = "default";
-  let icon = <Edit className="h-4 w-4" />;
-  
-  if (remaining === 1) {
-    variant = "destructive";
-    icon = <AlertTriangle className="h-4 w-4" />;
-  }
-  
+function RemainingChangesAlert({ remaining }: { remaining: number }) {
+  const isLast = remaining === 1;
+
   return (
-    <Alert variant={variant}>
-      {icon}
-      <AlertTitle>Alterações Restantes</AlertTitle>
+    <Alert
+      className={cn(
+        isLast
+          ? "border-yellow-500/20 bg-yellow-500/10 text-yellow-100"
+          : "border-sky-500/20 bg-sky-500/10 text-sky-100"
+      )}
+    >
+      {isLast ? (
+        <AlertTriangle className="h-4 w-4 text-yellow-300" />
+      ) : (
+        <Edit className="h-4 w-4 text-sky-300" />
+      )}
+      <AlertTitle>Alterações restantes</AlertTitle>
       <AlertDescription>
-        Você pode alterar sua escolha mais <strong>{remaining}</strong> {remaining === 1 ? 'vez' : 'vezes'}.
+        Você pode alterar sua escolha mais <strong>{remaining}</strong>{" "}
+        {remaining === 1 ? "vez." : "vezes."}
       </AlertDescription>
     </Alert>
   );
-};
+}
 
-/**
- * CharacterCard - Individual character card for selection
- */
 interface CharacterCardProps {
   character: CharacterEntity;
   selected: boolean;
@@ -131,12 +106,16 @@ interface CharacterCardProps {
   onSelect: () => void;
 }
 
-const CharacterCard: React.FC<CharacterCardProps> = ({ character, selected, isCurrent, onSelect }) => {
+function CharacterCard({ character, selected, isCurrent, onSelect }: CharacterCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  
-  const isLowStock = character.stockLevel !== undefined && character.stockLevel > 0 && character.stockLevel <= 5;
-  const isUnavailable = !character.isAvailable || (character.stockLevel !== undefined && character.stockLevel === 0);
-  
+  const isLowStock =
+    character.stockLevel !== undefined &&
+    character.stockLevel > 0 &&
+    character.stockLevel <= 5;
+  const isUnavailable =
+    !character.isAvailable ||
+    (character.stockLevel !== undefined && character.stockLevel === 0);
+
   return (
     <button
       type="button"
@@ -145,108 +124,102 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, selected, isCu
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "relative group w-full text-left rounded-lg border-2 transition-all duration-200",
-        "hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-        selected && "border-primary bg-primary/5 shadow-md",
-        !selected && !isUnavailable && !isCurrent && "border-border hover:border-primary/50",
-        (isUnavailable || isCurrent) && "opacity-50 cursor-not-allowed border-border",
+        "group relative w-full overflow-hidden rounded-sm border text-left transition-all duration-200",
+        "focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold-accent))] focus:ring-offset-2 focus:ring-offset-[hsl(0,0%,4%)]",
+        selected && "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.08)]",
+        !selected && !isUnavailable && !isCurrent && "border-[hsl(0,0%,14%)] bg-[hsl(0,0%,7%)] hover:border-[hsl(var(--gold-accent)/0.45)]",
+        (isUnavailable || isCurrent) && "cursor-not-allowed border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] opacity-55",
         !isUnavailable && !isCurrent && "cursor-pointer"
       )}
     >
-      <div className="relative aspect-square overflow-hidden rounded-t-md bg-muted">
+      <div className="relative aspect-square overflow-hidden bg-[hsl(0,0%,10%)]">
         {character.imageUrl ? (
           <img
             src={character.imageUrl}
             alt={character.name}
             className={cn(
-              "w-full h-full object-cover transition-transform duration-200",
-              isHovered && !isUnavailable && !isCurrent && "scale-110"
+              "h-full w-full object-cover transition-transform duration-200",
+              isHovered && !isUnavailable && !isCurrent && "scale-105"
             )}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package className="h-12 w-12 text-muted-foreground" />
+          <div className="flex h-full w-full items-center justify-center">
+            <Package className="h-12 w-12 text-[hsl(0,0%,38%)]" />
           </div>
         )}
-        
-        {selected && (
-          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-            <div className="bg-primary text-primary-foreground rounded-full p-2">
+
+        {selected ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-[hsl(var(--gold-accent)/0.18)]">
+            <div className="rounded-full bg-[hsl(var(--gold-accent))] p-2 text-[hsl(0,0%,7%)]">
               <CheckCircle2 className="h-8 w-8" />
             </div>
           </div>
-        )}
-        
-        {isCurrent && (
-          <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-            <Badge className="bg-blue-500">Escolha Atual</Badge>
+        ) : null}
+
+        {isCurrent ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-sky-500/18">
+            <Badge className="bg-sky-500 text-white">Escolha Atual</Badge>
           </div>
-        )}
-        
-        {isUnavailable && !isCurrent && (
-          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-            <div className="text-white text-center">
-              <XCircle className="h-8 w-8 mx-auto mb-1" />
+        ) : null}
+
+        {isUnavailable && !isCurrent ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+            <div className="text-center text-white">
+              <XCircle className="mx-auto mb-1 h-8 w-8" />
               <p className="text-sm font-semibold">Indisponível</p>
             </div>
           </div>
-        )}
-        
-        {isLowStock && !isUnavailable && !isCurrent && (
-          <Badge variant="destructive" className="absolute top-2 right-2">
-            Estoque Baixo
+        ) : null}
+
+        {isLowStock && !isUnavailable && !isCurrent ? (
+          <Badge variant="destructive" className="absolute right-2 top-2">
+            Estoque baixo
           </Badge>
-        )}
+        ) : null}
       </div>
-      
+
       <div className="p-3">
-        <h3 className={cn(
-          "font-semibold text-sm mb-1 line-clamp-1",
-          selected && "text-primary"
-        )}>
+        <h3
+          className={cn(
+            "mb-1 line-clamp-1 text-sm font-semibold text-white",
+            selected && "text-[hsl(var(--gold-accent))]"
+          )}
+        >
           {character.name}
         </h3>
-        
-        {character.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">
+
+        {character.description ? (
+          <p className="line-clamp-2 text-xs text-[hsl(0,0%,58%)]">
             {character.description}
           </p>
-        )}
-        
-        {character.stockLevel !== undefined && character.stockLevel > 0 && (
-          <p className="text-xs text-muted-foreground mt-1">
-            {character.stockLevel} {character.stockLevel === 1 ? 'unidade disponível' : 'unidades disponíveis'}
+        ) : null}
+
+        {character.stockLevel !== undefined && character.stockLevel > 0 ? (
+          <p className="mt-2 text-xs text-[hsl(0,0%,48%)]">
+            {character.stockLevel}{" "}
+            {character.stockLevel === 1 ? "unidade disponível" : "unidades disponíveis"}
           </p>
-        )}
+        ) : null}
       </div>
-      
-      {isHovered && !isUnavailable && !selected && !isCurrent && (
-        <div className="absolute inset-0 border-2 border-primary rounded-lg pointer-events-none" />
-      )}
     </button>
   );
-};
+}
 
-/**
- * LoadingSkeleton - Loading state
- */
-const LoadingSkeleton: React.FC = () => (
-  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-    {Array.from({ length: 6 }).map((_, i) => (
-      <div key={i} className="space-y-2">
-        <Skeleton className="aspect-square w-full rounded-md" />
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-1/2" />
-      </div>
-    ))}
-  </div>
-);
+function LoadingSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div key={index} className="space-y-2">
+          <Skeleton className="aspect-square w-full rounded-sm bg-[hsl(0,0%,12%)]" />
+          <Skeleton className="h-4 w-3/4 bg-[hsl(0,0%,12%)]" />
+          <Skeleton className="h-3 w-1/2 bg-[hsl(0,0%,12%)]" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
-export const ChoiceChangeModal: React.FC<ChoiceChangeModalProps> = ({
+export function ChoiceChangeModal({
   open,
   onOpenChange,
   choiceId,
@@ -259,13 +232,12 @@ export const ChoiceChangeModal: React.FC<ChoiceChangeModalProps> = ({
   changesCount,
   isApproved,
   onSuccess,
-}) => {
+}: ChoiceChangeModalProps) {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [changeReason, setChangeReason] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const queryClient = useQueryClient();
-  
-  // Reset state when modal opens
+
   useEffect(() => {
     if (open) {
       setSelectedCharacterId(null);
@@ -273,29 +245,18 @@ export const ChoiceChangeModal: React.FC<ChoiceChangeModalProps> = ({
       setShowConfirmation(false);
     }
   }, [open]);
-  
-  // Calculate remaining changes
+
   const remainingChanges = 3 - changesCount;
-  
-  // Check if deadline has passed
   const deadlineDate = deadline ? new Date(deadline) : null;
   const isDeadlinePassed = deadlineDate ? deadlineDate < new Date() : false;
-  
-  // Check if changes are allowed
   const canChange = isApproved && remainingChanges > 0 && !isDeadlinePassed;
-  
-  // Fetch available characters
-  const { 
-    data: characters, 
-    isLoading, 
-    error 
-  } = useQuery({
+
+  const { data: characters, isLoading, error } = useQuery({
     queryKey: ["available-characters", collectionId],
     queryFn: () => getAvailableCharactersAction(collectionId),
-    enabled: open && !!collectionId && canChange,
+    enabled: open && Boolean(collectionId) && canChange,
   });
-  
-  // Submit change mutation
+
   const changeMutation = useMutation({
     mutationFn: () => {
       if (!selectedCharacterId) {
@@ -305,188 +266,167 @@ export const ChoiceChangeModal: React.FC<ChoiceChangeModalProps> = ({
     },
     onSuccess: () => {
       toast({
-        title: "Escolha Alterada!",
-        description: "Sua nova escolha foi enviada com sucesso e está aguardando aprovação.",
+        title: "Escolha alterada",
+        description: "Sua nova escolha foi enviada e está aguardando aprovação.",
       });
-      
+
       queryClient.invalidateQueries({ queryKey: ["customer-order-progress"] });
       queryClient.invalidateQueries({ queryKey: ["character-choice"] });
-      
       onSuccess?.();
       onOpenChange(false);
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao Alterar Escolha",
+        title: "Erro ao alterar escolha",
         description: error.message || "Não foi possível alterar sua escolha. Tente novamente.",
         variant: "destructive",
       });
     },
   });
-  
-  // Handle character selection
+
   const handleSelectCharacter = (characterId: string) => {
-    if (characterId === currentCharacterId) {
-      return; // Can't select current character
-    }
+    if (characterId === currentCharacterId) return;
     setSelectedCharacterId(characterId);
   };
-  
-  // Handle submit
+
   const handleSubmit = () => {
     if (!selectedCharacterId) {
       toast({
-        title: "Nenhum Personagem Selecionado",
-        description: "Por favor, selecione um novo personagem.",
+        title: "Nenhum personagem selecionado",
+        description: "Selecione um novo personagem.",
         variant: "destructive",
       });
       return;
     }
-    
+
     if (!changeReason.trim()) {
       toast({
-        title: "Motivo Obrigatório",
-        description: "Por favor, informe o motivo da alteração.",
+        title: "Motivo obrigatório",
+        description: "Informe o motivo da alteração.",
         variant: "destructive",
       });
       return;
     }
-    
+
     setShowConfirmation(true);
   };
-  
-  // Handle confirmation
-  const handleConfirm = () => {
-    changeMutation.mutate();
-  };
-  
-  // Get selected character
-  const selectedCharacter = characters?.find(c => c.id === selectedCharacterId);
-  
+
+  const selectedCharacter = characters?.find((character) => character.id === selectedCharacterId);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col border-[hsl(0,0%,12%)] bg-[hsl(0,0%,5%)] text-white">
+        <DialogHeader className="border-b border-[hsl(0,0%,12%)] pb-4">
           <DialogTitle className="flex items-center gap-2">
-            <Edit className="h-5 w-5" />
+            <Edit className="h-5 w-5 text-[hsl(var(--gold-accent))]" />
             Alterar Escolha de Personagem
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-[hsl(0,0%,58%)]">
             Selecione um novo personagem e informe o motivo da alteração.
           </DialogDescription>
         </DialogHeader>
-        
-        {/* Validation Alerts */}
-        {!isApproved && (
-          <Alert variant="destructive">
+
+        {!isApproved ? (
+          <Alert variant="destructive" className="border-red-500/20 bg-red-500/10">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Alteração Não Permitida</AlertTitle>
+            <AlertTitle>Alteração não permitida</AlertTitle>
             <AlertDescription>
               Sua escolha ainda não foi aprovada. Aguarde a aprovação antes de solicitar alterações.
             </AlertDescription>
           </Alert>
-        )}
-        
-        {isDeadlinePassed && (
-          <Alert variant="destructive">
+        ) : null}
+
+        {isDeadlinePassed ? (
+          <Alert variant="destructive" className="border-red-500/20 bg-red-500/10">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Prazo Expirado</AlertTitle>
+            <AlertTitle>Prazo expirado</AlertTitle>
             <AlertDescription>
               O prazo para alterar a escolha expirou. Entre em contato com o suporte.
             </AlertDescription>
           </Alert>
-        )}
-        
-        {remainingChanges === 0 && (
-          <Alert variant="destructive">
+        ) : null}
+
+        {remainingChanges === 0 ? (
+          <Alert variant="destructive" className="border-red-500/20 bg-red-500/10">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Limite Atingido</AlertTitle>
+            <AlertTitle>Limite atingido</AlertTitle>
             <AlertDescription>
               Você já atingiu o limite de 3 alterações. Entre em contato com o suporte para mais informações.
             </AlertDescription>
           </Alert>
-        )}
-        
-        {/* Content - Only show if changes are allowed */}
-        {canChange && (
-          <div className="flex-1 min-h-0 space-y-4">
-            {/* Current Choice */}
-            <CurrentChoiceDisplay
-              name={currentCharacterName}
-              imageUrl={currentCharacterImageUrl}
-            />
-            
-            {/* Remaining Changes */}
+        ) : null}
+
+        {canChange ? (
+          <div className="min-h-0 flex-1 space-y-4">
+            <CurrentChoiceDisplay name={currentCharacterName} imageUrl={currentCharacterImageUrl} />
             <RemainingChangesAlert remaining={remainingChanges} />
-            
-            {/* Loading State */}
-            {isLoading && <LoadingSkeleton />}
-            
-            {/* Error State */}
-            {error && (
-              <Alert variant="destructive">
+
+            {isLoading ? <LoadingSkeleton /> : null}
+
+            {error ? (
+              <Alert variant="destructive" className="border-red-500/20 bg-red-500/10">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Erro ao Carregar Personagens</AlertTitle>
+                <AlertTitle>Erro ao carregar personagens</AlertTitle>
                 <AlertDescription>
-                  {error instanceof Error ? error.message : "Não foi possível carregar os personagens disponíveis."}
+                  {error instanceof Error
+                    ? error.message
+                    : "Não foi possível carregar os personagens disponíveis."}
                 </AlertDescription>
               </Alert>
-            )}
-            
-            {/* Characters Grid or Confirmation */}
-            {!isLoading && !error && characters && (
+            ) : null}
+
+            {!isLoading && !error && characters ? (
               <>
                 {showConfirmation && selectedCharacter ? (
-                  // Confirmation View
                   <div className="space-y-4">
-                    <Alert>
-                      <CheckCircle2 className="h-4 w-4" />
-                      <AlertTitle>Confirme Sua Nova Escolha</AlertTitle>
+                    <Alert className="border-emerald-500/20 bg-emerald-500/10 text-emerald-100">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                      <AlertTitle>Confirme sua nova escolha</AlertTitle>
                       <AlertDescription>
                         Você está alterando sua escolha para o personagem abaixo.
                       </AlertDescription>
                     </Alert>
-                    
-                    <div className="flex items-center gap-4 p-4 border rounded-lg bg-card">
-                      {selectedCharacter.imageUrl && (
+
+                    <div className="flex items-center gap-4 rounded-sm border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] p-4">
+                      {selectedCharacter.imageUrl ? (
                         <img
                           src={selectedCharacter.imageUrl}
                           alt={selectedCharacter.name}
-                          className="w-24 h-24 object-cover rounded"
+                          className="h-24 w-24 rounded-sm object-cover"
                         />
-                      )}
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{selectedCharacter.name}</h3>
-                        {selectedCharacter.description && (
-                          <p className="text-sm text-muted-foreground mt-1">
+                      ) : null}
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-lg font-semibold">{selectedCharacter.name}</h3>
+                        {selectedCharacter.description ? (
+                          <p className="mt-1 text-sm text-[hsl(0,0%,58%)]">
                             {selectedCharacter.description}
                           </p>
-                        )}
+                        ) : null}
                       </div>
                     </div>
-                    
-                    <div className="p-3 border rounded-lg bg-muted">
-                      <p className="text-sm font-medium mb-1">Motivo da Alteração:</p>
-                      <p className="text-sm text-muted-foreground">{changeReason}</p>
+
+                    <div className="rounded-sm border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] p-4">
+                      <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(0,0%,48%)]">
+                        Motivo da alteração
+                      </p>
+                      <p className="text-sm text-[hsl(0,0%,72%)]">{changeReason}</p>
                     </div>
-                    
-                    <Alert className="bg-blue-50 border-blue-200">
-                      <AlertCircle className="h-4 w-4 text-blue-600" />
-                      <AlertDescription className="text-blue-900">
-                        Após a confirmação, sua nova escolha será enviada para aprovação da equipe de produção.
+
+                    <Alert className="border-sky-500/20 bg-sky-500/10 text-sky-100">
+                      <AlertCircle className="h-4 w-4 text-sky-300" />
+                      <AlertDescription>
+                        Após a confirmação, sua nova escolha será enviada para aprovação da equipe.
                       </AlertDescription>
                     </Alert>
                   </div>
                 ) : (
-                  // Selection View
                   <>
-                    {/* Character Selection Grid */}
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">
+                      <Label className="mb-2 block text-sm font-medium text-white">
                         Selecione o Novo Personagem
                       </Label>
                       <ScrollArea className="h-[300px] pr-4">
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                           {characters.map((character) => (
                             <CharacterCard
                               key={character.id}
@@ -499,46 +439,42 @@ export const ChoiceChangeModal: React.FC<ChoiceChangeModalProps> = ({
                         </div>
                       </ScrollArea>
                     </div>
-                    
-                    {/* Reason Textarea */}
+
                     <div>
-                      <Label htmlFor="change-reason" className="text-sm font-medium mb-2 block">
-                        Motivo da Alteração <span className="text-destructive">*</span>
+                      <Label htmlFor="change-reason" className="mb-2 block text-sm font-medium text-white">
+                        Motivo da alteração <span className="text-red-300">*</span>
                       </Label>
                       <Textarea
                         id="change-reason"
                         placeholder="Explique por que você deseja alterar sua escolha..."
                         value={changeReason}
-                        onChange={(e) => setChangeReason(e.target.value)}
+                        onChange={(event) => setChangeReason(event.target.value)}
                         rows={3}
-                        className="resize-none"
+                        className="resize-none border-[hsl(0,0%,16%)] bg-[hsl(0,0%,7%)] text-white placeholder:text-[hsl(0,0%,42%)]"
                       />
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="mt-1 text-xs text-[hsl(0,0%,48%)]">
                         Mínimo de 10 caracteres
                       </p>
                     </div>
                   </>
                 )}
               </>
-            )}
+            ) : null}
           </div>
-        )}
-        
-        {/* Footer */}
-        <DialogFooter>
+        ) : null}
+
+        <DialogFooter className="border-t border-[hsl(0,0%,12%)] pt-4">
           {showConfirmation ? (
             <>
               <Button
                 variant="outline"
                 onClick={() => setShowConfirmation(false)}
                 disabled={changeMutation.isPending}
+                className="border-[hsl(0,0%,18%)] bg-transparent text-white hover:bg-[hsl(0,0%,10%)]"
               >
                 Voltar
               </Button>
-              <Button
-                onClick={handleConfirm}
-                disabled={changeMutation.isPending}
-              >
+              <Button onClick={() => changeMutation.mutate()} disabled={changeMutation.isPending}>
                 {changeMutation.isPending ? "Enviando..." : "Confirmar Alteração"}
               </Button>
             </>
@@ -547,6 +483,7 @@ export const ChoiceChangeModal: React.FC<ChoiceChangeModalProps> = ({
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                className="border-[hsl(0,0%,18%)] bg-transparent text-white hover:bg-[hsl(0,0%,10%)]"
               >
                 Cancelar
               </Button>
@@ -562,6 +499,6 @@ export const ChoiceChangeModal: React.FC<ChoiceChangeModalProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default ChoiceChangeModal;

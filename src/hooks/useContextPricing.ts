@@ -1,55 +1,26 @@
-/**
- * Hook para gerenciar multiplicadores e descontos contextuais
- * 
- * Fornece queries e mutations para operações de multiplicadores de contexto
- * e percentual de desconto para coleções escolhidas.
- * Spec: contextual-pricing-system
- * Task: 5.2
- */
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import {
-  PricingContextMultiplier,
-  QUERY_KEYS,
-  CACHE_CONFIG,
-  isValidMultiplier,
-  isValidDiscountPercentage,
-} from "@/types/contextual-pricing";
+  getActiveContextMultiplier,
+  getChosenCollectionDiscount,
+  listActiveContextPricing,
+  updateChosenDiscountWithHistory,
+  updateMultiplierWithHistory,
+} from "@/services/pricing/context-pricing-service";
+import type {
+  UpdateDiscountInput,
+  UpdateDiscountResponse,
+  UpdateMultiplierInput,
+  UpdateMultiplierResponse,
+} from "@/services/pricing/context-pricing-service";
+import { CACHE_CONFIG, QUERY_KEYS } from "@/types/contextual-pricing";
 
-// =====================================================
-// TYPES
-// =====================================================
-
-export interface UpdateMultiplierInput {
-  user_context: string;
-  new_multiplier: number;
-  reason?: string;
-}
-
-export interface UpdateDiscountInput {
-  new_discount_percentage: number;
-  reason?: string;
-}
-
-export interface UpdateMultiplierResponse {
-  success: boolean;
-  old_multiplier: number;
-  new_multiplier: number;
-  message: string;
-}
-
-export interface UpdateDiscountResponse {
-  success: boolean;
-  old_discount: number;
-  new_discount: number;
-  message: string;
-}
-
-// =====================================================
-// QUERY KEYS
-// =====================================================
+export type {
+  UpdateDiscountInput,
+  UpdateDiscountResponse,
+  UpdateMultiplierInput,
+  UpdateMultiplierResponse,
+} from "@/services/pricing/context-pricing-service";
 
 export const contextPricingKeys = {
   all: [QUERY_KEYS.CONTEXT_PRICING] as const,
@@ -58,138 +29,45 @@ export const contextPricingKeys = {
   detail: (context: string) => [...contextPricingKeys.all, "detail", context] as const,
 };
 
-// =====================================================
-// QUERIES
-// =====================================================
-
-/**
- * Hook para buscar todos os multiplicadores de contexto ativos
- */
 export function useContextPricing() {
   return useQuery({
     queryKey: contextPricingKeys.lists(),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("pricing_context_multipliers")
-        .select("*")
-        .eq("is_active", true)
-        .order("user_context", { ascending: true });
-
-      if (error) {
-        throw new Error(`Erro ao buscar multiplicadores: ${error.message}`);
-      }
-
-      return data as PricingContextMultiplier[];
-    },
-    staleTime: CACHE_CONFIG.STALE_TIME, // 5 minutos (RN010)
+    queryFn: listActiveContextPricing,
+    staleTime: CACHE_CONFIG.STALE_TIME,
   });
 }
 
-/**
- * Hook para buscar multiplicador de um contexto específico
- */
 export function useContextMultiplier(userContext: string | null | undefined) {
   return useQuery({
     queryKey: contextPricingKeys.detail(userContext || ""),
     queryFn: async () => {
       if (!userContext) return null;
-
-      const { data, error } = await supabase
-        .from("pricing_context_multipliers")
-        .select("*")
-        .eq("user_context", userContext)
-        .eq("is_active", true)
-        .single();
-
-      if (error) {
-        throw new Error(`Erro ao buscar multiplicador: ${error.message}`);
-      }
-
-      return data as PricingContextMultiplier;
+      return getActiveContextMultiplier(userContext);
     },
     enabled: !!userContext,
-    staleTime: CACHE_CONFIG.STALE_TIME, // 5 minutos (RN010)
+    staleTime: CACHE_CONFIG.STALE_TIME,
   });
 }
 
-/**
- * Hook para buscar apenas o desconto de coleções escolhidas
- */
 export function useChosenCollectionDiscount() {
   return useQuery({
     queryKey: [...contextPricingKeys.all, "chosen-discount"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("pricing_context_multipliers")
-        .select("chosen_collection_discount_percentage")
-        .eq("user_context", "subscribed_chosen")
-        .eq("is_active", true)
-        .single();
-
-      if (error) {
-        throw new Error(`Erro ao buscar desconto: ${error.message}`);
-      }
-
-      return data.chosen_collection_discount_percentage as number;
-    },
-    staleTime: CACHE_CONFIG.STALE_TIME, // 5 minutos (RN010)
+    queryFn: getChosenCollectionDiscount,
+    staleTime: CACHE_CONFIG.STALE_TIME,
   });
 }
 
-// =====================================================
-// MUTATIONS
-// =====================================================
-
-/**
- * Hook para atualizar multiplicador de contexto com histórico
- */
 export function useUpdateMultiplier() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: async (input: UpdateMultiplierInput) => {
-      // Validar input
-      if (!isValidMultiplier(input.new_multiplier)) {
-        throw new Error("Multiplicador deve ser maior que 0");
-      }
-
-      // Obter usuário atual
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      // Chamar função do banco de dados
-      const { data, error } = await supabase.rpc("update_multiplier_with_history", {
-        p_user_context: input.user_context,
-        p_new_multiplier: input.new_multiplier,
-        p_changed_by: user.id,
-        p_reason: input.reason || undefined,
-      });
-
-      if (error) {
-        throw new Error(`Erro ao atualizar multiplicador: ${error.message}`);
-      }
-
-      if (!data || data.length === 0) {
-        throw new Error("Nenhum resultado retornado");
-      }
-
-      const result = data[0] as UpdateMultiplierResponse;
-
-      if (!result.success) {
-        throw new Error(result.message);
-      }
-
-      return result;
-    },
+  return useMutation<UpdateMultiplierResponse, Error, UpdateMultiplierInput>({
+    mutationFn: updateMultiplierWithHistory,
     onSuccess: (result, variables) => {
-      // Invalidar queries relacionadas
       queryClient.invalidateQueries({ queryKey: contextPricingKeys.all });
-      queryClient.invalidateQueries({ queryKey: contextPricingKeys.detail(variables.user_context) });
-      
-      // Invalidar também preços de coleções (afetados pela mudança) - RN010
+      queryClient.invalidateQueries({
+        queryKey: contextPricingKeys.detail(variables.user_context),
+      });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COLLECTION_PRICE] });
       queryClient.invalidateQueries({ queryKey: ["character-price"] });
 
@@ -198,7 +76,7 @@ export function useUpdateMultiplier() {
         description: result.message,
       });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Erro ao atualizar multiplicador",
         description: error.message,
@@ -208,55 +86,17 @@ export function useUpdateMultiplier() {
   });
 }
 
-/**
- * Hook para atualizar desconto de coleções escolhidas com histórico
- */
 export function useUpdateChosenDiscount() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: async (input: UpdateDiscountInput) => {
-      // Validar input
-      if (!isValidDiscountPercentage(input.new_discount_percentage)) {
-        throw new Error("Desconto deve ser um número inteiro entre 0 e 100%");
-      }
-
-      // Obter usuário atual
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      // Chamar função do banco de dados
-      const { data, error } = await supabase.rpc("update_chosen_discount_with_history", {
-        p_new_discount_percentage: input.new_discount_percentage,
-        p_changed_by: user.id,
-        p_reason: input.reason || undefined,
-      });
-
-      if (error) {
-        throw new Error(`Erro ao atualizar desconto: ${error.message}`);
-      }
-
-      if (!data || data.length === 0) {
-        throw new Error("Nenhum resultado retornado");
-      }
-
-      const result = data[0] as UpdateDiscountResponse;
-
-      if (!result.success) {
-        throw new Error(result.message);
-      }
-
-      return result;
-    },
+  return useMutation<UpdateDiscountResponse, Error, UpdateDiscountInput>({
+    mutationFn: updateChosenDiscountWithHistory,
     onSuccess: (result) => {
-      // Invalidar queries relacionadas
       queryClient.invalidateQueries({ queryKey: contextPricingKeys.all });
-      queryClient.invalidateQueries({ queryKey: [...contextPricingKeys.all, "chosen-discount"] });
-      
-      // Invalidar também preços de coleções (afetados pela mudança) - RN010
+      queryClient.invalidateQueries({
+        queryKey: [...contextPricingKeys.all, "chosen-discount"],
+      });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COLLECTION_PRICE] });
       queryClient.invalidateQueries({ queryKey: ["character-price"] });
 
@@ -265,7 +105,7 @@ export function useUpdateChosenDiscount() {
         description: result.message,
       });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Erro ao atualizar desconto",
         description: error.message,

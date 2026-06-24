@@ -1,13 +1,5 @@
-/**
- * Barrel file para exportar todos os hooks de realtime do sistema de pagamento
- *
- * Este arquivo fornece uma interface unificada para importar hooks de realtime
- * do sistema de pagamento manual.
- */
+import { isRealtimeAvailable } from "@/services/realtime/realtime-service";
 
-import { supabase } from "@/integrations/supabase/client";
-
-// Exportar tipos e interfaces
 export type {
   RealtimeConnectionState,
   ReconnectionConfig,
@@ -25,7 +17,6 @@ export type {
   CombinedConnectionState,
 } from "./use-payment-system-realtime";
 
-// Exportar hooks principais
 export {
   usePaymentRealtime,
   usePaymentStatusRealtime,
@@ -46,30 +37,16 @@ export {
   useAdminDashboardRealtime,
 } from "./use-payment-system-realtime";
 
-// Exportar hook de notificação existente (para compatibilidade)
 export { useNotificationCount, useFormattedNotificationCount } from "./use-notification-count";
 
-/**
- * Hook utilitário para verificar se o Supabase Realtime está disponível
- */
 export function useRealtimeAvailable(): boolean {
-  // Verificar se o Supabase está configurado com realtime
-  // Esta é uma verificação básica - em produção, pode ser mais complexa
-  try {
-    return !!supabase && typeof supabase.channel === "function";
-  } catch {
-    return false;
-  }
+  return isRealtimeAvailable();
 }
 
-/**
- * Hook para gerenciar múltiplas assinaturas de realtime
- */
 export function useRealtimeManager() {
   const subscriptions = new Map<string, { disconnect: () => void }>();
 
   const subscribe = <T extends { disconnect: () => void }>(key: string, subscription: T): T => {
-    // Remover assinatura anterior com a mesma chave
     if (subscriptions.has(key)) {
       subscriptions.get(key)?.disconnect();
     }

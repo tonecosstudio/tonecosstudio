@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { canCreateStandalonePurchase } from "@/services/standalone-purchase-service";
+import { canCreateStandalonePurchase } from "@/services/payments/standalone-purchase-service";
 
 export function useStandalonePurchaseAvailability(cycleId: string) {
   const [canPurchase, setCanPurchase] = useState(true);

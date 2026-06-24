@@ -29,19 +29,21 @@ import { CreditCard, Edit, CheckCircle, XCircle, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { updatePaymentStatus, type ManualPayment } from "@/lib/services/integrationService";
+import { useCustomerSidebarActions } from "@/hooks/admin/useCustomerSidebarActions";
+import type { CustomerSidebarPayment } from "@/hooks/admin/useCustomerSidebar";
 import { getOrderStatusLabel, MANUAL_PAYMENT_STATUS_OPTIONS } from "@/config/admin-order-status";
 import type { ManualPaymentStatus } from "@/types/admin/orders";
 import { type LucideIcon } from "lucide-react";
 import { log } from "@/lib/logger";
 
 interface PaymentInfoProps {
-  payments: ManualPayment[];
+  payments: CustomerSidebarPayment[];
   onRefresh: () => void;
 }
 
 export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
-  const [selectedPayment, setSelectedPayment] = useState<ManualPayment | null>(null);
+  const { changePaymentStatus } = useCustomerSidebarActions();
+  const [selectedPayment, setSelectedPayment] = useState<CustomerSidebarPayment | null>(null);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [newStatus, setNewStatus] = useState<ManualPaymentStatus | "">("");
   const [updating, setUpdating] = useState(false);
@@ -50,11 +52,15 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
   const manualPayments = payments.filter(
     (p) => p.payment_type === "one_time" || p.payment_type === "recurring"
   );
+  const approvedPayments = manualPayments.filter((payment) => payment.status === "approved").length;
+  const pendingPayments = manualPayments.filter(
+    (payment) => payment.status === "pending" || payment.status === "under_review"
+  ).length;
 
   if (manualPayments.length === 0) {
     return (
-      <div className="text-center py-4 text-muted-foreground text-sm">
-        Nenhum pagamento manual encontrado
+      <div className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+        Nenhum pagamento manual encontrado para este cliente.
       </div>
     );
   }
@@ -64,7 +70,7 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
 
     setUpdating(true);
     try {
-      await updatePaymentStatus(selectedPayment.id, newStatus);
+      await changePaymentStatus(selectedPayment.id, newStatus);
       toast.success("Status do pagamento atualizado com sucesso");
       setShowStatusDialog(false);
       onRefresh();
@@ -76,7 +82,7 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
     }
   };
 
-  const openStatusDialog = (payment: ManualPayment) => {
+  const openStatusDialog = (payment: CustomerSidebarPayment) => {
     setSelectedPayment(payment);
     setNewStatus(
       MANUAL_PAYMENT_STATUS_OPTIONS.some((option) => option.value === payment.status)
@@ -115,7 +121,7 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
 
   const getPaymentTypeLabel = (type: string) => {
     const typeMap: Record<string, string> = {
-      one_time: "Pagamento Único",
+      one_time: "Pagamento unico",
       recurring: "Recorrente",
     };
     return typeMap[type] || type;
@@ -124,10 +130,24 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
   return (
     <>
       <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-2 rounded-lg border bg-muted/20 p-3 text-xs">
+          <div>
+            <p className="text-muted-foreground">Registros</p>
+            <p className="mt-1 font-semibold">{manualPayments.length}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Aprovados</p>
+            <p className="mt-1 font-semibold">{approvedPayments}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Em fila</p>
+            <p className="mt-1 font-semibold">{pendingPayments}</p>
+          </div>
+        </div>
+
         {manualPayments.map((payment) => (
           <Card key={payment.id} className="p-3">
             <div className="space-y-2">
-              {/* Payment Header */}
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
@@ -143,14 +163,12 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
                 </Button>
               </div>
 
-              {/* Payment Details */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">R$ {payment.amount.toFixed(2)}</span>
                   {getStatusBadge(payment.status)}
                 </div>
 
-                {/* Payment Type */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">Tipo:</span>
                   <span className="text-xs font-medium">
@@ -158,10 +176,9 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
                   </span>
                 </div>
 
-                {/* Payment Method */}
                 <div className="bg-muted p-2 rounded text-xs">
-                  <p className="text-muted-foreground">Método de pagamento:</p>
-                  <p className="font-medium">ID: {payment.payment_method_id.slice(0, 8)}</p>
+                  <p className="text-muted-foreground">Metodo de pagamento:</p>
+                  <p className="font-medium">{payment.payment_method_label}</p>
                 </div>
               </div>
             </div>
@@ -169,24 +186,21 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
         ))}
       </div>
 
-      {/* Status Update Dialog */}
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Atualizar Status do Pagamento</DialogTitle>
+            <DialogTitle>Atualizar status do pagamento</DialogTitle>
             <DialogDescription>Pagamento #{selectedPayment?.reference_number}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Current Amount */}
             <div className="bg-muted p-3 rounded">
               <p className="text-sm text-muted-foreground">Valor</p>
               <p className="text-lg font-bold">R$ {selectedPayment?.amount.toFixed(2)}</p>
             </div>
 
-            {/* Status Selection */}
             <div className="space-y-2">
-              <Label>Novo Status</Label>
+              <Label>Novo status</Label>
               <Select
                 value={newStatus}
                 onValueChange={(value) => setNewStatus(value as ManualPaymentStatus)}
@@ -204,9 +218,8 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
               </Select>
             </div>
 
-            {/* Warning for status changes */}
             <div className="bg-yellow-50 dark:bg-yellow-950 p-3 rounded text-xs text-yellow-700 dark:text-yellow-300">
-              ⚠️ Atualizar o status do pagamento irá notificar automaticamente o cliente
+              Atualizar o status do pagamento notifica o cliente automaticamente.
             </div>
           </div>
 
@@ -215,7 +228,7 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
               Cancelar
             </Button>
             <Button onClick={handleUpdateStatus} disabled={updating}>
-              {updating ? "Atualizando..." : "Atualizar Status"}
+              {updating ? "Atualizando..." : "Atualizar status"}
             </Button>
           </DialogFooter>
         </DialogContent>

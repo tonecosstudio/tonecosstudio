@@ -22,13 +22,13 @@ const stageService = vi.hoisted(() => ({
   uploadStagePhoto: vi.fn(),
 }));
 
-vi.mock("@/services/admin/stage-service", () => ({
+vi.mock("@/services/admin/production/stage-service", () => ({
   completeStage: stageService.completeStage,
   uploadStagePhoto: stageService.uploadStagePhoto,
 }));
 
 // Mock stage validation
-vi.mock("@/services/admin/stage-validation", () => ({
+vi.mock("@/services/admin/production/stage-validation", () => ({
   validateStageTransition: vi.fn(),
   logStageTransition: vi.fn(),
   getPreviousStage: vi.fn(),
@@ -109,7 +109,7 @@ describe("StageTransitionModal", () => {
     vi.clearAllMocks();
     
     // Setup default mock for validation to pass
-    const { validateStageTransition } = await import("@/services/admin/stage-validation");
+    const { validateStageTransition } = await import("@/services/admin/production/stage-validation");
     vi.mocked(validateStageTransition).mockResolvedValue({
       isValid: true,
       canOverride: false,

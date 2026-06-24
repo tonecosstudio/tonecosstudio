@@ -1,39 +1,22 @@
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { TypingIndicator } from "@/components/chat/TypingIndicator";
+import { useSupportAttachmentPublicUrl } from "@/hooks/customer/useCustomerSupportConversationActions";
 import { useMessages } from "@/hooks/useMessages";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
-import { TypingIndicator } from "@/components/chat/TypingIndicator";
+import { log } from "@/lib/logger";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
+import type { Attachment, Message } from "@/types/support";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Attachment, Message } from "@/types/support";
-import { log } from "@/lib/logger";
-import {
-  useCreateCustomerSupportConversation,
-  useSupportAttachmentPublicUrl,
-} from "@/hooks/customer/useCustomerSupportConversationActions";
-import { sanitizeURL } from "@/lib/security/input-sanitizer";
 
-/**
- * Converte file_path para URL pública do Supabase Storage
- */
-/**
- * CustomerMessageList Component
- *
- * Displays messages in a conversation for customers.
- * Features:
- * - Renders messages (excludes internal notes)
- * - Shows order status updates (system messages)
- * - Auto-scrolls to latest message
- * - Infinite scroll for older messages
- * - Typing indicator
- *
- * Requirements: 14.2, 14.8, 3.2, 3.6
- */
 interface CustomerMessageListProps {
   conversationId: string;
-  currentUserId: string;
-  currentUserName: string;
-  isClosed?: boolean; // Indica se a conversa está encerrada
+  currentUserId?: string;
+  currentUserName?: string;
+  isClosed?: boolean;
+  onCreateConversation?: () => void | Promise<void>;
+  isCreatingConversation?: boolean;
 }
 
 function getSafeAttachmentUrl(url: string): string | null {
@@ -46,26 +29,22 @@ function getSafeAttachmentUrl(url: string): string | null {
 
 export function CustomerMessageList({
   conversationId,
-  currentUserId,
-  currentUserName,
+  currentUserId = "",
+  currentUserName = "Cliente",
   isClosed = false,
+  onCreateConversation,
+  isCreatingConversation = false,
 }: CustomerMessageListProps) {
-  const {
-    messages,
-    loading,
-    hasMore,
-    loadMore,
-    messagesEndRef,
-    optimisticAttachments,
-  } = useMessages({ conversationId, autoScroll: true });
-  const { createConversation, isCreating } = useCreateCustomerSupportConversation(currentUserId);
+  const { messages, loading, hasMore, loadMore, messagesEndRef, optimisticAttachments } =
+    useMessages({ conversationId, autoScroll: true });
 
-  // Typing indicator
   const { typingText } = useTypingIndicator({
     conversationId,
     currentUserId,
     currentUserName,
   });
+
+  const visibleMessages = messages.filter((message) => !message.is_internal);
 
   const formatTimestamp = (timestamp: string) => {
     try {
@@ -78,32 +57,28 @@ export function CustomerMessageList({
     }
   };
 
-  // Filter out internal notes (customers should never see them)
-  const visibleMessages = messages.filter((msg) => !msg.is_internal);
-
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {/* Closed Conversation Banner */}
-      {isClosed && (
-        <div className="bg-muted border border-border rounded-lg p-4 text-center">
-          <p className="text-sm font-medium text-muted-foreground mb-1">
-            ⚠️ Este atendimento foi encerrado
+    <div className="flex-1 space-y-4 overflow-y-auto bg-[hsl(0,0%,5%)] p-4">
+      {isClosed && onCreateConversation && (
+        <div className="rounded-lg border border-[hsl(0,0%,14%)] bg-[hsl(0,0%,7%)] p-4 text-center">
+          <p className="mb-1 text-sm font-medium text-zinc-300">
+            Este atendimento foi encerrado.
           </p>
-          <p className="text-xs text-muted-foreground mb-3">
-            Precisa de ajuda? Inicie uma nova solicitação
+          <p className="mb-3 text-xs text-zinc-500">
+            Se precisar de ajuda novamente, abra uma nova solicitacao.
           </p>
           <Button
             variant="outline"
             size="sm"
-            onClick={createConversation}
-            disabled={isCreating}
+            onClick={() => void onCreateConversation()}
+            disabled={isCreatingConversation}
+            className="border-[hsl(0,0%,18%)] bg-[hsl(0,0%,8%)] text-zinc-100 hover:bg-[hsl(0,0%,10%)]"
           >
-            {isCreating ? "Criando..." : "Nova Solicitação"}
+            {isCreatingConversation ? "Criando..." : "Nova solicitacao"}
           </Button>
         </div>
       )}
 
-      {/* Load More Button */}
       {hasMore && (
         <div className="text-center">
           <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
@@ -112,7 +87,6 @@ export function CustomerMessageList({
         </div>
       )}
 
-      {/* Messages */}
       {visibleMessages.map((message) => (
         <CustomerMessageBubble
           key={message.id}
@@ -122,17 +96,13 @@ export function CustomerMessageList({
         />
       ))}
 
-      {/* Empty state */}
       {!loading && visibleMessages.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          Nenhuma mensagem ainda. Envie a primeira mensagem!
+        <div className="py-8 text-center text-zinc-500">
+          Nenhuma mensagem ainda. Envie a primeira mensagem.
         </div>
       )}
 
-      {/* Typing indicator */}
       <TypingIndicator typingText={typingText} />
-
-      {/* Auto-scroll anchor */}
       <div ref={messagesEndRef} />
     </div>
   );
@@ -167,18 +137,17 @@ function CustomerMessageBubble({
     });
   }
 
-  // System messages (order status updates, etc.)
   if (isSystem) {
     return (
       <div className="flex justify-center">
-        <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 px-4 py-3 rounded-lg max-w-md">
-          <div className="flex items-start gap-2 mb-1">
-            <Badge variant="secondary" className="text-xs">
-              Atualização Automática
+        <div className="max-w-md rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sky-100">
+          <div className="mb-1 flex items-start gap-2">
+            <Badge className="border-sky-500/30 bg-sky-500/15 text-xs text-sky-100">
+              Atualizacao automatica
             </Badge>
           </div>
-          <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-          <span className="text-xs text-muted-foreground mt-2 block">
+          <p className="whitespace-pre-wrap text-sm">{message.message}</p>
+          <span className="mt-2 block text-xs text-sky-200/80">
             {formatTimestamp(message.created_at)}
           </span>
         </div>
@@ -186,23 +155,23 @@ function CustomerMessageBubble({
     );
   }
 
-  // Regular messages
   return (
     <div className={`flex ${isCustomer ? "justify-end" : "justify-start"}`}>
       <div
         className={`max-w-[80%] rounded-lg p-3 ${
-          isCustomer ? "bg-primary text-primary-foreground" : "bg-muted"
+          isCustomer
+            ? "bg-[hsl(42,100%,50%)] text-black"
+            : "border border-[hsl(0,0%,14%)] bg-[hsl(0,0%,8%)] text-zinc-100"
         }`}
       >
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-medium text-sm">
-            {isCustomer ? "Você" : message.sender_name || "Suporte"}
+        <div className="mb-1 flex items-center gap-2">
+          <span className="text-sm font-medium">
+            {isCustomer ? "Voce" : message.sender_name || "Suporte"}
           </span>
           <span className="text-xs opacity-70">{formatTimestamp(message.created_at)}</span>
         </div>
-        <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+        <p className="whitespace-pre-wrap text-sm">{message.message}</p>
 
-        {/* Optimistic Attachments (uploading) */}
         {optimisticAttachments.length > 0 && (
           <div className="mt-2 space-y-2">
             {optimisticAttachments.map((attachment) => {
@@ -213,13 +182,11 @@ function CustomerMessageBubble({
                 return (
                   <div
                     key={attachment.id}
-                    className={`text-xs p-2 rounded border border-destructive ${
-                      isCustomer ? "bg-destructive/10" : "bg-destructive/10"
-                    }`}
+                    className="rounded border border-red-500/40 bg-red-500/10 p-2 text-xs"
                   >
                     <div className="flex items-center gap-2">
-                      <span>❌ {attachment.file.name}</span>
-                      <span className="text-destructive">
+                      <span>Arquivo: {attachment.file.name}</span>
+                      <span className="text-red-200">
                         {attachment.error || "Erro ao enviar"}
                       </span>
                     </div>
@@ -233,15 +200,19 @@ function CustomerMessageBubble({
                     <img
                       src={previewUrl}
                       alt={attachment.file.name}
-                      className="max-w-full max-h-64 rounded border opacity-70"
+                      className="max-h-64 max-w-full rounded border border-black/20 opacity-70"
                       loading="lazy"
                     />
                     {attachment.status === "uploading" && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded">
-                        <div className="text-white text-sm">Enviando... {attachment.progress}%</div>
+                      <div className="absolute inset-0 flex items-center justify-center rounded bg-black/50">
+                        <div className="text-sm text-white">
+                          Enviando... {attachment.progress}%
+                        </div>
                       </div>
                     )}
-                    <span className="text-xs opacity-70 mt-1 block">📎 {attachment.file.name}</span>
+                    <span className="mt-1 block text-xs opacity-70">
+                      Anexo: {attachment.file.name}
+                    </span>
                   </div>
                 );
               }
@@ -249,12 +220,12 @@ function CustomerMessageBubble({
               return (
                 <div
                   key={attachment.id}
-                  className={`text-xs p-2 rounded border ${
-                    isCustomer ? "border-primary-foreground/20" : "border-border"
+                  className={`rounded border p-2 text-xs ${
+                    isCustomer ? "border-black/20" : "border-[hsl(0,0%,18%)]"
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <span>📎 {attachment.file.name}</span>
+                    <span>Anexo: {attachment.file.name}</span>
                     {attachment.status === "uploading" && (
                       <span className="opacity-70">Enviando... {attachment.progress}%</span>
                     )}
@@ -265,7 +236,6 @@ function CustomerMessageBubble({
           </div>
         )}
 
-        {/* Attachments (confirmed) */}
         {message.attachments && message.attachments.length > 0 && (
           <div className="mt-2 space-y-2">
             {message.attachments.map((attachment: Attachment) => {
@@ -273,7 +243,9 @@ function CustomerMessageBubble({
               const publicUrl = getSupportAttachmentPublicUrl(attachment.file_path);
               const safePublicUrl = getSafeAttachmentUrl(publicUrl);
 
-              if (!safePublicUrl) return null;
+              if (!safePublicUrl) {
+                return null;
+              }
 
               if (isImage) {
                 return (
@@ -287,10 +259,12 @@ function CustomerMessageBubble({
                     <img
                       src={safePublicUrl}
                       alt={attachment.file_name}
-                      className="max-w-full max-h-64 rounded border"
+                      className="max-h-64 max-w-full rounded border border-[hsl(0,0%,18%)]"
                       loading="lazy"
                     />
-                    <span className="text-xs opacity-70 mt-1 block">📎 {attachment.file_name}</span>
+                    <span className="mt-1 block text-xs opacity-70">
+                      Anexo: {attachment.file_name}
+                    </span>
                   </a>
                 );
               }
@@ -301,13 +275,13 @@ function CustomerMessageBubble({
                   href={safePublicUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`text-xs underline block p-2 rounded border ${
+                  className={`block rounded border p-2 text-xs underline ${
                     isCustomer
-                      ? "border-primary-foreground/20 hover:bg-primary-foreground/10"
-                      : "border-border hover:bg-muted"
+                      ? "border-black/20 hover:bg-black/10"
+                      : "border-[hsl(0,0%,18%)] hover:bg-white/[0.04]"
                   }`}
                 >
-                  📎 {attachment.file_name}
+                  Anexo: {attachment.file_name}
                   {attachment.file_size && (
                     <span className="ml-2 opacity-70">
                       ({(attachment.file_size / 1024).toFixed(1)} KB)

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import businessDayService, { type HolidayInput } from "@/lib/services/businessDayService";
+import businessDayService, { type HolidayInput } from "@/services/calendar/business-day-calendar-service";
 
 export const ADMIN_HOLIDAYS_QUERY_KEY = ["admin-holidays"] as const;
 export type AdminHolidayInput = HolidayInput;

@@ -112,13 +112,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   )}
                 >
                   <Icon className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{item.label}</span>
-                  {item.badge && (
-                    <span className="ml-auto text-[8px] tracking-wider px-1.5 py-0.5 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent)/0.7)] uppercase">
-                      {item.badge}
-                    </span>
-                  )}
-                  {active && <ChevronRight className="ml-auto h-3 w-3 text-[hsl(var(--gold-accent)/0.5)]" />}
+                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                  <div className="ml-auto flex items-center gap-2">
+                    {item.badge && (
+                      <span className="text-[8px] tracking-wider px-1.5 py-0.5 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent)/0.7)] uppercase">
+                        {item.badge}
+                      </span>
+                    )}
+                    {active && <ChevronRight className="h-3 w-3 text-[hsl(var(--gold-accent)/0.5)]" />}
+                  </div>
                 </button>
               );
             })}
@@ -138,7 +140,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           className="text-[10px] tracking-[0.3em] uppercase text-[hsl(var(--gold-accent))]"
           style={{ fontFamily: "'Press Start 2P', monospace" }}
         >
-          ADMIN
+          ORDAX OPS
         </h1>
         <div className="flex items-center gap-2">
           <NotificationCenter />
@@ -172,7 +174,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 className="text-[10px] tracking-[0.3em] uppercase text-[hsl(var(--gold-accent))]"
                 style={{ fontFamily: "'Press Start 2P', monospace" }}
               >
-                COMMAND
+                BACKOFFICE
               </h2>
               <NotificationCenter />
             </div>

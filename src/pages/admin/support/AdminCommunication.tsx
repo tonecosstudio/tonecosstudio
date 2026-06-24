@@ -1,109 +1,95 @@
+import { useSearchParams } from "react-router-dom";
+import {
+  Bell,
+  FileText,
+  HeadphonesIcon,
+  History,
+  Megaphone,
+  MessageSquare,
+} from "lucide-react";
+import { GroupsContent } from "@/components/groups/GroupsContent";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { HeadphonesIcon, Megaphone, MessageSquare, FileText, Bell, History } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
-import { useState } from "react";
-import AdminSupport from "./AdminSupport";
-import { GroupsContent } from "@/components/groups/GroupsContent";
-import AdminQuickReplies from "./AdminQuickReplies";
-import CommunicationTemplates from "./CommunicationTemplates";
-import AdminNotificationSettings from "./AdminNotificationSettings";
 import AdminNotificationHistory from "./AdminNotificationHistory";
+import AdminNotificationSettings from "./AdminNotificationSettings";
+import AdminQuickReplies from "./AdminQuickReplies";
+import AdminSupport from "./AdminSupport";
+import CommunicationTemplates from "./CommunicationTemplates";
 
-/**
- * AdminCommunication - Hub Consolidado de Comunicação
- *
- * Consolida 6 páginas em uma só com tabs:
- * - AdminSupport (Tickets de Suporte)
- * - GroupsContent (Grupos de Broadcast)
- * - AdminQuickReplies (Respostas Rápidas)
- * - CommunicationTemplates (Templates)
- * - AdminNotificationSettings (Configurações de Notificações)
- * - AdminNotificationHistory (Histórico de Notificações)
- *
- * Redução: 6 páginas → 1 hub (83%)
- */
 export default function AdminCommunication() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<string>(tabParam || "support");
+  const activeTab = searchParams.get("tab") || "support";
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
     setSearchParams({ tab: value });
   };
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div>
           <h1
-            className="text-2xl md:text-3xl tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))]"
-            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)" }}
+            className="text-2xl uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))] md:text-3xl"
+            style={{
+              fontFamily: "'Bebas Neue', Impact, sans-serif",
+              textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)",
+            }}
           >
-            Central de Comunicação
+            Central de comunicacao
           </h1>
-          <p className="text-[hsl(0,0%,45%)] text-xs tracking-wider font-mono uppercase mt-1">
-            Gerencie suporte, grupos, templates e notificações
+          <p className="mt-1 text-xs uppercase tracking-wider text-[hsl(0,0%,45%)]">
+            Suporte, grupos, respostas rapidas e notificacoes administrativas
           </p>
         </div>
 
-        {/* Tabs Unificadas */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
             <TabsTrigger value="support">
-              <HeadphonesIcon className="h-4 w-4 mr-2" />
+              <HeadphonesIcon className="mr-2 h-4 w-4" />
               Suporte
             </TabsTrigger>
             <TabsTrigger value="groups">
-              <Megaphone className="h-4 w-4 mr-2" />
+              <Megaphone className="mr-2 h-4 w-4" />
               Grupos
             </TabsTrigger>
             <TabsTrigger value="quick-replies">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Respostas Rápidas
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Respostas rapidas
             </TabsTrigger>
             <TabsTrigger value="templates">
-              <FileText className="h-4 w-4 mr-2" />
+              <FileText className="mr-2 h-4 w-4" />
               Templates
             </TabsTrigger>
             <TabsTrigger value="notifications">
-              <Bell className="h-4 w-4 mr-2" />
-              Notificações
+              <Bell className="mr-2 h-4 w-4" />
+              Notificacoes
             </TabsTrigger>
             <TabsTrigger value="history">
-              <History className="h-4 w-4 mr-2" />
-              Histórico
+              <History className="mr-2 h-4 w-4" />
+              Historico
             </TabsTrigger>
           </TabsList>
 
-          {/* Tickets de Suporte */}
           <TabsContent value="support" className="space-y-4">
             <AdminSupport />
           </TabsContent>
 
-          {/* Grupos de Broadcast */}
           <TabsContent value="groups" className="space-y-4">
             <GroupsContent showHeader={false} />
           </TabsContent>
 
-          {/* Respostas Rápidas */}
           <TabsContent value="quick-replies" className="space-y-4">
             <AdminQuickReplies />
           </TabsContent>
 
-          {/* Templates */}
           <TabsContent value="templates" className="space-y-4">
             <CommunicationTemplates />
           </TabsContent>
 
-          {/* Configurações de Notificações */}
           <TabsContent value="notifications" className="space-y-4">
             <AdminNotificationSettings />
           </TabsContent>
 
-          {/* Histórico de Notificações */}
           <TabsContent value="history" className="space-y-4">
             <AdminNotificationHistory />
           </TabsContent>

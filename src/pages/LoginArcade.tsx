@@ -40,7 +40,7 @@ export default function LoginArcade() {
   const [isLoading, setIsLoading] = useState(false);
   const isSignupPasswordValid = mode !== "signup" || isPasswordPolicyCompliant(password);
 
-  const { formData, setValue, getSanitizedData } = useSanitizedForm<{
+  const { formData, setValue, getSanitizedValue } = useSanitizedForm<{
     name: string;
     email: string;
     phone: string;
@@ -62,20 +62,22 @@ export default function LoginArcade() {
 
     setIsLoading(true);
     try {
-      const sanitizedData = getSanitizedData();
+      const sanitizedEmail = getSanitizedValue("email");
       if (mode === "login") {
         await signInWithPasswordCredentials({
-          email: sanitizedData.email,
+          email: sanitizedEmail,
           password,
         });
         toast({ title: "Bem-vindo de volta!", description: "Login realizado com sucesso." });
         navigate(next);
       } else {
+        const sanitizedName = getSanitizedValue("name");
+        const sanitizedPhone = formData.phone.trim() ? getSanitizedValue("phone") : "";
         await signUpWithPasswordCredentials({
-          email: sanitizedData.email,
+          email: sanitizedEmail,
           password,
-          fullName: sanitizedData.name,
-          phone: sanitizedData.phone,
+          fullName: sanitizedName,
+          phone: sanitizedPhone || undefined,
           emailRedirectTo: window.location.origin,
         });
         toast({

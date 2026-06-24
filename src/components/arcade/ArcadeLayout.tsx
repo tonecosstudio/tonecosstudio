@@ -8,8 +8,13 @@ import { Coins, Menu, Bell, X } from "lucide-react";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { useEffect, useState, type PropsWithChildren } from "react";
 import { useAuth } from "@/lib/auth";
-import { useIsAdmin } from "@/lib/roles";
-import { ADMIN_ROUTES, AUTH_ROUTES, PUBLIC_ROUTES } from "@/config/routes";
+import { useCurrentUserIsAdmin } from "@/lib/roles";
+import {
+  ADMIN_ROUTES,
+  AUTH_ROUTES,
+  PUBLIC_COLLECTIONS_ENABLED,
+  PUBLIC_ROUTES,
+} from "@/config/routes";
 
 // ─── SCANLINE OVERLAY ────────────────────────────────────────────────
 
@@ -27,7 +32,13 @@ export function ScanlineOverlay() {
 
 // ─── GLITCH TEXT ─────────────────────────────────────────────────────
 
-export function GlitchText({ text, className = "" }: { text: string; className?: string }) {
+export function GlitchText({
+  text,
+  className = "",
+}: {
+  text: string;
+  className?: string;
+}) {
   return (
     <span className={`relative inline-block ${className}`}>
       <span
@@ -70,7 +81,13 @@ export function FloatingParticles() {
 
 // ─── COIN COUNTER ────────────────────────────────────────────────────
 
-export function CoinCounter({ balance, isLoading }: { balance: number; isLoading: boolean }) {
+export function CoinCounter({
+  balance,
+  isLoading,
+}: {
+  balance: number;
+  isLoading: boolean;
+}) {
   const [displayed, setDisplayed] = useState(0);
   const [sparkle, setSparkle] = useState(false);
 
@@ -101,7 +118,9 @@ export function CoinCounter({ balance, isLoading }: { balance: number; isLoading
         sparkle ? "shadow-[0_0_20px_hsl(var(--gold-accent)/0.4)] scale-105" : ""
       }`}
     >
-      <Coins className={`w-5 h-5 text-[hsl(var(--gold-accent))] ${sparkle ? "animate-bounce" : ""}`} />
+      <Coins
+        className={`w-5 h-5 text-[hsl(var(--gold-accent))] ${sparkle ? "animate-bounce" : ""}`}
+      />
       <span className="font-mono text-lg font-bold text-[hsl(var(--gold-accent))] tracking-wider tabular-nums">
         {isLoading ? "---" : displayed.toLocaleString("pt-BR")}
       </span>
@@ -132,14 +151,16 @@ export function AnimatedGridBg({ scrollY = 0 }: { scrollY?: number }) {
 
 // ─── TOP HUD NAV ─────────────────────────────────────────────────────
 
-const navLinks = [
-  { to: PUBLIC_ROUTES.home, label: "INÍCIO" },
+const navLinks: Array<{ to: string; label: string }> = [
+  { to: PUBLIC_ROUTES.home, label: "INICIO" },
   { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
-  { to: PUBLIC_ROUTES.collections, label: "COLEÇÕES" },
-  { to: PUBLIC_ROUTES.plans, label: "PLANOS" },
 ];
 
-const authNavLinks = [
+if (PUBLIC_COLLECTIONS_ENABLED) {
+  navLinks.push({ to: PUBLIC_ROUTES.collections, label: "COLECOES" });
+}
+
+const authNavLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.catalog, label: "PERSONAGENS" },
   { to: AUTH_ROUTES.profile, label: "CONTA" },
 ];
@@ -148,7 +169,7 @@ export function ArcadeNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { data: isAdmin } = useIsAdmin(user?.id);
+  const { data: isAdmin } = useCurrentUserIsAdmin({ currentUserId: user?.id });
   const { data: balanceData, isLoading: balanceLoading } = useCoinsBalance();
   const userBalance = balanceData?.balance ?? 0;
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -170,7 +191,10 @@ export function ArcadeNav() {
           <Link
             to={PUBLIC_ROUTES.home}
             className="font-black text-xl tracking-[0.3em] text-[hsl(var(--gold-accent))] shrink-0"
-            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.3)" }}
+            style={{
+              fontFamily: "'Bebas Neue', Impact, sans-serif",
+              textShadow: "0 0 20px hsl(var(--gold-accent) / 0.3)",
+            }}
           >
             ORDAX
           </Link>
@@ -182,13 +206,17 @@ export function ArcadeNav() {
                 {l.label}
               </Link>
             ))}
-            {user && authNavLinks.map((l) => (
-              <Link key={l.to} to={l.to} className={linkClass(l.to)}>
-                {l.label}
-              </Link>
-            ))}
+            {user &&
+              authNavLinks.map((l) => (
+                <Link key={l.to} to={l.to} className={linkClass(l.to)}>
+                  {l.label}
+                </Link>
+              ))}
             {isAdmin && (
-              <Link to={ADMIN_ROUTES.home} className="text-[10px] tracking-[0.2em] uppercase font-mono text-red-500 hover:text-red-400 transition-colors">
+              <Link
+                to={ADMIN_ROUTES.home}
+                className="text-[10px] tracking-[0.2em] uppercase font-mono text-red-500 hover:text-red-400 transition-colors"
+              >
                 ADMIN
               </Link>
             )}
@@ -218,7 +246,11 @@ export function ArcadeNav() {
               onClick={() => setMobileOpen(!mobileOpen)}
               className="lg:hidden text-[hsl(0,0%,55%)] hover:text-[hsl(var(--gold-accent))] transition-colors"
             >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
@@ -236,16 +268,17 @@ export function ArcadeNav() {
                 {l.label}
               </Link>
             ))}
-            {user && authNavLinks.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                onClick={() => setMobileOpen(false)}
-                className={`block py-2 ${linkClass(l.to)}`}
-              >
-                {l.label}
-              </Link>
-            ))}
+            {user &&
+              authNavLinks.map((l) => (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  onClick={() => setMobileOpen(false)}
+                  className={`block py-2 ${linkClass(l.to)}`}
+                >
+                  {l.label}
+                </Link>
+              ))}
             {user && (
               <Link
                 to={AUTH_ROUTES.notifications}
@@ -304,7 +337,10 @@ export function ArcadeHero({ badge, title, subtitle, stats }: ArcadeHeroProps) {
 
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.06] pointer-events-none"
-        style={{ background: "radial-gradient(circle, hsl(var(--gold-accent)), transparent 70%)" }}
+        style={{
+          background:
+            "radial-gradient(circle, hsl(var(--gold-accent)), transparent 70%)",
+        }}
       />
 
       <div className="relative max-w-5xl mx-auto text-center">
@@ -344,7 +380,9 @@ export function ArcadeHero({ badge, title, subtitle, stats }: ArcadeHeroProps) {
                   <p className="text-2xl md:text-3xl font-bold text-[hsl(var(--gold-accent))] tabular-nums">
                     {stat.value}
                   </p>
-                  <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">{stat.label}</p>
+                  <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">
+                    {stat.label}
+                  </p>
                 </div>
               </div>
             ))}
@@ -357,9 +395,15 @@ export function ArcadeHero({ badge, title, subtitle, stats }: ArcadeHeroProps) {
 
 // ─── CORNER BRACKETS CARD ────────────────────────────────────────────
 
-export function ArcadeCard({ children, className = "", hover = true }: PropsWithChildren<{ className?: string; hover?: boolean }>) {
+export function ArcadeCard({
+  children,
+  className = "",
+  hover = true,
+}: PropsWithChildren<{ className?: string; hover?: boolean }>) {
   return (
-    <div className={`group relative border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] ${hover ? "hover:border-[hsl(var(--gold-accent)/0.6)]" : ""} transition-all duration-500 overflow-hidden ${className}`}>
+    <div
+      className={`group relative border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] ${hover ? "hover:border-[hsl(var(--gold-accent)/0.6)]" : ""} transition-all duration-500 overflow-hidden ${className}`}
+    >
       {/* Corner brackets */}
       <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[hsl(var(--gold-accent)/0.3)] group-hover:border-[hsl(var(--gold-accent))] transition-colors z-10" />
       <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[hsl(var(--gold-accent)/0.3)] group-hover:border-[hsl(var(--gold-accent))] transition-colors z-10" />
@@ -380,7 +424,13 @@ interface ArcadeCTAProps {
   secondaryAction?: { label: string; href: string };
 }
 
-export function ArcadeCTA({ badge, title, description, primaryAction, secondaryAction }: ArcadeCTAProps) {
+export function ArcadeCTA({
+  badge,
+  title,
+  description,
+  primaryAction,
+  secondaryAction,
+}: ArcadeCTAProps) {
   const navigate = useNavigate();
 
   return (

@@ -30,30 +30,37 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import {
-  updateOrderStatus,
-  getOrderProductionStages,
-  type Order,
+  useCustomerSidebarActions,
   type OrderProductionStage,
-} from "@/lib/services/integrationService";
-import { getOrderStatusLabel, MANUAL_PAYMENT_STATUS_OPTIONS } from "@/config/admin-order-status";
-import type { ManualPaymentStatus } from "@/types/admin/orders";
+} from "@/hooks/admin/useCustomerSidebarActions";
+import type { CustomerSidebarOrder } from "@/hooks/admin/useCustomerSidebar";
+import {
+  getOrderStatusLabel,
+  getOrderStatusOptionsForType,
+} from "@/config/admin-order-status";
+import type { OrderStatus } from "@/types/admin/orders";
+import { getProductionStageLabel } from "@/config/production-stages";
+import { OrderTypeIndicator } from "@/components/admin/orders/OrderTypeIndicator";
 import { log } from "@/lib/logger";
 
 interface OrdersListProps {
-  orders: Order[];
+  orders: CustomerSidebarOrder[];
   onRefresh: () => void;
 }
 
 export function OrdersList({ orders, onRefresh }: OrdersListProps) {
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const { changeOrderStatus, loadOrderProductionStages } = useCustomerSidebarActions();
+  const [selectedOrder, setSelectedOrder] = useState<CustomerSidebarOrder | null>(null);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [newStatus, setNewStatus] = useState<ManualPaymentStatus | "">("");
+  const [newStatus, setNewStatus] = useState<OrderStatus | "">("");
   const [updating, setUpdating] = useState(false);
   const [productionStages, setProductionStages] = useState<OrderProductionStage[]>([]);
 
   if (orders.length === 0) {
     return (
-      <div className="text-center py-4 text-muted-foreground text-sm">Nenhum pedido encontrado</div>
+      <div className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+        Nenhum pedido encontrado para este cliente.
+      </div>
     );
   }
 
@@ -62,7 +69,7 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
 
     setUpdating(true);
     try {
-      await updateOrderStatus(selectedOrder.id, newStatus);
+      await changeOrderStatus(selectedOrder.id, selectedOrder.type, newStatus);
       toast.success("Status do pedido atualizado com sucesso");
       setShowStatusDialog(false);
       onRefresh();
@@ -74,18 +81,15 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
     }
   };
 
-  const openStatusDialog = async (order: Order) => {
+  const openStatusDialog = async (order: CustomerSidebarOrder) => {
     setSelectedOrder(order);
-    setNewStatus(
-      MANUAL_PAYMENT_STATUS_OPTIONS.some((option) => option.value === order.status)
-        ? (order.status as ManualPaymentStatus)
-        : "pending"
-    );
+    const validOptions = getOrderStatusOptionsForType(order.type);
+    setNewStatus(validOptions.some((option) => option.value === order.status) ? order.status : "");
     setShowStatusDialog(true);
 
     // Load production stages
     try {
-      const stages = await getOrderProductionStages(order.id);
+      const stages = await loadOrderProductionStages(order.id);
       setProductionStages(stages);
     } catch (error) {
       log.error("Error loading production stages", { error, orderId: order.id });
@@ -123,14 +127,12 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
     }
   };
 
-  const getProductionStageLabel = (stage: string) => {
-    const stageMap: Record<string, string> = {
-      molde_pronto: "Molde Pronto",
-      impressao_iniciada: "Impressão Iniciada",
-      pintura_iniciada: "Pintura Iniciada",
-      finalizacao: "Finalização",
-    };
-    return stageMap[stage] || stage;
+  const getAvailableStatusOptions = (order: CustomerSidebarOrder | null) => {
+    if (!order) {
+      return [];
+    }
+
+    return getOrderStatusOptionsForType(order.type);
   };
 
   return (
@@ -139,12 +141,11 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
         {orders.map((order) => (
           <Card key={order.id} className="p-3">
             <div className="space-y-2">
-              {/* Order Header */}
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   {getStatusIcon(order.status)}
                   <div>
-                    <p className="font-medium text-sm">#{order.reference_number}</p>
+                    <p className="font-medium text-sm">#{order.reference_number.slice(0, 8)}</p>
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(order.created_at), "dd/MM/yyyy", { locale: ptBR })}
                     </p>
@@ -155,12 +156,35 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
                 </Button>
               </div>
 
-              {/* Order Details */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">R$ {order.amount.toFixed(2)}</span>
                 {getStatusBadge(order.status)}
               </div>
-
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Tipo</span>
+                <OrderTypeIndicator type={order.type} />
+              </div>
+              {order.tracking_code && (
+                <div className="rounded bg-muted px-2 py-1 text-xs">
+                  <span className="text-muted-foreground">Rastreamento: </span>
+                  <span className="font-medium">{order.tracking_code}</span>
+                </div>
+              )}
+              {order.production_stages && order.production_stages.length > 0 && (
+                <div className="rounded bg-muted px-2 py-2 text-xs">
+                  <p className="font-medium">
+                    {order.production_stages.length} etapa
+                    {order.production_stages.length !== 1 ? "s" : ""} registrada
+                    {order.production_stages.length !== 1 ? "s" : ""}
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    Ultima:{" "}
+                    {getProductionStageLabel(
+                      order.production_stages[order.production_stages.length - 1].stage
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           </Card>
         ))}
@@ -175,18 +199,17 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Status Selection */}
             <div className="space-y-2">
               <Label>Status</Label>
               <Select
                 value={newStatus}
-                onValueChange={(value) => setNewStatus(value as ManualPaymentStatus)}
+                onValueChange={(value) => setNewStatus(value as OrderStatus)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {MANUAL_PAYMENT_STATUS_OPTIONS.map((option) => (
+                  {getAvailableStatusOptions(selectedOrder).map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -195,11 +218,10 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
               </Select>
             </div>
 
-            {/* Production Stages (Internal Only) */}
             {productionStages.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">
-                  Estágios de Produção Interna (visível apenas para admin)
+                  Estagios de producao interna
                 </Label>
                 <div className="space-y-1">
                   {productionStages.map((stage) => (
@@ -223,7 +245,7 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
               Cancelar
             </Button>
             <Button onClick={handleUpdateStatus} disabled={updating}>
-              {updating ? "Atualizando..." : "Atualizar Status"}
+              {updating ? "Atualizando..." : "Atualizar status"}
             </Button>
           </DialogFooter>
         </DialogContent>

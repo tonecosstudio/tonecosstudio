@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { approveChoice, rejectChoice, type CharacterChoice } from "@/services/admin/choice-service";
+import { approveChoice, rejectChoice, type CharacterChoice } from "@/services/admin/choices/choice-service";
 
 export type { CharacterChoice };
 

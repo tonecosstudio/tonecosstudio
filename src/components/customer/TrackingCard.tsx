@@ -1,26 +1,14 @@
-/**
- * TrackingCard Component
- * 
- * Displays shipping tracking information for customer orders.
- * Shows tracking code with copy functionality, carrier info, and link to tracking page.
- * 
- * Requirements: 2.4.4 Order Tracking
- * Task: 5.3.1 Create TrackingCard component
- */
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Truck, Copy, ExternalLink, Package, Calendar } from "lucide-react";
+import type { ReactNode } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Calendar, Copy, ExternalLink, Package, Truck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
-import { openSafeExternalUrl } from "@/lib/security/safe-open";
 import { buildTrackingUrl } from "@/lib/tracking-links";
-
-// ============================================================================
-// Types
-// ============================================================================
+import { openSafeExternalUrl } from "@/lib/security/safe-open";
+import { cn } from "@/lib/utils";
 
 export interface TrackingCardProps {
   trackingCode: string | null;
@@ -29,101 +17,107 @@ export interface TrackingCardProps {
   className?: string;
 }
 
-// Carrier configuration with display metadata
-const CARRIER_CONFIG: Record<string, { name: string; logo: string }> = {
-  correios: {
-    name: "Correios",
-    logo: "🇧🇷",
-  },
-  jadlog: {
-    name: "Jadlog",
-    logo: "📦",
-  },
-  sedex: {
-    name: "Sedex",
-    logo: "🇧🇷",
-  },
-  default: {
-    name: "Transportadora",
-    logo: "🚚",
-  },
+const CARRIER_CONFIG: Record<string, { name: string; shortCode: string }> = {
+  correios: { name: "Correios", shortCode: "BR" },
+  jadlog: { name: "Jadlog", shortCode: "JD" },
+  sedex: { name: "Sedex", shortCode: "SX" },
+  default: { name: "Transportadora", shortCode: "TR" },
 };
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Get carrier configuration based on carrier name
- */
-const getCarrierConfig = (carrier: string | null) => {
+function getCarrierConfig(carrier: string | null) {
   if (!carrier) return CARRIER_CONFIG.default;
-  
+
   const normalizedCarrier = carrier.toLowerCase().trim();
   return CARRIER_CONFIG[normalizedCarrier] || CARRIER_CONFIG.default;
-};
+}
 
-// ============================================================================
-// Main Component
-// ============================================================================
+function InfoBlock({
+  label,
+  value,
+  icon,
+  className,
+}: {
+  label: string;
+  value: React.ReactNode;
+  icon: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-sm border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] p-4",
+        className
+      )}
+    >
+      <div className="flex h-11 w-11 items-center justify-center rounded-sm border border-[hsl(0,0%,14%)] bg-[hsl(0,0%,10%)] text-[hsl(var(--gold-accent))]">
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(0,0%,48%)]">
+          {label}
+        </p>
+        <div className="mt-1 text-sm font-semibold text-white">{value}</div>
+      </div>
+    </div>
+  );
+}
 
-export const TrackingCard: React.FC<TrackingCardProps> = ({
+export function TrackingCard({
   trackingCode,
   trackingCarrier,
   estimatedDeliveryDate,
   className,
-}) => {
-  // Get carrier configuration
+}: TrackingCardProps) {
   const carrierConfig = getCarrierConfig(trackingCarrier);
 
-  // Copy tracking code to clipboard
   const handleCopyTrackingCode = () => {
-    if (trackingCode) {
-      navigator.clipboard.writeText(trackingCode);
+    if (!trackingCode) return;
+
+    navigator.clipboard.writeText(trackingCode);
+    toast({
+      title: "Código copiado",
+      description: "Código de rastreamento copiado para a área de transferência.",
+    });
+  };
+
+  const handleOpenTracking = () => {
+    if (!trackingCode) return;
+
+    try {
+      const trackingUrl = buildTrackingUrl(trackingCode, trackingCarrier);
+      if (!trackingUrl) throw new Error("Invalid tracking code");
+      openSafeExternalUrl(trackingUrl);
+    } catch {
       toast({
-        title: "Código Copiado",
-        description: "Código de rastreamento copiado para a área de transferência.",
+        title: "Link de rastreamento indisponível",
+        description: "Não foi possível abrir um link seguro para esta transportadora.",
+        variant: "destructive",
       });
     }
   };
 
-  // Open tracking link in new tab
-  const handleOpenTracking = () => {
-    if (trackingCode) {
-      try {
-        const trackingUrl = buildTrackingUrl(trackingCode, trackingCarrier);
-        if (!trackingUrl) {
-          throw new Error("Invalid tracking code");
-        }
-        openSafeExternalUrl(trackingUrl);
-      } catch {
-        toast({
-          title: "Link de rastreamento indisponivel",
-          description: "Nao foi possivel abrir um link seguro para esta transportadora.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  // If no tracking code, show placeholder
   if (!trackingCode) {
     return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Truck className="h-5 w-5" />
+      <Card
+        className={cn(
+          "border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] text-white shadow-none",
+          className
+        )}
+      >
+        <CardHeader className="border-b border-[hsl(0,0%,12%)]">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Truck className="h-5 w-5 text-[hsl(var(--gold-accent))]" />
             Rastreamento
           </CardTitle>
-          <CardDescription>
-            Informações de rastreamento estarão disponíveis após o envio
+          <CardDescription className="text-[hsl(0,0%,58%)]">
+            As informações de envio serão liberadas assim que o pedido sair da produção.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="text-center py-6 text-muted-foreground">
-            <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+        <CardContent className="py-10">
+          <div className="text-center text-[hsl(0,0%,58%)]">
+            <Package className="mx-auto mb-3 h-12 w-12 text-[hsl(0,0%,32%)]" />
             <p className="text-sm">
-              O código de rastreamento será disponibilizado assim que seu pedido for enviado.
+              O código de rastreamento será disponibilizado assim que o pedido for enviado.
             </p>
           </div>
         </CardContent>
@@ -132,85 +126,84 @@ export const TrackingCard: React.FC<TrackingCardProps> = ({
   }
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Truck className="h-5 w-5" />
+    <Card
+      className={cn(
+        "border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] text-white shadow-none",
+        className
+      )}
+    >
+      <CardHeader className="border-b border-[hsl(0,0%,12%)]">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Truck className="h-5 w-5 text-[hsl(var(--gold-accent))]" />
               Rastreamento
             </CardTitle>
-            <CardDescription>
-              Acompanhe seu pedido em tempo real
+            <CardDescription className="mt-2 text-[hsl(0,0%,58%)]">
+              Acompanhe a expedição e a previsão final de entrega.
             </CardDescription>
           </div>
-          <Badge variant="default" className="text-sm px-3 py-1">
+          <Badge className="border-violet-500/25 bg-violet-500/12 text-violet-200 hover:bg-violet-500/12">
             Enviado
           </Badge>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Tracking Code */}
-        <div>
-          <p className="text-sm text-muted-foreground mb-2">Código de Rastreamento</p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 p-3 bg-muted rounded font-mono text-sm break-all">
-              {trackingCode}
-            </code>
+      <CardContent className="space-y-4 p-6">
+        <div className="rounded-sm border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(0,0%,48%)]">
+              Código de rastreamento
+            </p>
             <Button
               variant="outline"
               size="icon"
               onClick={handleCopyTrackingCode}
+              aria-label="Copiar código"
               title="Copiar código"
+              className="border-[hsl(0,0%,18%)] bg-transparent text-[hsl(0,0%,78%)] hover:bg-[hsl(0,0%,10%)] hover:text-white"
             >
               <Copy className="h-4 w-4" />
             </Button>
           </div>
+          <code className="block break-all font-mono text-sm text-white">{trackingCode}</code>
         </div>
 
-        {/* Carrier Information */}
-        <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-          <div className="text-3xl" role="img" aria-label={carrierConfig.name}>
-            {carrierConfig.logo}
-          </div>
-          <div className="flex-1">
-            <p className="text-sm text-muted-foreground">Transportadora</p>
-            <p className="font-semibold">{carrierConfig.name}</p>
-          </div>
-        </div>
+        <InfoBlock
+          label="Transportadora"
+          value={carrierConfig.name}
+          icon={
+            <span
+              role="img"
+              aria-label={carrierConfig.name}
+              className="font-mono text-xs font-bold tracking-[0.18em]"
+            >
+              {carrierConfig.shortCode}
+            </span>
+          }
+        />
 
-        {/* Estimated Delivery Date */}
-        {estimatedDeliveryDate && (
-          <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-            <Calendar className="h-8 w-8 text-muted-foreground" />
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground">Previsão de Entrega</p>
-              <p className="font-semibold">
-                {format(new Date(estimatedDeliveryDate), "dd 'de' MMMM 'de' yyyy", {
-                  locale: ptBR,
-                })}
-              </p>
-            </div>
-          </div>
-        )}
+        {estimatedDeliveryDate ? (
+          <InfoBlock
+            label="Previsão de entrega"
+            value={format(new Date(estimatedDeliveryDate), "dd 'de' MMMM 'de' yyyy", {
+              locale: ptBR,
+            })}
+            icon={<Calendar className="h-5 w-5" />}
+          />
+        ) : null}
 
-        {/* Track Order Button */}
-        <Button
-          className="w-full"
-          onClick={handleOpenTracking}
-        >
+        <Button className="w-full" onClick={handleOpenTracking}>
           Rastrear Pedido
-          <ExternalLink className="h-4 w-4 ml-2" />
+          <ExternalLink className="ml-2 h-4 w-4" />
         </Button>
 
-        {/* Help Text */}
-        <p className="text-xs text-muted-foreground text-center">
-          Clique no botão acima para acompanhar seu pedido no site da transportadora.
+        <p className="text-center text-xs text-[hsl(0,0%,58%)]">
+          Use o link acima para acompanhar a atualização do envio no site da transportadora.
         </p>
       </CardContent>
     </Card>
   );
-};
+}
 
 export default TrackingCard;

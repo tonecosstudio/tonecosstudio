@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchCollectionFinancialAnalysis,
   fetchCollectionsFinancialSummary,
-} from "@/services/admin/admin-collections-service";
+} from "@/services/admin/catalog/admin-collections-service";
 
 export function useAdminCollectionsFinancialSummary() {
   return useQuery({

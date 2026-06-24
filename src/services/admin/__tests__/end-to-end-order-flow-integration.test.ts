@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { fetchProductionQueue, updateProductionStage, assignProduction } from "../production-service";
+import { fetchProductionQueue, updateProductionStage, assignProduction } from "../production/production-service";
 import { supabase } from "@/integrations/supabase/client";
 import { submitCharacterChoice } from "@/services/customer/choice-service";
-import { approveChoice } from "../choice-service";
+import { approveChoice } from "../choices/choice-service";
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -18,16 +18,23 @@ vi.mock("@/services/customer/choice-service", () => ({
   submitCharacterChoice: vi.fn(),
 }));
 
-vi.mock("../choice-service", () => ({
+vi.mock("../choices/choice-service", () => ({
   approveChoice: vi.fn(),
 }));
 
-vi.mock("../../notifications/production-notification-service", () => ({
-  ProductionNotificationService: vi.fn().mockImplementation(() => ({
+vi.mock("@/services/notifications/production-notification-service", () => ({
+  productionNotificationService: {
     sendAssignmentNotification: vi.fn().mockResolvedValue(undefined),
-    sendStageUpdateNotification: vi.fn().mockResolvedValue(undefined),
-  })),
+    sendStageUpdate: vi.fn().mockResolvedValue(undefined),
+  },
 }));
+
+interface ProductionRpcArgs {
+  p_stage?: string;
+  p_queue_id?: string;
+  p_user_id?: string;
+  p_reason?: string;
+}
 
 function productionRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -80,7 +87,7 @@ function mockProductionSelect(row: Record<string, unknown>) {
       Promise.resolve({ data: [row], error: null, count: 1 }).then(resolve, reject),
   };
 
-  vi.mocked(supabase.from).mockReturnValue(query as any);
+  vi.mocked(supabase.from).mockReturnValue(query as never);
 }
 
 describe("End-to-End Order Flow Integration Test", () => {
@@ -104,9 +111,9 @@ describe("End-to-End Order Flow Integration Test", () => {
     });
 
     mockProductionSelect(productionRow());
-    vi.mocked(supabase.rpc).mockImplementation((fn: string, args: any) => {
+    vi.mocked(supabase.rpc).mockImplementation(((fn: string, args: ProductionRpcArgs) => {
       if (fn === "admin_assign_production") {
-        return Promise.resolve({ data: assignedRow, error: null }) as any;
+        return Promise.resolve({ data: assignedRow, error: null });
       }
 
       if (fn === "admin_update_production_stage") {
@@ -118,18 +125,18 @@ describe("End-to-End Order Flow Integration Test", () => {
             production_completed_at: args.p_stage === "shipped" ? shippedRow.production_completed_at : null,
           }),
           error: null,
-        }) as any;
+        });
       }
 
-      return Promise.resolve({ data: null, error: null }) as any;
-    });
+      return Promise.resolve({ data: null, error: null });
+    }) as never);
     vi.mocked(submitCharacterChoice).mockResolvedValue({
       id: "choice-123",
       orderId: "order-123",
       characterId: "character-456",
       status: "submitted",
-    } as any);
-    vi.mocked(approveChoice).mockResolvedValue({ id: "choice-123", status: "approved" } as any);
+    } as never);
+    vi.mocked(approveChoice).mockResolvedValue({ id: "choice-123", status: "approved" } as never);
 
     const initialQueue = await fetchProductionQueue({}, { page: 1, pageSize: 10 });
     expect(initialQueue.data[0].productionStatus).toBe("awaiting_choice");
@@ -169,7 +176,7 @@ describe("End-to-End Order Flow Integration Test", () => {
     vi.mocked(supabase.rpc).mockResolvedValue({
       data: null,
       error: { message: "Database error" },
-    } as any);
+    } as never);
 
     await expect(updateProductionStage("prod-queue-001", "quality_check")).rejects.toThrow(
       "Database error"

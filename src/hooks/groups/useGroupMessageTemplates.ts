@@ -6,7 +6,7 @@ import {
   listGroupMessageTemplates,
   saveGroupMessageTemplate,
   type GroupMessageTemplate,
-} from "@/services/groups-message-service";
+} from "@/services/groups/groups-message-service";
 
 export interface SaveMessageTemplateParams {
   id?: string;

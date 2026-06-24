@@ -1,6 +1,19 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import {
+  catalogOfficialPtBrRewrite,
+  catalogRootRewrite,
+  collapseRedundantAdjacentParts,
+  gameOriginFranchise,
+  isDirectMainSubjectFolder,
+  universeContentGroup,
+  universeContentGroupCanonicalization,
+  universeGroupAlias,
+  universeMediaBucket,
+  universeRoot,
+} from "./catalog-taxonomy-rules.mjs";
+import { defaultTelegramRoot, defaultTelegramWebpOutput } from "./telegram-paths.mjs";
 
 function argValue(name, fallback = null) {
   const equalsArg = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -19,14 +32,14 @@ const ROOT = path.resolve(
   argValue(
     "root",
     process.env.TELEGRAM_ROOT ||
-      "C:/Users/Casa/Downloads/telegram-2370335738-images",
+      defaultTelegramRoot(),
   ),
 );
 const OUTPUT = path.resolve(
   argValue(
     "output",
     process.env.ORDAX_WEBP_OUTPUT ||
-      "C:/Users/Casa/Downloads/ordax-catalogo-webp-final",
+      defaultTelegramWebpOutput(),
   ),
 );
 const MANIFEST = path.resolve(
@@ -54,9 +67,10 @@ const RUNS_DIR = path.join(OUTPUT, "manifests", "runs");
 const FAILURE_LOG = path.join(OUTPUT, "manifests", "webp_failures.jsonl");
 
 const SKIPPED_CATEGORIES = new Set([
-  "_duplicados",
-  "_problemas",
-  "_revisar",
+  "duplicados",
+  "fora catalogo",
+  "problemas",
+  "revisar",
   "adulto",
   "nao identificado",
   "não identificado",
@@ -67,10 +81,16 @@ const CATEGORY_ALIASES = new Map(
     acessorios: "acessorios",
     accessories: "acessorios",
     anime: "anime",
-    animation: "animacao",
-    cartoon: "desenhos",
-    cartoons: "desenhos",
-    desenhos: "desenhos",
+    animacao: "desenhos-animacao",
+    animation: "desenhos-animacao",
+    cartoon: "desenhos-animacao",
+    cartoons: "desenhos-animacao",
+    desenho: "desenhos-animacao",
+    desenhos: "desenhos-animacao",
+    "desenho animacao": "desenhos-animacao",
+    "desenho-animacao": "desenhos-animacao",
+    "desenhos animacao": "desenhos-animacao",
+    "desenhos-animacao": "desenhos-animacao",
     comics: "quadrinhos",
     comic: "quadrinhos",
     hq: "quadrinhos",
@@ -81,9 +101,13 @@ const CATEGORY_ALIASES = new Map(
     games: "games",
     jogo: "games",
     jogos: "games",
-    filmes: "filmes",
-    movie: "filmes",
-    movies: "filmes",
+    filmes: "filmes-series",
+    "filme serie": "filmes-series",
+    "filme-serie": "filmes-series",
+    "filmes series": "filmes-series",
+    "filmes-series": "filmes-series",
+    movie: "filmes-series",
+    movies: "filmes-series",
     musica: "musica",
     "música": "musica",
     original: "original",
@@ -94,22 +118,23 @@ const CATEGORY_ALIASES = new Map(
     historicos: "tabletop",
     holiday: "props",
     internet: "props",
-    literature: "series",
+    literature: "filmes-series",
     pokemon: "games",
     props: "props",
     "sci fi": "sci-fi",
     "sci-fi": "sci-fi",
-    series: "series",
-    série: "series",
-    séries: "series",
+    serie: "filmes-series",
+    series: "filmes-series",
+    série: "filmes-series",
+    séries: "filmes-series",
     sports: "esportes",
     tabletop: "tabletop",
     tematicos: "props",
     toy: "brinquedos",
     toys: "brinquedos",
-    tv: "tv",
+    tv: "filmes-series",
     veiculos: "veiculos",
-    "web series": "series",
+    "web series": "filmes-series",
     veículos: "veiculos",
     vtubers: "vtubers",
     "virtual youtubers": "vtubers",
@@ -157,11 +182,28 @@ function canonicalCategory(value) {
 function catalogRelParts(record) {
   const rel = String(record.catalog_relpath || "");
   const parts = rel.split(/[\\/]+/).filter(Boolean);
+  const isShallow = parts.length === 3 && !record.folder;
   return {
     category: record.category || parts[0] || "outros",
     franchise: record.franchise || parts[1] || "sem franquia",
-    folder: record.folder || parts[2] || "geral",
+    folder: record.folder || (parts.length >= 4 ? parts[2] : "geral"),
     filename: record.filename || parts.at(-1) || record.source_name || "item",
+    isShallow,
+  };
+}
+
+function applyOfficialPtBrRewrite(parts) {
+  const rewrite = catalogOfficialPtBrRewrite(parts);
+  if (!rewrite) return parts;
+  return {
+    ...parts,
+    category: rewrite.category,
+    franchise: rewrite.franchise,
+    folder: rewrite.folder,
+    preserveSubjectFolder:
+      parts.preserveSubjectFolder ||
+      rewrite.reasons.includes("shallow_filename_subject_folder") ||
+      rewrite.reasons.includes("direct_main_subject_folder"),
   };
 }
 
@@ -176,40 +218,161 @@ function dragonBallCharacterFranchise(value) {
   return character;
 }
 
+const ANIME_CANONICAL_FRANCHISES = [
+  "attack on titan",
+  "black butler",
+  "bleach",
+  "captain tsubasa",
+  "cardcaptor sakura",
+  "chainsaw man",
+  "dandadan",
+  "darling in the franxx",
+  "demon slayer",
+  "digimon",
+  "dragon ball",
+  "evangelion",
+  "hunter x hunter",
+  "jujutsu kaisen",
+  "monster musume",
+  "my hero academia",
+  "naruto",
+  "one piece",
+  "one punch man",
+  "sailor moon",
+  "spy x family",
+].sort((a, b) => normalizeComparable(b).length - normalizeComparable(a).length);
+
+const GENERIC_MODEL_FOLDER_NAMES = new Set([
+  "anime",
+  "anime figure",
+  "anime girl",
+  "base",
+  "figure",
+  "figura",
+  "general",
+  "geral",
+  "model",
+  "modelo",
+  "style",
+  "xenoverse",
+]);
+
+function animeFranchisePrefixFold(parts) {
+  const franchise = normalizeComparable(parts.franchise);
+  const folder = normalizeComparable(parts.folder);
+  if (!franchise || !folder || GENERIC_MODEL_FOLDER_NAMES.has(folder)) return null;
+
+  for (const canonical of ANIME_CANONICAL_FRANCHISES) {
+    const canonicalComparable = normalizeComparable(canonical);
+    const expected = `${canonicalComparable} ${folder}`;
+    if (franchise === expected || franchise.startsWith(`${expected} `)) {
+      return { franchise: canonical, folder: parts.folder };
+    }
+  }
+
+  return null;
+}
+
 function curatedCatalogRelParts(record) {
   const parts = catalogRelParts(record);
   const sourceCategory = normalizeComparable(parts.category).replace(/\s+/g, "-");
   const category = canonicalCategory(parts.category);
+  const animeFold = category === "anime" ? animeFranchisePrefixFold(parts) : null;
   const dragonBallCharacter = dragonBallCharacterFranchise(parts.franchise);
+  const promotedUniverse = universeRoot(parts.franchise);
+  const gameOrigin = gameOriginFranchise(parts.franchise, parts.folder, parts.filename);
 
   if (sourceCategory === "pokemon") {
-    return {
+    return applyOfficialPtBrRewrite({
       ...parts,
       category: "games",
       franchise: "pokemon",
       folder: parts.folder || parts.franchise,
-    };
+    });
   }
 
   if (
     sourceCategory === "internet" &&
     ["hololive", "vtubers"].includes(normalizeComparable(parts.franchise))
   ) {
-    return {
+    return applyOfficialPtBrRewrite({
       ...parts,
       category: "vtubers",
-    };
+    });
+  }
+
+  if (gameOrigin && category !== "games" && !universeRoot(parts.category) && !promotedUniverse) {
+    return applyOfficialPtBrRewrite({
+      ...parts,
+      category: "games",
+      franchise: gameOrigin,
+      folder: parts.folder || parts.franchise,
+    });
+  }
+
+  if (promotedUniverse && universeRoot(parts.category) !== promotedUniverse) {
+    return applyOfficialPtBrRewrite({
+      ...parts,
+      category: promotedUniverse,
+      franchise: universeContentGroup({
+        category: parts.category,
+        franchise: parts.franchise,
+        folder: parts.folder,
+        filename: parts.filename,
+      }),
+      folder: parts.folder,
+    });
+  }
+
+  const currentUniverse = universeRoot(parts.category);
+  if (currentUniverse) {
+    const universeGroup = universeContentGroupCanonicalization({
+      category: parts.category,
+      franchise: parts.franchise,
+      folder: parts.folder,
+      filename: parts.filename,
+    });
+    if (universeGroup && universeGroup !== parts.franchise) {
+      return applyOfficialPtBrRewrite({
+        ...parts,
+        category: currentUniverse,
+        franchise: universeGroup,
+      });
+    }
+  }
+
+  const rootRewrite = catalogRootRewrite({
+    category: category,
+    franchise: parts.franchise,
+    folder: parts.folder,
+    filename: parts.filename,
+  });
+  if (rootRewrite) {
+    return applyOfficialPtBrRewrite({
+      ...parts,
+      category: rootRewrite.category,
+      franchise: rootRewrite.franchise,
+      folder: rootRewrite.folder,
+    });
+  }
+
+  if (animeFold) {
+    return applyOfficialPtBrRewrite({
+      ...parts,
+      franchise: animeFold.franchise,
+      folder: parts.folder || animeFold.folder,
+    });
   }
 
   if (category === "anime" && dragonBallCharacter) {
-    return {
+    return applyOfficialPtBrRewrite({
       ...parts,
       franchise: "dragon ball",
       folder: parts.folder || dragonBallCharacter,
-    };
+    });
   }
 
-  return parts;
+  return applyOfficialPtBrRewrite(parts);
 }
 
 function acceptedConfidence(value) {
@@ -241,7 +404,11 @@ function finalRelpaths(record) {
     String(record.sha256 || "").slice(0, 12) ||
     slugPart(record.source_name, "source");
   const filename = base.includes(identity) ? `${base}.webp` : `${base}-${identity}.webp`;
-  const common = path.join(category, franchise, folder, filename);
+  const commonParts =
+    parts.preserveSubjectFolder || isDirectMainSubjectFolder({ category, franchise, folder })
+      ? [category, franchise, folder, filename]
+      : collapseRedundantAdjacentParts([category, franchise, folder, filename]).parts;
+  const common = path.join(...commonParts);
   return {
     display: path.join("display", common),
     thumb: path.join("thumb", common),

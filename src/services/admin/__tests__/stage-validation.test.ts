@@ -8,13 +8,13 @@
  * - Transition logging
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   validateStageTransition,
   canUserOverride,
   getNextStage,
   getPreviousStage,
-} from "../stage-validation";
+} from "../production/stage-validation";
 
 // Mock Supabase client
 vi.mock("@/integrations/supabase/client", () => ({
@@ -28,11 +28,27 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 describe("Stage Validation Service", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe("validateStageTransition", () => {
     it("should allow completing the first stage", async () => {
       const mockStages = [
-        { id: "stage-1", stage_order: 1, stage_name: "awaiting_choice", status: "pending", is_blocked: false },
-        { id: "stage-2", stage_order: 2, stage_name: "design", status: "pending", is_blocked: false },
+        {
+          id: "stage-1",
+          stage_order: 1,
+          stage_name: "awaiting_choice",
+          status: "pending",
+          is_blocked: false,
+        },
+        {
+          id: "stage-2",
+          stage_order: 2,
+          stage_name: "design",
+          status: "pending",
+          is_blocked: false,
+        },
       ];
 
       const { supabase } = await import("@/integrations/supabase/client");
@@ -45,7 +61,7 @@ describe("Stage Validation Service", () => {
             }),
           }),
         }),
-      } as any);
+      } as never);
 
       const result = await validateStageTransition("queue-1", "stage-1");
 
@@ -56,8 +72,20 @@ describe("Stage Validation Service", () => {
 
     it("should allow completing a stage when previous stage is completed", async () => {
       const mockStages = [
-        { id: "stage-1", stage_order: 1, stage_name: "awaiting_choice", status: "completed", is_blocked: false },
-        { id: "stage-2", stage_order: 2, stage_name: "design", status: "pending", is_blocked: false },
+        {
+          id: "stage-1",
+          stage_order: 1,
+          stage_name: "awaiting_choice",
+          status: "completed",
+          is_blocked: false,
+        },
+        {
+          id: "stage-2",
+          stage_order: 2,
+          stage_name: "design",
+          status: "pending",
+          is_blocked: false,
+        },
       ];
 
       const { supabase } = await import("@/integrations/supabase/client");
@@ -70,7 +98,7 @@ describe("Stage Validation Service", () => {
             }),
           }),
         }),
-      } as any);
+      } as never);
 
       const result = await validateStageTransition("queue-1", "stage-2");
 
@@ -80,8 +108,20 @@ describe("Stage Validation Service", () => {
 
     it("should prevent completing a stage when previous stage is not completed", async () => {
       const mockStages = [
-        { id: "stage-1", stage_order: 1, stage_name: "awaiting_choice", status: "pending", is_blocked: false },
-        { id: "stage-2", stage_order: 2, stage_name: "design", status: "pending", is_blocked: false },
+        {
+          id: "stage-1",
+          stage_order: 1,
+          stage_name: "awaiting_choice",
+          status: "pending",
+          is_blocked: false,
+        },
+        {
+          id: "stage-2",
+          stage_order: 2,
+          stage_name: "design",
+          status: "pending",
+          is_blocked: false,
+        },
       ];
 
       const { supabase } = await import("@/integrations/supabase/client");
@@ -94,7 +134,7 @@ describe("Stage Validation Service", () => {
             }),
           }),
         }),
-      } as any);
+      } as never);
 
       const result = await validateStageTransition("queue-1", "stage-2");
 
@@ -106,9 +146,27 @@ describe("Stage Validation Service", () => {
 
     it("should prevent skipping stages", async () => {
       const mockStages = [
-        { id: "stage-1", stage_order: 1, stage_name: "awaiting_choice", status: "completed", is_blocked: false },
-        { id: "stage-2", stage_order: 2, stage_name: "design", status: "pending", is_blocked: false },
-        { id: "stage-3", stage_order: 3, stage_name: "production", status: "pending", is_blocked: false },
+        {
+          id: "stage-1",
+          stage_order: 1,
+          stage_name: "awaiting_choice",
+          status: "completed",
+          is_blocked: false,
+        },
+        {
+          id: "stage-2",
+          stage_order: 2,
+          stage_name: "design",
+          status: "pending",
+          is_blocked: false,
+        },
+        {
+          id: "stage-3",
+          stage_order: 3,
+          stage_name: "production",
+          status: "pending",
+          is_blocked: false,
+        },
       ];
 
       const { supabase } = await import("@/integrations/supabase/client");
@@ -121,7 +179,7 @@ describe("Stage Validation Service", () => {
             }),
           }),
         }),
-      } as any);
+      } as never);
 
       const result = await validateStageTransition("queue-1", "stage-3");
 
@@ -133,7 +191,13 @@ describe("Stage Validation Service", () => {
 
     it("should prevent completing an already completed stage", async () => {
       const mockStages = [
-        { id: "stage-1", stage_order: 1, stage_name: "awaiting_choice", status: "completed", is_blocked: false },
+        {
+          id: "stage-1",
+          stage_order: 1,
+          stage_name: "awaiting_choice",
+          status: "completed",
+          is_blocked: false,
+        },
       ];
 
       const { supabase } = await import("@/integrations/supabase/client");
@@ -146,7 +210,7 @@ describe("Stage Validation Service", () => {
             }),
           }),
         }),
-      } as any);
+      } as never);
 
       const result = await validateStageTransition("queue-1", "stage-1");
 
@@ -157,7 +221,13 @@ describe("Stage Validation Service", () => {
 
     it("should prevent completing a blocked stage", async () => {
       const mockStages = [
-        { id: "stage-1", stage_order: 1, stage_name: "awaiting_choice", status: "pending", is_blocked: true },
+        {
+          id: "stage-1",
+          stage_order: 1,
+          stage_name: "awaiting_choice",
+          status: "pending",
+          is_blocked: true,
+        },
       ];
 
       const { supabase } = await import("@/integrations/supabase/client");
@@ -170,7 +240,7 @@ describe("Stage Validation Service", () => {
             }),
           }),
         }),
-      } as any);
+      } as never);
 
       const result = await validateStageTransition("queue-1", "stage-1");
 
@@ -183,10 +253,14 @@ describe("Stage Validation Service", () => {
   describe("canUserOverride", () => {
     it("should return true for admin users", async () => {
       const { supabase } = await import("@/integrations/supabase/client");
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: "user-1" } },
+        error: null,
+      } as never);
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: true,
         error: null,
-      } as any);
+      } as never);
 
       const result = await canUserOverride("user-1");
 
@@ -199,15 +273,35 @@ describe("Stage Validation Service", () => {
 
     it("should return false for non-admin users", async () => {
       const { supabase } = await import("@/integrations/supabase/client");
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: "user-2" } },
+        error: null,
+      } as never);
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: false,
         error: null,
-      } as any);
+      } as never);
 
       const result = await canUserOverride("user-2");
 
       expect(result).toBe(false);
       expect(supabase.rpc).toHaveBeenCalledWith("has_role", {
+        _user_id: "user-2",
+        _role: "admin",
+      });
+    });
+
+    it("should reject override checks for a different user id", async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: "user-1" } },
+        error: null,
+      } as never);
+
+      const result = await canUserOverride("user-2");
+
+      expect(result).toBe(false);
+      expect(supabase.rpc).not.toHaveBeenCalledWith("has_role", {
         _user_id: "user-2",
         _role: "admin",
       });

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import * as adminCollectionsService from "@/services/admin/admin-collections-service";
+import * as adminCollectionsService from "@/services/admin/catalog/admin-collections-service";
 
 export function useAdminCollectionsData(selectedCollection: string | null) {
   const collectionsQuery = useQuery({

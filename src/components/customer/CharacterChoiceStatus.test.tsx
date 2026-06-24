@@ -1,16 +1,16 @@
-/**
- * Tests for CharacterChoiceStatus Component
- *
- * Task: 3.2.4 Add choice status to customer order view
- */
-
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { CharacterChoiceStatus } from "./CharacterChoiceStatus";
+import { render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as useCharacterChoiceHook from "@/hooks/customer/useCharacterChoice";
+import { CharacterChoiceStatus } from "./CharacterChoiceStatus";
 
 vi.mock("@/hooks/customer/useCharacterChoice");
+vi.mock("./CharacterSelectionModal", () => ({
+  CharacterSelectionModal: () => null,
+}));
+vi.mock("./ChoiceChangeModal", () => ({
+  ChoiceChangeModal: () => null,
+}));
 
 describe("CharacterChoiceStatus", () => {
   let queryClient: QueryClient;
@@ -24,334 +24,166 @@ describe("CharacterChoiceStatus", () => {
     vi.clearAllMocks();
   });
 
-  const renderComponent = (props = {}) => {
-    const defaultProps = {
-      orderId: "order-123",
-      collectionId: "collection-1",
-      collectionName: "Test Collection",
-      orderType: "standalone_purchase" as const,
-      ...props,
-    };
-
-    return render(
+  const renderComponent = () =>
+    render(
       <QueryClientProvider client={queryClient}>
-        <CharacterChoiceStatus {...defaultProps} />
+        <CharacterChoiceStatus
+          orderId="order-123"
+          collectionId="collection-1"
+          collectionName="Test Collection"
+          orderType="standalone_purchase"
+        />
       </QueryClientProvider>
     );
+
+  const baseChoice = {
+    id: "choice-1",
+    orderId: "order-123",
+    orderType: "standalone_purchase" as const,
+    userId: "user-1",
+    collectionId: "collection-1",
+    characterId: "char-1",
+    characterName: "Test Character",
+    characterImageUrl: "https://example.com/char.jpg",
+    status: "submitted" as const,
+    submittedAt: new Date().toISOString(),
+    approvedAt: null,
+    approvedBy: null,
+    approvedByName: null,
+    rejectedAt: null,
+    rejectionReason: null,
+    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    remindersSent: 0,
+    lastReminderAt: null,
+    previousChoiceId: null,
+    changeReason: null,
+    changeCount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
-  it("should show loading state initially", () => {
+  const mockChoice = (choice: unknown, isLoading = false) => {
     vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
-      data: undefined,
-      isLoading: true,
+      data: choice,
+      isLoading,
       refetch: vi.fn(),
     } as never);
+  };
 
-    renderComponent();
-    expect(screen.getByText("Escolha de Personagem")).toBeInTheDocument();
-  });
-
-  it("should show 'Choose Character' button when no choice exists", async () => {
-    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
-      data: null,
-      isLoading: false,
-      refetch: vi.fn(),
-    } as never);
+  it("renders loading state", () => {
+    mockChoice(undefined, true);
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText("Escolher Personagem")).toBeInTheDocument();
-    });
+    expect(screen.getByText("Escolha de personagem")).toBeInTheDocument();
   });
 
-  it("should show pending status with deadline", async () => {
-    const mockChoice = {
-      id: "choice-1",
-      orderId: "order-123",
-      orderType: "standalone_purchase" as const,
-      userId: "user-1",
-      collectionId: "collection-1",
+  it("asks the customer to choose a character when no choice exists", async () => {
+    mockChoice(null);
+
+    renderComponent();
+
+    expect(await screen.findByText("Escolher personagem")).toBeInTheDocument();
+    expect(screen.getByText(/Voce precisa escolher um personagem/)).toBeInTheDocument();
+  });
+
+  it("shows pending status with deadline", async () => {
+    mockChoice({
+      ...baseChoice,
       characterId: null,
       characterName: null,
       characterImageUrl: null,
-      status: "pending" as const,
-      submittedAt: null,
-      approvedAt: null,
-      approvedBy: null,
-      approvedByName: null,
-      rejectedAt: null,
-      rejectionReason: null,
-      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      remindersSent: 0,
-      lastReminderAt: null,
-      previousChoiceId: null,
-      changeReason: null,
-      changeCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
-      data: mockChoice,
-      isLoading: false,
-      refetch: vi.fn(),
-    } as never);
+      status: "pending",
+    });
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText(/Você ainda não escolheu um personagem/i)).toBeInTheDocument();
-      expect(screen.getByText("Escolher Personagem")).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/Voce ainda nao escolheu um personagem/)).toBeInTheDocument();
+    expect(screen.getByText("Escolher personagem")).toBeInTheDocument();
+    expect(screen.getByText(/Prazo:/)).toBeInTheDocument();
   });
 
-  it("should show submitted status with character info", async () => {
-    const mockChoice = {
-      id: "choice-1",
-      orderId: "order-123",
-      orderType: "standalone_purchase" as const,
-      userId: "user-1",
-      collectionId: "collection-1",
-      characterId: "char-1",
-      characterName: "Test Character",
-      characterImageUrl: "https://example.com/char.jpg",
-      status: "submitted" as const,
-      submittedAt: new Date().toISOString(),
-      approvedAt: null,
-      approvedBy: null,
-      approvedByName: null,
-      rejectedAt: null,
-      rejectionReason: null,
-      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      remindersSent: 0,
-      lastReminderAt: null,
-      previousChoiceId: null,
-      changeReason: null,
-      changeCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
-      data: mockChoice,
-      isLoading: false,
-      refetch: vi.fn(),
-    } as never);
+  it("shows submitted status with change availability", async () => {
+    mockChoice(baseChoice);
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText("Escolha Enviada - Aguardando Aprovação")).toBeInTheDocument();
-      expect(screen.getByText("Test Character")).toBeInTheDocument();
-      expect(screen.getByText(/3 alterações restantes/i)).toBeInTheDocument();
-    });
+    expect(await screen.findByText("Escolha enviada - aguardando aprovacao")).toBeInTheDocument();
+    expect(screen.getByText("Test Character")).toBeInTheDocument();
+    expect(screen.getByText(/3 alteracoes restantes/)).toBeInTheDocument();
   });
 
-  it("should show approved status with character image", async () => {
-    const mockChoice = {
-      id: "choice-1",
-      orderId: "order-123",
-      orderType: "standalone_purchase" as const,
-      userId: "user-1",
-      collectionId: "collection-1",
-      characterId: "char-1",
+  it("shows approved status", async () => {
+    mockChoice({
+      ...baseChoice,
       characterName: "Approved Character",
-      characterImageUrl: "https://example.com/char.jpg",
-      status: "approved" as const,
-      submittedAt: new Date().toISOString(),
+      status: "approved",
       approvedAt: new Date().toISOString(),
-      approvedBy: "admin-1",
-      approvedByName: "Admin User",
-      rejectedAt: null,
-      rejectionReason: null,
-      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      remindersSent: 0,
-      lastReminderAt: null,
-      previousChoiceId: null,
-      changeReason: null,
-      changeCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
-      data: mockChoice,
-      isLoading: false,
-      refetch: vi.fn(),
-    } as never);
+    });
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText("Escolha Aprovada")).toBeInTheDocument();
-      expect(screen.getByText("Approved Character")).toBeInTheDocument();
-      const aprovadoBadges = screen.getAllByText("Aprovado");
-      expect(aprovadoBadges.length).toBeGreaterThan(0);
-    });
+    expect(await screen.findByText("Escolha aprovada")).toBeInTheDocument();
+    expect(screen.getByText("Approved Character")).toBeInTheDocument();
+    expect(screen.getAllByText("Aprovado").length).toBeGreaterThan(0);
   });
 
-  it("should show rejected status with reason", async () => {
-    const mockChoice = {
-      id: "choice-1",
-      orderId: "order-123",
-      orderType: "standalone_purchase" as const,
-      userId: "user-1",
-      collectionId: "collection-1",
-      characterId: "char-1",
+  it("shows rejected status with reason", async () => {
+    mockChoice({
+      ...baseChoice,
       characterName: "Rejected Character",
-      characterImageUrl: "https://example.com/char.jpg",
-      status: "rejected" as const,
-      submittedAt: new Date().toISOString(),
-      approvedAt: null,
-      approvedBy: null,
-      approvedByName: null,
+      status: "rejected",
       rejectedAt: new Date().toISOString(),
-      rejectionReason: "Character out of stock",
-      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      remindersSent: 0,
-      lastReminderAt: null,
-      previousChoiceId: null,
-      changeReason: null,
-      changeCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
-      data: mockChoice,
-      isLoading: false,
-      refetch: vi.fn(),
-    } as never);
+      rejectionReason: "Personagem indisponivel",
+    });
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText("Escolha Rejeitada")).toBeInTheDocument();
-      expect(screen.getByText("Character out of stock")).toBeInTheDocument();
-      expect(screen.getByText("Escolher Outro Personagem")).toBeInTheDocument();
-    });
+    expect((await screen.findAllByText("Escolha rejeitada")).length).toBeGreaterThan(0);
+    expect(screen.getByText("Personagem indisponivel")).toBeInTheDocument();
+    expect(screen.getByText("Escolher outro personagem")).toBeInTheDocument();
   });
 
-  it("should show locked status", async () => {
-    const mockChoice = {
-      id: "choice-1",
-      orderId: "order-123",
-      orderType: "standalone_purchase" as const,
-      userId: "user-1",
-      collectionId: "collection-1",
-      characterId: "char-1",
+  it("shows locked status", async () => {
+    mockChoice({
+      ...baseChoice,
       characterName: "Locked Character",
-      characterImageUrl: "https://example.com/char.jpg",
-      status: "locked" as const,
-      submittedAt: new Date().toISOString(),
+      status: "locked",
       approvedAt: new Date().toISOString(),
-      approvedBy: "admin-1",
-      approvedByName: "Admin User",
-      rejectedAt: null,
-      rejectionReason: null,
-      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      remindersSent: 0,
-      lastReminderAt: null,
-      previousChoiceId: null,
-      changeReason: null,
-      changeCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    });
 
-    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
-      data: mockChoice,
-      isLoading: false,
-      refetch: vi.fn(),
-    } as never);
+    renderComponent();
+
+    expect(await screen.findByText("Escolha bloqueada")).toBeInTheDocument();
+    expect(screen.getByText("Locked Character")).toBeInTheDocument();
+    expect(screen.getByText("Em producao")).toBeInTheDocument();
+  });
+
+  it("hides change button after change limit", async () => {
+    mockChoice({
+      ...baseChoice,
+      changeCount: 3,
+    });
 
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText("Escolha Bloqueada")).toBeInTheDocument();
-      expect(screen.getByText("Locked Character")).toBeInTheDocument();
-      expect(screen.getByText("Em produção")).toBeInTheDocument();
+      expect(screen.queryByText(/Alterar escolha/)).not.toBeInTheDocument();
     });
   });
 
-  it("should not show change button when change limit reached", async () => {
-    const mockChoice = {
-      id: "choice-1",
-      orderId: "order-123",
-      orderType: "standalone_purchase" as const,
-      userId: "user-1",
-      collectionId: "collection-1",
-      characterId: "char-1",
-      characterName: "Test Character",
-      characterImageUrl: "https://example.com/char.jpg",
-      status: "submitted" as const,
-      submittedAt: new Date().toISOString(),
-      approvedAt: null,
-      approvedBy: null,
-      approvedByName: null,
-      rejectedAt: null,
-      rejectionReason: null,
-      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      remindersSent: 0,
-      lastReminderAt: null,
-      previousChoiceId: null,
-      changeReason: null,
-      changeCount: 3, // Max changes reached
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
-      data: mockChoice,
-      isLoading: false,
-      refetch: vi.fn(),
-    } as never);
-
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.queryByText(/Alterar Escolha/i)).not.toBeInTheDocument();
-    });
-  });
-
-  it("should show deadline expired warning", async () => {
-    const mockChoice = {
-      id: "choice-1",
-      orderId: "order-123",
-      orderType: "standalone_purchase" as const,
-      userId: "user-1",
-      collectionId: "collection-1",
+  it("shows expired deadline warning", async () => {
+    mockChoice({
+      ...baseChoice,
       characterId: null,
       characterName: null,
       characterImageUrl: null,
-      status: "pending" as const,
-      submittedAt: null,
-      approvedAt: null,
-      approvedBy: null,
-      approvedByName: null,
-      rejectedAt: null,
-      rejectionReason: null,
-      deadline: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Expired
-      remindersSent: 3,
-      lastReminderAt: new Date().toISOString(),
-      previousChoiceId: null,
-      changeReason: null,
-      changeCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
-      data: mockChoice,
-      isLoading: false,
-      refetch: vi.fn(),
-    } as never);
+      status: "pending",
+      deadline: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    });
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText(/O prazo para escolher o personagem expirou/i)).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/O prazo para escolher o personagem expirou/)).toBeInTheDocument();
   });
 });

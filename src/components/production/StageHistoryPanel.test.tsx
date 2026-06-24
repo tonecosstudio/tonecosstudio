@@ -12,7 +12,7 @@ const stageService = vi.hoisted(() => ({
   getStageHistory: vi.fn(),
 }));
 
-vi.mock("@/services/admin/stage-service", () => ({
+vi.mock("@/services/admin/production/stage-service", () => ({
   getStageHistory: stageService.getStageHistory,
 }));
 

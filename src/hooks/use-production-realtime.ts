@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { subscribeToQuoteProductionChanges } from "@/services/realtime/realtime-service";
 
 export function useProductionRealtime(quoteId: string | null, enabled: boolean) {
   const qc = useQueryClient();
@@ -8,48 +8,8 @@ export function useProductionRealtime(quoteId: string | null, enabled: boolean) 
   useEffect(() => {
     if (!enabled || !quoteId) return;
 
-    const channel = supabase
-      .channel(`prod:${quoteId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "quote_production",
-          filter: `quote_id=eq.${quoteId}`,
-        },
-        () => {
-          qc.invalidateQueries({ queryKey: ["production", quoteId] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "quote_production_updates",
-          filter: `quote_id=eq.${quoteId}`,
-        },
-        () => {
-          qc.invalidateQueries({ queryKey: ["production", quoteId] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "quote_production_photos",
-          filter: `quote_id=eq.${quoteId}`,
-        },
-        () => {
-          qc.invalidateQueries({ queryKey: ["production", quoteId] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return subscribeToQuoteProductionChanges(quoteId, () => {
+      qc.invalidateQueries({ queryKey: ["production", quoteId] });
+    });
   }, [enabled, quoteId, qc]);
 }

@@ -1,3 +1,3 @@
-import { adminPaymentsGateway } from "@/services/admin/admin-payments-gateway";
+import { adminPaymentsGateway } from "@/services/admin/payments/admin-payments-gateway";
 
 export const useAdminPaymentsGateway = () => adminPaymentsGateway;

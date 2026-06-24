@@ -6,7 +6,7 @@ import { Plus, RefreshCw, Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { groupService } from "@/lib/services/groupService";
+import { groupService } from "@/services/groups/group-service";
 import { GroupList } from "@/components/groups/GroupList";
 import { CreateGroupModal } from "@/components/groups/CreateGroupModal";
 import { AutomaticGroupsManager } from "@/components/groups/AutomaticGroupsManager";

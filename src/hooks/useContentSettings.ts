@@ -8,7 +8,7 @@ import {
   fetchContentSettings,
   processContentVariables,
   type ContentSettings,
-} from "@/lib/services/contentService";
+} from "@/services/content/content-settings-service";
 
 export function useContentSettings() {
   return useQuery<ContentSettings>({

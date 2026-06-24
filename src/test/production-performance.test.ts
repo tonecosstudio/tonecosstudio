@@ -27,7 +27,7 @@ import {
   assignProduction,
   type ProductionFilters,
   type PaginationParams,
-} from "@/services/admin/production-service";
+} from "@/services/admin/production/production-service";
 
 // Skip these tests if not in performance test environment
 const isPerformanceTestEnv = process.env.VITEST_PERFORMANCE === "true";

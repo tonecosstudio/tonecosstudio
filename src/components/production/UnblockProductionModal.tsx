@@ -67,7 +67,7 @@ export function UnblockProductionModal({
             Desbloquear Producao
           </DialogTitle>
           <DialogDescription>
-            Desbloqueie este item de producao apos resolver o problema que causou o bloqueio.
+            Retome este item somente depois de resolver a causa do bloqueio.
             O cliente sera notificado sobre a retomada da producao.
           </DialogDescription>
         </DialogHeader>
@@ -105,7 +105,7 @@ export function UnblockProductionModal({
 
             <div className="space-y-2">
               <Label htmlFor="resolution-notes">
-                Notas de Resolucao <span className="text-muted-foreground">(Opcional)</span>
+                Notas de resolucao <span className="text-muted-foreground">(Opcional)</span>
               </Label>
               <Textarea
                 id="resolution-notes"

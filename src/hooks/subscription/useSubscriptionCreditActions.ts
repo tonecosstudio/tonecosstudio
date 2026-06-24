@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { subscriptionCreditAPI } from "@/services/subscription-credit-api";
+import { subscriptionCreditAPI } from "@/services/subscriptions/subscription-credit-api";
 import type {
   CancelWithRefundResponse,
   NoRenewalResponse,

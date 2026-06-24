@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchPendingChoices,
   type PendingChoice,
-} from "@/services/admin/pending-choices-service";
+} from "@/services/admin/choices/pending-choices-service";
 
 export type { PendingChoice };
 

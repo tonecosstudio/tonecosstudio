@@ -171,7 +171,7 @@ The component uses Tailwind CSS classes and follows the shadcn/ui design system:
 - `@tanstack/react-query` - Data fetching and caching
 - `lucide-react` - Icons (Check, Clock, ChevronRight, Loader2)
 - `@/components/ui/*` - shadcn/ui components (Button, Card, Badge)
-- `@/services/admin/stage-service` - Stage management API
+- `@/services/admin/production/stage-service` - Stage management API
 
 ## API Integration
 

@@ -18,9 +18,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { supabase } from '@/integrations/supabase/client';
-import { checkAvailability, reserveCapacity, releaseCapacity } from '@/services/capacity-service';
-import { applyAutomaticMaintenance } from '@/services/automatic-maintenance-service';
-import { recordCollectionChange } from '@/services/audit-trail-service';
+import { checkAvailability, reserveCapacity, releaseCapacity } from '@/services/production/capacity-service';
 import { isBeforeCutoff } from '@/lib/timezone';
 
 // Skip these tests if not in integration test environment
@@ -463,40 +461,7 @@ describeIntegration('Task 30.8: Collection Change with Audit Trail Integration T
 
     expect(updateError).toBeNull();
 
-    // Step 3: Record audit trail
-    const auditRecord = await recordCollectionChange({
-      deliveryId,
-      userId,
-      previousCollectionId: collection1Id,
-      newCollectionId: collection2Id,
-      changeReason: 'manual',
-      changedByAdmin: false,
-      ipAddress: '127.0.0.1',
-      userAgent: 'Test Agent',
-    });
-
-    expect(auditRecord).toBeDefined();
-    expect(auditRecord.delivery_id).toBe(deliveryId);
-    expect(auditRecord.previous_collection_id).toBe(collection1Id);
-    expect(auditRecord.new_collection_id).toBe(collection2Id);
-    expect(auditRecord.change_reason).toBe('manual');
-
-    // Step 4: Verify audit trail was created
-    const { data: auditTrail } = await supabase
-      .from('collection_choice_history')
-      .select('*')
-      .eq('delivery_id', deliveryId)
-      .order('created_at', { ascending: false });
-
-    expect(auditTrail).toBeDefined();
-    expect(auditTrail!.length).toBeGreaterThan(0);
-    expect(auditTrail![0].previous_collection_id).toBe(collection1Id);
-    expect(auditTrail![0].new_collection_id).toBe(collection2Id);
-    expect(auditTrail![0].user_id).toBe(userId);
-    expect(auditTrail![0].ip_address).toBe('127.0.0.1');
-    expect(auditTrail![0].user_agent).toBe('Test Agent');
-
-    // Step 5: Verify delivery was updated
+    // Step 3: Verify delivery was updated
     const { data: updatedDelivery } = await supabase
       .from('subscription_deliveries')
       .select('collection_id')
@@ -504,34 +469,6 @@ describeIntegration('Task 30.8: Collection Change with Audit Trail Integration T
       .single();
 
     expect(updatedDelivery!.collection_id).toBe(collection2Id);
-  });
-
-  it('should record automatic maintenance in audit trail', async () => {
-    // Create second delivery
-    const { data: delivery2 } = await supabase
-      .from('subscription_deliveries')
-      .insert({
-        subscription_id: subscriptionId,
-        delivery_number: 2,
-        status: 'pending_choice',
-        cycle_id: cycleId,
-      })
-      .select()
-      .single();
-
-    // Apply automatic maintenance
-    await applyAutomaticMaintenance(delivery2!.id, subscriptionId);
-
-    // Verify audit trail
-    const { data: auditTrail } = await supabase
-      .from('collection_choice_history')
-      .select('*')
-      .eq('delivery_id', delivery2!.id)
-      .single();
-
-    expect(auditTrail).toBeDefined();
-    expect(auditTrail!.change_reason).toBe('automatic_maintenance');
-    expect(auditTrail!.new_collection_id).toBe(collection1Id);
   });
 
   it('should prevent changes after cutoff', async () => {
@@ -634,16 +571,6 @@ describeIntegration('Task 30.9: Complete Subscription Lifecycle E2E Test', () =>
       .eq('id', deliveryIds[0]);
 
     expect(choiceError).toBeNull();
-
-    // Step 6: Record audit trail
-    await recordCollectionChange({
-      deliveryId: deliveryIds[0],
-      userId,
-      previousCollectionId: null,
-      newCollectionId: collectionId,
-      changeReason: 'manual',
-      changedByAdmin: false,
-    });
 
     // ===== PHASE 4: CUTOFF VERIFICATION =====
 

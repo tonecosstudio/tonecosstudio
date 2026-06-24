@@ -14,12 +14,12 @@ const stageService = vi.hoisted(() => ({
   completeStage: vi.fn(),
 }));
 
-vi.mock("@/services/admin/stage-service", () => ({
+vi.mock("@/services/admin/production/stage-service", () => ({
   getStageHistory: stageService.getStageHistory,
   completeStage: stageService.completeStage,
 }));
 
-vi.mock("@/services/admin/stage-validation", () => ({
+vi.mock("@/services/admin/production/stage-validation", () => ({
   validateStageTransition: vi.fn().mockResolvedValue({
     isValid: true,
     canOverride: false,

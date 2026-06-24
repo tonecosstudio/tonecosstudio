@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchCollectionBreakdown,
   type CollectionBreakdownData,
-} from "@/services/admin/collection-breakdown-service";
+} from "@/services/admin/catalog/collection-breakdown-service";
 
 export type { CollectionBreakdownData };
 

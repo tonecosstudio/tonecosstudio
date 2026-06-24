@@ -99,8 +99,8 @@ When the "Unblock & Resume" button is clicked:
 
 ### Services Used
 
-- `unblockProduction` from `@/services/admin/production-service`
-- `calculateEstimatedCompletion` from `@/services/admin/stage-service`
+- `unblockProduction` from `@/services/admin/production/production-service`
+- `calculateEstimatedCompletion` from `@/services/admin/production/stage-service`
 - Direct Supabase queries for fetching block information
 
 ### Database Tables

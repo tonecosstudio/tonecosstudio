@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { adminNotificationQueryKeys } from "@/hooks/admin/admin-notification-query-keys";
 import {
   deleteAdminNotification,
   fetchAdminNotificationSettings,
@@ -7,14 +8,14 @@ import {
   markAllAdminNotificationsRead,
   sendAdminNotificationTest,
   updateAdminNotificationSettings,
-} from "@/services/admin/admin-notifications-service";
+} from "@/services/admin/support/admin-notifications-service";
 import type {
   AdminNotification,
   AdminNotificationSettings,
   NotificationFilter,
   NotificationPriority,
   NotificationType,
-} from "@/services/admin/admin-notifications-service";
+} from "@/services/admin/support/admin-notifications-service";
 
 export type {
   AdminNotification,
@@ -24,17 +25,9 @@ export type {
   NotificationType,
 };
 
-export const adminNotificationManagementKeys = {
-  settings: () => ["admin-notification-settings"] as const,
-  history: (filter?: NotificationFilter) =>
-    filter
-      ? (["admin-notifications-history", filter] as const)
-      : (["admin-notifications-history"] as const),
-};
-
 export function useAdminNotificationSettings() {
   return useQuery({
-    queryKey: adminNotificationManagementKeys.settings(),
+    queryKey: adminNotificationQueryKeys.settings(),
     queryFn: fetchAdminNotificationSettings,
   });
 }
@@ -47,7 +40,7 @@ export function useUpdateAdminNotificationSettings() {
       updateAdminNotificationSettings(updates),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: adminNotificationManagementKeys.settings(),
+        queryKey: adminNotificationQueryKeys.settings(),
       });
     },
   });
@@ -61,7 +54,7 @@ export function useSendAdminNotificationTest() {
 
 export function useAdminNotificationHistory(filter: NotificationFilter) {
   return useQuery({
-    queryKey: adminNotificationManagementKeys.history(filter),
+    queryKey: adminNotificationQueryKeys.list(filter),
     queryFn: () => fetchAdminNotificationsHistory(filter),
   });
 }
@@ -73,7 +66,7 @@ export function useMarkAdminNotificationRead() {
     mutationFn: markAdminNotificationRead,
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: adminNotificationManagementKeys.history(),
+        queryKey: adminNotificationQueryKeys.all(),
       });
     },
   });
@@ -86,7 +79,7 @@ export function useMarkAllAdminNotificationsRead() {
     mutationFn: markAllAdminNotificationsRead,
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: adminNotificationManagementKeys.history(),
+        queryKey: adminNotificationQueryKeys.all(),
       });
     },
   });
@@ -99,7 +92,7 @@ export function useDeleteAdminNotification() {
     mutationFn: deleteAdminNotification,
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: adminNotificationManagementKeys.history(),
+        queryKey: adminNotificationQueryKeys.all(),
       });
     },
   });

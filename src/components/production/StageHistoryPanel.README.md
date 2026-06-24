@@ -113,7 +113,7 @@ The component uses:
 The component integrates with the stage service:
 
 ```typescript
-import { getStageHistory } from "@/services/admin/stage-service";
+import { getStageHistory } from "@/services/admin/production/stage-service";
 
 // Fetches all stages for a production queue item
 const stages = await getStageHistory(productionQueueId);

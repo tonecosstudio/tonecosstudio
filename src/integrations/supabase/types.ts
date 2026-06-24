@@ -1239,6 +1239,32 @@ export type Database = {
         }
         Relationships: []
       }
+      model_like_counts: {
+        Row: {
+          likes_count: number
+          model_id: string
+          updated_at: string
+        }
+        Insert: {
+          likes_count?: number
+          model_id: string
+          updated_at?: string
+        }
+        Update: {
+          likes_count?: number
+          model_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_like_counts_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: true
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       model_likes: {
         Row: {
           created_at: string
@@ -1436,39 +1462,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      notifications: {
-        Row: {
-          created_at: string
-          id: string
-          is_read: boolean
-          message: string
-          read_at: string | null
-          title: string
-          type: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          message: string
-          read_at?: string | null
-          title: string
-          type?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          message?: string
-          read_at?: string | null
-          title?: string
-          type?: string | null
-          user_id?: string
-        }
-        Relationships: []
       }
       order_status_history: {
         Row: {
@@ -3216,24 +3209,6 @@ export type Database = {
         }
         Returns: Json
       }
-      admin_list_users: {
-        Args: never
-        Returns: {
-          confirmed_at: string
-          cpf: string
-          created_at: string
-          email: string
-          email_confirmed_at: string
-          full_name: string
-          id: string
-          last_sign_in_at: string
-          phone: string
-          profile_completion: number
-          profile_phone: string
-          roles: string[]
-          whatsapp: string
-        }[]
-      }
       are_sales_open: { Args: never; Returns: boolean }
       check_rate_limit: {
         Args: {
@@ -3306,17 +3281,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment_monthly_sales: {
-        Args: { quantity?: number }
-        Returns: undefined
-      }
-      mark_all_notifications_as_read: { Args: never; Returns: undefined }
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_all_user_notifications_read: { Args: never; Returns: number }
-      mark_notification_as_read: {
-        Args: { notification_id: string }
-        Returns: undefined
-      }
       mark_notification_read: {
         Args: { p_notification_id: string }
         Returns: undefined

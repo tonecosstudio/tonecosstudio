@@ -1,7 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { isAdmin, isGroupMember, requireAdmin, requireGroupMember } from "./groupPermissions";
 import type { AdminAccessRole } from "./adminRoles";
+import {
+  isAdmin,
+  isGroupMember,
+  requireAdmin,
+  requireGroupMember,
+} from "./groupPermissions";
 
 type AuthUserResponse = Awaited<ReturnType<typeof supabase.auth.getUser>>;
 type SupabaseFromResult = ReturnType<typeof supabase.from>;
@@ -129,7 +134,9 @@ describe("groupPermissions", () => {
       mockCurrentUser("user-1");
       mockGroupMembership(null);
 
-      await expect(requireGroupMember("group-1")).rejects.toThrow("não é membro");
+      await expect(requireGroupMember("group-1")).rejects.toThrow(
+        "nao e membro",
+      );
     });
   });
 });

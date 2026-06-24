@@ -3,7 +3,7 @@
  * Requirement 24: Flags de Risco e Prioridade
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { conversationService } from "@/lib/services/conversationService";
+import { conversationService } from "@/services/support/conversation-service";
 import type { RiskFlag } from "@/types/support";
 import { getRiskFlagLabel } from "@/types/support";
 import { log } from "@/lib/logger";
@@ -30,11 +30,19 @@ const AVAILABLE_FLAGS: RiskFlag[] = ["cliente_conflito", "atraso_critico", "paga
 export function RiskFlagManager({ conversationId, riskFlags, onUpdate }: RiskFlagManagerProps) {
   const [flags, setFlags] = useState<RiskFlag[]>(riskFlags);
   const [isOpen, setIsOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    setFlags(riskFlags);
+  }, [riskFlags]);
 
   const toggleFlag = async (flag: RiskFlag) => {
+    if (isUpdating) return;
+
     const newFlags = flags.includes(flag) ? flags.filter((f) => f !== flag) : [...flags, flag];
 
     try {
+      setIsUpdating(true);
       await conversationService.updateRiskFlags(conversationId, newFlags);
       setFlags(newFlags);
       onUpdate?.(newFlags);
@@ -42,6 +50,8 @@ export function RiskFlagManager({ conversationId, riskFlags, onUpdate }: RiskFla
     } catch (error) {
       log.error("Erro ao atualizar flags de risco", { error, conversationId, flag });
       toast.error("Erro ao atualizar flags de risco");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -53,6 +63,7 @@ export function RiskFlagManager({ conversationId, riskFlags, onUpdate }: RiskFla
             variant={flags.length > 0 ? "destructive" : "outline"}
             size="sm"
             className="gap-2"
+            disabled={isUpdating}
           >
             <AlertTriangle className="h-4 w-4" />
             Flags de Risco
@@ -68,6 +79,7 @@ export function RiskFlagManager({ conversationId, riskFlags, onUpdate }: RiskFla
             <DropdownMenuCheckboxItem
               key={flag}
               checked={flags.includes(flag)}
+              disabled={isUpdating}
               onCheckedChange={() => toggleFlag(flag)}
             >
               {getRiskFlagLabel(flag)}

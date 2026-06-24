@@ -5,6 +5,7 @@ import { ArcadeCard } from "@/components/arcade/ArcadeLayout";
 import { Page } from "@/components/layouts/Page";
 import { AlertTriangle, Home, ArrowLeft, RotateCcw } from "lucide-react";
 import { log } from "@/lib/logger";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 export default function NotFoundArcade() {
   const location = useLocation();
@@ -17,7 +18,7 @@ export default function NotFoundArcade() {
       return;
     }
 
-    navigate("/", { replace: true });
+    navigate(PUBLIC_ROUTES.catalog, { replace: true });
   };
 
   useEffect(() => {
@@ -82,7 +83,7 @@ export default function NotFoundArcade() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate(PUBLIC_ROUTES.catalog)}
                   className="inline-flex items-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] font-mono uppercase tracking-[0.15em] text-xs h-11 px-8 hover:brightness-110 shadow-[0_0_15px_hsl(var(--gold-accent)/0.2)] transition-all"
                 >
                   <Home className="w-4 h-4" />
@@ -122,7 +123,7 @@ function ContinueCountdown() {
 
   useEffect(() => {
     if (count <= 0) {
-      navigate("/");
+      navigate(PUBLIC_ROUTES.catalog);
       return;
     }
     const t = setTimeout(() => setCount((c) => c - 1), 1000);

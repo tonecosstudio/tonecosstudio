@@ -18,7 +18,7 @@ import { APP_ROUTES } from "./routes";
 export const ENV = {
   // Supabase
   SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || "",
-  SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
+  SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
 
   // Sentry (opcional)
   SENTRY_DSN: import.meta.env.VITE_SENTRY_DSN || "",
@@ -39,26 +39,33 @@ export const PRICING = {
   // Preços padrão (fallback quando não há configuração no banco)
   DEFAULT_PRICE_FULL: Number(import.meta.env.VITE_DEFAULT_PRICE_FULL) || 500,
   DEFAULT_PRICE_PIX: Number(import.meta.env.VITE_DEFAULT_PRICE_PIX) || 475,
-  DEFAULT_DEPOSIT_AMOUNT: Number(import.meta.env.VITE_DEFAULT_DEPOSIT_AMOUNT) || 100,
+  DEFAULT_DEPOSIT_AMOUNT:
+    Number(import.meta.env.VITE_DEFAULT_DEPOSIT_AMOUNT) || 100,
 
   // Descontos
-  PIX_DISCOUNT_PERCENTAGE: Number(import.meta.env.VITE_PIX_DISCOUNT_PERCENTAGE) || 5,
+  PIX_DISCOUNT_PERCENTAGE:
+    Number(import.meta.env.VITE_PIX_DISCOUNT_PERCENTAGE) || 5,
   get PIX_DISCOUNT_MULTIPLIER() {
     return 1 - this.PIX_DISCOUNT_PERCENTAGE / 100;
   },
 
   // Coins
-  COIN_EXCHANGE_REFERENCE_COINS:
-    Math.max(1, Number(import.meta.env.VITE_COIN_EXCHANGE_REFERENCE_COINS) || 100),
-  DEFAULT_COINS_PER_PIECE: Number(import.meta.env.VITE_DEFAULT_COINS_PER_PIECE) || 100,
+  COIN_EXCHANGE_REFERENCE_COINS: Math.max(
+    1,
+    Number(import.meta.env.VITE_COIN_EXCHANGE_REFERENCE_COINS) || 100,
+  ),
+  DEFAULT_COINS_PER_PIECE:
+    Number(import.meta.env.VITE_DEFAULT_COINS_PER_PIECE) || 100,
   COIN_PREVIEW_AMOUNT: Number(import.meta.env.VITE_COIN_PREVIEW_AMOUNT) || 1000,
   get DEFAULT_COIN_UNIT_VALUE() {
     return this.DEFAULT_PRICE_FULL / this.COIN_EXCHANGE_REFERENCE_COINS;
   },
 
   // Parcelamento
-  MAX_INSTALLMENTS_NO_INTEREST: Number(import.meta.env.VITE_MAX_INSTALLMENTS_NO_INTEREST) || 6,
-  MAX_INSTALLMENTS_WITH_INTEREST: Number(import.meta.env.VITE_MAX_INSTALLMENTS_WITH_INTEREST) || 10,
+  MAX_INSTALLMENTS_NO_INTEREST:
+    Number(import.meta.env.VITE_MAX_INSTALLMENTS_NO_INTEREST) || 6,
+  MAX_INSTALLMENTS_WITH_INTEREST:
+    Number(import.meta.env.VITE_MAX_INSTALLMENTS_WITH_INTEREST) || 10,
 
   // Valores calculados
   get DEFAULT_REMAINING_FULL() {
@@ -75,7 +82,8 @@ export const PRICING = {
 
 export const BATCH = {
   // Dias úteis para envio (5º dia útil)
-  SHIPPING_BUSINESS_DAYS: Number(import.meta.env.VITE_SHIPPING_BUSINESS_DAYS) || 5,
+  SHIPPING_BUSINESS_DAYS:
+    Number(import.meta.env.VITE_SHIPPING_BUSINESS_DAYS) || 5,
 
   // Ciclos por mês (fixo: 2 ciclos)
   CYCLES_PER_MONTH: 2,
@@ -87,7 +95,8 @@ export const BATCH = {
   // CYCLE2_END_DAY é o último dia do mês (dinâmico)
 
   // Prazo para troca de coleções (dias antes do fechamento)
-  EXCHANGE_DEADLINE_DAYS: Number(import.meta.env.VITE_EXCHANGE_DEADLINE_DAYS) || 1,
+  EXCHANGE_DEADLINE_DAYS:
+    Number(import.meta.env.VITE_EXCHANGE_DEADLINE_DAYS) || 1,
 
   // Limite de ciclos futuros a calcular
   FUTURE_BATCHES_COUNT: Number(import.meta.env.VITE_FUTURE_BATCHES_COUNT) || 12,
@@ -96,10 +105,13 @@ export const BATCH = {
   PRODUCTION_DAYS_MIN: Number(import.meta.env.VITE_PRODUCTION_DAYS_MIN) || 15,
   PRODUCTION_DAYS_MAX: Number(import.meta.env.VITE_PRODUCTION_DAYS_MAX) || 20,
   SALES_DURATION_DAYS: Number(import.meta.env.VITE_SALES_DURATION_DAYS) || 30,
-  DELIVERY_INTERVAL_DAYS: Number(import.meta.env.VITE_DELIVERY_INTERVAL_DAYS) || 90,
-  CHARACTER_CHOICE_DAYS: Number(import.meta.env.VITE_CHARACTER_CHOICE_DAYS) || 7,
+  DELIVERY_INTERVAL_DAYS:
+    Number(import.meta.env.VITE_DELIVERY_INTERVAL_DAYS) || 90,
+  CHARACTER_CHOICE_DAYS:
+    Number(import.meta.env.VITE_CHARACTER_CHOICE_DAYS) || 7,
   BALANCE_PAYMENT_DAYS: Number(import.meta.env.VITE_BALANCE_PAYMENT_DAYS) || 5,
-  MONTHLY_PRODUCTION_LIMIT: Number(import.meta.env.VITE_MONTHLY_PRODUCTION_LIMIT) || 20,
+  MONTHLY_PRODUCTION_LIMIT:
+    Number(import.meta.env.VITE_MONTHLY_PRODUCTION_LIMIT) || 20,
   SALES_OPEN_DAY: Number(import.meta.env.VITE_SALES_OPEN_DAY) || 15,
 } as const;
 
@@ -107,27 +119,39 @@ export const BATCH = {
 // 📧 CONFIGURAÇÕES DE EMAIL E CONTATO
 // ============================================================================
 
+export const ASSETS = {
+  DEFAULT_ICON_URL: "/favicon.ico",
+  PLACEHOLDER_IMAGE_URL: "/placeholder.svg",
+} as const;
+
 export const CONTACT = {
   // Emails
   SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL || "suporte@ordax.com.br",
   CONTACT_EMAIL: import.meta.env.VITE_CONTACT_EMAIL || "contato@ordax.com.br",
-  PRIVACY_EMAIL: import.meta.env.VITE_PRIVACY_EMAIL || "privacidade@ordax.com.br",
+  PRIVACY_EMAIL:
+    import.meta.env.VITE_PRIVACY_EMAIL || "privacidade@ordax.com.br",
   DPO_EMAIL: import.meta.env.VITE_DPO_EMAIL || "dpo@ordax.com.br",
 
   // Website
   WEBSITE_URL: import.meta.env.VITE_WEBSITE_URL || "https://ordax.com.br",
-  COMPANY_LOGO_URL: import.meta.env.VITE_COMPANY_LOGO_URL || "/logo.png",
-  FACEBOOK_URL: import.meta.env.VITE_FACEBOOK_URL || "https://facebook.com/ordax",
-  INSTAGRAM_URL: import.meta.env.VITE_INSTAGRAM_URL || "https://instagram.com/ordax",
+  COMPANY_LOGO_URL:
+    import.meta.env.VITE_COMPANY_LOGO_URL || ASSETS.DEFAULT_ICON_URL,
+  FACEBOOK_URL:
+    import.meta.env.VITE_FACEBOOK_URL || "https://facebook.com/ordax",
+  INSTAGRAM_URL:
+    import.meta.env.VITE_INSTAGRAM_URL || "https://instagram.com/ordax",
   X_URL: import.meta.env.VITE_X_URL || "https://x.com/ordax",
   YOUTUBE_URL: import.meta.env.VITE_YOUTUBE_URL || "https://youtube.com/@ordax",
-  BUSINESS_HOURS: import.meta.env.VITE_BUSINESS_HOURS || "Segunda a Sexta, 9h às 18h",
+  BUSINESS_HOURS:
+    import.meta.env.VITE_BUSINESS_HOURS || "Segunda a Sexta, 9h às 18h",
 
   // Empresa
   COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME || "Tonecos Studios",
   LEGAL_NAME: import.meta.env.VITE_LEGAL_NAME || "Tonecos Studios LTDA",
-  CNPJ_PLACEHOLDER: import.meta.env.VITE_CNPJ_PLACEHOLDER || "00.000.000/0000-00",
-  PHONE_PLACEHOLDER: import.meta.env.VITE_PHONE_PLACEHOLDER || "+55 (11) 9999-9999",
+  CNPJ_PLACEHOLDER:
+    import.meta.env.VITE_CNPJ_PLACEHOLDER || "00.000.000/0000-00",
+  PHONE_PLACEHOLDER:
+    import.meta.env.VITE_PHONE_PLACEHOLDER || "+55 (11) 9999-9999",
   COMPANY_ADDRESS: import.meta.env.VITE_COMPANY_ADDRESS || "São Paulo, Brasil",
 } as const;
 
@@ -137,10 +161,12 @@ export const CONTACT = {
 
 export const NOTIFICATIONS = {
   // Tempo para considerar usuário online (minutos)
-  USER_ONLINE_THRESHOLD_MINUTES: Number(import.meta.env.VITE_USER_ONLINE_THRESHOLD) || 5,
+  USER_ONLINE_THRESHOLD_MINUTES:
+    Number(import.meta.env.VITE_USER_ONLINE_THRESHOLD) || 5,
 
   // Intervalo de polling para notificações (ms)
-  POLLING_INTERVAL_MS: Number(import.meta.env.VITE_NOTIFICATION_POLLING_INTERVAL) || 30000,
+  POLLING_INTERVAL_MS:
+    Number(import.meta.env.VITE_NOTIFICATION_POLLING_INTERVAL) || 30000,
 
   // Tempo de exibição de toast (ms)
   TOAST_DURATION_MS: Number(import.meta.env.VITE_TOAST_DURATION) || 5000,
@@ -163,7 +189,8 @@ export const UI = {
   LAZY_LOAD_THRESHOLD: Number(import.meta.env.VITE_LAZY_LOAD_THRESHOLD) || 100,
 
   // Imagens
-  IMAGE_COMPRESSION_QUALITY: Number(import.meta.env.VITE_IMAGE_COMPRESSION_QUALITY) || 0.8,
+  IMAGE_COMPRESSION_QUALITY:
+    Number(import.meta.env.VITE_IMAGE_COMPRESSION_QUALITY) || 0.8,
   MAX_IMAGE_SIZE_MB: Number(import.meta.env.VITE_MAX_IMAGE_SIZE_MB) || 5,
 } as const;
 
@@ -178,7 +205,8 @@ export const SECURITY = {
   REQUEST_TIMEOUT_MS: Number(import.meta.env.VITE_REQUEST_TIMEOUT) || 30000,
 
   // Rate limiting
-  MAX_REQUESTS_PER_MINUTE: Number(import.meta.env.VITE_MAX_REQUESTS_PER_MINUTE) || 60,
+  MAX_REQUESTS_PER_MINUTE:
+    Number(import.meta.env.VITE_MAX_REQUESTS_PER_MINUTE) || 60,
 } as const;
 
 // ============================================================================
@@ -191,7 +219,8 @@ export const ANALYTICS = {
   SENTRY_SAMPLE_RATE: Number(import.meta.env.VITE_SENTRY_SAMPLE_RATE) || 1.0,
 
   // Logs
-  ENABLE_DEBUG_LOGS: import.meta.env.VITE_ENABLE_DEBUG_LOGS === "true" || ENV.IS_DEVELOPMENT,
+  ENABLE_DEBUG_LOGS:
+    import.meta.env.VITE_ENABLE_DEBUG_LOGS === "true" || ENV.IS_DEVELOPMENT,
 } as const;
 
 // ============================================================================
@@ -212,7 +241,8 @@ export const PLANS = {
   } as const,
 
   // Dias para próxima entrega (padrão)
-  DAYS_TO_NEXT_DELIVERY: Number(import.meta.env.VITE_DAYS_TO_NEXT_DELIVERY) || 30,
+  DAYS_TO_NEXT_DELIVERY:
+    Number(import.meta.env.VITE_DAYS_TO_NEXT_DELIVERY) || 30,
 } as const;
 
 // ============================================================================

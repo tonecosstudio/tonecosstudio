@@ -215,6 +215,9 @@ export interface QuoteData {
   items: QuoteItem[];
   totalAmount?: number | null;
   notes: string | null;
+  paymentStatus?: string | null;
+  itemsCount?: number;
+  itemsSummary?: string | null;
 }
 
 // ============================================================================

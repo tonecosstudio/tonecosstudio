@@ -30,11 +30,11 @@ const serviceMocks = vi.hoisted(() => ({
   assignProduction: vi.fn().mockResolvedValue({}),
 }));
 
-vi.mock("@/services/admin/team-workload-service", () => ({
+vi.mock("@/services/admin/production/team-workload-service", () => ({
   fetchTeamWorkload: serviceMocks.fetchTeamWorkload,
 }));
 
-vi.mock("@/services/admin/production-service", () => ({
+vi.mock("@/services/admin/production/production-service", () => ({
   assignProduction: serviceMocks.assignProduction,
 }));
 

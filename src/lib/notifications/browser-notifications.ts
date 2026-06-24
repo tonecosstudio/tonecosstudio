@@ -1,7 +1,8 @@
 import { log } from "@/lib/logger";
-
-const DEFAULT_NOTIFICATION_SOUND = "/notification.mp3";
-const DEFAULT_NOTIFICATION_ICON = "/logo.png";
+import {
+  DEFAULT_NOTIFICATION_ICON_URL,
+  DEFAULT_NOTIFICATION_SOUND_URL,
+} from "@/lib/notifications/assets";
 
 interface BrowserNotificationPayload {
   title: string;
@@ -36,8 +37,8 @@ export function showBrowserNotification(payload: BrowserNotificationPayload): vo
 
   new Notification(payload.title, {
     body: payload.body,
-    icon: payload.icon ?? DEFAULT_NOTIFICATION_ICON,
-    badge: payload.badge ?? DEFAULT_NOTIFICATION_ICON,
+    icon: payload.icon ?? DEFAULT_NOTIFICATION_ICON_URL,
+    badge: payload.badge ?? DEFAULT_NOTIFICATION_ICON_URL,
     tag: payload.tag,
   });
 }
@@ -45,7 +46,7 @@ export function showBrowserNotification(payload: BrowserNotificationPayload): vo
 export function playAudioNotification({
   enabled,
   volume = 0.5,
-  src = DEFAULT_NOTIFICATION_SOUND,
+  src = DEFAULT_NOTIFICATION_SOUND_URL,
   context,
 }: AudioNotificationOptions): void {
   if (!enabled) return;

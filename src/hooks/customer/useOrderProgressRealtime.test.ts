@@ -12,7 +12,7 @@ import { createElement } from "react";
 import { useOrderProgressRealtime } from "./useOrderProgressRealtime";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { ProductionStage, ChoiceStatus } from "@/services/admin/production-service";
+import type { ProductionStage, ChoiceStatus } from "@/services/admin/production/production-service";
 
 type MockRealtimeChannel = {
   on: ReturnType<typeof vi.fn>;

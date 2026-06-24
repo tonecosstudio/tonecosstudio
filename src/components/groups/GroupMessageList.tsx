@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { messageService } from "@/lib/services/messageService";
+import { messageService } from "@/services/support/message-service";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/lib/auth";
@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useGroupNotifications } from "@/hooks/useGroupNotifications";
-import { useGroupAttachmentPublicUrl } from "@/hooks/groups/useGroupAttachmentPublicUrl";
 import { sanitizeURL } from "@/lib/security/input-sanitizer";
 
 interface GroupMessageListProps {
@@ -69,9 +68,6 @@ function getSafeExternalUrl(url?: string | null): string | null {
   }
 }
 
-/**
- * Converte file_path para URL pública do Supabase Storage
- */
 /**
  * Detecta URLs no texto e as torna clicáveis
  */
@@ -111,7 +107,6 @@ function linkifyText(text: string): React.ReactNode {
 export function GroupMessageList({ groupId }: GroupMessageListProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const getGroupAttachmentPublicUrl = useGroupAttachmentPublicUrl();
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<MessageDateFilter>("all");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -448,22 +443,21 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
                   <div className="mt-3 space-y-2">
                     {msg.attachments.map((attachment: GroupAttachment) => {
                       const isImage = attachment.file_type?.startsWith("image/");
-                      const publicUrl = getGroupAttachmentPublicUrl(attachment.file_path);
-                      const safePublicUrl = getSafeExternalUrl(publicUrl);
+                      const safeAccessUrl = getSafeExternalUrl(attachment.access_url);
 
-                      if (!safePublicUrl) return null;
+                      if (!safeAccessUrl) return null;
 
                       if (isImage) {
                         return (
                           <a
                             key={attachment.id}
-                            href={safePublicUrl}
+                            href={safeAccessUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block"
                           >
                             <img
-                              src={safePublicUrl}
+                              src={safeAccessUrl}
                               alt={attachment.file_name}
                               className="max-w-full max-h-64 rounded-lg border-2 border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
                               loading="lazy"
@@ -478,7 +472,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
                       return (
                         <a
                           key={attachment.id}
-                          href={safePublicUrl}
+                          href={safeAccessUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs font-medium underline block p-2 rounded-md border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"

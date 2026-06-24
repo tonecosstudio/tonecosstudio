@@ -5,7 +5,7 @@
  */
 
 import { Package, ShoppingCart, CreditCard, FileText, TrendingUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 export interface OrdersStatsProps {
   counts?: {
@@ -85,7 +85,7 @@ export function OrdersStats({ counts, isLoading }: OrdersStatsProps) {
                 <Icon className={cn('w-4 h-4', stat.color)} />
               </div>
             </div>
-            <div className="text-2xl font-bold text-gray-900">{stat.value.toLocaleString('pt-BR')}</div>
+            <div className="text-2xl font-bold text-gray-900">{formatNumber(stat.value)}</div>
           </div>
         );
       })}

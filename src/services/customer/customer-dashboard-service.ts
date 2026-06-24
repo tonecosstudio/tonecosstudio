@@ -70,7 +70,7 @@ export async function listCustomerDashboardNotifications(
   await assertCurrentUserId(userId);
 
   const { data, error } = await supabase
-    .from("notifications")
+    .from("user_notifications")
     .select("id,title,message,created_at")
     .eq("user_id", userId)
     .eq("is_read", false)
@@ -78,5 +78,8 @@ export async function listCustomerDashboardNotifications(
     .limit(5);
 
   if (error) throw error;
-  return (data ?? []) as CustomerDashboardNotification[];
+  return (data ?? []).map((notification) => ({
+    ...notification,
+    message: notification.message ?? "",
+  }));
 }

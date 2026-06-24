@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Mail, CheckCircle, XCircle, Clock, Eye, MousePointer, AlertCircle } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 
 export function EmailAnalyticsDashboard() {
   const [searchEmail, setSearchEmail] = useState('');
@@ -223,8 +224,8 @@ export function EmailAnalyticsDashboard() {
                       <TableCell>{log.retry_count}</TableCell>
                       <TableCell>
                         {log.sent_at
-                          ? new Date(log.sent_at).toLocaleString('pt-BR')
-                          : new Date(log.created_at).toLocaleString('pt-BR')}
+                          ? formatDate(log.sent_at, { dateStyle: 'short', timeStyle: 'short' })
+                          : formatDate(log.created_at, { dateStyle: 'short', timeStyle: 'short' })}
                       </TableCell>
                     </TableRow>
                   ))

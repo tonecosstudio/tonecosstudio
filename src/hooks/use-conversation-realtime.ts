@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { RealtimeChannel } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
+import { subscribeToConversationChanges } from "@/services/realtime/realtime-service";
 import type { RealtimeConnectionState } from "./use-payment-realtime";
 import {
   DEFAULT_REALTIME_EVENTS,
@@ -15,7 +14,7 @@ import {
 } from "./realtime-helpers";
 import type { ReconnectionConfig, RealtimePostgresEvent } from "./realtime-helpers";
 
-type ConversationChangeEvent = "INSERT" | "UPDATE" | "DELETE";
+export type { ReconnectionConfig, RealtimePostgresEvent } from "./realtime-helpers";
 
 export interface SupportMessage {
   id: string;
@@ -52,7 +51,7 @@ export interface UseConversationRealtimeOptions {
   onMessageUpdate?: (message: SupportMessage, oldMessage: SupportMessage | null) => void;
   onConversationUpdate?: (
     conversation: SupportConversation,
-    oldConversation: SupportConversation | null
+    oldConversation: SupportConversation | null,
   ) => void;
   onConnected?: () => void;
   onDisconnected?: (error?: Error) => void;
@@ -65,7 +64,7 @@ function buildMessageFilter(conversationId?: string): string | undefined {
 function buildConversationFilter(
   conversationId?: string,
   userId?: string,
-  paymentId?: string
+  paymentId?: string,
 ): string | undefined {
   const filters: string[] = [];
 
@@ -92,7 +91,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
     onDisconnected,
   } = options;
 
-  const channelsRef = useRef<RealtimeChannel[]>([]);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
   const isMountedRef = useRef(true);
@@ -118,7 +117,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
   const messageFilter = useMemo(() => buildMessageFilter(conversationId), [conversationId]);
   const conversationFilter = useMemo(
     () => buildConversationFilter(conversationId, userId, paymentId),
-    [conversationId, userId, paymentId]
+    [conversationId, userId, paymentId],
   );
 
   const scheduleReconnect = useCallback(() => {
@@ -145,10 +144,8 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
   }, [reconnectionConfig]);
 
   const disconnect = useCallback(() => {
-    channelsRef.current.forEach((channel) => {
-      supabase.removeChannel(channel);
-    });
-    channelsRef.current = [];
+    unsubscribeRef.current?.();
+    unsubscribeRef.current = null;
 
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current);
@@ -168,10 +165,8 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
   const connect = useCallback(() => {
     if (!isMountedRef.current) return;
 
-    channelsRef.current.forEach((channel) => {
-      supabase.removeChannel(channel);
-    });
-    channelsRef.current = [];
+    unsubscribeRef.current?.();
+    unsubscribeRef.current = null;
 
     try {
       setConnectionState((prev) => ({
@@ -180,11 +175,9 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
         error: null,
       }));
 
-      const channels: RealtimeChannel[] = [];
       let subscribedChannels = 0;
-      let totalChannels = 0;
 
-      const markConnected = () => {
+      const markConnected = (totalChannels: number) => {
         if (subscribedChannels !== totalChannels) return;
 
         retryCountRef.current = 0;
@@ -219,90 +212,43 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
         }
       };
 
-      if (subscribeToMessages) {
-        totalChannels += 1;
-        const channelName = `conversation-messages-${conversationId || "all"}-${Date.now()}`;
-        let channel = supabase.channel(channelName);
+      const subscription = subscribeToConversationChanges({
+        events: normalizedEvents,
+        messageFilter,
+        conversationFilter,
+        subscribeToMessages,
+        subscribeToConversations,
+        conversationId,
+        onMessageChange: (payload) => {
+          if (!isMountedRef.current) return;
 
-        normalizedEvents.forEach((event) => {
-          channel = channel.on(
-            "postgres_changes",
-            {
-              event,
-              schema: "public",
-              table: "support_messages",
-              filter: messageFilter,
-            },
-            (payload) => {
-              if (!isMountedRef.current) return;
+          if (payload.event === "INSERT") {
+            onNewMessageRef.current?.(payload.new);
+          }
 
-              const eventType = payload.eventType as ConversationChangeEvent;
-              const message = payload.new as SupportMessage;
-              const oldMessage = payload.old as SupportMessage | null;
+          if (payload.event === "UPDATE") {
+            onMessageUpdateRef.current?.(payload.new, payload.old);
+          }
+        },
+        onConversationChange: (payload) => {
+          if (!isMountedRef.current || !onConversationUpdateRef.current) return;
+          if (payload.event !== "UPDATE") return;
 
-              if (eventType === "INSERT") onNewMessageRef.current?.(message);
-              if (eventType === "UPDATE") onMessageUpdateRef.current?.(message, oldMessage);
-            }
-          );
-        });
-
-        channel.subscribe((status, error) => {
+          onConversationUpdateRef.current(payload.new, payload.old);
+        },
+        onChannelStatus: (channelName, status, error) => {
           if (!isMountedRef.current) return;
 
           if (status === "SUBSCRIBED") {
             subscribedChannels += 1;
-            markConnected();
+            markConnected(subscription.totalChannels);
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
             handleChannelError(channelName, error || new Error(`Falha na conexao: ${status}`));
           }
-        });
+        },
+      });
 
-        channels.push(channel);
-      }
-
-      if (subscribeToConversations) {
-        totalChannels += 1;
-        const channelName = `conversation-conversations-${conversationId || "all"}-${Date.now()}`;
-        let channel = supabase.channel(channelName);
-
-        normalizedEvents.forEach((event) => {
-          channel = channel.on(
-            "postgres_changes",
-            {
-              event,
-              schema: "public",
-              table: "support_conversations",
-              filter: conversationFilter,
-            },
-            (payload) => {
-              if (!isMountedRef.current || !onConversationUpdateRef.current) return;
-
-              const eventType = payload.eventType as ConversationChangeEvent;
-              if (eventType !== "UPDATE") return;
-
-              onConversationUpdateRef.current(
-                payload.new as SupportConversation,
-                payload.old as SupportConversation | null
-              );
-            }
-          );
-        });
-
-        channel.subscribe((status, error) => {
-          if (!isMountedRef.current) return;
-
-          if (status === "SUBSCRIBED") {
-            subscribedChannels += 1;
-            markConnected();
-          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-            handleChannelError(channelName, error || new Error(`Falha na conexao: ${status}`));
-          }
-        });
-
-        channels.push(channel);
-      }
-
-      if (totalChannels === 0) {
+      if (subscription.totalChannels === 0) {
         setConnectionState((prev) => ({
           ...prev,
           isConnected: true,
@@ -313,7 +259,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
         onConnectedRef.current?.();
       }
 
-      channelsRef.current = channels;
+      unsubscribeRef.current = subscription.unsubscribe;
     } catch (error) {
       log.error("Failed to create conversation realtime channels", { error });
       setConnectionState((prev) => ({
@@ -375,7 +321,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
 
 export function useConversationMessagesRealtime(
   conversationId: string,
-  onNewMessage?: (message: SupportMessage) => void
+  onNewMessage?: (message: SupportMessage) => void,
 ) {
   const { isConnected, isReconnecting, error, ...rest } = useConversationRealtime({
     conversationId,
@@ -398,8 +344,8 @@ export function useMessageReadRealtime(
   onMessageRead?: (
     message: SupportMessage,
     wasReadByCustomer: boolean,
-    wasReadByAdmin: boolean
-  ) => void
+    wasReadByAdmin: boolean,
+  ) => void,
 ) {
   const { isConnected, isReconnecting, error, ...rest } = useConversationRealtime({
     conversationId,
@@ -430,8 +376,8 @@ export function usePaymentConversationRealtime(
   paymentId: string,
   onConversationUpdate?: (
     conversation: SupportConversation,
-    oldConversation: SupportConversation | null
-  ) => void
+    oldConversation: SupportConversation | null,
+  ) => void,
 ) {
   const { isConnected, isReconnecting, error, ...rest } = useConversationRealtime({
     paymentId,

@@ -1,44 +1,30 @@
-/**
- * PaymentInitiationFlow Component
- *
- * Customer flow for initiating manual payments with active payment method selection.
- *
- * Requirements: 2.1-2.10
- * Task: 16.1 Criar componente PaymentInitiationFlow
- */
-
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/hooks/use-toast";
-import {
-  CheckCircle,
-  CreditCard,
+  AlertCircle,
   Banknote,
-  QrCode,
   Building,
+  CheckCircle,
+  ChevronRight,
   Copy,
+  CreditCard,
   ExternalLink,
   Loader2,
-  AlertCircle,
-  ChevronRight,
+  QrCode,
 } from "lucide-react";
-import type { PaymentMethod, PaymentType } from "@/types/manual-payment";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { paymentDetailsPath } from "@/config/routes";
+import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 import { listActivePaymentMethods } from "@/lib/payment-method-service";
 import { createPayment } from "@/lib/payment-service";
-import { useAuth } from "@/lib/auth";
 import { openSafeExternalUrl } from "@/lib/security/safe-open";
-import { paymentDetailsPath } from "@/config/routes";
+import { cn, formatCurrency as formatConfiguredCurrency } from "@/lib/utils";
+import type { PaymentMethod, PaymentType } from "@/types/manual-payment";
 
 const ACCOUNT_DETAIL_LABELS: Record<string, string> = {
   bank: "Banco",
@@ -48,6 +34,8 @@ const ACCOUNT_DETAIL_LABELS: Record<string, string> = {
   holder: "Titular",
   document: "Documento",
 };
+
+const cardClassName = "border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] text-white shadow-none";
 
 function formatAccountDetailLabel(key: string): string {
   return ACCOUNT_DETAIL_LABELS[key] ?? key.replace(/_/g, " ");
@@ -88,7 +76,6 @@ export function PaymentInitiationFlow({
   const { user } = useAuth();
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
 
-  // Fetch active payment methods
   const {
     data: paymentMethods = [],
     isLoading: methodsLoading,
@@ -98,11 +85,10 @@ export function PaymentInitiationFlow({
     queryFn: listActivePaymentMethods,
   });
 
-  // Create payment mutation
   const createPaymentMutation = useMutation({
     mutationFn: () => {
       if (!selectedMethodId || !user?.id) {
-        throw new Error("Método de pagamento ou usuário não selecionado");
+        throw new Error("Metodo de pagamento ou usuario nao selecionado");
       }
 
       return createPayment({
@@ -117,8 +103,7 @@ export function PaymentInitiationFlow({
     onSuccess: (payment) => {
       toast({
         title: "Pagamento criado",
-        description:
-          "Seu pagamento foi registrado com sucesso. Agora você pode enviar o comprovante.",
+        description: "Seu pagamento foi registrado. Agora envie o comprovante para validacao.",
       });
 
       if (onSuccess) {
@@ -136,22 +121,15 @@ export function PaymentInitiationFlow({
     },
   });
 
-  // Auto-select default method if available
   useEffect(() => {
     if (paymentMethods.length > 0 && !selectedMethodId) {
       const defaultMethod = paymentMethods.find((method) => method.is_default);
-      if (defaultMethod) {
-        setSelectedMethodId(defaultMethod.id);
-      } else {
-        setSelectedMethodId(paymentMethods[0].id);
-      }
+      setSelectedMethodId((defaultMethod ?? paymentMethods[0]).id);
     }
   }, [paymentMethods, selectedMethodId]);
 
-  // Get selected method details
   const selectedMethod = paymentMethods.find((method) => method.id === selectedMethodId);
 
-  // Get method icon
   const getMethodIcon = (method: PaymentMethod) => {
     switch (method.type) {
       case "pix":
@@ -165,39 +143,26 @@ export function PaymentInitiationFlow({
     }
   };
 
-  // Get method type label
   const getMethodTypeLabel = (method: PaymentMethod) => {
     switch (method.type) {
       case "pix":
         return "PIX";
       case "bank_transfer":
-        return "Transferência Bancária";
+        return "Transferencia bancaria";
       case "credit_card":
-        return "Cartão de Crédito";
+        return "Cartao de credito";
       default:
         return "Outro";
     }
   };
 
-  // Format currency
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: currency,
-    }).format(value);
-  };
+  const formatCurrency = (value: number) => formatConfiguredCurrency(value, { currency });
 
-  // Handle method selection
-  const handleMethodSelect = (methodId: string) => {
-    setSelectedMethodId(methodId);
-  };
-
-  // Handle payment confirmation
   const handleConfirmPayment = () => {
     if (!selectedMethodId) {
       toast({
-        title: "Selecione um método",
-        description: "Por favor, selecione um método de pagamento.",
+        title: "Selecione um metodo",
+        description: "Selecione um metodo de pagamento para continuar.",
         variant: "destructive",
       });
       return;
@@ -206,26 +171,24 @@ export function PaymentInitiationFlow({
     createPaymentMutation.mutate();
   };
 
-  // Handle copy to clipboard
   const handleCopyToClipboard = (text: string) => {
     navigator.clipboard
       .writeText(text)
       .then(() => {
         toast({
           title: "Copiado",
-          description: "Texto copiado para a área de transferência.",
+          description: "Texto copiado para a area de transferencia.",
         });
       })
       .catch(() => {
         toast({
           title: "Erro ao copiar",
-          description: "Não foi possível copiar o texto.",
+          description: "Nao foi possivel copiar o texto.",
           variant: "destructive",
         });
       });
   };
 
-  // Handle open payment link
   const handleOpenPaymentLink = (url: string) => {
     try {
       openSafeExternalUrl(url);
@@ -241,10 +204,10 @@ export function PaymentInitiationFlow({
   if (methodsLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-32 w-full" />
+        <Skeleton className="h-8 w-48 bg-white/10" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {[...Array(3)].map((_, index) => (
+            <Skeleton key={index} className="h-32 w-full bg-white/10" />
           ))}
         </div>
       </div>
@@ -253,22 +216,20 @@ export function PaymentInitiationFlow({
 
   if (methodsError) {
     return (
-      <Card>
+      <Card className={cardClassName}>
         <CardHeader>
-          <CardTitle>Erro ao carregar métodos de pagamento</CardTitle>
-          <CardDescription>
-            Não foi possível carregar os métodos de pagamento disponíveis.
+          <CardTitle>Erro ao carregar metodos de pagamento</CardTitle>
+          <CardDescription className="text-zinc-400">
+            Nao foi possivel carregar os metodos disponiveis.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">{methodsError.message}</h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>Por favor, tente novamente mais tarde.</p>
-                </div>
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-red-300" />
+              <div>
+                <h3 className="text-sm font-medium text-red-100">{methodsError.message}</h3>
+                <p className="mt-2 text-sm text-red-200">Tente novamente mais tarde.</p>
               </div>
             </div>
           </div>
@@ -279,22 +240,22 @@ export function PaymentInitiationFlow({
 
   if (paymentMethods.length === 0) {
     return (
-      <Card>
+      <Card className={cardClassName}>
         <CardHeader>
-          <CardTitle>Nenhum método de pagamento disponível</CardTitle>
-          <CardDescription>No momento não há métodos de pagamento configurados.</CardDescription>
+          <CardTitle>Nenhum metodo de pagamento disponivel</CardTitle>
+          <CardDescription className="text-zinc-400">
+            No momento nao ha metodos de pagamento configurados.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md bg-yellow-50 p-4">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-yellow-400" />
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-yellow-800">
-                  Entre em contato com o suporte
-                </h3>
-                <div className="mt-2 text-sm text-yellow-700">
-                  <p>Por favor, entre em contato com nosso suporte para mais informações.</p>
-                </div>
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-300" />
+              <div>
+                <h3 className="text-sm font-medium text-amber-100">Entre em contato com o suporte</h3>
+                <p className="mt-2 text-sm text-amber-200">
+                  O suporte pode orientar a melhor forma de concluir o pagamento.
+                </p>
               </div>
             </div>
           </div>
@@ -305,103 +266,107 @@ export function PaymentInitiationFlow({
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Iniciar Pagamento</h1>
-        <p className="text-muted-foreground">
-          Selecione um método de pagamento e siga as instruções para concluir seu pagamento.
+        <h1 className="text-2xl font-semibold tracking-tight text-white">Iniciar pagamento</h1>
+        <p className="mt-1 text-sm text-zinc-400">
+          Escolha um metodo e siga as instrucoes para concluir seu pagamento.
         </p>
       </div>
 
-      {/* Payment Summary */}
-      <Card>
+      <Card className={cardClassName}>
         <CardHeader>
-          <CardTitle>Resumo do Pagamento</CardTitle>
-          <CardDescription>Detalhes do valor a ser pago</CardDescription>
+          <CardTitle>Resumo do pagamento</CardTitle>
+          <CardDescription className="text-zinc-400">Detalhes do valor a ser pago.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Valor</span>
-              <span className="text-2xl font-bold">{formatCurrency(amount)}</span>
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-zinc-300">Valor</span>
+              <span className="text-2xl font-semibold text-[hsl(42,100%,55%)]">
+                {formatCurrency(amount)}
+              </span>
             </div>
 
             {quoteId && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Orçamento</span>
-                <Badge variant="outline">{quoteId}</Badge>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm font-medium text-zinc-300">Orcamento</span>
+                <Badge variant="outline" className="border-[hsl(0,0%,18%)] text-zinc-200">
+                  {quoteId}
+                </Badge>
               </div>
             )}
 
             {subscriptionId && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Assinatura</span>
-                <Badge variant="outline">{subscriptionId}</Badge>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm font-medium text-zinc-300">Assinatura</span>
+                <Badge variant="outline" className="border-[hsl(0,0%,18%)] text-zinc-200">
+                  {subscriptionId}
+                </Badge>
               </div>
             )}
 
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Tipo</span>
-              <Badge variant="outline">
-                {paymentType === "one_time" ? "Pagamento Único" : "Recorrente"}
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-zinc-300">Tipo</span>
+              <Badge variant="outline" className="border-[hsl(0,0%,18%)] text-zinc-200">
+                {paymentType === "one_time" ? "Pagamento unico" : "Recorrente"}
               </Badge>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Payment Method Selection */}
-      <Card>
+      <Card className={cardClassName}>
         <CardHeader>
-          <CardTitle>Selecione o Método de Pagamento</CardTitle>
-          <CardDescription>Escolha como você deseja realizar o pagamento</CardDescription>
+          <CardTitle>Selecione o metodo de pagamento</CardTitle>
+          <CardDescription className="text-zinc-400">Escolha como voce deseja pagar.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {paymentMethods.map((method) => {
               const isSelected = method.id === selectedMethodId;
-              const isDefault = method.is_default;
 
               return (
                 <button
                   key={method.id}
                   type="button"
-                  onClick={() => handleMethodSelect(method.id)}
-                  className={`relative p-4 border rounded-lg text-left transition-all hover:border-primary ${
+                  onClick={() => setSelectedMethodId(method.id)}
+                  className={cn(
+                    "relative rounded-lg border p-4 text-left transition-all hover:border-[hsl(42,100%,55%)] hover:bg-white/[0.03]",
                     isSelected
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                      : "border-gray-200 hover:shadow-sm"
-                  }`}
+                      ? "border-[hsl(42,100%,55%)] bg-[hsl(42,100%,55%)]/10 ring-2 ring-[hsl(42,100%,55%)]/20"
+                      : "border-[hsl(0,0%,14%)] bg-[hsl(0,0%,8%)]"
+                  )}
                 >
-                  {isDefault && (
-                    <Badge className="absolute -top-2 -right-2" variant="default">
-                      Padrão
+                  {method.is_default && (
+                    <Badge className="absolute -right-2 -top-2 bg-[hsl(42,100%,50%)] text-black">
+                      Padrao
                     </Badge>
                   )}
 
                   <div className="flex items-start gap-3">
                     <div
-                      className={`p-2 rounded-full ${
-                        isSelected ? "bg-primary/10 text-primary" : "bg-gray-100 text-gray-600"
-                      }`}
+                      className={cn(
+                        "rounded-full p-2",
+                        isSelected
+                          ? "bg-[hsl(42,100%,55%)]/15 text-[hsl(42,100%,55%)]"
+                          : "bg-white/[0.06] text-zinc-300"
+                      )}
                     >
                       {getMethodIcon(method)}
                     </div>
 
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold">{method.name}</h3>
-                        {isSelected && <CheckCircle className="h-5 w-5 text-primary" />}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-semibold text-white">{method.name}</h3>
+                        {isSelected && <CheckCircle className="h-5 w-5 text-[hsl(42,100%,55%)]" />}
                       </div>
 
-                      <div className="mt-1">
-                        <Badge variant="outline" className="text-xs">
-                          {getMethodTypeLabel(method)}
-                        </Badge>
-                      </div>
+                      <Badge variant="outline" className="mt-2 border-[hsl(0,0%,18%)] text-xs text-zinc-300">
+                        {getMethodTypeLabel(method)}
+                      </Badge>
 
-                      <p className="mt-2 text-sm text-gray-600 line-clamp-2">
-                        {method.instructions || "Sem instruções específicas."}
+                      <p className="mt-2 line-clamp-2 text-sm text-zinc-400">
+                        {method.instructions || "Sem instrucoes especificas."}
                       </p>
                     </div>
                   </div>
@@ -412,123 +377,113 @@ export function PaymentInitiationFlow({
         </CardContent>
       </Card>
 
-      {/* Selected Method Instructions */}
       {selectedMethod && (
-        <Card>
+        <Card className={cardClassName}>
           <CardHeader>
-            <CardTitle>Instruções de Pagamento</CardTitle>
-            <CardDescription>Siga as instruções abaixo para realizar o pagamento</CardDescription>
+            <CardTitle>Instrucoes de pagamento</CardTitle>
+            <CardDescription className="text-zinc-400">
+              Siga as orientacoes abaixo antes de confirmar o metodo.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Method-specific instructions */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-full bg-primary/10 text-primary">
+                <div className="rounded-full bg-[hsl(42,100%,55%)]/15 p-2 text-[hsl(42,100%,55%)]">
                   {getMethodIcon(selectedMethod)}
                 </div>
                 <div>
-                  <h3 className="font-semibold">{selectedMethod.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {getMethodTypeLabel(selectedMethod)}
-                  </p>
+                  <h3 className="font-semibold text-white">{selectedMethod.name}</h3>
+                  <p className="text-sm text-zinc-400">{getMethodTypeLabel(selectedMethod)}</p>
                 </div>
               </div>
 
               {selectedMethod.instructions && (
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <p className="text-sm whitespace-pre-line">{selectedMethod.instructions}</p>
+                <div className="rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03] p-4">
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-200">
+                    {selectedMethod.instructions}
+                  </p>
                 </div>
               )}
 
-              {/* PIX-specific instructions */}
               {selectedMethod.type === "pix" && selectedMethod.pix_key && (
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-sm mb-2">Chave PIX</h4>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 p-3 bg-gray-100 rounded-md text-sm font-mono break-all">
-                        {selectedMethod.pix_key}
-                      </code>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCopyToClipboard(selectedMethod.pix_key!)}
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copiar
-                      </Button>
-                    </div>
-                    <p className="mt-2 text-xs text-gray-500">
-                      Copie a chave PIX e utilize em seu aplicativo bancário.
-                    </p>
+                <div>
+                  <h4 className="mb-2 text-sm font-medium text-zinc-200">Chave PIX</h4>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <code className="flex-1 break-all rounded-md border border-[hsl(0,0%,14%)] bg-black/30 p-3 font-mono text-sm text-zinc-100">
+                      {selectedMethod.pix_key}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCopyToClipboard(selectedMethod.pix_key!)}
+                      className="border-[hsl(0,0%,18%)] bg-[hsl(0,0%,8%)] text-zinc-100 hover:bg-[hsl(0,0%,10%)]"
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copiar
+                    </Button>
                   </div>
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Copie a chave PIX e utilize no seu aplicativo bancario.
+                  </p>
                 </div>
               )}
 
-              {/* Payment link instructions */}
               {selectedMethod.payment_link && (
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-sm mb-2">Link de Pagamento</h4>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 p-3 bg-gray-100 rounded-md text-sm font-mono break-all truncate">
-                        {selectedMethod.payment_link}
-                      </code>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenPaymentLink(selectedMethod.payment_link!)}
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Abrir
-                      </Button>
-                    </div>
-                    <p className="mt-2 text-xs text-gray-500">
-                      Clique em "Abrir" para acessar a página de pagamento.
-                    </p>
+                <div>
+                  <h4 className="mb-2 text-sm font-medium text-zinc-200">Link de pagamento</h4>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <code className="flex-1 truncate rounded-md border border-[hsl(0,0%,14%)] bg-black/30 p-3 font-mono text-sm text-zinc-100">
+                      {selectedMethod.payment_link}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenPaymentLink(selectedMethod.payment_link!)}
+                      className="border-[hsl(0,0%,18%)] bg-[hsl(0,0%,8%)] text-zinc-100 hover:bg-[hsl(0,0%,10%)]"
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Abrir
+                    </Button>
                   </div>
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Abra o link somente se reconhecer o provedor de pagamento.
+                  </p>
                 </div>
               )}
 
-              {/* Bank transfer instructions */}
               {selectedMethod.type === "bank_transfer" && selectedMethod.account_details && (
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-sm mb-2">Dados Bancários</h4>
-                    <dl className="rounded-lg bg-gray-50 p-4 text-sm">
-                      {Object.entries(selectedMethod.account_details).map(([key, value]) => (
-                        <div
-                          key={key}
-                          className="grid grid-cols-1 gap-1 border-b border-gray-200 py-2 last:border-b-0 sm:grid-cols-[140px_1fr]"
-                        >
-                          <dt className="font-medium text-gray-600">
-                            {formatAccountDetailLabel(key)}
-                          </dt>
-                          <dd className="break-words font-mono text-gray-900">
-                            {formatAccountDetailValue(value)}
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                    <p className="mt-2 text-xs text-gray-500">
-                      Utilize os dados acima para realizar a transferência bancária.
-                    </p>
-                  </div>
+                <div>
+                  <h4 className="mb-2 text-sm font-medium text-zinc-200">Dados bancarios</h4>
+                  <dl className="rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03] p-4 text-sm">
+                    {Object.entries(selectedMethod.account_details).map(([key, value]) => (
+                      <div
+                        key={key}
+                        className="grid grid-cols-1 gap-1 border-b border-[hsl(0,0%,14%)] py-2 last:border-b-0 sm:grid-cols-[140px_1fr]"
+                      >
+                        <dt className="font-medium text-zinc-400">{formatAccountDetailLabel(key)}</dt>
+                        <dd className="break-words font-mono text-zinc-100">
+                          {formatAccountDetailValue(value)}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Use os dados acima para realizar a transferencia bancaria.
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* Important notes */}
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                <AlertCircle className="mt-0.5 h-5 w-5 text-amber-300" />
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-amber-800">Importante</h4>
-                  <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
-                    <li>Após realizar o pagamento, você precisará enviar o comprovante</li>
-                    <li>Mantenha o comprovante em mãos para upload</li>
-                    <li>O processamento pode levar até 24 horas úteis</li>
-                    <li>Em caso de dúvidas, entre em contato com nosso suporte</li>
+                  <h4 className="text-sm font-medium text-amber-100">Importante</h4>
+                  <ul className="list-inside list-disc space-y-1 text-sm text-amber-200">
+                    <li>Apos pagar, envie o comprovante na pagina do pagamento.</li>
+                    <li>Mantenha o comprovante salvo para upload.</li>
+                    <li>A validacao pode levar ate 24 horas uteis.</li>
+                    <li>Em caso de duvida, entre em contato com o suporte.</li>
                   </ul>
                 </div>
               </div>
@@ -537,45 +492,49 @@ export function PaymentInitiationFlow({
         </Card>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
         <div>
           {onCancel && (
-            <Button variant="outline" onClick={onCancel} disabled={createPaymentMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              disabled={createPaymentMutation.isPending}
+              className="border-[hsl(0,0%,18%)] bg-[hsl(0,0%,8%)] text-zinc-100 hover:bg-[hsl(0,0%,10%)]"
+            >
               Cancelar
             </Button>
           )}
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <Button
             variant="outline"
             onClick={() => {
-              // Navigate back or show help
               toast({
                 title: "Precisa de ajuda?",
                 description: "Entre em contato com nosso suporte.",
               });
             }}
             disabled={createPaymentMutation.isPending}
+            className="border-[hsl(0,0%,18%)] bg-[hsl(0,0%,8%)] text-zinc-100 hover:bg-[hsl(0,0%,10%)]"
           >
-            Precisa de Ajuda?
+            Precisa de ajuda?
           </Button>
 
           <Button
             onClick={handleConfirmPayment}
             disabled={!selectedMethodId || createPaymentMutation.isPending}
-            className="min-w-[200px]"
+            className="min-w-[200px] bg-[hsl(42,100%,50%)] text-black hover:bg-[hsl(42,100%,58%)]"
           >
             {createPaymentMutation.isPending ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Criando Pagamento...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Criando pagamento...
               </>
             ) : (
               <>
-                Confirmar Método de Pagamento
-                <ChevronRight className="h-4 w-4 ml-2" />
+                Confirmar metodo de pagamento
+                <ChevronRight className="ml-2 h-4 w-4" />
               </>
             )}
           </Button>

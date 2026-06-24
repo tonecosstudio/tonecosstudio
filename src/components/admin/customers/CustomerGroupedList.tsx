@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,8 +48,13 @@ export function CustomerGroupedList({
   const [sortBy, setSortBy] = useState<SortOption>("activity");
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const [showOnlyUrgent, setShowOnlyUrgent] = useState(false);
+  const filteredConversationCount = conversations.length;
+  const unreadCustomerCount = useMemo(
+    () => conversations.filter((conversation) => (conversation.unread_count || 0) > 0).length,
+    [conversations]
+  );
 
-  // Agrupar conversas por usuário
+  // Agrupar conversas por usuario
   const customerGroups = useMemo(() => {
     const groups = new Map<string, CustomerGroup>();
 
@@ -59,7 +64,7 @@ export function CustomerGroupedList({
       if (!groups.has(userId)) {
         groups.set(userId, {
           user_id: userId,
-          user_name: conv.user_name || "Usuário",
+          user_name: conv.user_name || "Usuario",
           user_email: conv.user_email || "",
           conversations: [],
           total_unread: 0,
@@ -74,7 +79,7 @@ export function CustomerGroupedList({
       group.conversations.push(conv);
       group.total_unread += conv.unread_count || 0;
 
-      // Atualizar última atividade
+      // Atualizar ultima atividade
       if (new Date(conv.last_message_at) > new Date(group.last_activity)) {
         group.last_activity = conv.last_message_at;
       }
@@ -102,7 +107,7 @@ export function CustomerGroupedList({
       );
     }
 
-    // Filtro de não lidas
+    // Filtro de nao lidas
     if (showOnlyUnread) {
       filtered = filtered.filter((group) => group.total_unread > 0);
     }
@@ -139,6 +144,17 @@ export function CustomerGroupedList({
     return sorted;
   }, [filteredGroups, sortBy]);
 
+  const selectedGroup = useMemo(
+    () => customerGroups.find((group) => group.user_id === selectedUserId) ?? null,
+    [customerGroups, selectedUserId]
+  );
+
+  useEffect(() => {
+    if (selectedUserId && !selectedGroup) {
+      setSelectedUserId(null);
+    }
+  }, [selectedGroup, selectedUserId]);
+
   const handleStatusChange = (value: string) => {
     const status = value as ConversationStatus | "all";
     setStatusFilter(status);
@@ -160,18 +176,11 @@ export function CustomerGroupedList({
     }
   };
 
-  // Se um usuário está selecionado, mostrar suas conversas
-  if (selectedUserId) {
-    const selectedGroup = customerGroups.find((g) => g.user_id === selectedUserId);
-
-    if (!selectedGroup) {
-      setSelectedUserId(null);
-      return null;
-    }
-
+  // Se um usuario estiver selecionado, mostrar suas conversas
+  if (selectedUserId && selectedGroup) {
     return (
       <div className="flex flex-col h-full">
-        {/* Header com botão voltar */}
+        {/* Header com botao voltar */}
         <div className="p-4 border-b space-y-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={handleBackToCustomers}>
@@ -203,13 +212,13 @@ export function CustomerGroupedList({
             </Badge>
             {selectedGroup.total_unread > 0 && (
               <Badge variant="default">
-                {selectedGroup.total_unread} não lida{selectedGroup.total_unread !== 1 ? "s" : ""}
+                {selectedGroup.total_unread} nao lida{selectedGroup.total_unread !== 1 ? "s" : ""}
               </Badge>
             )}
           </div>
         </div>
 
-        {/* Lista de conversas do usuário */}
+        {/* Lista de conversas do usuario */}
         <div className="flex-1 overflow-y-auto">
           <div className="divide-y">
             {selectedGroup.conversations.map((conversation) => (
@@ -235,7 +244,13 @@ export function CustomerGroupedList({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            <h2 className="font-semibold text-lg">Clientes ({sortedGroups.length})</h2>
+            <div>
+              <h2 className="font-semibold text-lg">Clientes</h2>
+              <p className="text-xs text-muted-foreground">
+                {sortedGroups.length} grupos visiveis de {filteredConversationCount} conversa
+                {filteredConversationCount !== 1 ? "s" : ""}
+              </p>
+            </div>
           </div>
           <Button variant="ghost" size="sm" onClick={refresh} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -260,9 +275,9 @@ export function CustomerGroupedList({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="activity">Última atividade</SelectItem>
+              <SelectItem value="activity">Ultima atividade</SelectItem>
               <SelectItem value="conversations">Mais conversas</SelectItem>
-              <SelectItem value="unread">Mais não lidas</SelectItem>
+              <SelectItem value="unread">Mais nao lidas</SelectItem>
               <SelectItem value="name">Nome A-Z</SelectItem>
             </SelectContent>
           </Select>
@@ -281,7 +296,7 @@ export function CustomerGroupedList({
           </Select>
         </div>
 
-        {/* Filtros rápidos */}
+        {/* Filtros rapidos */}
         <div className="flex gap-2">
           <Button
             variant={showOnlyUnread ? "default" : "outline"}
@@ -289,7 +304,7 @@ export function CustomerGroupedList({
             onClick={() => setShowOnlyUnread(!showOnlyUnread)}
             className="flex-1"
           >
-            Não lidas
+            Nao lidas
           </Button>
           <Button
             variant={showOnlyUrgent ? "destructive" : "outline"}
@@ -299,6 +314,21 @@ export function CustomerGroupedList({
           >
             Urgentes
           </Button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="rounded-md border bg-background px-3 py-2">
+            <p className="text-muted-foreground">Clientes</p>
+            <p className="mt-1 font-semibold">{sortedGroups.length}</p>
+          </div>
+          <div className="rounded-md border bg-background px-3 py-2">
+            <p className="text-muted-foreground">Com nao lidas</p>
+            <p className="mt-1 font-semibold">{unreadCustomerCount}</p>
+          </div>
+          <div className="rounded-md border bg-background px-3 py-2">
+            <p className="text-muted-foreground">Conversas</p>
+            <p className="mt-1 font-semibold">{filteredConversationCount}</p>
+          </div>
         </div>
       </div>
 
@@ -371,17 +401,17 @@ function CustomerGroupCard({ group, onClick, formatTimestamp }: CustomerGroupCar
         <div className="flex flex-wrap gap-1">
           {group.has_urgent && (
             <Badge variant="destructive" className="text-xs">
-              🔴 Urgente
+              Urgente
             </Badge>
           )}
           {group.has_risk && (
             <Badge variant="destructive" className="text-xs">
-              ⚠️ Risco
+              Risco
             </Badge>
           )}
           {group.has_overdue && (
             <Badge variant="destructive" className="text-xs">
-              🕐 Atrasado
+              Atrasado
             </Badge>
           )}
 
@@ -472,14 +502,14 @@ function ConversationCard({
           {/* Risk flags */}
           {hasRiskFlags && (
             <Badge variant="destructive" className="text-xs">
-              ⚠️ Risco
+              Risco
             </Badge>
           )}
 
           {/* Overdue promise */}
           {isOverdue && (
             <Badge variant="destructive" className="text-xs">
-              🕐 Atrasado
+              Atrasada
             </Badge>
           )}
         </div>

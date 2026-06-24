@@ -1,25 +1,15 @@
-/**
- * CharacterChoiceStatus Component
- *
- * Displays character choice status in customer order views.
- * Shows appropriate buttons and status messages based on choice state.
- *
- * Requirements: 2.2.2, 2.4.3
- * Task: 3.2.4 Add choice status to customer order view
- */
-
 import { useState } from "react";
-import { Package, CheckCircle, Clock, AlertCircle, Edit } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { AlertCircle, CheckCircle, Clock, Edit, Package } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCharacterChoice } from "@/hooks/customer/useCharacterChoice";
 import { CharacterSelectionModal } from "./CharacterSelectionModal";
 import { ChoiceChangeModal } from "./ChoiceChangeModal";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 interface CharacterChoiceStatusProps {
   orderId: string;
@@ -27,6 +17,9 @@ interface CharacterChoiceStatusProps {
   collectionName: string;
   orderType: "subscription_delivery" | "standalone_purchase";
 }
+
+const cardClassName = "border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] text-white shadow-none";
+const softPanelClassName = "rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03] p-3";
 
 export function CharacterChoiceStatus({
   orderId,
@@ -36,8 +29,6 @@ export function CharacterChoiceStatus({
 }: CharacterChoiceStatusProps) {
   const [showSelectionModal, setShowSelectionModal] = useState(false);
   const [showChangeModal, setShowChangeModal] = useState(false);
-
-  // Fetch character choice for this order
   const { data: choice, isLoading, refetch } = useCharacterChoice(orderId);
 
   const handleCharacterSelected = () => {
@@ -50,48 +41,93 @@ export function CharacterChoiceStatus({
     refetch();
   };
 
+  const renderCharacterPanel = (
+    title: string,
+    tone: "default" | "approved" | "rejected" = "default"
+  ) => {
+    if (!choice?.characterName) {
+      return null;
+    }
+
+    return (
+      <div
+        className={
+          tone === "rejected"
+            ? "flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3"
+            : softPanelClassName
+        }
+      >
+        {choice.characterImageUrl && (
+          <img
+            src={choice.characterImageUrl}
+            alt={choice.characterName}
+            className={`h-16 w-16 rounded object-cover ${tone === "rejected" ? "opacity-60" : ""}`}
+          />
+        )}
+        <div className="min-w-0 flex-1">
+          <div className={tone === "rejected" ? "font-medium text-red-100" : "font-medium text-white"}>
+            {choice.characterName}
+          </div>
+          <div className={tone === "rejected" ? "text-xs text-red-200" : "text-xs text-zinc-400"}>
+            {title}
+          </div>
+        </div>
+        {tone === "approved" && (
+          <Badge className="bg-emerald-500 text-white">
+            <CheckCircle className="mr-1 h-3 w-3" />
+            Aprovado
+          </Badge>
+        )}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
-      <Card>
+      <Card className={cardClassName}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Escolha de Personagem
+            <Package className="h-5 w-5 text-[hsl(42,100%,55%)]" />
+            Escolha de personagem
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-4 w-full bg-white/10" />
+            <Skeleton className="h-10 w-full bg-white/10" />
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  // No choice record exists yet - show "Choose Character" button
   if (!choice) {
     return (
       <>
-        <Card>
+        <Card className={cardClassName}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Escolha de Personagem
+              <Package className="h-5 w-5 text-[hsl(42,100%,55%)]" />
+              Escolha de personagem
             </CardTitle>
-            <CardDescription>Selecione seu personagem favorito da coleção</CardDescription>
+            <CardDescription className="text-zinc-400">
+              Selecione seu personagem favorito da colecao.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
+            <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-100">
+              <AlertCircle className="h-4 w-4 text-amber-300" />
               <AlertDescription>
-                Você precisa escolher um personagem para este pedido. Clique no botão abaixo para
-                ver os personagens disponíveis.
+                Voce precisa escolher um personagem para este pedido. Abra a selecao para ver os
+                personagens disponiveis.
               </AlertDescription>
             </Alert>
-            <Button onClick={() => setShowSelectionModal(true)} className="w-full">
-              <Package className="h-4 w-4 mr-2" />
-              Escolher Personagem
+            <Button
+              onClick={() => setShowSelectionModal(true)}
+              className="w-full bg-[hsl(42,100%,50%)] text-black hover:bg-[hsl(42,100%,58%)]"
+            >
+              <Package className="mr-2 h-4 w-4" />
+              Escolher personagem
             </Button>
           </CardContent>
         </Card>
@@ -108,153 +144,119 @@ export function CharacterChoiceStatus({
     );
   }
 
-  // Choice exists - determine status and display appropriate UI
   const isPending = choice.status === "pending";
   const isSubmitted = choice.status === "submitted";
   const isApproved = choice.status === "approved";
   const isRejected = choice.status === "rejected";
   const isLocked = choice.status === "locked";
-
   const deadlineDate = choice.deadline ? new Date(choice.deadline) : null;
   const isDeadlinePassed = deadlineDate ? deadlineDate < new Date() : false;
-  const canChange =
-    !isApproved && !isLocked && !isDeadlinePassed && choice.changeCount < 3;
+  const canChange = !isApproved && !isLocked && !isDeadlinePassed && choice.changeCount < 3;
 
   return (
     <>
-      <Card>
+      <Card className={cardClassName}>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Escolha de Personagem
+                <Package className="h-5 w-5 text-[hsl(42,100%,55%)]" />
+                Escolha de personagem
               </CardTitle>
-              <CardDescription>{collectionName}</CardDescription>
+              <CardDescription className="text-zinc-400">{collectionName}</CardDescription>
             </div>
+
             {isApproved && (
-              <Badge className="bg-green-500">
-                <CheckCircle className="h-3 w-3 mr-1" />
+              <Badge className="w-fit bg-emerald-500 text-white">
+                <CheckCircle className="mr-1 h-3 w-3" />
                 Aprovado
               </Badge>
             )}
             {isSubmitted && (
-              <Badge variant="secondary">
-                <Clock className="h-3 w-3 mr-1" />
-                Aguardando Aprovação
+              <Badge className="w-fit border-sky-500/30 bg-sky-500/10 text-sky-100">
+                <Clock className="mr-1 h-3 w-3" />
+                Aguardando aprovacao
               </Badge>
             )}
             {isRejected && (
-              <Badge variant="destructive">
-                <AlertCircle className="h-3 w-3 mr-1" />
+              <Badge variant="destructive" className="w-fit">
+                <AlertCircle className="mr-1 h-3 w-3" />
                 Rejeitado
               </Badge>
             )}
             {isLocked && (
-              <Badge variant="secondary">
-                <CheckCircle className="h-3 w-3 mr-1" />
+              <Badge className="w-fit border-zinc-500/30 bg-zinc-500/10 text-zinc-100">
+                <CheckCircle className="mr-1 h-3 w-3" />
                 Bloqueado
               </Badge>
             )}
           </div>
         </CardHeader>
+
         <CardContent className="space-y-4">
-          {/* Pending Status */}
           {isPending && (
             <>
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
+              <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-100">
+                <AlertCircle className="h-4 w-4 text-amber-300" />
                 <AlertDescription>
-                  Você ainda não escolheu um personagem. Por favor, faça sua escolha antes do prazo.
+                  Voce ainda nao escolheu um personagem. Faca sua escolha antes do prazo.
                 </AlertDescription>
               </Alert>
               {deadlineDate && !isDeadlinePassed && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-zinc-400">
                   <Clock className="h-4 w-4" />
                   <span>
-                    Prazo:{" "}
-                    {formatDistanceToNow(deadlineDate, { addSuffix: true, locale: ptBR })}
+                    Prazo: {formatDistanceToNow(deadlineDate, { addSuffix: true, locale: ptBR })}
                   </span>
                 </div>
               )}
-              <Button onClick={() => setShowSelectionModal(true)} className="w-full">
-                <Package className="h-4 w-4 mr-2" />
-                Escolher Personagem
+              <Button
+                onClick={() => setShowSelectionModal(true)}
+                className="w-full bg-[hsl(42,100%,50%)] text-black hover:bg-[hsl(42,100%,58%)]"
+              >
+                <Package className="mr-2 h-4 w-4" />
+                Escolher personagem
               </Button>
             </>
           )}
 
-          {/* Submitted Status */}
           {isSubmitted && (
             <>
-              <Alert className="bg-blue-50 border-blue-200">
-                <Clock className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-900">
-                  <strong>Escolha Enviada - Aguardando Aprovação</strong>
+              <Alert className="border-sky-500/30 bg-sky-500/10 text-sky-100">
+                <Clock className="h-4 w-4 text-sky-300" />
+                <AlertDescription>
+                  <strong>Escolha enviada - aguardando aprovacao</strong>
                   <br />
-                  Sua escolha foi enviada e está aguardando aprovação da equipe de produção.
+                  Sua escolha foi enviada e esta aguardando aprovacao da equipe de producao.
                 </AlertDescription>
               </Alert>
-              {choice.characterName && (
-                <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                  {choice.characterImageUrl && (
-                    <img
-                      src={choice.characterImageUrl}
-                      alt={choice.characterName}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <div className="font-medium">{choice.characterName}</div>
-                    <div className="text-xs text-muted-foreground">Personagem escolhido</div>
-                  </div>
-                </div>
-              )}
+              {renderCharacterPanel("Personagem escolhido")}
               {canChange && (
                 <Button
                   variant="outline"
                   onClick={() => setShowChangeModal(true)}
-                  className="w-full"
+                  className="w-full border-[hsl(0,0%,18%)] bg-[hsl(0,0%,8%)] text-zinc-100 hover:bg-[hsl(0,0%,10%)]"
                 >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Alterar Escolha ({3 - choice.changeCount} alterações restantes)
+                  <Edit className="mr-2 h-4 w-4" />
+                  Alterar escolha ({3 - choice.changeCount} alteracoes restantes)
                 </Button>
               )}
             </>
           )}
 
-          {/* Approved Status */}
           {isApproved && (
             <>
-              <Alert className="bg-green-50 border-green-200">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-900">
-                  <strong>Escolha Aprovada</strong>
+              <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-100">
+                <CheckCircle className="h-4 w-4 text-emerald-300" />
+                <AlertDescription>
+                  <strong>Escolha aprovada</strong>
                   <br />
-                  Sua escolha foi aprovada! A produção do seu personagem será iniciada em breve.
+                  Sua escolha foi aprovada. A producao do seu personagem sera iniciada em breve.
                 </AlertDescription>
               </Alert>
-              {choice.characterName && (
-                <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                  {choice.characterImageUrl && (
-                    <img
-                      src={choice.characterImageUrl}
-                      alt={choice.characterName}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <div className="font-medium">{choice.characterName}</div>
-                    <div className="text-xs text-muted-foreground">Personagem aprovado</div>
-                  </div>
-                  <Badge className="bg-green-500">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Aprovado
-                  </Badge>
-                </div>
-              )}
+              {renderCharacterPanel("Personagem aprovado", "approved")}
               {choice.approvedAt && (
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-zinc-500">
                   Aprovado{" "}
                   {formatDistanceToNow(new Date(choice.approvedAt), {
                     addSuffix: true,
@@ -265,71 +267,43 @@ export function CharacterChoiceStatus({
             </>
           )}
 
-          {/* Rejected Status */}
           {isRejected && (
             <>
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Escolha Rejeitada</strong>
+                  <strong>Escolha rejeitada</strong>
                   <br />
-                  {choice.rejectionReason || "Sua escolha foi rejeitada. Por favor, escolha outro personagem."}
+                  {choice.rejectionReason ||
+                    "Sua escolha foi rejeitada. Selecione outro personagem para continuar."}
                 </AlertDescription>
               </Alert>
-              {choice.characterName && (
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-red-200 bg-red-50">
-                  {choice.characterImageUrl && (
-                    <img
-                      src={choice.characterImageUrl}
-                      alt={choice.characterName}
-                      className="w-16 h-16 object-cover rounded opacity-50"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <div className="font-medium text-red-900">{choice.characterName}</div>
-                    <div className="text-xs text-red-700">Escolha rejeitada</div>
-                  </div>
-                </div>
-              )}
+              {renderCharacterPanel("Escolha rejeitada", "rejected")}
               {canChange && (
-                <Button onClick={() => setShowSelectionModal(true)} className="w-full">
-                  <Package className="h-4 w-4 mr-2" />
-                  Escolher Outro Personagem
+                <Button
+                  onClick={() => setShowSelectionModal(true)}
+                  className="w-full bg-[hsl(42,100%,50%)] text-black hover:bg-[hsl(42,100%,58%)]"
+                >
+                  <Package className="mr-2 h-4 w-4" />
+                  Escolher outro personagem
                 </Button>
               )}
             </>
           )}
 
-          {/* Locked Status */}
           {isLocked && (
             <>
-              <Alert className="bg-gray-50 border-gray-200">
-                <CheckCircle className="h-4 w-4 text-gray-600" />
-                <AlertDescription className="text-gray-900">
-                  <strong>Escolha Bloqueada</strong>
-                  <br />
-                  A produção foi iniciada e sua escolha não pode mais ser alterada.
+              <Alert className="border-zinc-500/30 bg-zinc-500/10 text-zinc-100">
+                <CheckCircle className="h-4 w-4 text-zinc-300" />
+                <AlertDescription>
+                  <strong>Escolha bloqueada</strong>
+                  <br />A producao foi iniciada e sua escolha nao pode mais ser alterada.
                 </AlertDescription>
               </Alert>
-              {choice.characterName && (
-                <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                  {choice.characterImageUrl && (
-                    <img
-                      src={choice.characterImageUrl}
-                      alt={choice.characterName}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <div className="font-medium">{choice.characterName}</div>
-                    <div className="text-xs text-muted-foreground">Em produção</div>
-                  </div>
-                </div>
-              )}
+              {renderCharacterPanel("Em producao")}
             </>
           )}
 
-          {/* Deadline warning */}
           {isDeadlinePassed && !isApproved && !isLocked && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -341,7 +315,6 @@ export function CharacterChoiceStatus({
         </CardContent>
       </Card>
 
-      {/* Modals */}
       <CharacterSelectionModal
         open={showSelectionModal}
         onOpenChange={setShowSelectionModal}
@@ -351,22 +324,20 @@ export function CharacterChoiceStatus({
         onSuccess={handleCharacterSelected}
       />
 
-      {choice && (
-        <ChoiceChangeModal
-          open={showChangeModal}
-          onOpenChange={setShowChangeModal}
-          choiceId={choice.id}
-          orderId={orderId}
-          collectionId={collectionId}
-          currentCharacterId={choice.characterId ?? ""}
-          currentCharacterName={choice.characterName ?? "Personagem não selecionado"}
-          currentCharacterImageUrl={choice.characterImageUrl}
-          deadline={choice.deadline}
-          changesCount={choice.changeCount}
-          isApproved={choice.status === "approved"}
-          onSuccess={handleChoiceChanged}
-        />
-      )}
+      <ChoiceChangeModal
+        open={showChangeModal}
+        onOpenChange={setShowChangeModal}
+        choiceId={choice.id}
+        orderId={orderId}
+        collectionId={collectionId}
+        currentCharacterId={choice.characterId ?? ""}
+        currentCharacterName={choice.characterName ?? "Personagem nao selecionado"}
+        currentCharacterImageUrl={choice.characterImageUrl}
+        deadline={choice.deadline}
+        changesCount={choice.changeCount}
+        isApproved={choice.status === "approved"}
+        onSuccess={handleChoiceChanged}
+      />
     </>
   );
 }

@@ -4,7 +4,7 @@ import {
   fetchAdminPreordersStats,
   registerAdminPreorderManualPayment,
   releaseAdminPreorderFinalPayment,
-} from "@/services/admin/admin-preorders-service";
+} from "@/services/admin/payments/admin-preorders-service";
 
 export function useAdminPreordersData() {
   const preordersQuery = useQuery({

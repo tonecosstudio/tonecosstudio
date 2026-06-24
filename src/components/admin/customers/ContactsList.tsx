@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,6 @@ interface ContactsListProps {
 
 export function ContactsList({ onStartConversation }: ContactsListProps) {
   const { contacts, loading, loadContacts } = useContacts();
-  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "customers" | "subscribers" | "quotes">(
     "all"
@@ -36,7 +35,7 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
     }
   };
 
-  const applyFilters = useCallback(() => {
+  const filteredContacts = useMemo(() => {
     let filtered = [...contacts];
 
     if (filterType === "customers") {
@@ -54,12 +53,8 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
       );
     }
 
-    setFilteredContacts(filtered);
+    return filtered;
   }, [contacts, filterType, searchTerm]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
 
   const handleStartConversation = (contact: Contact) => {
     onStartConversation(contact.id, contact.full_name || contact.email, contact.email);
@@ -94,9 +89,9 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os Contatos</SelectItem>
-            <SelectItem value="customers">Clientes (com pedidos)</SelectItem>
+            <SelectItem value="customers">Clientes (com pedidos aprovados)</SelectItem>
             <SelectItem value="subscribers">Assinantes</SelectItem>
-            <SelectItem value="quotes">Com Orcamentos</SelectItem>
+            <SelectItem value="quotes">Com orcamentos</SelectItem>
           </SelectContent>
         </Select>
 
@@ -132,12 +127,25 @@ interface ContactCardProps {
 }
 
 function ContactCard({ contact, onStartConversation }: ContactCardProps) {
+  const lastApprovedPaymentLabel = useMemo(() => {
+    if (!contact.last_order_date) return "Sem pedidos aprovados";
+
+    try {
+      return `Ultimo pagamento aprovado em ${new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+      }).format(new Date(contact.last_order_date))}`;
+    } catch {
+      return "Ultimo pagamento aprovado registrado";
+    }
+  }, [contact.last_order_date]);
+
   return (
     <div className="p-4 hover:bg-accent transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="font-medium truncate">{contact.full_name || contact.email}</p>
           {contact.full_name && <p className="text-xs text-muted-foreground truncate">{contact.email}</p>}
+          <p className="mt-1 text-xs text-muted-foreground">{lastApprovedPaymentLabel}</p>
 
           <div className="flex flex-wrap items-center gap-1 mt-2">
             {contact.has_subscription && (
@@ -158,7 +166,7 @@ function ContactCard({ contact, onStartConversation }: ContactCardProps) {
           </div>
         </div>
 
-        <Button size="sm" variant="ghost" onClick={onStartConversation} title="Iniciar conversa">
+        <Button size="sm" variant="ghost" onClick={onStartConversation} title="Iniciar atendimento">
           <MessageSquarePlus className="h-4 w-4" />
         </Button>
       </div>

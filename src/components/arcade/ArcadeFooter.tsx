@@ -7,18 +7,24 @@
 import { Link } from "react-router-dom";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { Mail, Phone, MessageCircle, ExternalLink } from "lucide-react";
-import { AUTH_ROUTES, PUBLIC_ROUTES } from "@/config/routes";
+import {
+  AUTH_ROUTES,
+  PUBLIC_COLLECTIONS_ENABLED,
+  PUBLIC_ROUTES,
+} from "@/config/routes";
 import { CONTACT } from "@/config/constants";
 import { buildSafeMailtoHref, buildSafeWhatsAppHref } from "@/lib/security/safe-open";
 
-const navLinks = [
+const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.home, label: "Início" },
   { to: PUBLIC_ROUTES.catalog, label: "Universo" },
-  { to: PUBLIC_ROUTES.collections, label: "Coleções" },
-  { to: PUBLIC_ROUTES.plans, label: "Planos" },
   { to: PUBLIC_ROUTES.about, label: "Sobre" },
   { to: PUBLIC_ROUTES.contact, label: "Contato" },
 ];
+
+if (PUBLIC_COLLECTIONS_ENABLED) {
+  navLinks.splice(2, 0, { to: PUBLIC_ROUTES.collections, label: "Colecoes" });
+}
 
 const accountLinks = [
   { to: AUTH_ROUTES.profile, label: "Minha Conta" },

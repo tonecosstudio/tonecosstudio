@@ -8,16 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Zap, Search, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useQuickRepliesSelector } from "@/hooks/admin/useQuickRepliesSelector";
-import { processTemplate, fetchCustomerData, detectVariables } from "@/lib/services/templateService";
-
-interface QuickReply {
-  id: string;
-  category: string;
-  title: string;
-  message: string;
-  display_order: number;
-  is_active: boolean;
-}
+import type { QuickReply } from "@/hooks/admin/useQuickRepliesSelector";
+import { processTemplate, fetchCustomerData, detectVariables } from "@/services/support/support-template-service";
 
 interface QuickRepliesSelectorProps {
   onSelect: (message: string) => void;
@@ -31,6 +23,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   rastreamento: "Rastreamento",
   orcamento: "Orcamento",
   duvida: "Duvida",
+  tecnico: "Tecnico",
   despedida: "Despedida",
   outro: "Outro",
 };
@@ -185,6 +178,11 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm">{reply.title}</span>
+                            {reply.shortcut && (
+                              <Badge variant="outline" className="text-[10px]">
+                                {reply.shortcut}
+                              </Badge>
+                            )}
                             {hasVariables && (
                               <Sparkles
                                 aria-label="Contem variaveis dinamicas"

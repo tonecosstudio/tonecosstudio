@@ -34,7 +34,7 @@ describe("Character Availability Check", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockAvailability,
         error: null,
-      } as any);
+      } as never);
 
       const result = await supabase.rpc("check_character_availability", {
         p_character_id: "123e4567-e89b-12d3-a456-426614174000",
@@ -50,7 +50,7 @@ describe("Character Availability Check", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockAvailability,
         error: null,
-      } as any);
+      } as never);
 
       const result = await supabase.rpc("check_character_availability", {
         p_character_id: "123e4567-e89b-12d3-a456-426614174001",
@@ -66,7 +66,7 @@ describe("Character Availability Check", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockAvailability,
         error: null,
-      } as any);
+      } as never);
 
       const result = await supabase.rpc("check_character_availability", {
         p_character_id: "00000000-0000-0000-0000-000000000000",
@@ -82,7 +82,7 @@ describe("Character Availability Check", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: null,
         error: mockError,
-      } as any);
+      } as never);
 
       const result = await supabase.rpc("check_character_availability", {
         p_character_id: "123e4567-e89b-12d3-a456-426614174002",
@@ -151,7 +151,7 @@ describe("Character Availability Check", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockAvailability,
         error: null,
-      } as any);
+      } as never);
 
       // Simulate pre-submission validation
       const availabilityCheck = await supabase.rpc("check_character_availability", {
@@ -171,7 +171,7 @@ describe("Character Availability Check", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockAvailability,
         error: null,
-      } as any);
+      } as never);
 
       const availabilityCheck = await supabase.rpc("check_character_availability", {
         p_character_id: characterId,
@@ -190,7 +190,7 @@ describe("Character Availability Check", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockAvailability,
         error: null,
-      } as any);
+      } as never);
 
       const availabilityCheck = await supabase.rpc("check_character_availability", {
         p_character_id: characterId,

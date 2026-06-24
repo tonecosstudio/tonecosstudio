@@ -3,7 +3,7 @@
  * Requirement 12.2: Exibir e permitir editar tags (múltiplas tags)
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tag } from "lucide-react";
 import { toast } from "sonner";
-import { conversationService } from "@/lib/services/conversationService";
+import { conversationService } from "@/services/support/conversation-service";
 import type { ConversationTag } from "@/types/support";
 import { getTagLabel, CONVERSATION_TAGS } from "@/types/support";
 import { log } from "@/lib/logger";
@@ -41,11 +41,19 @@ export function ConversationTagsSelector({
 }: ConversationTagsSelectorProps) {
   const [tags, setTags] = useState<ConversationTag[]>(currentTags);
   const [isOpen, setIsOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    setTags(currentTags);
+  }, [currentTags]);
 
   const toggleTag = async (tag: ConversationTag) => {
+    if (isUpdating) return;
+
     const newTags = tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag];
 
     try {
+      setIsUpdating(true);
       await conversationService.updateTags(conversationId, newTags);
       setTags(newTags);
       onUpdate?.(newTags);
@@ -57,6 +65,8 @@ export function ConversationTagsSelector({
     } catch (error) {
       log.error("Erro ao atualizar tags da conversa", { error, conversationId, tag });
       toast.error("Erro ao atualizar tags");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -64,7 +74,7 @@ export function ConversationTagsSelector({
     <div className="flex items-center gap-2">
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2" disabled={isUpdating}>
             <Tag className="h-4 w-4" />
             Tags
             {tags.length > 0 && (
@@ -79,6 +89,7 @@ export function ConversationTagsSelector({
             <DropdownMenuCheckboxItem
               key={tag}
               checked={tags.includes(tag)}
+              disabled={isUpdating}
               onCheckedChange={() => toggleTag(tag)}
             >
               {getTagLabel(tag)}

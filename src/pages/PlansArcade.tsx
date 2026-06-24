@@ -41,23 +41,23 @@ export default function PlansArcade() {
   };
 
   const faqs = [
-    { q: "Como funciona a assinatura?", a: "Escolha um plano e selecione as coleções. Todo mês, receba uma peça surpresa." },
-    { q: "Posso trocar de coleção?", a: "Sim! Troque quantas vezes quiser antes da produção do próximo lote." },
-    { q: "Quando recebo a primeira peça?", a: faqFirstDelivery },
-    { q: "Posso cancelar a qualquer momento?", a: "Sim, cancele quando quiser. Peças já pagas serão entregues normalmente." },
-    { q: "O que é revelação surpresa?", a: "Você escolhe a coleção e o personagem é revelado no envio — cada peça é única." },
+    { q: "Como funciona nesta fase?", a: "Nesta fase, o lancamento fica focado no universo publicado. Voce pode explorar os modelos disponiveis e acompanhar futuras liberacoes." },
+    { q: "Os planos ja estao ativos?", a: "Os planos seguem apresentados como referencia comercial, mas o acesso principal agora e pelo universo publicado." },
+    { q: "Quando recebo a primeira peca?", a: faqFirstDelivery },
+    { q: "Posso cancelar a qualquer momento?", a: "Sim. Quando um plano estiver ativo para sua conta, o cancelamento continua disponivel conforme as regras da compra." },
+    { q: "Como acompanho novidades?", a: "Use o catalogo/universo como entrada principal e acompanhe as proximas liberacoes por la." },
   ];
 
   return (
     <Page
       title="Planos | ORDAX Command Center"
-      description="Escolha seu plano de assinatura e colecione peças premium todo mês."
-      keywords={["planos", "assinatura", "colecionáveis", "mensal"]}
+      description="Consulte os formatos comerciais da ORDAX e explore o universo publicado."
+      keywords={["planos", "universo", "catalogo", "ordax"]}
     >
       <ArcadeHero
         badge="Escolha seu Tier"
         title="PLANOS"
-        subtitle=">> ASSINE. COLECIONE. DOMINE."
+        subtitle=">> EXPLORE. ACOMPANHE. EVOLUA."
         stats={[
           { value: plans.length + 1, label: "Opções" },
           { value: "∞", label: "Trocas" },
@@ -117,10 +117,10 @@ export default function PlansArcade() {
                 </ul>
 
                 <button
-                  onClick={() => navigate(PUBLIC_ROUTES.collections)}
+                  onClick={() => navigate(PUBLIC_ROUTES.catalog)}
                   className="w-full py-3 border border-[hsl(0,0%,20%)] text-[hsl(0,0%,60%)] hover:border-[hsl(var(--gold-accent)/0.5)] hover:text-[hsl(var(--gold-accent))] font-mono text-xs tracking-[0.15em] uppercase transition-all flex items-center justify-center gap-2"
                 >
-                  Ver Coleções <ArrowRight className="w-3.5 h-3.5" />
+                  Ver Universo <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
               {/* Power bar */}
@@ -210,14 +210,14 @@ export default function PlansArcade() {
                     </ul>
 
                     <button
-                      onClick={() => navigate(PUBLIC_ROUTES.collections)}
+                      onClick={() => navigate(PUBLIC_ROUTES.catalog)}
                       className="w-full py-3 font-mono text-xs tracking-[0.15em] uppercase transition-all flex items-center justify-center gap-2"
                       style={{
                         background: `${meta.color}`,
                         color: "hsl(0,0%,5%)",
                       }}
                     >
-                      Escolher Coleções <ArrowRight className="w-3.5 h-3.5" />
+                      Explorar Universo <ArrowRight className="w-3.5 h-3.5" />
                     </button>
 
                     {isSemestral && (
@@ -252,8 +252,8 @@ export default function PlansArcade() {
       <ArcadeCTA
         badge="Pronto para a Missão?"
         title="COMECE AGORA"
-        description="Escolha suas coleções favoritas e inicie sua jornada de colecionador."
-        primaryAction={{ label: "VER COLEÇÕES", href: PUBLIC_ROUTES.collections, icon: <ArrowRight className="w-4 h-4" /> }}
+        description="Explore o universo publicado e inicie sua jornada de colecionador."
+        primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog, icon: <ArrowRight className="w-4 h-4" /> }}
       />
     </Page>
   );

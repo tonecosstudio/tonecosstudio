@@ -287,7 +287,7 @@ export default function BuyCharacter() {
                             alt={currentMonthCharacter.name}
                             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                             loading="eager"
-                            fetchPriority="high"
+                            {...({ fetchpriority: "high" } as Record<string, string>)}
                           />
                         </div>
                       )}

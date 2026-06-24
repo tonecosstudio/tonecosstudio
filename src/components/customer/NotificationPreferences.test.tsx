@@ -62,13 +62,13 @@ describe('NotificationPreferences', () => {
     renderWithQueryClient(<NotificationPreferences />);
 
     await waitFor(() => {
-      expect(screen.getByText('Notification Preferences')).toBeInTheDocument();
+      expect(screen.getByText('Preferencias de notificacao')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Production Stage Updates')).toBeInTheDocument();
-    expect(screen.getByText('Shipping Notifications')).toBeInTheDocument();
-    expect(screen.getByText('Delivery Confirmations')).toBeInTheDocument();
-    expect(screen.getByText('Marketing & Promotional Emails')).toBeInTheDocument();
+    expect(screen.getByText('Atualizacoes de producao')).toBeInTheDocument();
+    expect(screen.getByText('Avisos de envio')).toBeInTheDocument();
+    expect(screen.getByText('Confirmacoes de entrega')).toBeInTheDocument();
+    expect(screen.getByText('Novidades e promocoes')).toBeInTheDocument();
   });
 
   it('displays info banner about critical notifications', async () => {
@@ -77,10 +77,10 @@ describe('NotificationPreferences', () => {
     renderWithQueryClient(<NotificationPreferences />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Critical notifications/i)).toBeInTheDocument();
+      expect(screen.getByText(/Notificacoes criticas/i)).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/character choice reminders/i)).toBeInTheDocument();
+    expect(screen.getByText(/escolha de personagem/i)).toBeInTheDocument();
   });
 
   it('toggles preference when switch is clicked', async () => {
@@ -94,7 +94,7 @@ describe('NotificationPreferences', () => {
     renderWithQueryClient(<NotificationPreferences />);
 
     await waitFor(() => {
-      expect(screen.getByText('Production Stage Updates')).toBeInTheDocument();
+      expect(screen.getByText('Atualizacoes de producao')).toBeInTheDocument();
     });
 
     // Find and click the toggle for production_stage_updates
@@ -119,7 +119,7 @@ describe('NotificationPreferences', () => {
     renderWithQueryClient(<NotificationPreferences onUpdate={onUpdate} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Shipping Notifications')).toBeInTheDocument();
+      expect(screen.getByText('Avisos de envio')).toBeInTheDocument();
     });
 
     const toggles = screen.getAllByRole('switch');
@@ -148,10 +148,10 @@ describe('NotificationPreferences', () => {
     renderWithQueryClient(<NotificationPreferences />);
 
     await waitFor(() => {
-      expect(screen.getByText('Reset to Defaults')).toBeInTheDocument();
+      expect(screen.getByText('Restaurar padrao')).toBeInTheDocument();
     });
 
-    const resetButton = screen.getByText('Reset to Defaults');
+    const resetButton = screen.getByText('Restaurar padrao');
     await user.click(resetButton);
 
     expect(confirmSpy).toHaveBeenCalled();
@@ -172,10 +172,10 @@ describe('NotificationPreferences', () => {
     renderWithQueryClient(<NotificationPreferences />);
 
     await waitFor(() => {
-      expect(screen.getByText('Reset to Defaults')).toBeInTheDocument();
+      expect(screen.getByText('Restaurar padrao')).toBeInTheDocument();
     });
 
-    const resetButton = screen.getByText('Reset to Defaults');
+    const resetButton = screen.getByText('Restaurar padrao');
     await user.click(resetButton);
 
     expect(confirmSpy).toHaveBeenCalled();
@@ -192,7 +192,7 @@ describe('NotificationPreferences', () => {
     renderWithQueryClient(<NotificationPreferences />);
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to load notification preferences')).toBeInTheDocument();
+      expect(screen.getByText('Nao foi possivel carregar as preferencias de notificacao.')).toBeInTheDocument();
     });
   });
 
@@ -207,14 +207,14 @@ describe('NotificationPreferences', () => {
     renderWithQueryClient(<NotificationPreferences />);
 
     await waitFor(() => {
-      expect(screen.getByText('Marketing & Promotional Emails')).toBeInTheDocument();
+      expect(screen.getByText('Novidades e promocoes')).toBeInTheDocument();
     });
 
     const toggles = screen.getAllByRole('switch');
     await user.click(toggles[3]); // Fourth toggle is marketing_emails
 
     await waitFor(() => {
-      expect(screen.getByText(/preferences updated successfully/i)).toBeInTheDocument();
+      expect(screen.getByText(/Preferencias atualizadas com sucesso/i)).toBeInTheDocument();
     });
   });
 
@@ -228,7 +228,7 @@ describe('NotificationPreferences', () => {
     renderWithQueryClient(<NotificationPreferences />);
 
     await waitFor(() => {
-      expect(screen.getByText('Production Stage Updates')).toBeInTheDocument();
+      expect(screen.getByText('Atualizacoes de producao')).toBeInTheDocument();
     });
 
     const toggles = screen.getAllByRole('switch');

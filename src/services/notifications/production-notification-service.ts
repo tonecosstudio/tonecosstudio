@@ -17,7 +17,8 @@ import type { Json } from '@/integrations/supabase/types';
 import { logInfo, logError, logDebug } from '@/lib/logger';
 import { getProductionStageLabel } from '@/config/production-stages';
 import { getProductionPriorityFromScore, type Priority } from '@/types/production';
-import { emailService } from '../email-service';
+import { formatDate } from '@/lib/utils';
+import { emailService } from '@/services/notifications/email-service';
 
 // ============================================================================
 // Types
@@ -349,7 +350,7 @@ function generateChoiceReminderHTML(params: {
   orderType: string;
   reminderType: 'first' | 'second' | 'final';
 }): string {
-  const formattedDate = new Date(params.deadline).toLocaleDateString('pt-BR', {
+  const formattedDate = formatDate(params.deadline, {
     timeZone: 'America/Bahia',
     day: '2-digit',
     month: '2-digit',
@@ -1312,7 +1313,7 @@ class ProductionNotificationService {
 
       // Format estimated completion date
       const estimatedCompletion = queueItem.estimated_completion_date
-        ? new Date(queueItem.estimated_completion_date).toLocaleDateString('pt-BR', {
+        ? formatDate(queueItem.estimated_completion_date, {
             day: '2-digit',
             month: 'long',
             year: 'numeric',
@@ -1398,7 +1399,7 @@ class ProductionNotificationService {
 
       // Format new estimated date
       const newEstimatedDate = queueItem.estimated_completion_date
-        ? new Date(queueItem.estimated_completion_date).toLocaleDateString('pt-BR', {
+        ? formatDate(queueItem.estimated_completion_date, {
             day: '2-digit',
             month: 'long',
             year: 'numeric',

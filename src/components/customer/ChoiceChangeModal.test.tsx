@@ -1,20 +1,9 @@
-/**
- * Tests for ChoiceChangeModal Component
- * 
- * Tests character choice change functionality including:
- * - Current choice display
- * - New character selection
- * - Reason requirement
- * - Remaining changes counter
- * - Validation (approval status, deadline, change limit)
- */
-
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ChoiceChangeModal } from "./ChoiceChangeModal";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CharacterEntity as Character } from "@/hooks/customer/useChoiceActions";
+import { ChoiceChangeModal } from "./ChoiceChangeModal";
 
 const mockGetAvailableCharactersAction = vi.fn();
 const mockChangeCharacterChoiceAction = vi.fn();
@@ -24,12 +13,10 @@ vi.mock("@/hooks/customer/useChoiceActions", () => ({
   changeCharacterChoiceAction: (...args: unknown[]) => mockChangeCharacterChoiceAction(...args),
 }));
 
-// Mock toast
 vi.mock("@/components/ui/use-toast", () => ({
   toast: vi.fn(),
 }));
 
-// Helper to create a test query client
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -38,15 +25,11 @@ const createTestQueryClient = () =>
     },
   });
 
-// Helper to render with providers
 const renderWithProviders = (ui: React.ReactElement) => {
   const queryClient = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
 
-// Mock characters data
 const mockCharacters: Character[] = [
   {
     id: "char-1",
@@ -97,448 +80,201 @@ describe("ChoiceChangeModal", () => {
     mockGetAvailableCharactersAction.mockResolvedValue(mockCharacters);
   });
 
-  describe("Rendering", () => {
-    it("should render modal with title and description", () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
+  it("renders header, current choice and remaining changes", async () => {
+    renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
 
-      expect(screen.getByText("Alterar Escolha de Personagem")).toBeInTheDocument();
-      expect(screen.getByText("Selecione um novo personagem e informe o motivo da alteração.")).toBeInTheDocument();
-    });
+    expect(screen.getByText("Alterar Escolha de Personagem")).toBeInTheDocument();
+    expect(
+      screen.getByText("Selecione um novo personagem e informe o motivo da alteração.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Escolha Atual")).toBeInTheDocument();
+    expect(screen.getByText("Personagem atual")).toBeInTheDocument();
+    expect(screen.getByText("Alterações restantes")).toBeInTheDocument();
+    expect(screen.getByText(/Você pode alterar sua escolha mais/)).toBeInTheDocument();
 
-    it("should display current choice", () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      expect(screen.getByText("Escolha Atual")).toBeInTheDocument();
-      expect(screen.getByText("Personagem 1")).toBeInTheDocument();
-      expect(screen.getByText("Personagem atual")).toBeInTheDocument();
-    });
-
-    it("should display remaining changes counter", () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      expect(screen.getByText("Alterações Restantes")).toBeInTheDocument();
-      expect(screen.getByText(/Você pode alterar sua escolha mais/)).toBeInTheDocument();
-      expect(screen.getByText(/3/)).toBeInTheDocument();
-      expect(screen.getByText(/vezes/)).toBeInTheDocument();
-    });
-
-    it("should show warning when only 1 change remaining", () => {
-      renderWithProviders(
-        <ChoiceChangeModal {...defaultProps} changesCount={2} />
-      );
-
-      expect(screen.getByText(/Você pode alterar sua escolha mais/)).toBeInTheDocument();
-      expect(screen.getByText(/vez\./)).toBeInTheDocument();
-    });
-
-    it("should load and display available characters", async () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(mockGetAvailableCharactersAction).toHaveBeenCalledWith("col-1");
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem 2")).toBeInTheDocument();
-      });
-    });
-
-    it("should mark current character as 'Escolha Atual'", async () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        const currentBadge = screen.getByText("Escolha Atual");
-        expect(currentBadge).toBeInTheDocument();
-      });
-    });
-
-    it("should mark unavailable characters", async () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Indisponível")).toBeInTheDocument();
-      });
-    });
-
-    it("should show low stock badge", async () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Estoque Baixo")).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(mockGetAvailableCharactersAction).toHaveBeenCalledWith("col-1");
+      expect(screen.getByText("Personagem 2")).toBeInTheDocument();
     });
   });
 
-  describe("Validation", () => {
-    it("should show error when not approved", () => {
-      renderWithProviders(
-        <ChoiceChangeModal {...defaultProps} isApproved={false} />
-      );
+  it("shows last-change warning copy", () => {
+    renderWithProviders(<ChoiceChangeModal {...defaultProps} changesCount={2} />);
 
-      expect(screen.getByText("Alteração Não Permitida")).toBeInTheDocument();
-      expect(screen.getByText(/Sua escolha ainda não foi aprovada/)).toBeInTheDocument();
+    expect(screen.getByText("Alterações restantes")).toBeInTheDocument();
+    expect(screen.getByText(/vez\./)).toBeInTheDocument();
+  });
+
+  it("marks current, unavailable and low-stock characters", async () => {
+    renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Escolha Atual").length).toBeGreaterThan(0);
+      expect(screen.getByText("Indisponível")).toBeInTheDocument();
+      expect(screen.getByText("Estoque baixo")).toBeInTheDocument();
     });
 
-    it("should show error when deadline passed", () => {
-      const pastDeadline = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      renderWithProviders(
-        <ChoiceChangeModal {...defaultProps} deadline={pastDeadline} />
-      );
+    expect(screen.getByText("Personagem 3").closest("button")).toBeDisabled();
+  });
 
-      expect(screen.getByText("Prazo Expirado")).toBeInTheDocument();
-      expect(screen.getByText(/O prazo para alterar a escolha expirou/)).toBeInTheDocument();
-    });
+  it("shows validation states when change is not allowed", () => {
+    const { rerender } = renderWithProviders(
+      <ChoiceChangeModal {...defaultProps} isApproved={false} />
+    );
 
-    it("should show error when change limit reached", () => {
-      renderWithProviders(
+    expect(screen.getByText("Alteração não permitida")).toBeInTheDocument();
+    expect(screen.getByText(/Sua escolha ainda não foi aprovada/)).toBeInTheDocument();
+    expect(mockGetAvailableCharactersAction).not.toHaveBeenCalled();
+
+    rerender(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <ChoiceChangeModal
+          {...defaultProps}
+          deadline={new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}
+        />
+      </QueryClientProvider>
+    );
+    expect(screen.getByText("Prazo expirado")).toBeInTheDocument();
+
+    rerender(
+      <QueryClientProvider client={createTestQueryClient()}>
         <ChoiceChangeModal {...defaultProps} changesCount={3} />
+      </QueryClientProvider>
+    );
+    expect(screen.getByText("Limite atingido")).toBeInTheDocument();
+  });
+
+  it("selects a new character and requires a reason", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
+
+    await user.click(await screen.findByText("Personagem 2"));
+    const selectedCard = screen.getByText("Personagem 2").closest("button");
+    expect(selectedCard).toHaveClass("border-[hsl(var(--gold-accent))]");
+
+    const textarea = screen.getByPlaceholderText(/Explique por que você deseja alterar/i);
+    await user.type(textarea, "Prefiro outro personagem");
+    expect(textarea).toHaveValue("Prefiro outro personagem");
+    expect(screen.getByText("Mínimo de 10 caracteres")).toBeInTheDocument();
+  });
+
+  it("does not allow selecting current character", async () => {
+    renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
+
+    await waitFor(() => expect(screen.getAllByText("Escolha Atual").length).toBeGreaterThan(0));
+
+    const currentBadge = screen
+      .getAllByText("Escolha Atual")
+      .find((element) => element.classList.contains("bg-sky-500"));
+
+    expect(currentBadge?.closest("button")).toBeDisabled();
+  });
+
+  it("shows confirmation and allows going back", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
+
+    await user.click(await screen.findByText("Personagem 2"));
+    await user.type(
+      screen.getByPlaceholderText(/Explique por que você deseja alterar/i),
+      "Prefiro este personagem"
+    );
+    await user.click(screen.getByRole("button", { name: /continuar/i }));
+
+    expect(screen.getByText("Confirme sua nova escolha")).toBeInTheDocument();
+    expect(screen.getByText("Motivo da alteração")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /voltar/i }));
+    expect(screen.getByText("Selecione o Novo Personagem")).toBeInTheDocument();
+  });
+
+  it("submits change on confirmation", async () => {
+    const user = userEvent.setup();
+    const onSuccess = vi.fn();
+    mockChangeCharacterChoiceAction.mockResolvedValue({ id: "choice-1", status: "submitted" });
+
+    renderWithProviders(<ChoiceChangeModal {...defaultProps} onSuccess={onSuccess} />);
+
+    await user.click(await screen.findByText("Personagem 2"));
+    await user.type(
+      screen.getByPlaceholderText(/Explique por que você deseja alterar/i),
+      "Prefiro este personagem"
+    );
+    await user.click(screen.getByRole("button", { name: /continuar/i }));
+    await user.click(screen.getByRole("button", { name: /confirmar alteração/i }));
+
+    await waitFor(() => {
+      expect(mockChangeCharacterChoiceAction).toHaveBeenCalledWith(
+        "choice-1",
+        "char-2",
+        "Prefiro este personagem"
       );
-
-      expect(screen.getByText("Limite Atingido")).toBeInTheDocument();
-      expect(screen.getByText(/Você já atingiu o limite de 3 alterações/)).toBeInTheDocument();
-    });
-
-    it("should not load characters when changes not allowed", () => {
-      renderWithProviders(
-        <ChoiceChangeModal {...defaultProps} isApproved={false} />
-      );
-
-      expect(mockGetAvailableCharactersAction).not.toHaveBeenCalled();
+      expect(onSuccess).toHaveBeenCalled();
     });
   });
 
-  describe("Character Selection", () => {
-    it("should allow selecting a new character", async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
+  it("disables continue until character and valid reason are provided", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
 
-      await waitFor(() => {
-        expect(screen.getByText("Personagem 2")).toBeInTheDocument();
-      });
+    await screen.findByText("Personagem 2");
+    expect(screen.getByRole("button", { name: /continuar/i })).toBeDisabled();
 
-      const char2Button = screen.getByText("Personagem 2").closest("button");
-      await user.click(char2Button!);
+    await user.click(screen.getByText("Personagem 2"));
+    await user.type(screen.getByPlaceholderText(/Explique por que você deseja alterar/i), "Curto");
+    expect(screen.getByRole("button", { name: /continuar/i })).toBeDisabled();
+  });
 
-      // Should show selection indicator
-      await waitFor(() => {
-        const selectedCard = char2Button!.closest("button");
-        expect(selectedCard).toHaveClass("border-primary");
-      });
-    });
+  it("renders load error when characters fail to load", async () => {
+    mockGetAvailableCharactersAction.mockRejectedValueOnce(new Error("Erro ao carregar"));
+    renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
 
-    it("should not allow selecting current character", async () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getAllByText("Escolha Atual").length).toBeGreaterThan(0);
-      });
-
-      // Find the badge with "Escolha Atual" text (not the heading)
-      const badges = screen.getAllByText("Escolha Atual");
-      const currentCharBadge = badges.find(el => el.classList.contains("bg-blue-500"));
-      expect(currentCharBadge).toBeInTheDocument();
-      
-      const currentCharButton = currentCharBadge?.closest("button");
-      expect(currentCharButton).toBeDisabled();
-    });
-
-    it("should not allow selecting unavailable character", async () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Indisponível")).toBeInTheDocument();
-      });
-
-      const unavailableButton = screen.getByText("Personagem 3").closest("button");
-      expect(unavailableButton).toBeDisabled();
+    await waitFor(() => {
+      expect(screen.getByText("Erro ao carregar personagens")).toBeInTheDocument();
     });
   });
 
-  describe("Reason Input", () => {
-    it("should render reason textarea", async () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
+  it("keeps modal open after submission error", async () => {
+    mockGetAvailableCharactersAction.mockResolvedValue(mockCharacters);
+    mockChangeCharacterChoiceAction.mockRejectedValue(new Error("Erro ao alterar escolha"));
+    renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
 
-      await waitFor(() => {
-        expect(screen.getByLabelText(/Motivo da Alteração/)).toBeInTheDocument();
-      });
+    const user = userEvent.setup();
+    await user.click(await screen.findByText("Personagem 2"));
+    await user.type(
+      screen.getByPlaceholderText(/Explique por que você deseja alterar/i),
+      "Prefiro este personagem"
+    );
+    await user.click(screen.getByRole("button", { name: /continuar/i }));
+    await user.click(screen.getByRole("button", { name: /confirmar alteração/i }));
 
-      expect(screen.getByPlaceholderText(/Explique por que você deseja alterar/)).toBeInTheDocument();
-    });
-
-    it("should allow typing reason", async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/Motivo da Alteração/)).toBeInTheDocument();
-      });
-
-      const textarea = screen.getByPlaceholderText(/Explique por que você deseja alterar/);
-      await user.type(textarea, "Prefiro outro personagem");
-
-      expect(textarea).toHaveValue("Prefiro outro personagem");
-    });
-
-    it("should show minimum character requirement", async () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Mínimo de 10 caracteres")).toBeInTheDocument();
-      });
-    });
+    await waitFor(() => expect(mockChangeCharacterChoiceAction).toHaveBeenCalled());
+    expect(screen.getByText("Alterar Escolha de Personagem")).toBeInTheDocument();
   });
 
-  describe("Submission Flow", () => {
-    it("should show confirmation screen after clicking continue", async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
+  it("calls onOpenChange when cancel is clicked and resets on reopen", async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
 
-      // Wait for characters to load
-      await waitFor(() => {
-        expect(screen.getByText("Personagem 2")).toBeInTheDocument();
-      });
+    const { rerender } = renderWithProviders(
+      <ChoiceChangeModal {...defaultProps} onOpenChange={onOpenChange} />
+    );
 
-      // Select character
-      const char2Button = screen.getByText("Personagem 2").closest("button");
-      await user.click(char2Button!);
+    await user.click(screen.getByRole("button", { name: /cancelar/i }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
 
-      // Enter reason
-      const textarea = screen.getByPlaceholderText(/Explique por que você deseja alterar/);
-      await user.type(textarea, "Prefiro este personagem");
-
-      // Click continue
-      const continueButton = screen.getByRole("button", { name: /Continuar/ });
-      await user.click(continueButton);
-
-      // Should show confirmation
-      await waitFor(() => {
-        expect(screen.getByText("Confirme Sua Nova Escolha")).toBeInTheDocument();
-      });
-    });
-
-    it("should display selected character in confirmation", async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem 2")).toBeInTheDocument();
-      });
-
-      const char2Button = screen.getByText("Personagem 2").closest("button");
-      await user.click(char2Button!);
-
-      const textarea = screen.getByPlaceholderText(/Explique por que você deseja alterar/);
-      await user.type(textarea, "Prefiro este personagem");
-
-      const continueButton = screen.getByRole("button", { name: /Continuar/ });
-      await user.click(continueButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Descrição do personagem 2")).toBeInTheDocument();
-      });
-    });
-
-    it("should display reason in confirmation", async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem 2")).toBeInTheDocument();
-      });
-
-      const char2Button = screen.getByText("Personagem 2").closest("button");
-      await user.click(char2Button!);
-
-      const reason = "Prefiro este personagem";
-      const textarea = screen.getByPlaceholderText(/Explique por que você deseja alterar/);
-      await user.type(textarea, reason);
-
-      const continueButton = screen.getByRole("button", { name: /Continuar/ });
-      await user.click(continueButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(reason)).toBeInTheDocument();
-      });
-    });
-
-    it("should allow going back from confirmation", async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem 2")).toBeInTheDocument();
-      });
-
-      const char2Button = screen.getByText("Personagem 2").closest("button");
-      await user.click(char2Button!);
-
-      const textarea = screen.getByPlaceholderText(/Explique por que você deseja alterar/);
-      await user.type(textarea, "Prefiro este personagem");
-
-      const continueButton = screen.getByRole("button", { name: /Continuar/ });
-      await user.click(continueButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Confirme Sua Nova Escolha")).toBeInTheDocument();
-      });
-
-      const backButton = screen.getByRole("button", { name: /Voltar/ });
-      await user.click(backButton);
-
-      // Should be back to selection screen
-      await waitFor(() => {
-        expect(screen.getByText("Selecione o Novo Personagem")).toBeInTheDocument();
-      });
-    });
-
-    it("should submit change on confirmation", async () => {
-      const user = userEvent.setup();
-      const onSuccess = vi.fn();
-      mockChangeCharacterChoiceAction.mockResolvedValue({ id: "choice-1", status: "submitted" });
-
-      renderWithProviders(
-        <ChoiceChangeModal {...defaultProps} onSuccess={onSuccess} />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem 2")).toBeInTheDocument();
-      });
-
-      const char2Button = screen.getByText("Personagem 2").closest("button");
-      await user.click(char2Button!);
-
-      const textarea = screen.getByPlaceholderText(/Explique por que você deseja alterar/);
-      await user.type(textarea, "Prefiro este personagem");
-
-      const continueButton = screen.getByRole("button", { name: /Continuar/ });
-      await user.click(continueButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Confirme Sua Nova Escolha")).toBeInTheDocument();
-      });
-
-      const confirmButton = screen.getByRole("button", { name: /Confirmar Alteração/ });
-      await user.click(confirmButton);
-
-      await waitFor(() => {
-        expect(mockChangeCharacterChoiceAction).toHaveBeenCalledWith("choice-1", "char-2", "Prefiro este personagem");
-      });
-
-      await waitFor(() => {
-        expect(onSuccess).toHaveBeenCalled();
-      });
-    });
-
-    it("should disable continue button when no character selected", async () => {
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem 2")).toBeInTheDocument();
-      });
-
-      const continueButton = screen.getByRole("button", { name: /Continuar/ });
-      expect(continueButton).toBeDisabled();
-    });
-
-    it("should disable continue button when reason too short", async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem 2")).toBeInTheDocument();
-      });
-
-      const char2Button = screen.getByText("Personagem 2").closest("button");
-      await user.click(char2Button!);
-
-      const textarea = screen.getByPlaceholderText(/Explique por que você deseja alterar/);
-      await user.type(textarea, "Curto");
-
-      const continueButton = screen.getByRole("button", { name: /Continuar/ });
-      expect(continueButton).toBeDisabled();
-    });
-  });
-
-  describe("Error Handling", () => {
-    it("should display error when loading characters fails", async () => {
-      mockGetAvailableCharactersAction.mockRejectedValue(new Error("Erro ao carregar"));
-
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Erro ao Carregar Personagens")).toBeInTheDocument();
-      });
-    });
-
-    it("should handle submission error", async () => {
-      const user = userEvent.setup();
-      mockChangeCharacterChoiceAction.mockRejectedValue(new Error("Erro ao alterar escolha"));
-
-      renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem 2")).toBeInTheDocument();
-      });
-
-      const char2Button = screen.getByText("Personagem 2").closest("button");
-      await user.click(char2Button!);
-
-      const textarea = screen.getByPlaceholderText(/Explique por que você deseja alterar/);
-      await user.type(textarea, "Prefiro este personagem");
-
-      const continueButton = screen.getByRole("button", { name: /Continuar/ });
-      await user.click(continueButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Confirme Sua Nova Escolha")).toBeInTheDocument();
-      });
-
-      const confirmButton = screen.getByRole("button", { name: /Confirmar Alteração/ });
-      await user.click(confirmButton);
-
-      await waitFor(() => {
-        expect(mockChangeCharacterChoiceAction).toHaveBeenCalled();
-      });
-
-      // Modal should still be open after error
-      expect(screen.getByText("Alterar Escolha de Personagem")).toBeInTheDocument();
-    });
-  });
-
-  describe("Modal Controls", () => {
-    it("should call onOpenChange when cancel is clicked", async () => {
-      const user = userEvent.setup();
-      const onOpenChange = vi.fn();
-
-      renderWithProviders(
-        <ChoiceChangeModal {...defaultProps} onOpenChange={onOpenChange} />
-      );
-
-      const cancelButton = screen.getByRole("button", { name: /Cancelar/ });
-      await user.click(cancelButton);
-
-      expect(onOpenChange).toHaveBeenCalledWith(false);
-    });
-
-    it("should reset state when modal reopens", async () => {
-      const { rerender } = renderWithProviders(
+    rerender(
+      <QueryClientProvider client={createTestQueryClient()}>
         <ChoiceChangeModal {...defaultProps} open={false} />
-      );
+      </QueryClientProvider>
+    );
+    rerender(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <ChoiceChangeModal {...defaultProps} open />
+      </QueryClientProvider>
+    );
 
-      rerender(
-        <QueryClientProvider client={createTestQueryClient()}>
-          <ChoiceChangeModal {...defaultProps} open={true} />
-        </QueryClientProvider>
-      );
-
-      // Should not have any selected character
-      await waitFor(() => {
-        expect(screen.getByText("Personagem 2")).toBeInTheDocument();
-      });
-
-      const textarea = screen.getByPlaceholderText(/Explique por que você deseja alterar/);
-      expect(textarea).toHaveValue("");
-    });
+    await screen.findByText("Personagem 2");
+    expect(screen.getByPlaceholderText(/Explique por que você deseja alterar/i)).toHaveValue("");
   });
 });
-

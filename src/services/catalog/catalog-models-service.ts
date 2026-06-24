@@ -229,16 +229,6 @@ function slugifyCatalogSegment(value: string | null | undefined) {
     .slice(0, 80);
 }
 
-function getCatalogCharacterIdentityKey(row: {
-  source_title?: string | null;
-  character_name?: string | null;
-}) {
-  const characterName = normalizeGroupKey(row.character_name);
-  if (!characterName) return "";
-  const sourceTitle = normalizeGroupKey(row.source_title);
-  return sourceTitle ? `${sourceTitle}::${characterName}` : characterName;
-}
-
 function isPublicFinalizedModelPath(path: string | null | undefined) {
   return String(path || "").startsWith("catalog-webp-final/display/");
 }
@@ -1267,7 +1257,7 @@ export async function getCatalogCharacterContextBySlug(slug: string) {
   const normalizedSlug = normalizeGroupKey(decodeURIComponent(slug));
   if (!normalizedSlug) return null;
 
-  let query = catalogModelsGateway
+  const query = catalogModelsGateway
     .from("public_catalog_models")
     .select(CATALOG_MODEL_SELECT)
     .eq("is_active", true)

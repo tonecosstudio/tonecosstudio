@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import type { DashboardMetrics } from "@/types/support";
 import {
   fetchSupportConversationsForMetrics,
   subscribeSupportConversationMetrics,
   type SupportConversationMetricsRow,
-} from "@/services/admin/support-dashboard-metrics-service";
+} from "@/services/admin/support/support-dashboard-metrics-service";
+
+const SUPPORT_DASHBOARD_METRICS_QUERY_KEY = ["admin-support-dashboard-metrics"] as const;
 
 function calculateFromRows(conversations: SupportConversationMetricsRow[]): DashboardMetrics {
   const now = new Date();
@@ -12,41 +16,57 @@ function calculateFromRows(conversations: SupportConversationMetricsRow[]): Dash
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const open_count = conversations.filter((c) => c.status === "waiting_admin").length;
-  const waiting_customer_count = conversations.filter((c) => c.status === "waiting_customer").length;
-  const resolved_today_count = conversations.filter((c) => {
-    if (!c.resolved_at) return false;
-    return new Date(c.resolved_at) >= today;
+  const open_count = conversations.filter((conversation) => conversation.status === "waiting_admin")
+    .length;
+  const waiting_customer_count = conversations.filter(
+    (conversation) => conversation.status === "waiting_customer"
+  ).length;
+  const resolved_today_count = conversations.filter((conversation) => {
+    if (!conversation.resolved_at) {
+      return false;
+    }
+
+    return new Date(conversation.resolved_at) >= today;
   }).length;
   const total_count = conversations.length;
-  const overdue_24h_count = conversations.filter((c) => {
-    if (c.status !== "waiting_admin") return false;
-    return new Date(c.last_message_at) < twentyFourHoursAgo;
+  const overdue_24h_count = conversations.filter((conversation) => {
+    if (conversation.status !== "waiting_admin") {
+      return false;
+    }
+
+    return new Date(conversation.last_message_at) < twentyFourHoursAgo;
   }).length;
 
-  const recentConversations = conversations.filter((c) => {
-    const createdDate = new Date(c.created_at);
-    return createdDate >= sevenDaysAgo && c.first_response_at;
+  const recentConversations = conversations.filter((conversation) => {
+    const createdDate = new Date(conversation.created_at);
+    return createdDate >= sevenDaysAgo && conversation.first_response_at;
   });
 
   let avg_first_response_minutes = 0;
   if (recentConversations.length > 0) {
-    const totalMinutes = recentConversations.reduce((sum, c) => {
-      const created = new Date(c.created_at).getTime();
-      const firstResponse = new Date(c.first_response_at!).getTime();
+    const totalMinutes = recentConversations.reduce((sum, conversation) => {
+      const created = new Date(conversation.created_at).getTime();
+      const firstResponse = new Date(conversation.first_response_at!).getTime();
       return sum + (firstResponse - created) / (1000 * 60);
     }, 0);
     avg_first_response_minutes = Math.round(totalMinutes / recentConversations.length);
   }
 
-  const conversations_with_risk = conversations.filter((c) => {
-    return c.risk_flags && Array.isArray(c.risk_flags) && c.risk_flags.length > 0;
+  const conversations_with_risk = conversations.filter((conversation) => {
+    return (
+      conversation.risk_flags &&
+      Array.isArray(conversation.risk_flags) &&
+      conversation.risk_flags.length > 0
+    );
   }).length;
 
-  const conversations_overdue_promise = conversations.filter((c) => {
-    if (!c.promised_date) return false;
-    const promised = new Date(c.promised_date);
-    return promised < now && c.status !== "resolved" && c.status !== "closed";
+  const conversations_overdue_promise = conversations.filter((conversation) => {
+    if (!conversation.promised_date) {
+      return false;
+    }
+
+    const promised = new Date(conversation.promised_date);
+    return promised < now && conversation.status !== "resolved" && conversation.status !== "closed";
   }).length;
 
   return {
@@ -61,8 +81,8 @@ function calculateFromRows(conversations: SupportConversationMetricsRow[]): Dash
   };
 }
 
-export function useSupportDashboardMetrics() {
-  const [metrics, setMetrics] = useState<DashboardMetrics>({
+function createEmptyMetrics(): DashboardMetrics {
+  return {
     open_count: 0,
     waiting_customer_count: 0,
     resolved_today_count: 0,
@@ -71,25 +91,30 @@ export function useSupportDashboardMetrics() {
     avg_first_response_minutes: 0,
     conversations_with_risk: 0,
     conversations_overdue_promise: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  };
+}
 
-  const reload = useCallback(async () => {
-    try {
-      setLoading(true);
+export function useSupportDashboardMetrics() {
+  const queryClient = useQueryClient();
+
+  const metricsQuery = useQuery({
+    queryKey: SUPPORT_DASHBOARD_METRICS_QUERY_KEY,
+    queryFn: async () => {
       const conversations = await fetchSupportConversationsForMetrics();
-      setMetrics(calculateFromRows(conversations));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return calculateFromRows(conversations);
+    },
+  });
 
   useEffect(() => {
-    reload();
     return subscribeSupportConversationMetrics(() => {
-      reload();
+      void queryClient.invalidateQueries({
+        queryKey: SUPPORT_DASHBOARD_METRICS_QUERY_KEY,
+      });
     });
-  }, [reload]);
+  }, [queryClient]);
 
-  return { metrics, loading };
+  return {
+    metrics: metricsQuery.data ?? createEmptyMetrics(),
+    loading: metricsQuery.isLoading,
+  };
 }

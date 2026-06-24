@@ -1,23 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { assertCurrentUserId } from "@/services/auth/current-user";
-import { refundCoinPurchaseForCurrentUserRpc } from "@/services/coins-mutations-service";
+import {
+  purchaseCharacterWithCoinsForCurrentUser,
+  purchaseCollectionWithCoinsForCurrentUser,
+  refundCoinPurchaseForCurrentUserRpc,
+} from "@/services/coins/coins-mutations-service";
 import type {
-  CoinsAmount,
   PurchaseCharacterParams,
   PurchaseWithCoinsResponse,
   UserId,
 } from "@/types/coins";
 import { invalidateCoinsBalance } from "./useCoinsBalance";
 import { invalidateCoinsTransactions } from "./useCoinsTransactions";
-
-type PurchaseCoinsRpcResult = {
-  success: boolean;
-  message: string;
-  new_balance: CoinsAmount;
-  transaction_id?: string | null;
-};
 
 export interface PurchaseCollectionParams {
   user_id: UserId;
@@ -29,28 +23,6 @@ export interface RefundPurchaseParams {
   item_id: string;
   item_type: "character" | "collection";
   reason: string;
-}
-
-function firstPurchaseRpcResult(data: PurchaseCoinsRpcResult | PurchaseCoinsRpcResult[] | null) {
-  return Array.isArray(data) ? data[0] : data;
-}
-
-function toPurchaseResponse(
-  result: PurchaseCoinsRpcResult | null | undefined,
-  itemId: string,
-  fallbackMessage: string
-): PurchaseWithCoinsResponse {
-  if (!result?.success) {
-    throw new Error(result?.message ?? fallbackMessage);
-  }
-
-  return {
-    success: result.success,
-    message: result.message,
-    new_balance: result.new_balance,
-    item_id: itemId,
-    transaction_id: result.transaction_id || "",
-  };
 }
 
 function invalidateCoinPurchaseCaches(
@@ -91,23 +63,7 @@ export function usePurchaseCharacter() {
     mutationFn: async (
       params: PurchaseCharacterParams
     ): Promise<PurchaseWithCoinsResponse> => {
-      const { user_id, character_id } = params;
-      await assertCurrentUserId(user_id);
-
-      const { data, error } = await supabase.rpc("purchase_character_with_coins", {
-        p_user_id: user_id,
-        p_character_id: character_id,
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return toPurchaseResponse(
-        firstPurchaseRpcResult(data),
-        character_id,
-        "Compra de personagem nao retornou resultado."
-      );
+      return purchaseCharacterWithCoinsForCurrentUser(params);
     },
     onSuccess: (data, variables) => {
       invalidateCoinPurchaseCaches(queryClient, variables.user_id);
@@ -135,23 +91,7 @@ export function usePurchaseCollection() {
     mutationFn: async (
       params: PurchaseCollectionParams
     ): Promise<PurchaseWithCoinsResponse> => {
-      const { user_id, collection_id } = params;
-      await assertCurrentUserId(user_id);
-
-      const { data, error } = await supabase.rpc("purchase_collection_with_coins", {
-        p_user_id: user_id,
-        p_collection_id: collection_id,
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return toPurchaseResponse(
-        firstPurchaseRpcResult(data),
-        collection_id,
-        "Compra de colecao nao retornou resultado."
-      );
+      return purchaseCollectionWithCoinsForCurrentUser(params);
     },
     onSuccess: (data, variables) => {
       invalidateCoinPurchaseCaches(queryClient, variables.user_id);
@@ -180,9 +120,9 @@ export function useRefundPurchase() {
       params: RefundPurchaseParams
     ): Promise<PurchaseWithCoinsResponse> => {
       const { user_id, item_id, item_type, reason } = params;
-      await assertCurrentUserId(user_id);
 
       return refundCoinPurchaseForCurrentUserRpc({
+        userId: user_id,
         itemId: item_id,
         itemType: item_type,
         reason,

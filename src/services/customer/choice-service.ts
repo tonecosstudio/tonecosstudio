@@ -4,6 +4,7 @@ import {
   submitCharacterChoiceRpc,
 } from "./choice-mutations-service";
 import type { ChoiceStatus } from "@/types/production";
+import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 
 export type { ChoiceStatus };
 
@@ -148,20 +149,13 @@ export async function getMyChoice(orderId: string): Promise<CharacterChoice | nu
     throw new Error("Order ID e obrigatorio");
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    throw new Error("Usuario nao autenticado");
-  }
+  const userId = await requireAuthenticatedUserId();
 
   const { data: choice, error } = await supabase
     .from("character_choices")
     .select("*")
     .eq("order_id", orderId)
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (error) {

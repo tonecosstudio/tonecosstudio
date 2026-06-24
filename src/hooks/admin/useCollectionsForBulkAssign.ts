@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchCollectionsForBulkAssign } from "@/services/admin/collections-for-bulk-assign-service";
+import { fetchCollectionsForBulkAssign } from "@/services/admin/catalog/collections-for-bulk-assign-service";
 
 export function useCollectionsForBulkAssign(enabled: boolean) {
   return useQuery({

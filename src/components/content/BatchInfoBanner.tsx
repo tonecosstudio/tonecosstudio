@@ -12,7 +12,7 @@ import {
   formatBatchDate,
   formatBatchDateFull,
   getDaysUntilSalesEnd,
-} from "@/lib/services/batchCalculator";
+} from "@/services/content/batch-calculator-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PUBLIC_ROUTES } from "@/config/routes";
 

@@ -6,9 +6,8 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { assertCurrentUserId } from "@/services/auth/current-user";
 import { summarizeCoinLedger } from "@/lib/coins-ledger";
+import { listLegacyCoinTransactions } from "@/services/coins/coins-transactions-service";
 import type { CoinsAmount, UserId } from "@/types/coins";
 
 export type TransactionType =
@@ -40,24 +39,7 @@ export const coinTransactionsKeys = {
 export function useCoinTransactions(userId?: UserId | null, limit: number = 50) {
   return useQuery({
     queryKey: userId ? coinTransactionsKeys.list(userId, limit) : ["coin-transactions", "anonymous"],
-    queryFn: async () => {
-      if (!userId) {
-        return [];
-      }
-
-      await assertCurrentUserId(userId);
-
-      const { data, error } = await supabase
-        .from("coin_transactions")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-
-      return (data || []) as CoinTransaction[];
-    },
+    queryFn: (): Promise<CoinTransaction[]> => listLegacyCoinTransactions(userId, limit),
     enabled: !!userId,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,

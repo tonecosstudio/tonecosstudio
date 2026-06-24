@@ -4,13 +4,14 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { exportProductionItemsToCSV } from './csvExport';
-import type { ProductionQueueItem } from '@/services/admin/production-service';
+import type { ProductionQueueItem } from '@/types/production';
 
 describe('csvExport', () => {
-  let createElementSpy: any;
-  let appendChildSpy: any;
-  let removeChildSpy: any;
-  let clickSpy: any;
+  let createElementSpy: ReturnType<typeof vi.spyOn>;
+  let appendChildSpy: ReturnType<typeof vi.spyOn>;
+  let removeChildSpy: ReturnType<typeof vi.spyOn>;
+  let clickSpy: ReturnType<typeof vi.fn>;
+  let setAttributeSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     // Mock URL methods on global object
@@ -19,14 +20,19 @@ describe('csvExport', () => {
     
     // Mock DOM methods
     clickSpy = vi.fn();
+    setAttributeSpy = vi.fn();
     createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue({
-      setAttribute: vi.fn(),
+      setAttribute: setAttributeSpy,
       click: clickSpy,
       style: {},
-    } as any);
+    } as unknown as HTMLAnchorElement);
     
-    appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
-    removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+    appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(
+      () => null as unknown as Node
+    );
+    removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(
+      () => null as unknown as Node
+    );
   });
 
   afterEach(() => {
@@ -45,7 +51,7 @@ describe('csvExport', () => {
     characterId: 'char-1',
     characterName: 'Personagem 1',
     productionStatus: 'in_production',
-    currentStage: 'production',
+    currentStage: 'printing',
     choiceStatus: 'approved',
     choiceDeadline: '2024-12-31T23:59:59Z',
     choiceMadeAt: '2024-12-01T10:00:00Z',
@@ -85,8 +91,7 @@ describe('csvExport', () => {
   it('creates download link with default filename', () => {
     exportProductionItemsToCSV([mockItem]);
     
-    const setAttributeCalls = createElementSpy.mock.results[0].value.setAttribute.mock.calls;
-    const downloadCall = setAttributeCalls.find((call: any) => call[0] === 'download');
+    const downloadCall = setAttributeSpy.mock.calls.find(([name]) => name === 'download');
     
     expect(downloadCall).toBeDefined();
     expect(downloadCall[1]).toMatch(/^producao_\d+\.csv$/);
@@ -95,8 +100,7 @@ describe('csvExport', () => {
   it('creates download link with custom filename', () => {
     exportProductionItemsToCSV([mockItem], 'custom.csv');
     
-    const setAttributeCalls = createElementSpy.mock.results[0].value.setAttribute.mock.calls;
-    const downloadCall = setAttributeCalls.find((call: any) => call[0] === 'download');
+    const downloadCall = setAttributeSpy.mock.calls.find(([name]) => name === 'download');
     
     expect(downloadCall).toBeDefined();
     expect(downloadCall[1]).toBe('custom.csv');

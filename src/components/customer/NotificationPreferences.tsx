@@ -1,21 +1,13 @@
-/**
- * Notification Preferences Component
- * 
- * Allows customers to manage their notification preferences.
- * Customers can opt-out of non-critical notifications.
- */
-
-import { Bell, BellOff, Info, RotateCcw } from 'lucide-react';
-import { useCustomerNotificationPreferences } from '@/hooks/customer/useCustomerNotificationPreferences';
-import type { NotificationPreferences } from '@/types/notification-preferences';
+import { Bell, BellOff, Info, RotateCcw } from "lucide-react";
+import { useCustomerNotificationPreferences } from "@/hooks/customer/useCustomerNotificationPreferences";
+import type { NotificationPreferences as NotificationPreferencesData } from "@/types/notification-preferences";
 import {
-  getNotificationLabel,
   getNotificationDescription,
-} from '@/types/notification-preferences';
+  getNotificationLabel,
+} from "@/types/notification-preferences";
 
 interface NotificationPreferencesProps {
-  /** Optional callback when preferences are updated */
-  onUpdate?: (preferences: NotificationPreferences) => void;
+  onUpdate?: (preferences: NotificationPreferencesData) => void;
 }
 
 export function NotificationPreferences({ onUpdate }: NotificationPreferencesProps) {
@@ -31,32 +23,32 @@ export function NotificationPreferences({ onUpdate }: NotificationPreferencesPro
     updateFailed,
   } = useCustomerNotificationPreferences({ onUpdate });
 
-  const handleToggle = (key: keyof NotificationPreferences) => {
-    if (!preferences) return;
-    
-    updatePreferences({
-      [key]: !preferences[key],
-    });
+  const handleToggle = (key: keyof NotificationPreferencesData) => {
+    if (!preferences) {
+      return;
+    }
+
+    updatePreferences({ [key]: !preferences[key] });
   };
 
   const handleReset = () => {
-    if (confirm('Reset all notification preferences to defaults?')) {
+    if (confirm("Restaurar as preferencias de notificacao para o padrao?")) {
       resetPreferences();
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center rounded-lg border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] p-8">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[hsl(42,100%,55%)] border-t-transparent" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">Failed to load notification preferences</p>
+      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+        <p className="text-sm font-medium text-red-100">Nao foi possivel carregar as preferencias de notificacao.</p>
       </div>
     );
   }
@@ -65,86 +57,80 @@ export function NotificationPreferences({ onUpdate }: NotificationPreferencesPro
     return null;
   }
 
-  const preferenceKeys = Object.keys(preferences) as Array<keyof NotificationPreferences>;
+  const preferenceKeys = Object.keys(preferences) as Array<keyof NotificationPreferencesData>;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
+    <section className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Bell className="h-6 w-6" />
-            Notification Preferences
+          <h2 className="flex items-center gap-2 text-xl font-semibold text-white">
+            <Bell className="h-5 w-5 text-[hsl(42,100%,55%)]" />
+            Preferencias de notificacao
           </h2>
-          <p className="text-gray-600 mt-1">
-            Manage which notifications you want to receive
+          <p className="mt-1 text-sm text-zinc-400">
+            Controle os avisos opcionais que voce quer receber.
           </p>
         </div>
         <button
+          type="button"
           onClick={handleReset}
           disabled={isResetting}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-[hsl(0,0%,16%)] bg-[hsl(0,0%,8%)] px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-[hsl(42,100%,55%)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RotateCcw className="h-4 w-4" />
-          Reset to Defaults
+          Restaurar padrao
         </button>
       </div>
 
-      {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="rounded-lg border border-sky-500/25 bg-sky-500/10 p-4">
         <div className="flex items-start gap-3">
-          <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm text-blue-900">
-              <strong>Important:</strong> Critical notifications (character choice reminders, 
-              payment updates, order confirmations, and production delays) cannot be disabled 
-              as they contain essential information about your orders.
-            </p>
-          </div>
+          <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-sky-300" />
+          <p className="text-sm leading-relaxed text-sky-100">
+            Notificacoes criticas, como escolha de personagem, pagamentos, confirmacoes de pedido
+            e atrasos de producao, continuam sempre ativas porque afetam seus pedidos.
+          </p>
         </div>
       </div>
 
-      {/* Preferences List */}
-      <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
+      <div className="overflow-hidden rounded-lg border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)]">
         {preferenceKeys.map((key) => {
           const isEnabled = preferences[key];
           const label = getNotificationLabel(key);
           const description = getNotificationDescription(key);
 
           return (
-            <div key={key} className="p-4 hover:bg-gray-50 transition-colors">
+            <div
+              key={key}
+              className="border-b border-[hsl(0,0%,12%)] p-4 transition-colors last:border-b-0 hover:bg-white/[0.03]"
+            >
               <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     {isEnabled ? (
-                      <Bell className="h-5 w-5 text-blue-600" />
+                      <Bell className="h-5 w-5 text-[hsl(42,100%,55%)]" />
                     ) : (
-                      <BellOff className="h-5 w-5 text-gray-400" />
+                      <BellOff className="h-5 w-5 text-zinc-500" />
                     )}
-                    <h3 className="font-semibold text-gray-900">{label}</h3>
+                    <h3 className="font-medium text-white">{label}</h3>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1 ml-7">{description}</p>
+                  <p className="ml-7 mt-1 text-sm leading-relaxed text-zinc-400">{description}</p>
                 </div>
 
-                {/* Toggle Switch */}
                 <button
+                  type="button"
                   onClick={() => handleToggle(key)}
                   disabled={isUpdating}
-                  className={`
-                    relative inline-flex h-6 w-11 items-center rounded-full
-                    transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    ${isEnabled ? 'bg-blue-600' : 'bg-gray-300'}
-                  `}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[hsl(42,100%,55%)] focus:ring-offset-2 focus:ring-offset-black disabled:cursor-not-allowed disabled:opacity-50 ${
+                    isEnabled ? "bg-[hsl(42,100%,45%)]" : "bg-zinc-700"
+                  }`}
                   role="switch"
                   aria-checked={isEnabled}
-                  aria-label={`Toggle ${label}`}
+                  aria-label={`Alternar ${label}`}
                 >
                   <span
-                    className={`
-                      inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                      ${isEnabled ? 'translate-x-6' : 'translate-x-1'}
-                    `}
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isEnabled ? "translate-x-6" : "translate-x-1"
+                    }`}
                   />
                 </button>
               </div>
@@ -153,22 +139,19 @@ export function NotificationPreferences({ onUpdate }: NotificationPreferencesPro
         })}
       </div>
 
-      {/* Status Message */}
       {updateSucceeded && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <p className="text-green-800 text-sm">
-            ✓ Notification preferences updated successfully
-          </p>
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
+          <p className="text-sm font-medium text-emerald-100">Preferencias atualizadas com sucesso.</p>
         </div>
       )}
 
       {updateFailed && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800 text-sm">
-            Failed to update preferences. Please try again.
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+          <p className="text-sm font-medium text-red-100">
+            Nao foi possivel atualizar as preferencias. Tente novamente.
           </p>
         </div>
       )}
-    </div>
+    </section>
   );
 }

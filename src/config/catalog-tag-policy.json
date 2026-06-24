@@ -6,7 +6,9 @@
     "source-",
     "price-",
     "bg-",
-    "needs-"
+    "needs-",
+    "sensitive-",
+    "age-"
   ],
   "internalTags": [
     "drive-import",
@@ -33,6 +35,14 @@
   "publicTagAliases": {
     "anime": "anime",
     "animes": "anime",
+    "animacao": "desenhos",
+    "animation": "desenhos",
+    "cartoon": "desenhos",
+    "cartoons": "desenhos",
+    "desenho": "desenhos",
+    "desenho animacao": "desenhos",
+    "desenhos": "desenhos",
+    "desenhos animacao": "desenhos",
     "filme": "filme",
     "filmes": "filme",
     "movie": "filme",
@@ -46,7 +56,16 @@
     "game": "game",
     "games": "game",
     "jogo": "game",
-    "jogos": "game"
+    "jogos": "game",
+    "mascara": "mascara",
+    "mascaras": "mascara",
+    "capacete": "mascara",
+    "capacetes": "mascara",
+    "x 23": "x-23",
+    "nsfw": "nsfw",
+    "adulto": "nsfw",
+    "improprio": "nsfw",
+    "conteudo adulto": "nsfw"
   },
   "publicTagBlocklist": [
     "catalogo",
@@ -66,6 +85,15 @@
     "categoria",
     "categorias",
     "colecao",
-    "colecoes"
+    "colecoes",
+    "objeto",
+    "objetos",
+    "prop",
+    "props",
+    "acessorio",
+    "acessorios",
+    "decoracao",
+    "peca",
+    "pecas"
   ]
 }

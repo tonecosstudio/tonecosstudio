@@ -1,9 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
-import { createSupportConversationRpc } from "@/lib/services/supportConversationMutationsService";
+import {
+  createRealtimeChannel,
+  removeRealtimeChannel,
+} from "@/services/supabase/realtime-client";
+import { createSupportConversationRpc } from "@/services/support/support-conversation-mutations-service";
 import {
   assertCurrentUserId,
   requireAuthenticatedUserId,
 } from "@/services/auth/current-user";
+import { fetchActiveSubscriptionSummary } from "@/services/subscriptions/subscription-summary-service";
 import type {
   ActiveSubscription,
   ProfilePaymentMethod,
@@ -116,16 +121,7 @@ export async function setDefaultProfilePaymentMethod(paymentMethodId: string): P
 
 export async function getActiveSubscription(userId: string): Promise<ActiveSubscription | null> {
   await assertCurrentUserId(userId);
-
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .select("id,user_id,plan_type,status,created_at,updated_at")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .single();
-
-  if (error && error.code !== "PGRST116") throw error;
-  return (data ?? null) as ActiveSubscription | null;
+  return fetchActiveSubscriptionSummary(userId);
 }
 
 export async function listSupportConversations(userId: string): Promise<SupportConversation[]> {
@@ -160,8 +156,7 @@ export function subscribeToSupportMessages(
   conversationId: string,
   onMessage: (message: SupportMessage) => void,
 ) {
-  const channel = supabase
-    .channel(`support_messages_${conversationId}`)
+  const channel = createRealtimeChannel(`support_messages_${conversationId}`)
     .on(
       "postgres_changes",
       {
@@ -178,7 +173,7 @@ export function subscribeToSupportMessages(
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    removeRealtimeChannel(channel);
   };
 }
 

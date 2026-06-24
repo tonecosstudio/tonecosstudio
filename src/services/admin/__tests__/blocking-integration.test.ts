@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { supabase } from "@/integrations/supabase/client";
-import { blockProduction } from "../production-service";
+import { blockProduction } from "../production/production-service";
+import log from "@/lib/logger";
 
 const serviceMocks = vi.hoisted(() => ({
   calculateEstimatedCompletion: vi.fn(),
@@ -14,16 +15,19 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-vi.mock("../stage-service", () => ({
+vi.mock("../production/stage-service", () => ({
   calculateEstimatedCompletion: serviceMocks.calculateEstimatedCompletion,
 }));
 
 vi.mock("@/services/notifications/production-notification-service", () => ({
-  ProductionNotificationService: vi.fn().mockImplementation(() => ({
-    sendDelayNotification: serviceMocks.sendDelayNotification,
-  })),
   productionNotificationService: {
     sendDelayNotification: serviceMocks.sendDelayNotification,
+  },
+}));
+
+vi.mock("@/lib/logger", () => ({
+  default: {
+    error: vi.fn(),
   },
 }));
 
@@ -127,5 +131,6 @@ describe("Blocking Production Integration Test", () => {
     expect(result.productionStatus).toBe("on_hold");
     expect(serviceMocks.calculateEstimatedCompletion).toHaveBeenCalledWith(QUEUE_ID);
     expect(serviceMocks.sendDelayNotification).toHaveBeenCalledWith(QUEUE_ID, BLOCK_REASON);
+    expect(log.error).toHaveBeenCalledTimes(2);
   });
 });

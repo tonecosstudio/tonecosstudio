@@ -3,7 +3,7 @@
  * Requirement 26: Campo "Promessa Feita"
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -12,7 +12,7 @@ import { format, isPast, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { conversationService } from "@/lib/services/conversationService";
+import { conversationService } from "@/services/support/conversation-service";
 import { log } from "@/lib/logger";
 
 interface PromisedDatePickerProps {
@@ -30,6 +30,10 @@ export function PromisedDatePicker({
     promisedDate ? new Date(promisedDate) : undefined
   );
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    setDate(promisedDate ? new Date(promisedDate) : undefined);
+  }, [promisedDate]);
 
   const isOverdue = date && isPast(date);
   const daysUntil = date ? differenceInDays(date, new Date()) : null;
@@ -89,7 +93,7 @@ export function PromisedDatePicker({
                 )}
               </span>
             ) : (
-              "Promessa"
+              "Prazo prometido"
             )}
           </Button>
         </PopoverTrigger>

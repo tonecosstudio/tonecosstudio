@@ -68,7 +68,7 @@ The component fetches blocked items and displays them in a table format:
 ### Dependencies
 
 - `@tanstack/react-query`: For data fetching and caching
-- `@/services/admin/production-service`: For fetching production queue
+- `@/services/admin/production/production-service`: For fetching production queue
 - `@/integrations/supabase/client`: For fetching stage details
 - `./UnblockProductionModal`: For unblocking functionality
 - `date-fns`: For date formatting

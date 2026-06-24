@@ -1,17 +1,18 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import {
-  AreaChart,
   Area,
+  AreaChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
 } from "recharts";
-import { TrendingUp, TrendingDown } from "lucide-react";
-import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 import type { TooltipProps } from "recharts";
+import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
+import { formatCurrency as formatConfiguredCurrency } from "@/lib/utils";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface RevenueData {
   month: string;
@@ -30,76 +31,70 @@ interface RevenueChartProps {
 
 export function RevenueChart({
   data,
-  title = "Receita Mensal",
-  description = "Últimos 6 meses",
+  title = "Receita mensal",
+  description = "Periodo selecionado",
   showGoal = false,
   className,
 }: RevenueChartProps) {
-  // Calcular tendência
-  const firstMonth = data[0]?.receita || 0;
-  const lastMonth = data[data.length - 1]?.receita || 0;
-  const trend = lastMonth > firstMonth ? "up" : "down";
+  const firstPoint = data[0]?.receita || 0;
+  const lastPoint = data[data.length - 1]?.receita || 0;
+  const trend = lastPoint > firstPoint ? "up" : "down";
   const trendPercentage =
-    firstMonth > 0 ? (((lastMonth - firstMonth) / firstMonth) * 100).toFixed(1) : "0";
+    firstPoint > 0 ? (((lastPoint - firstPoint) / firstPoint) * 100).toFixed(1) : "0";
 
-  // Formatar valores monetários
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
+  const formatCurrency = (value: number) =>
+    formatConfiguredCurrency(value, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(value);
-  };
+    });
 
-  const toNumericValue = (value: ValueType | undefined): number => {
-    return typeof value === "number" ? value : Number(value ?? 0);
-  };
+  const toNumericValue = (value: ValueType | undefined): number =>
+    typeof value === "number" ? value : Number(value ?? 0);
 
-  // Tooltip customizado
   const CustomTooltip = ({ active, payload }: TooltipProps<ValueType, NameType>) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background border rounded-lg shadow-lg p-3">
-          <p className="font-semibold mb-2">{payload[0].payload.month}</p>
-          <div className="space-y-1">
-            <p className="text-sm">
-              <span className="text-primary">Receita:</span>{" "}
-              <span className="font-medium">{formatCurrency(toNumericValue(payload[0].value))}</span>
-            </p>
-            <p className="text-sm">
-              <span className="text-muted-foreground">Orçamentos:</span>{" "}
-              <span className="font-medium">{payload[1]?.value || 0}</span>
-            </p>
-            {showGoal && payload[2] && (
-              <p className="text-sm">
-                <span className="text-amber-600">Meta:</span>{" "}
-                <span className="font-medium">{formatCurrency(toNumericValue(payload[2].value))}</span>
-              </p>
-            )}
-          </div>
-        </div>
-      );
+    if (!active || !payload || payload.length === 0) {
+      return null;
     }
-    return null;
+
+    return (
+      <div className="rounded-lg border bg-background p-3 shadow-lg">
+        <p className="mb-2 font-semibold">{payload[0].payload.month}</p>
+        <div className="space-y-1">
+          <p className="text-sm">
+            <span className="text-primary">Receita:</span>{" "}
+            <span className="font-medium">{formatCurrency(toNumericValue(payload[0].value))}</span>
+          </p>
+          <p className="text-sm">
+            <span className="text-muted-foreground">Orcamentos:</span>{" "}
+            <span className="font-medium">{payload[1]?.value || 0}</span>
+          </p>
+          {showGoal && payload[2] && (
+            <p className="text-sm">
+              <span className="text-amber-600">Meta:</span>{" "}
+              <span className="font-medium">{formatCurrency(toNumericValue(payload[2].value))}</span>
+            </p>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
     <Card className={className}>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
             <CardDescription className="text-xs sm:text-sm">{description}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
             {trend === "up" ? (
-              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+              <TrendingUp className="h-4 w-4 text-green-600 sm:h-5 sm:w-5" />
             ) : (
-              <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+              <TrendingDown className="h-4 w-4 text-red-600 sm:h-5 sm:w-5" />
             )}
             <span
-              className={`text-xs sm:text-sm font-medium ${
+              className={`text-xs font-medium sm:text-sm ${
                 trend === "up" ? "text-green-600" : "text-red-600"
               }`}
             >
@@ -122,6 +117,7 @@ export function RevenueChart({
                 <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
               </linearGradient>
             </defs>
+
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted opacity-30" />
             <XAxis
               dataKey="month"
@@ -156,7 +152,7 @@ export function RevenueChart({
             <Area
               type="monotone"
               dataKey="orcamentos"
-              name="Orçamentos"
+              name="Orcamentos"
               stroke="#10b981"
               strokeWidth={2}
               fill="url(#colorOrcamentos)"

@@ -10,6 +10,7 @@ import type { StatusHistoryEntry } from '@/types/admin/orders';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useOrderStatusHistory } from '@/hooks/admin/useOrderStatusHistory';
+import { formatDate } from '@/lib/utils';
 
 interface OrderStatusHistoryProps {
   orderId: string;
@@ -109,7 +110,7 @@ interface StatusHistoryItemProps {
 }
 
 function StatusHistoryItem({ entry, isFirst }: StatusHistoryItemProps) {
-  const formattedDate = new Date(entry.changedAt).toLocaleString('pt-BR', {
+  const formattedDate = formatDate(entry.changedAt, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

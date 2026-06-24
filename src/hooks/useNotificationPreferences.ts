@@ -1,56 +1,47 @@
 import { useCallback, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import {
   notificationPreferencesService,
   type NotificationPreferences,
-} from "@/services/notification-preferences-service";
+} from "@/services/notifications/notification-preferences-service";
 
 export type NotificationPreferenceEntity = NotificationPreferences;
+type NotificationPreferenceResult = "ok" | "unauthorized" | "error";
+
+function toPreferenceResult(error: unknown): NotificationPreferenceResult {
+  return error instanceof Error && error.message === "User not authenticated"
+    ? "unauthorized"
+    : "error";
+}
 
 export function useNotificationPreferences() {
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const loadPreferences = useCallback(async (): Promise<"ok" | "unauthorized" | "error"> => {
+  const loadPreferences = useCallback(async (): Promise<NotificationPreferenceResult> => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        return "unauthorized";
-      }
-
-      const prefs = await notificationPreferencesService.getPreferences(user.id);
-      if (!prefs) {
-        const newPrefs = await notificationPreferencesService.createDefaultPreferences(user.id);
-        setPreferences(newPrefs);
-      } else {
-        setPreferences(prefs);
-      }
+      const prefs = await notificationPreferencesService.getOrCreateCurrentPreferences();
+      setPreferences(prefs);
 
       return "ok";
-    } catch {
-      return "error";
+    } catch (error) {
+      return toPreferenceResult(error);
     } finally {
       setLoading(false);
     }
   }, []);
 
   const updatePreference = useCallback(
-    async (field: keyof NotificationPreferences, value: boolean): Promise<"ok" | "unauthorized" | "error"> => {
+    async (
+      field: keyof NotificationPreferences,
+      value: boolean,
+    ): Promise<NotificationPreferenceResult> => {
       if (!preferences) return "error";
 
       try {
         setSaving(true);
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
 
-        if (!user) return "unauthorized";
-
-        const updated = await notificationPreferencesService.updatePreferences(user.id, {
+        const updated = await notificationPreferencesService.updateCurrentPreferences({
           [field]: value,
         });
 
@@ -60,8 +51,8 @@ export function useNotificationPreferences() {
         }
 
         return "error";
-      } catch {
-        return "error";
+      } catch (error) {
+        return toPreferenceResult(error);
       } finally {
         setSaving(false);
       }
@@ -69,15 +60,10 @@ export function useNotificationPreferences() {
     [preferences],
   );
 
-  const enableAll = useCallback(async (): Promise<"ok" | "unauthorized" | "error"> => {
+  const enableAll = useCallback(async (): Promise<NotificationPreferenceResult> => {
     try {
       setSaving(true);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) return "unauthorized";
-      const updated = await notificationPreferencesService.enableAllEmails(user.id);
+      const updated = await notificationPreferencesService.enableAllCurrentUserEmails();
 
       if (updated) {
         setPreferences(updated);
@@ -85,22 +71,17 @@ export function useNotificationPreferences() {
       }
 
       return "error";
-    } catch {
-      return "error";
+    } catch (error) {
+      return toPreferenceResult(error);
     } finally {
       setSaving(false);
     }
   }, []);
 
-  const disableAll = useCallback(async (): Promise<"ok" | "unauthorized" | "error"> => {
+  const disableAll = useCallback(async (): Promise<NotificationPreferenceResult> => {
     try {
       setSaving(true);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) return "unauthorized";
-      const updated = await notificationPreferencesService.disableAllEmails(user.id);
+      const updated = await notificationPreferencesService.disableAllCurrentUserEmails();
 
       if (updated) {
         setPreferences(updated);
@@ -108,8 +89,8 @@ export function useNotificationPreferences() {
       }
 
       return "error";
-    } catch {
-      return "error";
+    } catch (error) {
+      return toPreferenceResult(error);
     } finally {
       setSaving(false);
     }

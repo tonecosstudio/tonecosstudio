@@ -79,6 +79,8 @@ const STATUS_CONFIG = {
   },
 };
 
+type StatusConfigKey = keyof typeof STATUS_CONFIG;
+
 export function ChoiceHistoryPanel({ orderId }: ChoiceHistoryPanelProps) {
   // Fetch choice history
   const { data: history, isLoading, error } = useChoiceHistory(orderId);
@@ -192,7 +194,8 @@ export function ChoiceHistoryPanel({ orderId }: ChoiceHistoryPanelProps) {
           {/* Timeline items */}
           <div className="space-y-6">
             {history.map((choice, index) => {
-              const config = STATUS_CONFIG[choice.status];
+              const config =
+                STATUS_CONFIG[choice.status as StatusConfigKey] ?? STATUS_CONFIG.pending;
               const Icon = config.icon;
               const isLatest = index === 0;
 

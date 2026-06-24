@@ -1,6 +1,6 @@
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { cn, formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface MetricComparisonProps {
   title: string;
@@ -19,23 +19,17 @@ export function MetricComparison({
   icon,
   className,
 }: MetricComparisonProps) {
-  // Calcular diferença e percentual
   const difference = currentValue - previousValue;
   const percentageChange = previousValue !== 0 ? (difference / previousValue) * 100 : 0;
 
-  // Determinar tendência
   const isPositive = difference > 0;
   const isNegative = difference < 0;
   const isNeutral = difference === 0;
 
-  // Formatar valor
   const formatValue = (value: number): string => {
     switch (format) {
       case "currency":
-        return new Intl.NumberFormat("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        }).format(value);
+        return formatCurrency(value);
       case "percentage":
         return `${value.toFixed(1)}%`;
       case "number":
@@ -44,10 +38,8 @@ export function MetricComparison({
     }
   };
 
-  // Ícone de tendência
   const TrendIcon = isPositive ? TrendingUp : isNegative ? TrendingDown : Minus;
 
-  // Cor da tendência
   const trendColor = isPositive
     ? "text-green-600 dark:text-green-400"
     : isNegative
@@ -68,14 +60,12 @@ export function MetricComparison({
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {/* Valor Atual */}
           <div className="text-2xl font-bold">{formatValue(currentValue)}</div>
 
-          {/* Comparação com Período Anterior */}
           <div className="flex items-center gap-2">
             <div
               className={cn(
-                "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                "flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
                 trendBgColor,
                 trendColor
               )}
@@ -85,10 +75,9 @@ export function MetricComparison({
                 {isNeutral ? "0%" : `${isPositive ? "+" : ""}${percentageChange.toFixed(1)}%`}
               </span>
             </div>
-            <span className="text-xs text-muted-foreground">vs período anterior</span>
+            <span className="text-xs text-muted-foreground">vs periodo anterior</span>
           </div>
 
-          {/* Valor Anterior (opcional) */}
           <div className="text-xs text-muted-foreground">
             Anterior: {formatValue(previousValue)}
           </div>

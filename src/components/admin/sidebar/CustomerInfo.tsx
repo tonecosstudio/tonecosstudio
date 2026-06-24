@@ -2,16 +2,15 @@ import { Mail, Phone, User, MapPin, Calendar, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useCustomerProfile } from "@/hooks/admin/useCustomerProfile";
 import { buildSafeMailtoHref } from "@/lib/security/safe-open";
+import type { CustomerProfile } from "@/hooks/admin/useCustomerSidebar";
 
 interface CustomerInfoProps {
-  userId: string;
+  profile: CustomerProfile | null;
+  loading?: boolean;
 }
 
-export function CustomerInfo({ userId }: CustomerInfoProps) {
-  const { data: profile, isLoading: loading } = useCustomerProfile(userId);
-
+export function CustomerInfo({ profile, loading = false }: CustomerInfoProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-4">
@@ -44,6 +43,19 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
         )}
       </div>
 
+      {typeof profile.pieces_owned === "number" || typeof profile.total_spent === "number" ? (
+        <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/20 p-3 text-sm">
+          <div>
+            <div className="text-xs text-muted-foreground">Pecas</div>
+            <div className="font-medium">{profile.pieces_owned ?? 0}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Total gasto</div>
+            <div className="font-medium">R$ {(profile.total_spent ?? 0).toFixed(2)}</div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="space-y-2">
         {profile.email && (
           <div className="flex items-center gap-2 text-sm">
@@ -60,9 +72,7 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
         {profile.phone && (
           <div className="flex items-center gap-2 text-sm">
             <Phone className="h-4 w-4 text-muted-foreground" />
-            <a href={`tel:${profile.phone}`} className="hover:underline">
-              {profile.phone}
-            </a>
+            <span>{profile.phone}</span>
           </div>
         )}
         {profile.cpf && (

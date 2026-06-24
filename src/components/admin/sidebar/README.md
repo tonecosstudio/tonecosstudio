@@ -87,19 +87,21 @@ Displays payment history and allows status updates.
 - Allows admin to update payment status
 - Warns admin that status changes trigger automatic notifications
 
-## Integration Service
+## Hooks e services
 
-The `integrationService.ts` file provides functions to fetch and update customer data:
+A sidebar usa dois boundaries explicitos:
+
+- `useCustomerSidebar` para carregar e atualizar o contexto agregado do cliente
+- `useCustomerSidebarActions` para operacoes de status e leitura de estagios
+
+Esses hooks delegam ao `customer-sidebar-service.ts`, que centraliza o contrato de dados e evita acesso direto de componentes a `services`.
 
 ### Functions
 
-- `getUserOrders(userId: string): Promise<Order[]>` - Fetch all orders for a user
-- `getUserQuotes(userId: string): Promise<Quote[]>` - Fetch all quotes for a user
-- `getUserSubscription(userId: string): Promise<Subscription | null>` - Fetch active subscription
-- `getUserPayments(userId: string): Promise<ManualPayment[]>` - Fetch all payments for a user
-- `getOrderProductionStages(orderId: string): Promise<OrderProductionStage[]>` - Fetch production stages (currently disabled)
-- `updateOrderStatus(orderId: string, status: string, trackingCode?: string): Promise<void>` - Update order status
-- `updatePaymentStatus(paymentId: string, status: string): Promise<void>` - Update payment status
+- `getCustomerSidebarData(userId: string): Promise<CustomerSidebarData>` - Carrega o contexto agregado do cliente
+- `getOrderProductionStages(orderId: string): Promise<OrderProductionStage[]>` - Busca estagios via `production_queue` + `production_stages`
+- `updateOrderStatus(orderId, orderType, status): Promise<void>` - Atualiza pedido respeitando o tipo real
+- `updatePaymentStatus(paymentId, status): Promise<void>` - Atualiza pagamento manual
 
 ## Usage Example
 
@@ -157,6 +159,6 @@ This implementation satisfies the following requirements:
 
 ## Notes
 
-- The `order_production_stages` table functionality is currently disabled because the table is not yet in the Supabase types. It will be enabled after the migration is applied.
+- Production stages are resolved through the canonical `production_queue` -> `production_stages` relationship.
 - All status updates trigger automatic notifications to customers as per the design requirements.
 - The sidebar uses lazy loading to improve performance - data is only fetched when the sidebar is opened.

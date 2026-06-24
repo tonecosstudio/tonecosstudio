@@ -86,8 +86,8 @@ export const ProductionStageTracker: React.FC<ProductionStageTrackerProps> = ({
   const handleNextStage = () => {
     if (!currentStage) {
       toast({
-        title: "Nenhum Estágio Ativo",
-        description: "Todos os estágios foram completados.",
+        title: "Nenhum estágio ativo",
+        description: "Todos os estágios foram concluídos.",
         variant: "destructive",
       });
       return;
@@ -95,7 +95,7 @@ export const ProductionStageTracker: React.FC<ProductionStageTrackerProps> = ({
 
     if (currentStage.isBlocked) {
       toast({
-        title: "Estágio Bloqueado",
+        title: "Estágio bloqueado",
         description: "Este estágio está bloqueado. Desbloqueie antes de continuar.",
         variant: "destructive",
       });
@@ -270,7 +270,7 @@ export const ProductionStageTracker: React.FC<ProductionStageTrackerProps> = ({
                 )}
               </div>
               <div className="text-right">
-                <div className="text-sm text-muted-foreground">Tempo Estimado</div>
+                <div className="text-sm text-muted-foreground">Tempo estimado</div>
                 <div className="text-lg font-semibold">
                   {formatDuration(currentStage.estimatedDuration)}
                 </div>

@@ -35,13 +35,13 @@ export const adminNavigationConfig: NavigationSection[] = [
     items: [
       {
         id: 'dashboard',
-        label: 'Dashboard',
+        label: 'Painel',
         path: ADMIN_ROUTES.home,
         icon: 'LayoutDashboard',
       },
       {
         id: 'analytics',
-        label: 'Analytics',
+        label: 'Análises',
         path: ADMIN_ROUTES.analytics,
         icon: 'BarChart3',
       },
@@ -53,10 +53,10 @@ export const adminNavigationConfig: NavigationSection[] = [
     items: [
       {
         id: 'catalog-hub',
-        label: 'Catálogo & Produtos',
+        label: 'Catálogo e Produtos',
         path: ADMIN_ROUTES.catalog,
         icon: 'Package',
-        badge: 'Hub',
+        badge: 'Central',
       },
       {
         id: 'packaging',
@@ -94,7 +94,7 @@ export const adminNavigationConfig: NavigationSection[] = [
         label: 'Créditos',
         path: ADMIN_ROUTES.credits,
         icon: 'Coins',
-        badge: 'Hub',
+        badge: 'Central',
       },
     ],
   },
@@ -104,10 +104,10 @@ export const adminNavigationConfig: NavigationSection[] = [
     items: [
       {
         id: 'production-dashboard',
-        label: 'Hub de Produção',
+        label: 'Produção',
         path: ADMIN_ROUTES.production,
         icon: 'Grid',
-        badge: 'Hub',
+        badge: 'Central',
       },
     ],
   },
@@ -120,14 +120,14 @@ export const adminNavigationConfig: NavigationSection[] = [
         label: 'Relatórios Financeiros',
         path: ADMIN_ROUTES.financialHub,
         icon: 'DollarSign',
-        badge: 'Hub',
+        badge: 'Central',
       },
       {
         id: 'payments',
         label: 'Pagamentos',
         path: ADMIN_ROUTES.payments,
         icon: 'CreditCard',
-        badge: 'Hub',
+        badge: 'Central',
       },
     ],
   },
@@ -137,7 +137,7 @@ export const adminNavigationConfig: NavigationSection[] = [
     items: [
       {
         id: 'users',
-        label: 'Gerenciar Usuários',
+        label: 'Usuários',
         path: ADMIN_ROUTES.users,
         icon: 'Users',
       },
@@ -146,7 +146,7 @@ export const adminNavigationConfig: NavigationSection[] = [
         label: 'Central de Comunicação',
         path: ADMIN_ROUTES.communication,
         icon: 'MessageSquare',
-        badge: 'Hub',
+        badge: 'Central',
       },
     ],
   },
@@ -159,7 +159,7 @@ export const adminNavigationConfig: NavigationSection[] = [
         label: 'Configurações',
         path: ADMIN_ROUTES.settings,
         icon: 'Settings',
-        badge: 'Hub',
+        badge: 'Central',
       },
     ],
   },

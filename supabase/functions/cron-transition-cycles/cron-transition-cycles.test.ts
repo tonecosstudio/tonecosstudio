@@ -4,7 +4,7 @@
  * These tests verify the cycle transition logic and cycle creation functionality.
  */
 
-import { assertEquals } from "https://deno.land/std@0.192.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.224.0/testing/asserts.ts";
 
 /**
  * Test: Cycle date calculation for Cycle 1

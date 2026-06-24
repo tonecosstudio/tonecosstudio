@@ -1,67 +1,255 @@
-import { Page } from "@/components/layouts/Page";
-import { ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
-import { useAuth } from "@/lib/auth";
-import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  User, Bell, MapPin, Heart, Settings, CreditCard, Package,
-  RefreshCw, MessageSquare, Trophy, ExternalLink, Save, Loader2
+  Bell,
+  CreditCard,
+  Loader2,
+  MessageSquare,
+  Save,
+  ShieldCheck,
+  Trophy,
+  User,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Page } from "@/components/layouts/Page";
+import { ArcadeCard } from "@/components/arcade/ArcadeLayout";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import {
-  getMyProfile,
-  upsertMyProfile,
-} from "@/lib/profile";
-import {
-  getMyCollectorProfile,
-  updateCollectorProfile,
-  checkUsernameAvailability,
-} from "@/lib/collector";
+import { useAuth } from "@/lib/auth";
+import { getMyProfile, upsertMyProfile } from "@/lib/profile";
+import { getMyCollectorProfile } from "@/lib/collector";
+import { useToast } from "@/hooks/use-toast";
 import {
   fetchNotificationPreferences,
   updateNotificationPreferences,
 } from "@/services/customer/notification-preferences-service";
 import {
-  PaymentSection,
   NotificationsSection,
+  PaymentSection,
+  PROFILE_COLLECTIONS_ENABLED,
   SubscriptionSection,
   SupportSection,
 } from "./ProfileSections";
 import { profileNavigationConfig } from "@/config/profile-navigation.config";
+import { profileSectionPath, resolveProfileSectionId } from "@/config/routes";
 
-type SectionId = "info" | "personal" | "collector" | "preferences" | "address" | "subscriptions" | "support" | "orders" | "collection" | "payment" | "notifications";
+type SectionId =
+  | "info"
+  | "payment"
+  | "notifications"
+  | "support"
+  | "subscriptions";
+
+type SectionMeta = {
+  title: string;
+  eyebrow: string;
+  description: string;
+};
+
+const SECTION_META: Record<SectionId, SectionMeta> = {
+  info: {
+    title: "Dados da conta",
+    eyebrow: "Conta",
+    description: "Mantenha seus dados principais atualizados para pagamentos, suporte e comunicacoes.",
+  },
+  payment: {
+    title: "Pagamentos",
+    eyebrow: "Financeiro",
+    description: "Consulte metodos salvos, historico recente e a situacao financeira da conta.",
+  },
+  notifications: {
+    title: "Notificacoes",
+    eyebrow: "Comunicacoes",
+    description: "Escolha quais avisos realmente importam e reduza ruido na operacao diaria.",
+  },
+  support: {
+    title: "Suporte",
+    eyebrow: "Atendimento",
+    description: "Abra conversas, acompanhe retornos e centralize historico de atendimento em um unico lugar.",
+  },
+  subscriptions: {
+    title: "Assinaturas",
+    eyebrow: "Continuidades",
+    description: "Consulte o estado da assinatura e acompanhe sua configuracao ativa.",
+  },
+};
+
+const SECTION_IDS = new Set<SectionId>([
+  "info",
+  "payment",
+  "notifications",
+  "support",
+  "subscriptions",
+]);
+
+function formatCurrency(value?: number | null) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(value ?? 0);
+}
+
+function formatDateLabel(value?: string | null) {
+  if (!value) return "Nao registrado";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Nao registrado";
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function getCompletionMessage(completion: number) {
+  if (completion >= 90) return "Conta pronta para uso continuo.";
+  if (completion >= 70) return "Falta pouco para fechar a configuracao principal.";
+  return "Complete os dados principais para evitar retrabalho em pedidos e suporte.";
+}
+
+function SummaryMetric({
+  label,
+  value,
+  help,
+}: {
+  label: string;
+  value: string;
+  help: string;
+}) {
+  return (
+    <ArcadeCard hover={false} className="p-4">
+      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.72)]">
+        {label}
+      </p>
+      <p
+        className="mt-2 text-3xl font-black uppercase tracking-[0.08em] text-[hsl(0,0%,96%)]"
+        style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+      >
+        {value}
+      </p>
+      <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(0,0%,45%)]">
+        {help}
+      </p>
+    </ArcadeCard>
+  );
+}
+
+function SectionShell({
+  meta,
+  status,
+  children,
+}: {
+  meta: SectionMeta;
+  status?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 border-b border-[hsl(0,0%,12%)] pb-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-[hsl(var(--gold-accent)/0.72)]">
+            {meta.eyebrow}
+          </p>
+          <h2
+            className="mt-2 text-3xl font-black uppercase tracking-[0.08em]"
+            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+          >
+            {meta.title}
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[hsl(0,0%,56%)]">
+            {meta.description}
+          </p>
+        </div>
+        {status ? (
+          <span className="inline-flex items-center self-start border border-[hsl(var(--gold-accent)/0.25)] bg-[hsl(var(--gold-accent)/0.08)] px-3 py-1 font-mono text-[9px] uppercase tracking-[0.18em] text-[hsl(var(--gold-accent))]">
+            {status}
+          </span>
+        ) : null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ProfileSectionSkeleton() {
+  return (
+    <ArcadeCard hover={false} className="p-6">
+      <div className="space-y-4 animate-pulse">
+        <div className="h-5 w-40 bg-[hsl(0,0%,12%)]" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-3">
+            <div className="h-10 bg-[hsl(0,0%,10%)]" />
+            <div className="h-10 bg-[hsl(0,0%,10%)]" />
+            <div className="h-10 bg-[hsl(0,0%,10%)]" />
+          </div>
+          <div className="space-y-3">
+            <div className="h-20 bg-[hsl(0,0%,10%)]" />
+            <div className="h-20 bg-[hsl(0,0%,10%)]" />
+          </div>
+        </div>
+      </div>
+    </ArcadeCard>
+  );
+}
 
 export default function ProfileArcade() {
   const { user } = useAuth();
   const userId = user?.id;
   const { toast } = useToast();
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { section: routeSection } = useParams<{ section?: string }>();
   const [searchParams] = useSearchParams();
-  const sectionFromUrl = searchParams.get("section") as SectionId | null;
-  const [activeSection, setActiveSection] = useState<SectionId>(sectionFromUrl || "info");
+  const [activeSection, setActiveSection] = useState<SectionId>("info");
+
+  const allowedSections = useMemo(
+    () =>
+      new Set<SectionId>(
+        profileNavigationConfig.flatMap((section) =>
+          section.subSections
+            .map((subSection) => subSection.id)
+            .filter((id): id is SectionId => SECTION_IDS.has(id as SectionId)),
+        ),
+      ),
+    [],
+  );
 
   useEffect(() => {
-    if (sectionFromUrl) setActiveSection(sectionFromUrl);
-  }, [sectionFromUrl]);
+    const requestedSection = resolveProfileSectionId(routeSection);
+    const nextSection =
+      requestedSection && allowedSections.has(requestedSection as SectionId)
+        ? (requestedSection as SectionId)
+        : "info";
+    const canonicalPath = profileSectionPath(nextSection);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete("section");
+    const canonicalSearch = nextSearchParams.toString();
 
-  // Profile data
+    setActiveSection(nextSection);
+
+    if (
+      location.pathname !== canonicalPath ||
+      searchParams.has("section")
+    ) {
+      navigate(
+        canonicalSearch ? `${canonicalPath}?${canonicalSearch}` : canonicalPath,
+        { replace: true }
+      );
+    }
+  }, [allowedSections, location.pathname, navigate, routeSection, searchParams]);
+
   const profileQuery = useQuery({
-    queryKey: ["profile", { userId: user?.id ?? null }],
-    enabled: Boolean(user?.id),
-    queryFn: () => user?.id ? getMyProfile(user.id) : null,
+    queryKey: ["profile", { userId: userId ?? null }],
+    enabled: Boolean(userId),
+    queryFn: () => (userId ? getMyProfile(userId) : null),
   });
 
   const collectorQuery = useQuery({
-    queryKey: ["collector-profile", { userId: user?.id ?? null }],
-    enabled: Boolean(user?.id),
-    queryFn: () => user?.id ? getMyCollectorProfile(user.id) : null,
+    queryKey: ["collector-profile", { userId: userId ?? null }],
+    enabled: Boolean(userId),
+    queryFn: () => (userId ? getMyCollectorProfile(userId) : null),
   });
 
   const notificationPreferencesQuery = useQuery({
@@ -70,13 +258,6 @@ export default function ProfileArcade() {
     queryFn: fetchNotificationPreferences,
   });
 
-  // Collector profile states
-  const [username, setUsername] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [bio, setBio] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
-
-  // Personal data states
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -84,72 +265,38 @@ export default function ProfileArcade() {
   const [marketingEmails, setMarketingEmails] = useState(true);
 
   useEffect(() => {
-    if (collectorQuery.data) {
-      setUsername(collectorQuery.data.username || "");
-      setDisplayName(collectorQuery.data.display_name || "");
-      setBio(collectorQuery.data.bio || "");
-      setIsPublic(collectorQuery.data.is_public);
-    }
-  }, [collectorQuery.data]);
-
-  useEffect(() => {
-    if (profileQuery.data) {
-      setFullName(profileQuery.data.full_name || "");
-      setPhone(profileQuery.data.phone || "");
-    }
+    if (!profileQuery.data) return;
+    setFullName(profileQuery.data.full_name || "");
+    setPhone(profileQuery.data.phone || "");
   }, [profileQuery.data]);
 
   useEffect(() => {
-    if (notificationPreferencesQuery.data) {
-      setEmailNotifications(
+    if (!notificationPreferencesQuery.data) return;
+    setEmailNotifications(
+      Boolean(
         notificationPreferencesQuery.data.item_shipped &&
-          notificationPreferencesQuery.data.item_delivered
-      );
-      setOrderUpdates(notificationPreferencesQuery.data.production_stage_updates);
-      setMarketingEmails(notificationPreferencesQuery.data.marketing_emails);
-    }
+          notificationPreferencesQuery.data.item_delivered,
+      ),
+    );
+    setOrderUpdates(Boolean(notificationPreferencesQuery.data.production_stage_updates));
+    setMarketingEmails(Boolean(notificationPreferencesQuery.data.marketing_emails));
   }, [notificationPreferencesQuery.data]);
 
   const saveProfileMutation = useMutation({
     mutationFn: async () => {
-      if (!user?.id) throw new Error("Não autenticado");
+      if (!userId) throw new Error("Conta nao autenticada");
       return upsertMyProfile({
-        id: user.id,
+        id: userId,
         full_name: fullName.trim() || null,
         phone: phone.replace(/\D/g, "") || null,
       });
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["profile"] });
-      toast({ title: "Perfil salvo", description: "Dados atualizados com sucesso." });
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast({ title: "Conta atualizada", description: "Os dados principais foram salvos." });
     },
-    onError: (e: Error) => {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
-    },
-  });
-
-  const saveCollectorMutation = useMutation({
-    mutationFn: async () => {
-      if (!user?.id) throw new Error("Não autenticado");
-      if (username.trim()) {
-        const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-        if (!usernameRegex.test(username.trim())) throw new Error("Username deve ter 3-20 caracteres");
-        const available = await checkUsernameAvailability(username.trim(), user.id);
-        if (!available) throw new Error("Username já em uso");
-      }
-      return updateCollectorProfile(user.id, {
-        username: username.trim() || undefined,
-        display_name: displayName.trim() || undefined,
-        bio: bio.trim() || undefined,
-        is_public: isPublic,
-      });
-    },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["collector-profile"] });
-      toast({ title: "Perfil público atualizado" });
-    },
-    onError: (e: Error) => {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
     },
   });
 
@@ -162,178 +309,365 @@ export default function ProfileArcade() {
         marketing_emails: marketingEmails,
       }),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["customer-notification-preferences"] });
-      toast({ title: "Preferencias salvas", description: "Notificacoes atualizadas com sucesso." });
+      await queryClient.invalidateQueries({
+        queryKey: ["customer-notification-preferences"],
+      });
+      toast({
+        title: "Preferencias salvas",
+        description: "As notificacoes da conta foram atualizadas.",
+      });
     },
-    onError: (e: Error) => {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
     },
   });
 
-  const profile = profileQuery.data;
-  const completion = profile?.profile_completion || 0;
-
   const iconLookup: Record<string, LucideIcon> = {
-    User, Star: Trophy, Bell, Settings: Heart, Grid: Settings,
-    MapPin, CreditCard, ShoppingBag: Package, RefreshCw, HelpCircle: MessageSquare
+    User,
+    Star: Trophy,
+    Bell,
+    CreditCard,
+    HelpCircle: MessageSquare,
+    RefreshCw: Bell,
   };
+
+  const profile = profileQuery.data;
+  const collector = collectorQuery.data;
+  const completion = profile?.profile_completion || 0;
+  const notificationChannelsEnabled = [
+    emailNotifications,
+    orderUpdates,
+    marketingEmails,
+  ].filter(Boolean).length;
+  const accountDisplayName =
+    fullName || user?.email?.split("@")[0] || "Minha conta";
+  const accountDataCoverage = [
+    Boolean(fullName.trim()),
+    Boolean(phone.trim()),
+    Boolean(user?.email),
+  ].filter(Boolean).length;
+  const accountOperationalStatus =
+    accountDataCoverage === 3
+      ? "Base operacional pronta"
+      : accountDataCoverage === 2
+        ? "Revisar dados principais"
+        : "Completar cadastro principal";
+  const isAccountLoading =
+    (profileQuery.isLoading && !profileQuery.data) ||
+    (collectorQuery.isLoading && !collectorQuery.data) ||
+    (notificationPreferencesQuery.isLoading && !notificationPreferencesQuery.data);
+
+  const sectionStatus = useMemo(() => {
+    switch (activeSection) {
+      case "info":
+        return `${completion}% completo`;
+      case "payment":
+        return "Metodos, historico e seguranca";
+      case "notifications":
+        return `${notificationChannelsEnabled}/3 canais ativos`;
+      case "support":
+        return "Central do cliente";
+      case "subscriptions":
+        return PROFILE_COLLECTIONS_ENABLED ? "Area ativa" : "Area futura";
+      default:
+        return "";
+    }
+  }, [activeSection, completion, notificationChannelsEnabled]);
+
+  const handleSectionChange = (nextSection: SectionId) => {
+    setActiveSection(nextSection);
+    navigate(profileSectionPath(nextSection));
+  };
+
   const saveNotificationPreferencesAction = {
     mutate: () => saveNotificationPreferencesMutation.mutate(),
     isPending: saveNotificationPreferencesMutation.isPending,
   };
 
   return (
-    <Page title="Minha Conta | ORDAX" description="Gerencie seu perfil e preferências">
-      {/* Hero */}
-      <section className="relative py-12 md:py-16 px-6">
-        <div className="relative max-w-5xl mx-auto">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-2 h-2 bg-[hsl(var(--gold-accent))] rounded-full animate-pulse" />
-            <span className="font-mono text-[9px] text-[hsl(var(--gold-accent))] tracking-[0.3em] uppercase" style={{ fontFamily: "'Press Start 2P', monospace" }}>
-              SOLDIER PROFILE
+    <Page
+      title="Minha Conta | ORDAX"
+      description="Gerencie dados da conta, nivel do colecionador, pagamentos e comunicacoes."
+    >
+      <section className="relative px-6 py-12 md:py-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-[hsl(var(--gold-accent))] animate-pulse" />
+            <span
+              className="font-mono text-[9px] uppercase tracking-[0.3em] text-[hsl(var(--gold-accent))]"
+              style={{ fontFamily: "'Press Start 2P', monospace" }}
+            >
+              ACCOUNT CONSOLE
             </span>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-black tracking-[0.15em] mb-4" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
-            MINHA CONTA
-          </h1>
+          <div className="mt-4 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+            <div className="max-w-3xl">
+              <h1
+                className="text-4xl font-black uppercase tracking-[0.15em] md:text-6xl"
+                style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+              >
+                MINHA CONTA
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[hsl(0,0%,58%)] md:text-base">
+                Gerencie dados da conta, nivel do colecionador, pagamentos, notificacoes e
+                suporte em uma superficie unica e mais clara.
+              </p>
+            </div>
 
-          {/* XP Bar */}
-          <div className="max-w-md">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-mono text-[10px] text-[hsl(0,0%,50%)] tracking-widest uppercase">PERFIL COMPLETO</span>
-              <span className="font-mono text-sm text-[hsl(var(--gold-accent))] font-bold">{completion}%</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 border border-[hsl(0,0%,14%)] bg-[hsl(0,0%,6%)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,72%)]">
+                <ShieldCheck className="h-3.5 w-3.5 text-[hsl(var(--gold-accent))]" />
+                {user?.email || "Conta autenticada"}
+              </span>
+              <span className="inline-flex items-center gap-2 border border-[hsl(0,0%,14%)] bg-[hsl(0,0%,6%)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,72%)]">
+                <Trophy className="h-3.5 w-3.5 text-[hsl(var(--gold-accent))]" />
+                Nivel {collector?.collector_level ?? 0}
+              </span>
             </div>
-            <div className="h-2 bg-[hsl(0,0%,12%)] overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-[hsl(var(--gold-accent))] to-[hsl(var(--gold-accent)/0.7)] transition-all duration-1000"
-                style={{ width: `${completion}%` }}
-              />
-            </div>
+          </div>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <SummaryMetric
+              label="Perfil"
+              value={`${completion}%`}
+              help={getCompletionMessage(completion)}
+            />
+            <SummaryMetric
+              label="Nivel"
+              value={`NVL ${collector?.collector_level ?? 0}`}
+              help="Status interno do colecionador. Nao ha classificacao publica ativa no projeto."
+            />
+            <SummaryMetric
+              label="Pecas"
+              value={String(collector?.pieces_owned ?? 0)}
+              help="Quantidade de itens associados ao seu historico atual."
+            />
+            <SummaryMetric
+              label="Investido"
+              value={formatCurrency(collector?.total_spent)}
+              help="Total registrado para a sua conta ate o momento."
+            />
           </div>
         </div>
       </section>
 
-      {/* Content */}
-      <section className="max-w-7xl mx-auto px-6 pb-16">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar */}
-          <aside className="lg:w-56 flex-shrink-0">
+      <section className="mx-auto max-w-7xl px-6 pb-16">
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <aside className="lg:w-72 lg:flex-shrink-0">
             <ArcadeCard hover={false} className="p-4">
-              <nav className="space-y-1">
-                {profileNavigationConfig.map((section) => (
-                  <div key={section.id} className="mb-4">
-                    <h3 className="font-mono text-[8px] text-[hsl(var(--gold-accent)/0.5)] tracking-[0.2em] uppercase mb-2 px-2">{section.title}</h3>
-                    {section.subSections.map((sub) => {
-                      const Icon = sub.icon ? iconLookup[sub.icon] ?? User : User;
-                      const sectionMap: Record<string, string> = {
-                        info: "info", collector: "collector", notifications: "notifications",
-                        preferences: "preferences", collection: "collection", address: "address",
-                        payment: "payment", orders: "orders", subscriptions: "subscriptions", support: "support",
-                      };
-                      const mapped = (sectionMap[sub.id] || sub.id) as SectionId;
-                      const isActive = activeSection === mapped;
+              <div className="border-b border-[hsl(0,0%,12%)] pb-4">
+                <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.72)]">
+                  Conta atual
+                </p>
+                <p
+                  className="mt-2 text-2xl font-black uppercase tracking-[0.08em]"
+                  style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+                >
+                  {accountDisplayName}
+                </p>
+                <p className="mt-2 text-sm text-[hsl(0,0%,58%)]">{user?.email || "Sem email"}</p>
+              </div>
 
-                      return (
-                        <button
-                          key={sub.id}
-                          onClick={() => setActiveSection(mapped)}
-                          className={cn(
-                            "w-full flex items-center gap-2 px-3 py-2 text-xs font-mono tracking-wider transition-all",
-                            isActive
-                              ? "bg-[hsl(var(--gold-accent)/0.15)] text-[hsl(var(--gold-accent))] border-l-2 border-[hsl(var(--gold-accent))]"
-                              : "text-[hsl(0,0%,50%)] hover:text-[hsl(0,0%,80%)] hover:bg-[hsl(0,0%,10%)]"
-                          )}
-                        >
-                          <Icon className="h-3.5 w-3.5" />
-                          {sub.label}
-                        </button>
-                      );
-                    })}
+              <nav className="mt-4 space-y-4">
+                {profileNavigationConfig.map((section) => (
+                  <div key={section.id}>
+                    <p className="px-2 font-mono text-[8px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.5)]">
+                      {section.title}
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {section.subSections.map((subSection) => {
+                        const sectionId = subSection.id as SectionId;
+                        const Icon = subSection.icon ? iconLookup[subSection.icon] ?? User : User;
+                        const isActive = activeSection === sectionId;
+
+                        return (
+                          <button
+                            key={subSection.id}
+                            type="button"
+                            onClick={() => handleSectionChange(sectionId)}
+                            className={cn(
+                              "flex w-full items-center gap-3 px-3 py-2.5 text-left font-mono text-[11px] uppercase tracking-[0.12em] transition-all",
+                              isActive
+                                ? "border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.14)] text-[hsl(var(--gold-accent))]"
+                                : "text-[hsl(0,0%,50%)] hover:bg-[hsl(0,0%,10%)] hover:text-[hsl(0,0%,82%)]",
+                            )}
+                          >
+                            <Icon className="h-3.5 w-3.5" />
+                            {subSection.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </nav>
             </ArcadeCard>
+
+            <ArcadeCard hover={false} className="mt-4 p-4">
+              <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.72)]">
+                Estado da conta
+              </p>
+              <div className="mt-3 space-y-3">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(0,0%,44%)]">
+                    Perfil completo
+                  </p>
+                  <div className="mt-2 h-2 overflow-hidden bg-[hsl(0,0%,12%)]">
+                    <div
+                      className="h-full bg-gradient-to-r from-[hsl(var(--gold-accent))] to-[hsl(var(--gold-accent)/0.72)] transition-all duration-700"
+                      style={{ width: `${completion}%` }}
+                    />
+                  </div>
+                </div>
+                <p className="font-mono text-[10px] leading-relaxed text-[hsl(0,0%,48%)]">
+                  {getCompletionMessage(completion)}
+                </p>
+                <div className="border-t border-[hsl(0,0%,12%)] pt-3 font-mono text-[10px] text-[hsl(0,0%,48%)]">
+                  <p>Ultima atualizacao: {formatDateLabel(profile?.updated_at)}</p>
+                  <p className="mt-1">Cadastro: {formatDateLabel(profile?.created_at)}</p>
+                </div>
+              </div>
+            </ArcadeCard>
           </aside>
 
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            {activeSection === "info" && (
-              <ArcadeCard hover={false} className="p-6">
-                <ArcadeSectionTitle>DADOS BÁSICOS</ArcadeSectionTitle>
-                <div className="space-y-4">
-                  <div>
-                    <label className="font-mono text-[10px] text-[hsl(0,0%,50%)] tracking-widest uppercase block mb-1">NOME COMPLETO</label>
-                    <Input value={fullName} onChange={e => setFullName(e.target.value)} className="bg-[hsl(0,0%,8%)] border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono" />
-                  </div>
-                  <div>
-                    <label className="font-mono text-[10px] text-[hsl(0,0%,50%)] tracking-widest uppercase block mb-1">TELEFONE</label>
-                    <Input value={phone} onChange={e => setPhone(e.target.value)} className="bg-[hsl(0,0%,8%)] border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono" />
-                  </div>
-                  <div>
-                    <label className="font-mono text-[10px] text-[hsl(0,0%,50%)] tracking-widest uppercase block mb-1">EMAIL</label>
-                    <Input value={user?.email || ""} disabled className="bg-[hsl(0,0%,6%)] border-[hsl(0,0%,12%)] text-[hsl(0,0%,40%)] font-mono" />
-                  </div>
-                  <button
-                    onClick={() => saveProfileMutation.mutate()}
-                    disabled={saveProfileMutation.isPending}
-                    className="flex items-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,7%)] font-mono uppercase tracking-[0.15em] text-xs h-10 px-6 hover:brightness-110 transition-all disabled:opacity-50"
-                  >
-                    {saveProfileMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    SALVAR
-                  </button>
-                </div>
-              </ArcadeCard>
-            )}
+          <div className="min-w-0 flex-1">
+            <SectionShell meta={SECTION_META[activeSection]} status={sectionStatus}>
+              {isAccountLoading ? <ProfileSectionSkeleton /> : null}
 
-            {activeSection === "collector" && (
-              <ArcadeCard hover={false} className="p-6">
-                <ArcadeSectionTitle>PERFIL PÚBLICO</ArcadeSectionTitle>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="font-mono text-xs text-[hsl(0,0%,60%)]">Perfil visível publicamente</span>
-                    <Switch checked={isPublic} onCheckedChange={setIsPublic} />
-                  </div>
-                  <div>
-                    <label className="font-mono text-[10px] text-[hsl(0,0%,50%)] tracking-widest uppercase block mb-1">USERNAME</label>
-                    <Input value={username} onChange={e => setUsername(e.target.value)} placeholder="meu_username" className="bg-[hsl(0,0%,8%)] border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono" />
-                  </div>
-                  <div>
-                    <label className="font-mono text-[10px] text-[hsl(0,0%,50%)] tracking-widest uppercase block mb-1">NOME DE EXIBIÇÃO</label>
-                    <Input value={displayName} onChange={e => setDisplayName(e.target.value)} className="bg-[hsl(0,0%,8%)] border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono" />
-                  </div>
-                  <div>
-                    <label className="font-mono text-[10px] text-[hsl(0,0%,50%)] tracking-widest uppercase block mb-1">BIO</label>
-                    <Textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} className="bg-[hsl(0,0%,8%)] border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono" />
-                  </div>
-                  {isPublic && username && (
-                    <div className="flex items-center gap-2 text-xs font-mono text-[hsl(var(--gold-accent)/0.7)]">
-                      <ExternalLink className="w-3 h-3" />
-                      <span>/collector/{username}</span>
+              {!isAccountLoading && activeSection === "info" ? (
+                <ArcadeCard hover={false} className="p-6">
+                  <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.95fr)]">
+                    <div className="space-y-4">
+                      <div className="rounded-lg border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] p-4">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--gold-accent)/0.72)]">
+                          Dados operacionais
+                        </p>
+                        <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(0,0%,48%)]">
+                          Estes dados aparecem em comunicacoes, validacoes de conta e acompanhamento de pedidos.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="md:col-span-2">
+                          <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,50%)]">
+                            Nome completo
+                          </label>
+                          <Input
+                            value={fullName}
+                            onChange={(event) => setFullName(event.target.value)}
+                            className="border-[hsl(0,0%,15%)] bg-[hsl(0,0%,8%)] font-mono text-[hsl(0,0%,92%)]"
+                            placeholder="Seu nome completo"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,50%)]">
+                            Telefone principal
+                          </label>
+                          <Input
+                            value={phone}
+                            onChange={(event) => setPhone(event.target.value)}
+                            className="border-[hsl(0,0%,15%)] bg-[hsl(0,0%,8%)] font-mono text-[hsl(0,0%,92%)]"
+                            placeholder="(11) 99999-9999"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,50%)]">
+                            Email da conta
+                          </label>
+                          <Input
+                            value={user?.email || ""}
+                            disabled
+                            className="border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] font-mono text-[hsl(0,0%,44%)]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--gold-accent)/0.72)]">
+                              Estado da base
+                            </p>
+                            <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(0,0%,48%)]">
+                              {accountOperationalStatus}
+                            </p>
+                          </div>
+                          <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,72%)]">
+                            {accountDataCoverage}/3 sinais principais
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => saveProfileMutation.mutate()}
+                          disabled={saveProfileMutation.isPending}
+                          className="inline-flex w-full items-center justify-center gap-2 bg-[hsl(var(--gold-accent))] px-6 py-2.5 font-mono text-xs uppercase tracking-[0.16em] text-[hsl(0,0%,7%)] transition-all hover:brightness-110 disabled:opacity-50 sm:w-auto"
+                        >
+                          {saveProfileMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Save className="h-4 w-4" />
+                          )}
+                          Salvar dados
+                        </button>
+                      </div>
                     </div>
-                  )}
-                  <button
-                    onClick={() => saveCollectorMutation.mutate()}
-                    disabled={saveCollectorMutation.isPending}
-                    className="flex items-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,7%)] font-mono uppercase tracking-[0.15em] text-xs h-10 px-6 hover:brightness-110 transition-all disabled:opacity-50"
-                  >
-                    {saveCollectorMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    SALVAR
-                  </button>
-                </div>
-              </ArcadeCard>
-            )}
 
-            {activeSection === "payment" && (
-              <ArcadeCard hover={false} className="p-6">
-                <ArcadeSectionTitle>PAGAMENTO</ArcadeSectionTitle>
-                {userId && <PaymentSection userId={userId} />}
-              </ArcadeCard>
-            )}
+                    <div className="space-y-4">
+                      <div className="border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] p-4">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--gold-accent)/0.72)]">
+                          Resumo da conta
+                        </p>
+                        <div className="mt-3 space-y-3 font-mono text-[10px] text-[hsl(0,0%,56%)]">
+                          <div className="flex items-center justify-between gap-3 border-b border-[hsl(0,0%,12%)] pb-2">
+                            <span>Email</span>
+                            <span className="text-right text-[hsl(0,0%,82%)]">{user?.email || "--"}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3 border-b border-[hsl(0,0%,12%)] pb-2">
+                            <span>Nivel do colecionador</span>
+                            <span className="text-right text-[hsl(0,0%,82%)]">
+                              {collector?.collector_level ?? 0}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3 border-b border-[hsl(0,0%,12%)] pb-2">
+                            <span>Notificacoes ativas</span>
+                            <span className="text-right text-[hsl(0,0%,82%)]">
+                              {notificationChannelsEnabled}/3
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <span>Ultima atualizacao</span>
+                            <span className="text-right text-[hsl(0,0%,82%)]">
+                              {formatDateLabel(profile?.updated_at)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
-            {activeSection === "notifications" && (
-              <ArcadeCard hover={false} className="p-6">
-                <ArcadeSectionTitle>NOTIFICAÇÕES</ArcadeSectionTitle>
+                      <div className="border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] p-4">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--gold-accent)/0.72)]">
+                          Recomendacao
+                        </p>
+                        <p className="mt-3 font-mono text-[10px] leading-relaxed text-[hsl(0,0%,48%)]">
+                          O sistema ainda mantem progresso de colecionador por nivel, pecas e
+                          investimento total. O que nao existe hoje e uma classificacao publica comparativa.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </ArcadeCard>
+              ) : null}
+
+              {!isAccountLoading && activeSection === "payment" && userId ? (
+                <PaymentSection userId={userId} />
+              ) : null}
+
+              {!isAccountLoading && activeSection === "notifications" ? (
                 <NotificationsSection
                   emailNotifications={emailNotifications}
                   setEmailNotifications={setEmailNotifications}
@@ -343,35 +677,19 @@ export default function ProfileArcade() {
                   setMarketingEmails={setMarketingEmails}
                   saveMutation={saveNotificationPreferencesAction}
                 />
-              </ArcadeCard>
-            )}
+              ) : null}
 
-            {activeSection === "subscriptions" && (
-              <ArcadeCard hover={false} className="p-6">
-                <ArcadeSectionTitle>ASSINATURAS</ArcadeSectionTitle>
-                {userId && <SubscriptionSection userId={userId} />}
-              </ArcadeCard>
-            )}
+              {!isAccountLoading && activeSection === "support" && userId ? (
+                <SupportSection userId={userId} />
+              ) : null}
 
-            {activeSection === "support" && (
-              <ArcadeCard hover={false} className="p-6">
-                <ArcadeSectionTitle>SUPORTE</ArcadeSectionTitle>
-                {userId && <SupportSection userId={userId} />}
-              </ArcadeCard>
-            )}
-
-            {/* Fallback for other sections */}
-            {!["info", "collector", "payment", "notifications", "subscriptions", "support"].includes(activeSection) && (
-              <ArcadeCard hover={false} className="p-6">
-                <ArcadeSectionTitle>{activeSection.toUpperCase()}</ArcadeSectionTitle>
-                <div className="text-center py-12">
-                  <Settings className="w-12 h-12 text-[hsl(0,0%,20%)] mx-auto mb-4" />
-                  <p className="font-mono text-xs text-[hsl(0,0%,40%)] tracking-wider">
-                    Seção em construção
-                  </p>
-                </div>
-              </ArcadeCard>
-            )}
+              {!isAccountLoading &&
+              PROFILE_COLLECTIONS_ENABLED &&
+              activeSection === "subscriptions" &&
+              userId ? (
+                <SubscriptionSection userId={userId} />
+              ) : null}
+            </SectionShell>
           </div>
         </div>
       </section>

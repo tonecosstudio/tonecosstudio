@@ -1,4 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
 import {
   ALLOWED_PAYMENT_PROOF_TYPES,
   generateSecureToken,
@@ -6,6 +5,7 @@ import {
   sanitizeFilename,
 } from "@/lib/security/input-sanitizer";
 import { assertCurrentUserId } from "@/services/auth/current-user";
+import { getPublicStorageUrl, uploadStorageFile } from "@/services/supabase/storage-client";
 
 const STORAGE_BUCKET = "payment-vouchers";
 
@@ -46,20 +46,14 @@ export async function uploadPaymentVoucher({
     : `${timestamp}-${randomId}.${fileExt}`;
   const filePath = `${sanitizePathPrefix(pathPrefix)}/${fileName}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .upload(filePath, file, {
-      upsert: false,
-      contentType: file.type,
-    });
+  const { error: uploadError } = await uploadStorageFile(STORAGE_BUCKET, filePath, file, {
+    upsert: false,
+    contentType: file.type,
+  });
 
   if (uploadError) {
     throw new Error(`Falha no upload: ${uploadError.message}`);
   }
 
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
-
-  return publicUrl;
+  return getPublicStorageUrl(STORAGE_BUCKET, filePath);
 }

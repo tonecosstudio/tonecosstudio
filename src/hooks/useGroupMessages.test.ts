@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { createElement, type ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useGroupMessages } from "./useGroupMessages";
 import { supabase } from "@/integrations/supabase/client";
-import { messageService } from "@/lib/services/messageService";
+import { messageService } from "@/services/support/message-service";
 import type { User } from "@supabase/supabase-js";
 
 // Mock dependencies
@@ -24,11 +26,11 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-vi.mock("@/lib/services/messageService", () => ({
+vi.mock("@/services/support/message-service", () => ({
   messageService: {
-    listGroupMessages: vi.fn(),
-    updateLastViewed: vi.fn(),
-    sendBroadcastMessage: vi.fn(),
+    listCurrentUserGroupMessages: vi.fn(),
+    updateCurrentUserLastViewed: vi.fn(),
+    sendCurrentAdminBroadcastMessage: vi.fn(),
   },
 }));
 
@@ -75,6 +77,23 @@ describe("useGroupMessages", () => {
     },
   ];
 
+  const createWrapper = () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        mutations: { retry: false },
+        queries: { gcTime: 0, retry: false },
+      },
+    });
+
+    return ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children);
+  };
+
+  const renderUseGroupMessages = (
+    options: Parameters<typeof useGroupMessages>[0],
+  ) =>
+    renderHook(() => useGroupMessages(options), { wrapper: createWrapper() });
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -89,7 +108,7 @@ describe("useGroupMessages", () => {
     } as Awaited<ReturnType<typeof supabase.rpc>>);
 
     // Mock message service
-    vi.mocked(messageService.listGroupMessages).mockResolvedValue({
+    vi.mocked(messageService.listCurrentUserGroupMessages).mockResolvedValue({
       messages: mockMessages,
       pagination: {
         page: 1,
@@ -99,11 +118,21 @@ describe("useGroupMessages", () => {
       },
     });
 
-    vi.mocked(messageService.updateLastViewed).mockResolvedValue();
+    vi.mocked(messageService.updateCurrentUserLastViewed).mockResolvedValue(
+      mockUser.id,
+    );
+    vi.mocked(
+      messageService.sendCurrentAdminBroadcastMessage,
+    ).mockResolvedValue({
+      ...mockMessages[0],
+      attachments: [],
+    } as Awaited<
+      ReturnType<typeof messageService.sendCurrentAdminBroadcastMessage>
+    >);
   });
 
   it("should load messages on mount", async () => {
-    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
+    const { result } = renderUseGroupMessages({ groupId: "group-1" });
 
     expect(result.current.loading).toBe(true);
 
@@ -111,36 +140,41 @@ describe("useGroupMessages", () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(messageService.listGroupMessages).toHaveBeenCalledWith("group-1", mockUser.id, {
-      page: 1,
-      limit: 50,
-    });
+    expect(messageService.listCurrentUserGroupMessages).toHaveBeenCalledWith(
+      "group-1",
+      {
+        page: 1,
+        limit: 50,
+      },
+    );
 
     expect(result.current.messages).toHaveLength(2);
     expect(result.current.messages[0].id).toBe("msg-1");
   });
 
   it("should not load messages when groupId is null", async () => {
-    const { result } = renderHook(() => useGroupMessages({ groupId: null }));
+    const { result } = renderUseGroupMessages({ groupId: null });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(messageService.listGroupMessages).not.toHaveBeenCalled();
+    expect(messageService.listCurrentUserGroupMessages).not.toHaveBeenCalled();
     expect(result.current.messages).toHaveLength(0);
   });
 
   it("should update last viewed on mount", async () => {
-    renderHook(() => useGroupMessages({ groupId: "group-1" }));
+    renderUseGroupMessages({ groupId: "group-1" });
 
     await waitFor(() => {
-      expect(messageService.updateLastViewed).toHaveBeenCalledWith("group-1", mockUser.id);
+      expect(messageService.updateCurrentUserLastViewed).toHaveBeenCalledWith(
+        "group-1",
+      );
     });
   });
 
   it("should handle pagination", async () => {
-    vi.mocked(messageService.listGroupMessages).mockResolvedValue({
+    vi.mocked(messageService.listCurrentUserGroupMessages).mockResolvedValue({
       messages: mockMessages,
       pagination: {
         page: 1,
@@ -150,7 +184,7 @@ describe("useGroupMessages", () => {
       },
     });
 
-    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
+    const { result } = renderUseGroupMessages({ groupId: "group-1" });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -162,7 +196,7 @@ describe("useGroupMessages", () => {
   });
 
   it("should set hasMore to false on last page", async () => {
-    vi.mocked(messageService.listGroupMessages).mockResolvedValue({
+    vi.mocked(messageService.listCurrentUserGroupMessages).mockResolvedValue({
       messages: mockMessages,
       pagination: {
         page: 2,
@@ -172,7 +206,7 @@ describe("useGroupMessages", () => {
       },
     });
 
-    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
+    const { result } = renderUseGroupMessages({ groupId: "group-1" });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -182,9 +216,11 @@ describe("useGroupMessages", () => {
   });
 
   it("should handle errors gracefully", async () => {
-    vi.mocked(messageService.listGroupMessages).mockRejectedValue(new Error("Network error"));
+    vi.mocked(messageService.listCurrentUserGroupMessages).mockRejectedValue(
+      new Error("Network error"),
+    );
 
-    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
+    const { result } = renderUseGroupMessages({ groupId: "group-1" });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -195,7 +231,7 @@ describe("useGroupMessages", () => {
   });
 
   it("should provide refresh function", async () => {
-    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
+    const { result } = renderUseGroupMessages({ groupId: "group-1" });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -209,20 +245,24 @@ describe("useGroupMessages", () => {
     });
 
     await waitFor(() => {
-      expect(messageService.listGroupMessages).toHaveBeenCalledWith("group-1", mockUser.id, {
-        page: 1,
-        limit: 50,
-      });
+      expect(messageService.listCurrentUserGroupMessages).toHaveBeenCalledWith(
+        "group-1",
+        {
+          page: 1,
+          limit: 50,
+        },
+      );
     });
   });
 
   it("should validate admin role before sending message", async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({
-      data: false,
-      error: null,
-    } as Awaited<ReturnType<typeof supabase.rpc>>);
+    vi.mocked(
+      messageService.sendCurrentAdminBroadcastMessage,
+    ).mockRejectedValue(
+      new Error("Apenas administradores podem enviar mensagens"),
+    );
 
-    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
+    const { result } = renderUseGroupMessages({ groupId: "group-1" });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -230,7 +270,7 @@ describe("useGroupMessages", () => {
 
     // Try to send message as non-admin
     await expect(result.current.sendMessage("Test message")).rejects.toThrow(
-      "Apenas administradores podem enviar mensagens"
+      "Apenas administradores podem enviar mensagens",
     );
   });
 });

@@ -1,15 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, AlertTriangle, CalendarX, CheckCircle, Clock, MessageSquare, Timer, UserCheck } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
-import {
-  AlertCircle,
-  Clock,
-  CheckCircle,
-  MessageSquare,
-  UserCheck,
-  Timer,
-  AlertTriangle,
-  CalendarX,
-} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSupportDashboardMetrics } from "@/hooks/admin/useSupportDashboardMetrics";
 
 export function DashboardMetrics() {
@@ -18,8 +10,8 @@ export function DashboardMetrics() {
   if (loading) {
     return (
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(8)].map((_, i) => (
-          <Card key={i}>
+        {[...Array(8)].map((_, index) => (
+          <Card key={index}>
             <CardHeader className="pb-2">
               <div className="h-4 animate-pulse rounded bg-muted" />
             </CardHeader>
@@ -67,15 +59,15 @@ export function DashboardMetrics() {
         value={metrics.overdue_24h_count}
         icon={<Clock className="h-4 w-4" />}
         variant={metrics.overdue_24h_count > 0 ? "danger" : "success"}
-        description="Conversas abertas há mais de 24h"
+        description="Conversas abertas ha mais de 24h"
         highlight={metrics.overdue_24h_count > 0}
       />
       <MetricCard
-        title="Tempo Médio Resposta"
+        title="Tempo Medio de Resposta"
         value={`${metrics.avg_first_response_minutes}min`}
         icon={<Timer className="h-4 w-4" />}
         variant="default"
-        description="Média últimos 7 dias"
+        description="Media dos ultimos 7 dias"
       />
       <MetricCard
         title="Conversas com Risco"
@@ -106,7 +98,14 @@ interface MetricCardProps {
   highlight?: boolean;
 }
 
-function MetricCard({ title, value, icon, variant, description, highlight = false }: MetricCardProps) {
+function MetricCard({
+  title,
+  value,
+  icon,
+  variant,
+  description,
+  highlight = false,
+}: MetricCardProps) {
   const variantStyles = {
     default: "text-foreground",
     success: "text-green-600 dark:text-green-400",

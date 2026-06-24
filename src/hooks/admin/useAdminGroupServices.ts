@@ -1,5 +1,5 @@
-import { groupService } from "@/lib/services/groupService";
-import { metricsService } from "@/lib/services/metricsService";
+import { groupService } from "@/services/groups/group-service";
+import { metricsService } from "@/services/groups/group-metrics-service";
 
 export function useAdminGroupServices() {
   return {

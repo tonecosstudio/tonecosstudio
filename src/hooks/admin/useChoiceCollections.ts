@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchActiveChoiceCollections,
   type ChoiceCollectionFilterOption,
-} from "@/services/admin/choice-service";
+} from "@/services/admin/choices/choice-service";
 
 export type { ChoiceCollectionFilterOption };
 

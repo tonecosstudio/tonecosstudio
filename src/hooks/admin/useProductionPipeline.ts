@@ -1,14 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { PRODUCTION_STAGE_LABELS, PRODUCTION_STAGE_ORDER } from "@/config/production-stages";
 import {
   fetchProductionQueue,
-  STAGE_LABELS,
-  STAGE_ORDER,
   updateProductionStage,
   type PaginatedResponse,
-} from "@/services/admin/production-service";
+} from "@/services/admin/production/production-service";
 import type { ProductionFilters, ProductionQueueItem, ProductionStage } from "@/types/production";
 
-export { STAGE_LABELS, STAGE_ORDER };
+export const STAGE_LABELS = PRODUCTION_STAGE_LABELS;
+export const STAGE_ORDER = PRODUCTION_STAGE_ORDER;
 
 interface UseProductionPipelineQueueOptions {
   enabled?: boolean;
@@ -46,7 +47,7 @@ export function useMoveProductionPipelineItems() {
       targetStage: ProductionStage;
     }) => Promise.all(itemIds.map((id) => updateProductionStage(id, targetStage))),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["production-queue"] });
+      void queryClient.invalidateQueries({ queryKey: ["production-queue"] });
     },
   });
 }
@@ -61,8 +62,7 @@ export function useMoveProductionKanbanItem(filters: ProductionFilters) {
       const queryKey = ["production-queue", filters] as const;
       await queryClient.cancelQueries({ queryKey });
 
-      const previousData =
-        queryClient.getQueryData<PaginatedResponse<ProductionQueueItem>>(queryKey);
+      const previousData = queryClient.getQueryData<PaginatedResponse<ProductionQueueItem>>(queryKey);
 
       if (previousData) {
         queryClient.setQueryData<PaginatedResponse<ProductionQueueItem>>(queryKey, {
@@ -81,10 +81,10 @@ export function useMoveProductionKanbanItem(filters: ProductionFilters) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["production-metrics"] });
+      void queryClient.invalidateQueries({ queryKey: ["production-metrics"] });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["production-queue"] });
+      void queryClient.invalidateQueries({ queryKey: ["production-queue"] });
     },
   });
 }

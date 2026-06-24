@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { defaultTelegramWebpOutput } from "./telegram-paths.mjs";
 
 function argValue(name, fallback = null) {
   const equalsArg = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -15,7 +16,7 @@ const OUTPUT = path.resolve(
   argValue(
     "output",
     process.env.ORDAX_WEBP_OUTPUT ||
-      "C:/Users/Casa/Downloads/ordax-catalogo-webp-final",
+      defaultTelegramWebpOutput(),
   ),
 );
 const SITE_PLAN = path.resolve(

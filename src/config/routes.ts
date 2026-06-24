@@ -32,9 +32,10 @@ export const PUBLIC_COLLECTIONS_ENABLED = false;
 
 export const AUTH_ROUTES = {
   profile: "/perfil",
+  profileSection: "/perfil/:section",
   support: "/suporte",
-  payments: "/pagamentos",
-  paymentDetails: "/pagamentos/:paymentId",
+  payments: "/perfil/pagamentos",
+  paymentDetails: "/perfil/pagamentos/:paymentId",
   subscribeCollection: "/colecoes/:slug/assinar",
   wishlist: "/wishlist",
   dashboard: "/dashboard",
@@ -45,6 +46,28 @@ export const AUTH_ROUTES = {
   subscriberDashboard: "/painel-assinante",
   coinsPurchase: "/coins/purchase",
 } as const;
+
+const PROFILE_SECTION_SEGMENTS = {
+  info: "conta",
+  payment: "pagamentos",
+  notifications: "notificacoes",
+  support: "suporte",
+  subscriptions: "assinatura",
+} as const;
+
+type ProfileSectionRouteId = keyof typeof PROFILE_SECTION_SEGMENTS;
+
+const PROFILE_SECTION_ALIASES: Record<string, ProfileSectionRouteId> = {
+  conta: "info",
+  preferencias: "info",
+  pagamento: "payment",
+  pagamentos: "payment",
+  notificacoes: "notifications",
+  notificacao: "notifications",
+  suporte: "support",
+  assinatura: "subscriptions",
+  assinaturas: "subscriptions",
+};
 
 export const ADMIN_ROUTES = {
   home: "/admin",
@@ -259,8 +282,18 @@ export function subscribeCollectionPath(slug: string) {
   return AUTH_ROUTES.subscribeCollection.replace(":slug", encodeURIComponent(slug));
 }
 
+export function resolveProfileSectionId(
+  section: string | null | undefined,
+): ProfileSectionRouteId | null {
+  if (!section) return null;
+  const normalized = section.trim().toLocaleLowerCase();
+  if (normalized in PROFILE_SECTION_SEGMENTS) return normalized as ProfileSectionRouteId;
+  return PROFILE_SECTION_ALIASES[normalized] ?? null;
+}
+
 export function profileSectionPath(section: string) {
-  return `${AUTH_ROUTES.profile}?section=${encodeURIComponent(section)}`;
+  const resolvedSection = resolveProfileSectionId(section) ?? "info";
+  return `${AUTH_ROUTES.profile}/${PROFILE_SECTION_SEGMENTS[resolvedSection]}`;
 }
 
 export function loginReturnToPath(returnTo: string) {

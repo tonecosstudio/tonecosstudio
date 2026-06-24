@@ -45,7 +45,7 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   anime: "Anime",
   manga: "Manga",
   movie: "Filme",
-  series: "Serie",
+  series: "Series",
   game: "Game",
   comic: "HQ",
   tokusatsu: "Tokusatsu",
@@ -53,16 +53,6 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   other: "Outro",
 };
 
-const VARIANT_TYPE_LABELS: Record<string, string> = {
-  default: "Padrao",
-  form: "Forma",
-  costume: "Roupa",
-  pose: "Pose",
-  scale: "Escala",
-  edition: "Edicao",
-  variant: "Versao",
-  other: "Outro",
-};
 
 // ─── Types ───────────────────────────────────────────────────
 function catalogFilterPath(
@@ -80,6 +70,12 @@ type ModelGalleryItem = {
   thumbnailUrl: string;
   altText: string;
   sensitivity: ReturnType<typeof getCatalogSensitivity>;
+};
+
+type TaxonomyRow = {
+  label: string;
+  value: string;
+  href: string;
 };
 
 function uniqueGalleryItems(items: ModelGalleryItem[]) {
@@ -241,17 +237,14 @@ export default function ModelDetails() {
   const mediaLabel = model?.source_type
     ? SOURCE_TYPE_LABELS[model.source_type] || model.source_type
     : null;
-  const variantLabel = model?.variant_type
-    ? VARIANT_TYPE_LABELS[model.variant_type] || model.variant_type
-    : null;
   const title = model
     ? variantName
       ? `${displayName} - ${variantName}`
       : buildModelTitle(displayName, sourceTitle)
     : "Modelo";
   const seoDescription = model
-    ? `Veja detalhes do modelo ${title}. Estatueta artesanal da Tonecos Studios.`
-    : "Veja detalhes do modelo. Estatueta artesanal da Tonecos Studios.";
+    ? `Veja detalhes do modelo ${title}. Peca disponivel no universo ORDAX.`
+    : "Veja detalhes do modelo. Peca disponivel no universo ORDAX.";
   const headlineTitle = displayName;
   const subtitleParts = uniqueStrings([
     sourceTitle,
@@ -390,9 +383,7 @@ export default function ModelDetails() {
           href: catalogFilterPath("tag", sourceTitle),
         }
       : null,
-  ].filter((row): row is { label: string; value: string; href?: string } =>
-    Boolean(row?.value),
-  );
+  ].filter((row): row is TaxonomyRow => row !== null);
   const fixedCashPrice =
     model?.price_mode === "fixed" &&
     typeof model.price_standalone_override === "number" &&
@@ -529,7 +520,7 @@ export default function ModelDetails() {
                         sensitivity.shouldBlur ? "scale-[1.03] blur-xl" : ""
                       }`}
                       loading="eager"
-                      fetchPriority="high"
+                      {...({ fetchpriority: "high" } as Record<string, string>)}
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[hsl(var(--gold-accent)/0.2)] to-[#080808]">
@@ -624,7 +615,7 @@ export default function ModelDetails() {
                 </h1>
                 {subtitleParts.length > 0 && (
                   <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.28em] text-[hsl(var(--muted-foreground))]">
-                    {subtitleParts.join(" • ")}
+                    {subtitleParts.join(" / ")}
                   </p>
                 )}
 

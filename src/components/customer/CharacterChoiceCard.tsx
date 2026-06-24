@@ -1,29 +1,22 @@
-/**
- * CharacterChoiceCard Component
- * 
- * Displays character choice status and actions for customer order progress view.
- * Shows deadline countdown, chosen character, approval status, and change options.
- * 
- * Requirements: 2.2.2, 2.4.3
- * Task: 5.1.4 Create CharacterChoiceCard component
- */
-
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Package, Clock, CheckCircle2, AlertCircle, XCircle, Edit } from "lucide-react";
-import { formatDistanceToNow, differenceInDays, differenceInHours } from "date-fns";
+import { differenceInDays, differenceInHours, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Edit,
+  Package,
+  XCircle,
+} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { ChoiceStatusEntity } from "@/hooks/customer/useChoiceActions";
 import { CharacterSelectionModal } from "./CharacterSelectionModal";
 import { ChoiceChangeModal } from "./ChoiceChangeModal";
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export interface CharacterChoiceCardProps {
   orderId: string;
@@ -39,113 +32,135 @@ export interface CharacterChoiceCardProps {
   className?: string;
 }
 
-// Status labels in Portuguese
 const STATUS_LABELS: Record<ChoiceStatusEntity, string> = {
-  pending: "Aguardando Escolha",
-  submitted: "Aguardando Aprovação",
+  pending: "Aguardando escolha",
+  submitted: "Aguardando aprovação",
   approved: "Aprovado",
   rejected: "Rejeitado",
   locked: "Bloqueado",
   expired: "Expirado",
 };
 
-// ============================================================================
-// Sub-Components
-// ============================================================================
+const STATUS_BADGE_CLASSNAMES: Record<ChoiceStatusEntity, string> = {
+  pending:
+    "border-yellow-500/25 bg-yellow-500/12 text-yellow-200 hover:bg-yellow-500/12",
+  submitted:
+    "border-sky-500/25 bg-sky-500/12 text-sky-200 hover:bg-sky-500/12",
+  approved:
+    "border-emerald-500/25 bg-emerald-500/12 text-emerald-200 hover:bg-emerald-500/12",
+  rejected: "border-red-500/25 bg-red-500/12 text-red-200 hover:bg-red-500/12",
+  locked:
+    "border-[hsl(0,0%,18%)] bg-[hsl(0,0%,10%)] text-[hsl(0,0%,80%)] hover:bg-[hsl(0,0%,10%)]",
+  expired: "border-red-500/25 bg-red-500/12 text-red-200 hover:bg-red-500/12",
+};
 
-/**
- * DeadlineCountdown - Shows deadline with color-coded urgency
- */
 interface DeadlineCountdownProps {
   deadline: string;
 }
 
-const DeadlineCountdown: React.FC<DeadlineCountdownProps> = ({ deadline }) => {
+function DeadlineCountdown({ deadline }: DeadlineCountdownProps) {
   const deadlineDate = new Date(deadline);
   const now = new Date();
   const daysRemaining = differenceInDays(deadlineDate, now);
   const hoursRemaining = differenceInHours(deadlineDate, now);
-  
-  // Determine urgency level
-  let urgencyColor = "text-green-600";
-  let bgColor = "bg-green-50 border-green-200";
+
+  let toneClassName =
+    "border-emerald-500/20 bg-emerald-500/10 text-emerald-100";
+  let iconClassName = "text-emerald-300";
   let icon = <Clock className="h-4 w-4" />;
-  
+
   if (hoursRemaining < 24) {
-    urgencyColor = "text-red-600";
-    bgColor = "bg-red-50 border-red-200";
+    toneClassName = "border-red-500/20 bg-red-500/10 text-red-100";
+    iconClassName = "text-red-300";
     icon = <AlertCircle className="h-4 w-4" />;
   } else if (daysRemaining <= 3) {
-    urgencyColor = "text-yellow-600";
-    bgColor = "bg-yellow-50 border-yellow-200";
-    icon = <Clock className="h-4 w-4" />;
+    toneClassName = "border-yellow-500/20 bg-yellow-500/10 text-yellow-100";
+    iconClassName = "text-yellow-300";
   }
-  
+
   return (
-    <div className={cn("flex items-center gap-2 p-3 rounded-lg border", bgColor)}>
-      <div className={urgencyColor}>{icon}</div>
-      <div className="flex-1">
-        <p className="text-sm font-medium">Prazo para escolha</p>
-        <p className={cn("text-sm font-semibold", urgencyColor)}>
+    <div className={cn("flex items-start gap-3 rounded-sm border p-4", toneClassName)}>
+      <div className={cn("mt-0.5", iconClassName)}>{icon}</div>
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-current/80">
+          Prazo para escolha
+        </p>
+        <p className="mt-1 text-sm font-semibold">
           {formatDistanceToNow(deadlineDate, { addSuffix: true, locale: ptBR })}
         </p>
       </div>
     </div>
   );
-};
+}
 
-/**
- * CharacterDisplay - Shows chosen character with image
- */
 interface CharacterDisplayProps {
   name: string;
   imageUrl: string | null;
   status: ChoiceStatusEntity;
 }
 
-const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ name, imageUrl, status }) => {
+function CharacterDisplay({ name, imageUrl, status }: CharacterDisplayProps) {
   const isRejected = status === "rejected";
-  
+
   return (
-    <div className={cn(
-      "flex items-center gap-3 p-3 rounded-lg border",
-      isRejected ? "border-red-200 bg-red-50" : "bg-card"
-    )}>
-      {imageUrl && (
+    <div
+      className={cn(
+        "flex items-center gap-4 rounded-sm border p-4",
+        isRejected
+          ? "border-red-500/20 bg-red-500/8"
+          : "border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)]"
+      )}
+    >
+      {imageUrl ? (
         <img
           src={imageUrl}
           alt={name}
           className={cn(
-            "w-16 h-16 object-cover rounded",
-            isRejected && "opacity-50"
+            "h-16 w-16 rounded-sm object-cover",
+            isRejected && "opacity-60 saturate-50"
           )}
         />
+      ) : (
+        <div className="flex h-16 w-16 items-center justify-center rounded-sm border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,9%)]">
+          <Package className="h-5 w-5 text-[hsl(0,0%,50%)]" />
+        </div>
       )}
-      <div className="flex-1">
-        <p className={cn(
-          "font-medium",
-          isRejected && "text-red-900"
-        )}>
+      <div className="min-w-0 flex-1">
+        <p className={cn("font-semibold", isRejected ? "text-red-100" : "text-white")}>
           {name}
         </p>
-        <p className={cn(
-          "text-xs",
-          isRejected ? "text-red-700" : "text-muted-foreground"
-        )}>
-          {isRejected ? "Escolha rejeitada" : "Personagem escolhido"}
+        <p
+          className={cn(
+            "mt-1 text-xs",
+            isRejected ? "text-red-200/80" : "text-[hsl(0,0%,58%)]"
+          )}
+        >
+          {isRejected ? "Escolha rejeitada pela equipe" : "Personagem vinculado ao pedido"}
         </p>
       </div>
     </div>
   );
-};
+}
 
-// ============================================================================
-// Main Component
-// ============================================================================
+function StatusBadge({ status }: { status: ChoiceStatusEntity }) {
+  const iconClassName = "mr-1 h-3 w-3";
 
-export const CharacterChoiceCard: React.FC<CharacterChoiceCardProps> = ({
+  return (
+    <Badge variant="outline" className={cn("capitalize", STATUS_BADGE_CLASSNAMES[status])}>
+      {status === "pending" && <Clock className={iconClassName} />}
+      {status === "submitted" && <Clock className={iconClassName} />}
+      {status === "approved" && <CheckCircle2 className={iconClassName} />}
+      {status === "rejected" && <XCircle className={iconClassName} />}
+      {status === "locked" && <CheckCircle2 className={iconClassName} />}
+      {status === "expired" && <AlertCircle className={iconClassName} />}
+      {STATUS_LABELS[status]}
+    </Badge>
+  );
+}
+
+export function CharacterChoiceCard({
   orderId,
-  orderType: _orderType, // Part of interface contract, reserved for future use
+  orderType: _orderType,
   collectionId,
   choiceStatus,
   choiceDeadline,
@@ -155,267 +170,205 @@ export const CharacterChoiceCard: React.FC<CharacterChoiceCardProps> = ({
   characterImageUrl,
   changesCount = 0,
   className,
-}) => {
+}: CharacterChoiceCardProps) {
   const [showSelectionModal, setShowSelectionModal] = useState(false);
   const [showChangeModal, setShowChangeModal] = useState(false);
 
-  // Determine status flags
   const isPending = choiceStatus === "pending";
   const isSubmitted = choiceStatus === "submitted";
   const isApproved = choiceStatus === "approved";
   const isRejected = choiceStatus === "rejected";
   const isLocked = choiceStatus === "locked";
   const isExpired = choiceStatus === "expired";
-  
-  // Check if deadline has passed
+
   const deadlineDate = choiceDeadline ? new Date(choiceDeadline) : null;
   const isDeadlinePassed = deadlineDate ? deadlineDate < new Date() : false;
-  
-  // Determine if changes are allowed
   const canChange = isApproved && changesCount < 3 && !isDeadlinePassed;
   const changesRemaining = 3 - changesCount;
 
-  // Get status badge
-  const getStatusBadge = () => {
-    switch (choiceStatus) {
-      case "pending":
-        return (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-            <Clock className="h-3 w-3 mr-1" />
-            {STATUS_LABELS.pending}
-          </Badge>
-        );
-      case "submitted":
-        return (
-          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-            <Clock className="h-3 w-3 mr-1" />
-            {STATUS_LABELS.submitted}
-          </Badge>
-        );
-      case "approved":
-        return (
-          <Badge className="bg-green-500">
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            {STATUS_LABELS.approved}
-          </Badge>
-        );
-      case "rejected":
-        return (
-          <Badge variant="destructive">
-            <XCircle className="h-3 w-3 mr-1" />
-            {STATUS_LABELS.rejected}
-          </Badge>
-        );
-      case "locked":
-        return (
-          <Badge variant="secondary">
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            {STATUS_LABELS.locked}
-          </Badge>
-        );
-      case "expired":
-        return (
-          <Badge variant="destructive">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            {STATUS_LABELS.expired}
-          </Badge>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
-    <Card className={className}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
+    <Card
+      className={cn(
+        "border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] text-white shadow-none",
+        className
+      )}
+    >
+      <CardHeader className="space-y-4 border-b border-[hsl(0,0%,12%)] pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Package className="h-5 w-5 text-[hsl(var(--gold-accent))]" />
               Escolha de Personagem
             </CardTitle>
-            <CardDescription>
-              Selecione seu personagem favorito
+            <CardDescription className="mt-2 text-sm text-[hsl(0,0%,58%)]">
+              Gerencie a escolha vinculada a este pedido e acompanhe a aprovação da equipe.
             </CardDescription>
           </div>
-          {getStatusBadge()}
+          <StatusBadge status={choiceStatus} />
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Pending Status - Show "Choose Character" button */}
+      <CardContent className="space-y-4 p-6">
         {isPending && (
           <>
-            {choiceDeadline && !isDeadlinePassed && (
-              <DeadlineCountdown deadline={choiceDeadline} />
-            )}
-            
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
+            {choiceDeadline && !isDeadlinePassed ? <DeadlineCountdown deadline={choiceDeadline} /> : null}
+
+            <Alert className="border-yellow-500/20 bg-yellow-500/10 text-yellow-100">
+              <AlertCircle className="h-4 w-4 text-yellow-300" />
               <AlertDescription>
-                Você precisa escolher um personagem para este pedido.
+                Você precisa escolher um personagem para liberar o andamento deste pedido.
               </AlertDescription>
             </Alert>
 
-            <Button 
-              onClick={() => setShowSelectionModal(true)} 
+            <Button
+              onClick={() => setShowSelectionModal(true)}
               className="w-full"
               disabled={isDeadlinePassed}
             >
-              <Package className="h-4 w-4 mr-2" />
+              <Package className="mr-2 h-4 w-4" />
               Escolher Personagem
             </Button>
 
-            {isDeadlinePassed && (
-              <Alert variant="destructive">
+            {isDeadlinePassed ? (
+              <Alert variant="destructive" className="border-red-500/20 bg-red-500/10">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Prazo Expirado</AlertTitle>
+                <AlertTitle>Prazo expirado</AlertTitle>
                 <AlertDescription>
                   O prazo para escolher o personagem expirou. Entre em contato com o suporte.
                 </AlertDescription>
               </Alert>
-            )}
+            ) : null}
           </>
         )}
 
-        {/* Submitted Status - Show chosen character and waiting message */}
         {isSubmitted && (
           <>
-            <Alert className="bg-blue-50 border-blue-200">
-              <Clock className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-900">
+            <Alert className="border-sky-500/20 bg-sky-500/10 text-sky-100">
+              <Clock className="h-4 w-4 text-sky-300" />
+              <AlertDescription>
                 Sua escolha foi enviada e está aguardando aprovação da equipe de produção.
               </AlertDescription>
             </Alert>
 
-            {characterName && (
+            {characterName ? (
               <CharacterDisplay
                 name={characterName}
                 imageUrl={characterImageUrl}
                 status={choiceStatus}
               />
-            )}
+            ) : null}
 
-            {choiceDeadline && !isDeadlinePassed && (
-              <DeadlineCountdown deadline={choiceDeadline} />
-            )}
+            {choiceDeadline && !isDeadlinePassed ? <DeadlineCountdown deadline={choiceDeadline} /> : null}
           </>
         )}
 
-        {/* Approved Status - Show approved character */}
         {isApproved && (
           <>
-            <Alert className="bg-green-50 border-green-200">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertTitle className="text-green-900">Escolha Aprovada</AlertTitle>
-              <AlertDescription className="text-green-900">
-                Sua escolha foi aprovada! A produção será iniciada em breve.
+            <Alert className="border-emerald-500/20 bg-emerald-500/10 text-emerald-100">
+              <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+              <AlertTitle>Escolha aprovada</AlertTitle>
+              <AlertDescription>
+                Sua escolha foi aprovada e a produção seguirá com este personagem.
               </AlertDescription>
             </Alert>
 
-            {characterName && (
+            {characterName ? (
               <CharacterDisplay
                 name={characterName}
                 imageUrl={characterImageUrl}
                 status={choiceStatus}
               />
-            )}
+            ) : null}
 
-            {canChange && (
+            {canChange ? (
               <Button
                 variant="outline"
                 onClick={() => setShowChangeModal(true)}
-                className="w-full"
+                className="w-full border-[hsl(0,0%,18%)] bg-transparent text-white hover:bg-[hsl(0,0%,10%)]"
               >
-                <Edit className="h-4 w-4 mr-2" />
-                Alterar Escolha ({changesRemaining} {changesRemaining === 1 ? 'alteração restante' : 'alterações restantes'})
+                <Edit className="mr-2 h-4 w-4" />
+                Alterar Escolha ({changesRemaining}{" "}
+                {changesRemaining === 1 ? "alteração restante" : "alterações restantes"})
               </Button>
-            )}
+            ) : null}
 
-            {changesCount >= 3 && (
-              <p className="text-xs text-muted-foreground text-center">
+            {changesCount >= 3 ? (
+              <p className="text-center text-xs text-[hsl(0,0%,58%)]">
                 Você atingiu o limite de 3 alterações.
               </p>
-            )}
+            ) : null}
           </>
         )}
 
-        {/* Rejected Status - Show rejection and allow new choice */}
         {isRejected && (
           <>
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="border-red-500/20 bg-red-500/10">
               <XCircle className="h-4 w-4" />
-              <AlertTitle>Escolha Rejeitada</AlertTitle>
+              <AlertTitle>Escolha rejeitada</AlertTitle>
               <AlertDescription>
-                Sua escolha foi rejeitada. Por favor, escolha outro personagem.
+                Sua escolha foi rejeitada. Envie um novo personagem para seguir com o pedido.
               </AlertDescription>
             </Alert>
 
-            {characterName && (
+            {characterName ? (
               <CharacterDisplay
                 name={characterName}
                 imageUrl={characterImageUrl}
                 status={choiceStatus}
               />
-            )}
+            ) : null}
 
-            {!isDeadlinePassed && (
-              <Button 
-                onClick={() => setShowSelectionModal(true)} 
-                className="w-full"
-              >
-                <Package className="h-4 w-4 mr-2" />
+            {!isDeadlinePassed ? (
+              <Button onClick={() => setShowSelectionModal(true)} className="w-full">
+                <Package className="mr-2 h-4 w-4" />
                 Escolher Outro Personagem
               </Button>
-            )}
+            ) : null}
 
-            {isDeadlinePassed && (
-              <Alert variant="destructive">
+            {isDeadlinePassed ? (
+              <Alert variant="destructive" className="border-red-500/20 bg-red-500/10">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Prazo Expirado</AlertTitle>
+                <AlertTitle>Prazo expirado</AlertTitle>
                 <AlertDescription>
                   O prazo para escolher o personagem expirou. Entre em contato com o suporte.
                 </AlertDescription>
               </Alert>
-            )}
+            ) : null}
           </>
         )}
 
-        {/* Locked Status - Show locked character */}
         {isLocked && (
           <>
-            <Alert className="bg-gray-50 border-gray-200">
-              <CheckCircle2 className="h-4 w-4 text-gray-600" />
-              <AlertTitle className="text-gray-900">Escolha Bloqueada</AlertTitle>
-              <AlertDescription className="text-gray-900">
-                A produção foi iniciada e sua escolha não pode mais ser alterada.
+            <Alert className="border-[hsl(0,0%,16%)] bg-[hsl(0,0%,9%)] text-[hsl(0,0%,88%)]">
+              <CheckCircle2 className="h-4 w-4 text-[hsl(var(--gold-accent))]" />
+              <AlertTitle>Escolha bloqueada</AlertTitle>
+              <AlertDescription>
+                A produção já foi iniciada e esta escolha não pode mais ser alterada.
               </AlertDescription>
             </Alert>
 
-            {characterName && (
+            {characterName ? (
               <CharacterDisplay
                 name={characterName}
                 imageUrl={characterImageUrl}
                 status={choiceStatus}
               />
-            )}
+            ) : null}
           </>
         )}
 
-        {/* Expired Status - Choice window is closed */}
-        {isExpired && (
-          <Alert variant="destructive">
+        {isExpired ? (
+          <Alert variant="destructive" className="border-red-500/20 bg-red-500/10">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Prazo Expirado</AlertTitle>
+            <AlertTitle>Prazo expirado</AlertTitle>
             <AlertDescription>
               O prazo para escolher o personagem expirou. Entre em contato com o suporte.
             </AlertDescription>
           </Alert>
-        )}
+        ) : null}
       </CardContent>
 
-      {/* Character Selection Modal - Only render when open to avoid test issues */}
-      {showSelectionModal && (
+      {showSelectionModal ? (
         <CharacterSelectionModal
           open={showSelectionModal}
           onOpenChange={setShowSelectionModal}
@@ -423,10 +376,9 @@ export const CharacterChoiceCard: React.FC<CharacterChoiceCardProps> = ({
           collectionId={collectionId}
           deadline={choiceDeadline}
         />
-      )}
+      ) : null}
 
-      {/* Choice Change Modal */}
-      {showChangeModal && choiceId && characterId && characterName && (
+      {showChangeModal && choiceId && characterId && characterName ? (
         <ChoiceChangeModal
           open={showChangeModal}
           onOpenChange={setShowChangeModal}
@@ -440,9 +392,9 @@ export const CharacterChoiceCard: React.FC<CharacterChoiceCardProps> = ({
           changesCount={changesCount}
           isApproved={isApproved}
         />
-      )}
+      ) : null}
     </Card>
   );
-};
+}
 
 export default CharacterChoiceCard;

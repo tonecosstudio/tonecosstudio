@@ -1,40 +1,27 @@
-/**
- * CustomerPaymentDetails Component
- *
- * Component for customers to view payment details, upload proof, and track status.
- *
- * Requirements: 13.1-13.15
- * Task: 18.2 Criar componente CustomerPaymentDetails
- */
-
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Clock,
-  CheckCircle,
-  XCircle,
   AlertCircle,
-  Eye,
-  Download,
-  Upload,
-  MessageSquare,
-  FileText,
   ArrowLeft,
-  ExternalLink,
+  CheckCircle,
+  Clock,
   CreditCard,
+  Eye,
   FileCheck,
   History,
   Info,
+  Upload,
+  XCircle,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileUploadComponent } from "@/components/customer/FileUploadComponent";
 import { UploadedFilesList } from "@/components/customer/UploadedFilesList";
 import { useToast } from "@/hooks/use-toast";
@@ -45,13 +32,92 @@ interface CustomerPaymentDetailsProps {
   paymentId: string;
   userId?: string;
   onBack?: () => void;
+  showHeader?: boolean;
 }
 
-export function CustomerPaymentDetails({ paymentId, userId: _userId, onBack }: CustomerPaymentDetailsProps) {
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+}
+
+function getStatusConfig(status: PaymentStatus) {
+  switch (status) {
+    case "pending":
+      return {
+        badgeClass:
+          "border-[hsl(var(--gold-accent)/0.28)] bg-[hsl(var(--gold-accent)/0.1)] text-[hsl(var(--gold-accent))]",
+        icon: <Clock className="h-4 w-4" />,
+        label: "Pendente",
+        guidance: "Envie o comprovante para iniciar a analise do pagamento.",
+      };
+    case "under_review":
+      return {
+        badgeClass: "border-sky-500/25 bg-sky-500/10 text-sky-300",
+        icon: <Eye className="h-4 w-4" />,
+        label: "Em analise",
+        guidance: "Comprovante recebido. A equipe esta revisando o pagamento.",
+      };
+    case "requires_info":
+      return {
+        badgeClass: "border-amber-500/25 bg-amber-500/10 text-amber-300",
+        icon: <AlertCircle className="h-4 w-4" />,
+        label: "Precisa de informacoes",
+        guidance: "A equipe solicitou contexto adicional para concluir a verificacao.",
+      };
+    case "approved":
+      return {
+        badgeClass: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
+        icon: <CheckCircle className="h-4 w-4" />,
+        label: "Aprovado",
+        guidance: "Pagamento aprovado com sucesso e registrado na conta.",
+      };
+    case "rejected":
+      return {
+        badgeClass: "border-red-500/25 bg-red-500/10 text-red-300",
+        icon: <XCircle className="h-4 w-4" />,
+        label: "Rejeitado",
+        guidance: "Revise o motivo da rejeicao e envie um novo comprovante, se necessario.",
+      };
+    default:
+      return {
+        badgeClass: "border-[hsl(0,0%,18%)] bg-[hsl(0,0%,10%)] text-[hsl(0,0%,78%)]",
+        icon: <Info className="h-4 w-4" />,
+        label: "Desconhecido",
+        guidance: "",
+      };
+  }
+}
+
+function getTimelineActionLabel(actionType: PaymentAuditLog["action_type"]) {
+  switch (actionType) {
+    case "status_changed":
+      return "Status alterado";
+    case "rejected":
+      return "Pagamento rejeitado";
+    case "info_requested":
+      return "Informacao solicitada";
+    case "approved":
+      return "Pagamento aprovado";
+    case "file_uploaded":
+      return "Comprovante enviado";
+    case "created":
+      return "Pagamento criado";
+    default:
+      return actionType;
+  }
+}
+
+export function CustomerPaymentDetails({
+  paymentId,
+  userId: _userId,
+  onBack,
+  showHeader = true,
+}: CustomerPaymentDetailsProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Fetch payment data
   const {
     data: payment,
     isLoading,
@@ -62,106 +128,57 @@ export function CustomerPaymentDetails({ paymentId, userId: _userId, onBack }: C
     queryFn: async (): Promise<PaymentDetails> => {
       const result = await getMyPaymentById(paymentId);
       if (!result) {
-        throw new Error("Pagamento não encontrado");
+        throw new Error("Pagamento nao encontrado");
       }
       return result;
     },
-    enabled: !!paymentId,
+    enabled: Boolean(paymentId),
   });
 
-  // Handle file upload
   const handleFileUploadComplete = (_files: PaymentFile[]) => {
     toast({
       title: "Arquivos enviados com sucesso",
-      description: "Seus comprovantes foram enviados para análise.",
+      description: "Seus comprovantes foram enviados para analise.",
     });
-    refetch();
+    void refetch();
   };
 
-  const handleFileUploadError = (error: Error) => {
+  const handleFileUploadError = (uploadError: Error) => {
     toast({
       title: "Erro no upload",
-      description: error.message,
+      description: uploadError.message,
       variant: "destructive",
     });
   };
 
-  // Get status badge color and icon
-  const getStatusConfig = (status: PaymentStatus) => {
-    switch (status) {
-      case "pending":
-        return {
-          color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-          icon: <Clock className="h-4 w-4" />,
-          label: "Pendente",
-          guidance: "Envie o comprovante de pagamento para iniciar a análise.",
-        };
-      case "under_review":
-        return {
-          color: "bg-blue-100 text-blue-800 border-blue-200",
-          icon: <Eye className="h-4 w-4" />,
-          label: "Em Análise",
-          guidance: "Comprovante recebido e em análise. Tempo médio: 24 horas úteis.",
-        };
-      case "requires_info":
-        return {
-          color: "bg-orange-100 text-orange-800 border-orange-200",
-          icon: <AlertCircle className="h-4 w-4" />,
-          label: "Precisa de Informações",
-          guidance: "Envie as informações solicitadas pelo administrador.",
-        };
-      case "approved":
-        return {
-          color: "bg-green-100 text-green-800 border-green-200",
-          icon: <CheckCircle className="h-4 w-4" />,
-          label: "Aprovado",
-          guidance: "Pagamento aprovado com sucesso. Baixe o recibo para seus registros.",
-        };
-      case "rejected":
-        return {
-          color: "bg-red-100 text-red-800 border-red-200",
-          icon: <XCircle className="h-4 w-4" />,
-          label: "Rejeitado",
-          guidance: "Verifique o motivo da rejeição e envie um novo comprovante se necessário.",
-        };
-      default:
-        return {
-          color: "bg-gray-100 text-gray-800 border-gray-200",
-          icon: <Info className="h-4 w-4" />,
-          label: "Desconhecido",
-          guidance: "",
-        };
-    }
-  };
-
-  // Check if file upload is allowed
-  const isUploadAllowed =
-    payment?.status && ["pending", "rejected", "requires_info"].includes(payment.status);
-
-  // Loading state
   if (isLoading) {
     return (
       <div className="space-y-6" role="status" aria-label="Carregando detalhes do pagamento">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Meus Pagamentos
-          </Button>
-          <Skeleton className="h-8 w-48" />
-        </div>
-        <Skeleton className="h-64 w-full" />
+        {showHeader ? (
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" onClick={onBack}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para pagamentos
+            </Button>
+            <Skeleton className="h-8 w-52" />
+          </div>
+        ) : null}
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-12 w-full rounded-lg" />
+        <Skeleton className="h-80 w-full rounded-lg" />
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="space-y-4">
-        <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar para Meus Pagamentos
-        </Button>
+        {showHeader ? (
+          <Button variant="outline" onClick={onBack}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para pagamentos
+          </Button>
+        ) : null}
 
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -173,25 +190,26 @@ export function CustomerPaymentDetails({ paymentId, userId: _userId, onBack }: C
           </AlertDescription>
         </Alert>
 
-        <Button onClick={() => refetch()}>Tentar Novamente</Button>
+        <Button onClick={() => void refetch()}>Tentar novamente</Button>
       </div>
     );
   }
 
-  // No payment found
   if (!payment) {
     return (
       <div className="space-y-4">
-        <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar para Meus Pagamentos
-        </Button>
+        {showHeader ? (
+          <Button variant="outline" onClick={onBack}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para pagamentos
+          </Button>
+        ) : null}
 
         <Alert>
           <Info className="h-4 w-4" />
-          <AlertTitle>Pagamento não encontrado</AlertTitle>
+          <AlertTitle>Pagamento nao encontrado</AlertTitle>
           <AlertDescription>
-            O pagamento solicitado não foi encontrado ou você não tem permissão para visualizá-lo.
+            O pagamento solicitado nao foi encontrado ou nao esta disponivel para esta conta.
           </AlertDescription>
         </Alert>
       </div>
@@ -199,344 +217,286 @@ export function CustomerPaymentDetails({ paymentId, userId: _userId, onBack }: C
   }
 
   const statusConfig = getStatusConfig(payment.status);
+  const isUploadAllowed = ["pending", "rejected", "requires_info"].includes(payment.status);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Meus Pagamentos
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              Pagamento {payment.reference_number}
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge className={statusConfig.color}>
+      {showHeader ? (
+        <div className="flex flex-col justify-between gap-4 rounded-lg border border-[hsl(0,0%,14%)] bg-[hsl(0,0%,7%)] p-5 sm:flex-row sm:items-start">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight">
+                Pagamento {payment.reference_number}
+              </h1>
+              <Badge variant="outline" className={statusConfig.badgeClass}>
                 {statusConfig.icon}
                 <span className="ml-1">{statusConfig.label}</span>
               </Badge>
-              <span className="text-sm text-muted-foreground">
-                Criado em {format(new Date(payment.created_at), "dd/MM/yyyy", { locale: ptBR })}
-              </span>
             </div>
+            <p className="mt-2 text-sm text-zinc-400">
+              Criado em {format(new Date(payment.created_at), "dd/MM/yyyy", { locale: ptBR })}
+            </p>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          {payment.status === "approved" && (
-            <Button>
-              <Download className="h-4 w-4 mr-2" />
-              Baixar Recibo
-            </Button>
-          )}
-          {payment.conversation && (
-            <Button variant="outline">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Conversa de Suporte
-              <ExternalLink className="h-3 w-3 ml-2" />
-            </Button>
-          )}
+          <Button variant="outline" size="sm" onClick={onBack} className="self-start">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para pagamentos
+          </Button>
         </div>
-      </div>
+      ) : null}
 
-      {/* Status guidance */}
-      <Alert>
+      <Alert className="border-[hsl(0,0%,14%)] bg-[hsl(0,0%,7%)]">
         {statusConfig.icon}
-        <AlertTitle>Orientação</AlertTitle>
+        <AlertTitle>Orientacao</AlertTitle>
         <AlertDescription>
           {statusConfig.guidance}
-          {payment.status === "requires_info" && payment.audit_logs?.[0]?.notes && (
-            <div className="mt-2 p-3 bg-muted rounded">
-              <strong>Mensagem do Administrador:</strong> {payment.audit_logs[0].notes}
+          {payment.status === "requires_info" && payment.audit_logs?.[0]?.notes ? (
+            <div className="mt-3 rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03] p-3">
+              <strong>Mensagem da equipe:</strong> {payment.audit_logs[0].notes}
             </div>
-          )}
-          {payment.status === "rejected" && payment.rejection_reason && (
-            <div className="mt-2 p-3 bg-destructive/10 rounded">
-              <strong>Motivo da Rejeição:</strong> {payment.rejection_reason}
+          ) : null}
+          {payment.status === "rejected" && payment.rejection_reason ? (
+            <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/10 p-3">
+              <strong>Motivo da rejeicao:</strong> {payment.rejection_reason}
             </div>
-          )}
+          ) : null}
         </AlertDescription>
       </Alert>
 
-      {/* Main content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-3 w-full">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 border border-[hsl(0,0%,14%)] bg-[hsl(0,0%,8%)]">
+          <TabsTrigger value="overview">Visao geral</TabsTrigger>
           <TabsTrigger value="files">Comprovantes</TabsTrigger>
-          <TabsTrigger value="history">Histórico</TabsTrigger>
+          <TabsTrigger value="history">Historico</TabsTrigger>
         </TabsList>
 
-        {/* Overview tab */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Payment information */}
-            <Card>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <Card className="border-[hsl(0,0%,14%)] bg-[hsl(0,0%,7%)]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  Informações do Pagamento
+                  Informacoes do pagamento
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Número de Referência</span>
-                    <span className="font-medium">{payment.reference_number}</span>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-sm text-zinc-400">Numero de referencia</span>
+                    <span className="text-right font-medium">{payment.reference_number}</span>
                   </div>
                   <Separator />
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Data de Criação</span>
-                    <span className="font-medium">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-sm text-zinc-400">Data de criacao</span>
+                    <span className="text-right font-medium">
                       {format(new Date(payment.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                     </span>
                   </div>
                   <Separator />
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Valor</span>
-                    <span className="font-medium">
-                      R$ {payment.amount.toFixed(2).replace(".", ",")}
+                  <div className="flex justify-between gap-4">
+                    <span className="text-sm text-zinc-400">Valor</span>
+                    <span className="text-right font-medium">{formatCurrency(payment.amount)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between gap-4">
+                    <span className="text-sm text-zinc-400">Metodo de pagamento</span>
+                    <span className="text-right font-medium">
+                      {payment.payment_method?.name || "Nao especificado"}
                     </span>
                   </div>
                   <Separator />
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Método de Pagamento</span>
-                    <span className="font-medium">
-                      {payment.payment_method?.name || "Não especificado"}
-                    </span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Tipo</span>
-                    <span className="font-medium">
-                      {payment.payment_type === "one_time" ? "Pagamento Único" : "Assinatura"}
+                  <div className="flex justify-between gap-4">
+                    <span className="text-sm text-zinc-400">Tipo</span>
+                    <span className="text-right font-medium">
+                      {payment.payment_type === "one_time" ? "Pagamento unico" : "Assinatura"}
                     </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Payment instructions */}
-            <Card>
+            <Card className="border-[hsl(0,0%,14%)] bg-[hsl(0,0%,7%)]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileCheck className="h-5 w-5" />
-                  Instruções de Pagamento
+                  Instrucoes de pagamento
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {payment.payment_method?.instructions ? (
-                  <div className="prose prose-sm max-w-none">
-                    <p>{payment.payment_method.instructions}</p>
-                    {payment.payment_method.pix_key && (
-                      <div className="mt-4 p-3 bg-primary/10 rounded-lg">
-                        <p className="font-medium mb-1">Chave PIX:</p>
-                        <code className="text-lg font-bold">{payment.payment_method.pix_key}</code>
+                  <div className="space-y-3 text-sm leading-relaxed">
+                    <p className="text-zinc-400">{payment.payment_method.instructions}</p>
+                    {payment.payment_method.pix_key ? (
+                      <div className="rounded-lg border border-[hsl(var(--gold-accent)/0.2)] bg-[hsl(var(--gold-accent)/0.08)] p-3">
+                        <p className="mb-1 font-medium">Chave PIX</p>
+                        <code className="text-base font-bold">{payment.payment_method.pix_key}</code>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">Nenhuma instrução específica fornecida.</p>
+                  <p className="text-sm text-zinc-400">
+                    Nenhuma instrucao especifica fornecida.
+                  </p>
                 )}
 
-                {isUploadAllowed && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Após realizar o pagamento, faça upload do comprovante na aba "Comprovantes".
+                {isUploadAllowed ? (
+                  <div className="border-t pt-4">
+                    <p className="mb-3 text-sm text-zinc-400">
+                      Apos realizar o pagamento, envie o comprovante na aba "Comprovantes".
                     </p>
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className="w-full border-[hsl(0,0%,18%)] bg-[hsl(0,0%,8%)] text-zinc-100 hover:bg-[hsl(0,0%,10%)]"
                       onClick={() => setActiveTab("files")}
                     >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Ir para Comprovantes
+                      <Upload className="mr-2 h-4 w-4" />
+                      Ir para comprovantes
                     </Button>
                   </div>
-                )}
+                ) : null}
               </CardContent>
             </Card>
           </div>
 
-          {/* Status timeline */}
-          <Card>
+          <Card className="border-[hsl(0,0%,14%)] bg-[hsl(0,0%,7%)]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <History className="h-5 w-5" />
-                Linha do Tempo
+                Linha do tempo
               </CardTitle>
-              <CardDescription>Histórico de status e eventos deste pagamento</CardDescription>
+              <CardDescription className="text-zinc-400">
+                Historico de status e eventos deste pagamento.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {payment.audit_logs && payment.audit_logs.length > 0 ? (
+              {payment.audit_logs.length > 0 ? (
                 <div className="space-y-4">
                   {payment.audit_logs
                     .slice()
                     .reverse()
-                    .map((log: PaymentAuditLog) => (
+                    .map((log) => (
                       <div key={log.id} className="flex gap-4">
                         <div className="flex flex-col items-center">
-                          <div className="w-3 h-3 rounded-full bg-primary mt-1" />
-                          <div className="w-px h-full bg-border mt-2" />
+                          <div className="mt-1 h-3 w-3 rounded-full bg-[hsl(var(--gold-accent))]" />
+                          <div className="mt-2 h-full w-px bg-[hsl(0,0%,16%)]" />
                         </div>
-                        <div className="pb-4 flex-1">
-                          <div className="flex justify-between items-start">
+                        <div className="flex-1 pb-4">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <div>
-                              <p className="font-medium">
-                                {log.action_type === "status_changed" && "Status alterado"}
-                                {log.action_type === "rejected" && "Pagamento rejeitado"}
-                                {log.action_type === "info_requested" && "Informação solicitada"}
-                                {log.action_type === "approved" && "Pagamento aprovado"}
-                                {log.action_type === "file_uploaded" && "Comprovante enviado"}
-                              </p>
-                              {log.old_status && log.new_status && (
-                                <p className="text-sm text-muted-foreground">
+                              <p className="font-medium">{getTimelineActionLabel(log.action_type)}</p>
+                              {log.old_status && log.new_status ? (
+                                <p className="text-sm text-zinc-400">
                                   De <span className="font-medium">{log.old_status}</span> para{" "}
                                   <span className="font-medium">{log.new_status}</span>
                                 </p>
-                              )}
+                              ) : null}
                             </div>
-                            <span className="text-sm text-muted-foreground">
-                              {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", {
-                                locale: ptBR,
-                              })}
+                            <span className="text-sm text-zinc-400">
+                              {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                             </span>
                           </div>
-                          {log.notes && (
-                            <p className="text-sm mt-2 p-2 bg-muted rounded">{log.notes}</p>
-                          )}
+                          {log.notes ? (
+                            <div className="mt-3 rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03] p-3 text-sm">
+                              {log.notes}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground italic">Nenhum evento registrado ainda.</p>
+                <p className="italic text-zinc-500">Nenhum evento registrado ainda.</p>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Files tab */}
         <TabsContent value="files" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* File upload section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5" />
-                  Enviar Comprovante
-                </CardTitle>
-                <CardDescription>Faça upload do comprovante de pagamento</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isUploadAllowed ? (
-                  <FileUploadComponent
-                    paymentId={paymentId}
-                    onUploadComplete={handleFileUploadComplete}
-                    onError={handleFileUploadError}
-                  />
-                ) : (
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Upload não disponível</AlertTitle>
-                    <AlertDescription>
-                      O upload de comprovantes não está disponível para pagamentos com status "
-                      {statusConfig.label}".
-                      {payment.status === "approved" && " O pagamento já foi aprovado."}
-                      {payment.status === "under_review" && " O comprovante já está em análise."}
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {isUploadAllowed ? (
+              <FileUploadComponent
+                paymentId={paymentId}
+                onUploadComplete={handleFileUploadComplete}
+                onError={handleFileUploadError}
+              />
+            ) : (
+              <Alert className="border-[hsl(0,0%,14%)] bg-[hsl(0,0%,8%)]">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Upload nao disponivel</AlertTitle>
+                <AlertDescription>
+                  O upload de comprovantes nao esta disponivel para pagamentos com status "
+                  {statusConfig.label}".
+                  {payment.status === "approved" ? " O pagamento ja foi aprovado." : ""}
+                  {payment.status === "under_review" ? " O comprovante ja esta em analise." : ""}
+                </AlertDescription>
+              </Alert>
+            )}
 
-            {/* Uploaded files */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Comprovantes Enviados
-                </CardTitle>
-                <CardDescription>Arquivos enviados para este pagamento</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <UploadedFilesList paymentId={paymentId} files={payment.files} />
-              </CardContent>
-            </Card>
+            <UploadedFilesList paymentId={paymentId} files={payment.files} />
           </div>
         </TabsContent>
 
-        {/* History tab */}
         <TabsContent value="history" className="space-y-6">
-          <Card>
+          <Card className="border-[hsl(0,0%,14%)] bg-[hsl(0,0%,7%)]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <History className="h-5 w-5" />
-                Histórico Completo
+                Historico completo
               </CardTitle>
-              <CardDescription>Registros de auditoria e eventos detalhados</CardDescription>
+              <CardDescription className="text-zinc-400">
+                Registros de auditoria e eventos detalhados.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {payment.audit_logs && payment.audit_logs.length > 0 ? (
+              {payment.audit_logs.length > 0 ? (
                 <div className="space-y-4">
-                  {payment.audit_logs.map((log: PaymentAuditLog) => (
-                    <Card key={log.id} className="overflow-hidden">
+                  {payment.audit_logs.map((log) => (
+                    <Card key={log.id} className="overflow-hidden border-[hsl(0,0%,14%)] bg-[hsl(0,0%,8%)]">
                       <div className="p-4">
-                        <div className="flex justify-between items-start mb-2">
+                        <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <div className="flex items-center gap-2">
-                              <Badge variant="outline">{log.action_type}</Badge>
-                              {log.admin_id && (
-                                <span className="text-sm text-muted-foreground">
+                              <Badge variant="outline" className="border-[hsl(0,0%,18%)] text-zinc-200">
+                                {log.action_type}
+                              </Badge>
+                              {log.admin_id ? (
+                                <span className="text-sm text-zinc-400">
                                   por Admin {log.admin_id.substring(0, 8)}
                                 </span>
-                              )}
+                              ) : null}
                             </div>
-                            <h4 className="font-medium mt-2">
-                              {log.action_type === "status_changed" && "Status Alterado"}
-                              {log.action_type === "rejected" && "Pagamento Rejeitado"}
-                              {log.action_type === "info_requested" && "Informação Solicitada"}
-                              {log.action_type === "approved" && "Pagamento Aprovado"}
-                              {log.action_type === "file_uploaded" && "Comprovante Enviado"}
-                            </h4>
+                            <h4 className="mt-2 font-medium">{getTimelineActionLabel(log.action_type)}</h4>
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", {
-                              locale: ptBR,
-                            })}
+                          <span className="text-sm text-zinc-400">
+                            {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
                           </span>
                         </div>
 
-                        {log.old_status && log.new_status && (
-                          <div className="flex items-center gap-2 text-sm mb-2">
-                            <span className="text-muted-foreground">Status:</span>
-                            <Badge variant="outline" className="bg-muted">
+                        {log.old_status && log.new_status ? (
+                          <div className="mb-2 flex items-center gap-2 text-sm">
+                            <span className="text-zinc-400">Status:</span>
+                            <Badge variant="outline" className="border-[hsl(0,0%,18%)] bg-white/[0.03] text-zinc-200">
                               {log.old_status}
                             </Badge>
-                            <ArrowLeft className="h-3 w-3 text-muted-foreground" />
-                            <Badge
-                              variant="outline"
-                              className={getStatusConfig(log.new_status as PaymentStatus).color}
-                            >
+                            <ArrowLeft className="h-3 w-3 text-zinc-500" />
+                            <Badge variant="outline" className={getStatusConfig(log.new_status as PaymentStatus).badgeClass}>
                               {log.new_status}
                             </Badge>
                           </div>
-                        )}
+                        ) : null}
 
-                        {log.notes && (
-                          <div className="mt-3 p-3 bg-muted rounded">
-                            <p className="text-sm font-medium mb-1">Notas:</p>
+                        {log.notes ? (
+                          <div className="mt-3 rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03] p-3">
+                            <p className="mb-1 text-sm font-medium">Notas</p>
                             <p className="text-sm">{log.notes}</p>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     </Card>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground italic">
+                <p className="italic text-zinc-500">
                   Nenhum registro de auditoria encontrado.
                 </p>
               )}

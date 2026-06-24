@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchAdminUsers, fetchAdminUsersStats } from "@/services/admin/admin-users-service";
+import { fetchAdminUsers, fetchAdminUsersStats } from "@/services/admin/users/admin-users-service";
 
 export function useAdminUsersData() {
   const usersQuery = useQuery({

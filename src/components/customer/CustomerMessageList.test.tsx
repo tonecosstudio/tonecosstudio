@@ -5,7 +5,6 @@ import { CustomerMessageList } from "./CustomerMessageList";
 import type { Message } from "@/types/support";
 
 const supportActionsMock = vi.hoisted(() => ({
-  createConversation: vi.fn(),
   getPublicUrl: vi.fn((filePath: string) => `https://storage.ordax.test/${filePath}`),
 }));
 
@@ -15,16 +14,12 @@ vi.mock("@/hooks/useMessages", () => ({
 }));
 
 vi.mock("@/hooks/customer/useCustomerSupportConversationActions", () => ({
-  useCreateCustomerSupportConversation: () => ({
-    createConversation: supportActionsMock.createConversation,
-    isCreating: false,
-  }),
   useSupportAttachmentPublicUrl: () => supportActionsMock.getPublicUrl,
 }));
 
 // Mock date-fns
 vi.mock("date-fns", () => ({
-  formatDistanceToNow: vi.fn((_date) => "2 minutos atrás"),
+  formatDistanceToNow: vi.fn((_date) => "2 minutos atras"),
 }));
 
 vi.mock("date-fns/locale", () => ({
@@ -72,7 +67,7 @@ describe("CustomerMessageList", () => {
         createMockMessage({
           id: "msg-1",
           sender_type: "customer",
-          message: "Olá, preciso de ajuda",
+          message: "Ola, preciso de ajuda",
         }),
       ];
 
@@ -89,8 +84,8 @@ describe("CustomerMessageList", () => {
 
       render(<CustomerMessageList conversationId="conv-1" />);
 
-      expect(screen.getByText("Olá, preciso de ajuda")).toBeInTheDocument();
-      expect(screen.getByText("Você")).toBeInTheDocument();
+      expect(screen.getByText("Ola, preciso de ajuda")).toBeInTheDocument();
+      expect(screen.getByText("Voce")).toBeInTheDocument();
     });
 
     it("should render admin messages", () => {
@@ -125,19 +120,19 @@ describe("CustomerMessageList", () => {
         createMockMessage({
           id: "msg-1",
           sender_type: "customer",
-          message: "Mensagem visível",
+          message: "Mensagem visivel",
           is_internal: false,
         }),
         createMockMessage({
           id: "msg-2",
           sender_type: "admin",
-          message: "Nota interna - não deve aparecer",
+          message: "Nota interna - nao deve aparecer",
           is_internal: true,
         }),
         createMockMessage({
           id: "msg-3",
           sender_type: "admin",
-          message: "Resposta visível",
+          message: "Resposta visivel",
           is_internal: false,
         }),
       ];
@@ -156,18 +151,18 @@ describe("CustomerMessageList", () => {
       render(<CustomerMessageList conversationId="conv-1" />);
 
       // Should show visible messages
-      expect(screen.getByText("Mensagem visível")).toBeInTheDocument();
-      expect(screen.getByText("Resposta visível")).toBeInTheDocument();
+      expect(screen.getByText("Mensagem visivel")).toBeInTheDocument();
+      expect(screen.getByText("Resposta visivel")).toBeInTheDocument();
 
       // Should NOT show internal note
-      expect(screen.queryByText("Nota interna - não deve aparecer")).not.toBeInTheDocument();
+      expect(screen.queryByText("Nota interna - nao deve aparecer")).not.toBeInTheDocument();
     });
 
     it("should display empty state when no messages", () => {
       render(<CustomerMessageList conversationId="conv-1" />);
 
       expect(
-        screen.getByText("Nenhuma mensagem ainda. Envie a primeira mensagem!")
+        screen.getByText("Nenhuma mensagem ainda. Envie a primeira mensagem.")
       ).toBeInTheDocument();
     });
   });
@@ -178,7 +173,7 @@ describe("CustomerMessageList", () => {
         createMockMessage({
           id: "msg-system",
           sender_type: "system",
-          message: "Seu pedido #123 foi enviado! 📦\n\nCódigo de rastreamento: BR123456789",
+          message: "Seu pedido #123 foi enviado!\n\nCodigo de rastreamento: BR123456789",
         }),
       ];
 
@@ -198,8 +193,8 @@ describe("CustomerMessageList", () => {
       // Should show system message content
       expect(screen.getByText(/Seu pedido #123 foi enviado/)).toBeInTheDocument();
 
-      // Should show "Atualização Automática" badge
-      expect(screen.getByText("Atualização Automática")).toBeInTheDocument();
+      // Should show "Atualizacao automatica" badge
+      expect(screen.getByText("Atualizacao automatica")).toBeInTheDocument();
     });
 
     it("should display multiple system messages", () => {
@@ -207,7 +202,7 @@ describe("CustomerMessageList", () => {
         createMockMessage({
           id: "msg-1",
           sender_type: "system",
-          message: "Seu pedido #123 entrou em produção",
+          message: "Seu pedido #123 entrou em producao",
         }),
         createMockMessage({
           id: "msg-2",
@@ -229,11 +224,11 @@ describe("CustomerMessageList", () => {
 
       render(<CustomerMessageList conversationId="conv-1" />);
 
-      expect(screen.getByText("Seu pedido #123 entrou em produção")).toBeInTheDocument();
+      expect(screen.getByText("Seu pedido #123 entrou em producao")).toBeInTheDocument();
       expect(screen.getByText("Seu pedido #123 foi enviado")).toBeInTheDocument();
 
-      // Should have 2 "Atualização Automática" badges
-      const badges = screen.getAllByText("Atualização Automática");
+      // Should have 2 "Atualizacao automatica" badges
+      const badges = screen.getAllByText("Atualizacao automatica");
       expect(badges).toHaveLength(2);
     });
   });
@@ -363,7 +358,7 @@ describe("CustomerMessageList", () => {
     it("should display attachments when present", () => {
       const messages = [
         createMockMessage({
-          message: "Aqui está o comprovante",
+          message: "Aqui esta o comprovante",
           attachments: [
             {
               id: "att-1",
@@ -392,7 +387,7 @@ describe("CustomerMessageList", () => {
 
       render(<CustomerMessageList conversationId="conv-1" />);
 
-      const attachmentLink = screen.getByText("📎 comprovante.pdf");
+      const attachmentLink = screen.getByText("Anexo: comprovante.pdf");
       expect(attachmentLink).toBeInTheDocument();
       expect(attachmentLink).toHaveAttribute(
         "href",
@@ -417,7 +412,7 @@ describe("CustomerMessageList", () => {
 
       render(<CustomerMessageList conversationId="conv-1" />);
 
-      const timestamps = screen.getAllByText("2 minutos atrás");
+      const timestamps = screen.getAllByText("2 minutos atras");
       expect(timestamps.length).toBeGreaterThanOrEqual(2);
     });
   });

@@ -29,7 +29,7 @@ import { BulkActionsBar } from '@/components/admin/orders/BulkActionsBar';
 import { OrderTypeFilter } from '@/components/admin/orders-v2/OrderTypeFilter';
 import { OrdersStats } from '@/components/admin/orders-v2/OrdersStats';
 import { useToast } from '@/hooks/use-toast';
-import { exportOrdersToCSV, triggerDownload } from '@/services/admin/orders-export';
+import { exportOrdersToCSV, triggerDownload } from '@/services/admin/orders/orders-export';
 import type { UnifiedOrder } from '@/types/admin/orders';
 
 export default function OrdersPageV2() {

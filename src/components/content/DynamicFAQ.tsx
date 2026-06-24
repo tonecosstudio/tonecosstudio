@@ -6,8 +6,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useContentSettings } from "@/hooks/useContentSettings";
-import { processContentVariables } from "@/lib/services/contentService";
-import type { ContentSettings } from "@/lib/services/contentService";
+import { processContentVariables } from "@/services/content/content-settings-service";
+import type { ContentSettings } from "@/services/content/content-settings-service";
 
 interface FAQItem {
   q: string;

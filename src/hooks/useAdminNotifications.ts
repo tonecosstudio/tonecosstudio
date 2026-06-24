@@ -1,33 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   playAudioNotification,
   requestBrowserNotificationPermission,
   showBrowserNotification,
 } from "@/lib/notifications/browser-notifications";
+import {
+  getAdminNotificationSettingsForCurrentUser,
+  listUnreadAdminNotifications,
+  subscribeToAdminNotificationInserts,
+} from "@/services/notifications/live-notifications-service";
+import type { NotificationSoundSettings } from "@/services/notifications/live-notifications-service";
 
-export interface AdminNotification {
-  id: string;
-  type: string;
-  priority: "low" | "medium" | "high" | "urgent";
-  title: string;
-  message: string;
-  icon?: string;
-  related_id?: string;
-  related_type?: string;
-  action_url?: string;
-  is_read: boolean;
-  read_at?: string;
-  created_at: string;
-  metadata?: Record<string, unknown>;
-}
-
-interface NotificationSettings {
-  sound_enabled?: boolean | null;
-  sound_volume?: number | null;
-}
+export type { AdminNotification } from "@/services/notifications/live-notifications-service";
 
 interface UseAdminNotificationsOptions {
   enableSound?: boolean;
@@ -44,36 +30,13 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["admin-notifications-unread"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("admin_notifications")
-        .select("*")
-        .eq("is_read", false)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as AdminNotification[];
-    },
+    queryFn: listUnreadAdminNotifications,
     refetchInterval,
   });
 
-  const { data: settings } = useQuery<NotificationSettings | null>({
+  const { data: settings } = useQuery<NotificationSoundSettings | null>({
     queryKey: ["admin-notification-settings"],
-    queryFn: async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data, error } = await supabase
-        .from("admin_notification_settings")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (error && error.code !== "PGRST116") throw error;
-      return data as NotificationSettings | null;
-    },
+    queryFn: getAdminNotificationSettingsForCurrentUser,
   });
 
   useEffect(() => {
@@ -91,62 +54,41 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
   }, [settings?.sound_volume, soundEnabled]);
 
   useEffect(() => {
-    let channelRef: ReturnType<typeof supabase.channel> | undefined;
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
 
     async function setupRealtimeNotifications() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user || cancelled) return;
+      unsubscribe = await subscribeToAdminNotificationInserts((newNotification) => {
+        queryClient.invalidateQueries({ queryKey: ["admin-notifications-unread"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
 
-      const channel = supabase
-        .channel("admin-notifications-realtime")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "admin_notifications",
-          },
-          (payload) => {
-            const newNotification = payload.new as AdminNotification;
+        playNotificationSound();
 
-            queryClient.invalidateQueries({ queryKey: ["admin-notifications-unread"] });
-            queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
+        if (enableToast) {
+          toast({
+            title: newNotification.title,
+            description: newNotification.message,
+            variant: newNotification.priority === "urgent" ? "destructive" : "default",
+          });
+        }
 
-            playNotificationSound();
-
-            if (enableToast) {
-              toast({
-                title: newNotification.title,
-                description: newNotification.message,
-                variant: newNotification.priority === "urgent" ? "destructive" : "default",
-              });
-            }
-
-            showBrowserNotification({
-              title: newNotification.title,
-              body: newNotification.message,
-              tag: newNotification.id,
-            });
-          }
-        )
-        .subscribe();
+        showBrowserNotification({
+          title: newNotification.title,
+          body: newNotification.message,
+          tag: newNotification.id,
+        });
+      });
 
       if (cancelled) {
-        supabase.removeChannel(channel);
-        return;
+        unsubscribe();
       }
-
-      channelRef = channel;
     }
 
     setupRealtimeNotifications();
 
     return () => {
       cancelled = true;
-      if (channelRef) supabase.removeChannel(channelRef);
+      unsubscribe?.();
     };
   }, [enableToast, playNotificationSound, queryClient, toast]);
 

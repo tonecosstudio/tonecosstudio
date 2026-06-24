@@ -1,51 +1,16 @@
-/**
- * Hook para gerenciar modalidades de compra (Purchase Modes)
- * 
- * Fornece queries e mutations para listar e atualizar modalidades.
- * Requisitos: 3.3, 3.4, 3.5, 11.6
- * Tarefa: 7.3
- */
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import type {
-  PurchaseMode,
-  UpdatePurchaseModeInput,
-  UpdatePurchaseModeMultiplierResult,
-} from "@/types/pricing-restructure";
-import { updatePurchaseModeSchema, updateMultiplierSchema } from "@/lib/validations/pricing-restructure";
-import { updatePurchaseModeRpc } from "@/services/admin/admin-config-mutations-service";
-
-type RpcError = { message: string } | null;
-
-interface PurchaseModesSupabaseClient {
-  from(table: "purchase_modes"): {
-    select(columns: string): {
-      order(column: "display_order", options: { ascending: boolean }): PromiseLike<{
-        data: PurchaseMode[] | null;
-        error: RpcError;
-      }>;
-      eq(column: "is_active", value: boolean): {
-        order(column: "display_order", options: { ascending: boolean }): PromiseLike<{
-          data: PurchaseMode[] | null;
-          error: RpcError;
-        }>;
-      };
-    };
-  };
-  rpc(functionName: "update_purchase_mode_multiplier", args: {
-    p_mode_key: string;
-    p_new_multiplier: number;
-    p_changed_by: string;
-  }): PromiseLike<{ data: unknown; error: RpcError }>;
-}
-
-const purchaseModesSupabase = supabase as unknown as PurchaseModesSupabaseClient;
-
-// =====================================================
-// QUERY KEYS
-// =====================================================
+import {
+  updateMultiplierSchema,
+  updatePurchaseModeSchema,
+} from "@/lib/validations/pricing-restructure";
+import { updatePurchaseModeRpc } from "@/services/admin/config/admin-config-mutations-service";
+import {
+  listActivePurchaseModes,
+  listPurchaseModes,
+  updatePurchaseModeMultiplier,
+} from "@/services/payments/purchase-modes-service";
+import type { UpdatePurchaseModeInput } from "@/types/pricing-restructure";
 
 export const purchaseModesKeys = {
   all: ["purchase-modes"] as const,
@@ -54,65 +19,22 @@ export const purchaseModesKeys = {
   detail: (modeKey: string) => [...purchaseModesKeys.all, "detail", modeKey] as const,
 };
 
-// =====================================================
-// QUERIES
-// =====================================================
-
-/**
- * Hook para buscar todas as modalidades de compra
- * Requisitos: 3.1, 3.2
- */
 export function usePurchaseModes() {
   return useQuery({
     queryKey: purchaseModesKeys.lists(),
-    queryFn: async () => {
-      const { data, error } = await purchaseModesSupabase
-        .from("purchase_modes")
-        .select("*")
-        .order("display_order", { ascending: true });
-
-      if (error) {
-        throw new Error(`Erro ao buscar modalidades: ${error.message}`);
-      }
-
-      return data ?? [];
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutos
+    queryFn: listPurchaseModes,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
-/**
- * Hook para buscar apenas modalidades ativas
- * Requisitos: 3.1
- */
 export function useActivePurchaseModes() {
   return useQuery({
     queryKey: purchaseModesKeys.active(),
-    queryFn: async () => {
-      const { data, error } = await purchaseModesSupabase
-        .from("purchase_modes")
-        .select("*")
-        .eq("is_active", true)
-        .order("display_order", { ascending: true });
-
-      if (error) {
-        throw new Error(`Erro ao buscar modalidades ativas: ${error.message}`);
-      }
-
-      return data ?? [];
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutos
+    queryFn: listActivePurchaseModes,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
-// =====================================================
-// MUTATIONS
-// =====================================================
-
-/**
- * Hook para atualizar uma modalidade de compra
- * Requisitos: 3.3, 3.4
- */
 export function useUpdatePurchaseMode() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -125,7 +47,6 @@ export function useUpdatePurchaseMode() {
       modeKey: string;
       input: UpdatePurchaseModeInput;
     }) => {
-      // Validar input
       const validated = updatePurchaseModeSchema.parse(input);
 
       await updatePurchaseModeRpc(modeKey, validated);
@@ -133,7 +54,6 @@ export function useUpdatePurchaseMode() {
       return modeKey;
     },
     onSuccess: (modeKey) => {
-      // Invalidar queries relacionadas
       queryClient.invalidateQueries({ queryKey: purchaseModesKeys.all });
       queryClient.invalidateQueries({ queryKey: purchaseModesKeys.detail(modeKey) });
 
@@ -152,11 +72,6 @@ export function useUpdatePurchaseMode() {
   });
 }
 
-/**
- * Hook para atualizar o multiplicador de uma modalidade
- * Atualiza o multiplicador e recalcula todos os planos dessa modalidade
- * Requisitos: 3.3, 3.4, 3.7
- */
 export function useUpdatePurchaseModeMultiplier() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -169,30 +84,17 @@ export function useUpdatePurchaseModeMultiplier() {
       modeKey: string;
       newMultiplier: number;
     }) => {
-      // Validar input
-      const validated = updateMultiplierSchema.parse({ mode_key: modeKey, new_multiplier: newMultiplier });
-
-      // Obter usuário atual
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      // Chamar função do banco de dados
-      const { data, error } = await purchaseModesSupabase.rpc("update_purchase_mode_multiplier", {
-        p_mode_key: validated.mode_key,
-        p_new_multiplier: validated.new_multiplier,
-        p_changed_by: user.id,
+      const validated = updateMultiplierSchema.parse({
+        mode_key: modeKey,
+        new_multiplier: newMultiplier,
       });
 
-      if (error) {
-        throw new Error(`Erro ao atualizar multiplicador: ${error.message}`);
-      }
-
-      return data as unknown as UpdatePurchaseModeMultiplierResult;
+      return updatePurchaseModeMultiplier({
+        modeKey: validated.mode_key,
+        newMultiplier: validated.new_multiplier,
+      });
     },
     onSuccess: (result, variables) => {
-      // Invalidar queries relacionadas
       queryClient.invalidateQueries({ queryKey: purchaseModesKeys.all });
       queryClient.invalidateQueries({ queryKey: purchaseModesKeys.detail(variables.modeKey) });
       queryClient.invalidateQueries({ queryKey: ["pricing-tiers"] });
@@ -200,7 +102,7 @@ export function useUpdatePurchaseModeMultiplier() {
 
       toast({
         title: "Multiplicador atualizado",
-        description: `${result.plans_updated} planos recalculados em ${result.tiers_affected} níveis.`,
+        description: `${result.plans_updated} planos recalculados em ${result.tiers_affected} niveis.`,
       });
     },
     onError: (error: Error) => {

@@ -3,7 +3,7 @@ import {
   type BulkDeliveryStatusUpdateInput,
   type BulkUpdateResult,
   updateBulkDeliveryStatus,
-} from '@/services/admin/bulk-delivery-status-update-service';
+} from '@/services/admin/delivery/bulk-delivery-status-update-service';
 
 export type { BulkUpdateResult };
 

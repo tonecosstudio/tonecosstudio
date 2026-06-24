@@ -3,8 +3,8 @@ import {
   fetchAdminQuoteItems,
   fetchAdminQuotes,
   updateQuoteStatus,
-} from "@/services/admin/admin-quotes-service";
-import type { ModelMini, QuoteItemRow } from "@/services/admin/admin-quotes-service";
+} from "@/services/admin/config/admin-quotes-service";
+import type { ModelMini, QuoteItemRow } from "@/services/admin/config/admin-quotes-service";
 
 export type { ModelMini, QuoteItemRow };
 

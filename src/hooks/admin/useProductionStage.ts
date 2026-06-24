@@ -1,4 +1,3 @@
-import type { ProductionStage } from "@/services/admin/production-service";
+import type { ProductionStage } from "@/types/production";
 
 export type { ProductionStage };
-

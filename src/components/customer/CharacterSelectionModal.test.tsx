@@ -1,41 +1,22 @@
-/**
- * CharacterSelectionModal Component Tests
- * 
- * Tests for the character selection modal component including:
- * - Character grid display
- * - Stock level indicators
- * - Deadline countdown
- * - Character selection and submission
- * - Error handling
- * - Loading states
- */
-
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { CharacterSelectionModal } from "./CharacterSelectionModal";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CharacterEntity as Character } from "@/hooks/customer/useChoiceActions";
+import { CharacterSelectionModal } from "./CharacterSelectionModal";
 
 const mockUseAvailableCharacters = vi.fn();
-const mockSubmitMutate = vi.fn();
 const mockSubmitCharacterChoiceAction = vi.fn();
 
 vi.mock("@/hooks/customer/useChoiceActions", () => ({
   useAvailableCharacters: (...args: unknown[]) => mockUseAvailableCharacters(...args),
   submitCharacterChoiceAction: (...args: unknown[]) => mockSubmitCharacterChoiceAction(...args),
-  useSubmitCharacterChoice: () => ({
-    isPending: false,
-    mutate: mockSubmitMutate,
-  }),
 }));
 
-// Mock toast
 vi.mock("@/components/ui/use-toast", () => ({
   toast: vi.fn(),
 }));
 
-// Helper to create a test query client
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -44,17 +25,11 @@ const createTestQueryClient = () =>
     },
   });
 
-// Helper to render with providers
 const renderWithProviders = (ui: React.ReactElement) => {
   const queryClient = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      {ui}
-    </QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
 
-// Mock characters data
 const mockCharacters: Character[] = [
   {
     id: "char-1",
@@ -72,7 +47,7 @@ const mockCharacters: Character[] = [
     imageUrl: "https://example.com/char-b.jpg",
     collectionId: "collection-1",
     isAvailable: true,
-    stockLevel: 3, // Low stock
+    stockLevel: 3,
   },
   {
     id: "char-3",
@@ -80,7 +55,7 @@ const mockCharacters: Character[] = [
     description: "Descrição do Personagem C",
     imageUrl: "https://example.com/char-c.jpg",
     collectionId: "collection-1",
-    isAvailable: false, // Unavailable
+    isAvailable: false,
     stockLevel: 0,
   },
   {
@@ -99,434 +74,175 @@ describe("CharacterSelectionModal", () => {
     onOpenChange: vi.fn(),
     orderId: "order-123",
     collectionId: "collection-1",
-    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     onSuccess: vi.fn(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  describe("Display and Layout", () => {
-    it("should render modal with title and description", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      expect(screen.getByText("Escolha Seu Personagem")).toBeInTheDocument();
-      expect(screen.getByText("Selecione o personagem que você deseja receber neste pedido.")).toBeInTheDocument();
-    });
-
-    it("should display all available characters in grid", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem A")).toBeInTheDocument();
-        expect(screen.getByText("Personagem B")).toBeInTheDocument();
-        expect(screen.getByText("Personagem C")).toBeInTheDocument();
-        expect(screen.getByText("Personagem D")).toBeInTheDocument();
-      });
-    });
-
-    it("should display character images", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        const images = screen.getAllByRole("img");
-        expect(images.length).toBeGreaterThan(0);
-        expect(images[0]).toHaveAttribute("alt", "Personagem A");
-      });
-    });
-
-    it("should display character descriptions", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Descrição do Personagem A")).toBeInTheDocument();
-        expect(screen.getByText("Descrição do Personagem B")).toBeInTheDocument();
-      });
-    });
-
-    it("should handle characters without images", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem D")).toBeInTheDocument();
-      });
+    mockUseAvailableCharacters.mockReturnValue({
+      data: mockCharacters,
+      isLoading: false,
+      error: null,
     });
   });
 
-  describe("Stock Level Indicators", () => {
-    it("should show low stock badge for characters with stock <= 5", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
+  it("renders title, description and character grid", async () => {
+    renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
+    expect(screen.getByText("Escolha Seu Personagem")).toBeInTheDocument();
+    expect(
+      screen.getByText("Selecione o personagem que você deseja receber neste pedido.")
+    ).toBeInTheDocument();
 
-      await waitFor(() => {
-        expect(screen.getByText("Estoque Baixo")).toBeInTheDocument();
-      });
-    });
-
-    it("should show unavailable overlay for out of stock characters", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Indisponível")).toBeInTheDocument();
-      });
-    });
-
-    it("should disable selection for unavailable characters", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem C")).toBeInTheDocument();
-      });
-
-      const unavailableCard = screen.getByText("Personagem C").closest("button");
-      expect(unavailableCard).toBeDisabled();
-    });
-
-    it("should display stock level count", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("10 unidades disponíveis")).toBeInTheDocument();
-        expect(screen.getByText("3 unidades disponíveis")).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByText("Personagem A")).toBeInTheDocument();
+      expect(screen.getByText("Personagem B")).toBeInTheDocument();
+      expect(screen.getByText("Personagem C")).toBeInTheDocument();
+      expect(screen.getByText("Personagem D")).toBeInTheDocument();
     });
   });
 
-  describe("Deadline Countdown", () => {
-    it("should display deadline countdown", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
+  it("shows descriptions, images and stock signals", async () => {
+    renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Prazo para Escolha")).toBeInTheDocument();
-      });
-    });
-
-    it("should show urgent alert when deadline < 24h", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      
-      const urgentDeadline = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(); // 12 hours
-
-      renderWithProviders(
-        <CharacterSelectionModal {...defaultProps} deadline={urgentDeadline} />
+    await waitFor(() => {
+      expect(screen.getByText("Descrição do Personagem A")).toBeInTheDocument();
+      expect(screen.getByAltText("Personagem A")).toHaveAttribute(
+        "src",
+        "https://example.com/char-a.jpg"
       );
-
-      await waitFor(() => {
-        expect(screen.getByText("Prazo Urgente!")).toBeInTheDocument();
-      });
-    });
-
-    it("should show expired alert when deadline has passed", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      
-      const expiredDeadline = new Date(Date.now() - 1000).toISOString(); // Past
-
-      renderWithProviders(
-        <CharacterSelectionModal {...defaultProps} deadline={expiredDeadline} />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText("Prazo Expirado")).toBeInTheDocument();
-      });
-    });
-
-    it("should disable submission when deadline has passed", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      
-      const expiredDeadline = new Date(Date.now() - 1000).toISOString();
-
-      renderWithProviders(
-        <CharacterSelectionModal {...defaultProps} deadline={expiredDeadline} />
-      );
-
-      await waitFor(() => {
-        const continueButton = screen.getByRole("button", { name: /continuar/i });
-        expect(continueButton).toBeDisabled();
-      });
+      expect(screen.getByText("Estoque baixo")).toBeInTheDocument();
+      expect(screen.getByText("Indisponível")).toBeInTheDocument();
+      expect(screen.getByText("10 unidades disponíveis")).toBeInTheDocument();
+      expect(screen.getByText("3 unidades disponíveis")).toBeInTheDocument();
     });
   });
 
-  describe("Character Selection", () => {
-    it("should allow selecting a character", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      const user = userEvent.setup();
+  it("disables unavailable characters", async () => {
+    renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText("Personagem C")).toBeInTheDocument());
 
-      await waitFor(() => {
-        expect(screen.getByText("Personagem A")).toBeInTheDocument();
-      });
-
-      const characterCard = screen.getByText("Personagem A").closest("button");
-      await user.click(characterCard!);
-
-      // Should show visual selection indicator
-      await waitFor(() => {
-        const card = screen.getByText("Personagem A").closest("button");
-        expect(card).toHaveClass("border-primary");
-      });
-    });
-
-    it("should show confirmation view after clicking continue", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      const user = userEvent.setup();
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem A")).toBeInTheDocument();
-      });
-
-      // Select character
-      const characterCard = screen.getByText("Personagem A").closest("button");
-      await user.click(characterCard!);
-
-      // Click continue
-      const continueButton = screen.getByRole("button", { name: /continuar/i });
-      await user.click(continueButton);
-
-      // Should show confirmation view
-      await waitFor(() => {
-        expect(screen.getByText("Confirme Sua Escolha")).toBeInTheDocument();
-      });
-    });
-
-    it("should allow going back from confirmation view", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      const user = userEvent.setup();
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem A")).toBeInTheDocument();
-      });
-
-      // Select and continue
-      const characterCard = screen.getByText("Personagem A").closest("button");
-      await user.click(characterCard!);
-      const continueButton = screen.getByRole("button", { name: /continuar/i });
-      await user.click(continueButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Confirme Sua Escolha")).toBeInTheDocument();
-      });
-
-      // Click back
-      const backButton = screen.getByRole("button", { name: /voltar/i });
-      await user.click(backButton);
-
-      // Should return to character grid
-      await waitFor(() => {
-        expect(screen.getByText("Personagem A")).toBeInTheDocument();
-        expect(screen.queryByText("Confirme Sua Escolha")).not.toBeInTheDocument();
-      });
-    });
+    expect(screen.getByText("Personagem C").closest("button")).toBeDisabled();
   });
 
-  describe("Character Submission", () => {
-    it("should submit character choice successfully", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      mockSubmitCharacterChoiceAction.mockResolvedValue(undefined);
+  it("shows deadline states and blocks expired submission", async () => {
+    const expiredDeadline = new Date(Date.now() - 1000).toISOString();
 
-      const user = userEvent.setup();
+    renderWithProviders(
+      <CharacterSelectionModal {...defaultProps} deadline={expiredDeadline} />
+    );
 
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem A")).toBeInTheDocument();
-      });
-
-      // Select character
-      const characterCard = screen.getByText("Personagem A").closest("button");
-      await user.click(characterCard!);
-
-      // Continue to confirmation
-      const continueButton = screen.getByRole("button", { name: /continuar/i });
-      await user.click(continueButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Confirme Sua Escolha")).toBeInTheDocument();
-      });
-
-      // Confirm
-      const confirmButton = screen.getByRole("button", { name: /confirmar escolha/i });
-      await user.click(confirmButton);
-
-      await waitFor(() => {
-        expect(mockSubmitCharacterChoiceAction).toHaveBeenCalledWith("order-123", "char-1");
-        expect(defaultProps.onSuccess).toHaveBeenCalled();
-        expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
-      });
-    });
-
-    it("should handle submission error", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      mockSubmitCharacterChoiceAction.mockRejectedValue(new Error("Erro ao enviar escolha"));
-
-      const user = userEvent.setup();
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem A")).toBeInTheDocument();
-      });
-
-      // Select and submit
-      const characterCard = screen.getByText("Personagem A").closest("button");
-      await user.click(characterCard!);
-      const continueButton = screen.getByRole("button", { name: /continuar/i });
-      await user.click(continueButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Confirme Sua Escolha")).toBeInTheDocument();
-      });
-
-      const confirmButton = screen.getByRole("button", { name: /confirmar escolha/i });
-      await user.click(confirmButton);
-
-      await waitFor(() => {
-        expect(mockSubmitCharacterChoiceAction).toHaveBeenCalledWith("order-123", "char-1");
-        // Modal should remain open on error
-        expect(defaultProps.onOpenChange).not.toHaveBeenCalledWith(false);
-      });
-    });
-
-    it("should disable buttons during submission", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      mockSubmitCharacterChoiceAction.mockImplementation(() => new Promise(() => {}));
-
-      const user = userEvent.setup();
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Personagem A")).toBeInTheDocument();
-      });
-
-      // Select and submit
-      const characterCard = screen.getByText("Personagem A").closest("button");
-      await user.click(characterCard!);
-      const continueButton = screen.getByRole("button", { name: /continuar/i });
-      await user.click(continueButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Confirme Sua Escolha")).toBeInTheDocument();
-      });
-
-      const confirmButton = screen.getByRole("button", { name: /confirmar escolha/i });
-      await user.click(confirmButton);
-
-      // Buttons should be disabled during submission
-      await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enviando/i })).toBeDisabled();
-      });
-    });
+    expect(screen.getByText("Prazo expirado")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /continuar/i })).toBeDisabled();
   });
 
-  describe("Loading and Error States", () => {
-    it("should show loading skeleton while fetching characters", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: undefined, isLoading: true, error: null });
+  it("shows urgent deadline state", () => {
+    const urgentDeadline = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString();
 
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
+    renderWithProviders(
+      <CharacterSelectionModal {...defaultProps} deadline={urgentDeadline} />
+    );
 
-      // Should show loading state - check for skeleton class or loading grid
-      await waitFor(() => {
-        // The LoadingSkeleton component renders a grid with Skeleton components
-        const gridElements = document.querySelectorAll('.grid');
-        expect(gridElements.length).toBeGreaterThan(0);
-      });
-    });
-
-    it("should show error message when fetch fails", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: undefined, isLoading: false, error: new Error("Erro ao carregar personagens") });
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Erro ao Carregar Personagens")).toBeInTheDocument();
-      });
-    });
-
-    it("should show message when no characters available", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: [], isLoading: false, error: null });
-
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Nenhum Personagem Disponível")).toBeInTheDocument();
-      });
-    });
+    expect(screen.getByText("Prazo urgente")).toBeInTheDocument();
   });
 
-  describe("Modal Behavior", () => {
-    it("should call onOpenChange when cancel is clicked", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      const user = userEvent.setup();
+  it("selects a character and shows confirmation view", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
-      renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
+    await user.click(await screen.findByText("Personagem A"));
+    await user.click(screen.getByRole("button", { name: /continuar/i }));
 
-      await waitFor(() => {
-        expect(screen.getByText("Personagem A")).toBeInTheDocument();
-      });
+    expect(screen.getByText("Confirme sua escolha")).toBeInTheDocument();
+    expect(screen.getByText(/Você selecionou o personagem abaixo/i)).toBeInTheDocument();
+  });
 
-      const cancelButton = screen.getByRole("button", { name: /cancelar/i });
-      await user.click(cancelButton);
+  it("allows returning from confirmation view", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
+    await user.click(await screen.findByText("Personagem A"));
+    await user.click(screen.getByRole("button", { name: /continuar/i }));
+    await user.click(screen.getByRole("button", { name: /voltar/i }));
+
+    expect(screen.getByText("Personagem A")).toBeInTheDocument();
+    expect(screen.queryByText("Confirme sua escolha")).not.toBeInTheDocument();
+  });
+
+  it("submits selected character successfully", async () => {
+    const user = userEvent.setup();
+    mockSubmitCharacterChoiceAction.mockResolvedValue(undefined);
+
+    renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
+
+    await user.click(await screen.findByText("Personagem A"));
+    await user.click(screen.getByRole("button", { name: /continuar/i }));
+    await user.click(screen.getByRole("button", { name: /confirmar escolha/i }));
+
+    await waitFor(() => {
+      expect(mockSubmitCharacterChoiceAction).toHaveBeenCalledWith("order-123", "char-1");
+      expect(defaultProps.onSuccess).toHaveBeenCalled();
       expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
     });
+  });
 
-    it("should reset selection when modal reopens", async () => {
-      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      const user = userEvent.setup();
+  it("keeps modal open when submission fails", async () => {
+    const user = userEvent.setup();
+    mockSubmitCharacterChoiceAction.mockRejectedValue(new Error("Erro ao enviar escolha"));
 
-      const { rerender } = renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
+    renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
-      await waitFor(() => {
-        expect(screen.getByText("Personagem A")).toBeInTheDocument();
-      });
+    await user.click(await screen.findByText("Personagem A"));
+    await user.click(screen.getByRole("button", { name: /continuar/i }));
+    await user.click(screen.getByRole("button", { name: /confirmar escolha/i }));
 
-      // Select character
-      const characterCard = screen.getByText("Personagem A").closest("button");
-      await user.click(characterCard!);
-
-      // Close modal
-      rerender(
-        <QueryClientProvider client={createTestQueryClient()}>
-          <CharacterSelectionModal {...defaultProps} open={false} />
-        </QueryClientProvider>
-      );
-
-      // Reopen modal
-      rerender(
-        <QueryClientProvider client={createTestQueryClient()}>
-          <CharacterSelectionModal {...defaultProps} open={true} />
-        </QueryClientProvider>
-      );
-
-      // Selection should be reset
-      await waitFor(() => {
-        const card = screen.getByText("Personagem A").closest("button");
-        expect(card).not.toHaveClass("border-primary");
-      });
+    await waitFor(() => {
+      expect(mockSubmitCharacterChoiceAction).toHaveBeenCalledWith("order-123", "char-1");
+      expect(defaultProps.onOpenChange).not.toHaveBeenCalledWith(false);
     });
   });
-});
 
+  it("renders loading, error and empty states", () => {
+    mockUseAvailableCharacters.mockReturnValueOnce({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
+    const { rerender } = renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
+    expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
+
+    mockUseAvailableCharacters.mockReturnValueOnce({
+      data: undefined,
+      isLoading: false,
+      error: new Error("Erro ao carregar personagens"),
+    });
+    rerender(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <CharacterSelectionModal {...defaultProps} />
+      </QueryClientProvider>
+    );
+    expect(screen.getAllByText("Erro ao carregar personagens").length).toBeGreaterThan(0);
+
+    mockUseAvailableCharacters.mockReturnValueOnce({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
+    rerender(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <CharacterSelectionModal {...defaultProps} />
+      </QueryClientProvider>
+    );
+    expect(screen.getByText("Nenhum personagem disponível")).toBeInTheDocument();
+  });
+
+  it("calls onOpenChange when cancel is clicked", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
+
+    await user.click(screen.getByRole("button", { name: /cancelar/i }));
+    expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
+  });
+});

@@ -21,6 +21,7 @@ import { Page } from "@/components/layouts/Page";
 import { PUBLIC_ROUTES, paymentDetailsPath } from "@/config/routes";
 import { PRICING } from "@/config/constants";
 import { usePricingSettings } from "@/hooks/usePricingSettings";
+import { formatNumber } from "@/lib/utils";
 
 export default function SubscribeCollection() {
   const { slug } = useParams();
@@ -171,7 +172,7 @@ export default function SubscribeCollection() {
                       const isSelected = selectedPlanId === plan.id;
                       const isPopular = plan.plan_type === "trimestral";
                       const isBestValue = plan.plan_type === "anual";
-                      const pricePerPiece = (Number(plan.price_full) / plan.deliveries_total).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                      const pricePerPiece = formatNumber(Number(plan.price_full) / plan.deliveries_total, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                       const referenceTotal = standaloneReferencePrice * plan.deliveries_total;
                       const savings = Math.max(0, referenceTotal - Number(plan.price_full));
                       const savingsPercent = referenceTotal > 0 ? Math.round((savings / referenceTotal) * 100) : 0;
@@ -367,7 +368,7 @@ export default function SubscribeCollection() {
                             <Badge className="bg-green-500 text-white text-xs">5% OFF</Badge>
                           </div>
                           <p className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
-                            R$ {selectedPlan ? Number(selectedPlan.price_pix).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
+                            R$ {selectedPlan ? formatNumber(Number(selectedPlan.price_pix), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
                           </p>
                           <p className="text-xs text-slate-600 dark:text-slate-400">Pagamento à vista</p>
                         </div>
@@ -393,7 +394,7 @@ export default function SubscribeCollection() {
                         <div className="flex-1">
                           <h4 className="font-bold text-slate-950 dark:text-white mb-2">Cartão de Crédito</h4>
                           <p className="text-2xl font-bold text-slate-950 dark:text-white mb-1">
-                            R$ {selectedPlan ? Number(selectedPlan.price_full).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
+                            R$ {selectedPlan ? formatNumber(Number(selectedPlan.price_full), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
                           </p>
                           <p className="text-xs text-slate-600 dark:text-slate-400">Até 6x sem juros</p>
                         </div>
@@ -502,7 +503,7 @@ export default function SubscribeCollection() {
                           Desconto PIX
                         </div>
                         <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                          - R$ {discount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          - R$ {formatNumber(discount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </div>
                     )}
@@ -512,11 +513,11 @@ export default function SubscribeCollection() {
                         <span className="text-lg font-semibold text-slate-950 dark:text-white">Total:</span>
                         <div className="text-right">
                           <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
-                            R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            R$ {formatNumber(finalPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
                           {paymentMethod === "credit_card" && (
                             <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                              ou 6x de R$ {(finalPrice / 6).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              ou 6x de R$ {formatNumber(finalPrice / 6, { minimumFractionDigits: 2 })}
                             </div>
                           )}
                         </div>

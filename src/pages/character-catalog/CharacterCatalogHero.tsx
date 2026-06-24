@@ -7,8 +7,8 @@ export function CharacterCatalogHero() {
             Catálogo de Personagens
           </h1>
           <p className="mt-6 text-lg text-muted-foreground">
-            Explore nossa coleção exclusiva de personagens colecionáveis. 
-            Assinantes podem usar créditos para adquirir seus favoritos.
+            Explore personagens colecionaveis publicados no universo ORDAX.
+            Veja detalhes, variacoes e formatos disponiveis para cada item.
           </p>
         </div>
       </div>

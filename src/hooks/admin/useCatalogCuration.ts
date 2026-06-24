@@ -16,7 +16,7 @@ import {
   type CatalogPublishInput,
   type CatalogVariantType,
   type CatalogVisibility,
-} from "@/services/admin/catalog-curation-service";
+} from "@/services/admin/catalog/catalog-curation-service";
 
 export type {
   CatalogImportBatchesResult,

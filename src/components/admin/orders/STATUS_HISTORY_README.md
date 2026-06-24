@@ -75,7 +75,7 @@ The status history is automatically displayed in the OrderDetailPanel when viewi
 ### Example Query
 
 ```typescript
-import { fetchOrderStatusHistory } from '@/services/admin/orders-service';
+import { fetchOrderStatusHistory } from '@/services/admin/orders/orders-service';
 
 const history = await fetchOrderStatusHistory(
   'order-uuid-here',

@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import {
   uploadAdminImage,
   type UploadAdminImageInput,
-} from "@/services/admin/admin-image-upload-service";
+} from "@/services/admin/catalog/admin-image-upload-service";
 
 export function useAdminImageUpload() {
   return useMutation({

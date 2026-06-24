@@ -24,7 +24,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 }));
 
 // Mock services
-vi.mock('@/services/collection-service', () => ({
+vi.mock('@/services/collections/collection-service', () => ({
   getRotationSchedule: vi.fn(() => Promise.resolve([1, 3, 5, 7, 9, 11])),
 }));
 

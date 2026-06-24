@@ -4,7 +4,7 @@ import {
   fetchEstimatedProductionCompletion,
   fetchProductionBlockInfo,
   unblockBlockedProductionItem,
-} from "@/services/admin/blocked-production-service";
+} from "@/services/admin/production/blocked-production-service";
 
 interface UseUnblockProductionOptions {
   productionQueueId: string;

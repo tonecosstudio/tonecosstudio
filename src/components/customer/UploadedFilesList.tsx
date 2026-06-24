@@ -1,12 +1,12 @@
-/**
+﻿/**
  * UploadedFilesList - Component for displaying uploaded payment proof files
  * Requirements: 3.1-3.12
  *
  * Features:
  * - Display all uploaded files with thumbnails for images
  * - Show file name, size, upload date
- * - "View full size" button for images
- * - "Download" button for PDFs
+ * - Botao de visualizacao para imagens
+ * - Botao de download para PDFs
  * - Show upload status (uploading, complete, error)
  */
 
@@ -47,6 +47,9 @@ interface FileWithUrl extends PaymentFile {
   thumbnailUrl?: string;
   isLoadingUrl?: boolean;
 }
+
+const cardClassName = "w-full border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] text-white shadow-none";
+const mutedTextClassName = "text-zinc-400";
 
 export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
   paymentId,
@@ -106,7 +109,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
       generateSignedUrls(loadedFiles);
     } catch (err) {
       log.error("Failed to load payment files", { error: err, paymentId });
-      setError(err instanceof Error ? err.message : "Failed to load files");
+      setError(err instanceof Error ? err.message : "Nao foi possivel carregar os arquivos");
     } finally {
       setLoading(false);
     }
@@ -140,7 +143,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
       setFiles((prev) => prev.filter((f) => f.id !== fileId));
     } catch (err) {
       log.error("Failed to delete payment file", { error: err, fileId });
-      setError(err instanceof Error ? err.message : "Failed to delete file");
+      setError(err instanceof Error ? err.message : "Nao foi possivel remover o arquivo");
     }
   };
 
@@ -186,7 +189,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
 
   const openFileUrl = (url: string | undefined) => {
     if (!url) {
-      setError("Invalid file URL");
+      setError("URL do arquivo invalida");
       return;
     }
 
@@ -194,14 +197,14 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
       openSafeExternalUrl(url);
     } catch (err) {
       log.error("Blocked unsafe payment file URL", { error: err, paymentId });
-      setError("Invalid file URL");
+      setError("URL do arquivo invalida");
     }
   };
 
   const downloadFile = (file: FileWithUrl) => {
     const safeUrl = getSafeFileUrl(file.signedUrl);
     if (!safeUrl) {
-      setError("Invalid file URL");
+      setError("URL do arquivo invalida");
       return;
     }
 
@@ -224,19 +227,19 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
 
   if (isLoading || loading) {
     return (
-      <Card className={cn("w-full", className)}>
+      <Card className={cn(cardClassName, className)}>
         <CardHeader>
-          <CardTitle>Uploaded Files</CardTitle>
-          <CardDescription>Loading files...</CardDescription>
+          <CardTitle>Comprovantes enviados</CardTitle>
+          <CardDescription className={mutedTextClassName}>Carregando arquivos...</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
-                <Skeleton className="h-12 w-12 rounded" />
+              <div key={i} className="flex items-center gap-3 rounded-lg border border-[hsl(0,0%,14%)] p-3">
+                <Skeleton className="h-12 w-12 rounded bg-white/10" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-4 w-3/4 bg-white/10" />
+                  <Skeleton className="h-3 w-1/2 bg-white/10" />
                 </div>
               </div>
             ))}
@@ -248,19 +251,24 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
 
   if (error) {
     return (
-      <Card className={cn("w-full", className)}>
+      <Card className={cn(cardClassName, className)}>
         <CardHeader>
-          <CardTitle>Uploaded Files</CardTitle>
-          <CardDescription>Error loading files</CardDescription>
+          <CardTitle>Comprovantes enviados</CardTitle>
+          <CardDescription className={mutedTextClassName}>Erro ao carregar arquivos</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/10">
-            <div className="flex items-center gap-2 text-destructive">
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+            <div className="flex items-center gap-2 text-red-100">
               <AlertCircle className="h-4 w-4" />
               <p className="text-sm">{error}</p>
             </div>
-            <Button variant="outline" size="sm" className="mt-3" onClick={loadFiles}>
-              Try Again
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 border-[hsl(0,0%,18%)] bg-[hsl(0,0%,8%)] text-zinc-100 hover:bg-[hsl(0,0%,10%)]"
+              onClick={loadFiles}
+            >
+              Tentar novamente
             </Button>
           </div>
         </CardContent>
@@ -270,17 +278,17 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
 
   if (files.length === 0) {
     return (
-      <Card className={cn("w-full", className)}>
+      <Card className={cn(cardClassName, className)}>
         <CardHeader>
-          <CardTitle>Uploaded Files</CardTitle>
-          <CardDescription>No files uploaded yet</CardDescription>
+          <CardTitle>Comprovantes enviados</CardTitle>
+          <CardDescription className={mutedTextClassName}>Nenhum arquivo enviado ainda</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <div className="rounded-full bg-muted p-4 inline-flex mb-4">
-              <Upload className="h-8 w-8 text-muted-foreground" />
+            <div className="mb-4 inline-flex rounded-full bg-[hsl(42,100%,55%)]/10 p-4">
+              <Upload className="h-8 w-8 text-[hsl(42,100%,55%)]" />
             </div>
-            <p className="text-muted-foreground">No payment proof files have been uploaded yet.</p>
+            <p className="text-zinc-400">Nenhum comprovante foi enviado para este pagamento.</p>
           </div>
         </CardContent>
       </Card>
@@ -288,17 +296,17 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
   }
 
   return (
-    <Card className={cn("w-full", className)}>
+    <Card className={cn(cardClassName, className)}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Uploaded Files</CardTitle>
-            <CardDescription>
-              {files.length} file{files.length !== 1 ? "s" : ""} uploaded
+            <CardTitle>Comprovantes enviados</CardTitle>
+            <CardDescription className={mutedTextClassName}>
+              {files.length} arquivo{files.length !== 1 ? "s" : ""} enviado{files.length !== 1 ? "s" : ""}
             </CardDescription>
           </div>
-          <Badge variant="outline">
-            {files.length} file{files.length !== 1 ? "s" : ""}
+          <Badge variant="outline" className="border-[hsl(0,0%,18%)] text-zinc-200">
+            {files.length} arquivo{files.length !== 1 ? "s" : ""}
           </Badge>
         </div>
       </CardHeader>
@@ -308,26 +316,26 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
             <div
               key={file.id}
               className={cn(
-                "flex items-start gap-3 p-3 border rounded-lg transition-colors",
-                onFileClick && file.signedUrl && "cursor-pointer hover:bg-muted/50"
+                "flex items-start gap-3 rounded-lg border border-[hsl(0,0%,14%)] bg-[hsl(0,0%,7%)] p-3 transition-colors",
+                onFileClick && file.signedUrl && "cursor-pointer hover:bg-white/[0.04]"
               )}
               onClick={() => handleFileClick(file)}
             >
               {/* Thumbnail/Icon */}
               <div className="flex-shrink-0">
                 {file.isLoadingUrl ? (
-                  <Skeleton className="h-12 w-12 rounded" />
+                  <Skeleton className="h-12 w-12 rounded bg-white/10" />
                 ) : file.thumbnailUrl && isImage(file.file_type) ? (
                   <div className="relative h-12 w-12">
                     <img
                       src={file.thumbnailUrl}
-                      alt={`Thumbnail of ${file.file_name}`}
+                      alt={`Miniatura de ${file.file_name}`}
                       className="h-full w-full object-cover rounded"
                     />
-                    <div className="absolute inset-0 bg-black/5 rounded" />
+                    <div className="absolute inset-0 rounded bg-black/5" />
                   </div>
                 ) : (
-                  <div className="h-12 w-12 rounded bg-muted flex items-center justify-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded bg-white/[0.05] text-zinc-400">
                     {getFileIcon(file.file_type)}
                   </div>
                 )}
@@ -341,11 +349,11 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
                       {file.file_name}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-zinc-500">
                         {formatFileSize(file.file_size)}
                       </p>
-                      <span className="text-xs text-muted-foreground">•</span>
-                      <p className="text-xs text-muted-foreground">{formatDate(file.created_at)}</p>
+                      <span className="text-xs text-zinc-600">-</span>
+                      <p className="text-xs text-zinc-500">{formatDate(file.created_at)}</p>
                     </div>
                   </div>
 
@@ -358,12 +366,12 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 text-zinc-300 hover:bg-white/10 hover:text-white"
                             onClick={(e) => {
                               e.stopPropagation();
                               openFileUrl(file.signedUrl);
                             }}
-                            title="View full size"
+                            title="Ver imagem"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -374,12 +382,12 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 text-zinc-300 hover:bg-white/10 hover:text-white"
                             onClick={(e) => {
                               e.stopPropagation();
                               downloadFile(file);
                             }}
-                            title="Download PDF"
+                            title="Baixar PDF"
                           >
                             <Download className="h-4 w-4" />
                           </Button>
@@ -392,9 +400,9 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        className="h-8 w-8 text-red-300 hover:bg-red-500/10 hover:text-red-100"
                         onClick={(e) => handleDelete(file.id, e)}
-                        title="Delete file"
+                        title="Remover arquivo"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -405,23 +413,23 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
                 {/* Status Indicator */}
                 <div className="flex items-center gap-2 mt-2">
                   {file.isLoadingUrl ? (
-                    <Badge variant="outline" className="text-xs">
-                      Loading...
+                    <Badge variant="outline" className="border-[hsl(0,0%,18%)] text-xs text-zinc-200">
+                      Carregando...
                     </Badge>
                   ) : file.signedUrl ? (
-                    <Badge variant="secondary" className="text-xs gap-1">
+                    <Badge className="gap-1 bg-emerald-500/15 text-xs text-emerald-100">
                       <CheckCircle className="h-3 w-3" />
-                      Ready
+                      Pronto
                     </Badge>
                   ) : (
                     <Badge variant="destructive" className="text-xs gap-1">
                       <AlertCircle className="h-3 w-3" />
-                      Unavailable
+                      Indisponivel
                     </Badge>
                   )}
 
-                  <Badge variant="outline" className="text-xs">
-                    {isImage(file.file_type) ? "Image" : isPDF(file.file_type) ? "PDF" : "File"}
+                  <Badge variant="outline" className="border-[hsl(0,0%,18%)] text-xs text-zinc-200">
+                    {isImage(file.file_type) ? "Imagem" : isPDF(file.file_type) ? "PDF" : "Arquivo"}
                   </Badge>
                 </div>
               </div>
@@ -430,14 +438,14 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
         </div>
 
         {/* Help Text */}
-        <div className="mt-4 pt-4 border-t">
-          <p className="text-xs text-muted-foreground">
+        <div className="mt-4 border-t border-[hsl(0,0%,14%)] pt-4">
+          <p className="text-xs text-zinc-500">
             {isImage(files[0]?.file_type) ? (
-              <>Click on an image to view it full size, or use the eye icon.</>
+              <>Clique na imagem para abrir o arquivo completo ou use o icone de visualizacao.</>
             ) : isPDF(files[0]?.file_type) ? (
-              <>Click on a PDF to view it, or use the download icon to save it.</>
+              <>Clique no PDF para abrir o arquivo ou use o icone de download para salvar.</>
             ) : (
-              <>Click on a file to view it.</>
+              <>Clique no arquivo para abrir a visualizacao.</>
             )}
           </p>
         </div>

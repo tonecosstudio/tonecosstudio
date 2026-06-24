@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchCreditsDashboardMetrics } from "@/services/admin/credits-dashboard-service";
+import { fetchCreditsDashboardMetrics } from "@/services/admin/credits/credits-dashboard-service";
 
 export function useCreditsDashboardMetrics() {
   return useQuery({

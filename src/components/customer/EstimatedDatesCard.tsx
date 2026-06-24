@@ -1,24 +1,18 @@
-/**
- * EstimatedDatesCard Component
- * 
- * Displays estimated production completion, shipping, and delivery dates
- * with status indicators (on track or delayed) and explanations for delays.
- * 
- * Requirements: 2.4.2 Estimated Dates
- * Task: 5.1.3 Create EstimatedDatesCard component
- */
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calendar, Package, Truck, CheckCircle2, AlertCircle, Clock } from "lucide-react";
-import { format, formatDistanceToNow, isPast, isFuture } from "date-fns";
+import type { ReactNode } from "react";
+import { format, formatDistanceToNow, isFuture, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Package,
+  Truck,
+} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export interface EstimatedDatesCardProps {
   estimatedCompletionDate: string | null;
@@ -33,74 +27,67 @@ export interface EstimatedDatesCardProps {
 interface DateDisplayProps {
   label: string;
   date: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   isPast?: boolean;
 }
 
-// ============================================================================
-// Sub-Components
-// ============================================================================
+function DateDisplay({ label, date, icon, isPast: isDatePast }: DateDisplayProps) {
+  const dateObject = new Date(date);
+  const isValidDate = !Number.isNaN(dateObject.getTime());
 
-/**
- * DateDisplay - Displays a single date with icon and relative time
- */
-const DateDisplay: React.FC<DateDisplayProps> = ({ label, date, icon, isPast: isDatePast }) => {
-  const dateObj = new Date(date);
-  
-  // Check if date is valid
-  const isValidDate = !isNaN(dateObj.getTime());
-  
   if (!isValidDate) {
     return (
-      <div className="flex items-center justify-between p-3 rounded-lg border transition-colors bg-muted/50">
-        <div className="flex-1">
-          <p className="text-sm text-muted-foreground mb-1">{label}</p>
-          <p className="text-sm text-muted-foreground">Data inválida</p>
+      <div className="flex items-center justify-between rounded-sm border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] p-4">
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(0,0%,48%)]">
+            {label}
+          </p>
+          <p className="mt-1 text-sm text-[hsl(0,0%,58%)]">Data inválida</p>
         </div>
-        <div className="ml-4">
-          {icon}
-        </div>
+        <div className="ml-4 text-[hsl(0,0%,48%)]">{icon}</div>
       </div>
     );
   }
-  
-  const isInPast = isPast(dateObj);
-  const isInFuture = isFuture(dateObj);
+
+  const completed = isPast(dateObject);
+  const upcoming = isFuture(dateObject);
 
   return (
-    <div className={cn(
-      "flex items-center justify-between p-3 rounded-lg border transition-colors",
-      isDatePast && "bg-muted/50 opacity-75"
-    )}>
-      <div className="flex-1">
-        <p className="text-sm text-muted-foreground mb-1">{label}</p>
-        <p className="font-semibold">
-          {format(dateObj, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+    <div
+      className={cn(
+        "flex items-center justify-between rounded-sm border p-4 transition-colors",
+        isDatePast
+          ? "border-[hsl(0,0%,14%)] bg-[hsl(0,0%,8%)] opacity-90"
+          : "border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)]"
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(0,0%,48%)]">
+          {label}
         </p>
-        {isInFuture && (
-          <p className="text-xs text-muted-foreground mt-1">
-            {formatDistanceToNow(dateObj, { addSuffix: true, locale: ptBR })}
+        <p className="mt-1 text-sm font-semibold text-white">
+          {format(dateObject, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+        </p>
+        {upcoming ? (
+          <p className="mt-1 text-xs text-[hsl(0,0%,58%)]">
+            {formatDistanceToNow(dateObject, { addSuffix: true, locale: ptBR })}
           </p>
-        )}
-        {isInPast && (
-          <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+        ) : null}
+        {completed ? (
+          <p className="mt-1 flex items-center gap-1 text-xs text-emerald-300">
             <CheckCircle2 className="h-3 w-3" />
             Concluído
           </p>
-        )}
+        ) : null}
       </div>
-      <div className="ml-4">
+      <div className="ml-4 flex h-11 w-11 items-center justify-center rounded-sm border border-[hsl(0,0%,14%)] bg-[hsl(0,0%,10%)] text-[hsl(var(--gold-accent))]">
         {icon}
       </div>
     </div>
   );
-};
+}
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
-export const EstimatedDatesCard: React.FC<EstimatedDatesCardProps> = ({
+export function EstimatedDatesCard({
   estimatedCompletionDate,
   estimatedShippingDate,
   estimatedDeliveryDate,
@@ -108,40 +95,47 @@ export const EstimatedDatesCard: React.FC<EstimatedDatesCardProps> = ({
   delayReason,
   productionStatus,
   className,
-}) => {
-  // Determine if dates are in the past (completed)
+}: EstimatedDatesCardProps) {
   const completionPast = estimatedCompletionDate ? isPast(new Date(estimatedCompletionDate)) : false;
   const shippingPast = estimatedShippingDate ? isPast(new Date(estimatedShippingDate)) : false;
   const deliveryPast = estimatedDeliveryDate ? isPast(new Date(estimatedDeliveryDate)) : false;
-
-  // Check if production is blocked/on hold
   const isBlocked = productionStatus === "on_hold";
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+    <Card
+      className={cn(
+        "border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] text-white shadow-none",
+        className
+      )}
+    >
+      <CardHeader className="border-b border-[hsl(0,0%,12%)]">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Calendar className="h-5 w-5 text-[hsl(var(--gold-accent))]" />
               Datas Estimadas
             </CardTitle>
-            <CardDescription>
-              Previsão de conclusão e entrega
+            <CardDescription className="mt-2 text-[hsl(0,0%,58%)]">
+              Previsão de conclusão da produção, envio e entrega.
             </CardDescription>
           </div>
           <Badge
-            variant={isOnTrack ? "default" : "destructive"}
-            className="text-sm px-3 py-1"
+            variant="outline"
+            className={cn(
+              "border px-3 py-1 text-sm",
+              isOnTrack
+                ? "border-emerald-500/25 bg-emerald-500/12 text-emerald-200"
+                : "border-red-500/25 bg-red-500/12 text-red-200"
+            )}
           >
             {isOnTrack ? (
               <>
-                <CheckCircle2 className="h-4 w-4 mr-1" />
+                <CheckCircle2 className="mr-1 h-4 w-4" />
                 No Prazo
               </>
             ) : (
               <>
-                <AlertCircle className="h-4 w-4 mr-1" />
+                <AlertCircle className="mr-1 h-4 w-4" />
                 Atrasado
               </>
             )}
@@ -149,81 +143,69 @@ export const EstimatedDatesCard: React.FC<EstimatedDatesCardProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Production Completion Date */}
-        {estimatedCompletionDate && (
+      <CardContent className="space-y-4 p-6">
+        {estimatedCompletionDate ? (
           <DateDisplay
-            label="Conclusão da Produção"
+            label="Conclusão da produção"
             date={estimatedCompletionDate}
-            icon={<Package className="h-8 w-8 text-muted-foreground" />}
+            icon={<Package className="h-5 w-5" />}
             isPast={completionPast}
           />
-        )}
+        ) : null}
 
-        {/* Shipping Date */}
-        {estimatedShippingDate && (
+        {estimatedShippingDate ? (
           <DateDisplay
-            label="Data de Envio"
+            label="Data de envio"
             date={estimatedShippingDate}
-            icon={<Truck className="h-8 w-8 text-muted-foreground" />}
+            icon={<Truck className="h-5 w-5" />}
             isPast={shippingPast}
           />
-        )}
+        ) : null}
 
-        {/* Delivery Date */}
-        {estimatedDeliveryDate && (
+        {estimatedDeliveryDate ? (
           <DateDisplay
-            label="Data de Entrega"
+            label="Data de entrega"
             date={estimatedDeliveryDate}
-            icon={<CheckCircle2 className="h-8 w-8 text-muted-foreground" />}
+            icon={<CheckCircle2 className="h-5 w-5" />}
             isPast={deliveryPast}
           />
-        )}
+        ) : null}
 
-        {/* No dates available */}
-        {!estimatedCompletionDate && !estimatedShippingDate && !estimatedDeliveryDate && (
-          <div className="text-center py-6 text-muted-foreground">
-            <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">
-              As datas estimadas serão calculadas em breve.
-            </p>
+        {!estimatedCompletionDate && !estimatedShippingDate && !estimatedDeliveryDate ? (
+          <div className="py-8 text-center text-[hsl(0,0%,58%)]">
+            <Clock className="mx-auto mb-3 h-12 w-12 text-[hsl(0,0%,32%)]" />
+            <p className="text-sm">As datas estimadas serão calculadas em breve.</p>
           </div>
-        )}
+        ) : null}
 
-        {/* Blocked/On Hold Alert (takes priority over delay alert) */}
         {isBlocked ? (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="border-red-500/20 bg-red-500/10">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Produção Pausada</AlertTitle>
+            <AlertTitle>Produção pausada</AlertTitle>
             <AlertDescription>
-              {delayReason || "Seu pedido está temporariamente pausado. Entraremos em contato em breve com mais informações."}
+              {delayReason ||
+                "Seu pedido está temporariamente pausado. Entraremos em contato em breve com mais informações."}
             </AlertDescription>
           </Alert>
-        ) : (
-          /* Delay Alert (only shown if not blocked) */
-          !isOnTrack && delayReason && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Produção Atrasada</AlertTitle>
-              <AlertDescription>
-                {delayReason}
-              </AlertDescription>
-            </Alert>
-          )
-        )}
+        ) : !isOnTrack && delayReason ? (
+          <Alert variant="destructive" className="border-red-500/20 bg-red-500/10">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Produção atrasada</AlertTitle>
+            <AlertDescription>{delayReason}</AlertDescription>
+          </Alert>
+        ) : null}
 
-        {/* On Track Message */}
-        {isOnTrack && !isBlocked && estimatedDeliveryDate && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-900 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              Tudo está correndo conforme o planejado!
+        {isOnTrack && !isBlocked && estimatedDeliveryDate ? (
+          <div className="rounded-sm border border-emerald-500/20 bg-emerald-500/10 p-4">
+            <p className="flex items-center gap-2 text-sm text-emerald-100">
+              <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+              Tudo está correndo conforme o planejado.
             </p>
           </div>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );
-};
+}
 
 export default EstimatedDatesCard;

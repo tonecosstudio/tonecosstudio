@@ -3,15 +3,18 @@ import type { ComponentProps } from "react";
 import userEvent from "@testing-library/user-event";
 
 import { GroupList } from "./GroupList";
-import { groupService } from "@/lib/services/groupService";
+import { groupService } from "@/services/groups/group-service";
 import { renderWithProviders, screen, waitFor } from "@/test/utils/test-utils";
 import type { GroupWithMetrics } from "@/types/groups";
 
 const authState = vi.hoisted(() => ({
-  user: { email: "admin@test.com", id: "admin-123" } as { email: string; id: string } | null,
+  user: { email: "admin@test.com", id: "admin-123" } as {
+    email: string;
+    id: string;
+  } | null,
 }));
 
-vi.mock("@/lib/services/groupService", () => ({
+vi.mock("@/services/groups/group-service", () => ({
   groupService: {
     deleteGroup: vi.fn(),
   },
@@ -62,7 +65,7 @@ const mockGroups: GroupWithMetrics[] = [
 ];
 
 function renderGroupList(
-  props: Partial<ComponentProps<typeof GroupList>> = {}
+  props: Partial<ComponentProps<typeof GroupList>> = {},
 ): {
   onRefresh: ReturnType<typeof vi.fn>;
   onSelectGroup: ReturnType<typeof vi.fn>;
@@ -77,7 +80,7 @@ function renderGroupList(
       onRefresh={onRefresh}
       onSelectGroup={onSelectGroup}
       {...props}
-    />
+    />,
   );
 
   return { onRefresh, onSelectGroup };
@@ -93,7 +96,9 @@ describe("GroupList", () => {
   it("exibe estado de loading acessivel sem depender de dados carregados", () => {
     renderGroupList({ groups: [], isLoading: true });
 
-    expect(screen.getByRole("status", { name: "Carregando grupos" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("status", { name: "Carregando grupos" }),
+    ).toBeInTheDocument();
   });
 
   it("exibe estado vazio quando nao ha grupos", () => {
@@ -121,7 +126,9 @@ describe("GroupList", () => {
     const user = userEvent.setup();
     const { onSelectGroup } = renderGroupList();
 
-    await user.click(screen.getByText("Assinantes Ativos").closest(".cursor-pointer")!);
+    await user.click(
+      screen.getByText("Assinantes Ativos").closest(".cursor-pointer")!,
+    );
 
     expect(onSelectGroup).toHaveBeenCalledWith("group-1");
   });
@@ -131,17 +138,26 @@ describe("GroupList", () => {
     const { onRefresh, onSelectGroup } = renderGroupList();
     const { toast } = await import("sonner");
 
-    await user.click(screen.getByRole("button", { name: "Abrir acoes do grupo Assinantes Ativos" }));
+    await user.click(
+      screen.getByRole("button", {
+        name: "Abrir acoes do grupo Assinantes Ativos",
+      }),
+    );
     await user.click(screen.getByText("Deletar Grupo"));
 
     expect(onSelectGroup).not.toHaveBeenCalled();
-    expect(screen.getByRole("heading", { name: "Deletar Grupo" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Deletar Grupo" }),
+    ).toBeInTheDocument();
     expect(screen.getAllByText("Assinantes Ativos")).toHaveLength(2);
 
     await user.click(screen.getByRole("button", { name: "Deletar Grupo" }));
 
     await waitFor(() => {
-      expect(groupService.deleteGroup).toHaveBeenCalledWith("group-1", "admin-123");
+      expect(groupService.deleteGroup).toHaveBeenCalledWith(
+        "group-1",
+        "admin-123",
+      );
     });
     expect(toast.success).toHaveBeenCalledWith("Grupo deletado com sucesso");
     expect(onRefresh).toHaveBeenCalledTimes(1);
@@ -150,11 +166,17 @@ describe("GroupList", () => {
   it("exibe erro de exclusao retornado pelo servico", async () => {
     const user = userEvent.setup();
     const { toast } = await import("sonner");
-    vi.mocked(groupService.deleteGroup).mockRejectedValue(new Error("Grupo nao encontrado"));
+    vi.mocked(groupService.deleteGroup).mockRejectedValue(
+      new Error("Grupo nao encontrado"),
+    );
 
     renderGroupList();
 
-    await user.click(screen.getByRole("button", { name: "Abrir acoes do grupo Assinantes Ativos" }));
+    await user.click(
+      screen.getByRole("button", {
+        name: "Abrir acoes do grupo Assinantes Ativos",
+      }),
+    );
     await user.click(screen.getByText("Deletar Grupo"));
     await user.click(screen.getByRole("button", { name: "Deletar Grupo" }));
 
@@ -170,13 +192,17 @@ describe("GroupList", () => {
 
     renderGroupList();
 
-    await user.click(screen.getByRole("button", { name: "Abrir acoes do grupo Assinantes Ativos" }));
+    await user.click(
+      screen.getByRole("button", {
+        name: "Abrir acoes do grupo Assinantes Ativos",
+      }),
+    );
     await user.click(screen.getByText("Deletar Grupo"));
     await user.click(screen.getByRole("button", { name: "Deletar Grupo" }));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
-        "Usuario autenticado obrigatorio para deletar grupo"
+        "Usuario autenticado obrigatorio para deletar grupo",
       );
     });
     expect(groupService.deleteGroup).not.toHaveBeenCalled();

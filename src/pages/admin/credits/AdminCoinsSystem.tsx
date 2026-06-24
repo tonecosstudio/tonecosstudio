@@ -27,7 +27,7 @@ import { EditPricingForm } from "@/components/admin/payments/EditPricingForm";
 import { ContextualPricingManager } from "@/components/admin/contextual-pricing";
 import { EditStandalonePricingForm } from "@/components/admin/payments/EditStandalonePricingForm";
 import { useAdminCoinsPricingConfig, useAdminCoinsStats } from "@/hooks/admin/useAdminCoinsSystem";
-import type { AdminCoinsStats } from "@/services/admin/admin-coins-system-service";
+import type { AdminCoinsStats } from "@/services/admin/credits/admin-coins-system-service";
 
 const EMPTY_ADMIN_COINS_STATS: AdminCoinsStats = {
   totalBalance: 0,

@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { conversationService } from "@/lib/services/conversationService";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { conversationService } from "@/services/support/conversation-service";
 import { log } from "@/lib/logger";
+import { subscribeToSupportConversationListChanges } from "@/services/realtime/realtime-service";
 import type {
   Conversation,
   ConversationFilters,
@@ -11,68 +12,33 @@ import type {
 import { toast } from "sonner";
 
 export function useConversations() {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ConversationFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Carregar conversas iniciais
-  const loadConversations = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await conversationService.listConversations(filters);
-      setConversations(data);
-    } catch (error) {
-      log.error("Failed to load support conversations", { error, filters });
-      toast.error("Erro ao carregar conversas");
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
+  const conversationsQuery = useQuery({
+    queryKey: ["support-conversations", filters],
+    queryFn: async () => {
+      try {
+        return await conversationService.listConversations(filters);
+      } catch (error) {
+        log.error("Failed to load support conversations", { error, filters });
+        toast.error("Erro ao carregar conversas");
+        throw error;
+      }
+    },
+  });
 
   useEffect(() => {
-    loadConversations();
-  }, [loadConversations]);
+    setLoading(conversationsQuery.isLoading || conversationsQuery.isFetching);
+  }, [conversationsQuery.isFetching, conversationsQuery.isLoading]);
 
   // Configurar Realtime subscription
   useEffect(() => {
-    const channel = supabase
-      .channel("support_conversations_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "support_conversations",
-        },
-        (payload) => {
-          log.debug("Support conversation realtime change received", {
-            eventType: payload.eventType,
-          });
-
-          if (payload.eventType === "INSERT") {
-            // Nova conversa
-            const newConv = payload.new as Conversation;
-            setConversations((prev) => [newConv, ...prev]);
-          } else if (payload.eventType === "UPDATE") {
-            // Conversa atualizada
-            const updatedConv = payload.new as Conversation;
-            setConversations((prev) =>
-              prev.map((conv) => (conv.id === updatedConv.id ? updatedConv : conv))
-            );
-          } else if (payload.eventType === "DELETE") {
-            // Conversa deletada
-            const deletedId = payload.old.id;
-            setConversations((prev) => prev.filter((conv) => conv.id !== deletedId));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    return subscribeToSupportConversationListChanges((eventType) => {
+      log.debug("Support conversation realtime change received", { eventType });
+      void conversationsQuery.refetch();
+    });
+  }, [conversationsQuery]);
 
   // Filtrar por status
   const filterByStatus = useCallback((status: ConversationStatus | "all") => {
@@ -107,21 +73,25 @@ export function useConversations() {
 
   // Recarregar conversas
   const refresh = useCallback(() => {
-    loadConversations();
-  }, [loadConversations]);
+    void conversationsQuery.refetch();
+  }, [conversationsQuery]);
 
-  // Conversas filtradas localmente (para busca instantânea)
-  const filteredConversations = conversations.filter((conv) => {
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      return (
-        conv.user_email?.toLowerCase().includes(term) ||
-        conv.user_name?.toLowerCase().includes(term) ||
-        conv.subject.toLowerCase().includes(term)
-      );
-    }
-    return true;
-  });
+  // Conversas filtradas localmente (para busca instantanea)
+  const filteredConversations = useMemo(() => {
+    const conversations = conversationsQuery.data ?? ([] as Conversation[]);
+
+    return conversations.filter((conv) => {
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        return (
+          conv.user_email?.toLowerCase().includes(term) ||
+          conv.user_name?.toLowerCase().includes(term) ||
+          conv.subject.toLowerCase().includes(term)
+        );
+      }
+      return true;
+    });
+  }, [conversationsQuery.data, searchTerm]);
 
   return {
     conversations: filteredConversations,

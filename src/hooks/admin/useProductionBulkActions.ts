@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   bulkAssignProduction,
   bulkUpdateStage,
-} from "@/services/admin/bulk-operations-service";
+} from "@/services/admin/operations/bulk-operations-service";
 import type { ProductionStage } from "@/types/production";
 
 interface BulkAssignProductionInput {

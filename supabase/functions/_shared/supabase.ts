@@ -1,11 +1,14 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { logAuthFailure, logPermissionDenied } from "./security-logger.ts";
+import { ADMIN_ACCESS_ROLES } from "./roles.ts";
 
 function getAnonClientWithAuth(req: Request) {
   const url = Deno.env.get("SUPABASE_URL");
   if (!url) throw new Error("SUPABASE_URL is not configured");
 
-  const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+  const anon =
+    Deno.env.get("SUPABASE_ANON_KEY") ??
+    Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
   if (!anon) throw new Error("SUPABASE_ANON_KEY is not configured");
 
   const authHeader = req.headers.get("Authorization") || "";
@@ -23,6 +26,18 @@ function getAnonClientWithAuth(req: Request) {
   });
 }
 
+function getSupabaseUrl() {
+  const url = Deno.env.get("SUPABASE_URL");
+  if (!url) throw new Error("SUPABASE_URL is not configured");
+  return url;
+}
+
+function getServiceRoleKey() {
+  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!service) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+  return service;
+}
+
 export async function getClaims(req: Request) {
   const client = getAnonClientWithAuth(req);
   const authHeader = req.headers.get("Authorization") || "";
@@ -31,20 +46,42 @@ export async function getClaims(req: Request) {
   // Important: validates JWT with signing keys, avoids "Invalid JWT" issues when verify_jwt is true.
   const { data, error } = await client.auth.getClaims(token);
   if (error || !data?.claims?.sub) {
-    logAuthFailure(req, new URL(req.url).pathname, error?.message ?? "missing sub claim");
+    logAuthFailure(
+      req,
+      new URL(req.url).pathname,
+      error?.message ?? "missing sub claim",
+    );
     throw new Error("Unauthorized");
   }
   return { client, claims: data.claims };
 }
 
 export function getServiceClient() {
-  const url = Deno.env.get("SUPABASE_URL");
-  if (!url) throw new Error("SUPABASE_URL is not configured");
+  return createClient(getSupabaseUrl(), getServiceRoleKey());
+}
 
-  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!service) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+export function callServiceRoleFunction(
+  functionName: string,
+  body: unknown,
+  init: Omit<RequestInit, "body" | "method"> = {},
+): Promise<Response> {
+  if (!/^[a-z0-9-]+$/.test(functionName)) {
+    throw new Error("Invalid Supabase function name");
+  }
 
-  return createClient(url, service);
+  const headers = new Headers(init.headers);
+  headers.set(
+    "Content-Type",
+    headers.get("Content-Type") ?? "application/json",
+  );
+  headers.set("Authorization", `Bearer ${getServiceRoleKey()}`);
+
+  return fetch(`${getSupabaseUrl()}/functions/v1/${functionName}`, {
+    ...init,
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
 }
 
 export async function assertAdmin(req: Request) {
@@ -58,12 +95,17 @@ export async function assertAdmin(req: Request) {
     .from("profiles")
     .select("role")
     .eq("id", userId)
-    .in("role", ["admin", "super_admin"])
+    .in("role", ADMIN_ACCESS_ROLES)
     .maybeSingle();
 
   if (error) throw new Error(`Role check failed: ${error.message}`);
   if (!profile) {
-    logPermissionDenied(req, new URL(req.url).pathname, userId, "admin role required");
+    logPermissionDenied(
+      req,
+      new URL(req.url).pathname,
+      userId,
+      "admin role required",
+    );
     throw new Error("Forbidden: admin only");
   }
 

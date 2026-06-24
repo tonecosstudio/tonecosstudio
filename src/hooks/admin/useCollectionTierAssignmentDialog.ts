@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchCollectionsForTierAssignment,
   saveCollectionsForTierAssignment,
-} from "@/services/admin/collection-tier-assignment-dialog-service";
+} from "@/services/admin/pricing/collection-tier-assignment-dialog-service";
 
 export function useCollectionsForTierAssignment(enabled: boolean, tierId: string) {
   return useQuery({

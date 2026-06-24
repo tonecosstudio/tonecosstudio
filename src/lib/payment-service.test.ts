@@ -29,7 +29,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-vi.mock("@/services/admin/admin-order-status-service", () => ({
+vi.mock("@/services/admin/orders/admin-order-status-service", () => ({
   approveManualPaymentWithNotification,
   rejectManualPaymentWithNotification,
   requestManualPaymentInfoRpc,

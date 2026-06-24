@@ -5,7 +5,7 @@ import {
   savePricingTierPlan,
   type PricingTierPlan,
   type SavePricingTierPlanInput,
-} from "@/services/admin/admin-plans-configuration-service";
+} from "@/services/admin/config/admin-plans-configuration-service";
 
 export type { PricingTierPlan, SavePricingTierPlanInput };
 

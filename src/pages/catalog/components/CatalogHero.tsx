@@ -15,7 +15,7 @@ export function CatalogHero() {
                 width: "0",
               }}
             >
-              by Tonecos Studios
+              ORDAX universe
             </span>
             <span className="h-px w-8 sm:w-12 bg-background/40"></span>
           </div>

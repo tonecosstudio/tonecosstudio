@@ -2,7 +2,7 @@
  * ReminderScheduler - modal para agendar lembretes em conversas.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -38,14 +38,14 @@ interface ReminderSchedulerProps {
 }
 
 const REMINDER_TYPE_LABELS: Record<ConversationReminder["reminder_type"], string> = {
-  quote_followup: "Follow-up de Orçamento",
-  payment_pending: "Pagamento Pendente",
-  promised_date: "Data Prometida",
+  quote_followup: "Follow-up de orcamento",
+  payment_pending: "Pagamento pendente",
+  promised_date: "Prazo prometido",
 };
 
 const REMINDER_TYPE_DESCRIPTIONS: Record<ConversationReminder["reminder_type"], string> = {
-  quote_followup: "Lembrar cliente sobre orçamento sem resposta",
-  payment_pending: "Lembrar cliente sobre pagamento aguardando confirmação",
+  quote_followup: "Lembrar o cliente sobre orcamento sem resposta",
+  payment_pending: "Lembrar o cliente sobre pagamento aguardando confirmacao",
   promised_date: "Lembrar sobre prazo prometido ao cliente",
 };
 
@@ -62,10 +62,18 @@ export function ReminderScheduler({
   const [scheduledTime, setScheduledTime] = useState("09:00");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (!open && !isSubmitting) {
+      setReminderType("quote_followup");
+      setScheduledDate(undefined);
+      setScheduledTime("09:00");
+    }
+  }, [open, isSubmitting]);
+
   const handleSubmit = async () => {
     if (!scheduledDate) {
       toast({
-        title: "Data obrigatória",
+        title: "Data obrigatoria",
         description: "Selecione uma data para o lembrete.",
         variant: "destructive",
       });
@@ -78,7 +86,7 @@ export function ReminderScheduler({
 
     if (scheduledDateTime <= new Date()) {
       toast({
-        title: "Data inválida",
+        title: "Data invalida",
         description: "A data do lembrete deve ser no futuro.",
         variant: "destructive",
       });
@@ -92,7 +100,9 @@ export function ReminderScheduler({
 
       toast({
         title: "Lembrete agendado",
-        description: `Lembrete agendado para ${format(scheduledDateTime, "dd/MM/yyyy 'as' HH:mm", { locale: ptBR })}.`,
+        description: `Lembrete agendado para ${format(scheduledDateTime, "dd/MM/yyyy 'as' HH:mm", {
+          locale: ptBR,
+        })}.`,
       });
 
       setReminderType("quote_followup");
@@ -116,13 +126,13 @@ export function ReminderScheduler({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Agendar Lembrete</DialogTitle>
-          <DialogDescription>Configure um lembrete automático para esta conversa.</DialogDescription>
+          <DialogTitle>Agendar lembrete</DialogTitle>
+          <DialogDescription>Configure um lembrete automatico para esta conversa.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="reminder-type">Tipo de Lembrete</Label>
+            <Label htmlFor="reminder-type">Tipo de lembrete</Label>
             <Select
               value={reminderType}
               onValueChange={(value) =>
@@ -148,14 +158,14 @@ export function ReminderScheduler({
           </div>
 
           <div className="grid gap-2">
-            <Label>Data do Lembrete</Label>
+            <Label>Data do lembrete</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
                     "justify-start text-left font-normal",
-                    !scheduledDate && "text-muted-foreground",
+                    !scheduledDate && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -180,7 +190,7 @@ export function ReminderScheduler({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="reminder-time">Hora do Lembrete</Label>
+            <Label htmlFor="reminder-time">Hora do lembrete</Label>
             <input
               id="reminder-time"
               type="time"
@@ -196,7 +206,7 @@ export function ReminderScheduler({
             Cancelar
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Agendando..." : "Agendar Lembrete"}
+            {isSubmitting ? "Agendando..." : "Agendar lembrete"}
           </Button>
         </DialogFooter>
       </DialogContent>

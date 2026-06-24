@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { groupAnalyticsService } from "@/lib/services/groupAnalyticsService";
+import { groupAnalyticsService } from "@/services/groups/group-analytics-service";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Users, MessageSquare, Clock, BarChart3 } from "lucide-react";
 import {

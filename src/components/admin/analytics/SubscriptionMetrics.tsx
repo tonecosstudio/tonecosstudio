@@ -1,33 +1,33 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  TrendingUp,
-  TrendingDown,
+  Calendar,
   DollarSign,
-  Users,
+  Percent,
+  TrendingDown,
+  TrendingUp,
   UserMinus,
   UserPlus,
-  Percent,
-  Calendar,
+  Users,
 } from "lucide-react";
+import { formatCurrency as formatConfiguredCurrency } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface SubscriptionMetricsProps {
   data: {
-    mrr: number; // Monthly Recurring Revenue
+    mrr: number;
     previousMrr: number;
     activeSubscriptions: number;
     previousActiveSubscriptions: number;
     newSubscriptions: number;
     canceledSubscriptions: number;
-    churnRate: number; // Taxa de cancelamento
-    ltv: number; // Lifetime Value
+    churnRate: number;
+    ltv: number;
     averageSubscriptionValue: number;
   };
   className?: string;
 }
 
 export function SubscriptionMetrics({ data, className }: SubscriptionMetricsProps) {
-  // Calcular mudanças
   const mrrChange = data.mrr - data.previousMrr;
   const mrrChangePercent =
     data.previousMrr > 0 ? ((mrrChange / data.previousMrr) * 100).toFixed(1) : "0";
@@ -38,23 +38,17 @@ export function SubscriptionMetrics({ data, className }: SubscriptionMetricsProp
       ? ((subscriptionsChange / data.previousActiveSubscriptions) * 100).toFixed(1)
       : "0";
 
-  // Formatar moeda
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
+  const formatCurrency = (value: number) =>
+    formatConfiguredCurrency(value, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(value);
-  };
+    });
 
-  // Calcular taxa de retenção
   const retentionRate = 100 - data.churnRate;
 
   return (
     <div className={className}>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* MRR */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">MRR</CardTitle>
@@ -62,7 +56,7 @@ export function SubscriptionMetrics({ data, className }: SubscriptionMetricsProp
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(data.mrr)}</div>
-            <div className="flex items-center gap-1 mt-1">
+            <div className="mt-1 flex items-center gap-1">
               {mrrChange >= 0 ? (
                 <TrendingUp className="h-3 w-3 text-green-600" />
               ) : (
@@ -70,75 +64,72 @@ export function SubscriptionMetrics({ data, className }: SubscriptionMetricsProp
               )}
               <p className={`text-xs ${mrrChange >= 0 ? "text-green-600" : "text-red-600"}`}>
                 {mrrChange >= 0 ? "+" : ""}
-                {mrrChangePercent}% vs mês anterior
+                {mrrChangePercent}% vs periodo anterior
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Assinaturas Ativas */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assinaturas Ativas</CardTitle>
+            <CardTitle className="text-sm font-medium">Assinaturas ativas</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.activeSubscriptions}</div>
-            <div className="flex items-center gap-1 mt-1">
+            <div className="mt-1 flex items-center gap-1">
               {subscriptionsChange >= 0 ? (
                 <TrendingUp className="h-3 w-3 text-green-600" />
               ) : (
                 <TrendingDown className="h-3 w-3 text-red-600" />
               )}
               <p
-                className={`text-xs ${subscriptionsChange >= 0 ? "text-green-600" : "text-red-600"}`}
+                className={`text-xs ${
+                  subscriptionsChange >= 0 ? "text-green-600" : "text-red-600"
+                }`}
               >
                 {subscriptionsChange >= 0 ? "+" : ""}
-                {subscriptionsChangePercent}% vs mês anterior
+                {subscriptionsChangePercent}% vs periodo anterior
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Taxa de Churn */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Churn</CardTitle>
+            <CardTitle className="text-sm font-medium">Taxa de churn</CardTitle>
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.churnRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Retenção: {retentionRate.toFixed(1)}%
+            <p className="mt-1 text-xs text-muted-foreground">
+              Retencao: {retentionRate.toFixed(1)}%
             </p>
-            <Progress value={retentionRate} className="h-2 mt-2" />
+            <Progress value={retentionRate} className="mt-2 h-2" />
           </CardContent>
         </Card>
 
-        {/* LTV */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">LTV Médio</CardTitle>
+            <CardTitle className="text-sm font-medium">LTV medio</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(data.ltv)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Lifetime Value por cliente</p>
+            <p className="mt-1 text-xs text-muted-foreground">Valor medio por cliente</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Detalhes de Movimentação */}
       <Card className="mt-4">
         <CardHeader>
-          <CardTitle className="text-base">Movimentação de Assinaturas</CardTitle>
-          <CardDescription>Novas vs Canceladas no período</CardDescription>
+          <CardTitle className="text-base">Movimento de assinaturas</CardTitle>
+          <CardDescription>Entradas e cancelamentos no periodo</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
-            {/* Novas */}
-            <div className="flex items-center gap-3 p-4 rounded-lg border bg-green-50 dark:bg-green-950/20">
-              <div className="p-2 rounded-lg bg-green-500 bg-opacity-10">
+            <div className="flex items-center gap-3 rounded-lg border bg-green-50 p-4 dark:bg-green-950/20">
+              <div className="rounded-lg bg-green-500 bg-opacity-10 p-2">
                 <UserPlus className="h-5 w-5 text-green-600" />
               </div>
               <div>
@@ -147,9 +138,8 @@ export function SubscriptionMetrics({ data, className }: SubscriptionMetricsProp
               </div>
             </div>
 
-            {/* Canceladas */}
-            <div className="flex items-center gap-3 p-4 rounded-lg border bg-red-50 dark:bg-red-950/20">
-              <div className="p-2 rounded-lg bg-red-500 bg-opacity-10">
+            <div className="flex items-center gap-3 rounded-lg border bg-red-50 p-4 dark:bg-red-950/20">
+              <div className="rounded-lg bg-red-500 bg-opacity-10 p-2">
                 <UserMinus className="h-5 w-5 text-red-600" />
               </div>
               <div>
@@ -158,9 +148,8 @@ export function SubscriptionMetrics({ data, className }: SubscriptionMetricsProp
               </div>
             </div>
 
-            {/* Saldo */}
-            <div className="flex items-center gap-3 p-4 rounded-lg border bg-blue-50 dark:bg-blue-950/20">
-              <div className="p-2 rounded-lg bg-blue-500 bg-opacity-10">
+            <div className="flex items-center gap-3 rounded-lg border bg-blue-50 p-4 dark:bg-blue-950/20">
+              <div className="rounded-lg bg-blue-500 bg-opacity-10 p-2">
                 <Users className="h-5 w-5 text-blue-600" />
               </div>
               <div>
@@ -173,22 +162,19 @@ export function SubscriptionMetrics({ data, className }: SubscriptionMetricsProp
             </div>
           </div>
 
-          {/* Insights */}
-          <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-            <p className="text-sm font-medium mb-2">💡 Análise</p>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Valor médio por assinatura: {formatCurrency(data.averageSubscriptionValue)}</li>
+          <div className="mt-4 rounded-lg bg-muted/50 p-4">
+            <p className="mb-2 text-sm font-medium">Analise</p>
+            <ul className="space-y-1 text-sm text-muted-foreground">
+              <li>Valor medio por assinatura: {formatCurrency(data.averageSubscriptionValue)}</li>
               <li>
-                •{" "}
                 {data.churnRate < 5
-                  ? "✅ Churn saudável (abaixo de 5%)"
-                  : "⚠️ Churn elevado (acima de 5%)"}
+                  ? "Churn controlado abaixo de 5%."
+                  : "Churn elevado acima de 5%."}
               </li>
               <li>
-                •{" "}
                 {data.newSubscriptions > data.canceledSubscriptions
-                  ? "✅ Crescimento positivo de assinaturas"
-                  : "⚠️ Mais cancelamentos que novas assinaturas"}
+                  ? "Saldo positivo de assinaturas no periodo."
+                  : "Cancelamentos acima das novas assinaturas no periodo."}
               </li>
             </ul>
           </div>

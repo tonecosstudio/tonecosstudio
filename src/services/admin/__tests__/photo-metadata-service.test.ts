@@ -19,7 +19,7 @@ import {
   deletePhotoMetadata,
   bulkCreatePhotoMetadata,
   isUserAdmin,
-} from "../photo-metadata-service";
+} from "../production/photo-metadata-service";
 import { supabase } from "@/integrations/supabase/client";
 
 // Mock Supabase client
@@ -55,7 +55,7 @@ describe("Photo Metadata Service", () => {
         uploaded_at: "2024-01-15T10:00:00Z",
       };
 
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as never);
 
       const result = await createPhotoMetadata({
         photoUrl: "https://example.com/photo.jpg",
@@ -86,7 +86,7 @@ describe("Photo Metadata Service", () => {
         uploaded_at: "2024-01-15T10:00:00Z",
       };
 
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as never);
 
       const result = await createPhotoMetadata({
         photoUrl: "https://example.com/wip.jpg",
@@ -101,7 +101,7 @@ describe("Photo Metadata Service", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: null,
         error: { message: "Database error" },
-      } as any);
+      } as never);
 
       await expect(
         createPhotoMetadata({
@@ -127,7 +127,7 @@ describe("Photo Metadata Service", () => {
         uploaded_at: "2024-01-15T10:00:00Z",
       };
 
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as never);
 
       const result = await updatePhotoMetadata("https://example.com/photo.jpg", {
         customerVisible: true,
@@ -150,7 +150,7 @@ describe("Photo Metadata Service", () => {
         uploaded_at: "2024-01-15T10:00:00Z",
       };
 
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as never);
 
       const result = await updatePhotoMetadata("https://example.com/photo.jpg", {
         caption: "Updated caption",
@@ -186,7 +186,7 @@ describe("Photo Metadata Service", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockPhotos,
         error: null,
-      } as any);
+      } as never);
 
       const result = await getStagePhotosWithMetadata("stage-1");
 
@@ -212,7 +212,7 @@ describe("Photo Metadata Service", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: mockPhotos,
         error: null,
-      } as any);
+      } as never);
 
       const result = await getStagePhotosWithMetadata("stage-1");
 
@@ -224,7 +224,7 @@ describe("Photo Metadata Service", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: [],
         error: null,
-      } as any);
+      } as never);
 
       const result = await getStagePhotosWithMetadata("stage-1");
 
@@ -235,7 +235,7 @@ describe("Photo Metadata Service", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: null,
         error: { message: "RPC error" },
-      } as any);
+      } as never);
 
       await expect(getStagePhotosWithMetadata("stage-1")).rejects.toThrow(
         "Failed to get photos with metadata"
@@ -249,7 +249,7 @@ describe("Photo Metadata Service", () => {
 
   describe("deletePhotoMetadata", () => {
     it("should delete photo metadata", async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as never);
 
       await deletePhotoMetadata("https://example.com/photo.jpg");
 
@@ -262,7 +262,7 @@ describe("Photo Metadata Service", () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: null,
         error: { message: "Delete error" },
-      } as any);
+      } as never);
 
       await expect(
         deletePhotoMetadata("https://example.com/photo.jpg")
@@ -295,7 +295,7 @@ describe("Photo Metadata Service", () => {
         },
       ];
 
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockPhotos, error: null } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockPhotos, error: null } as never);
 
       const result = await bulkCreatePhotoMetadata(
         "stage-1",
@@ -331,12 +331,12 @@ describe("Photo Metadata Service", () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: mockUser,
         error: null,
-      } as any);
+      } as never);
 
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: true,
         error: null,
-      } as any);
+      } as never);
 
       const result = await isUserAdmin();
 
@@ -353,12 +353,12 @@ describe("Photo Metadata Service", () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: mockUser,
         error: null,
-      } as any);
+      } as never);
 
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: false,
         error: null,
-      } as any);
+      } as never);
 
       const result = await isUserAdmin();
 
@@ -369,7 +369,7 @@ describe("Photo Metadata Service", () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: null },
         error: null,
-      } as any);
+      } as never);
 
       const result = await isUserAdmin();
 

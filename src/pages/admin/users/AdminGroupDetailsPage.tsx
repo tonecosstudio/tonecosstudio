@@ -378,7 +378,7 @@ export default function AdminGroupDetailsPage() {
                 </TabsTrigger>
                 <TabsTrigger value="analytics" className="gap-2">
                   <BarChart3 className="h-4 w-4" />
-                  Analytics
+                  Análises
                 </TabsTrigger>
               </TabsList>
             </div>

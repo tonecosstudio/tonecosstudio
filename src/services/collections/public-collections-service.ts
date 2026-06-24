@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { catalogModelDetailsPath } from "@/config/routes";
 import { COLLECTION_CATALOG_VISIBILITIES } from "@/config/catalog";
+import { getPublicStorageUrl as getSupabasePublicStorageUrl } from "@/services/supabase/storage-client";
 
 export type PublicCollectionPreview = {
   id: string;
@@ -203,7 +204,7 @@ type CollectionModelDbRow = {
 
 function getPublicStorageUrl(bucket: string | null, path: string | null) {
   if (!bucket || !path) return null;
-  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  return getSupabasePublicStorageUrl(bucket, path);
 }
 
 function normalizeCharacterDetailsRow(

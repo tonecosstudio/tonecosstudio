@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +14,9 @@ import { toast } from "sonner";
 import { validateMessage } from "@/lib/validations/support";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { conversationService } from "@/lib/services/conversationService";
-import { messageService } from "@/lib/services/messageService";
-import { fileUploadService } from "@/lib/services/fileUploadService";
+import { conversationService } from "@/services/support/conversation-service";
+import { messageService } from "@/services/support/message-service";
+import { fileUploadService } from "@/services/support/file-upload-service";
 import { useSanitizedInput } from "@/hooks/useSanitizedInput";
 import { sanitizeURL } from "@/lib/security/input-sanitizer";
 import { openSafeExternalUrl } from "@/lib/security/safe-open";
@@ -31,7 +32,6 @@ interface ChatInterfaceProps {
   conversationId: string;
   onOpenUserSidebar?: (userId: string) => void;
 }
-
 export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfaceProps) {
   const {
     messages,
@@ -46,13 +46,24 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   const [newMessageRaw, setNewMessageRaw, newMessageSanitized] = useSanitizedInput("", "text");
   const [isInternal, setIsInternal] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [conversation, setConversation] = useState<Conversation | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const { data: currentUser } = useSupportChatCurrentUser();
   const getPublicUrl = useSupportAttachmentPublicUrl();
+  const conversationQuery = useQuery<Conversation | null>({
+    queryKey: ["support-conversation", conversationId],
+    queryFn: async () => {
+      try {
+        return await conversationService.getConversation(conversationId);
+      } catch (error) {
+        log.error("Erro ao carregar conversa de suporte", { error, conversationId });
+        return null;
+      }
+    },
+  });
+  const conversation = conversationQuery.data ?? null;
 
   // Typing indicator
   const { typingText, startTyping, stopTyping } = useTypingIndicator({
@@ -60,19 +71,6 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
     currentUserId: currentUser?.id || "",
     currentUserName: currentUser?.name || "Admin",
   });
-
-  // Load conversation data
-  useEffect(() => {
-    const loadConversation = async () => {
-      try {
-        const conv = await conversationService.getConversation(conversationId);
-        setConversation(conv);
-      } catch (error) {
-        log.error("Erro ao carregar conversa de suporte", { error, conversationId });
-      }
-    };
-    loadConversation();
-  }, [conversationId]);
 
   const handleSend = async () => {
     const rateLimit = checkRateLimit(`chat-${conversationId}`, { maxRequests: 60, windowMs: 60000 });
@@ -102,7 +100,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
           }
         }
       } catch {
-        toast.error("A mensagem contém URLs inválidas");
+        toast.error("A mensagem contem URLs invalidas");
         return;
       }
     }
@@ -113,7 +111,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
       stopTyping();
 
       const currentUserId = currentUser?.id;
-      if (!currentUserId) throw new Error("Usuário não autenticado");
+      if (!currentUserId) throw new Error("Usuario nao autenticado");
 
       const messageText = newMessageSanitized.trim() || (selectedFiles.length > 0 ? "(anexo)" : "");
 
@@ -200,7 +198,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
 
   const handleSaveEdit = async (messageId: string) => {
     if (!editingText.trim()) {
-      toast.error("Mensagem não pode estar vazia");
+      toast.error("Mensagem nao pode estar vazia");
       return;
     }
     try {
@@ -214,14 +212,19 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
     }
   };
 
-  const reloadConversation = async () => {
+  const reloadConversation = useCallback(async () => {
+    await conversationQuery.refetch();
+  }, [conversationQuery]);
+
+  const reopenConversation = useCallback(async () => {
     try {
-      const conv = await conversationService.getConversation(conversationId);
-      setConversation(conv);
-    } catch (error) {
-      log.error("Erro ao recarregar conversa de suporte", { error, conversationId });
+      await conversationService.updateStatus(conversationId, "waiting_admin");
+      await reloadConversation();
+      toast.success("Conversa reaberta com sucesso");
+    } catch {
+      toast.error("Erro ao reabrir conversa");
     }
-  };
+  }, [conversationId, reloadConversation]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -261,7 +264,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
       {/* Chat Header */}
       <ChatHeader
         conversationId={conversationId}
-        conversation={conversation || undefined}
+        conversation={conversation ?? undefined}
         onUserClick={onOpenUserSidebar}
         onConversationUpdate={reloadConversation}
         onToggleSidebar={() => {
@@ -277,25 +280,17 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
               <Lock className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">Atendimento Encerrado</span>
+              <span className="font-medium">Atendimento encerrado</span>
               <span className="text-muted-foreground">
-                - Esta conversa foi encerrada e não aceita mais mensagens
+                - Esta conversa foi encerrada e nao aceita mais mensagens
               </span>
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={async () => {
-                try {
-                  await conversationService.updateStatus(conversationId, "waiting_admin");
-                  await reloadConversation();
-                  toast.success("Conversa reaberta com sucesso");
-                } catch {
-                  toast.error("Erro ao reabrir conversa");
-                }
-              }}
+              onClick={reopenConversation}
             >
-              Reabrir Conversa
+              Reabrir conversa
             </Button>
           </div>
         </div>
@@ -343,23 +338,15 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
         {isClosed ? (
           <div className="text-center py-6 text-muted-foreground">
             <Lock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="font-medium">Atendimento Encerrado</p>
+            <p className="font-medium">Atendimento encerrado</p>
             <p className="text-sm mt-1 mb-4">
-              Esta conversa foi encerrada e não aceita mais mensagens.
+              Esta conversa foi encerrada e nao aceita mais mensagens.
             </p>
             <Button
               variant="default"
-              onClick={async () => {
-                try {
-                  await conversationService.updateStatus(conversationId, "waiting_admin");
-                  await reloadConversation();
-                  toast.success("Conversa reaberta com sucesso");
-                } catch {
-                  toast.error("Erro ao reabrir conversa");
-                }
-              }}
+              onClick={reopenConversation}
             >
-              Reabrir Conversa
+              Reabrir conversa
             </Button>
           </div>
         ) : (
@@ -391,7 +378,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
               <Textarea
                 placeholder={
                   isInternal
-                    ? "Escreva uma nota interna (visível apenas para admins)..."
+                    ? "Escreva uma nota interna (visivel apenas para admins)..."
                     : "Digite sua mensagem..."
                 }
                 value={newMessageRaw}
@@ -424,8 +411,8 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>
                 {newMessageRaw.length}/2000 caracteres
-                {isInternal && " • Nota interna"}
-                {selectedFiles.length > 0 && ` • ${selectedFiles.length} arquivo(s)`}
+                {isInternal && " - Nota interna"}
+                {selectedFiles.length > 0 && ` - ${selectedFiles.length} arquivo(s)`}
               </span>
               <span>
                 {isUploading
@@ -724,14 +711,14 @@ function AttachmentDisplay({ attachment, getPublicUrl, isImage, isAdmin }: Attac
 
   const handleDownload = () => {
     if (!safePublicUrl) {
-      toast.error("URL do anexo invalida");
+      toast.error("URL do anexo invalida.");
       return;
     }
 
     try {
       openSafeExternalUrl(safePublicUrl);
     } catch {
-      toast.error("URL do anexo invalida");
+      toast.error("URL do anexo invalida.");
     }
   };
 
@@ -748,7 +735,7 @@ function AttachmentDisplay({ attachment, getPublicUrl, isImage, isAdmin }: Attac
           <FileText className="h-5 w-5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium truncate">{attachment.file_name}</p>
-            <p className="text-xs opacity-70">Imagem não disponível</p>
+            <p className="text-xs opacity-70">Imagem nao disponivel</p>
           </div>
           <Button size="sm" variant="ghost" onClick={handleDownload} className="flex-shrink-0">
             <Download className="h-4 w-4" />
