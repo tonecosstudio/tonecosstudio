@@ -59,7 +59,7 @@ import {
 } from "@/lib/payment-dashboard-utils";
 import { PaymentActionButtons } from "./PaymentActionButtons";
 import { getPaymentStatusIcon } from "./payment-status-icons";
-import { ADMIN_ROUTES } from "@/config/routes";
+import { adminSupportConversationPath } from "@/config/routes";
 import { sanitizeURL } from "@/lib/security/input-sanitizer";
 
 interface PaymentDetailsViewProps {
@@ -809,7 +809,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                 </div>
                 <Button variant="outline" className="w-full" asChild>
                   <a
-                    href={`${ADMIN_ROUTES.communication}?tab=support&conversation=${encodeURIComponent(payment.conversation.id)}`}
+                    href={adminSupportConversationPath(payment.conversation.id)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

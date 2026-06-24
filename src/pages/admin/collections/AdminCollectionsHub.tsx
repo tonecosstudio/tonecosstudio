@@ -4,44 +4,42 @@
  * Consolida gerenciamento de modelos, colecoes e personagens de credito.
  */
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Coins, Layers3, Package } from "lucide-react";
+import { ADMIN_ROUTES } from "@/config/routes";
 import AdminCollections from "./AdminCollections";
 import { CreditCharactersContent } from "@/components/admin/catalog/CreditCharactersContent";
 import { CatalogCurationContent } from "@/components/admin/catalog/CatalogCurationContent";
 
-const ADMIN_CATALOG_TABS = [
-  "models",
-  "collections",
-  "credit-characters",
-] as const;
-type AdminCatalogTab = (typeof ADMIN_CATALOG_TABS)[number];
+type AdminCatalogTab = "models" | "collections" | "credit-characters";
 
-function normalizeCatalogTab(tab: string | null): AdminCatalogTab {
-  if (tab === "curation") return "models";
-  if (ADMIN_CATALOG_TABS.includes(tab as AdminCatalogTab))
-    return tab as AdminCatalogTab;
+const CATALOG_TAB_PATHS: Record<AdminCatalogTab, string> = {
+  models: ADMIN_ROUTES.catalog,
+  collections: ADMIN_ROUTES.catalogCollections,
+  "credit-characters": ADMIN_ROUTES.catalogCreditCharacters,
+};
+
+function isCatalogTab(value: string): value is AdminCatalogTab {
+  return value in CATALOG_TAB_PATHS;
+}
+
+function getCurrentTab(pathname: string): AdminCatalogTab {
+  if (pathname === ADMIN_ROUTES.catalogCollections) return "collections";
+  if (pathname === ADMIN_ROUTES.catalogCreditCharacters) return "credit-characters";
   return "models";
 }
 
 export default function AdminCollectionsHub() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<AdminCatalogTab>(() =>
-    normalizeCatalogTab(tabParam),
-  );
-
-  useEffect(() => {
-    setActiveTab(normalizeCatalogTab(tabParam));
-  }, [tabParam]);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeTab = getCurrentTab(location.pathname);
 
   const handleTabChange = (value: string) => {
-    const nextTab = normalizeCatalogTab(value);
-    setActiveTab(nextTab);
-    setSearchParams({ tab: nextTab });
+    if (isCatalogTab(value)) {
+      navigate(CATALOG_TAB_PATHS[value]);
+    }
   };
 
   return (

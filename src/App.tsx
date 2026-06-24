@@ -203,21 +203,43 @@ function AppContent() {
             <Route path={ADMIN_ROUTES.home} element={<RequireAdmin><AdminHome /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.users} element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.userDetails} element={<RequireAdmin><AdminUserDetails /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.userDetailsSection} element={<RequireAdmin><AdminUserDetails /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.catalog} element={<RequireAdmin><AdminCollectionsHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.catalogCollections} element={<RequireAdmin><AdminCollectionsHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.catalogCreditCharacters} element={<RequireAdmin><AdminCollectionsHub /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.financialHub} element={<RequireAdmin><AdminFinancialHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.financialCollections} element={<RequireAdmin><AdminFinancialHub /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.orders} element={<RequireAdmin><OrdersPage /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.production} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.productionKanban} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.productionList} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.productionCalendar} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.productionAnalytics} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.productionChoices} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.credits} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.creditsCoins} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.creditsCycles} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.creditsPlans} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.creditsAnalytics} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.audit} element={<RequireAdmin><AuditTrail /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.packaging} element={<RequireAdmin><AdminPackaging /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.analytics} element={<RequireAdmin><AdminAnalytics /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.settings} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.settingsOperational} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.settingsHolidays} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.settingsLegal} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.payments} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.paymentMethods} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.paymentKeys} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.paymentCalculator} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.paymentDetails} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.communication} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.communicationGroups} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.communicationQuickReplies} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.communicationTemplates} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.communicationNotifications} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.communicationHistory} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.communicationConversation} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.groupDetails} element={<RequireAdmin><AdminGroupDetailsPage /></RequireAdmin>} />
 
 

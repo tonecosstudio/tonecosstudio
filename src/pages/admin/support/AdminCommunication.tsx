@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { matchPath, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   FileText,
@@ -10,18 +10,53 @@ import {
 import { GroupsContent } from "@/components/groups/GroupsContent";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ADMIN_ROUTES } from "@/config/routes";
 import AdminNotificationHistory from "./AdminNotificationHistory";
 import AdminNotificationSettings from "./AdminNotificationSettings";
 import AdminQuickReplies from "./AdminQuickReplies";
 import AdminSupport from "./AdminSupport";
 import CommunicationTemplates from "./CommunicationTemplates";
 
+type CommunicationTab =
+  | "support"
+  | "groups"
+  | "quick-replies"
+  | "templates"
+  | "notifications"
+  | "history";
+
+const COMMUNICATION_TAB_PATHS: Record<CommunicationTab, string> = {
+  support: ADMIN_ROUTES.communication,
+  groups: ADMIN_ROUTES.communicationGroups,
+  "quick-replies": ADMIN_ROUTES.communicationQuickReplies,
+  templates: ADMIN_ROUTES.communicationTemplates,
+  notifications: ADMIN_ROUTES.communicationNotifications,
+  history: ADMIN_ROUTES.communicationHistory,
+};
+
+function isCommunicationTab(value: string): value is CommunicationTab {
+  return value in COMMUNICATION_TAB_PATHS;
+}
+
+function getCurrentTab(pathname: string): CommunicationTab {
+  if (pathname === ADMIN_ROUTES.communicationGroups) return "groups";
+  if (pathname === ADMIN_ROUTES.communicationQuickReplies) return "quick-replies";
+  if (pathname === ADMIN_ROUTES.communicationTemplates) return "templates";
+  if (pathname === ADMIN_ROUTES.communicationNotifications) return "notifications";
+  if (pathname === ADMIN_ROUTES.communicationHistory) return "history";
+  if (matchPath(ADMIN_ROUTES.communicationConversation, pathname)) return "support";
+  return "support";
+}
+
 export default function AdminCommunication() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "support";
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeTab = getCurrentTab(location.pathname);
 
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+    if (isCommunicationTab(value)) {
+      navigate(COMMUNICATION_TAB_PATHS[value]);
+    }
   };
 
   return (

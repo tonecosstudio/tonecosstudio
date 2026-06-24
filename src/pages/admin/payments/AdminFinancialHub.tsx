@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CreditCard, DollarSign, Package } from "lucide-react";
 import { PeriodFilter, type DateRange } from "@/components/admin/operations/PeriodFilter";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ADMIN_ROUTES } from "@/config/routes";
 import { useAdminFinancialOverview } from "@/hooks/admin/useAdminFinancialOverview";
 import AdminCollectionFinancials from "../collections/AdminCollectionFinancials";
 
@@ -15,24 +16,35 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+type FinancialTab = "overview" | "collections";
+
+const FINANCIAL_TAB_PATHS: Record<FinancialTab, string> = {
+  overview: ADMIN_ROUTES.financialHub,
+  collections: ADMIN_ROUTES.financialCollections,
+};
+
+function isFinancialTab(value: string): value is FinancialTab {
+  return value in FINANCIAL_TAB_PATHS;
+}
+
+function getCurrentTab(pathname: string): FinancialTab {
+  if (pathname === ADMIN_ROUTES.financialCollections) return "collections";
+  return "overview";
+}
+
 export default function AdminFinancialHub() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<string>(tabParam || "overview");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeTab = getCurrentTab(location.pathname);
   const [dateRange, setDateRange] = useState<DateRange>({
     from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     to: new Date(),
   });
 
-  useEffect(() => {
-    if (tabParam && ["overview", "collections"].includes(tabParam)) {
-      setActiveTab(tabParam);
-    }
-  }, [tabParam]);
-
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    setSearchParams({ tab: value });
+    if (isFinancialTab(value)) {
+      navigate(FINANCIAL_TAB_PATHS[value]);
+    }
   };
 
   const financialQuery = useAdminFinancialOverview(dateRange);

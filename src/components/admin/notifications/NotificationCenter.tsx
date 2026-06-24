@@ -235,7 +235,7 @@ export function NotificationCenter() {
               variant="ghost"
               className="w-full"
               onClick={() => {
-                navigate(`${ADMIN_ROUTES.communication}?tab=notifications`);
+                navigate(ADMIN_ROUTES.communicationNotifications);
                 setIsOpen(false);
               }}
             >

@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  adminCyclesPath,
   adminPaymentDetailsPath,
+  adminSupportConversationPath,
+  adminUserDetailsSectionPath,
   catalogCharacterPath,
   catalogUniverseCharacterPath,
   catalogUniverseFranchisePath,
@@ -24,7 +27,16 @@ describe("route helpers", () => {
   it("builds encoded app paths from route templates", () => {
     expect(paymentDetailsPath("pay 1")).toBe("/perfil/pagamentos/pay%201");
     expect(adminPaymentDetailsPath("pay/1")).toBe("/admin/pagamentos/pay%2F1");
+    expect(adminSupportConversationPath("conversation/1")).toBe(
+      "/admin/comunicacao/conversas/conversation%2F1"
+    );
+    expect(adminCyclesPath({ month: 5, year: 2026 })).toBe(
+      "/admin/creditos/ciclos?month=5&year=2026"
+    );
     expect(adminUserDetailsPath("user/1")).toBe("/admin/users/user%2F1");
+    expect(adminUserDetailsSectionPath("user/1", "address")).toBe(
+      "/admin/users/user%2F1/address"
+    );
     expect(collectionDetailsPath("my collection")).toBe("/colecoes/my%20collection");
     expect(collectionCharacterDetailsPath("my collection", "char/1")).toBe(
       "/colecoes/my%20collection/char%2F1"

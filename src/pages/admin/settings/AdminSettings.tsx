@@ -2,7 +2,7 @@ import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, DollarSign, Gauge, Scale, ExternalLink, Clock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AdminSystemSettings from "./AdminSystemSettings";
 import AdminProductionLimit from "../production/AdminProductionLimit";
 import AdminDeadlinesSettings from "../production/AdminDeadlinesSettings";
@@ -18,13 +18,35 @@ import { ADMIN_ROUTES } from "@/config/routes";
  * - Operacional: Prazos, capacidade e limites de produção (SSOT)
  * - Legal: Conformidade e políticas
  */
+type SettingsTab = "general" | "operational" | "holidays" | "legal";
+
+const SETTINGS_TAB_PATHS: Record<SettingsTab, string> = {
+  general: ADMIN_ROUTES.settings,
+  operational: ADMIN_ROUTES.settingsOperational,
+  holidays: ADMIN_ROUTES.settingsHolidays,
+  legal: ADMIN_ROUTES.settingsLegal,
+};
+
+function isSettingsTab(value: string): value is SettingsTab {
+  return value in SETTINGS_TAB_PATHS;
+}
+
+function getCurrentTab(pathname: string): SettingsTab {
+  if (pathname === ADMIN_ROUTES.settingsOperational) return "operational";
+  if (pathname === ADMIN_ROUTES.settingsHolidays) return "holidays";
+  if (pathname === ADMIN_ROUTES.settingsLegal) return "legal";
+  return "general";
+}
+
 export default function AdminSettings() {
+  const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = searchParams.get("tab") || "general";
+  const currentTab = getCurrentTab(location.pathname);
 
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+    if (isSettingsTab(value)) {
+      navigate(SETTINGS_TAB_PATHS[value]);
+    }
   };
 
   return (
@@ -131,7 +153,7 @@ export default function AdminSettings() {
                 Gerencie níveis de preço, modalidades, planos e atribuições de coleções
               </p>
             </div>
-            <Button onClick={() => navigate(`${ADMIN_ROUTES.catalog}?tab=pricing`)}>
+            <Button onClick={() => navigate(ADMIN_ROUTES.creditsPlans)}>
               Ir para Preços
               <ExternalLink className="h-4 w-4 ml-2" />
             </Button>

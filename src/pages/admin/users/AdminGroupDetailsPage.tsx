@@ -96,7 +96,7 @@ export default function AdminGroupDetailsPage() {
     onSuccess: () => {
       toast.success("Grupo deletado com sucesso");
       queryClient.invalidateQueries({ queryKey: ["admin-groups"] });
-      navigate(`${ADMIN_ROUTES.communication}?tab=groups`);
+      navigate(ADMIN_ROUTES.communicationGroups);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Erro ao deletar grupo");
@@ -185,7 +185,7 @@ export default function AdminGroupDetailsPage() {
         <div className="border-b bg-card">
           <div className="p-4">
             <div className="flex items-center gap-3 mb-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate(`${ADMIN_ROUTES.communication}?tab=groups`)}>
+              <Button variant="ghost" size="icon" onClick={() => navigate(ADMIN_ROUTES.communicationGroups)}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="flex-1 min-w-0">

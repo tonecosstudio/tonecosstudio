@@ -576,7 +576,7 @@ export default function AdminHome() {
               {stats?.support && stats.support > 0 && (
                 <div
                   className="flex cursor-pointer items-center justify-between rounded-lg border border-red-500/20 p-3 transition-colors hover:bg-red-500/5"
-                  onClick={() => navigate(`${ADMIN_ROUTES.communication}?tab=support`)}
+                  onClick={() => navigate(ADMIN_ROUTES.communication)}
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/10">

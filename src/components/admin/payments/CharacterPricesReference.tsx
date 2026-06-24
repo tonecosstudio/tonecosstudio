@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useCharacterPricesReference } from "@/hooks/useCharacterPricesReference";
 import { useNavigate } from "react-router-dom";
-import { adminCreditsTabPath } from "@/config/routes";
+import { ADMIN_ROUTES } from "@/config/routes";
 
 export function CharacterPricesReference() {
   const { data: prices, isLoading } = useCharacterPricesReference();
@@ -126,7 +126,7 @@ export function CharacterPricesReference() {
           <Button
             variant="outline"
             size="lg"
-            onClick={() => navigate(adminCreditsTabPath("coins"))}
+            onClick={() => navigate(ADMIN_ROUTES.creditsCoins)}
             className="shadow-md"
           >
             <ExternalLink className="h-4 w-4 mr-2" />

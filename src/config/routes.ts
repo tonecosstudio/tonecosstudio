@@ -65,21 +65,43 @@ export const ADMIN_ROUTES = {
   home: "/admin",
   users: "/admin/users",
   userDetails: "/admin/users/:userId",
+  userDetailsSection: "/admin/users/:userId/:section",
   catalog: "/admin/catalogo",
-  financialHub: "/admin/financeiro-hub",
+  catalogCollections: "/admin/catalogo/colecoes",
+  catalogCreditCharacters: "/admin/catalogo/personagens-coins",
+  financialHub: "/admin/financeiro",
+  financialCollections: "/admin/financeiro/colecoes",
   orders: "/admin/pedidos",
   production: "/admin/producao",
+  productionKanban: "/admin/producao/kanban",
+  productionList: "/admin/producao/lista",
+  productionCalendar: "/admin/producao/calendario",
+  productionAnalytics: "/admin/producao/analises",
+  productionChoices: "/admin/producao/escolhas",
   credits: "/admin/creditos",
+  creditsCoins: "/admin/creditos/moedas",
+  creditsCycles: "/admin/creditos/ciclos",
+  creditsPlans: "/admin/creditos/planos",
+  creditsAnalytics: "/admin/creditos/analises",
   audit: "/admin/auditoria",
   packaging: "/admin/embalagem",
   analytics: "/admin/analytics",
   settings: "/admin/configuracoes",
+  settingsOperational: "/admin/configuracoes/operacional",
+  settingsHolidays: "/admin/configuracoes/feriados",
+  settingsLegal: "/admin/configuracoes/legal",
   payments: "/admin/pagamentos",
   paymentMethods: "/admin/pagamentos/metodos",
   paymentKeys: "/admin/pagamentos/chaves",
   paymentCalculator: "/admin/pagamentos/calculadora",
   paymentDetails: "/admin/pagamentos/:paymentId",
   communication: "/admin/comunicacao",
+  communicationGroups: "/admin/comunicacao/grupos",
+  communicationQuickReplies: "/admin/comunicacao/respostas-rapidas",
+  communicationTemplates: "/admin/comunicacao/modelos-de-mensagem",
+  communicationNotifications: "/admin/comunicacao/notificacoes",
+  communicationHistory: "/admin/comunicacao/historico",
+  communicationConversation: "/admin/comunicacao/conversas/:conversationId",
   groupDetails: "/admin/grupos/:groupId",
 } as const;
 
@@ -100,6 +122,13 @@ export const NOTIFICATION_ROUTES = {
 
 export function adminPaymentDetailsPath(paymentId: string) {
   return ADMIN_ROUTES.paymentDetails.replace(":paymentId", encodeURIComponent(paymentId));
+}
+
+export function adminSupportConversationPath(conversationId: string) {
+  return ADMIN_ROUTES.communicationConversation.replace(
+    ":conversationId",
+    encodeURIComponent(conversationId),
+  );
 }
 
 export function adminOrdersPath(params?: {
@@ -124,7 +153,7 @@ export function adminCyclesPath(params?: {
   month?: number;
   year?: number;
 }) {
-  const searchParams = new URLSearchParams({ tab: "cycles" });
+  const searchParams = new URLSearchParams();
 
   if (params?.month) {
     searchParams.set("month", String(params.month));
@@ -134,11 +163,8 @@ export function adminCyclesPath(params?: {
     searchParams.set("year", String(params.year));
   }
 
-  return `${ADMIN_ROUTES.credits}?${searchParams.toString()}`;
-}
-
-export function adminCreditsTabPath(tab: "plans" | "analytics" | "credit-characters" | "coins" | "cycles") {
-  return `${ADMIN_ROUTES.credits}?tab=${encodeURIComponent(tab)}`;
+  const query = searchParams.toString();
+  return query ? `${ADMIN_ROUTES.creditsCycles}?${query}` : ADMIN_ROUTES.creditsCycles;
 }
 
 export function paymentDetailsPath(paymentId: string) {
@@ -283,6 +309,12 @@ export function isSafeInAppPath(path: string): boolean {
 
 export function adminUserDetailsPath(userId: string) {
   return ADMIN_ROUTES.userDetails.replace(":userId", encodeURIComponent(userId));
+}
+
+export function adminUserDetailsSectionPath(userId: string, section: string) {
+  return ADMIN_ROUTES.userDetailsSection
+    .replace(":userId", encodeURIComponent(userId))
+    .replace(":section", encodeURIComponent(section));
 }
 
 export function adminGroupDetailsPath(groupId: string) {

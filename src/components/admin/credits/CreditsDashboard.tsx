@@ -80,15 +80,15 @@ export function CreditsDashboard() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.credits}?tab=coins`)}>
+            <Button variant="outline" onClick={() => navigate(ADMIN_ROUTES.creditsCoins)}>
               <Coins className="mr-2 h-4 w-4" />
               Gerenciar coins
             </Button>
-            <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.credits}?tab=cycles`)}>
+            <Button variant="outline" onClick={() => navigate(ADMIN_ROUTES.creditsCycles)}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Ver ciclos
             </Button>
-            <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.credits}?tab=plans`)}>
+            <Button variant="outline" onClick={() => navigate(ADMIN_ROUTES.creditsPlans)}>
               <Wallet className="mr-2 h-4 w-4" />
               Configurar planos
             </Button>

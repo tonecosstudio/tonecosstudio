@@ -61,7 +61,7 @@ import {
   getValidNextStatuses,
 } from "@/hooks/admin/useOrderMutations";
 import { useOrderDetailActions } from "@/hooks/admin/useOrderDetailActions";
-import { adminUserDetailsPath } from "@/config/routes";
+import { adminUserDetailsSectionPath } from "@/config/routes";
 
 interface OrderDetailPanelProps {
   order: UnifiedOrder | null;
@@ -178,7 +178,7 @@ export function OrderDetailPanel({
   const handleOpenCustomerAddress = () => {
     if (!order) return;
 
-    openSafeInAppPath(`${adminUserDetailsPath(order.customer.id)}?tab=address`);
+    openSafeInAppPath(adminUserDetailsSectionPath(order.customer.id, "address"));
   };
 
   // Handler para cancelar mudança crítica

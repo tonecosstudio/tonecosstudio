@@ -83,7 +83,7 @@ export default function AdminNotificationSettings() {
           </p>
         </div>
 
-        <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.communication}?tab=history`)}>
+        <Button variant="outline" onClick={() => navigate(ADMIN_ROUTES.communicationHistory)}>
           <History className="mr-2 h-4 w-4" />
           Ver historico
         </Button>

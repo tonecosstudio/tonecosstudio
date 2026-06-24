@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { List, Users } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { DashboardMetrics } from "@/components/admin/analytics/DashboardMetrics";
@@ -9,18 +9,18 @@ import { ChatInterface } from "@/components/admin/support/ChatInterface";
 import { ConversationList } from "@/components/admin/support/ConversationList";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { adminSupportConversationPath } from "@/config/routes";
 
 export default function AdminSupport() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const selectedConversationId = searchParams.get("conversation");
+  const navigate = useNavigate();
+  const { conversationId } = useParams<{ conversationId?: string }>();
+  const selectedConversationId = conversationId ?? null;
   const [viewMode, setViewMode] = useState<"grouped" | "list">("grouped");
   const [showCustomerSidebar, setShowCustomerSidebar] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const handleSelectConversation = (conversationId: string) => {
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("conversation", conversationId);
-    setSearchParams(nextParams, { replace: true });
+    navigate(adminSupportConversationPath(conversationId), { replace: true });
   };
 
   const handleUserClick = (userId: string) => {

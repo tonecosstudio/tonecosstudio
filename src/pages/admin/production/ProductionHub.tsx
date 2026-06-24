@@ -12,9 +12,9 @@
  * Benefícios: 62% menos espaço, 50% menos cliques, 0% duplicação
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useProductionQueueRealtime } from "@/hooks/useProductionQueueRealtime";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -35,6 +35,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
+import { ADMIN_ROUTES } from "@/config/routes";
 
 // Redesigned components
 import { UrgentAlertsBanner } from "@/components/production/UrgentAlertsBanner";
@@ -73,11 +74,34 @@ import type {
 } from "@/types/production";
 import type { AlertType } from "@/components/production/UrgentAlertsBanner";
 
-function ProductionHub() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab");
+type ProductionTab = "pipeline" | "kanban" | "list" | "calendar" | "analytics" | "choices";
 
-  const [activeTab, setActiveTab] = useState<string>(tabParam || "pipeline");
+const PRODUCTION_TAB_PATHS: Record<ProductionTab, string> = {
+  pipeline: ADMIN_ROUTES.production,
+  kanban: ADMIN_ROUTES.productionKanban,
+  list: ADMIN_ROUTES.productionList,
+  calendar: ADMIN_ROUTES.productionCalendar,
+  analytics: ADMIN_ROUTES.productionAnalytics,
+  choices: ADMIN_ROUTES.productionChoices,
+};
+
+function isProductionTab(value: string): value is ProductionTab {
+  return value in PRODUCTION_TAB_PATHS;
+}
+
+function getCurrentTab(pathname: string): ProductionTab {
+  if (pathname === ADMIN_ROUTES.productionKanban) return "kanban";
+  if (pathname === ADMIN_ROUTES.productionList) return "list";
+  if (pathname === ADMIN_ROUTES.productionCalendar) return "calendar";
+  if (pathname === ADMIN_ROUTES.productionAnalytics) return "analytics";
+  if (pathname === ADMIN_ROUTES.productionChoices) return "choices";
+  return "pipeline";
+}
+
+function ProductionHub() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeTab = getCurrentTab(location.pathname);
   const [filters, setFilters] = useState<ProductionFiltersType>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -105,17 +129,10 @@ function ProductionHub() {
   const invalidateProductionQueries = useInvalidateProductionQueries();
   const { toast } = useToast();
 
-  // Keep tab selection in sync with the URL.
-  useEffect(() => {
-    const validTabs = ["pipeline", "kanban", "list", "calendar", "analytics", "choices"];
-    if (tabParam && validTabs.includes(tabParam)) {
-      setActiveTab(tabParam);
-    }
-  }, [tabParam]);
-
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    setSearchParams({ tab: value });
+    if (isProductionTab(value)) {
+      navigate(PRODUCTION_TAB_PATHS[value]);
+    }
   };
 
   // Production metrics.
@@ -291,7 +308,7 @@ function ProductionHub() {
   };
 
   const handleAlertClick = (alertType: AlertType) => {
-    setActiveTab("kanban");
+    navigate(ADMIN_ROUTES.productionKanban);
     switch (alertType) {
       case "deadline_critical":
         setFilters({ ...filters, priorities: ["critical"] });

@@ -2,7 +2,7 @@
  * Página de detalhes do usuário no painel admin
  * Refatorado para seguir padrão AAA e remover código legado
  */
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,11 @@ import { formatCurrency } from "@/lib/utils";
 import { useUserDetails } from "@/hooks/admin/useUserDetails";
 import { useUserSubscription } from "@/hooks/admin/useUserSubscription";
 import { useUserOrders } from "@/hooks/admin/useUserOrders";
-import { ADMIN_ROUTES } from "@/config/routes";
+import {
+  ADMIN_ROUTES,
+  adminUserDetailsPath,
+  adminUserDetailsSectionPath,
+} from "@/config/routes";
 import { hasAdminAccessRole } from "@/lib/permissions/adminRoles";
 import { getOrderTypeLabel } from "@/config/admin-order-status";
 import { normalizeAddressBR, type AddressBR } from "@/lib/profile";
@@ -77,21 +81,19 @@ type UserBadgeEntry = {
 
 export default function AdminUserDetails() {
   // Arrange: Obter ID do usuário da URL
-  const { userId } = useParams<{ userId: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const requestedTab = searchParams.get("tab");
-  const selectedTab = requestedTab && USER_DETAILS_TABS.has(requestedTab) ? requestedTab : "info";
+  const { userId, section } = useParams<{ userId: string; section?: string }>();
+  const navigate = useNavigate();
+  const selectedTab =
+    section && USER_DETAILS_TABS.has(section) ? section : "info";
 
   const handleTabChange = (tab: string) => {
-    const nextParams = new URLSearchParams(searchParams);
-
-    if (tab === "info") {
-      nextParams.delete("tab");
-    } else {
-      nextParams.set("tab", tab);
-    }
-
-    setSearchParams(nextParams, { replace: true });
+    if (!userId) return;
+    navigate(
+      tab === "info"
+        ? adminUserDetailsPath(userId)
+        : adminUserDetailsSectionPath(userId, tab),
+      { replace: true },
+    );
   };
 
   // Arrange: Hooks customizados para dados do usuário

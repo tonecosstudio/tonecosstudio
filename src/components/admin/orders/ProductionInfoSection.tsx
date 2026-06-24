@@ -142,7 +142,7 @@ export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
                 asChild
               >
                 <Link
-                  to={`${ADMIN_ROUTES.production}?order=${encodeURIComponent(order.id)}`}
+                  to={ADMIN_ROUTES.production}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

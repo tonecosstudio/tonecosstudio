@@ -7,7 +7,7 @@ import { ADMIN_ROUTES } from "./routes";
  * Atualizado para refletir as consolidações de páginas em hubs.
  * 
  * Consolidações realizadas:
- * - Preços: 5 páginas → 1 hub (/admin/creditos?tab=plans)
+ * - Preços: 5 páginas → 1 hub (/admin/creditos/planos)
  * - Pagamentos: 5 páginas → 1 hub (/admin/pagamentos)
  * - Catálogo: 6 páginas → 1 hub (/admin/catalogo)
  */

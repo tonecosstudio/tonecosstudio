@@ -1,19 +1,45 @@
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { BarChart3, Coins, Gauge, RefreshCw, Wallet } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { CreditsDashboard } from "@/components/admin/credits/CreditsDashboard";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ADMIN_ROUTES } from "@/config/routes";
 import AdminPlansConfiguration from "../plans/AdminPlansConfiguration";
 import AdminCycleManager from "../production/AdminCycleManager";
 import AdminCoinsSystem from "./AdminCoinsSystem";
 
+type CreditsTab = "dashboard" | "coins" | "cycles" | "plans" | "analytics";
+
+const CREDIT_TAB_PATHS: Record<CreditsTab, string> = {
+  dashboard: ADMIN_ROUTES.credits,
+  coins: ADMIN_ROUTES.creditsCoins,
+  cycles: ADMIN_ROUTES.creditsCycles,
+  plans: ADMIN_ROUTES.creditsPlans,
+  analytics: ADMIN_ROUTES.creditsAnalytics,
+};
+
+function isCreditsTab(value: string): value is CreditsTab {
+  return value in CREDIT_TAB_PATHS;
+}
+
+function getCurrentTab(pathname: string): CreditsTab {
+  if (pathname === ADMIN_ROUTES.creditsCoins) return "coins";
+  if (pathname === ADMIN_ROUTES.creditsCycles) return "cycles";
+  if (pathname === ADMIN_ROUTES.creditsPlans) return "plans";
+  if (pathname === ADMIN_ROUTES.creditsAnalytics) return "analytics";
+  return "dashboard";
+}
+
 export default function AdminCreditsHub() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = searchParams.get("tab") || "dashboard";
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentTab = getCurrentTab(location.pathname);
 
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+    if (isCreditsTab(value)) {
+      navigate(CREDIT_TAB_PATHS[value]);
+    }
   };
 
   return (
