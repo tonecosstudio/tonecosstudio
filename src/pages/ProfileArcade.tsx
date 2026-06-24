@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Bell,
   CreditCard,
@@ -32,7 +32,8 @@ import {
   SupportSection,
 } from "./ProfileSections";
 import { profileNavigationConfig } from "@/config/profile-navigation.config";
-import { profileSectionPath, resolveProfileSectionId } from "@/config/routes";
+import { profileSectionPath, resolveProfileRouteSectionId } from "@/config/routes";
+import NotFoundArcade from "./NotFoundArcade";
 
 type SectionId =
   | "info"
@@ -199,9 +200,7 @@ export default function ProfileArcade() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const location = useLocation();
   const { section: routeSection } = useParams<{ section?: string }>();
-  const [searchParams] = useSearchParams();
   const [activeSection, setActiveSection] = useState<SectionId>("info");
 
   const allowedSections = useMemo(
@@ -216,29 +215,18 @@ export default function ProfileArcade() {
     [],
   );
 
+  const requestedRouteSection = resolveProfileRouteSectionId(routeSection);
+  const hasInvalidRouteSection = Boolean(routeSection) && !requestedRouteSection;
+
   useEffect(() => {
-    const requestedSection = resolveProfileSectionId(routeSection);
+    if (hasInvalidRouteSection) return;
     const nextSection =
-      requestedSection && allowedSections.has(requestedSection as SectionId)
-        ? (requestedSection as SectionId)
+      requestedRouteSection && allowedSections.has(requestedRouteSection as SectionId)
+        ? (requestedRouteSection as SectionId)
         : "info";
-    const canonicalPath = profileSectionPath(nextSection);
-    const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.delete("section");
-    const canonicalSearch = nextSearchParams.toString();
 
     setActiveSection(nextSection);
-
-    if (
-      location.pathname !== canonicalPath ||
-      searchParams.has("section")
-    ) {
-      navigate(
-        canonicalSearch ? `${canonicalPath}?${canonicalSearch}` : canonicalPath,
-        { replace: true }
-      );
-    }
-  }, [allowedSections, location.pathname, navigate, routeSection, searchParams]);
+  }, [allowedSections, hasInvalidRouteSection, requestedRouteSection]);
 
   const profileQuery = useQuery({
     queryKey: ["profile", { userId: userId ?? null }],
@@ -383,6 +371,10 @@ export default function ProfileArcade() {
     mutate: () => saveNotificationPreferencesMutation.mutate(),
     isPending: saveNotificationPreferencesMutation.isPending,
   };
+
+  if (hasInvalidRouteSection) {
+    return <NotFoundArcade />;
+  }
 
   return (
     <Page

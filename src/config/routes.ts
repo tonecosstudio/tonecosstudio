@@ -9,8 +9,6 @@ export const PUBLIC_ROUTES = {
   catalogUniverseCharacter: "/universo/:themeKey/:franchiseKey/:characterSlug",
   catalogCharacter: "/universo/personagem/:slug",
   catalogDetails: "/modelos/:id",
-  legacyCatalog: "/catalogo",
-  legacyCatalogDetails: "/catalogo/:id",
   about: "/sobre",
   plans: "/planos",
   collections: "/colecoes",
@@ -33,7 +31,6 @@ export const PUBLIC_COLLECTIONS_ENABLED = false;
 export const AUTH_ROUTES = {
   profile: "/perfil",
   profileSection: "/perfil/:section",
-  support: "/suporte",
   payments: "/perfil/pagamentos",
   paymentDetails: "/perfil/pagamentos/:paymentId",
   subscribeCollection: "/colecoes/:slug/assinar",
@@ -57,17 +54,12 @@ const PROFILE_SECTION_SEGMENTS = {
 
 type ProfileSectionRouteId = keyof typeof PROFILE_SECTION_SEGMENTS;
 
-const PROFILE_SECTION_ALIASES: Record<string, ProfileSectionRouteId> = {
-  conta: "info",
-  preferencias: "info",
-  pagamento: "payment",
-  pagamentos: "payment",
-  notificacoes: "notifications",
-  notificacao: "notifications",
-  suporte: "support",
-  assinatura: "subscriptions",
-  assinaturas: "subscriptions",
-};
+const PROFILE_SECTION_ROUTE_SEGMENTS = Object.fromEntries(
+  Object.entries(PROFILE_SECTION_SEGMENTS).map(([sectionId, segment]) => [
+    segment,
+    sectionId,
+  ]),
+) as Record<string, ProfileSectionRouteId>;
 
 export const ADMIN_ROUTES = {
   home: "/admin",
@@ -83,6 +75,9 @@ export const ADMIN_ROUTES = {
   analytics: "/admin/analytics",
   settings: "/admin/configuracoes",
   payments: "/admin/pagamentos",
+  paymentMethods: "/admin/pagamentos/metodos",
+  paymentKeys: "/admin/pagamentos/chaves",
+  paymentCalculator: "/admin/pagamentos/calculadora",
   paymentDetails: "/admin/pagamentos/:paymentId",
   communication: "/admin/comunicacao",
   groupDetails: "/admin/grupos/:groupId",
@@ -94,59 +89,17 @@ export const APP_ROUTES = {
   admin: ADMIN_ROUTES,
 } as const;
 
-export const ADMIN_REDIRECTS = [
-  { from: "/admin/colecoes", to: `${ADMIN_ROUTES.catalog}?tab=collections` },
-  { from: "/admin/financeiro", to: `${ADMIN_ROUTES.financialHub}?tab=collections` },
-  { from: "/admin/pre-vendas", to: `${ADMIN_ROUTES.orders}?type=quote` },
-  { from: "/admin/gerenciar-colecoes", to: `${ADMIN_ROUTES.catalog}?tab=collections` },
-  { from: "/admin/precos", to: `${ADMIN_ROUTES.credits}?tab=plans` },
-  { from: "/admin/niveis-preco", to: `${ADMIN_ROUTES.credits}?tab=plans` },
-  { from: "/admin/precos-planos", to: `${ADMIN_ROUTES.credits}?tab=plans` },
-  { from: "/admin/precos-gerenciar", to: `${ADMIN_ROUTES.credits}?tab=plans` },
-  { from: "/admin/pricing", to: `${ADMIN_ROUTES.credits}?tab=plans` },
-  { from: "/admin/fila-producao", to: `${ADMIN_ROUTES.production}?tab=list` },
-  { from: "/admin/escolhas-personagens", to: `${ADMIN_ROUTES.production}?tab=choices` },
-  { from: "/admin/creditos/planos", to: `${ADMIN_ROUTES.credits}?tab=plans` },
-  { from: "/admin/planos", to: `${ADMIN_ROUTES.credits}?tab=plans` },
-  { from: "/admin/planos-configuracao", to: `${ADMIN_ROUTES.credits}?tab=plans` },
-  { from: "/admin/creditos/dashboard", to: ADMIN_ROUTES.credits },
-  { from: "/admin/creditos/analytics", to: `${ADMIN_ROUTES.credits}?tab=analytics` },
-  { from: "/admin/creditos/personagens", to: `${ADMIN_ROUTES.catalog}?tab=credit-characters` },
-  { from: "/admin/coins", to: `${ADMIN_ROUTES.credits}?tab=coins` },
-  { from: "/admin/ciclos", to: `${ADMIN_ROUTES.credits}?tab=cycles` },
-  { from: "/admin/assinaturas", to: `${ADMIN_ROUTES.orders}?type=subscription` },
-  { from: "/admin/assinaturas-gerenciar", to: `${ADMIN_ROUTES.orders}?type=subscription` },
-  { from: "/admin/entregas", to: `${ADMIN_ROUTES.orders}?type=subscription` },
-  { from: "/admin/compras-avulsas", to: `${ADMIN_ROUTES.orders}?type=standalone` },
-  { from: "/admin/creditos/assinaturas", to: `${ADMIN_ROUTES.orders}?type=subscription` },
-  { from: "/admin/feriados", to: `${ADMIN_ROUTES.settings}?tab=holidays` },
-  { from: "/admin/chaves-pagamento", to: `${ADMIN_ROUTES.payments}?tab=keys` },
-  { from: "/admin/notificacoes", to: `${ADMIN_ROUTES.communication}?tab=notifications` },
-  { from: "/admin/notificacoes/historico", to: `${ADMIN_ROUTES.communication}?tab=history` },
-  { from: "/admin/configuracoes-sistema", to: `${ADMIN_ROUTES.settings}?tab=general` },
-  { from: "/admin/configuracoes-conteudo", to: `${ADMIN_ROUTES.settings}?tab=content` },
-  { from: "/admin/limite-producao", to: `${ADMIN_ROUTES.settings}?tab=production` },
-  { from: "/admin/conformidade-legal", to: `${ADMIN_ROUTES.settings}?tab=legal` },
-  { from: "/admin/calculadora", to: `${ADMIN_ROUTES.payments}?tab=calculator` },
-  { from: "/admin/payments", to: `${ADMIN_ROUTES.payments}?tab=payments` },
-  { from: "/admin/metodos-pagamento", to: `${ADMIN_ROUTES.payments}?tab=methods` },
-  { from: "/admin/suporte", to: `${ADMIN_ROUTES.communication}?tab=support` },
-  { from: "/admin/grupos", to: `${ADMIN_ROUTES.communication}?tab=groups` },
-  { from: "/admin/respostas-rapidas", to: `${ADMIN_ROUTES.communication}?tab=quick-replies` },
-  { from: "/admin/templates-comunicacao", to: `${ADMIN_ROUTES.communication}?tab=templates` },
-] as const;
-
 export const NOTIFICATION_ROUTES = {
-  adminPayments: `${ADMIN_ROUTES.payments}?tab=payments`,
-  adminPaymentsPending: `${ADMIN_ROUTES.payments}?tab=payments&status=pending`,
-  adminPaymentsUnderReview: `${ADMIN_ROUTES.payments}?tab=payments&status=under_review`,
+  adminPayments: ADMIN_ROUTES.payments,
+  adminPaymentsPending: `${ADMIN_ROUTES.payments}?status=pending`,
+  adminPaymentsUnderReview: `${ADMIN_ROUTES.payments}?status=under_review`,
   myPayments: AUTH_ROUTES.payments,
   myPaymentsRequiresInfo: `${AUTH_ROUTES.payments}?status=requires_info`,
-  support: AUTH_ROUTES.support,
+  support: `${AUTH_ROUTES.profile}/${PROFILE_SECTION_SEGMENTS.support}`,
 } as const;
 
 export function adminPaymentDetailsPath(paymentId: string) {
-  return `${ADMIN_ROUTES.paymentDetails.replace(":paymentId", encodeURIComponent(paymentId))}?tab=payments`;
+  return ADMIN_ROUTES.paymentDetails.replace(":paymentId", encodeURIComponent(paymentId));
 }
 
 export function adminOrdersPath(params?: {
@@ -288,7 +241,15 @@ export function resolveProfileSectionId(
   if (!section) return null;
   const normalized = section.trim().toLocaleLowerCase();
   if (normalized in PROFILE_SECTION_SEGMENTS) return normalized as ProfileSectionRouteId;
-  return PROFILE_SECTION_ALIASES[normalized] ?? null;
+  return PROFILE_SECTION_ROUTE_SEGMENTS[normalized] ?? null;
+}
+
+export function resolveProfileRouteSectionId(
+  section: string | null | undefined,
+): ProfileSectionRouteId | null {
+  if (!section) return null;
+  const normalized = section.trim().toLocaleLowerCase();
+  return PROFILE_SECTION_ROUTE_SEGMENTS[normalized] ?? null;
 }
 
 export function profileSectionPath(section: string) {

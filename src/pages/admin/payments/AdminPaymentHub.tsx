@@ -1,23 +1,42 @@
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wallet, CreditCard, Calculator, Key } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ADMIN_ROUTES } from "@/config/routes";
 import AdminPayments from "./AdminPayments";
 import AdminPaymentMethods from "./AdminPaymentMethods";
 import AdminPaymentKeys from "./AdminPaymentKeys";
 import PaymentCalculator from "./PaymentCalculator";
 
+type PaymentHubTab = "payments" | "methods" | "keys" | "calculator";
+
+const PAYMENT_TAB_PATHS: Record<PaymentHubTab, string> = {
+  payments: ADMIN_ROUTES.payments,
+  methods: ADMIN_ROUTES.paymentMethods,
+  keys: ADMIN_ROUTES.paymentKeys,
+  calculator: ADMIN_ROUTES.paymentCalculator,
+};
+
+function isPaymentHubTab(value: string): value is PaymentHubTab {
+  return value in PAYMENT_TAB_PATHS;
+}
+
+function getCurrentTab(pathname: string): PaymentHubTab {
+  if (pathname === ADMIN_ROUTES.paymentMethods) return "methods";
+  if (pathname === ADMIN_ROUTES.paymentKeys) return "keys";
+  if (pathname === ADMIN_ROUTES.paymentCalculator) return "calculator";
+  return "payments";
+}
+
 export default function AdminPaymentHub() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const currentTab = ["payments", "methods", "keys", "calculator"].includes(tabParam ?? "")
-    ? tabParam!
-    : "payments";
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentTab = getCurrentTab(location.pathname);
 
   const handleTabChange = (value: string) => {
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("tab", value);
-    setSearchParams(nextParams);
+    if (isPaymentHubTab(value)) {
+      navigate(PAYMENT_TAB_PATHS[value]);
+    }
   };
 
   return (

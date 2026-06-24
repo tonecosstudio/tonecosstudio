@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useSentry } from "@/hooks/use-sentry";
 import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -12,15 +12,10 @@ import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
 import { CustomerChat } from "@/components/customer/CustomerChat";
 import {
-  ADMIN_REDIRECTS,
   ADMIN_ROUTES,
   AUTH_ROUTES,
   PUBLIC_COLLECTIONS_ENABLED,
   PUBLIC_ROUTES,
-  adminPaymentDetailsPath,
-  catalogModelDetailsPath,
-  profileSectionPath,
-  resolveCatalogModelIdFromParam,
 } from "@/config/routes";
 
 // ─── Lazy-loaded pages ───────────────────────────────────────────────
@@ -86,30 +81,8 @@ function PageLoader() {
 
 const queryClient = new QueryClient();
 
-function LegacyAdminPaymentRedirect() {
-  const { paymentId } = useParams<{ paymentId?: string }>();
-
-  return (
-    <Navigate
-      to={paymentId ? adminPaymentDetailsPath(paymentId) : `${ADMIN_ROUTES.payments}?tab=payments`}
-      replace
-    />
-  );
-}
-
-function LegacyCatalogRedirect() {
-  const { id } = useParams<{ id?: string }>();
-
-  return (
-    <Navigate
-      to={id ? catalogModelDetailsPath(resolveCatalogModelIdFromParam(id)) : PUBLIC_ROUTES.catalog}
-      replace
-    />
-  );
-}
-
-function CollectionsLaunchRedirect() {
-  return <Navigate to={PUBLIC_ROUTES.catalog} replace />;
+function HiddenCollectionsPage() {
+  return <NotFoundArcade />;
 }
 
 function AppContent() {
@@ -140,35 +113,33 @@ function AppContent() {
             <Route path={PUBLIC_ROUTES.catalogModels} element={<CatalogModelsArcade />} />
             <Route path={PUBLIC_ROUTES.catalogCharacter} element={<CatalogCharacterArcade />} />
             <Route path={PUBLIC_ROUTES.catalogDetails} element={<ModelDetails />} />
-            <Route path={PUBLIC_ROUTES.legacyCatalog} element={<Navigate to={PUBLIC_ROUTES.catalog} replace />} />
-            <Route path={PUBLIC_ROUTES.legacyCatalogDetails} element={<LegacyCatalogRedirect />} />
             <Route path={PUBLIC_ROUTES.about} element={<AboutArcade />} />
             <Route
               path={PUBLIC_ROUTES.plans}
-              element={PUBLIC_COLLECTIONS_ENABLED ? <PlansArcade /> : <CollectionsLaunchRedirect />}
+              element={PUBLIC_COLLECTIONS_ENABLED ? <PlansArcade /> : <HiddenCollectionsPage />}
             />
             <Route
               path={PUBLIC_ROUTES.collections}
               element={
-                PUBLIC_COLLECTIONS_ENABLED ? <CollectionsShowcase /> : <CollectionsLaunchRedirect />
+                PUBLIC_COLLECTIONS_ENABLED ? <CollectionsShowcase /> : <HiddenCollectionsPage />
               }
             />
             <Route
               path={PUBLIC_ROUTES.collectionsArcade}
               element={
-                PUBLIC_COLLECTIONS_ENABLED ? <CollectionsArcade /> : <CollectionsLaunchRedirect />
+                PUBLIC_COLLECTIONS_ENABLED ? <CollectionsArcade /> : <HiddenCollectionsPage />
               }
             />
             <Route
               path={PUBLIC_ROUTES.collectionCharacterDetails}
               element={
-                PUBLIC_COLLECTIONS_ENABLED ? <CharacterDetails /> : <CollectionsLaunchRedirect />
+                PUBLIC_COLLECTIONS_ENABLED ? <CharacterDetails /> : <HiddenCollectionsPage />
               }
             />
             <Route
               path={PUBLIC_ROUTES.characterDetails}
               element={
-                PUBLIC_COLLECTIONS_ENABLED ? <CharacterDetails /> : <CollectionsLaunchRedirect />
+                PUBLIC_COLLECTIONS_ENABLED ? <CharacterDetails /> : <HiddenCollectionsPage />
               }
             />
             <Route
@@ -178,12 +149,12 @@ function AppContent() {
             <Route
               path={PUBLIC_ROUTES.collectionDetails}
               element={
-                PUBLIC_COLLECTIONS_ENABLED ? <CollectionDetailsArcade /> : <CollectionsLaunchRedirect />
+                PUBLIC_COLLECTIONS_ENABLED ? <CollectionDetailsArcade /> : <HiddenCollectionsPage />
               }
             />
             <Route
               path={PUBLIC_ROUTES.buyCharacter}
-              element={PUBLIC_COLLECTIONS_ENABLED ? <BuyCharacter /> : <CollectionsLaunchRedirect />}
+              element={PUBLIC_COLLECTIONS_ENABLED ? <BuyCharacter /> : <HiddenCollectionsPage />}
             />
             <Route path={PUBLIC_ROUTES.terms} element={<TermsArcade />} />
             <Route path={PUBLIC_ROUTES.privacy} element={<PrivacyArcade />} />
@@ -192,13 +163,12 @@ function AppContent() {
             <Route path={PUBLIC_ROUTES.publicProfile} element={<NotFoundArcade />} />
             <Route
               path={PUBLIC_ROUTES.preLaunch}
-              element={PUBLIC_COLLECTIONS_ENABLED ? <PreLaunchArcade /> : <CollectionsLaunchRedirect />}
+              element={PUBLIC_COLLECTIONS_ENABLED ? <PreLaunchArcade /> : <HiddenCollectionsPage />}
             />
 
             {/* Auth-required */}
             <Route path={AUTH_ROUTES.profile} element={<RequireAuth><ProfileArcade /></RequireAuth>} />
             <Route path={AUTH_ROUTES.profileSection} element={<RequireAuth><ProfileArcade /></RequireAuth>} />
-            <Route path={AUTH_ROUTES.support} element={<Navigate to={profileSectionPath("support")} replace />} />
             <Route path={AUTH_ROUTES.paymentDetails} element={<RequireAuth><PaymentDetails /></RequireAuth>} />
             <Route
               path={AUTH_ROUTES.subscribeCollection}
@@ -206,7 +176,7 @@ function AppContent() {
                 PUBLIC_COLLECTIONS_ENABLED ? (
                   <RequireAuth><SubscribeCollection /></RequireAuth>
                 ) : (
-                  <CollectionsLaunchRedirect />
+                  <HiddenCollectionsPage />
                 )
               }
             />
@@ -222,33 +192,13 @@ function AppContent() {
                 PUBLIC_COLLECTIONS_ENABLED ? (
                   <RequireAuth><SubscriberDashboardArcade /></RequireAuth>
                 ) : (
-                  <CollectionsLaunchRedirect />
+                  <HiddenCollectionsPage />
                 )
               }
             />
             <Route path={AUTH_ROUTES.coinsPurchase} element={<RequireAuth><CoinsPurchaseArcade /></RequireAuth>} />
 
-            {/* Redirects de compatibilidade */}
-            <Route
-              path="/assinaturas"
-              element={
-                PUBLIC_COLLECTIONS_ENABLED ? (
-                  <Navigate to={AUTH_ROUTES.subscriberDashboard} replace />
-                ) : (
-                  <CollectionsLaunchRedirect />
-                )
-              }
-            />
-            <Route
-              path="/planos-assinatura"
-              element={
-                PUBLIC_COLLECTIONS_ENABLED ? (
-                  <Navigate to={PUBLIC_ROUTES.plans} replace />
-                ) : (
-                  <CollectionsLaunchRedirect />
-                )
-              }
-            />
+
             {/* Admin */}
             <Route path={ADMIN_ROUTES.home} element={<RequireAdmin><AdminHome /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.users} element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
@@ -263,15 +213,13 @@ function AppContent() {
             <Route path={ADMIN_ROUTES.analytics} element={<RequireAdmin><AdminAnalytics /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.settings} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.payments} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.paymentMethods} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.paymentKeys} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.paymentCalculator} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.paymentDetails} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.communication} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
             <Route path={ADMIN_ROUTES.groupDetails} element={<RequireAdmin><AdminGroupDetailsPage /></RequireAdmin>} />
 
-            {/* Admin redirects */}
-            <Route path="/admin/payments/:paymentId" element={<RequireAdmin><LegacyAdminPaymentRedirect /></RequireAdmin>} />
-            {ADMIN_REDIRECTS.map(({ from, to }) => (
-              <Route key={from} path={from} element={<RequireAdmin><Navigate to={to} replace /></RequireAdmin>} />
-            ))}
 
             {/* 404 */}
             <Route path="*" element={<NotFoundArcade />} />

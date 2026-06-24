@@ -15,6 +15,7 @@ import {
   profileSectionPath,
   publicProfilePath,
   resolveCatalogModelIdFromParam,
+  resolveProfileRouteSectionId,
   resolveProfileSectionId,
   subscribeCollectionPath,
 } from "./routes";
@@ -22,7 +23,7 @@ import {
 describe("route helpers", () => {
   it("builds encoded app paths from route templates", () => {
     expect(paymentDetailsPath("pay 1")).toBe("/perfil/pagamentos/pay%201");
-    expect(adminPaymentDetailsPath("pay/1")).toBe("/admin/pagamentos/pay%2F1?tab=payments");
+    expect(adminPaymentDetailsPath("pay/1")).toBe("/admin/pagamentos/pay%2F1");
     expect(adminUserDetailsPath("user/1")).toBe("/admin/users/user%2F1");
     expect(collectionDetailsPath("my collection")).toBe("/colecoes/my%20collection");
     expect(collectionCharacterDetailsPath("my collection", "char/1")).toBe(
@@ -68,6 +69,8 @@ describe("route helpers", () => {
     expect(profileSectionPath("support")).toBe("/perfil/suporte");
     expect(resolveProfileSectionId("pagamentos")).toBe("payment");
     expect(resolveProfileSectionId("suporte")).toBe("support");
+    expect(resolveProfileRouteSectionId("pagamentos")).toBe("payment");
+    expect(resolveProfileRouteSectionId("payment")).toBeNull();
     expect(resolveProfileSectionId("payments")).toBeNull();
     expect(resolveProfileSectionId("orders")).toBeNull();
   });

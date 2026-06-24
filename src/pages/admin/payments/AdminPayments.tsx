@@ -27,7 +27,7 @@ export default function AdminPayments() {
 
   // Handle going back to dashboard
   const handleBackToDashboard = () => {
-    navigate(`${ADMIN_ROUTES.payments}?tab=payments`);
+    navigate(ADMIN_ROUTES.payments);
     setRefreshKey((prev) => prev + 1); // Refresh dashboard when returning
   };
 

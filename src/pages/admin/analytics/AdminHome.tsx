@@ -656,7 +656,7 @@ export default function AdminHome() {
               <Button
                 className="w-full justify-start"
                 variant="outline"
-                onClick={() => navigate(`${ADMIN_ROUTES.payments}?tab=calculator`)}
+                onClick={() => navigate(ADMIN_ROUTES.paymentCalculator)}
               >
                 <DollarSign className="mr-2 h-4 w-4" />
                 Calculadora de pagamento
