@@ -74,7 +74,8 @@ export default function PublicProfileArcade() {
     );
   }
 
-  const xpForNextLevel = profile.collector_level * 1000;
+  const currentLevel = Math.max(profile.collector_level || 0, 1);
+  const xpForNextLevel = currentLevel * 1000;
   const xpProgress = Math.min(
     100,
     (profile.collector_xp / xpForNextLevel) * 100,
@@ -132,7 +133,7 @@ export default function PublicProfileArcade() {
                 {profile.collector_level}
               </p>
               <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">
-                NÍVEL
+                NÍVEL INTERNO
               </p>
             </div>
             <div className="w-px h-10 bg-[hsl(0,0%,20%)]" />
