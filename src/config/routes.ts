@@ -22,7 +22,6 @@ export const PUBLIC_ROUTES = {
   privacy: "/privacidade",
   contact: "/contato",
   login: "/login",
-  publicProfile: "/collector/:username",
   preLaunch: "/pre-lancamento",
 } as const;
 
@@ -285,10 +284,6 @@ export function profileSectionPath(section: string) {
 
 export function loginReturnToPath(returnTo: string) {
   return `${PUBLIC_ROUTES.login}?returnTo=${encodeURIComponent(returnTo)}`;
-}
-
-export function publicProfilePath(username: string) {
-  return PUBLIC_ROUTES.publicProfile.replace(":username", encodeURIComponent(username));
 }
 
 function hasControlCharacter(value: string): boolean {

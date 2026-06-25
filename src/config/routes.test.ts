@@ -16,7 +16,6 @@ import {
   isSafeInAppPath,
   paymentDetailsPath,
   profileSectionPath,
-  publicProfilePath,
   resolveCatalogModelIdFromParam,
   resolveProfileRouteSectionId,
   resolveProfileSectionId,
@@ -61,7 +60,6 @@ describe("route helpers", () => {
       "/universo/anime/dragon-ball/freeza"
     );
     expect(subscribeCollectionPath("my collection")).toBe("/colecoes/my%20collection/assinar");
-    expect(publicProfilePath("collector/user")).toBe("/collector/collector%2Fuser");
   });
 
   it("extracts model ids from friendly universe detail params", () => {

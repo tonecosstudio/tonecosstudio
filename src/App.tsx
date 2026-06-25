@@ -160,7 +160,6 @@ function AppContent() {
             <Route path={PUBLIC_ROUTES.privacy} element={<PrivacyArcade />} />
             <Route path={PUBLIC_ROUTES.contact} element={<ContactArcade />} />
             <Route path={PUBLIC_ROUTES.login} element={<LoginArcade />} />
-            <Route path={PUBLIC_ROUTES.publicProfile} element={<NotFoundArcade />} />
             <Route
               path={PUBLIC_ROUTES.preLaunch}
               element={PUBLIC_COLLECTIONS_ENABLED ? <PreLaunchArcade /> : <HiddenCollectionsPage />}

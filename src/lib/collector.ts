@@ -1,25 +1,14 @@
 export {
-  addToPublicCollection,
   calculateLevelProgress,
   calculateXPForNextLevel,
   checkUsernameAvailability,
   getAllBadges,
   getMyCollectorProfile,
-  getPublicCollection,
-  getPublicModelImageUrl,
   getUserBadges,
-  removeFromPublicCollection,
-  searchAvailablePublicCollectionModels,
-  updateCollectionNotes,
-  updateCollectionOrder,
   updateCollectorProfile,
 } from "@/services/customer/collector-service";
 export type {
-  AvailablePublicCollectionModel,
   CollectorBadge,
   CollectorProfile,
-  PublicCollectionEntry,
-  PublicCollectionItem,
-  PublicCollectionModel,
   UserBadge,
 } from "@/services/customer/collector-service";
