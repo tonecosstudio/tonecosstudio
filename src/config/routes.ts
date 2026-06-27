@@ -283,7 +283,7 @@ export function profileSectionPath(section: string) {
 }
 
 export function loginReturnToPath(returnTo: string) {
-  return `${PUBLIC_ROUTES.login}?returnTo=${encodeURIComponent(returnTo)}`;
+  return `${PUBLIC_ROUTES.login}?next=${encodeURIComponent(returnTo)}`;
 }
 
 function hasControlCharacter(value: string): boolean {

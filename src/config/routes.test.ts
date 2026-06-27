@@ -14,6 +14,7 @@ import {
   collectionCharacterDetailsPath,
   collectionDetailsPath,
   isSafeInAppPath,
+  loginReturnToPath,
   paymentDetailsPath,
   profileSectionPath,
   resolveCatalogModelIdFromParam,
@@ -60,6 +61,9 @@ describe("route helpers", () => {
       "/universo/anime/dragon-ball/freeza"
     );
     expect(subscribeCollectionPath("my collection")).toBe("/colecoes/my%20collection/assinar");
+    expect(loginReturnToPath("/perfil/pagamentos?status=pending")).toBe(
+      "/login?next=%2Fperfil%2Fpagamentos%3Fstatus%3Dpending"
+    );
   });
 
   it("extracts model ids from friendly universe detail params", () => {

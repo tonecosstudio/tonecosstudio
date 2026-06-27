@@ -1,10 +1,10 @@
-import { PropsWithChildren, useMemo } from "react";
+import { PropsWithChildren } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { ScanlineOverlay } from "@/components/arcade/ArcadeLayout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { useCurrentUserIsAdmin } from "@/lib/roles";
-import { PUBLIC_ROUTES } from "@/config/routes";
+import { PUBLIC_ROUTES, loginReturnToPath } from "@/config/routes";
 import { signOutCurrentSession } from "@/services/auth/auth-session-service";
 
 export default function RequireAdmin({ children }: PropsWithChildren) {
@@ -14,11 +14,6 @@ export default function RequireAdmin({ children }: PropsWithChildren) {
 
   const isChecking = isLoading || (user && isAdminQuery.isLoading);
   const isAdmin = Boolean(isAdminQuery.data);
-
-  const redirectTo = useMemo(
-    () => encodeURIComponent(location.pathname + location.search),
-    [location],
-  );
 
   if (isChecking) {
     return (
@@ -44,7 +39,7 @@ export default function RequireAdmin({ children }: PropsWithChildren) {
 
   if (!user)
     return (
-      <Navigate to={`${PUBLIC_ROUTES.login}?next=${redirectTo}`} replace />
+      <Navigate to={loginReturnToPath(location.pathname + location.search)} replace />
     );
 
   if (isAdmin) return <>{children}</>;
