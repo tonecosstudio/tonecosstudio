@@ -283,7 +283,8 @@ export function profileSectionPath(section: string) {
 }
 
 export function loginReturnToPath(returnTo: string) {
-  return `${PUBLIC_ROUTES.login}?next=${encodeURIComponent(returnTo)}`;
+  const safeReturnTo = isSafeInAppPath(returnTo) ? returnTo : PUBLIC_ROUTES.home;
+  return `${PUBLIC_ROUTES.login}?next=${encodeURIComponent(safeReturnTo)}`;
 }
 
 function hasControlCharacter(value: string): boolean {

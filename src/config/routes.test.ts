@@ -64,6 +64,8 @@ describe("route helpers", () => {
     expect(loginReturnToPath("/perfil/pagamentos?status=pending")).toBe(
       "/login?next=%2Fperfil%2Fpagamentos%3Fstatus%3Dpending"
     );
+    expect(loginReturnToPath("https://evil.example")).toBe("/login?next=%2F");
+    expect(loginReturnToPath("//evil.example")).toBe("/login?next=%2F");
   });
 
   it("extracts model ids from friendly universe detail params", () => {
