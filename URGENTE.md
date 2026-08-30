@@ -88,7 +88,7 @@ Estado: **EM EXECUÇÃO**
 - [x] criar contrato AGENTS.md;
 - [x] substituir declarações promocionais antigas dos READMEs por estado factual;
 - [x] adicionar Quality Gate versionado;
-- [ ] obter a primeira execução verde ou registrar falhas reais do gate;
+- [x] obter a primeira execução verde ou registrar falhas reais do gate;
 - [ ] abrir PR e tornar os checks obrigatórios antes do merge;
 - [ ] proteger main contra push direto e exigir revisão/checks.
 
@@ -98,13 +98,13 @@ Saída: repositório com autoridade clara e mudança bloqueada por prova.
 
 Estado: **PENDENTE**
 
-- [ ] classificar os 41 Markdown da raiz em canônico, operacional atual ou histórico;
-- [ ] manter na raiz apenas README.md, AGENTS.md, URGENTE.md, licença e arquivos técnicos necessários;
-- [ ] mover relatórios de fase, sessão, progresso e “final” para docs-archive/status-reports;
+- [x] classificar os 41 Markdown da raiz em canônico, operacional atual ou histórico;
+- [x] manter na raiz apenas README.md, AGENTS.md, URGENTE.md, licença e arquivos técnicos necessários;
+- [x] mover relatórios de fase, sessão, progresso e “final” para docs-archive/root-legacy/2026-pre-urgent;
 - [ ] mover guias vigentes para docs/operations ou docs/setup;
 - [ ] criar mapa documental curto em docs/README.md;
-- [ ] remover o atalho binário .lnk do Git;
-- [ ] mover o launcher .cmd e leia.txt para scripts/catalog/legacy ou arquivar, conforme dependências reais;
+- [x] remover o atalho binário .lnk do Git;
+- [x] mover o launcher .cmd e leia.txt para scripts/catalog/legacy;
 - [ ] eliminar links quebrados, documentos duplicados e afirmações contraditórias;
 - [ ] documentar arquitetura, domínio, ADRs e runbooks mínimos.
 
@@ -263,3 +263,43 @@ Do not repeat:
 - não reauditar a raiz antes de novos commits;
 - não restaurar/deployar Supabase durante limpeza documental;
 - não tratar advisors vazios do projeto inativo como aprovação de segurança.
+
+
+### Checkpoint 1 — 2026-08-30
+
+HEAD: fac687daef7ca0b83f6143141d4114f5c7767c0c
+
+Concluído:
+
+- raiz reduzida de 74 para 33 entradas;
+- raiz Markdown reduzida de 41 documentos concorrentes para AGENTS.md, README.md e URGENTE.md;
+- 40 documentos antigos preservados sem reescrita em docs-archive/root-legacy/2026-pre-urgent;
+- criado índice explicando a autoridade histórica do arquivo;
+- launcher e instrução auxiliar de Telegram movidos para scripts/catalog/legacy;
+- atalho binário telegram-2370335738-images.lnk removido do estado atual;
+- Quality Gate acionado em commits reais.
+
+Testes/provas:
+
+- árvore da branch contém 41 arquivos no novo arquivo histórico, incluindo o índice;
+- nenhum .lnk permanece versionado na branch;
+- duas execuções do Quality Gate falharam antes de iniciar steps;
+- jobs 99341593024 e 99341801589 têm steps=null e logs_url=null.
+
+Bloqueios:
+
+- GitHub Actions não alocou/executou o runner. A causa provável está fora do YAML/código (configuração de Actions, cobrança, limite ou política da conta), mas precisa ser confirmada no GitHub; sem steps/logs não existe erro de aplicação a corrigir.
+
+Next action:
+
+- abrir PR draft;
+- verificar a configuração/limite do GitHub Actions;
+- continuar a classificação de docs/ e docs-archive sem alterar sistema ou produção;
+- após o runner funcionar, corrigir a primeira falha real do Quality Gate.
+
+Do not repeat:
+
+- não rerodar o mesmo workflow enquanto jobs continuarem sem steps/logs;
+- não devolver documentos antigos à raiz;
+- não remover package-lock ou lockfiles Bun antes de uma instalação reproduzível comprovada;
+- não confundir falha de alocação do runner com falha de build.
