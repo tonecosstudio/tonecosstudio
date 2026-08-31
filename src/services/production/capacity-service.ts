@@ -43,42 +43,14 @@ interface CycleCapacityRow {
 
 const capacityRpc = supabase as unknown as CapacityRpcClient;
 
-/**
- * Capacity usage information for a cycle
- */
 export interface CapacityUsage {
-  /** Maximum capacity for the cycle */
   max: number;
-  /** Current capacity used */
   current: number;
-  /** Available capacity remaining (accounts for reserved capacity) */
   available: number;
-  /** Percentage of capacity used (0-100) */
   percentage: number;
-  /** Reserved capacity for special orders */
   reserved?: number;
 }
 
-/**
- * Check if capacity is available for a purchase
- *
- * This function verifies if the requested quantity can be accommodated
- * within the cycle's capacity limits before confirming a purchase.
- *
- * @param cycleId - The ID of the cycle to check
- * @param quantity - The number of pieces to reserve
- * @returns Promise<boolean> - True if capacity is available
- * @throws Error if database query fails
- *
- * @example
- * // Check if 3 pieces can be added to a cycle
- * const available = await checkAvailability(cycleId, 3);
- * if (available) {
- *   // Proceed with purchase
- * }
- *
- * Requirements: 3.2, 3.3
- */
 export async function checkAvailability(
   cycleId: string,
   quantity: number,
@@ -95,24 +67,6 @@ export async function checkAvailability(
   return data === true;
 }
 
-/**
- * Reserve capacity for a subscription or standalone purchase.
- *
- * This function increments the canonical used_capacity value by the specified
- * quantity through the database RPC. It will fail if capacity would be exceeded.
- *
- * @param cycleId - The ID of the cycle to reserve capacity in
- * @param quantity - The number of pieces to reserve
- * @param referenceId - The subscription or standalone purchase ID (for logging)
- * @returns Promise<void>
- * @throws Error if capacity limit exceeded or database update fails
- *
- * @example
- * // Reserve capacity for a new subscription
- * await reserveCapacity(cycleId, 1, subscriptionId);
- *
- * Requirements: 3.2, 3.3
- */
 export async function reserveCapacity(
   cycleId: string,
   quantity: number,
@@ -130,24 +84,6 @@ export async function reserveCapacity(
   log.info("Capacity reserved", { quantity, cycleId, referenceId });
 }
 
-/**
- * Release capacity when a purchase is cancelled before cutoff.
- *
- * This function decrements the canonical used_capacity value by the specified
- * quantity through the database RPC. It ensures usage never goes below 0.
- *
- * @param cycleId - The ID of the cycle to release capacity from
- * @param quantity - The number of pieces to release
- * @param referenceId - The subscription or standalone purchase ID (for logging)
- * @returns Promise<void>
- * @throws Error if database update fails
- *
- * @example
- * // Release capacity when subscription is cancelled
- * await releaseCapacity(cycleId, 1, subscriptionId);
- *
- * Requirements: 3.6
- */
 export async function releaseCapacity(
   cycleId: string,
   quantity: number,
@@ -165,25 +101,6 @@ export async function releaseCapacity(
   log.info("Capacity released", { quantity, cycleId, referenceId });
 }
 
-/**
- * Get current capacity usage for a cycle
- *
- * This function retrieves the capacity information for a cycle and
- * calculates the available capacity and usage percentage.
- * Available capacity is calculated from the canonical capacity and used_capacity
- * columns. Legacy aliases are synchronized in the database migration.
- *
- * @param cycleId - The ID of the cycle to query
- * @returns Promise<CapacityUsage> - Capacity usage information
- * @throws Error if cycle not found or database query fails
- *
- * @example
- * // Get capacity usage for display in admin panel
- * const usage = await getCapacityUsage(cycleId);
- * console.log(`Capacity: ${usage.current}/${usage.max} (${usage.percentage}%)`);
- *
- * Requirements: 3.5, 16.6
- */
 export async function getCapacityUsage(
   cycleId: string,
 ): Promise<CapacityUsage> {
@@ -212,33 +129,16 @@ export async function getCapacityUsage(
   };
 }
 
-/**
- * Information about subscription capacity availability
- */
 export interface SubscriptionCapacityCheck {
-  /** Whether capacity is available for all deliveries */
   available: boolean;
-  /** First unavailable cycle information (if any) */
   firstUnavailableCycle?: {
     cycleNumber: 1 | 2;
     month: number;
     year: number;
     deliveryNumber: number;
   };
-  /** Estimated next available date (if capacity unavailable) */
-  estimatedAvailableDate?: Date;
 }
 
-/**
- * Calculate delivery cycles for a subscription
- *
- * This function determines which cycles will be used for each delivery
- * based on the entry cycle and number of deliveries.
- *
- * @param entryCycle - The cycle where subscription starts
- * @param deliveryCount - Number of deliveries (3 for Trimestral, 6 for Semestral)
- * @returns Array of cycle information for each delivery
- */
 function calculateDeliveryCycles(
   entryCycle: { cycle_number: 1 | 2; month: number; year: number },
   deliveryCount: number,
@@ -250,19 +150,15 @@ function calculateDeliveryCycles(
   let currentYear = entryCycle.year;
 
   for (let i = 0; i < deliveryCount; i++) {
-    // Advance to next cycle
     if (currentCycleNumber === 1) {
-      // Cycle 1 -> Cycle 2 (same month)
       currentCycleNumber = 2;
     } else {
-      // Cycle 2 -> Cycle 1 (next month)
       currentCycleNumber = 1;
-      currentMonth = currentMonth + 1;
+      currentMonth += 1;
 
-      // Roll over year if necessary
       if (currentMonth > 12) {
         currentMonth = 1;
-        currentYear = currentYear + 1;
+        currentYear += 1;
       }
     }
 
@@ -276,43 +172,20 @@ function calculateDeliveryCycles(
   return cycles;
 }
 
-/**
- * Check if capacity is available for all deliveries in a subscription
- *
- * This function verifies capacity for all consecutive cycles that would be
- * used by a subscription. It's used to show "Sold Out" messages before
- * customers enter payment information.
- *
- * @param deliveryCount - Number of deliveries (3 for Trimestral, 6 for Semestral)
- * @returns Promise<SubscriptionCapacityCheck> - Capacity availability information
- * @throws Error if database query fails
- *
- * @example
- * // Check capacity for Trimestral subscription (3 deliveries)
- * const check = await checkSubscriptionCapacity(3);
- * if (!check.available) {
- *   console.log('Sold out! First unavailable:', check.firstUnavailableCycle);
- * }
- *
- * Requirements: 3.2, 9.9, 22.1, 22.2, 22.3
- */
 export async function checkSubscriptionCapacity(
   deliveryCount: number,
 ): Promise<SubscriptionCapacityCheck> {
-  const now = new Date();
-  const fallbackCycle: CurrentCycleRow = {
-    cycle_number: 1,
-    month: now.getMonth() + 1,
-    year: now.getFullYear(),
-  };
+  if (!Number.isInteger(deliveryCount) || deliveryCount < 1) {
+    throw new Error("Invalid subscription delivery count");
+  }
 
   const { data: openCycle, error: cycleError } = await supabase
     .from("cycles")
     .select("cycle_number, month, year")
-    .eq("month", fallbackCycle.month)
-    .eq("year", fallbackCycle.year)
     .in("status", ["open", "active", "sales"])
-    .order("cycle_number", { ascending: true })
+    .order("year", { ascending: false })
+    .order("month", { ascending: false })
+    .order("cycle_number", { ascending: false })
     .limit(1)
     .maybeSingle<CurrentCycleRow>();
 
@@ -320,24 +193,15 @@ export async function checkSubscriptionCapacity(
     throw new Error(`Failed to get current cycle: ${cycleError.message}`);
   }
 
-  const currentCycle = openCycle ?? fallbackCycle;
+  if (!openCycle) {
+    return { available: false };
+  }
 
-  // Calculate which cycles will be used for deliveries
-  const deliveryCycles = calculateDeliveryCycles(
-    {
-      cycle_number: currentCycle.cycle_number,
-      month: currentCycle.month,
-      year: currentCycle.year,
-    },
-    deliveryCount,
-  );
+  const deliveryCycles = calculateDeliveryCycles(openCycle, deliveryCount);
 
-  // Check capacity for each cycle
   for (let i = 0; i < deliveryCycles.length; i++) {
     const cycleInfo = deliveryCycles[i];
-
-    // Try to find existing cycle
-    const { data: existingCycle } = await supabase
+    const { data: existingCycle, error: existingCycleError } = await supabase
       .from("cycles")
       .select("id")
       .eq("cycle_number", cycleInfo.cycleNumber)
@@ -345,61 +209,46 @@ export async function checkSubscriptionCapacity(
       .eq("year", cycleInfo.year)
       .maybeSingle();
 
-    if (existingCycle) {
-      // Check capacity using database function
-      const { data: hasCapacity, error } = await capacityRpc.rpc(
-        "check_capacity_available",
-        {
-          p_cycle_id: existingCycle.id,
-          p_quantity: 1,
-        },
-      );
-
-      if (error) {
-        throw new Error(`Failed to check capacity: ${error.message}`);
-      }
-
-      if (!hasCapacity) {
-        // Capacity unavailable - calculate estimated available date
-        // Next available would be the cycle after this one
-        let nextMonth = cycleInfo.month;
-        let nextYear = cycleInfo.year;
-        let nextCycleNumber: 1 | 2 = cycleInfo.cycleNumber;
-
-        if (cycleInfo.cycleNumber === 1) {
-          nextCycleNumber = 2;
-        } else {
-          nextCycleNumber = 1;
-          nextMonth = nextMonth + 1;
-          if (nextMonth > 12) {
-            nextMonth = 1;
-            nextYear = nextYear + 1;
-          }
-        }
-
-        // Estimated date is the start of the next cycle
-        const estimatedDate = new Date(
-          nextYear,
-          nextMonth - 1,
-          nextCycleNumber === 1 ? 1 : 16,
-        );
-
-        return {
-          available: false,
-          firstUnavailableCycle: {
-            cycleNumber: cycleInfo.cycleNumber,
-            month: cycleInfo.month,
-            year: cycleInfo.year,
-            deliveryNumber: i + 1,
-          },
-          estimatedAvailableDate: estimatedDate,
-        };
-      }
+    if (existingCycleError) {
+      throw new Error(`Failed to get delivery cycle: ${existingCycleError.message}`);
     }
-    // If cycle doesn't exist yet, it will be created with available capacity
+
+    if (!existingCycle) {
+      return {
+        available: false,
+        firstUnavailableCycle: {
+          cycleNumber: cycleInfo.cycleNumber,
+          month: cycleInfo.month,
+          year: cycleInfo.year,
+          deliveryNumber: i + 1,
+        },
+      };
+    }
+
+    const { data: hasCapacity, error } = await capacityRpc.rpc(
+      "check_capacity_available",
+      {
+        p_cycle_id: existingCycle.id,
+        p_quantity: 1,
+      },
+    );
+
+    if (error) {
+      throw new Error(`Failed to check capacity: ${error.message}`);
+    }
+
+    if (hasCapacity !== true) {
+      return {
+        available: false,
+        firstUnavailableCycle: {
+          cycleNumber: cycleInfo.cycleNumber,
+          month: cycleInfo.month,
+          year: cycleInfo.year,
+          deliveryNumber: i + 1,
+        },
+      };
+    }
   }
 
-  return {
-    available: true,
-  };
+  return { available: true };
 }
