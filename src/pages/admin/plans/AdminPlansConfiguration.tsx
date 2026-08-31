@@ -1,228 +1,362 @@
-import { useState, useEffect, type ComponentType } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState, type ComponentType } from "react";
+import {
+  Calendar,
+  CheckCircle2,
+  Coins,
+  DollarSign,
+  Loader2,
+  Package,
+  RefreshCw,
+  Save,
+} from "lucide-react";
+import SEOHead from "@/components/SEOHead";
+import { CharacterPricesReference } from "@/components/admin/payments/CharacterPricesReference";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import SEOHead from "@/components/SEOHead";
 import {
   useAdminPlansConfiguration,
   useCoinExchangeRate,
   useSavePricingTierPlan,
+  type PricingTierPlan,
 } from "@/hooks/admin/useAdminPlansConfiguration";
-import type { PricingTierPlan } from "@/hooks/admin/useAdminPlansConfiguration";
-import {
-  Coins,
-  Calculator,
-  Package,
-  Gift,
-  DollarSign,
-  Calendar,
-  CheckCircle2,
-  Sparkles,
-  Info,
-  TrendingUp
-} from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CharacterPricesReference } from "@/components/admin/payments/CharacterPricesReference";
-import { PurchasingPowerCalculator } from "@/components/admin/email/PurchasingPowerCalculator";
-import { PRICING } from "@/config/constants";
-interface PlanConfig {
-  id?: string;
-  plan_type: 'avulso' | 'bimestral' | 'trimestral' | 'semestral' | 'anual';
-  name: string;
-  duration_months: number;
-  price_per_month: number;
-  total_price: number;
-
-  // Peças
-  base_pieces: number;
-  bonus_pieces: number;
-  total_pieces: number;
-
-  // Coins
-  coins_per_piece: number;
-  coins_per_bonus_piece: number;
-  base_credits: number;
-  bonus_credits: number;
-  total_credits: number;
-
-  // Outros
-  coin_unit_cost: number;
-  deposit_amount?: number;
-  is_active: boolean;
-}
+import { usePricingSettings } from "@/hooks/usePricingSettings";
+import type { AdminPlanType } from "@/services/admin/config/admin-plans-configuration-service";
 
 interface PlanTypeMeta {
-  key: PlanConfig["plan_type"];
+  key: AdminPlanType;
   label: string;
   months: number;
   icon: ComponentType<{ className?: string }>;
-  color: string;
 }
 
-const PLAN_TYPES = [
-  { key: 'avulso', label: 'Compra Avulsa', months: 0, icon: Package, color: 'bg-gray-500' },
-  { key: 'bimestral', label: 'Bimestral', months: 2, icon: Calendar, color: 'bg-blue-500' },
-  { key: 'trimestral', label: 'Trimestral', months: 3, icon: Calendar, color: 'bg-green-500' },
-  { key: 'semestral', label: 'Semestral', months: 6, icon: Calendar, color: 'bg-purple-500' },
-  { key: 'anual', label: 'Anual', months: 12, icon: Calendar, color: 'bg-orange-500' },
-] satisfies readonly PlanTypeMeta[];
+const PLAN_TYPES: readonly PlanTypeMeta[] = [
+  { key: "avulso", label: "Compra avulsa", months: 0, icon: Package },
+  { key: "bimestral", label: "Bimestral", months: 2, icon: Calendar },
+  { key: "trimestral", label: "Trimestral", months: 3, icon: Calendar },
+  { key: "semestral", label: "Semestral", months: 6, icon: Calendar },
+  { key: "anual", label: "Anual", months: 12, icon: Calendar },
+];
 
-// Coin Exchange Rate Card Component
+function isPositiveFinite(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
 function CoinExchangeRateCard() {
-  const { toast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
-  const [reaisAmount, setReaisAmount] = useState(PRICING.DEFAULT_PRICE_FULL);
-  const [coinsAmount, setCoinsAmount] = useState(PRICING.COIN_EXCHANGE_REFERENCE_COINS);
+  const { data: rate, isLoading, isError, error, refetch } = useCoinExchangeRate();
 
-  const exchangeRateQuery = useCoinExchangeRate();
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center gap-3 py-6 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Validando a cotação de coins...
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const rate = exchangeRateQuery.data;
-  const coinUnitValue = rate
-    ? rate.reais_amount / Math.max(1, rate.coins_amount)
-    : PRICING.DEFAULT_COIN_UNIT_VALUE;
+  if (isError || !rate || !isPositiveFinite(rate.reais_amount) || !isPositiveFinite(rate.coins_amount)) {
+    return (
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle>Cotação de coins indisponível</CardTitle>
+          <CardDescription>
+            A cotação deve vir de uma categoria de preço ativa. Nenhum valor local é usado como fallback.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {error instanceof Error && <p className="text-sm text-muted-foreground">{error.message}</p>}
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tentar novamente
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  // Update exchange rate - disabled since we derive from price_categories
-  const handleExchangeRateSave = () => {
-    toast({
-      title: "Info",
-      description: "A cotação é derivada das categorias de preço. Edite as categorias de preço para alterar.",
-    });
-    setIsEditing(false);
-  };
-
-  // Set initial values when data loads
-  useEffect(() => {
-    if (rate) {
-      setReaisAmount(rate.reais_amount);
-      setCoinsAmount(rate.coins_amount);
-    }
-  }, [rate]);
+  const unitValue = rate.reais_amount / rate.coins_amount;
 
   return (
-    <Card className="mb-8 border-2 border-yellow-500/50 bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 dark:from-yellow-950/20 dark:via-orange-950/20 dark:to-yellow-950/20 shadow-lg">
-      <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl shadow-lg">
-              <Coins className="h-8 w-8 text-white" />
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Coins className="h-5 w-5" />
+          Cotação de coins
+        </CardTitle>
+        <CardDescription>
+          Somente leitura. Derivada da primeira categoria de preço ativa no SSOT.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-lg border p-4">
+          <p className="text-xs text-muted-foreground">Referência</p>
+          <p className="mt-1 text-xl font-bold">R$ {rate.reais_amount.toFixed(2)}</p>
+        </div>
+        <div className="rounded-lg border p-4">
+          <p className="text-xs text-muted-foreground">Coins</p>
+          <p className="mt-1 text-xl font-bold">{rate.coins_amount.toLocaleString("pt-BR")}</p>
+        </div>
+        <div className="rounded-lg border p-4">
+          <p className="text-xs text-muted-foreground">Valor unitário</p>
+          <p className="mt-1 text-xl font-bold">R$ {unitValue.toFixed(4)}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface PlanEditorProps {
+  meta: PlanTypeMeta;
+  existingPlan?: PricingTierPlan;
+  pixDiscountPercentage: number;
+  coinUnitValue: number;
+}
+
+function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }: PlanEditorProps) {
+  const { toast } = useToast();
+  const saveMutation = useSavePricingTierPlan();
+  const [isEditing, setIsEditing] = useState(!existingPlan);
+  const [name, setName] = useState(existingPlan?.name ?? `Plano ${meta.label}`);
+  const [priceFull, setPriceFull] = useState(
+    isPositiveFinite(existingPlan?.price_full ?? existingPlan?.price)
+      ? String(existingPlan?.price_full ?? existingPlan?.price)
+      : "",
+  );
+  const [deliveries, setDeliveries] = useState(
+    existingPlan?.pieces_per_subscription != null
+      ? String(existingPlan.pieces_per_subscription)
+      : "",
+  );
+  const [coinsIncluded, setCoinsIncluded] = useState(
+    existingPlan?.base_credits != null ? String(existingPlan.base_credits) : "0",
+  );
+  const [isActive, setIsActive] = useState(existingPlan?.is_active ?? false);
+
+  useEffect(() => {
+    setName(existingPlan?.name ?? `Plano ${meta.label}`);
+    setPriceFull(
+      isPositiveFinite(existingPlan?.price_full ?? existingPlan?.price)
+        ? String(existingPlan?.price_full ?? existingPlan?.price)
+        : "",
+    );
+    setDeliveries(
+      existingPlan?.pieces_per_subscription != null
+        ? String(existingPlan.pieces_per_subscription)
+        : "",
+    );
+    setCoinsIncluded(existingPlan?.base_credits != null ? String(existingPlan.base_credits) : "0");
+    setIsActive(existingPlan?.is_active ?? false);
+  }, [existingPlan, meta.label]);
+
+  const numericPrice = Number(priceFull);
+  const numericDeliveries = Number(deliveries);
+  const numericCoins = Number(coinsIncluded);
+  const pricePix = numericPrice * (1 - pixDiscountPercentage / 100);
+  const priceCoins = numericPrice / coinUnitValue;
+
+  const canSave =
+    name.trim().length > 0 &&
+    Number.isFinite(numericPrice) &&
+    numericPrice > 0 &&
+    Number.isInteger(numericDeliveries) &&
+    numericDeliveries > 0 &&
+    Number.isInteger(numericCoins) &&
+    numericCoins >= 0 &&
+    Number.isFinite(pricePix) &&
+    pricePix > 0 &&
+    Number.isFinite(priceCoins) &&
+    priceCoins > 0;
+
+  const handleSave = () => {
+    if (!canSave) {
+      toast({
+        title: "Plano inválido",
+        description: "Preencha nome, preço e quantidade de entregas com valores oficiais válidos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    saveMutation.mutate(
+      {
+        id: existingPlan?.id,
+        planType: meta.key,
+        data: {
+          name: name.trim(),
+          display_name: name.trim(),
+          price_coins: Math.round(priceCoins),
+          price_brl: numericPrice,
+          price_full: numericPrice,
+          price_pix: pricePix,
+          deposit_amount: 0,
+          coins_included: numericCoins,
+          deliveries_total: numericDeliveries,
+          is_active: isActive,
+          description:
+            meta.months > 0 ? `${meta.months} meses de assinatura` : "Compra avulsa",
+        },
+      },
+      {
+        onSuccess: () => {
+          toast({ title: "Plano salvo", description: `${name.trim()} foi atualizado.` });
+          setIsEditing(false);
+        },
+        onError: (mutationError: Error) => {
+          toast({
+            title: "Erro ao salvar plano",
+            description: mutationError.message,
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
+  const Icon = meta.icon;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-muted p-3">
+              <Icon className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-3xl font-bold">Cotação do Coin</CardTitle>
-              <CardDescription className="text-base mt-1">
-                Taxa de câmbio fixa para conversão Real → Coin
+              <CardTitle className="flex items-center gap-2">
+                {meta.label}
+                {existingPlan && isActive && (
+                  <Badge>
+                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                    Ativo
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                {meta.months > 0 ? `${meta.months} meses` : "Compra única"}
               </CardDescription>
             </div>
           </div>
-          <Button
-            variant={isEditing ? "outline" : "default"}
-            size="lg"
-            onClick={() => {
-              if (isEditing) {
-                setReaisAmount(rate?.reais_amount ?? PRICING.DEFAULT_PRICE_FULL);
-                setCoinsAmount(rate?.coins_amount ?? PRICING.COIN_EXCHANGE_REFERENCE_COINS);
-              }
-              setIsEditing(!isEditing);
-            }}
-            className="shadow-md"
-          >
-            {isEditing ? "Cancelar" : "Editar Cotação"}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Label htmlFor={`plan-active-${meta.key}`}>Ativo</Label>
+            <Switch
+              id={`plan-active-${meta.key}`}
+              checked={isActive}
+              onCheckedChange={(checked) => {
+                setIsActive(checked);
+                setIsEditing(true);
+              }}
+            />
+            <Button variant="outline" size="sm" onClick={() => setIsEditing((current) => !current)}>
+              {isEditing ? "Fechar edição" : "Editar"}
+            </Button>
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
+
+      <CardContent className="space-y-5">
         {isEditing ? (
-          <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-base font-semibold">Valor em Reais (R$)</Label>
+          <>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor={`plan-name-${meta.key}`}>Nome</Label>
                 <Input
+                  id={`plan-name-${meta.key}`}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`plan-price-${meta.key}`}>Preço cheio (R$)</Label>
+                <Input
+                  id={`plan-price-${meta.key}`}
                   type="number"
+                  min="0.01"
                   step="0.01"
-                  value={reaisAmount}
-                  onChange={(e) => setReaisAmount(parseFloat(e.target.value) || 0)}
-                  className="text-xl h-14 shadow-sm"
+                  value={priceFull}
+                  onChange={(event) => setPriceFull(event.target.value)}
+                  placeholder="Obrigatório"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-base font-semibold">Quantidade de Coins</Label>
+                <Label htmlFor={`plan-deliveries-${meta.key}`}>Entregas / peças</Label>
                 <Input
+                  id={`plan-deliveries-${meta.key}`}
                   type="number"
-                  value={coinsAmount}
-                  onChange={(e) => setCoinsAmount(parseInt(e.target.value) || 0)}
-                  className="text-xl h-14 shadow-sm"
+                  min="1"
+                  step="1"
+                  value={deliveries}
+                  onChange={(event) => setDeliveries(event.target.value)}
+                  placeholder="Obrigatório"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`plan-coins-${meta.key}`}>Coins incluídos</Label>
+                <Input
+                  id={`plan-coins-${meta.key}`}
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={coinsIncluded}
+                  onChange={(event) => setCoinsIncluded(event.target.value)}
                 />
               </div>
             </div>
 
-            <div className="p-6 bg-white dark:bg-gray-900 rounded-xl border-2 border-yellow-500/30 shadow-md">
-              <p className="text-sm text-muted-foreground mb-3 font-semibold">Preview da nova cotação:</p>
-              <div className="space-y-3">
-                <p className="text-2xl font-bold text-yellow-600">
-                  R$ {reaisAmount.toFixed(2)} = {coinsAmount} coins
-                </p>
-                <p className="text-xl text-muted-foreground">
-                  1 coin = R$ {(reaisAmount / coinsAmount).toFixed(2)}
-                </p>
+            <div className="grid gap-3 rounded-lg border bg-muted/30 p-4 text-sm sm:grid-cols-3">
+              <div>
+                <p className="text-muted-foreground">PIX oficial</p>
+                <strong>{canSave ? `R$ ${pricePix.toFixed(2)}` : "Indisponível"}</strong>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Equivalência em coins</p>
+                <strong>{canSave ? `${Math.round(priceCoins)} coins` : "Indisponível"}</strong>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Desconto PIX aplicado</p>
+                <strong>{pixDiscountPercentage.toFixed(2).replace(".", ",")}%</strong>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3">
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => {
-                  setReaisAmount(rate?.reais_amount ?? PRICING.DEFAULT_PRICE_FULL);
-                  setCoinsAmount(rate?.coins_amount ?? PRICING.COIN_EXCHANGE_REFERENCE_COINS);
-                  setIsEditing(false);
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                size="lg"
-                onClick={handleExchangeRateSave}
-                className="shadow-md"
-              >
-                Salvar Cotação
+            <div className="flex justify-end">
+              <Button onClick={handleSave} disabled={!canSave || saveMutation.isPending}>
+                {saveMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Salvar plano
               </Button>
             </div>
-          </div>
+          </>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="p-6 bg-white dark:bg-gray-900 rounded-xl border-2 border-yellow-500/30 shadow-md hover:shadow-lg transition-shadow">
-              <p className="text-sm text-muted-foreground mb-2 font-semibold">Equivalência</p>
-              <p className="text-4xl font-bold text-yellow-600">
-                R$ {(rate?.reais_amount ?? PRICING.DEFAULT_PRICE_FULL).toFixed(2)}
-              </p>
-              <p className="text-xl text-muted-foreground mt-2">
-                = {rate?.coins_amount ?? PRICING.COIN_EXCHANGE_REFERENCE_COINS} coins
-              </p>
-            </div>
-
-            <div className="p-6 bg-white dark:bg-gray-900 rounded-xl border-2 border-orange-500/30 shadow-md hover:shadow-lg transition-shadow">
-              <p className="text-sm text-muted-foreground mb-2 font-semibold">Valor Unitário</p>
-              <p className="text-4xl font-bold text-orange-600">
-                R$ {coinUnitValue.toFixed(2)}
-              </p>
-              <p className="text-xl text-muted-foreground mt-2">
-                por coin
+          <div className="grid gap-4 sm:grid-cols-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Preço cheio</p>
+              <p className="font-semibold">
+                {isPositiveFinite(existingPlan?.price_full ?? existingPlan?.price)
+                  ? `R$ ${Number(existingPlan?.price_full ?? existingPlan?.price).toFixed(2)}`
+                  : "Não configurado"}
               </p>
             </div>
-
-            <div className="p-6 bg-white dark:bg-gray-900 rounded-xl border-2 border-green-500/30 shadow-md hover:shadow-lg transition-shadow sm:col-span-2 lg:col-span-1">
-              <p className="text-sm text-muted-foreground mb-2 font-semibold">Exemplo</p>
-              <p className="text-2xl font-semibold text-green-600">
-                {PRICING.COIN_PREVIEW_AMOUNT.toLocaleString("pt-BR")} coins
-              </p>
-              <p className="text-xl text-muted-foreground mt-2">
-                = R$ {(PRICING.COIN_PREVIEW_AMOUNT * coinUnitValue).toFixed(2)}
-              </p>
+            <div>
+              <p className="text-xs text-muted-foreground">Entregas</p>
+              <p className="font-semibold">{existingPlan?.pieces_per_subscription ?? "Não configurado"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Coins incluídos</p>
+              <p className="font-semibold">{existingPlan?.base_credits ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Status</p>
+              <p className="font-semibold">{isActive ? "Ativo" : "Inativo"}</p>
             </div>
           </div>
         )}
@@ -232,782 +366,88 @@ function CoinExchangeRateCard() {
 }
 
 export default function AdminPlansConfiguration() {
-  const [activeTab, setActiveTab] = useState("subscription-plans");
   const plansQuery = useAdminPlansConfiguration();
+  const exchangeRateQuery = useCoinExchangeRate();
+  const pricingQuery = usePricingSettings();
 
-  const plans = plansQuery.data || [];
-
-  // Calculate totals from pricing_tiers
-  const totalMonthlyRevenue = plans
-    .filter((p) => p.is_active)
-    .reduce((sum, p) => sum + (p.price_full || 0), 0);
-
-  const totalPieces = plans.filter((p) => p.is_active).length;
-
-  const totalCoins = 0; // Coins are managed separately via coin_transactions
+  const plans = plansQuery.data ?? [];
+  const rate = exchangeRateQuery.data;
+  const officialDiscount = pricingQuery.data?.pixDiscountPercentage;
+  const coinUnitValue =
+    rate && isPositiveFinite(rate.reais_amount) && isPositiveFinite(rate.coins_amount)
+      ? rate.reais_amount / rate.coins_amount
+      : null;
+  const pricingReady =
+    coinUnitValue !== null &&
+    officialDiscount !== undefined &&
+    Number.isFinite(officialDiscount) &&
+    officialDiscount >= 0 &&
+    officialDiscount <= 100;
 
   return (
     <div className="space-y-6">
       <SEOHead
         title="Admin - Gestão de Planos & Preços"
-        description="Central de configuração de planos de assinatura e preços de coleções"
-        noindex={true}
+        description="Configuração administrativa de planos usando fontes oficiais"
+        noindex
       />
 
-      {/* Header Moderno */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Gestão de Planos & Preços
-            </h1>
-            <p className="text-muted-foreground mt-2 text-lg">
-              Configure planos de assinatura com créditos e níveis de preço para coleções
-            </p>
-          </div>
-          <Badge variant="outline" className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 text-lg px-4 py-2 w-fit">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            SSOT
-          </Badge>
-        </div>
+      <div>
+        <h1 className="text-4xl font-bold tracking-tight">Gestão de Planos & Preços</h1>
+        <p className="mt-2 text-muted-foreground">
+          Planos, cotação de coins e desconto PIX sem valores monetários de fallback.
+        </p>
       </div>
 
-        {/* Tabs Principais */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-1 h-auto p-1">
-            <TabsTrigger value="subscription-plans" className="flex items-center gap-2 py-3">
-              <Coins className="h-5 w-5" />
-              <div className="text-left">
-                <div className="font-semibold">Planos de Assinatura</div>
-                <div className="text-xs text-muted-foreground">Sistema de coins e peças</div>
-              </div>
-            </TabsTrigger>
-          </TabsList>
+      <Alert>
+        <DollarSign className="h-4 w-4" />
+        <AlertDescription>
+          A tela só permite salvar planos quando a cotação de coins e o desconto PIX oficial estão válidos.
+        </AlertDescription>
+      </Alert>
 
-          {/* Tab 1: Planos de Assinatura com Coins */}
-          <TabsContent value="subscription-plans" className="space-y-6">
-            {/* Info Alert */}
-            <Alert className="border-blue-500/50 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20">
-              <Info className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-sm">
-                <strong>Sistema de Assinatura com Créditos:</strong> Configure planos mensais/anuais com sistema de coins.
-                Assinantes recebem créditos para escolher personagens do catálogo. Defina peças base, bônus e cotação do coin.
-              </AlertDescription>
-            </Alert>
+      <CharacterPricesReference />
+      <CoinExchangeRateCard />
 
-            {/* Character Prices Reference - integração com o hub de créditos */}
-            <CharacterPricesReference />
-
-            {/* Coin Exchange Rate */}
-            <CoinExchangeRateCard />
-
-            {/* Summary Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Card className="border-2 hover:border-green-500/50 transition-colors">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Planos Ativos</CardTitle>
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {plans.filter(p => p.is_active).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    de {plans.length} planos
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-2 hover:border-green-500/50 transition-colors">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Receita Mensal</CardTitle>
-                  <DollarSign className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    R$ {totalMonthlyRevenue.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    potencial
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-2 hover:border-blue-500/50 transition-colors">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total de Peças</CardTitle>
-                  <Package className="h-4 w-4 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {totalPieces}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    por ciclo
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-2 hover:border-yellow-500/50 transition-colors">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total de Coins</CardTitle>
-                  <Coins className="h-4 w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {totalCoins}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    por ciclo
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Plans Configuration */}
-            <div className="space-y-4">
-              {PLAN_TYPES.map((planType) => {
-                const existingPlan = plans.find(p => p.plan_type === planType.key);
-                return (
-                  <PlanConfigCard
-                    key={planType.key}
-                    planType={planType}
-                    existingPlan={existingPlan}
-                    onUpdate={() => {
-                      void plansQuery.refetch();
-                    }}
-                  />
-                );
-              })}
-            </div>
-          </TabsContent>
-
-        {/* Tab 2: Preços de Coleções - REMOVIDO */}
-        {/* Movido para o hub de créditos, aba "Preços Contextuais" */}
-        {/* Esta funcionalidade pertence ao SSOT de coins, não de planos */}
-      </Tabs>
-    </div>
-  );
-}
-
-interface ExistingPlanLike extends Omit<Partial<PricingTierPlan>, "plan_type"> {
-  id?: string;
-  plan_type?: PlanConfig["plan_type"] | null;
-  bonus_type?: "pieces" | "coins" | null;
-}
-
-interface PlanConfigCardProps {
-  planType: PlanTypeMeta;
-  existingPlan?: ExistingPlanLike;
-  onUpdate: () => void;
-}
-
-function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProps) {
-  const { toast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
-  const saveMutation = useSavePricingTierPlan();
-  const exchangeRateQuery = useCoinExchangeRate();
-  const coinUnitValue = exchangeRateQuery.data
-    ? exchangeRateQuery.data.reais_amount / Math.max(1, exchangeRateQuery.data.coins_amount)
-    : PRICING.DEFAULT_COIN_UNIT_VALUE;
-
-  const [formData, setFormData] = useState<PlanConfig>({
-    id: existingPlan?.id,
-    plan_type: planType.key,
-    name: existingPlan?.name || `Plano ${planType.label}`,
-    duration_months: planType.months,
-    price_per_month: existingPlan?.price || 0,
-    total_price: 0,
-
-    // Peças
-    base_pieces: existingPlan?.pieces_per_subscription || 0,
-    bonus_pieces: 0, // Será calculado
-    total_pieces: 0,
-
-    // Coins
-    coins_per_piece: PRICING.DEFAULT_COINS_PER_PIECE,
-    coins_per_bonus_piece: PRICING.DEFAULT_COINS_PER_PIECE,
-    base_credits: existingPlan?.base_credits || 0,
-    bonus_credits: existingPlan?.bonus_credits || 0,
-    total_credits: 0,
-
-    coin_unit_cost: 0,
-    deposit_amount: existingPlan?.deposit_amount ?? (planType.key === 'avulso' ? PRICING.DEFAULT_DEPOSIT_AMOUNT : 0),
-    is_active: existingPlan?.is_active ?? false,
-  });
-
-  // Estado para tipo de bônus (carregado do banco ou padrão 'pieces')
-  const [bonusType, setBonusType] = useState<'pieces' | 'coins'>(
-    existingPlan?.bonus_type || 'pieces'
-  );
-
-  // Auto-calculate derived values
-  const updateCalculations = (data: Partial<PlanConfig>) => {
-    const updated = { ...formData, ...data };
-
-    // Calculate total price
-    if (planType.months > 0) {
-      updated.total_price = updated.price_per_month * planType.months;
-    } else {
-      updated.total_price = updated.price_per_month;
-    }
-
-    // Calculate total pieces (apenas peças base se tipo for 'coins')
-    if (bonusType === 'pieces') {
-      updated.total_pieces = updated.base_pieces + updated.bonus_pieces;
-    } else {
-      updated.total_pieces = updated.base_pieces; // Sem peças bônus
-    }
-
-    // Calculate coins from pieces
-    updated.base_credits = updated.base_pieces * updated.coins_per_piece;
-
-    // Calculate bonus credits based on bonus type
-    if (bonusType === 'pieces') {
-      // Bônus em peças: calcula coins a partir das peças bônus
-      updated.bonus_credits = updated.bonus_pieces * updated.coins_per_bonus_piece;
-    }
-    // Se bonusType === 'coins', bonus_credits já está definido diretamente
-
-    updated.total_credits = updated.base_credits + updated.bonus_credits;
-
-    // Calculate coin unit cost (price per coin)
-    if (updated.total_credits > 0) {
-      updated.coin_unit_cost = updated.total_price / updated.total_credits;
-    }
-
-    setFormData(updated);
-  };
-
-  const handleSavePlan = () => {
-    const totalPrice = formData.total_price || formData.price_per_month;
-
-    saveMutation.mutate(
-      {
-        id: existingPlan?.id,
-        planType: planType.key,
-        data: {
-          name: formData.name,
-          display_name: formData.name,
-          price_coins: Math.round(totalPrice / coinUnitValue),
-          price_brl: totalPrice,
-          price_full: totalPrice,
-          price_pix: totalPrice * PRICING.PIX_DISCOUNT_MULTIPLIER,
-          deposit_amount: formData.deposit_amount || 0,
-          coins_included: formData.total_credits,
-          deliveries_total: formData.total_pieces,
-          is_active: formData.is_active,
-          description: `Plano ${planType.label}`,
-        },
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: "Plano salvo com sucesso!",
-            description: `${formData.name} foi atualizado.`,
-          });
-          setIsEditing(false);
-          onUpdate();
-        },
-        onError: (error: Error) => {
-          toast({
-            title: "Erro ao salvar plano",
-            description: error.message,
-            variant: "destructive",
-          });
-        },
-      }
-    );
-  };
-
-  const IconComponent = planType.icon;
-  const isAvulso = planType.key === 'avulso';
-
-  return (
-    <Card className={`transition-all duration-200 hover:shadow-lg ${!formData.is_active && existingPlan ? "opacity-60" : ""} ${formData.is_active ? "border-2 border-primary/20" : ""}`}>
-      <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-3 ${planType.color} rounded-xl shadow-md`}>
-              <IconComponent className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                {planType.label}
-                {formData.is_active && existingPlan && (
-                  <Badge variant="default" className="ml-2">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Ativo
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription className="text-base mt-1">
-                {isAvulso ? 'Compra única sem assinatura' : `${planType.months} meses de assinatura`}
-              </CardDescription>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {existingPlan && (
-              <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
-                <Label htmlFor={`active-${planType.key}`} className="text-sm font-medium cursor-pointer">
-                  {formData.is_active ? 'Ativo' : 'Inativo'}
-                </Label>
-                <Switch
-                  id={`active-${planType.key}`}
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => {
-                    updateCalculations({ is_active: checked });
-                    if (!isEditing) setIsEditing(true);
-                  }}
-                />
-              </div>
-            )}
-            {!existingPlan && (
-              <Badge variant="outline" className="text-sm px-3 py-1">
-                Não Configurado
-              </Badge>
-            )}
-          </div>
+      {plansQuery.isLoading || pricingQuery.isLoading || exchangeRateQuery.isLoading ? (
+        <Card>
+          <CardContent className="flex items-center gap-3 py-8 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Validando fontes oficiais...
+          </CardContent>
+        </Card>
+      ) : !pricingReady ? (
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle>Edição de planos bloqueada</CardTitle>
+            <CardDescription>
+              Corrija a configuração comercial ou a categoria de preço ativa antes de alterar planos.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => void pricingQuery.refetch()}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Recarregar preços
+            </Button>
+            <Button variant="outline" onClick={() => void exchangeRateQuery.refetch()}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Recarregar cotação
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {PLAN_TYPES.map((meta) => (
+            <PlanEditor
+              key={meta.key}
+              meta={meta}
+              existingPlan={plans.find((plan) => plan.plan_type === meta.key)}
+              pixDiscountPercentage={officialDiscount}
+              coinUnitValue={coinUnitValue}
+            />
+          ))}
         </div>
-      </CardHeader>
-
-      <CardContent>
-        <Tabs defaultValue="pricing" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="pricing">
-              <DollarSign className="h-4 w-4 mr-2" />
-              Valores
-            </TabsTrigger>
-            <TabsTrigger value="pieces">
-              <Package className="h-4 w-4 mr-2" />
-              Peças
-            </TabsTrigger>
-            <TabsTrigger value="coins">
-              <Coins className="h-4 w-4 mr-2" />
-              Moedas
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Tab: Valores Monetários */}
-          <TabsContent value="pricing" className="space-y-4 mt-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div>
-                <Label>
-                  {isAvulso ? 'Preço Unitário (R$)' : 'Preço Mensal (R$)'}
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.price_per_month}
-                  onChange={(e) => {
-                    updateCalculations({ price_per_month: parseFloat(e.target.value) || 0 });
-                    if (!isEditing) setIsEditing(true);
-                  }}
-                  placeholder="0.00"
-                  className="mt-2"
-                />
-              </div>
-
-              {!isAvulso && (
-                <div>
-                  <Label>Valor Total</Label>
-                  <div className="mt-2 p-3 bg-muted rounded-md">
-                    <p className="text-sm text-muted-foreground">
-                      {formData.price_per_month} × {planType.months} meses
-                    </p>
-                    <p className="text-lg font-bold text-green-600">
-                      R$ {formData.total_price.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {isAvulso && (
-                <div>
-                  <Label>Entrada Mínima (R$)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.deposit_amount}
-                    onChange={(e) => {
-                      updateCalculations({ deposit_amount: parseFloat(e.target.value) || 0 });
-                      if (!isEditing) setIsEditing(true);
-                    }}
-                    placeholder={PRICING.DEFAULT_DEPOSIT_AMOUNT.toFixed(2)}
-                    className="mt-2"
-                  />
-                </div>
-              )}
-
-              {formData.total_credits > 0 && (
-                <div>
-                  <Label>Custo por Coin</Label>
-                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-md border border-blue-200 dark:border-blue-800">
-                    <p className="text-sm text-muted-foreground">
-                      R$ / coins
-                    </p>
-                    <p className="text-lg font-bold text-blue-600">
-                      R$ {formData.coin_unit_cost.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Tab: Peças */}
-          <TabsContent value="pieces" className="space-y-4 mt-4">
-            {/* Seletor de Tipo de Bônus */}
-            <Card className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-2 border-purple-200 dark:border-purple-800">
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <Label className="text-base font-semibold">Tipo de Bônus</Label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Escolha se o bônus será em peças extras ou coins extras
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={bonusType === 'pieces' ? 'default' : 'outline'}
-                      onClick={() => {
-                        setBonusType('pieces');
-                        if (!isEditing) setIsEditing(true);
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <Package className="h-4 w-4" />
-                      Peças Extras
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={bonusType === 'coins' ? 'default' : 'outline'}
-                      onClick={() => {
-                        setBonusType('coins');
-                        updateCalculations({ bonus_pieces: 0 }); // Zera peças bônus se escolher coins
-                        if (!isEditing) setIsEditing(true);
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <Coins className="h-4 w-4" />
-                      Coins Extras
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-4 md:grid-cols-4">
-              <div>
-                <Label>Peças Base</Label>
-                <Input
-                  type="number"
-                  value={formData.base_pieces}
-                  onChange={(e) => {
-                    updateCalculations({ base_pieces: parseInt(e.target.value) || 0 });
-                    if (!isEditing) setIsEditing(true);
-                  }}
-                  placeholder="0"
-                  className="mt-2"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Peças principais
-                </p>
-              </div>
-
-              {bonusType === 'pieces' ? (
-                <div>
-                  <Label>
-                    <Gift className="h-3 w-3 inline mr-1" />
-                    Peças Bônus
-                  </Label>
-                  <Input
-                    type="number"
-                    value={formData.bonus_pieces}
-                    onChange={(e) => {
-                      updateCalculations({ bonus_pieces: parseInt(e.target.value) || 0 });
-                      if (!isEditing) setIsEditing(true);
-                    }}
-                    placeholder="0"
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Peças extras
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <Label>
-                    <Sparkles className="h-3 w-3 inline mr-1" />
-                    Coins Bônus Diretos
-                  </Label>
-                  <Input
-                    type="number"
-                    value={formData.bonus_credits}
-                    onChange={(e) => {
-                      const bonusCoins = parseInt(e.target.value) || 0;
-                      setFormData(prev => ({
-                        ...prev,
-                        bonus_credits: bonusCoins,
-                        total_credits: prev.base_credits + bonusCoins
-                      }));
-                      if (!isEditing) setIsEditing(true);
-                    }}
-                    placeholder="0"
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Coins extras (não vinculados a peças)
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <Label>Total de Peças</Label>
-                <div className="mt-2 p-3 bg-purple-50 dark:bg-purple-950 rounded-md border border-purple-200 dark:border-purple-800">
-                  <p className="text-sm text-muted-foreground">
-                    {formData.base_pieces} {bonusType === 'pieces' ? `+ ${formData.bonus_pieces}` : '(sem bônus)'}
-                  </p>
-                  <p className="text-lg font-bold text-purple-600">
-                    {formData.total_pieces} peças
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <Label>Exemplo</Label>
-                <div className="mt-2 p-3 bg-muted rounded-md text-xs">
-                  <p className="font-semibold mb-1">Semestral:</p>
-                  {bonusType === 'pieces' ? (
-                    <>
-                      <p>6 base + 1 bônus</p>
-                      <p className="text-muted-foreground">= 7 peças total</p>
-                    </>
-                  ) : (
-                    <>
-                      <p>6 peças base</p>
-                      <p className="text-green-600">+ 50 coins extras</p>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Tab: Moedas/Coins */}
-          <TabsContent value="coins" className="space-y-4 mt-4">
-            <div className="grid gap-4 md:grid-cols-4">
-              <div>
-                <Label>Coins por Peça Base</Label>
-                <Input
-                  type="number"
-                  value={formData.coins_per_piece}
-                  onChange={(e) => {
-                    updateCalculations({ coins_per_piece: parseInt(e.target.value) || 0 });
-                    if (!isEditing) setIsEditing(true);
-                  }}
-                  placeholder={String(PRICING.DEFAULT_COINS_PER_PIECE)}
-                  className="mt-2"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Coins por peça normal
-                </p>
-              </div>
-
-              {bonusType === 'pieces' && (
-                <div>
-                  <Label>
-                    <Sparkles className="h-3 w-3 inline mr-1" />
-                    Coins por Peça Bônus
-                  </Label>
-                  <Input
-                    type="number"
-                    value={formData.coins_per_bonus_piece}
-                    onChange={(e) => {
-                      updateCalculations({ coins_per_bonus_piece: parseInt(e.target.value) || 0 });
-                      if (!isEditing) setIsEditing(true);
-                    }}
-                    placeholder={String(PRICING.DEFAULT_COINS_PER_PIECE)}
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Coins por peça extra
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <Label>Coins Base</Label>
-                <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-md border border-yellow-200 dark:border-yellow-800">
-                  <p className="text-sm text-muted-foreground">
-                    {formData.base_pieces} × {formData.coins_per_piece}
-                  </p>
-                  <p className="text-lg font-bold text-yellow-600">
-                    {formData.base_credits} coins
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <Label>Coins Bônus</Label>
-                <div className="mt-2 p-3 bg-green-50 dark:bg-green-950 rounded-md border border-green-200 dark:border-green-800">
-                  {bonusType === 'pieces' ? (
-                    <>
-                      <p className="text-sm text-muted-foreground">
-                        {formData.bonus_pieces} × {formData.coins_per_bonus_piece}
-                      </p>
-                      <p className="text-lg font-bold text-green-600">
-                        {formData.bonus_credits} coins
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm text-muted-foreground">
-                        Coins extras diretos
-                      </p>
-                      <p className="text-lg font-bold text-green-600">
-                        {formData.bonus_credits} coins
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <Label>Total de Coins</Label>
-                <div className="mt-2 p-4 bg-primary/10 rounded-lg border-2 border-primary/20">
-                  <p className="text-sm text-muted-foreground mb-1">
-                    Base + Bônus
-                  </p>
-                  <p className="text-2xl font-bold text-primary">
-                    {formData.total_credits} coins
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formData.base_credits} + {formData.bonus_credits}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <Label>Distribuição</Label>
-                <div className="mt-2 p-4 bg-muted rounded-lg space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Peças base:</span>
-                    <span className="font-semibold">{formData.base_pieces} × {formData.coins_per_piece} = {formData.base_credits}</span>
-                  </div>
-                  {bonusType === 'pieces' ? (
-                    <div className="flex justify-between text-green-600">
-                      <span>Peças bônus:</span>
-                      <span className="font-semibold">{formData.bonus_pieces} × {formData.coins_per_bonus_piece} = {formData.bonus_credits}</span>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between text-green-600">
-                      <span>Coins extras:</span>
-                      <span className="font-semibold">+{formData.bonus_credits} coins</span>
-                    </div>
-                  )}
-                  <Separator />
-                  <div className="flex justify-between font-bold">
-                    <span>Total:</span>
-                    <span>{formData.total_credits} coins</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        {/* Summary Box */}
-        {formData.total_pieces > 0 && (
-          <>
-            <Separator className="my-6" />
-            <div className="p-6 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 rounded-xl border-2 border-primary/20 shadow-md">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-primary rounded-xl shadow-md">
-                  <Calculator className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-xl font-bold mb-4">Resumo do Plano</h4>
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
-                      <p className="text-sm text-muted-foreground mb-2 font-semibold">Investimento</p>
-                      <p className="text-2xl font-bold text-green-600">R$ {formData.total_price.toFixed(2)}</p>
-                    </div>
-                    <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
-                      <p className="text-sm text-muted-foreground mb-2 font-semibold">Custo/coin</p>
-                      <p className="text-2xl font-bold text-blue-600">R$ {formData.coin_unit_cost.toFixed(2)}</p>
-                    </div>
-                    <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
-                      <p className="text-sm text-muted-foreground mb-2 font-semibold">Peças totais</p>
-                      <p className="text-2xl font-bold text-purple-600">{formData.total_pieces}</p>
-                      <p className="text-xs text-muted-foreground mt-1">({formData.base_pieces}+{formData.bonus_pieces})</p>
-                    </div>
-                    <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
-                      <p className="text-sm text-muted-foreground mb-2 font-semibold">Coins totais</p>
-                      <p className="text-2xl font-bold text-yellow-600">{formData.total_credits}</p>
-                      <p className="text-xs text-muted-foreground mt-1">coins</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Purchasing Power Calculator - integração com o hub de créditos */}
-            {formData.total_credits > 0 && (
-              <PurchasingPowerCalculator
-                totalCoins={formData.total_credits}
-                planName={formData.name}
-              />
-            )}
-          </>
-        )}
-
-        {/* Action Buttons */}
-        {isEditing && (
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => {
-                setIsEditing(false);
-                setBonusType(existingPlan?.bonus_type || 'pieces');
-                setFormData((prev) => ({
-                  ...prev,
-                  id: existingPlan?.id,
-                  name: existingPlan?.name || `Plano ${planType.label}`,
-                  price_per_month: existingPlan?.price || 0,
-                  base_pieces: existingPlan?.pieces_per_subscription || 0,
-                  bonus_pieces: 0,
-                  total_pieces: 0,
-                  base_credits: existingPlan?.base_credits || 0,
-                  bonus_credits: existingPlan?.bonus_credits || 0,
-                  total_credits: 0,
-                  total_price: 0,
-                  coin_unit_cost: 0,
-                  deposit_amount: existingPlan?.deposit_amount ?? (planType.key === 'avulso' ? PRICING.DEFAULT_DEPOSIT_AMOUNT : 0),
-                  is_active: existingPlan?.is_active ?? false,
-                }));
-              }}
-              className="w-full sm:w-auto"
-            >
-              Cancelar Alterações
-            </Button>
-            <Button
-              size="lg"
-              onClick={handleSavePlan}
-              disabled={saveMutation.isPending}
-              className="w-full sm:w-auto shadow-md"
-            >
-              {saveMutation.isPending ? "Salvando..." : "💾 Salvar Configurações"}
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }
