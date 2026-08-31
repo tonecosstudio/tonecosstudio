@@ -1,238 +1,89 @@
-# PaymentVoucherUpload Component
+# PaymentVoucherUpload
 
-## Overview
+`PaymentVoucherUpload` envia comprovantes de pagamento para o bucket privado
+`payment-vouchers` do Supabase Storage.
 
-The `PaymentVoucherUpload` component is a reusable React component for uploading payment vouchers (proof of payment) to Supabase Storage. It provides a user-friendly interface with drag-and-drop functionality, file validation, and visual feedback.
+## Contrato de segurança
 
-## Features
+- o bucket **deve permanecer privado** (`public = false`);
+- somente usuários autenticados podem enviar arquivos;
+- o objeto fica em `subscriptions/<user-id>/<arquivo>`;
+- a policy de `storage.objects` deve conferir que o `<user-id>` do caminho é o
+  mesmo `auth.uid()`;
+- administradores podem ler comprovantes conforme a policy do bucket;
+- o componente retorna apenas o **object path** privado, nunca `getPublicUrl()`;
+- URLs públicas ou signed URLs de longa duração não devem ser persistidas nas
+  tabelas de assinatura/pagamento;
+- tamanho máximo: 5 MB;
+- MIME types aceitos: JPEG, PNG e PDF.
 
-- ✅ Drag-and-drop file upload
-- ✅ File type validation (JPG, PNG, PDF)
-- ✅ File size validation (max 5MB)
-- ✅ Upload to Supabase Storage
-- ✅ Visual feedback (loading, success, error states)
-- ✅ Image preview for uploaded files
-- ✅ Remove uploaded file functionality
-- ✅ Disabled state support
-- ✅ Customizable labels and paths
+A configuração canônica do bucket e das policies está em:
 
-## Requirements
+`supabase/migrations/20260831011000_secure_payment_voucher_storage.sql`
 
-### Supabase Storage Bucket
+Não recrie o bucket manualmente como público e não adicione policy de leitura
+para `public` ou `anon`.
 
-The component requires a Supabase Storage bucket named `payment-vouchers`. 
-
-**To create the bucket:**
-
-1. Go to your Supabase project dashboard
-2. Navigate to Storage
-3. Click "Create a new bucket"
-4. Name: `payment-vouchers`
-5. Public bucket: **Yes** (or configure RLS policies as needed)
-6. Click "Create bucket"
-
-**Alternative: SQL Migration**
-
-You can also create the bucket using SQL:
-
-```sql
--- Create payment-vouchers bucket
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('payment-vouchers', 'payment-vouchers', true);
-
--- Set up RLS policies (optional - adjust as needed)
-CREATE POLICY "Allow authenticated users to upload"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = 'payment-vouchers');
-
-CREATE POLICY "Allow public read access"
-ON storage.objects FOR SELECT
-TO public
-USING (bucket_id = 'payment-vouchers');
-
-CREATE POLICY "Allow users to delete their own files"
-ON storage.objects FOR DELETE
-TO authenticated
-USING (bucket_id = 'payment-vouchers' AND auth.uid()::text = (storage.foldername(name))[1]);
-```
-
-## Usage
-
-### Basic Usage
-
-```tsx
-import { PaymentVoucherUpload } from '@/components/PaymentVoucherUpload';
-
-function MyComponent() {
-  const handleUploadSuccess = (url: string, file: File) => {
-    console.log('File uploaded successfully:', url);
-    // Save the URL to your database or state
-  };
-
-  const handleUploadError = (error: string) => {
-    console.error('Upload failed:', error);
-  };
-
-  return (
-    <PaymentVoucherUpload
-      onUploadSuccess={handleUploadSuccess}
-      onUploadError={handleUploadError}
-    />
-  );
-}
-```
-
-### With Custom Configuration
+## Uso
 
 ```tsx
 <PaymentVoucherUpload
-  onUploadSuccess={handleUploadSuccess}
-  onUploadError={handleUploadError}
-  userId="user-123"
-  pathPrefix="deposits"
-  label="Comprovante de Depósito"
-  showPreview={true}
-  disabled={false}
-  className="my-custom-class"
+  userId={user.id}
+  pathPrefix="subscriptions"
+  onUploadSuccess={(path) => setVoucherPath(path)}
+  onUploadError={(message) => reportUploadError(message)}
 />
 ```
 
-### In a Form
+`pathPrefix` usa `subscriptions` por padrão. Outros destinos são rejeitados pelo
+serviço enquanto não houver contrato de Storage/RLS específico para eles.
 
-```tsx
-import { useState } from 'react';
-import { PaymentVoucherUpload } from '@/components/PaymentVoucherUpload';
-import { Button } from '@/components/ui/button';
+## Estrutura do objeto
 
-function PaymentForm() {
-  const [voucherUrl, setVoucherUrl] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!voucherUrl) {
-      alert('Por favor, envie o comprovante de pagamento');
-      return;
-    }
-
-    // Submit form with voucherUrl
-    await submitPayment({ voucherUrl });
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <PaymentVoucherUpload
-        onUploadSuccess={(url) => setVoucherUrl(url)}
-        onUploadError={(error) => console.error(error)}
-      />
-      
-      <Button type="submit" disabled={!voucherUrl}>
-        Confirmar Pagamento
-      </Button>
-    </form>
-  );
-}
-```
-
-## Props
-
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `onUploadSuccess` | `(url: string, file: File) => void` | Yes | - | Callback when file is successfully uploaded |
-| `onUploadError` | `(error: string) => void` | No | - | Callback when upload fails |
-| `userId` | `string` | No | - | Optional user ID for organizing files |
-| `pathPrefix` | `string` | No | `'vouchers'` | Optional prefix for file path in storage |
-| `disabled` | `boolean` | No | `false` | Whether the component is disabled |
-| `className` | `string` | No | - | Optional CSS class name |
-| `label` | `string` | No | `'Comprovante de Pagamento'` | Label text |
-| `showPreview` | `boolean` | No | `true` | Show preview of uploaded image files |
-
-## File Validation
-
-The component validates files based on:
-
-- **File Type**: Only JPG, PNG, and PDF files are accepted
-- **File Size**: Maximum 5MB
-- **File Extension**: Must match the MIME type
-
-Invalid files will trigger the `onUploadError` callback with an appropriate error message.
-
-## File Storage Structure
-
-Files are stored in Supabase Storage with the following structure:
-
-```
+```text
 payment-vouchers/
-  └── {pathPrefix}/
-      └── {userId}-{timestamp}-{randomId}.{ext}
+└── subscriptions/
+    └── <auth.uid()>/
+        └── <timestamp>-<random-token>.<ext>
 ```
 
-Example:
+Exemplo:
+
+```text
+subscriptions/11111111-1111-4111-8111-111111111111/1788130800000-a1b2c3d4e5f60708.jpg
 ```
-payment-vouchers/vouchers/user123-1704067200000-abc123.jpg
-```
 
-## States
+O caminho salvo no banco não inclui URL, host ou token temporário.
 
-The component has the following visual states:
+## Validação
 
-1. **Initial**: Shows upload area with drag-and-drop instructions
-2. **Dragging**: Highlights the drop zone when dragging a file over it
-3. **Uploading**: Shows loading spinner and "Enviando arquivo..." message
-4. **Success**: Shows file name, size, and preview (for images)
-5. **Error**: Shows error message with "Tentar novamente" button
+A validação acontece em camadas:
 
-## Accessibility
+1. frontend rejeita tamanho, MIME e extensão incompatíveis;
+2. o serviço exige sessão autenticada e vincula o caminho ao usuário atual;
+3. o bucket limita tamanho e MIME types;
+4. RLS de `storage.objects` valida propriedade do caminho;
+5. o RPC de checkout valida novamente o formato e o `auth.uid()` antes de salvar.
 
-- File input has proper `aria-label` attribute
-- Keyboard navigation supported
-- Screen reader friendly
-- Visual feedback for all states
+A validação do navegador melhora UX; as fronteiras de segurança continuam no
+Storage e no banco.
 
-## Testing
+## Props principais
 
-The component includes comprehensive unit tests covering:
+| Prop | Tipo | Obrigatório | Padrão | Uso |
+| --- | --- | --- | --- | --- |
+| `onUploadSuccess` | `(path: string, file: File) => void` | sim | — | recebe o object path privado |
+| `onUploadError` | `(error: string) => void` | não | — | recebe falhas de validação/upload |
+| `userId` | `string` | não | sessão atual | quando informado, deve ser o usuário autenticado |
+| `pathPrefix` | `string` | não | `subscriptions` | namespace permitido pelo contrato atual |
+| `disabled` | `boolean` | não | `false` | bloqueia seleção e drop |
+| `showPreview` | `boolean` | não | `true` | usa apenas `blob:` local para preview |
 
-- Rendering
-- File validation (type, size, extension)
-- Upload functionality
-- Drag-and-drop
-- Preview generation
-- Remove file
-- Disabled state
-- Error handling
+## Testes
 
-Run tests:
 ```bash
 npm test -- src/components/__tests__/PaymentVoucherUpload.test.tsx
 ```
 
-## Related Components
-
-- Used in: `StandalonePurchase.tsx` (deposit voucher)
-- Used in: Subscription creation flow (payment voucher)
-- Used in: Balance payment page (balance voucher)
-
-## Requirements Validation
-
-This component satisfies the following requirements:
-
-- **Requirement 25.1**: File input with drag-and-drop ✅
-- **Requirement 25.1**: Validate file type (JPG, PNG, PDF) ✅
-- **Requirement 25.1**: Validate file size (max 5MB) ✅
-- **Requirement 25.1**: Upload to Supabase Storage ✅
-- **Requirement 25.1**: Return URL of storage ✅
-- **Requirement 25.1**: Visual feedback (loading, success, error) ✅
-
-## Future Enhancements
-
-Potential improvements for future versions:
-
-- [ ] Multiple file upload support
-- [ ] Progress bar for large files
-- [ ] Image compression before upload
-- [ ] Thumbnail generation
-- [ ] File type icons for PDFs
-- [ ] Retry mechanism for failed uploads
-- [ ] Upload queue for multiple files
+Os testes devem garantir, no mínimo, autenticação obrigatória, caminho privado
+por usuário, ausência de URL pública, validação de arquivo e tratamento de RLS.
