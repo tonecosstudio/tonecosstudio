@@ -21,7 +21,6 @@ export interface CustomerOrderTemplateData {
 
 export interface CustomerQuoteTemplateData {
   id: string;
-  total_price?: number | null;
   total_amount?: number | null;
 }
 
@@ -161,7 +160,7 @@ export async function fetchCustomerData(userId: string): Promise<CustomerData> {
       supabase.from("profiles").select("full_name, email").eq("id", userId).maybeSingle(),
       supabase
         .from("quotes")
-        .select("id, total_price, total_amount")
+        .select("id, total_amount")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(5),
@@ -189,13 +188,13 @@ export async function fetchCustomerData(userId: string): Promise<CustomerData> {
   }
 
   if (quotesResult.status === "fulfilled" && !quotesResult.value.error) {
-    customerData.quotes = (quotesResult.value.data ?? []) as CustomerQuoteTemplateData[];
+    customerData.quotes = quotesResult.value.data ?? [];
   } else if (quotesResult.status === "rejected") {
     log.debug("Orçamentos indisponíveis para template", { error: quotesResult.reason, userId });
   }
 
   if (paymentsResult.status === "fulfilled" && !paymentsResult.value.error) {
-    customerData.payments = (paymentsResult.value.data ?? []) as CustomerPaymentTemplateData[];
+    customerData.payments = paymentsResult.value.data ?? [];
   } else if (paymentsResult.status === "rejected") {
     log.debug("Pagamentos indisponíveis para template", { error: paymentsResult.reason, userId });
   }
@@ -242,7 +241,8 @@ export async function processTemplate(
   const lastQuote = customerData.quotes?.[0];
   const lastPayment = customerData.payments?.[0];
   const subscription = customerData.subscription;
-  const subscriptionName = subscription?.collections?.name ?? subscription?.plan_type ?? "sem assinatura ativa";
+  const subscriptionName =
+    subscription?.collections?.name ?? subscription?.plan_type ?? "sem assinatura ativa";
   const discountValue = systemSettings.defaultPriceFull - systemSettings.defaultPricePix;
   const currentPercentage =
     isFiniteNumber(systemSettings.currentMonthPercentage)
@@ -257,13 +257,17 @@ export async function processTemplate(
     "{{NOME_CLIENTE}}": customerData.name?.trim() || "Cliente",
     "{{EMAIL_CLIENTE}}": customerData.email?.trim() || "não disponível",
     "{{ULTIMO_PEDIDO_ID}}": lastOrder ? `#${lastOrder.id.slice(0, 8)}` : "sem pedido",
-    "{{ULTIMO_PEDIDO_STATUS}}": lastOrder ? translateOrderStatus(lastOrder.status) : "sem pedido",
+    "{{ULTIMO_PEDIDO_STATUS}}": lastOrder
+      ? translateOrderStatus(lastOrder.status)
+      : "sem pedido",
     "{{ULTIMO_PEDIDO_RASTREIO}}": lastOrder?.tracking_code?.trim() || "não disponível",
     "{{ULTIMO_PEDIDO_DATA}}": lastOrder ? formatDate(lastOrder.created_at) : "não disponível",
     "{{ULTIMO_ORCAMENTO_ID}}": lastQuote ? `#ORC-${lastQuote.id.slice(0, 6)}` : "sem orçamento",
-    "{{ULTIMO_ORCAMENTO_VALOR}}": formatOptionalCurrency(lastQuote?.total_price ?? lastQuote?.total_amount),
+    "{{ULTIMO_ORCAMENTO_VALOR}}": formatOptionalCurrency(lastQuote?.total_amount),
     "{{ULTIMO_PAGAMENTO_VALOR}}": formatOptionalCurrency(lastPayment?.amount),
-    "{{ULTIMO_PAGAMENTO_STATUS}}": lastPayment ? translatePaymentStatus(lastPayment.status) : "sem pagamento",
+    "{{ULTIMO_PAGAMENTO_STATUS}}": lastPayment
+      ? translatePaymentStatus(lastPayment.status)
+      : "sem pagamento",
     "{{ASSINATURA_PLANO}}": subscriptionName,
     "{{ASSINATURA_STATUS}}": subscription?.status === "active" ? "Ativa" : "sem assinatura ativa",
     "{{DATA_HOJE}}": formatDate(new Date()),
@@ -280,13 +284,14 @@ export async function processTemplate(
     "{{VAGAS_DISPONIVEIS}}": isFiniteNumber(systemSettings.currentMonthAvailable)
       ? `${systemSettings.currentMonthAvailable} vagas`
       : "não disponível",
-    "{{PERCENTUAL_VENDIDO}}": currentPercentage == null
-      ? "não disponível"
-      : `${currentPercentage.toFixed(0)}%`,
+    "{{PERCENTUAL_VENDIDO}}":
+      currentPercentage == null ? "não disponível" : `${currentPercentage.toFixed(0)}%`,
     "{{DIA_ABERTURA_VENDAS}}": `Dia ${systemSettings.salesOpenDay}`,
   };
 
-  const processed = replaceAll(template, values).replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
+  const processed = replaceAll(template, values)
+    .replace(/\n\s*\n\s*\n+/g, "\n\n")
+    .trim();
 
   if (detectVariables(processed).length > 0) {
     throw new Error("Template não pôde ser resolvido por completo.");
@@ -305,7 +310,9 @@ export function validateTemplate(template: string): {
   unknownVars: string[];
 } {
   const knownVars = new Set(TEMPLATE_VARIABLES.map((variable) => variable.key));
-  const unknownVars = detectVariables(template).filter((variable) => !knownVars.has(variable));
+  const unknownVars = detectVariables(template).filter(
+    (variable) => !knownVars.has(variable),
+  );
 
   return {
     valid: unknownVars.length === 0,
