@@ -7,7 +7,6 @@ import type {
   PlanChangeResponse,
   PlanType,
   ProductionCycle,
-  SubscriptionActivationResponse,
 } from "@/types/subscription-credit-system";
 
 type RpcError = {
@@ -51,10 +50,6 @@ type CharacterPatch = {
 
 interface SubscriptionCreditMutationRpcClient {
   rpc(
-    fn: "activate_subscription_credit_for_current_user",
-    args: { p_plan_type: PlanType; p_payment_method_id: string | null }
-  ): RpcResult<SubscriptionActivationResponse>;
-  rpc(
     fn: "schedule_subscription_credit_plan_change",
     args: { p_subscription_id: string; p_new_plan_type: PlanType }
   ): RpcResult<PlanChangeResponse>;
@@ -93,21 +88,6 @@ function unwrapRpcData<T>(data: T | null, error: RpcError | null, fallback: stri
   }
 
   return data;
-}
-
-export async function activateSubscriptionCreditRpc(
-  planType: PlanType,
-  paymentMethodId: string | null
-): Promise<SubscriptionActivationResponse> {
-  const { data, error } = await subscriptionCreditMutationRpc.rpc(
-    "activate_subscription_credit_for_current_user",
-    {
-      p_plan_type: planType,
-      p_payment_method_id: paymentMethodId,
-    }
-  );
-
-  return unwrapRpcData(data, error, "Subscription activation did not return data");
 }
 
 export async function scheduleSubscriptionCreditPlanChangeRpc(
