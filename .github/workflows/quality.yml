@@ -47,6 +47,9 @@ jobs:
       - name: Audit commercial authority
         run: node scripts/security/audit-commercial-authority.mjs
 
+      - name: Audit profile authority
+        run: node scripts/security/audit-profile-authority.mjs
+
       - name: Test with coverage thresholds
         run: npm run test:coverage
 
