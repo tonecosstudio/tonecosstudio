@@ -1,186 +1,46 @@
-# Cron Job: Character Choice Reminder Sender
+# cron-send-character-choice-reminders
 
-## Overview
+Envia lembretes para pedidos que **ainda aguardam a escolha de personagem**.
 
-This cron job runs daily at 09:00 Bahia Time to send character choice reminders to customers who haven't yet chosen their character.
+## Autoridade de estado
 
-## Requirements
+O estado anterior à escolha pertence a `production_queue`, não a `character_choices`.
 
-- **2.2.4**: Deadline Management - Automatically manage choice deadlines and send reminders
-  - First reminder sent at 5 days before deadline
-  - Second reminder sent at 2 days before deadline
-  - Final reminder sent at 24 hours before deadline
+Um pedido elegível precisa ter:
 
-## Actions Performed
+- `current_stage = 'awaiting_choice'`;
+- `choice_status = 'pending'`;
+- `choice_deadline` persistido;
+- `user_id`, `order_id`, `order_type` e `collection_id` válidos.
 
-### 1. First Reminder (5 days before deadline)
+A janela é aberta pelo trigger versionado em
+`20260831061000_canonical_character_choice_window.sql`, usando exclusivamente
+`system_settings.character_choice_days`. Ausência ou valor inválido bloqueia a abertura; não há
+fallback de sete dias no cron ou no navegador.
 
-- Finds character choices with status `pending` AND deadline in 5 days
-- For each choice:
-  - Sends friendly reminder email to customer
-  - Email includes:
-    - Collection name
-    - Deadline date
-    - Days remaining (5)
-    - Link to make choice
-  - Updates `reminders_sent` counter
-  - Updates `last_reminder_at` timestamp
+## Lembretes
 
-### 2. Second Reminder (2 days before deadline)
+A função procura pedidos cujo `choice_deadline` esteja a 5, 2 ou 1 dia, considerando o dia civil de
+`America/Bahia`. O instante armazenado continua sendo comparado como `timestamptz` real.
 
-- Finds character choices with status `pending` AND deadline in 2 days
-- For each choice:
-  - Sends more urgent reminder email to customer
-  - Email includes:
-    - Collection name
-    - Deadline date
-    - Days remaining (2)
-    - Warning about approaching deadline
-    - Link to make choice
-  - Updates `reminders_sent` counter
-  - Updates `last_reminder_at` timestamp
+O envio é auditado em:
 
-### 3. Final Reminder (1 day before deadline)
+- `production_queue.choice_reminders_sent`;
+- `production_queue.choice_last_reminder_at`.
 
-- Finds character choices with status `pending` AND deadline in 1 day
-- For each choice:
-  - Sends final urgent reminder email to customer
-  - Email includes:
-    - Collection name
-    - Deadline date
-    - Days remaining (1)
-    - Strong warning about last day
-    - Explanation that admin will assign character if not chosen
-    - Link to make choice
-  - Updates `reminders_sent` counter
-  - Updates `last_reminder_at` timestamp
+Um pedido não recebe mais de um lembrete no mesmo dia civil de Bahia.
 
-## Schedule
+## Segurança
 
-- **Frequency**: Daily
-- **Time**: 09:00 AM America/Bahia (UTC-3)
-- **Cron Expression**: `0 9 * * *`
+A função exige o segredo compartilhado e rate-limited do cron. Credenciais de serviço e de e-mail
+são server-only e não devem aparecer em variáveis `VITE_*`.
 
-## Email Templates
+## Falhas
 
-### First Reminder (5 days)
+Falha de consulta, perfil, coleção, envio ou persistência do audit trail é registrada. A função não
+fabrica deadline, usuário, coleção ou endereço de e-mail quando a fonte oficial está ausente.
 
-- Subject: "Escolha seu Personagem - [Collection Name]"
-- Tone: Friendly and informative
-- Color scheme: Blue (informational)
-- Content: Invitation to choose character with deadline information
+## Deploy e prova
 
-### Second Reminder (2 days)
-
-- Subject: "⏰ Lembrete: Escolha seu Personagem - [Collection Name]"
-- Tone: More urgent but still friendly
-- Color scheme: Orange (warning)
-- Content: Reminder that deadline is approaching
-
-### Final Reminder (1 day)
-
-- Subject: "🚨 URGENTE: Último Dia para Escolher - [Collection Name]"
-- Tone: Urgent and clear
-- Color scheme: Red (critical)
-- Content: Final warning with explanation of consequences
-
-## Logging
-
-All actions are logged to the `cron_job_logs` table:
-- Job name: `cron-send-character-choice-reminders`
-- Execution details include:
-  - Total reminders sent
-  - Count per reminder type (first, second, final)
-  - Any errors encountered
-  - Execution timestamp
-
-## Error Handling
-
-- Individual choice processing errors are logged but don't stop the job
-- Failed email sends are logged but don't fail the reminder update
-- Database update errors are logged but don't fail the email send
-- Overall job failure sends alert email to admins
-
-## Testing
-
-To test this function locally:
-
-```bash
-# Run the function
-supabase functions serve cron-send-character-choice-reminders
-
-# Invoke it
-curl -X POST http://localhost:54321/functions/v1/cron-send-character-choice-reminders \
-  -H "Authorization: Bearer YOUR_ANON_KEY"
-```
-
-## Deployment
-
-Deploy to Supabase:
-
-```bash
-supabase functions deploy cron-send-character-choice-reminders
-```
-
-Schedule the cron job (see migration file for SQL):
-
-```sql
-SELECT cron.schedule(
-  'send-character-choice-reminders',
-  '0 9 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://YOUR_PROJECT.supabase.co/functions/v1/cron-send-character-choice-reminders',
-    headers := jsonb_build_object(
-      'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY',
-      'Content-Type', 'application/json'
-    )
-  ) AS request_id;
-  $$
-);
-```
-
-## Dependencies
-
-- `_shared/cron-logger.ts`: Logging utilities
-- `_shared/timezone.ts`: Bahia timezone utilities
-
-## Environment Variables
-
-Required:
-- `SUPABASE_URL`: Supabase project URL
-- `SUPABASE_SERVICE_ROLE_KEY`: Service role key for admin operations
-- `EMAIL_PROVIDER`: Email provider (resend or sendgrid)
-- `EMAIL_API_KEY`: API key for email provider
-- `EMAIL_FROM`: Sender email address
-- `EMAIL_FROM_NAME`: Sender name
-- `FRONTEND_URL`: Frontend URL for choice links
-
-## Database Tables
-
-### character_choices
-
-Fields used:
-- `id`: Choice ID
-- `user_id`: Customer ID
-- `order_id`: Order ID
-- `order_type`: Order type (subscription_delivery or standalone_purchase)
-- `collection_id`: Collection ID
-- `status`: Choice status (must be 'pending')
-- `deadline`: Deadline for choice
-- `reminders_sent`: Count of reminders sent
-- `last_reminder_at`: Timestamp of last reminder
-
-## Related Files
-
-- `supabase/migrations/20260428000001_create_character_choices.sql`: Table creation
-- `src/services/admin/choice-service.ts`: Frontend service
-- `src/services/customer/choice-service.ts`: Customer service
-
-## Notes
-
-- Reminders are only sent for choices with status 'pending'
-- The job checks for exact day matches (5, 2, or 1 day before deadline)
-- Each reminder type has a distinct visual style and urgency level
-- The `reminders_sent` counter is incremented regardless of which reminder type is sent
-- Customers can receive multiple reminders as the deadline approaches
+Este arquivo descreve o código versionado. Deploy da Edge Function, agendamento real e entrega de
+e-mail precisam ser comprovados no projeto Supabase ativo antes de lançamento.
