@@ -14,18 +14,8 @@ import {
 import { getProductionStageLabel } from "@/config/production-stages";
 
 /**
- * ProductionMetricsBar Component
- * 
- * Displays real-time production metrics at the top of the production dashboard:
- * - Count of items in each production stage
- * - Average time per production stage
- * - Count of items scheduled for today
- * - Count of items scheduled for this week
- * 
- * Features:
- * - Real-time updates via Supabase Realtime
- * - Visual icons for each metric
- * - Responsive grid layout
+ * Displays measured production metrics. Values that cannot be derived from
+ * complete persisted data are shown as unavailable rather than zero.
  */
 export function ProductionMetricsBar() {
   const { data: metrics, isLoading, error } = useProductionMetrics({
@@ -55,11 +45,8 @@ export function ProductionMetricsBar() {
     );
   }
 
-  if (!metrics) {
-    return null;
-  }
+  if (!metrics) return null;
 
-  // Stage icons mapping
   const stageIcons: Record<string, React.ReactNode> = {
     awaiting_choice: <AlertCircle className="h-4 w-4" />,
     design: <Wrench className="h-4 w-4" />,
@@ -72,8 +59,7 @@ export function ProductionMetricsBar() {
   return (
     <Card className="border border-border bg-card shadow-sm">
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Stage Counts Section */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Package className="h-4 w-4" />
@@ -94,7 +80,6 @@ export function ProductionMetricsBar() {
             </div>
           </div>
 
-          {/* Average Stage Durations Section */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Clock className="h-4 w-4" />
@@ -114,14 +99,11 @@ export function ProductionMetricsBar() {
                   </div>
                 ))
               ) : (
-                <div className="text-sm text-muted-foreground">
-                  Sem dados suficientes
-                </div>
+                <div className="text-sm text-muted-foreground">Sem dados medidos suficientes</div>
               )}
             </div>
           </div>
 
-          {/* Scheduled Items Section */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Calendar className="h-4 w-4" />
@@ -149,7 +131,6 @@ export function ProductionMetricsBar() {
             </div>
           </div>
 
-          {/* Overall Metrics Section */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <TrendingUp className="h-4 w-4" />
@@ -165,13 +146,15 @@ export function ProductionMetricsBar() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Tempo Médio</span>
                 <span className="text-sm font-medium text-foreground">
-                  {metrics.overall.avgProductionTimeHours.toFixed(1)}h
+                  {metrics.overall.avgProductionTimeHours === null
+                    ? "Indisponível"
+                    : `${metrics.overall.avgProductionTimeHours.toFixed(1)}h`}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Taxa de Conclusão</span>
                 <span className="text-sm font-medium text-foreground">
-                  {(metrics.overall.completionRate * 100).toFixed(0)}%
+                  {metrics.overall.completionRate.toFixed(0)}%
                 </span>
               </div>
             </div>
