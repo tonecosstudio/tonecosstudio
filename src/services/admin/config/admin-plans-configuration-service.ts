@@ -19,7 +19,7 @@ export interface PricingTierPlan {
 }
 
 export interface CoinExchangeRate {
-  id: string | null;
+  id: string;
   reais_amount: number;
   coins_amount: number;
 }
@@ -63,7 +63,7 @@ interface SubscriptionPlansQueryBuilder {
   select(columns: string): {
     order(
       column: string,
-      options?: { ascending?: boolean }
+      options?: { ascending?: boolean },
     ): Promise<{ data: SubscriptionPlanConfigurationRow[] | null; error: Error | null }>;
   };
 }
@@ -147,12 +147,18 @@ export async function fetchCoinExchangeRate(): Promise<CoinExchangeRate> {
   }
 
   const category = data?.[0];
+  if (!category?.id) {
+    throw new Error("Nenhuma categoria de preço ativa disponível para calcular a cotação de coins.");
+  }
+
+  const coinValueInCents = Number(category.coin_value_in_cents);
+  if (!Number.isFinite(coinValueInCents) || coinValueInCents <= 0) {
+    throw new Error("A categoria de preço ativa possui cotação de coins inválida.");
+  }
 
   return {
-    id: category?.id ?? null,
-    reais_amount: category
-      ? (category.coin_value_in_cents / 100) * PRICING.COIN_EXCHANGE_REFERENCE_COINS
-      : PRICING.DEFAULT_PRICE_FULL,
+    id: category.id,
+    reais_amount: (coinValueInCents / 100) * PRICING.COIN_EXCHANGE_REFERENCE_COINS,
     coins_amount: PRICING.COIN_EXCHANGE_REFERENCE_COINS,
   };
 }
