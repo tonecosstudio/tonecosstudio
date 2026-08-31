@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { log } from "@/lib/logger";
 import {
   assertCurrentUserId,
   requireAuthenticatedUserId,
@@ -41,7 +40,7 @@ export async function fetchSubscriptionForUser(
 
 export async function fetchSubscriptionPlan(
   planId: string,
-  context: { userId?: string | null } = {},
+  _context: { userId?: string | null } = {},
 ): Promise<DbSubscriptionPlan | null> {
   const { data: plan, error } = await supabase
     .from("subscription_plans")
@@ -50,12 +49,7 @@ export async function fetchSubscriptionPlan(
     .maybeSingle();
 
   if (error) {
-    log.error("Failed to fetch subscription plan", {
-      error,
-      userId: context.userId,
-      planId,
-    });
-    return null;
+    throw new Error(`Erro ao buscar plano de assinatura: ${error.message}`);
   }
 
   return plan;
