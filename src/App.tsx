@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MainLayout } from "@/components/layouts/MainLayout";
@@ -17,7 +17,6 @@ import {
   PUBLIC_ROUTES,
 } from "@/config/routes";
 
-// ─── Lazy-loaded pages ───────────────────────────────────────────────
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const CatalogArcade = lazy(() => import("./pages/CatalogArcade"));
 const CatalogModelsArcade = lazy(() => import("./pages/CatalogModelsArcade"));
@@ -39,7 +38,6 @@ const PreLaunchArcade = lazy(() => import("./pages/PreLaunchArcade"));
 const NotFoundArcade = lazy(() => import("./pages/NotFoundArcade"));
 const MigratePedido = lazy(() => import("./pages/MigratePedido"));
 
-// Auth-required pages
 const ProfileArcade = lazy(() => import("./pages/ProfileArcade"));
 const PaymentDetails = lazy(() => import("./pages/PaymentDetails"));
 const SubscribeCollection = lazy(() => import("./pages/SubscribeCollection"));
@@ -51,7 +49,6 @@ const GroupsArcade = lazy(() => import("./pages/GroupsArcade"));
 const MemberGroupDetailsPage = lazy(() => import("./pages/MemberGroupDetailsPage"));
 const SubscriberDashboardArcade = lazy(() => import("./pages/SubscriberDashboardArcade"));
 
-// Admin pages
 const AdminHome = lazy(() => import("./pages/admin/analytics/AdminHome"));
 const AdminUsers = lazy(() => import("./pages/admin/users/AdminUsers"));
 const AdminUserDetails = lazy(() => import("./pages/admin/users/AdminUserDetails"));
@@ -98,7 +95,6 @@ function AppContent() {
         <MainLayout>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              {/* Public */}
               <Route path={PUBLIC_ROUTES.home} element={<LandingPage />} />
               <Route path={PUBLIC_ROUTES.landing} element={<LandingPage />} />
               <Route
@@ -159,7 +155,6 @@ function AppContent() {
                 element={PUBLIC_COLLECTIONS_ENABLED ? <PreLaunchArcade /> : <HiddenCollectionsPage />}
               />
 
-              {/* Auth-required */}
               <Route
                 path={AUTH_ROUTES.profile}
                 element={
@@ -256,12 +251,7 @@ function AppContent() {
                   )
                 }
               />
-              <Route
-                path={AUTH_ROUTES.coinsPurchase}
-                element={<Navigate to={PUBLIC_ROUTES.catalog} replace />}
-              />
 
-              {/* Admin */}
               <Route path={ADMIN_ROUTES.home} element={<RequireAdmin><AdminHome /></RequireAdmin>} />
               <Route path={ADMIN_ROUTES.users} element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
               <Route path={ADMIN_ROUTES.userDetails} element={<RequireAdmin><AdminUserDetails /></RequireAdmin>} />
@@ -308,7 +298,6 @@ function AppContent() {
             </Routes>
           </Suspense>
         </MainLayout>
-
         <CustomerChat />
       </BrowserRouter>
     </>
