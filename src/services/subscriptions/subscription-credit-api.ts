@@ -17,7 +17,6 @@ import {
   OrderWithItems,
   CreditsBalanceResponse,
   TransactionsResponse,
-  SubscriptionActivationResponse,
   PlanChangeResponse,
   CancelWithRefundResponse,
   NoRenewalResponse,
@@ -26,7 +25,6 @@ import {
   isSubscriptionCreditTransactionType,
 } from '@/types/subscription-credit-system';
 import {
-  activateSubscriptionCreditRpc,
   cancelSubscriptionCreditWithRefundRpc,
   createSubscriptionCreditIndividualOrderRpc,
   reactivateSubscriptionCreditRenewalRpc,
@@ -81,13 +79,6 @@ class SubscriptionCreditAPI {
     }
 
     return data as unknown as Subscription;
-  }
-
-  async activateSubscription(
-    planType: PlanType,
-    paymentMethodId: string
-  ): Promise<SubscriptionActivationResponse> {
-    return activateSubscriptionCreditRpc(planType, paymentMethodId);
   }
 
   async schedulePlanChange(
@@ -177,8 +168,6 @@ class SubscriptionCreditAPI {
       }
       query = query.eq('transaction_type', transactionType);
     }
-
-    const { data, error, count } = await query;
 
     if (error) throw error;
 
