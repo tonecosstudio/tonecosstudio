@@ -102,9 +102,10 @@ export function useShowcaseCollections() {
   });
 }
 
-export function useActiveCollectionPreviews(limit?: number) {
+export function useActiveCollectionPreviews(limit?: number, enabled = true) {
   return useQuery({
     queryKey: ["collections-active", limit],
     queryFn: () => listActiveCollectionPreviews(limit),
+    enabled,
   });
 }
