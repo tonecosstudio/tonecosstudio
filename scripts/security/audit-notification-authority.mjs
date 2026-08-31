@@ -22,9 +22,18 @@ function roleListContainsAuthenticated(statement, keyword) {
     .some((role) => role.toLowerCase() === "authenticated");
 }
 
-function parseUpdateState(table) {
+function clauseIncludesPrivilege(clause, privilege) {
+  if (!clause) return false;
+  if (/^ALL(?: PRIVILEGES)?$/i.test(clause)) return true;
+  if (new RegExp(`\\b${privilege}\\s*\\(`, "i").test(clause)) return false;
+  return new RegExp(`(?:^|,)\\s*${privilege}\\s*(?:,|$)`, "i").test(clause);
+}
+
+function parseMutationState(table) {
   let tableUpdateGranted = false;
-  let tableEvidence = null;
+  let updateEvidence = null;
+  let tableDeleteGranted = false;
+  let deleteEvidence = null;
   let columnGrant = null;
   let columnEvidence = null;
 
@@ -37,7 +46,9 @@ function parseUpdateState(table) {
       /GRANT\s+SELECT,\s*INSERT,\s*UPDATE,\s*DELETE\s+ON\s+TABLE\s+public\.%I\s+TO\s+authenticated/i.test(source)
     ) {
       tableUpdateGranted = true;
-      tableEvidence = file;
+      updateEvidence = file;
+      tableDeleteGranted = true;
+      deleteEvidence = file;
     }
 
     for (const rawStatement of source.split(";")) {
@@ -63,12 +74,13 @@ function parseUpdateState(table) {
           .split(new RegExp(`\\s+ON(?:\\s+TABLE)?\\s+public\\.${table}\\b`, "i"))[0]
           ?.trim();
 
-        if (
-          /^ALL(?: PRIVILEGES)?$/i.test(clause ?? "") ||
-          /(?:^|,)\s*UPDATE\s*(?:,|$)/i.test(clause ?? "")
-        ) {
+        if (clauseIncludesPrivilege(clause, "UPDATE")) {
           tableUpdateGranted = true;
-          tableEvidence = file;
+          updateEvidence = file;
+        }
+        if (clauseIncludesPrivilege(clause, "DELETE")) {
+          tableDeleteGranted = true;
+          deleteEvidence = file;
         }
       }
 
@@ -78,18 +90,26 @@ function parseUpdateState(table) {
           .split(new RegExp(`\\s+ON(?:\\s+TABLE)?\\s+public\\.${table}\\b`, "i"))[0]
           ?.trim();
 
-        if (
-          /^ALL(?: PRIVILEGES)?$/i.test(clause ?? "") ||
-          /(?:^|,)\s*UPDATE\s*(?:,|$)/i.test(clause ?? "")
-        ) {
+        if (clauseIncludesPrivilege(clause, "UPDATE")) {
           tableUpdateGranted = false;
-          tableEvidence = file;
+          updateEvidence = file;
+        }
+        if (clauseIncludesPrivilege(clause, "DELETE")) {
+          tableDeleteGranted = false;
+          deleteEvidence = file;
         }
       }
     }
   }
 
-  return { tableUpdateGranted, tableEvidence, columnGrant, columnEvidence };
+  return {
+    tableUpdateGranted,
+    updateEvidence,
+    tableDeleteGranted,
+    deleteEvidence,
+    columnGrant,
+    columnEvidence,
+  };
 }
 
 function latestFunctionSecurityMode(functionName) {
@@ -135,23 +155,24 @@ function validateColumnGrant(table, state, failures) {
 
 const failures = [];
 
-const userNotifications = parseUpdateState("user_notifications");
+const userNotifications = parseMutationState("user_notifications");
 if (userNotifications.tableUpdateGranted) {
   failures.push(
-    `user_notifications: authenticated still has table-level UPDATE (last evidence: ${userNotifications.tableEvidence})`,
+    `user_notifications: authenticated still has table-level UPDATE (last evidence: ${userNotifications.updateEvidence})`,
   );
 }
 validateColumnGrant("user_notifications", userNotifications, failures);
 
-const adminNotifications = parseUpdateState("admin_notifications");
+const adminNotifications = parseMutationState("admin_notifications");
 if (adminNotifications.tableUpdateGranted) {
   failures.push(
-    `admin_notifications: authenticated has table-level UPDATE; notification read mutation must be column-scoped (last evidence: ${adminNotifications.tableEvidence})`,
+    `admin_notifications: authenticated has table-level UPDATE; notification read mutation must be column-scoped (last evidence: ${adminNotifications.updateEvidence})`,
   );
 }
 
 const markOneMode = latestFunctionSecurityMode("mark_notification_read");
 const markAllMode = latestFunctionSecurityMode("mark_all_notifications_read");
+const deleteMode = latestFunctionSecurityMode("admin_delete_notification");
 
 if (markOneMode.mode === "SECURITY INVOKER" || markAllMode.mode === "SECURITY INVOKER") {
   validateColumnGrant("admin_notifications", adminNotifications, failures);
@@ -161,11 +182,21 @@ if (!markOneMode.mode || !markAllMode.mode) {
   failures.push("admin notification read RPC security mode could not be determined from migrations");
 }
 
+if (deleteMode.mode === "SECURITY INVOKER" && !adminNotifications.tableDeleteGranted) {
+  failures.push(
+    `admin_delete_notification: latest function is SECURITY INVOKER (${deleteMode.evidence}) but authenticated has no DELETE privilege on admin_notifications (${adminNotifications.deleteEvidence ?? "no grant evidence"})`,
+  );
+}
+
+if (!deleteMode.mode) {
+  failures.push("admin_delete_notification security mode could not be determined from migrations");
+}
+
 if (failures.length > 0) {
   console.error("Notification authority audit: FAIL");
   for (const failure of failures) console.error(`- ${failure}`);
   console.error(
-    "\nExpected remediation: revoke table-level UPDATE from authenticated. For SECURITY INVOKER read-state RPCs, grant UPDATE only on is_read/read_at/updated_at and retain owner/recipient RLS. Alternatively keep table UPDATE revoked and use an explicitly authorized SECURITY DEFINER RPC.",
+    "\nExpected remediation: revoke table-level UPDATE from authenticated. For SECURITY INVOKER read-state RPCs, grant UPDATE only on is_read/read_at/updated_at and retain owner/recipient RLS, or use an explicitly authorized SECURITY DEFINER RPC. Admin deletion should remain behind an admin-asserting RPC instead of reopening broad direct DELETE.",
   );
   process.exit(1);
 }
