@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import type {
-  CancelWithRefundResponse,
   Character,
   NoRenewalResponse,
   PlanChangeResponse,
@@ -54,10 +53,6 @@ interface SubscriptionCreditMutationRpcClient {
     args: { p_subscription_id: string; p_new_plan_type: PlanType }
   ): RpcResult<PlanChangeResponse>;
   rpc(
-    fn: "cancel_subscription_credit_with_refund",
-    args: { p_subscription_id: string }
-  ): RpcResult<CancelWithRefundResponse>;
-  rpc(
     fn: "set_subscription_credit_no_renewal",
     args: { p_subscription_id: string }
   ): RpcResult<NoRenewalResponse>;
@@ -103,17 +98,6 @@ export async function scheduleSubscriptionCreditPlanChangeRpc(
   );
 
   return unwrapRpcData(data, error, "Plan change did not return data");
-}
-
-export async function cancelSubscriptionCreditWithRefundRpc(
-  subscriptionId: string
-): Promise<CancelWithRefundResponse> {
-  const { data, error } = await subscriptionCreditMutationRpc.rpc(
-    "cancel_subscription_credit_with_refund",
-    { p_subscription_id: subscriptionId }
-  );
-
-  return unwrapRpcData(data, error, "Subscription cancellation did not return data");
 }
 
 export async function setSubscriptionCreditNoRenewalRpc(
@@ -170,10 +154,10 @@ export async function adjustSubscriptionCreditCreditsRpc(
   reason: string
 ): Promise<void> {
   await callAdminRpc("admin_adjust_subscription_credit_credits", {
-      p_subscription_id: subscriptionId,
-      p_amount: amount,
-      p_reason: reason,
-    });
+    p_subscription_id: subscriptionId,
+    p_amount: amount,
+    p_reason: reason,
+  });
 }
 
 export async function createSubscriptionCreditCharacterRpc(data: {
