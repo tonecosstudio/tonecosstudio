@@ -9,14 +9,12 @@ import { ArrowLeft, Check, CreditCard, Smartphone } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProductionLimitBadge } from "@/components/production/ProductionLimitBadge";
 import { useCollectionPricing } from "@/hooks/useCollectionPricing";
-import { useSystemSettings } from "@/hooks/useSystemSettings";
 import {
   createStandalonePurchaseReservation,
   getStandalonePurchaseCollectionBySlug,
 } from "@/lib/standalone-purchase-service";
 import { log } from "@/lib/logger";
 import { PUBLIC_ROUTES, subscribeCollectionPath } from "@/config/routes";
-import { PRICING } from "@/config/constants";
 
 export default function BuyCharacter() {
   const { slug } = useParams<{ slug: string }>();
@@ -24,16 +22,15 @@ export default function BuyCharacter() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: settings } = useSystemSettings();
-
-  const { data: collection, isLoading } = useQuery({
+  const collectionQuery = useQuery({
     queryKey: ["collection", collectionSlug],
     queryFn: () => getStandalonePurchaseCollectionBySlug(collectionSlug),
     enabled: collectionSlug.length > 0,
   });
+  const { data: collection, isLoading } = collectionQuery;
 
-  // Buscar preços dinâmicos
-  const { data: pricing, isLoading: isPricingLoading } = useCollectionPricing(collection?.id);
+  const pricingQuery = useCollectionPricing(collection?.id);
+  const { data: pricing, isLoading: isPricingLoading } = pricingQuery;
 
   if (isLoading || isPricingLoading) {
     return (
@@ -43,6 +40,27 @@ export default function BuyCharacter() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Carregando informações...</p>
           </div>
+        </div>
+      </Page>
+    );
+  }
+
+  if (collectionQuery.isError) {
+    return (
+      <Page
+        title="Coleção indisponível"
+        description="Não foi possível carregar a coleção"
+      >
+        <div className="container max-w-4xl py-16 text-center">
+          <h1 className="text-3xl font-bold mb-4">
+            Não foi possível carregar esta coleção
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            Nenhuma compra foi iniciada. Tente novamente em instantes.
+          </p>
+          <Button onClick={() => void collectionQuery.refetch()}>
+            Tentar novamente
+          </Button>
         </div>
       </Page>
     );
@@ -64,17 +82,36 @@ export default function BuyCharacter() {
     );
   }
 
+  if (pricingQuery.isError || !pricing) {
+    return (
+      <Page
+        title="Preço indisponível"
+        description="A compra está temporariamente indisponível"
+      >
+        <div className="container max-w-4xl py-16 text-center">
+          <h1 className="text-3xl font-bold mb-4">Preço indisponível</h1>
+          <p className="text-muted-foreground mb-6">
+            Não exibimos valores estimados. A reserva será liberada quando o
+            preço oficial desta coleção estiver disponível.
+          </p>
+          <Button onClick={() => void pricingQuery.refetch()}>
+            Tentar novamente
+          </Button>
+        </div>
+      </Page>
+    );
+  }
+
   const characters = collection.collection_characters || [];
 
   // Pegar o personagem do mês atual (revealed)
   const currentMonthCharacter = characters.find((c) => c.status === "revealed");
 
-  // Valores de preço (com fallback para valores padrão)
-  const priceFull = pricing?.price_full || settings?.default_price_full || PRICING.DEFAULT_PRICE_FULL;
-  const pricePix = pricing?.price_pix || settings?.default_price_pix || PRICING.DEFAULT_PRICE_PIX;
-  const depositAmount = pricing?.deposit_amount || settings?.default_deposit_amount || PRICING.DEFAULT_DEPOSIT_AMOUNT;
-  const remainingPix = pricing?.remaining_pix || pricePix - depositAmount;
-  const remainingFull = pricing?.remaining_full || priceFull - depositAmount;
+  const priceFull = pricing.price_full;
+  const pricePix = pricing.price_pix;
+  const depositAmount = pricing.deposit_amount;
+  const remainingPix = pricing.remaining_pix;
+  const remainingFull = pricing.remaining_full;
   return (
     <Page
       title={`Comprar Peça Avulsa - ${collection.name}`}

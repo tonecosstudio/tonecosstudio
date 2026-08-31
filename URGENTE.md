@@ -542,3 +542,42 @@ Do not repeat:
 - não usar localização do usuário ou do desenvolvedor como endereço da empresa;
 - não criar perfis sociais presumidos;
 - não alterar a decisão de main única sem nova instrução.
+
+
+### Checkpoint 8 — 2026-08-30
+
+HEAD anterior da main: ca5b825de2c48977037cba0da41d132fe8eb07b3
+
+Concluído:
+
+- fluxo BuyCharacter deixou de usar preços hardcoded como fallback;
+- erro ao carregar coleção agora é distinguido de coleção inexistente;
+- ausência, erro ou inconsistência de preço bloqueia a oferta e a reserva;
+- RPC de preço agora exige linha presente e valores monetários finitos e coerentes;
+- valores numéricos retornados pelo PostgREST são normalizados antes do uso;
+- usuário recebe estado de erro com retry sem ver preço estimado.
+
+Testes/provas:
+
+- removidas todas as referências a PRICING.DEFAULT_* e system settings em BuyCharacter;
+- validação rejeita preço zero/negativo, PIX maior que preço cheio e entrada maior que o total;
+- price_full, price_pix, entrada e saldos vêm exclusivamente do RPC validado;
+- rota de compra continua escondida enquanto PUBLIC_COLLECTIONS_ENABLED=false.
+
+Bloqueios:
+
+- testes automatizados existentes não foram executados porque o runner permanece indisponível;
+- o fluxo só poderá ser testado ponta a ponta após Supabase e preview voltarem.
+
+Next action:
+
+- estender fail-closed para páginas de planos e assinatura;
+- revisar retorno silencioso de defaults em pricing-settings-service;
+- executar testes de preço e reserva assim que o Quality Gate funcionar.
+
+Do not repeat:
+
+- não usar preço fixo como fallback em tela de compra;
+- não converter falha de preço em oferta estimada;
+- não habilitar PUBLIC_COLLECTIONS_ENABLED antes dos fluxos comerciais serem testados;
+- não permitir reserva quando o RPC não retornar configuração válida.
