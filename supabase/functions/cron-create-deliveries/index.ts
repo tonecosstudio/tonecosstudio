@@ -1,87 +1,128 @@
 /**
  * Cron Job: Automatic Delivery Creation
  *
- * Runs daily at 00:01 Bahia Time to create delivery records for subscriptions
- * scheduled for the current month.
- *
- * Requirements:
- * - 10.1: Execute cron job daily at 00:01 Bahia Time
- * - 10.2: Identify all subscriptions with deliveries scheduled for current month
- * - 10.3: Create delivery record with status 'pending_choice'
- * - 10.4: Apply automatic maintenance if subscriber hasn't made collection choice
- * - 10.6: Log all automatic delivery creation actions
- * - 10.7: Send alert notification to administrator if cron job fails
+ * On the first Bahia calendar day of each month, creates the missing delivery
+ * for active subscriptions using the canonical shipping-business-day setting.
  */
 
 import {
+  logCronError,
   logCronStart,
   logCronSuccess,
-  logCronError,
 } from "../_shared/cron-logger.ts";
 import { ADMIN_ACCESS_ROLES } from "../_shared/roles.ts";
-import { nowInBahia } from "../_shared/timezone.ts";
 import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
 import { getServiceClient } from "../_shared/supabase.ts";
-import { EmailService, getEmailConfig } from "../_shared/email.ts";
+import { EmailService, escapeHtml, getEmailConfig, sanitizeEmailSubject } from "../_shared/email.ts";
 import { getPublicBaseUrl } from "../_shared/public-url.ts";
 import {
   calculateNthBusinessDayOfMonth,
   getHolidayDatesForMonth,
 } from "../_shared/business-days.ts";
 
+const BAHIA_TIMEZONE = "America/Bahia";
+const BAHIA_OFFSET = "-03:00";
+
 interface Subscription {
   id: string;
   user_id: string;
-  plan_type: "trimestral" | "semestral";
-  status: string;
+  plan_type: string;
   deliveries_total: number;
-  deliveries_completed: number;
-  created_at: string;
 }
 
 interface Delivery {
   id: string;
-  subscription_id: string;
-  delivery_number: number;
-  status: string;
+  delivery_number: number | null;
   expected_delivery_date: string | null;
 }
 
-/**
- * Sends an alert email to admins when some subscriptions fail to process
- * but the overall cron job completes successfully
- */
-async function sendPartialFailureAlert(
-  logId: string,
-  errors: Array<{ subscriptionId: string; error: string }>,
-  subscriptionsProcessed: number,
-  deliveriesCreated: number,
-): Promise<void> {
-  const supabase = getServiceClient();
+function getBahiaDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BAHIA_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const read = (type: "year" | "month" | "day") => {
+    const value = Number(parts.find((part) => part.type === type)?.value);
+    if (!Number.isInteger(value)) throw new Error(`Unable to resolve Bahia ${type}`);
+    return value;
+  };
+  return { year: read("year"), month: read("month"), day: read("day") };
+}
 
-  // Get admin profiles for alerts
-  const { data: adminProfiles, error: profileError } = await supabase
+function getBahiaYearMonth(value: string): { year: number; month: number } | null {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = getBahiaDateParts(date);
+  return { year: parts.year, month: parts.month };
+}
+
+function firstMissingDeliveryNumber(deliveries: Delivery[], total: number): number | null {
+  if (!Number.isInteger(total) || total < 1) {
+    throw new Error("Subscription deliveries_total is invalid");
+  }
+
+  const existing = new Set(
+    deliveries
+      .map((delivery) => delivery.delivery_number)
+      .filter((value): value is number => Number.isInteger(value) && Number(value) > 0),
+  );
+
+  for (let number = 1; number <= total; number += 1) {
+    if (!existing.has(number)) return number;
+  }
+  return null;
+}
+
+async function getShippingBusinessDay(supabase: any): Promise<number> {
+  const { data, error } = await supabase
+    .from("system_settings")
+    .select("value")
+    .eq("key", "shipping_business_days")
+    .maybeSingle();
+
+  if (error) throw new Error(`Failed to load shipping setting: ${error.message}`);
+
+  const value = Number(data?.value);
+  if (!Number.isInteger(value) || value < 1 || value > 31) {
+    throw new Error("SHIPPING_BUSINESS_DAYS_NOT_CONFIGURED");
+  }
+  return value;
+}
+
+async function sendPartialFailureAlert(params: {
+  logId: string;
+  errors: Array<{ subscriptionId: string; error: string }>;
+  subscriptionsProcessed: number;
+  deliveriesCreated: number;
+}): Promise<void> {
+  const supabase = getServiceClient();
+  const { data: admins, error } = await supabase
     .from("profiles")
     .select("email, full_name")
     .in("role", ADMIN_ACCESS_ROLES);
 
-  if (profileError || !adminProfiles || adminProfiles.length === 0) {
-    console.warn("No admin profiles found with emails");
-    return;
-  }
+  if (error) throw new Error(`Failed to load admins: ${error.message}`);
+  if (!admins?.length) return;
 
-  // Prepare email content
-  const subject = `⚠️ Delivery Creation: Partial Failures (${errors.length} subscription${errors.length > 1 ? "s" : ""})`;
-  const htmlContent = generatePartialFailureEmailHTML({
-    logId,
-    errors,
-    subscriptionsProcessed,
-    deliveriesCreated,
-    timestamp: new Date().toLocaleString("pt-BR", {
-      timeZone: "America/Bahia",
-    }),
-  });
-
+  const rows = params.errors
+    .map(
+      (item) =>
+        `<li><code>${escapeHtml(item.subscriptionId)}</code>: ${escapeHtml(item.error)}</li>`,
+    )
+    .join("");
+  const html = `
+<!doctype html>
+<html lang="pt-BR">
+  <body style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+    <h1>Falhas parciais na criação de entregas</h1>
+    <p>Log: <code>${escapeHtml(params.logId)}</code></p>
+    <p>Assinaturas processadas: ${params.subscriptionsProcessed}</p>
+    <p>Entregas criadas: ${params.deliveriesCreated}</p>
+    <ul>${rows}</ul>
+  </body>
+</html>`.trim();
   const baseUrl = getPublicBaseUrl(["FRONTEND_URL", "BASE_URL", "SITE_URL"]);
   const emailService = new EmailService(
     getEmailConfig({
@@ -90,182 +131,20 @@ async function sendPartialFailureAlert(
     }),
   );
 
-  for (const admin of adminProfiles) {
+  for (const admin of admins) {
     if (!admin.email) continue;
-
     try {
       await emailService.sendEmail({
         to: admin.email,
-        subject,
-        html: htmlContent,
+        subject: sanitizeEmailSubject(
+          `Falhas na criação de entregas (${params.errors.length})`,
+        ),
+        html,
       });
-
-      console.log(`Partial failure alert sent to admin: ${admin.email}`);
     } catch (emailError) {
-      console.error(
-        `Failed to send alert email to ${admin.email}:`,
-        emailError,
-      );
-      // Continue sending to other admins
+      console.error(`Failed to alert admin ${admin.email}`, emailError);
     }
   }
-}
-
-/**
- * Generates HTML content for the partial failure alert email
- */
-function generatePartialFailureEmailHTML(params: {
-  logId: string;
-  errors: Array<{ subscriptionId: string; error: string }>;
-  subscriptionsProcessed: number;
-  deliveriesCreated: number;
-  timestamp: string;
-}): string {
-  const errorRows = params.errors
-    .map(
-      (e) => `
-      <tr>
-        <td style="padding: 8px; border: 1px solid #e5e7eb; font-family: 'Courier New', monospace; font-size: 12px;">${e.subscriptionId}</td>
-        <td style="padding: 8px; border: 1px solid #e5e7eb; color: #dc2626; font-size: 13px;">${e.error}</td>
-      </tr>
-    `,
-    )
-    .join("");
-
-  return `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Delivery Creation Partial Failures</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 700px;
-      margin: 20px auto;
-      background-color: #ffffff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .header {
-      background-color: #f59e0b;
-      color: #ffffff;
-      padding: 24px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 600;
-    }
-    .content {
-      padding: 32px 24px;
-    }
-    .summary-box {
-      background-color: #fffbeb;
-      border-left: 4px solid #f59e0b;
-      padding: 16px;
-      margin: 24px 0;
-      border-radius: 4px;
-    }
-    .info-row {
-      margin: 8px 0;
-    }
-    .info-label {
-      font-weight: 600;
-      color: #374151;
-    }
-    .info-value {
-      color: #6b7280;
-    }
-    .errors-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 16px 0;
-      font-size: 14px;
-    }
-    .errors-table th {
-      background-color: #f3f4f6;
-      padding: 12px 8px;
-      text-align: left;
-      font-weight: 600;
-      border: 1px solid #e5e7eb;
-    }
-    .footer {
-      background-color: #f8fafc;
-      padding: 24px;
-      text-align: center;
-      font-size: 14px;
-      color: #64748b;
-      border-top: 1px solid #e2e8f0;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>⚠️ Delivery Creation: Partial Failures</h1>
-    </div>
-    <div class="content">
-      <div class="summary-box">
-        <div class="info-row">
-          <span class="info-label">Timestamp:</span>
-          <span class="info-value">${params.timestamp}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Log ID:</span>
-          <span class="info-value">${params.logId}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Subscriptions Processed:</span>
-          <span class="info-value">${params.subscriptionsProcessed}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Deliveries Created:</span>
-          <span class="info-value">${params.deliveriesCreated}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Failed Subscriptions:</span>
-          <span class="info-value" style="color: #dc2626; font-weight: 600;">${params.errors.length}</span>
-        </div>
-      </div>
-
-      <h3>Failed Subscriptions:</h3>
-      <table class="errors-table">
-        <thead>
-          <tr>
-            <th>Subscription ID</th>
-            <th>Error Message</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${errorRows}
-        </tbody>
-      </table>
-
-      <p style="margin-top: 24px; font-size: 14px; color: #64748b;">
-        The cron job completed successfully, but some subscriptions failed to process.
-        Please investigate these failures and manually create deliveries if needed.
-        Check the cron_job_logs table for detailed error information.
-      </p>
-    </div>
-    <div class="footer">
-      <p>This is an automated alert from ORDAX Platform.</p>
-      <p>&copy; ${new Date().getFullYear()} ORDAX. All rights reserved.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `.trim();
 }
 
 Deno.serve(async (req) => {
@@ -280,293 +159,182 @@ Deno.serve(async (req) => {
     );
     if (forbidden) return forbidden;
 
-    // Start logging
     logId = await logCronStart("cron-create-deliveries");
 
     const supabase = getServiceClient();
+    const now = new Date();
+    const currentInstant = now.toISOString();
+    const { day, month, year } = getBahiaDateParts(now);
 
-    // Get current Bahia time
-    const bahiaTime = nowInBahia();
-    const day = bahiaTime.getDate();
-    const month = bahiaTime.getMonth() + 1; // JavaScript months are 0-indexed
-    const year = bahiaTime.getFullYear();
-
-    console.log(`Cron job running at ${bahiaTime.toISOString()} (Bahia time)`);
-    console.log(`Current day: ${day}, month: ${month}, year: ${year}`);
-
-    // Only run on day 1 of the month
     if (day !== 1) {
-      console.log(
-        `Not day 1 (current day: ${day}), skipping delivery creation`,
-      );
-
       await logCronSuccess(logId, {
         skipped: true,
-        reason: "Not day 1 of month",
-        currentDay: day,
+        reason: "Not day 1 of Bahia calendar month",
+        day,
         month,
         year,
+        executedAt: currentInstant,
       });
-
       return new Response(
-        JSON.stringify({
-          success: true,
-          skipped: true,
-          message: "Not day 1 of month",
-          currentDay: day,
-        }),
+        JSON.stringify({ success: true, skipped: true, day, month, year }),
         { headers: { "Content-Type": "application/json" } },
       );
     }
 
-    // Query all active subscriptions
+    const shippingBusinessDay = await getShippingBusinessDay(supabase);
+    const holidayDates = await getHolidayDatesForMonth(supabase, year, month);
+    const expectedDateKey = calculateNthBusinessDayOfMonth(
+      year,
+      month,
+      shippingBusinessDay,
+      holidayDates,
+    )
+      .toISOString()
+      .split("T")[0];
+    const expectedDeliveryAt = `${expectedDateKey}T00:00:00${BAHIA_OFFSET}`;
+
     const { data: subscriptions, error: subscriptionsError } = await supabase
       .from("subscriptions")
-      .select(
-        "id, user_id, plan_type, status, deliveries_total, deliveries_completed, created_at",
-      )
+      .select("id, user_id, plan_type, deliveries_total")
       .eq("status", "active");
 
     if (subscriptionsError) {
-      throw new Error(
-        `Failed to fetch subscriptions: ${subscriptionsError.message}`,
-      );
+      throw new Error(`Failed to fetch subscriptions: ${subscriptionsError.message}`);
     }
-
-    if (!subscriptions || subscriptions.length === 0) {
-      console.log("No active subscriptions found");
-
-      await logCronSuccess(logId, {
-        subscriptionsProcessed: 0,
-        deliveriesCreated: 0,
-        month,
-        year,
-      });
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          subscriptionsProcessed: 0,
-          deliveriesCreated: 0,
-          message: "No active subscriptions found",
-        }),
-        { headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    console.log(`Found ${subscriptions.length} active subscriptions`);
 
     let deliveriesCreated = 0;
     let subscriptionsProcessed = 0;
     const errors: Array<{ subscriptionId: string; error: string }> = [];
 
-    // Process each subscription
-    for (const subscription of subscriptions as Subscription[]) {
+    for (const subscription of (subscriptions || []) as Subscription[]) {
       try {
-        // Get all existing deliveries for this subscription
-        const { data: existingDeliveries, error: deliveriesError } =
-          await supabase
-            .from("subscription_deliveries")
-            .select(
-              "id, subscription_id, delivery_number, status, expected_delivery_date",
-            )
-            .eq("subscription_id", subscription.id)
-            .order("delivery_number", { ascending: true });
+        const { data: existing, error: deliveriesError } = await supabase
+          .from("subscription_deliveries")
+          .select("id, delivery_number, expected_delivery_date")
+          .eq("subscription_id", subscription.id)
+          .order("delivery_number", { ascending: true });
 
         if (deliveriesError) {
-          throw new Error(
-            `Failed to fetch deliveries: ${deliveriesError.message}`,
-          );
+          throw new Error(`Failed to fetch deliveries: ${deliveriesError.message}`);
         }
 
-        const deliveries = (existingDeliveries || []) as Delivery[];
-
-        // Determine the next delivery number
-        const nextDeliveryNumber = deliveries.length + 1;
-
-        // Check if we've already created all deliveries for this subscription
-        if (nextDeliveryNumber > subscription.deliveries_total) {
-          console.log(
-            `Subscription ${subscription.id}: All deliveries already created (${deliveries.length}/${subscription.deliveries_total})`,
-          );
-          subscriptionsProcessed++;
-          continue;
-        }
-
-        // Check if a delivery for this month already exists
-        const deliveryForThisMonth = deliveries.find((d) => {
-          if (!d.expected_delivery_date) return false;
-          const deliveryDate = new Date(d.expected_delivery_date);
-          return (
-            deliveryDate.getMonth() + 1 === month &&
-            deliveryDate.getFullYear() === year
-          );
+        const deliveries = (existing || []) as Delivery[];
+        const alreadyScheduledThisMonth = deliveries.some((delivery) => {
+          if (!delivery.expected_delivery_date) return false;
+          const parts = getBahiaYearMonth(delivery.expected_delivery_date);
+          return parts?.year === year && parts.month === month;
         });
 
-        if (deliveryForThisMonth) {
-          console.log(
-            `Subscription ${subscription.id}: Delivery for ${month}/${year} already exists (delivery #${deliveryForThisMonth.delivery_number})`,
-          );
-          subscriptionsProcessed++;
+        if (alreadyScheduledThisMonth) {
+          subscriptionsProcessed += 1;
           continue;
         }
 
-        const holidayDates = await getHolidayDatesForMonth(
-          supabase,
-          year,
-          month,
+        const nextDeliveryNumber = firstMissingDeliveryNumber(
+          deliveries,
+          Number(subscription.deliveries_total),
         );
-        const expectedDeliveryDate = calculateNthBusinessDayOfMonth(
-          year,
-          month,
-          5,
-          holidayDates,
-        );
+        if (nextDeliveryNumber === null) {
+          subscriptionsProcessed += 1;
+          continue;
+        }
 
-        // Create the delivery record with status 'pending_choice'
         const { data: newDelivery, error: createError } = await supabase
           .from("subscription_deliveries")
           .insert({
             subscription_id: subscription.id,
             delivery_number: nextDeliveryNumber,
             status: "pending_choice",
-            expected_delivery_date: expectedDeliveryDate.toISOString(),
+            expected_delivery_date: expectedDeliveryAt,
           })
-          .select()
+          .select("id")
           .single();
 
-        if (createError) {
-          throw new Error(`Failed to create delivery: ${createError.message}`);
+        if (createError || !newDelivery) {
+          throw new Error(`Failed to create delivery: ${createError?.message || "no row returned"}`);
         }
 
-        console.log(
-          `Created delivery #${nextDeliveryNumber} for subscription ${subscription.id} (delivery ID: ${newDelivery.id})`,
-        );
-        deliveriesCreated++;
+        deliveriesCreated += 1;
 
-        // Apply automatic maintenance if this is not the first delivery
         if (nextDeliveryNumber > 1) {
-          try {
-            // Call the activate_delivery_with_auto_maintenance function
-            const { error: maintenanceError } = await supabase.rpc(
-              "activate_delivery_with_auto_maintenance",
-              { p_delivery_id: newDelivery.id },
-            );
-
-            if (maintenanceError) {
-              console.error(
-                `Failed to apply automatic maintenance for delivery ${newDelivery.id}:`,
-                maintenanceError,
-              );
-              // Don't throw - the delivery was created successfully, maintenance is a bonus
-            } else {
-              console.log(
-                `Applied automatic maintenance for delivery ${newDelivery.id}`,
-              );
-            }
-          } catch (maintenanceError) {
+          const { error: maintenanceError } = await supabase.rpc(
+            "activate_delivery_with_auto_maintenance",
+            { p_delivery_id: newDelivery.id },
+          );
+          if (maintenanceError) {
             console.error(
-              `Error applying automatic maintenance for delivery ${newDelivery.id}:`,
+              `Automatic maintenance failed for ${newDelivery.id}`,
               maintenanceError,
             );
-            // Don't throw - the delivery was created successfully
           }
-        } else {
-          console.log(
-            `Delivery #${nextDeliveryNumber} is first delivery, skipping automatic maintenance`,
-          );
         }
 
-        subscriptionsProcessed++;
+        subscriptionsProcessed += 1;
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        const errorStack = error instanceof Error ? error.stack : undefined;
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push({ subscriptionId: subscription.id, error: message });
 
-        console.error(
-          `Error processing subscription ${subscription.id}:`,
-          error,
-        );
-
-        // Log individual subscription error to cron_job_logs
         try {
           await supabase.from("cron_job_logs").insert({
             job_name: "cron-create-deliveries",
             status: "failed",
-            error_message: `Subscription ${subscription.id}: ${errorMessage}`,
+            error_message: `Subscription ${subscription.id}: ${message}`,
             execution_details: {
               subscriptionId: subscription.id,
               userId: subscription.user_id,
               planType: subscription.plan_type,
-              errorStack,
               month,
               year,
             },
-            started_at: new Date().toISOString(),
+            started_at: currentInstant,
             completed_at: new Date().toISOString(),
           });
         } catch (logError) {
-          console.error(
-            `Failed to log subscription error for ${subscription.id}:`,
-            logError,
-          );
-          // Don't throw - continue processing
+          console.error(`Failed to log subscription error ${subscription.id}`, logError);
         }
-
-        errors.push({
-          subscriptionId: subscription.id,
-          error: errorMessage,
-        });
-        // Continue processing other subscriptions
       }
     }
 
-    // Log success with details
     await logCronSuccess(logId, {
       subscriptionsProcessed,
       deliveriesCreated,
       errors: errors.length > 0 ? errors : undefined,
       month,
       year,
+      shippingBusinessDay,
+      expectedDeliveryDate: expectedDateKey,
+      executedAt: currentInstant,
     });
 
-    // If there were any errors processing individual subscriptions, send an alert
     if (errors.length > 0) {
       try {
-        await sendPartialFailureAlert(
+        await sendPartialFailureAlert({
           logId,
           errors,
           subscriptionsProcessed,
           deliveriesCreated,
-        );
+        });
       } catch (alertError) {
-        console.error("Failed to send partial failure alert:", alertError);
-        // Don't throw - the job completed successfully overall
+        console.error("Failed to send partial failure alert", alertError);
       }
-    }
-
-    console.log(
-      `Cron job completed: ${deliveriesCreated} deliveries created for ${subscriptionsProcessed} subscriptions`,
-    );
-    if (errors.length > 0) {
-      console.warn(`${errors.length} subscription(s) failed to process`);
     }
 
     return new Response(
       JSON.stringify({
-        success: true,
+        success: errors.length === 0,
         subscriptionsProcessed,
         deliveriesCreated,
         errors: errors.length > 0 ? errors : undefined,
         month,
         year,
+        expectedDeliveryDate: expectedDateKey,
       }),
-      { headers: { "Content-Type": "application/json" } },
+      {
+        status: errors.length === 0 ? 200 : 207,
+        headers: { "Content-Type": "application/json" },
+      },
     );
   } catch (error) {
-    console.error("Cron job failed:", error);
-
-    // Log error if we have a log ID
     if (logId) {
       try {
         await logCronError(
@@ -574,7 +342,7 @@ Deno.serve(async (req) => {
           error instanceof Error ? error : new Error(String(error)),
         );
       } catch (logError) {
-        console.error("Failed to log error:", logError);
+        console.error("Failed to log cron error", logError);
       }
     }
 
@@ -583,10 +351,7 @@ Deno.serve(async (req) => {
         success: false,
         error: error instanceof Error ? error.message : String(error),
       }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 });
