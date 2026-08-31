@@ -9,7 +9,6 @@ export {
   useIsSubscriber,
   useSubscriptionPlan,
   useAvailablePlans,
-  useCreateSubscription,
   useCancelSubscription,
   invalidateSubscription,
   subscriptionKeys,
