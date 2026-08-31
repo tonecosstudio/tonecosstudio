@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
+import { getSupportAttachmentSignedUrl } from "@/services/support/support-attachment-url-service";
 import type { Attachment, Message, SenderType } from "@/types/support";
 
 export type SupportMessageRow = {
@@ -30,14 +31,19 @@ export type SupportAttachmentRow = {
   created_at: string;
 };
 
+export type HydratedSupportAttachment = Attachment & {
+  access_url?: string;
+  thumbnail_url?: string;
+};
+
 function getFallbackSenderName(senderType: SenderType): string {
   if (senderType === "admin") return "Administrador";
   if (senderType === "customer") return "Cliente";
   return "Sistema";
 }
 
-function toAttachment(row: SupportAttachmentRow): Attachment {
-  return {
+async function toAttachment(row: SupportAttachmentRow): Promise<HydratedSupportAttachment> {
+  const attachment: HydratedSupportAttachment = {
     id: row.id,
     message_id: row.message_id,
     file_name: row.file_name,
@@ -48,6 +54,28 @@ function toAttachment(row: SupportAttachmentRow): Attachment {
     uploaded_by: row.uploaded_by,
     created_at: row.created_at,
   };
+
+  const [accessResult, thumbnailResult] = await Promise.allSettled([
+    getSupportAttachmentSignedUrl(row.file_path),
+    row.thumbnail_path
+      ? getSupportAttachmentSignedUrl(row.thumbnail_path)
+      : Promise.resolve(undefined),
+  ]);
+
+  if (accessResult.status === "fulfilled") {
+    attachment.access_url = accessResult.value;
+  } else {
+    log.warn("Failed to create signed support attachment URL", {
+      error: accessResult.reason,
+      attachmentId: row.id,
+    });
+  }
+
+  if (thumbnailResult.status === "fulfilled" && thumbnailResult.value) {
+    attachment.thumbnail_url = thumbnailResult.value;
+  }
+
+  return attachment;
 }
 
 async function fetchAttachmentsByMessageIds(messageIds: string[]): Promise<Map<string, Attachment[]>> {
@@ -65,8 +93,11 @@ async function fetchAttachmentsByMessageIds(messageIds: string[]): Promise<Map<s
     return new Map();
   }
 
-  return ((data ?? []) as SupportAttachmentRow[]).reduce((map, row) => {
-    const attachment = toAttachment(row);
+  const attachments = await Promise.all(
+    ((data ?? []) as SupportAttachmentRow[]).map((row) => toAttachment(row)),
+  );
+
+  return attachments.reduce((map, attachment) => {
     const existing = map.get(attachment.message_id) ?? [];
     existing.push(attachment);
     map.set(attachment.message_id, existing);
