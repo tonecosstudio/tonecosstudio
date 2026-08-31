@@ -6,7 +6,7 @@ import { PriorityDistributionChart } from "./PriorityDistributionChart";
 import { useProductionMetrics } from "@/hooks/admin/useProductionMetrics";
 
 export function ProductionAnalytics() {
-  const { data: metrics, isLoading } = useProductionMetrics();
+  const { data: metrics, isLoading, error } = useProductionMetrics();
 
   if (isLoading) {
     return (
@@ -14,14 +14,30 @@ export function ProductionAnalytics() {
         {[1, 2, 3, 4].map((i) => (
           <Card key={i}>
             <CardHeader>
-              <div className="h-6 bg-muted animate-pulse rounded" />
+              <div className="h-6 animate-pulse rounded bg-muted" />
             </CardHeader>
             <CardContent>
-              <div className="h-32 bg-muted animate-pulse rounded" />
+              <div className="h-32 animate-pulse rounded bg-muted" />
             </CardContent>
           </Card>
         ))}
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle>Métricas de produção indisponíveis</CardTitle>
+          <CardDescription>
+            Os dados não puderam ser validados e não serão substituídos por valores locais.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          {error instanceof Error ? error.message : "Erro desconhecido"}
+        </CardContent>
+      </Card>
     );
   }
 
@@ -31,9 +47,7 @@ export function ProductionAnalytics() {
 
   return (
     <div className="space-y-6">
-      {/* Gráficos Principais */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Distribuição por Estágio */}
         <Card>
           <CardHeader>
             <CardTitle>Distribuição por Estágio</CardTitle>
@@ -44,7 +58,6 @@ export function ProductionAnalytics() {
           </CardContent>
         </Card>
 
-        {/* Distribuição por Prioridade */}
         <Card>
           <CardHeader>
             <CardTitle>Distribuição por Prioridade</CardTitle>
@@ -56,9 +69,7 @@ export function ProductionAnalytics() {
         </Card>
       </div>
 
-      {/* Métricas Detalhadas */}
       <div className="grid gap-6 md:grid-cols-3">
-        {/* Tempo Médio por Estágio */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -75,12 +86,11 @@ export function ProductionAnalytics() {
                 </div>
               ))
             ) : (
-              <p className="text-sm text-muted-foreground">Sem dados suficientes</p>
+              <p className="text-sm text-muted-foreground">Sem dados medidos suficientes</p>
             )}
           </CardContent>
         </Card>
 
-        {/* Itens Agendados */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -104,7 +114,6 @@ export function ProductionAnalytics() {
           </CardContent>
         </Card>
 
-        {/* Métricas de Performance */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -116,7 +125,9 @@ export function ProductionAnalytics() {
             <div className="flex items-center justify-between">
               <span className="text-sm">Tempo Médio Total</span>
               <Badge variant="secondary">
-                {metrics.overall.avgProductionTimeHours.toFixed(1)}h
+                {metrics.overall.avgProductionTimeHours === null
+                  ? "Indisponível"
+                  : `${metrics.overall.avgProductionTimeHours.toFixed(1)}h`}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
@@ -128,52 +139,43 @@ export function ProductionAnalytics() {
             <div className="flex items-center justify-between">
               <span className="text-sm">Score de Prioridade</span>
               <Badge variant="outline">
-                {metrics.overall.avgPriorityScore.toFixed(1)}
+                {metrics.overall.avgPriorityScore === null
+                  ? "Indisponível"
+                  : metrics.overall.avgPriorityScore.toFixed(1)}
               </Badge>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Escolhas de Personagens */}
-      {metrics.choices && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Escolhas de Personagens
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {metrics.choices.pending}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Pendentes</p>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {metrics.choices.approved}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Aprovadas</p>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">
-                  {metrics.choices.rejected}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Rejeitadas</p>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">
-                  {choicesTotal}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Total</p>
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Escolhas de Personagens
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600">{metrics.choices.pending}</div>
+              <p className="mt-1 text-xs text-muted-foreground">Pendentes</p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{metrics.choices.approved}</div>
+              <p className="mt-1 text-xs text-muted-foreground">Aprovadas</p>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{metrics.choices.rejected}</div>
+              <p className="mt-1 text-xs text-muted-foreground">Rejeitadas</p>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">{choicesTotal}</div>
+              <p className="mt-1 text-xs text-muted-foreground">Total</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
