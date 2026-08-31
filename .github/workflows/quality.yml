@@ -44,6 +44,9 @@ jobs:
       - name: Audit Supabase boundaries
         run: npm run security:supabase-access
 
+      - name: Audit commercial authority
+        run: node scripts/security/audit-commercial-authority.mjs
+
       - name: Test with coverage thresholds
         run: npm run test:coverage
 
