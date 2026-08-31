@@ -5,8 +5,6 @@ import {
   AlertCircle,
   AlertTriangle,
   Bell,
-  Check,
-  CheckCheck,
   Clock,
   CreditCard,
   DollarSign,
@@ -20,14 +18,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ADMIN_ROUTES, isSafeInAppPath } from "@/config/routes";
-import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import {
-  type AdminNotification,
-  useAdminNotifications,
-  useMarkAllNotificationsAsRead,
-  useMarkNotificationAsRead,
-} from "@/hooks/admin/useNotificationCenter";
+import { type AdminNotification, useAdminNotifications } from "@/hooks/admin/useNotificationCenter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -57,31 +49,12 @@ const priorityColors: Record<AdminNotification["priority"], string> = {
 export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "unread">("all");
-  const { toast } = useToast();
   const navigate = useNavigate();
 
-  const { data: notifications = [], isLoading } = useAdminNotifications(filter);
-  const markAsReadMutation = useMarkNotificationAsRead();
-  const markAllAsReadMutation = useMarkAllNotificationsAsRead();
-
+  const { data: notifications = [], isLoading, isError } = useAdminNotifications(filter);
   const unreadCount = notifications.filter((notification) => !notification.read).length;
 
-  const handleMarkAllAsRead = () => {
-    markAllAsReadMutation.mutate(undefined, {
-      onSuccess: (count) => {
-        toast({
-          title: "Notificacoes marcadas como lidas",
-          description: `${count} notificacoes foram marcadas como lidas.`,
-        });
-      },
-    });
-  };
-
   const handleNotificationClick = (notification: AdminNotification) => {
-    if (!notification.read) {
-      markAsReadMutation.mutate(notification.id);
-    }
-
     if (notification.action_url && isSafeInAppPath(notification.action_url)) {
       navigate(notification.action_url);
       setIsOpen(false);
@@ -117,23 +90,13 @@ export function NotificationCenter() {
 
       <PopoverContent className="w-96 p-0" align="end">
         <div className="flex items-center justify-between border-b p-4">
-          <h3 className="font-semibold">Notificacoes</h3>
-          <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleMarkAllAsRead}
-                disabled={markAllAsReadMutation.isPending}
-              >
-                <CheckCheck className="mr-1 h-4 w-4" />
-                Marcar todas como lidas
-              </Button>
-            )}
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-              <X className="h-4 w-4" />
-            </Button>
+          <div>
+            <h3 className="font-semibold">Notificacoes</h3>
+            <p className="text-xs text-muted-foreground">Somente leitura durante a reconciliacao do banco</p>
           </div>
+          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
         <Tabs value={filter} onValueChange={(value) => setFilter(value as "all" | "unread")}>
@@ -152,6 +115,12 @@ export function NotificationCenter() {
                 <div className="flex h-32 items-center justify-center">
                   <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
                 </div>
+              ) : isError ? (
+                <div className="text-muted-foreground flex h-32 flex-col items-center justify-center px-6 text-center">
+                  <AlertTriangle className="mb-2 h-10 w-10 text-destructive" />
+                  <p className="text-sm font-medium text-foreground">Falha ao carregar notificacoes</p>
+                  <p className="mt-1 text-xs">Tente novamente quando o backend estiver disponivel.</p>
+                </div>
               ) : notifications.length === 0 ? (
                 <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
                   <Bell className="mb-2 h-12 w-12 opacity-50" />
@@ -163,7 +132,10 @@ export function NotificationCenter() {
                     <div
                       key={notification.id}
                       className={cn(
-                        "cursor-pointer p-4 transition-colors hover:bg-muted/50",
+                        "p-4 transition-colors",
+                        notification.action_url && isSafeInAppPath(notification.action_url)
+                          ? "cursor-pointer hover:bg-muted/50"
+                          : "cursor-default",
                         !notification.read && "bg-muted/30"
                       )}
                       onClick={() => handleNotificationClick(notification)}
@@ -206,20 +178,6 @@ export function NotificationCenter() {
                             )}
                           </div>
                         </div>
-
-                        {!notification.read && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="flex-shrink-0"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              markAsReadMutation.mutate(notification.id);
-                            }}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                        )}
                       </div>
                     </div>
                   ))}
