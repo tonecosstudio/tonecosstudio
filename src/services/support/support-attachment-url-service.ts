@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { createStorageSignedUrl } from "@/services/supabase/storage-client";
 
 const SUPPORT_ATTACHMENTS_BUCKET = "support-attachments";
@@ -11,6 +12,19 @@ const signedUrlCache = new Map<
     expiresAt: number;
   }
 >();
+let cacheUserId: string | null = null;
+
+function clearSignedUrlCache(): void {
+  signedUrlCache.clear();
+}
+
+supabase.auth.onAuthStateChange((_event, session) => {
+  const nextUserId = session?.user?.id ?? null;
+  if (nextUserId !== cacheUserId) {
+    clearSignedUrlCache();
+    cacheUserId = nextUserId;
+  }
+});
 
 function validateSupportAttachmentPath(filePath: string): void {
   if (
@@ -36,11 +50,28 @@ function cacheSignedUrl(filePath: string, url: string, expiresIn: number): void 
   });
 }
 
+async function assertCacheUser(): Promise<void> {
+  const { data, error } = await supabase.auth.getUser();
+  const userId = data.user?.id ?? null;
+
+  if (error || !userId) {
+    clearSignedUrlCache();
+    cacheUserId = null;
+    throw new Error("Authentication required for support attachment access");
+  }
+
+  if (cacheUserId !== userId) {
+    clearSignedUrlCache();
+    cacheUserId = userId;
+  }
+}
+
 export async function getSupportAttachmentSignedUrl(
   filePath: string,
   expiresIn = SUPPORT_ATTACHMENT_URL_TTL_SECONDS,
 ): Promise<string> {
   validateSupportAttachmentPath(filePath);
+  await assertCacheUser();
 
   const { data, error } = await createStorageSignedUrl(
     SUPPORT_ATTACHMENTS_BUCKET,
