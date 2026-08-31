@@ -1,5 +1,5 @@
 // Email Delivery Status Webhook Handler
-// Handles webhooks from email providers (SendGrid, AWS SES) to track delivery status
+// Provider webhooks do not use user JWT; access is protected by EMAIL_WEBHOOK_SECRET.
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
@@ -7,16 +7,9 @@ import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts"
 import { getServiceClient } from "../_shared/supabase.ts";
 
 interface SendGridEvent {
-  email: string;
-  event:
-    | "delivered"
-    | "bounce"
-    | "open"
-    | "click"
-    | "dropped"
-    | "deferred"
-    | "processed";
-  timestamp: number;
+  email?: string;
+  event?: string;
+  timestamp?: number;
   "smtp-id"?: string;
   sg_message_id?: string;
   reason?: string;
@@ -24,29 +17,17 @@ interface SendGridEvent {
 }
 
 interface SESEvent {
-  eventType: "Delivery" | "Bounce" | "Complaint" | "Open" | "Click";
-  mail: {
-    timestamp: string;
-    messageId: string;
-    destination: string[];
+  eventType?: "Delivery" | "Bounce" | "Complaint" | "Open" | "Click";
+  mail?: {
+    timestamp?: string;
+    messageId?: string;
+    destination?: string[];
   };
-  bounce?: {
-    bounceType: string;
-    bouncedRecipients: Array<{ emailAddress: string; status: string }>;
-  };
-  delivery?: {
-    timestamp: string;
-    recipients: string[];
-  };
+  bounce?: { bounceType?: string };
+  delivery?: { timestamp?: string };
 }
 
 type EmailProvider = "sendgrid" | "ses";
-
-interface EmailDeliveryLog {
-  id: string;
-  status: string;
-}
-
 type EmailDeliveryLogUpdate = {
   provider_message_id?: string;
   status?: "sent" | "bounced" | "opened" | "clicked";
@@ -72,30 +53,192 @@ function jsonResponse(
   });
 }
 
+function requireIsoFromUnixSeconds(value: number | undefined): string {
+  if (!Number.isFinite(value) || Number(value) <= 0) {
+    throw new Error("Invalid provider event timestamp");
+  }
+  const date = new Date(Number(value) * 1000);
+  if (Number.isNaN(date.getTime())) throw new Error("Invalid provider event timestamp");
+  return date.toISOString();
+}
+
+function requireIsoDate(value: string | undefined): string {
+  if (!value) throw new Error("Missing provider event timestamp");
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new Error("Invalid provider event timestamp");
+  return date.toISOString();
+}
+
+async function findDeliveryLogByProviderMessageId(
+  supabase: any,
+  messageId: string,
+): Promise<{ id: string; status: string } | null> {
+  const { data, error } = await supabase
+    .from("email_delivery_logs")
+    .select("id, status")
+    .eq("provider_message_id", messageId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    throw new Error(`Failed to find email delivery log: ${error.message}`);
+  }
+
+  return data?.[0] ?? null;
+}
+
 async function updateEmailDeliveryLog(
-  supabaseClient: any,
+  supabase: any,
   logId: string,
   updates: EmailDeliveryLogUpdate,
-): Promise<boolean> {
-  const { error } = await supabaseClient.rpc("update_email_delivery_log", {
+): Promise<void> {
+  const { error } = await supabase.rpc("update_email_delivery_log", {
     p_log_id: logId,
     p_updates: updates,
   });
-
   if (error) {
-    console.error("Error updating log entry:", error);
-    return false;
+    throw new Error(`Failed to update email delivery log: ${error.message}`);
+  }
+}
+
+async function handleSendGridWebhook(
+  supabase: any,
+  events: SendGridEvent[],
+): Promise<{ processed: number; ignored: number }> {
+  let processed = 0;
+  let ignored = 0;
+
+  for (const event of events) {
+    const messageId = event.sg_message_id || event["smtp-id"];
+    if (!messageId || typeof messageId !== "string") {
+      ignored += 1;
+      continue;
+    }
+
+    const log = await findDeliveryLogByProviderMessageId(supabase, messageId);
+    if (!log) {
+      // Never guess by recipient address: one recipient may have many messages.
+      ignored += 1;
+      continue;
+    }
+
+    const updates: EmailDeliveryLogUpdate = { provider_message_id: messageId };
+
+    switch (event.event) {
+      case "delivered":
+        updates.status = "sent";
+        updates.sent_at = requireIsoFromUnixSeconds(event.timestamp);
+        break;
+      case "bounce":
+      case "dropped":
+        updates.status = "bounced";
+        updates.bounced_at = requireIsoFromUnixSeconds(event.timestamp);
+        updates.error_message = event.reason || event.status || "Email bounced";
+        break;
+      case "open":
+        updates.status = "opened";
+        updates.opened_at = requireIsoFromUnixSeconds(event.timestamp);
+        break;
+      case "click":
+        updates.status = "clicked";
+        updates.clicked_at = requireIsoFromUnixSeconds(event.timestamp);
+        break;
+      case "processed":
+        if (log.status !== "pending") {
+          ignored += 1;
+          continue;
+        }
+        updates.status = "sent";
+        updates.sent_at = requireIsoFromUnixSeconds(event.timestamp);
+        break;
+      case "deferred":
+        ignored += 1;
+        continue;
+      default:
+        ignored += 1;
+        continue;
+    }
+
+    await updateEmailDeliveryLog(supabase, log.id, updates);
+    processed += 1;
   }
 
-  return true;
+  return { processed, ignored };
+}
+
+function unwrapSesEvent(notification: unknown): SESEvent {
+  if (!notification || typeof notification !== "object" || Array.isArray(notification)) {
+    throw new Error("Invalid SES payload");
+  }
+
+  const wrapper = notification as { Message?: unknown };
+  if (typeof wrapper.Message === "string") {
+    const parsed = JSON.parse(wrapper.Message);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("Invalid SES message payload");
+    }
+    return parsed as SESEvent;
+  }
+
+  if (wrapper.Message && typeof wrapper.Message === "object") {
+    return wrapper.Message as SESEvent;
+  }
+
+  return notification as SESEvent;
+}
+
+async function handleSESWebhook(
+  supabase: any,
+  notification: unknown,
+): Promise<{ processed: number; ignored: number }> {
+  const event = unwrapSesEvent(notification);
+  const messageId = event.mail?.messageId;
+  if (!messageId) return { processed: 0, ignored: 1 };
+
+  const log = await findDeliveryLogByProviderMessageId(supabase, messageId);
+  if (!log) return { processed: 0, ignored: 1 };
+
+  const updates: EmailDeliveryLogUpdate = { provider_message_id: messageId };
+  switch (event.eventType) {
+    case "Delivery":
+      updates.status = "sent";
+      updates.sent_at = requireIsoDate(event.delivery?.timestamp || event.mail?.timestamp);
+      break;
+    case "Bounce":
+      updates.status = "bounced";
+      updates.bounced_at = requireIsoDate(event.mail?.timestamp);
+      updates.error_message = event.bounce?.bounceType
+        ? `Bounce type: ${event.bounce.bounceType}`
+        : "Email bounced";
+      break;
+    case "Complaint":
+      updates.status = "bounced";
+      updates.bounced_at = requireIsoDate(event.mail?.timestamp);
+      updates.error_message = "Recipient marked as spam";
+      break;
+    case "Open":
+      updates.status = "opened";
+      updates.opened_at = requireIsoDate(event.mail?.timestamp);
+      break;
+    case "Click":
+      updates.status = "clicked";
+      updates.clicked_at = requireIsoDate(event.mail?.timestamp);
+      break;
+    default:
+      return { processed: 0, ignored: 1 };
+  }
+
+  await updateEmailDeliveryLog(supabase, log.id, updates);
+  return { processed: 1, ignored: 0 };
 }
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", {
+      headers: { ...corsHeaders, "Access-Control-Allow-Methods": "POST" },
+    });
   }
 
   try {
@@ -111,11 +254,7 @@ serve(async (req) => {
     );
     if (forbidden) return forbidden;
 
-    const supabaseClient = getServiceClient();
-
-    // Determine provider from path or header
-    const url = new URL(req.url);
-    const provider = url.searchParams.get("provider") || "sendgrid";
+    const provider = new URL(req.url).searchParams.get("provider") || "sendgrid";
     if (!isEmailProvider(provider)) {
       return jsonResponse({ error: "Unsupported provider" }, 400, corsHeaders);
     }
@@ -125,218 +264,29 @@ serve(async (req) => {
       return jsonResponse({ error: "Invalid JSON payload" }, 400, corsHeaders);
     }
 
-    if (provider === "sendgrid") {
-      if (!Array.isArray(body)) {
-        return jsonResponse(
-          { error: "SendGrid payload must be an array" },
-          400,
-          corsHeaders,
-        );
-      }
-      await handleSendGridWebhook(supabaseClient, body);
-    } else {
-      await handleSESWebhook(supabaseClient, body);
-    }
+    const supabase = getServiceClient();
+    const result = provider === "sendgrid"
+      ? Array.isArray(body)
+        ? await handleSendGridWebhook(supabase, body)
+        : (() => {
+            throw new Error("SendGrid payload must be an array");
+          })()
+      : await handleSESWebhook(supabase, body);
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ success: true, ...result }, 200, corsHeaders);
   } catch (error) {
     console.error("Webhook processing error:", error);
-    return new Response(
-      JSON.stringify({ error: "Webhook processing failed" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+    const message = error instanceof Error ? error.message : String(error);
+    const status =
+      message.includes("payload") ||
+      message.includes("timestamp") ||
+      message.includes("JSON")
+        ? 400
+        : 500;
+    return jsonResponse(
+      { error: status === 400 ? "Invalid webhook payload" : "Webhook processing failed" },
+      status,
+      corsHeaders,
     );
   }
 });
-
-async function findDeliveryLogForSendGridEvent(
-  supabaseClient: any,
-  messageId: string,
-  recipientEmail: string,
-): Promise<EmailDeliveryLog | null> {
-  const { data: byMessageId, error: messageError } = await supabaseClient
-    .from("email_delivery_logs")
-    .select("id, status")
-    .eq("provider_message_id", messageId)
-    .order("created_at", { ascending: false })
-    .limit(1);
-
-  if (messageError) {
-    console.error(
-      "Error finding log entry by provider message ID:",
-      messageError,
-    );
-    return null;
-  }
-
-  if (byMessageId?.length) {
-    return byMessageId[0] as EmailDeliveryLog;
-  }
-
-  const { data: byRecipient, error: recipientError } = await supabaseClient
-    .from("email_delivery_logs")
-    .select("id, status")
-    .eq("recipient_email", recipientEmail)
-    .order("created_at", { ascending: false })
-    .limit(1);
-
-  if (recipientError) {
-    console.error(
-      "Error finding log entry by recipient email:",
-      recipientError,
-    );
-    return null;
-  }
-
-  return byRecipient?.[0] as EmailDeliveryLog | null;
-}
-
-async function handleSendGridWebhook(
-  supabaseClient: any,
-  events: SendGridEvent[],
-) {
-  for (const event of events) {
-    try {
-      const messageId = event.sg_message_id || event["smtp-id"];
-
-      if (!messageId) {
-        console.warn("SendGrid event ignored because it has no message ID");
-        continue;
-      }
-
-      const log = await findDeliveryLogForSendGridEvent(
-        supabaseClient,
-        messageId,
-        event.email,
-      );
-      if (!log) {
-        console.warn("No log entry found for message:", messageId);
-        continue;
-      }
-
-      const updates: EmailDeliveryLogUpdate = {
-        provider_message_id: messageId,
-      };
-
-      // Map SendGrid events to our status
-      switch (event.event) {
-        case "delivered":
-          updates.status = "sent"; // Already sent, now delivered
-          updates.sent_at = new Date(event.timestamp * 1000).toISOString();
-          break;
-        case "bounce":
-        case "dropped":
-          updates.status = "bounced";
-          updates.bounced_at = new Date(event.timestamp * 1000).toISOString();
-          updates.error_message =
-            event.reason || event.status || "Email bounced";
-          break;
-        case "open":
-          updates.status = "opened";
-          updates.opened_at = new Date(event.timestamp * 1000).toISOString();
-          break;
-        case "click":
-          updates.status = "clicked";
-          updates.clicked_at = new Date(event.timestamp * 1000).toISOString();
-          break;
-        case "processed":
-          // Email accepted by SendGrid, keep as sent
-          if (log.status === "pending") {
-            updates.status = "sent";
-            updates.sent_at = new Date(event.timestamp * 1000).toISOString();
-          }
-          break;
-        case "deferred":
-          // Temporary failure, don't update status
-          console.log("Email deferred:", messageId);
-          continue;
-      }
-
-      if (await updateEmailDeliveryLog(supabaseClient, log.id, updates)) {
-        console.log(`Updated log ${log.id} with event ${event.event}`);
-      }
-    } catch (error) {
-      console.error("Error processing SendGrid event:", error);
-    }
-  }
-}
-
-async function handleSESWebhook(supabaseClient: any, notification: any) {
-  try {
-    // SES sends notifications wrapped in SNS
-    const message =
-      typeof notification.Message === "string"
-        ? JSON.parse(notification.Message)
-        : notification.Message;
-
-    const event: SESEvent = message;
-    const messageId = event?.mail?.messageId;
-
-    if (!messageId) {
-      console.warn("SES event ignored because it has no message ID");
-      return;
-    }
-
-    // Find log entry by provider message ID
-    const { data: logs, error: findError } = await supabaseClient
-      .from("email_delivery_logs")
-      .select("id, status")
-      .eq("provider_message_id", messageId)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    if (findError) {
-      console.error("Error finding log entry:", findError);
-      return;
-    }
-
-    if (!logs || logs.length === 0) {
-      console.warn("No log entry found for message:", messageId);
-      return;
-    }
-
-    const log = logs[0];
-    const updates: EmailDeliveryLogUpdate = {
-      provider_message_id: messageId,
-    };
-
-    // Map SES events to our status
-    switch (event.eventType) {
-      case "Delivery":
-        updates.status = "sent";
-        if (event.delivery) {
-          updates.sent_at = event.delivery.timestamp;
-        }
-        break;
-      case "Bounce":
-        updates.status = "bounced";
-        updates.bounced_at = new Date().toISOString();
-        if (event.bounce) {
-          updates.error_message = `Bounce type: ${event.bounce.bounceType}`;
-        }
-        break;
-      case "Complaint":
-        updates.status = "bounced";
-        updates.error_message = "Recipient marked as spam";
-        break;
-      case "Open":
-        updates.status = "opened";
-        updates.opened_at = new Date().toISOString();
-        break;
-      case "Click":
-        updates.status = "clicked";
-        updates.clicked_at = new Date().toISOString();
-        break;
-    }
-
-    if (await updateEmailDeliveryLog(supabaseClient, log.id, updates)) {
-      console.log(`Updated log ${log.id} with event ${event.eventType}`);
-    }
-  } catch (error) {
-    console.error("Error processing SES event:", error);
-  }
-}
