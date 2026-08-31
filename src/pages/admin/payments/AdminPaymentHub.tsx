@@ -1,19 +1,17 @@
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, CreditCard, Calculator, Key } from "lucide-react";
+import { Wallet, CreditCard, Calculator } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ADMIN_ROUTES } from "@/config/routes";
 import AdminPayments from "./AdminPayments";
 import AdminPaymentMethods from "./AdminPaymentMethods";
-import AdminPaymentKeys from "./AdminPaymentKeys";
 import PaymentCalculator from "./PaymentCalculator";
 
-type PaymentHubTab = "payments" | "methods" | "keys" | "calculator";
+type PaymentHubTab = "payments" | "methods" | "calculator";
 
 const PAYMENT_TAB_PATHS: Record<PaymentHubTab, string> = {
   payments: ADMIN_ROUTES.payments,
   methods: ADMIN_ROUTES.paymentMethods,
-  keys: ADMIN_ROUTES.paymentKeys,
   calculator: ADMIN_ROUTES.paymentCalculator,
 };
 
@@ -23,7 +21,6 @@ function isPaymentHubTab(value: string): value is PaymentHubTab {
 
 function getCurrentTab(pathname: string): PaymentHubTab {
   if (pathname === ADMIN_ROUTES.paymentMethods) return "methods";
-  if (pathname === ADMIN_ROUTES.paymentKeys) return "keys";
   if (pathname === ADMIN_ROUTES.paymentCalculator) return "calculator";
   return "payments";
 }
@@ -53,12 +50,12 @@ export default function AdminPaymentHub() {
             Central de Pagamentos
           </h1>
           <p className="text-[hsl(0,0%,45%)] text-xs tracking-wider font-mono uppercase mt-1">
-            Gerencie pagamentos, métodos, credenciais e cálculos financeiros
+            Gerencie pagamentos, métodos e cálculos financeiros
           </p>
         </div>
 
         <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="payments">
               <Wallet className="h-4 w-4 mr-2" />
               Pagamentos
@@ -66,10 +63,6 @@ export default function AdminPaymentHub() {
             <TabsTrigger value="methods">
               <CreditCard className="h-4 w-4 mr-2" />
               Métodos
-            </TabsTrigger>
-            <TabsTrigger value="keys">
-              <Key className="h-4 w-4 mr-2" />
-              Chaves
             </TabsTrigger>
             <TabsTrigger value="calculator">
               <Calculator className="h-4 w-4 mr-2" />
@@ -83,10 +76,6 @@ export default function AdminPaymentHub() {
 
           <TabsContent value="methods" className="space-y-4">
             <AdminPaymentMethods />
-          </TabsContent>
-
-          <TabsContent value="keys" className="space-y-4">
-            <AdminPaymentKeys />
           </TabsContent>
 
           <TabsContent value="calculator" className="space-y-4">
