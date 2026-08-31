@@ -1,12 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { assertCurrentUserId } from "@/services/auth/current-user";
-
-type CheckoutRow = Record<string, unknown> & { id: string };
-
-type SubscriptionCheckoutResult = {
-  subscription: CheckoutRow;
-  payment: CheckoutRow;
-};
 
 export type SubscribePlan = {
   id: string;
@@ -34,8 +26,6 @@ export type SubscribeCollectionOption = {
     status: string | null;
   }>;
 };
-
-export type SubscriptionPaymentMethod = "pix" | "credit_card";
 
 type SubscribeCollectionQueryRow = Omit<SubscribeCollectionOption, "image_url" | "collection_characters"> & {
   image_url?: string | null;
@@ -130,28 +120,4 @@ export async function getSubscribeCollectionBySlug(
 
   if (error) throw error;
   return data ? toSubscribeCollectionOption(data as unknown as SubscribeCollectionQueryRow) : null;
-}
-
-/**
- * Subscription checkout is intentionally fail-closed until the canonical
- * database contract is reconciled and proved in the active Supabase project.
- *
- * Current migration history still allows direct subscription INSERT for the
- * authenticated role and the checkout RPC stores the plan amount in
- * `subscriptions.total_paid` before an administrator/payment provider approves
- * the payment. Re-enabling this mutation before those invariants are fixed can
- * expose inconsistent financial state.
- */
-export async function createSubscriptionCheckout(params: {
-  userId: string;
-  selectedPlan: SubscribePlan;
-  activeCollectionId: string;
-  paymentMethod: SubscriptionPaymentMethod;
-  paymentVoucherUrl: string | null;
-}): Promise<SubscriptionCheckoutResult> {
-  await assertCurrentUserId(params.userId);
-
-  throw new Error(
-    "Assinaturas estão temporariamente indisponíveis enquanto o fluxo de pagamento é validado",
-  );
 }
