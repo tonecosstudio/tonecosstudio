@@ -38,16 +38,41 @@ interface Cycle {
   used_capacity: number | null;
 }
 
+async function getConfiguredCycleCapacity(supabase: any): Promise<number> {
+  const { data, error } = await supabase
+    .from("system_settings")
+    .select("value")
+    .eq("key", "monthly_production_limit")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load production limit: ${error.message}`);
+  }
+
+  const capacity = Number(data?.value);
+  if (!Number.isInteger(capacity) || capacity < 1 || capacity > 100000) {
+    throw new Error("PRODUCTION_LIMIT_NOT_CONFIGURED");
+  }
+
+  return capacity;
+}
+
 /**
- * Creates a new cycle for an upcoming period if it doesn't exist
+ * Creates a new cycle for an upcoming period if it doesn't exist.
+ * Capacity must come from the canonical production setting; this function never
+ * manufactures a numeric fallback.
  */
 async function createCycleIfNeeded(
   supabase: any,
   cycleNumber: 1 | 2,
   month: number,
   year: number,
+  capacity: number,
 ): Promise<boolean> {
-  // Check if cycle already exists
+  if (!Number.isInteger(capacity) || capacity < 1 || capacity > 100000) {
+    throw new Error("INVALID_CYCLE_CAPACITY");
+  }
+
   const { data: existingCycle, error: checkError } = await supabase
     .from("cycles")
     .select("id")
@@ -67,7 +92,6 @@ async function createCycleIfNeeded(
     return false;
   }
 
-  // Calculate cycle dates
   let openStart: Date;
   let openEnd: Date;
   let productionStart: Date;
@@ -75,11 +99,10 @@ async function createCycleIfNeeded(
   let shippingDate: Date;
 
   if (cycleNumber === 1) {
-    // Cycle 1: days 1-15
     openStart = new Date(year, month - 1, 1, 0, 0, 0);
     openEnd = new Date(year, month - 1, 15, 23, 59, 59);
     productionStart = new Date(year, month - 1, 16, 0, 0, 0);
-    productionEnd = new Date(year, month - 1, 28, 23, 59, 59); // Approximate end of month
+    productionEnd = new Date(year, month - 1, 28, 23, 59, 59);
 
     const nextMonth = month === 12 ? 1 : month + 1;
     const nextYear = month === 12 ? year + 1 : year;
@@ -95,14 +118,11 @@ async function createCycleIfNeeded(
       holidayDates,
     );
   } else {
-    // Cycle 2: days 16-end of month
     openStart = new Date(year, month - 1, 16, 0, 0, 0);
 
-    // Get last day of month
     const lastDay = new Date(year, month, 0).getDate();
     openEnd = new Date(year, month - 1, lastDay, 23, 59, 59);
 
-    // Production starts on 1st of next month
     const nextMonth = month === 12 ? 1 : month + 1;
     const nextYear = month === 12 ? year + 1 : year;
     productionStart = new Date(nextYear, nextMonth - 1, 1, 0, 0, 0);
@@ -123,7 +143,6 @@ async function createCycleIfNeeded(
     );
   }
 
-  // Create the cycle
   const { data: newCycle, error: createError } = await supabase
     .from("cycles")
     .insert({
@@ -139,15 +158,15 @@ async function createCycleIfNeeded(
       sales_end_date: openEnd.toISOString().split("T")[0],
       production_start_date: productionStart.toISOString().split("T")[0],
       production_end_date: productionEnd.toISOString().split("T")[0],
-      shipping_date: shippingDate.toISOString().split("T")[0], // Date only
+      shipping_date: shippingDate.toISOString().split("T")[0],
       shipping_start_date: shippingDate.toISOString().split("T")[0],
       shipping_end_date: shippingDate.toISOString().split("T")[0],
       status: "open",
-      capacity: 100,
+      capacity,
       used_capacity: 0,
-      capacity_max: 100,
+      capacity_max: capacity,
       capacity_current: 0,
-      capacity_limit: 100,
+      capacity_limit: capacity,
       reserved_capacity: 0,
     })
     .select()
@@ -158,7 +177,7 @@ async function createCycleIfNeeded(
   }
 
   console.log(
-    `Created cycle ${cycleNumber} for ${month}/${year} (ID: ${newCycle.id})`,
+    `Created cycle ${cycleNumber} for ${month}/${year} (ID: ${newCycle.id}) with capacity ${capacity}`,
   );
   return true;
 }
@@ -175,18 +194,14 @@ Deno.serve(async (req) => {
     );
     if (forbidden) return forbidden;
 
-    // Start logging
     logId = await logCronStart("cron-transition-cycles");
 
     const supabase = getServiceClient();
-
-    // Get current Bahia time
     const bahiaTime = nowInBahia();
     const currentDate = bahiaTime.toISOString();
 
     console.log(`Cron job running at ${currentDate} (Bahia time)`);
 
-    // Find cycles with status 'open' where open_end <= today
     const { data: cyclesToTransition, error: cyclesError } = await supabase
       .from("cycles")
       .select("*")
@@ -210,7 +225,6 @@ Deno.serve(async (req) => {
     }> = [];
     const errors: Array<{ cycleId: string; error: string }> = [];
 
-    // Process each cycle that needs transition
     if (cyclesToTransition && cyclesToTransition.length > 0) {
       console.log(`Found ${cyclesToTransition.length} cycle(s) to transition`);
 
@@ -220,7 +234,6 @@ Deno.serve(async (req) => {
             `Transitioning cycle ${cycle.cycle_number} for ${cycle.month}/${cycle.year} (ID: ${cycle.id})`,
           );
 
-          // Transition to 'production' status
           const { error: updateError } = await supabase
             .from("cycles")
             .update({
@@ -253,13 +266,13 @@ Deno.serve(async (req) => {
             cycleId: cycle.id,
             error: errorMessage,
           });
-          // Continue processing other cycles
         }
       }
     }
 
-    // Create new cycles for upcoming periods if needed
-    const currentMonth = bahiaTime.getMonth() + 1; // JavaScript months are 0-indexed
+    const configuredCapacity = await getConfiguredCycleCapacity(supabase);
+
+    const currentMonth = bahiaTime.getMonth() + 1;
     const currentYear = bahiaTime.getFullYear();
     const currentDay = bahiaTime.getDate();
 
@@ -270,105 +283,94 @@ Deno.serve(async (req) => {
       year: number;
     }> = [];
 
-    try {
-      // If we're in the first half of the month, ensure Cycle 2 exists for current month
-      if (currentDay <= 15) {
-        const created = await createCycleIfNeeded(
-          supabase,
-          2,
-          currentMonth,
-          currentYear,
-        );
-        if (created) {
-          cyclesCreated++;
-          createdCycles.push({
-            cycleNumber: 2,
-            month: currentMonth,
-            year: currentYear,
-          });
-        }
-      }
-
-      // Always ensure Cycle 1 exists for next month
-      const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-      const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
-
-      const created1 = await createCycleIfNeeded(
-        supabase,
-        1,
-        nextMonth,
-        nextYear,
-      );
-      if (created1) {
-        cyclesCreated++;
-        createdCycles.push({
-          cycleNumber: 1,
-          month: nextMonth,
-          year: nextYear,
-        });
-      }
-
-      // Ensure Cycle 2 exists for next month
-      const created2 = await createCycleIfNeeded(
+    if (currentDay <= 15) {
+      const created = await createCycleIfNeeded(
         supabase,
         2,
-        nextMonth,
-        nextYear,
+        currentMonth,
+        currentYear,
+        configuredCapacity,
       );
-      if (created2) {
+      if (created) {
         cyclesCreated++;
         createdCycles.push({
           cycleNumber: 2,
-          month: nextMonth,
-          year: nextYear,
+          month: currentMonth,
+          year: currentYear,
         });
       }
+    }
 
-      // Also create cycles for the month after next
-      const secondNextMonth = nextMonth === 12 ? 1 : nextMonth + 1;
-      const secondNextYear = nextMonth === 12 ? nextYear + 1 : nextYear;
+    const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+    const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
 
-      const created3 = await createCycleIfNeeded(
-        supabase,
-        1,
-        secondNextMonth,
-        secondNextYear,
-      );
-      if (created3) {
-        cyclesCreated++;
-        createdCycles.push({
-          cycleNumber: 1,
-          month: secondNextMonth,
-          year: secondNextYear,
-        });
-      }
-
-      const created4 = await createCycleIfNeeded(
-        supabase,
-        2,
-        secondNextMonth,
-        secondNextYear,
-      );
-      if (created4) {
-        cyclesCreated++;
-        createdCycles.push({
-          cycleNumber: 2,
-          month: secondNextMonth,
-          year: secondNextYear,
-        });
-      }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error("Error creating new cycles:", error);
-
-      errors.push({
-        cycleId: "cycle-creation",
-        error: errorMessage,
+    const created1 = await createCycleIfNeeded(
+      supabase,
+      1,
+      nextMonth,
+      nextYear,
+      configuredCapacity,
+    );
+    if (created1) {
+      cyclesCreated++;
+      createdCycles.push({
+        cycleNumber: 1,
+        month: nextMonth,
+        year: nextYear,
       });
     }
 
-    // Log success with details
+    const created2 = await createCycleIfNeeded(
+      supabase,
+      2,
+      nextMonth,
+      nextYear,
+      configuredCapacity,
+    );
+    if (created2) {
+      cyclesCreated++;
+      createdCycles.push({
+        cycleNumber: 2,
+        month: nextMonth,
+        year: nextYear,
+      });
+    }
+
+    const secondNextMonth = nextMonth === 12 ? 1 : nextMonth + 1;
+    const secondNextYear = nextMonth === 12 ? nextYear + 1 : nextYear;
+
+    const created3 = await createCycleIfNeeded(
+      supabase,
+      1,
+      secondNextMonth,
+      secondNextYear,
+      configuredCapacity,
+    );
+    if (created3) {
+      cyclesCreated++;
+      createdCycles.push({
+        cycleNumber: 1,
+        month: secondNextMonth,
+        year: secondNextYear,
+      });
+    }
+
+    const created4 = await createCycleIfNeeded(
+      supabase,
+      2,
+      secondNextMonth,
+      secondNextYear,
+      configuredCapacity,
+    );
+    if (created4) {
+      cyclesCreated++;
+      createdCycles.push({
+        cycleNumber: 2,
+        month: secondNextMonth,
+        year: secondNextYear,
+      });
+    }
+
     await logCronSuccess(logId, {
       cyclesTransitioned,
       transitionedCycles,
@@ -376,18 +378,19 @@ Deno.serve(async (req) => {
       createdCycles,
       errors: errors.length > 0 ? errors : undefined,
       currentDate,
+      configuredCapacity,
     });
 
     console.log(
       `Cron job completed: ${cyclesTransitioned} cycle(s) transitioned, ${cyclesCreated} cycle(s) created`,
     );
     if (errors.length > 0) {
-      console.warn(`${errors.length} error(s) occurred during processing`);
+      console.warn(`${errors.length} transition error(s) occurred during processing`);
     }
 
     return new Response(
       JSON.stringify({
-        success: true,
+        success: errors.length === 0,
         cyclesTransitioned,
         transitionedCycles,
         cyclesCreated,
@@ -395,12 +398,14 @@ Deno.serve(async (req) => {
         errors: errors.length > 0 ? errors : undefined,
         currentDate,
       }),
-      { headers: { "Content-Type": "application/json" } },
+      {
+        status: errors.length === 0 ? 200 : 500,
+        headers: { "Content-Type": "application/json" },
+      },
     );
   } catch (error) {
     console.error("Cron job failed:", error);
 
-    // Log error if we have a log ID
     if (logId) {
       try {
         await logCronError(
