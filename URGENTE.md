@@ -116,8 +116,8 @@ Saída: raiz limpa e documentação navegável com um único status vigente.
 Estado: **PENDENTE**
 
 - [ ] escolher npm como package manager canônico e remover lockfiles concorrentes após CI;
-- [ ] corrigir nome e versão do pacote;
-- [ ] executar npm ci com Node 22;
+- [x] corrigir identidade do pacote para ordax-web@0.1.0;
+- [ ] executar npm ci com Node 24;
 - [ ] aprovar format, typecheck, lint, auditoria Supabase, cobertura e build;
 - [ ] corrigir vulnerabilidades high/critical sem upgrades cegos;
 - [ ] revisar dependências de browser e servidor misturadas no mesmo pacote;
@@ -391,3 +391,38 @@ Do not repeat:
 - não tentar mesclar feature/contextual-pricing-system: ela possui zero commits exclusivos;
 - não alterar Node para 22 enquanto Vercel e o runtime canônico estiverem em Node 24;
 - não confundir referências antigas com branches ativas de desenvolvimento.
+
+
+### Checkpoint 4 — 2026-08-30
+
+HEAD anterior da main: dfd7c5f739b09da130686fe562e8eed0239efc00
+
+Concluído:
+
+- package.json deixou de usar a identidade do template vite_react_shadcn_ts@0.0.0;
+- identidade canônica definida como ordax-web@0.1.0;
+- package-lock.json atualizado no mesmo commit;
+- engines.node fixado em 24.x no manifesto e no lockfile.
+
+Testes/provas:
+
+- package.json e package-lock.json foram parseados como JSON antes da escrita;
+- nome, versão e engine foram atualizados tanto no manifesto quanto na entrada raiz do lockfile;
+- nenhuma dependência ou resolução do lockfile foi alterada.
+
+Bloqueios:
+
+- npm ci e o restante do Quality Gate ainda dependem da alocação do runner do GitHub Actions.
+
+Next action:
+
+- observar a execução do Quality Gate no novo HEAD;
+- se o runner continuar sem steps, avançar com auditorias estáticas que não dependam de instalação;
+- consolidar npm como package manager único somente depois de npm ci real.
+
+Do not repeat:
+
+- não restaurar o nome vite_react_shadcn_ts;
+- não publicar versão 1.0.0 antes dos critérios de GO;
+- não remover package-lock.json;
+- não remover lockfiles concorrentes antes da prova de npm ci.
