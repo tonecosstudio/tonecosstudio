@@ -7,6 +7,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Calculator,
   Star,
@@ -17,8 +18,13 @@ import {
   AlertTriangle,
   Lightbulb,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
-import { usePurchasingPower, useValidatePlan } from "@/hooks/useCharacterPricesReference";
+import {
+  useCharacterPricesReference,
+  usePurchasingPower,
+  useValidatePlan,
+} from "@/hooks/useCharacterPricesReference";
 import { Separator } from "@/components/ui/separator";
 
 interface PurchasingPowerCalculatorProps {
@@ -30,10 +36,11 @@ export function PurchasingPowerCalculator({
   totalCoins,
   planName = "Este plano",
 }: PurchasingPowerCalculatorProps) {
+  const pricesQuery = useCharacterPricesReference();
   const purchasingPower = usePurchasingPower(totalCoins);
   const validation = useValidatePlan(totalCoins);
 
-  if (!purchasingPower) {
+  if (pricesQuery.isPending) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
@@ -43,15 +50,40 @@ export function PurchasingPowerCalculator({
     );
   }
 
+  if (pricesQuery.isError) {
+    return (
+      <Card>
+        <CardContent className="space-y-4 py-8">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Não foi possível validar o poder de compra porque a configuração oficial de preços
+              em coins está indisponível ou incompleta. Nenhuma estimativa foi calculada.
+            </AlertDescription>
+          </Alert>
+          <Button variant="outline" onClick={() => void pricesQuery.refetch()}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tentar novamente
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!purchasingPower || totalCoins <= 0) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          Informe uma quantidade de coins maior que zero para validar este plano.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   const { canBuy, remaining, suggestions } = purchasingPower;
 
-  // Determinar cor do alerta baseado na validação
-  const alertVariant =
-    validation.severity === "error"
-      ? "destructive"
-      : validation.severity === "warning"
-        ? "default"
-        : "default";
+  const alertVariant = validation.severity === "error" ? "destructive" : "default";
 
   const alertIcon =
     validation.severity === "error"
@@ -118,7 +150,6 @@ export function PurchasingPowerCalculator({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Validation Alert */}
         <Alert
           variant={alertVariant}
           className={
@@ -144,7 +175,6 @@ export function PurchasingPowerCalculator({
           </AlertDescription>
         </Alert>
 
-        {/* Purchase Options Grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {purchaseOptions.map((option) => {
             const IconComponent = option.icon;
@@ -186,7 +216,6 @@ export function PurchasingPowerCalculator({
 
         <Separator />
 
-        {/* Suggestions */}
         {suggestions.length > 0 && (
           <div className="p-6 bg-white dark:bg-gray-900 rounded-xl border-2 border-green-200 dark:border-green-800 shadow-md">
             <div className="flex items-start gap-4">
@@ -211,7 +240,6 @@ export function PurchasingPowerCalculator({
           </div>
         )}
 
-        {/* Summary */}
         <div className="p-6 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 rounded-xl border-2 border-primary/20 shadow-md">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
