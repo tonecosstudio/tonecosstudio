@@ -3,297 +3,254 @@
 Status: **EM EXECUÇÃO — NO-GO para lançamento**  
 Atualizado em: **2026-08-31 (America/Bahia)**  
 Branch operacional: **main somente**  
-HEAD funcional antes deste documento: `2818f19e55e7fb7e939279c31fd9ce0826b78edf`
+HEAD funcional antes deste documento: `ba24735ac3e2a1c00bf80a6b109a4e9ac03ece43`
 
-Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX. O histórico detalhado permanece no Git; este documento mantém apenas regras vigentes, estado atual, bloqueios, provas e próxima ordem de execução.
+Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX. O histórico detalhado permanece no Git; aqui ficam somente regras vigentes, estado atual, bloqueios comprovados, provas e próxima ordem de execução.
 
 ## 1. Regras vigentes
 
 1. Trabalhar diretamente na `main`; não criar branch/PR sem nova instrução explícita.
 2. Commits pequenos e reversíveis.
 3. Frontend nunca é fronteira suficiente de autorização ou segurança.
-4. Preço, crédito, disponibilidade, capacidade, pagamento, prazo e permissão devem falhar fechados quando a fonte oficial não puder ser validada.
+4. Preço, crédito, disponibilidade, capacidade, pagamento, prazo e permissão devem vir de fonte server-side canônica e falhar fechados quando não puderem ser validados.
 5. Segredos e `service_role` nunca entram em `VITE_*` ou bundle do navegador.
 6. Um domínio deve ter uma autoridade canônica; remover mocks, executores e caminhos paralelos desnecessários.
-7. Código/migration versionado não equivale a deploy ou prova remota.
-8. Não editar migrations históricas nem tipos gerados para mascarar drift.
-9. Não declarar GO, CI verde, migration aplicada ou segurança remota sem prova reproduzível.
-10. `timestamptz` representa um instante real; Bahia é regra/calendário/apresentação, não um deslocamento artificial antes de `toISOString()`.
-11. Comprovante enviado não equivale a pagamento aprovado; somente contrato server-side canônico pode promover estado financeiro.
-12. Metadata de provedor externo não é autoridade para alterar pedido/assinatura do domínio sem vínculo e valor validados pelo servidor.
+7. Código/migration versionado não equivale a deploy nem a prova remota.
+8. Não editar migrations históricas aplicadas nem tipos gerados para mascarar drift.
+9. Migration nova deve ser criada pelo fluxo oficial da CLI Supabase; não inventar filename.
+10. Não declarar GO, CI verde, migration aplicada ou segurança remota sem prova reproduzível.
+11. Comprovante enviado não equivale a pagamento aprovado.
+12. Metadata de provedor externo não é autoridade para alterar pedido/assinatura do domínio.
+13. Tabelas comerciais não devem aceitar mutação direta do navegador quando já existe RPC/contrato canônico que deriva preço, estado e ownership.
+14. `timestamptz` representa instante real; Bahia é regra/calendário/apresentação, não deslocamento artificial antes de `toISOString()`.
 
 ## 2. Estado atual
 
 | Área | Estado | Observação |
 | --- | --- | --- |
-| Branch | **main somente** | decisão explícita do usuário |
-| HEAD funcional | `2818f19e55e7fb7e939279c31fd9ce0826b78edf` | checkpoint 15 antes deste documento |
-| Proteção da main | **PENDENTE** | `protected=false`, required checks desligados |
-| Quality Gate | **SEM PROVA NO HEAD ATUAL** | GitHub Actions associado = nenhum; Vercel falha por `build-rate-limit` |
+| Branch | **main somente** | decisão explícita vigente |
+| HEAD funcional | `ba24735ac3e2a1c00bf80a6b109a4e9ac03ece43` | antes deste update do SSOT |
+| Proteção da main | **PENDENTE** | branch não protegida; checks obrigatórios desligados |
+| GitHub Actions | **EXECUTA, MAS FALHA ANTES DOS STEPS** | run `33363845874` terminou `failure` em ~3 s; job sem steps/log disponível |
+| Vercel | **FAILURE** | status atual falho; causa deste HEAD ainda não provada |
 | Runtime | **Node 24.x** | manifesto/workflow alinhados |
-| Pacote | **ordax-web@0.1.0** | identidade de template removida |
-| Package manager | **NÃO CONSOLIDADO** | manter locks concorrentes até `npm ci` real |
-| Coleções públicas | **DESATIVADAS** | `PUBLIC_COLLECTIONS_ENABLED = false`; compra/assinatura pública ficam escondidas |
-| Comercial BRL/coins | **FAIL-CLOSED NO CÓDIGO AUDITADO** | sem preço/entrada/crédito fictício nos caminhos corrigidos |
-| Stripe genérico | **REMOVIDO DO SOURCE** | endpoint client-controlled de PaymentIntent e frontend órfão removidos |
-| Stripe webhook | **ISOLADO DO DOMÍNIO** | somente espelha estado em tabelas Stripe; metadata não muda `orders/subscriptions` |
-| Criação de assinatura legada | **REMOVIDA DO SOURCE** | `create-subscription` e `create-subscription-v2` não tinham consumidor e ativavam assinatura sem prova de pagamento |
-| Compra avulsa | **FAIL-CLOSED NO SOURCE** | criação bloqueada enquanto RPC puder marcar `deposit_paid` sem pagamento comprovado |
-| Saldo avulso | **CONTRATO AUDITADO** | owner-only, deadline/status validados, comprovante não aprova pagamento |
-| Produção/capacidade | **FAIL-CLOSED VERSIONADO** | sem abertura/capacidade otimista quando fonte oficial falha |
-| Prazos operacionais | **SSOT VERSIONADO** | sete prazos canônicos em `system_settings` |
-| Escolha de personagem | **SSOT VERSIONADO** | pré-escolha em `production_queue`; escolha real em `character_choices` |
-| Crons críticos | **ENDURECIDOS NO SOURCE** | instantes UTC reais + calendário Bahia explícito |
-| Agendamento de entregas | **SSOT VERSIONADO** | plano/quantidade persistidos + `shipping_business_days` oficial |
-| Métricas de produção | **MEDIDAS/FAIL-CLOSED** | placeholders 0 removidos do caminho ativo |
-| Uploads sensíveis | **SERVER-AUTHORITY VERSIONADA** | comprovantes/suporte privados; scanner server-only |
-| Supabase canônico | **INATIVO** | `pdytjhtjlxvbbeuxgnms` = `Ordax-2026-1`; `get_project` confirmou `INACTIVE` |
-| Drift de Edge Functions | **COMPROVADO** | remoto ainda lista endpoints retirados do Git como ACTIVE; tombstone não pôde ser deployado porque projeto está inativo |
-| Tipos Supabase | **SEM REGENERAÇÃO OFICIAL** | projeto inativo impede prova/geração confiável |
-| Deploy/visual | **SEM PROVA ATUAL** | Vercel bloqueado por limite de build; smoke recente ausente |
-| Lançamento | **NO-GO** | CI, banco remoto, pagamentos E2E, segurança e release engineering sem prova suficiente |
+| Package manager | **NÃO CONSOLIDADO** | só consolidar depois de `npm ci` real e prova do lock escolhido |
+| Coleções públicas | **DESATIVADAS** | reduz exposição dos fluxos comerciais em hardening |
+| Supabase canônico | **INACTIVE** | `pdytjhtjlxvbbeuxgnms` / `Ordax-2026-1` |
+| Drift de Edge Functions | **COMPROVADO** | remoto ainda mantém funções retiradas do Git; não foi possível neutralizar com projeto inativo |
+| Autoridade comercial no Data API | **P1 ABERTO** | grants/policies ainda permitem INSERT direto em tabelas comerciais críticas |
+| Criação manual de pagamento | **REMOVIDA DO FRONTEND** | `createPayment` aposentado; RPC legado no banco ainda aceita `p_amount` |
+| Confirmação de pagamento por orçamento | **REMOVIDA DO FRONTEND** | UI/hook/service mortos removidos; RPC legado continua dívida de banco |
+| Compra avulsa | **FAIL-CLOSED NO SOURCE** | criação pública bloqueada até correção do estado inicial de depósito e do bypass Data API |
+| Assinatura | **RPC CANÔNICO DERIVA PREÇO** | mas INSERT direto de `subscriptions` ainda é mais permissivo que o RPC |
+| Uploads sensíveis | **SERVER-AUTHORITY VERSIONADA** | comprovantes/suporte privados nos caminhos endurecidos |
+| Stripe genérico | **REMOVIDO DO SOURCE** | PaymentIntent client-controlled removido |
+| Stripe webhook | **ISOLADO DO DOMÍNIO** | metadata Stripe não promove `orders/subscriptions` |
+| Produção/capacidade | **FAIL-CLOSED VERSIONADO** | sem capacidade/preço otimista quando fonte oficial falha |
+| E2E | **BLOQUEADO EXPLICITAMENTE** | `npm run test:e2e` retorna `E2E_BLOCKED` até banco canônico ser reconciliado |
+| Lançamento | **NO-GO** | banco, CI, E2E, deploy e release engineering ainda sem prova suficiente |
 
-## 3. Hardening concluído
+## 3. Hardening concluído no source
+
+### Segurança e autoridade comercial
+
+- [x] `create-payment-intent` genérico e frontend Stripe órfão removidos;
+- [x] `stripe-webhook` não altera mais estado do domínio a partir de metadata do provedor;
+- [x] `create-subscription` e `create-subscription-v2` removidos por ativarem assinatura sem prova financeira e não terem consumidor ativo;
+- [x] criação avulsa bloqueada com `PAYMENT_FLOW_UNAVAILABLE` enquanto o RPC legado puder produzir estado incorreto;
+- [x] saldo avulso auditado: ownership/status/deadline validados e comprovante não significa aprovação;
+- [x] upload de comprovante manual auditado: owner-only e primeira evidência muda apenas para `under_review`;
+- [x] suporte auditado contra BOLA/IDOR em conversa, mensagem e anexo;
+- [x] cancelamento de assinatura valida ownership no Edge e novamente no RPC atômico;
+- [x] `createPayment` removido da camada canônica do frontend;
+- [x] `PaymentLinkCard`, `usePaymentConfirmation` e `payment-confirmation-service` removidos por ausência de consumidor e autoridade de valor no cliente;
+- [x] suites antigas que inseriam `active`, `deposit_paid` ou valores comerciais diretamente foram removidas;
+- [x] placeholder E2E que apenas validava arrays/mocks foi removido;
+- [x] `test:e2e` agora falha fechado enquanto a infraestrutura canônica não puder ser validada;
+- [x] `scripts/security/audit-commercial-authority.mjs` criado;
+- [x] Quality Gate executa o auditor comercial antes dos testes de cobertura.
+
+### Produção, capacidade e calendário
+
+- [x] `monthly_production_limit` é autoridade de capacidade mensal;
+- [x] falta de configuração não vira capacidade/venda disponível;
+- [x] ciclos inexistentes não viram disponibilidade fictícia;
+- [x] scheduling deriva plano/quantidade persistidos e exige `shipping_date` real;
+- [x] cron mensal evita colisão de `delivery_number` após pausa;
+- [x] deadlines e calendário usam instantes reais com Bahia explícita;
+- [x] escolha real de personagem usa `character_choices`; pré-escolha usa `production_queue`;
+- [x] seleção de personagem valida vínculo com coleção/entrega.
 
 ### Governança e limpeza
 
-- [x] `AGENTS.md`, `README.md` e `URGENTE.md` consolidados como contrato/SSOT;
-- [x] ruído/legados/documentação enganosa removidos ou arquivados do caminho ativo;
-- [x] catálogo mock/placeholders demonstrativos removidos do runtime auditado;
-- [x] compra fake de coins removida;
-- [x] `schedule-deliveries` removido por ausência de consumidor e autoridade duplicada;
-- [x] `cancel-standalone-for-non-payment` removido do source; cron usa RPC atômico diretamente;
-- [x] `send-group-emails-batch` removido por ausência de consumidor e superfície privilegiada desnecessária;
-- [x] wrapper `src/lib/standalone-purchase-service.ts` removido; página aponta ao serviço canônico;
-- [ ] continuar inventário de flags, rotas, no-ops e integrações opcionais.
+- [x] `AGENTS.md`, `README.md` e este arquivo representam o contrato operacional atual;
+- [x] funções sem consumidor que duplicavam autoridade foram removidas do source;
+- [x] wrappers/reexports desnecessários removidos nos fluxos auditados;
+- [x] documentação de comandos de março removida por conter práticas e comandos defasados;
+- [x] mocks/placeholders comerciais removidos dos caminhos auditados.
 
-### Comercial, assinatura e pagamentos
+## 4. P1 comprovado — mutação comercial direta no Data API
 
-- [x] preços avulsos, PIX, entrada e planos não usam fallbacks comerciais locais nos caminhos corrigidos;
-- [x] editores administrativos não inicializam/salvam valores exemplo como configuração real;
-- [x] equivalência fictícia coins↔reais removida;
-- [x] pagamento administrativo de assinatura exige créditos persistidos;
-- [x] `coins_included` e `total_credits` sincronizados em novas escritas; divergência rejeitada;
-- [x] comprovantes/anexos sensíveis usam autoridade server-side/buckets privados nos caminhos endurecidos;
-- [x] cron de saldo usa `deposit_amount`/`balance_amount` persistidos e RPC atômico;
-- [x] UI não fabrica depósito fixo quando não possui valor oficial;
-- [x] `create-payment-intent` genérico removido: cliente não pode escolher `amount`/metadata e obter PaymentIntent por esse caminho;
-- [x] serviço/hook/componente/browser Stripe órfãos desse fluxo foram removidos;
-- [x] `stripe-webhook` não promove mais `orders`/`subscriptions` a partir de metadata Stripe;
-- [x] `create-subscription` e `create-subscription-v2` removidos do source por ativarem assinatura sem verificação de pagamento e não possuírem consumidor ativo;
-- [x] `create-standalone-purchase` bloqueia criação com `PAYMENT_FLOW_UNAVAILABLE` enquanto o RPC legado ainda puder iniciar `deposit_paid` sem prova;
-- [x] `submit_standalone_balance_voucher` auditado: ownership, status e deadline são validados e o comprovante não altera status para pago;
-- [ ] criar/aplicar migration corretiva para compra avulsa quando o Supabase estiver operacional: estado inicial não pago + aprovação de depósito canônica;
-- [ ] retirar/invalidar `create_subscription_atomic` legado no banco, após prova de ausência de consumidor e com migration gerada oficialmente;
-- [ ] testar assinatura/pagamento/compra avulsa ponta a ponta em ambiente operacional.
+A migration `20260429000001_harden_public_grants.sql` concede `SELECT, INSERT, UPDATE, DELETE` a `authenticated` para diversas tabelas, incluindo `subscriptions`, `standalone_purchases`, `manual_payments` e `quotes`, deixando o RLS como fronteira principal.
 
-### Produção, capacidade, ciclos e entregas
+No estado efetivo versionado:
 
-- [x] `monthly_production_limit` é autoridade de capacidade mensal;
-- [x] ausência de configuração não vira capacidade 100 nem vendas abertas;
-- [x] ciclo futuro inexistente não equivale a capacidade disponível;
-- [x] `admin_get_or_create_delivery_cycle` exige capacidade explícita ou setting oficial;
-- [x] `cron-transition-cycles` usa instante UTC real, Bahia explícita e `shipping_business_days` oficial;
-- [x] `admin_schedule_subscription_deliveries` deriva plano/quantidade da assinatura/plano persistidos;
-- [x] `shipping_date` precisa existir; não é fabricada;
-- [x] cron mensal usa menor `delivery_number` ausente, evitando colisão após pausa;
-- [x] `pause-subscription` delega cutoff/estado/capacidade ao RPC atômico;
-- [ ] reconciliar funções SQL históricas de calendário/timezone quando o banco puder ser validado;
-- [ ] revisar bônus Semestral como política de produto antes da RC.
+- `quotes_insert_own` permite a um autenticado inserir seu próprio `quote`; a linha contém valores e estados comerciais;
+- `standalone_purchases_insert_own` permite INSERT próprio sem obrigar preço/capacidade/status a passarem pelo RPC atômico;
+- `subscriptions_insert_own_pending_checkout` limita estado a `pending_payment`, mas ainda permite campos como `total_paid` e `deliveries_total` vindos do INSERT, enquanto o RPC canônico deriva esses valores do plano;
+- `admin_verify_subscription_payment_voucher` promove a linha existente para `active/paid` e não recalcula esses campos comerciais antes da ativação;
+- `create_manual_payment_for_current_user` continua executável por `authenticated` no histórico versionado e aceita `p_amount`;
+- `notify_quote_payment_for_current_user` também aceita valor informado pelo cliente e não possui consumidor frontend atual.
 
-### Escolha de personagem
+**Conclusão:** reativar o Supabase antes de reconciliar grants/policies/RPCs comerciais é **NO-GO**.
 
-- [x] BOLA de mudança de coleção revisada com `auth.uid()`/ownership server-side;
-- [x] troca de personagem exige vínculo com a coleção da entrega;
-- [x] tradução `collection_characters.id` → `characters.id` corrigida;
-- [x] `production_queue` é a autoridade pré-escolha;
-- [x] `character_choice_days` oficial gera deadline persistido ao entrar em `awaiting_choice`;
-- [x] lembretes/expiração usam solicitação pendente real;
-- [x] trigger/invariante impede escolha `submitted` sem solicitação aberta compatível;
-- [x] erro de leitura não é mascarado como ausência de registro.
+### Remediação obrigatória quando o Supabase puder ser operado
 
-### Edge Functions, tempo e notificações
+A migration corretiva oficial deverá, após `db pull`/reconciliação real:
 
-- [x] `cron-check-balance-deadlines` usa instante real e RPC atômico;
-- [x] `cron-reveal-characters` usa instante real e evita dupla revelação concorrente;
-- [x] `cron-update-tracking` valida persistência e timestamp real;
-- [x] `send-alert-digest` não depende do RPC fantasma `get_production_metrics`; deriva métricas persistidas e aceita cron/admin autenticado;
-- [x] `send-email` separa service-to-service de chamada humana admin;
-- [x] `email-delivery-webhook` não adivinha registro pelo último e-mail do destinatário;
-- [x] conteúdo de e-mail/chat auditado usa escape/sanitização nos caminhos corrigidos;
-- [x] Stripe webhook valida assinatura do provedor e persiste somente estado Stripe;
-- [ ] terminar inventário de `verify_jwt=false` e `SECURITY DEFINER` com prova remota quando o projeto estiver ativo.
+1. revogar INSERT direto de `authenticated` nas tabelas comerciais que já possuem RPC canônico;
+2. remover as policies de INSERT direto correspondentes;
+3. manter somente SELECT necessário ao cliente;
+4. preservar mutações administrativas apenas por RPCs auditáveis quando houver efeitos colaterais de domínio;
+5. retirar ou reescrever RPCs legados que aceitam valor do cliente;
+6. corrigir compra avulsa para estado inicial não pago (`awaiting_deposit` ou equivalente) sem `deposit_paid_at` até aprovação real;
+7. provar que checkout de assinatura deriva preço, entregas, créditos e estado do plano persistido;
+8. regenerar tipos e rodar advisors `security` e `performance`.
 
-## 4. Bloqueios comprovados
+O auditor `scripts/security/audit-commercial-authority.mjs` deve permanecer vermelho até essa correção existir no histórico efetivo de migrations.
 
-### GitHub Actions / Vercel
+## 5. Infraestrutura bloqueada
 
-No HEAD `2818f19e55e7fb7e939279c31fd9ce0826b78edf`:
+### GitHub Actions
 
-- `fetch_commit_workflow_runs` retornou `[]`;
-- combined status contém somente `Vercel = failure`;
-- URL do status contém `upgradeToPro=build-rate-limit`.
+Prova atual:
 
-Conclusão: **não existe prova de typecheck/lint/test/build no HEAD atual**. Não interpretar a falha Vercel como erro de source nem marcar CI verde.
+- run `33363845874` (`Quality Gate`, HEAD `ba24735...`) = `completed/failure`;
+- o job retornado não possui steps;
+- tentativa de ler log do job equivalente anterior resultou em blob inexistente;
+- portanto a falha ocorre antes da execução demonstrável de `npm ci`, format, typecheck, lint, auditorias, testes ou build.
+
+Não atribuir essa falha ao código até existir step/log que prove isso.
+
+### Vercel
+
+- combined status do HEAD atual contém `Vercel = failure`;
+- a causa do status deste HEAD ainda não foi inspecionada/provada;
+- não declarar build quebrado nem deploy válido apenas por esse status.
 
 ### Supabase
 
-Projeto canônico: `pdytjhtjlxvbbeuxgnms` (`Ordax-2026-1`). Estado confirmado: **INACTIVE**.
+Projeto canônico `pdytjhtjlxvbbeuxgnms` (`Ordax-2026-1`) está **INACTIVE**.
 
-Consequências observadas nesta rodada:
+Enquanto permanecer inativo:
 
-- `execute_sql` não conseguiu fornecer prova do banco operacional;
-- tentativa de deploy de tombstone para `create-payment-intent` falhou porque o serviço do projeto não está disponível enquanto `INACTIVE`;
-- `list_edge_functions` ainda lista versões ACTIVE de funções retiradas do Git, incluindo `create-payment-intent`, `schedule-deliveries`, `cancel-standalone-for-non-payment`, `send-group-emails-batch`, `create-subscription` e `create-subscription-v2`;
-- source removido **não significa endpoint remoto removido**;
-- não restaurar projeto automaticamente sem decisão operacional explícita;
-- quando restaurado, primeira ação é medir drift e neutralizar/deletar endpoints retirados antes de qualquer tráfego de produção;
-- migrations corretivas devem ser geradas pelo fluxo oficial (`supabase migration new`/`db pull`) e depois verificadas; não inventar filename nem editar migration histórica aplicada;
-- regenerar tipos oficialmente e executar advisors `security`/`performance` depois da reconciliação.
+- não aplicar migration;
+- não declarar schema remoto reconciliado;
+- não regenerar tipos como se fossem prova oficial;
+- não reativar automaticamente;
+- não assumir que remover source removeu função remota já publicada.
 
-### Deploy/visual
+Quando houver decisão explícita para restaurar, a ordem é: **neutralizar drift remoto → medir migration/schema drift → criar migrations oficiais → aplicar/verificar → advisors/tipos → E2E**.
 
-- mudanças recentes não possuem build/smoke público comprovado;
-- Vercel está bloqueado por limite de build;
-- coleções públicas permanecem desativadas, reduzindo exposição dos fluxos comerciais ainda em correção;
-- não aprovar UI por inspeção estática.
+## 6. Próxima ordem de execução
 
-## 5. Próxima ordem de execução
+### P0 — recuperar prova de engenharia
 
-### P0 — Prova de engenharia
+- [ ] identificar por que GitHub Actions encerra antes dos steps;
+- [ ] obter execução real de `npm ci` em Node 24;
+- [ ] format/typecheck/lint;
+- [ ] `security:supabase-access` + `audit-commercial-authority`;
+- [ ] testes/coverage;
+- [ ] build;
+- [ ] `npm audit --omit=dev --audit-level=high`;
+- [ ] só então configurar proteção obrigatória da `main`.
 
-- [ ] restaurar execução real do GitHub Actions/Vercel;
-- [ ] `npm ci` em Node 24;
-- [ ] format/typecheck/lint/test/coverage/build;
-- [ ] `npm audit` e correção controlada de high/critical;
-- [ ] proteger `main` somente quando Quality Gate executar de verdade.
+### P1 — Supabase/comercial
 
-### P1 — Supabase/pagamentos
-
-- [ ] decidir operacionalmente quando restaurar `Ordax-2026-1`;
-- [ ] ao restaurar, neutralizar endpoints remotos retirados antes de tráfego;
-- [ ] medir migration/schema drift;
-- [ ] criar migration correta para compra avulsa: `awaiting_deposit`/equivalente pendente, sem `deposit_paid_at` até aprovação real;
-- [ ] retirar RPC `create_subscription_atomic` legado se a prova remota confirmar ausência de consumidor;
-- [ ] provar RLS/grants/Storage/Edge Functions/advisors;
+- [ ] decidir quando restaurar `Ordax-2026-1`;
+- [ ] neutralizar Edge Functions remotas retiradas do Git antes de tráfego;
+- [ ] medir drift de schema/migrations;
+- [ ] gerar migration oficial para revogar DML comercial direto;
+- [ ] corrigir contrato de depósito avulso;
+- [ ] retirar/reformular RPCs que aceitam `amount` do cliente;
+- [ ] provar RLS/grants/Storage/functions/advisors;
 - [ ] regenerar tipos;
-- [ ] testar pagamentos E2E e idempotência.
+- [ ] substituir o gate E2E por suíte real contra ambiente seguro.
 
-### P2 — Segurança e domínio
+### P2 — segurança e domínio
 
-- [ ] continuar auditoria BOLA/IDOR em suporte, pedidos e RPCs cliente;
-- [ ] concluir inventário `SECURITY DEFINER`/`verify_jwt=false`;
+- [ ] concluir inventário de `SECURITY DEFINER` e `verify_jwt=false`;
+- [ ] auditar demais tabelas com DML concedido a `authenticated` e separar self-service legítimo de autoridade administrativa;
 - [ ] provar ausência de `service_role` no bundle;
-- [ ] testar scanner server-side real e fail-closed;
-- [ ] reconciliar helpers SQL históricos de timezone com Bahia.
+- [ ] testar scanner server-side real/fail-closed;
+- [ ] reconciliar helpers SQL históricos de timezone.
 
-### P3 — Funcionalidade/UI
+### P3 — produto e release
 
 - [ ] smoke público e catálogo real;
-- [ ] auth completo;
-- [ ] cliente: perfil/wishlist/dashboard/notificações/suporte;
+- [ ] auth, perfil, wishlist, dashboard, notificações e suporte;
 - [ ] admin/RBAC;
-- [ ] desktop/tablet/mobile + loading/vazio/erro/retry;
-- [ ] acessibilidade e Lighthouse/Core Web Vitals medidos.
-
-### P4 — Release engineering
-
-- [ ] SemVer e política de release;
+- [ ] estados loading/vazio/erro/retry em desktop/tablet/mobile;
+- [ ] acessibilidade/Lighthouse/Core Web Vitals medidos;
 - [ ] staging/preview separado de produção;
-- [ ] artefato imutável promovido entre ambientes;
-- [ ] secrets checklist;
-- [ ] monitoramento/logs/alertas reais;
+- [ ] artefato imutável, secrets checklist, monitoramento e alertas;
 - [ ] backup/restore/rollback ensaiados;
-- [ ] RC e release notes.
+- [ ] RC + release notes.
 
-## 6. Critérios de GO
+## 7. Critérios mínimos de GO
 
-Todos devem estar verdadeiros:
+Nenhum GO enquanto qualquer item abaixo estiver ausente:
 
-- [ ] Quality Gate verde no commit exato da RC;
-- [ ] instalação reproduzível;
-- [ ] nenhum secret high-confidence em Git/bundle;
-- [ ] nenhum risco crítico/alto aberto sem mitigação/aceitação formal;
-- [ ] RLS, grants, Storage e funções privilegiadas provados no ambiente ativo;
-- [ ] pagamentos/uploads testados ponta a ponta;
-- [ ] catálogo real e estados de falha honestos;
-- [ ] fluxos público/cliente/admin aprovados;
-- [ ] acessibilidade/desempenho medidos;
-- [ ] dados legais/LGPD validados;
-- [ ] backup/restore/rollback ensaiados;
-- [ ] RC versionada, monitorada e reversível.
+- Quality Gate executado até o fim e verde no HEAD da release;
+- build/deploy reproduzível e smoke comprovado;
+- Supabase ativo, reconciliado e sem drift crítico;
+- auditor comercial verde;
+- nenhuma função remota retirada ainda exposta;
+- pagamentos/assinatura/compra avulsa E2E provados com idempotência;
+- RLS/grants/Storage/advisors revisados no banco real;
+- segredos e RBAC provados;
+- rollback e recuperação ensaiados.
 
-## 7. Checkpoints recentes
-
-### Checkpoint 12 — 2026-08-31
-
-HEAD funcional: `c6436fb570d0a721ef77b6db59a14872a235cd19`  
-Foco: produção/capacidade fail-closed, remoção de capacidade 100, validação de ciclos e testes determinísticos.
-
-### Checkpoint 13 — 2026-08-31
-
-HEAD funcional: `8d538fd6ecf06d24ef12f2c8ea8e4ebeebd58164`  
-Foco: SSOT de agendamento, integridade de escolha cliente e métricas medidas.
-
-### Checkpoint 14 — 2026-08-31
-
-HEAD funcional: `e70dc98d4e8c45beea887817513dc9263c280764`  
-Foco: deadlines/tempo, crons, pausa, envio interno de e-mail, remoção de scheduler legado e hardcodes comerciais encontrados.
-
-### Checkpoint 15 — 2026-08-31
-
-HEAD funcional antes deste documento: `2818f19e55e7fb7e939279c31fd9ce0826b78edf`
+## 8. Checkpoint desta continuação
 
 Concluído:
 
-- endpoint genérico `create-payment-intent` removido porque permitia ao cliente escolher `amount`/metadata e não tinha consumidor de UI;
-- serviço, hook, componente Stripe e browser client órfãos desse fluxo removidos;
-- `stripe-webhook` deixou de usar `orderId`/`subscriptionId` de metadata para promover estado do domínio;
-- `create-subscription` e `create-subscription-v2` removidos: sem consumidor ativo e capazes de criar assinatura `active` sem prova real de pagamento;
-- `send-alert-digest` consolidado sobre dados versionados, sem RPC fantasma;
-- funções privilegiadas mortas adicionais removidas (`cancel-standalone-for-non-payment`, `send-group-emails-batch`);
-- `create_standalone_purchase_atomic` auditado e identificado como P1: calcula preço/coleção/capacidade corretamente, porém inicia `deposit_paid` e `deposit_paid_at = now()` mesmo sem comprovante;
-- por esse motivo `create-standalone-purchase` passou a falhar fechado com `PAYMENT_FLOW_UNAVAILABLE` até migration corretiva aplicada/testada;
-- teste-placeholder que documentava `deposit_paid` como comportamento correto foi removido;
-- `submit_standalone_balance_voucher` auditado e mantido: owner-only, status/deadline validados e sem promoção automática para pago;
-- wrapper de serviço avulso removido; import canônico passou a `src/services/payments/standalone-purchase-reservation-service.ts`;
-- `PUBLIC_COLLECTIONS_ENABLED = false` confirmado, mantendo compra/assinatura públicas escondidas durante o hardening;
-- Supabase remoto confirmado `INACTIVE`; endpoints antigos continuam listados como ACTIVE e não puderam ser tombstonados/deployados nesse estado.
+- RLS de leitura de `manual_payments` auditado: cliente lê apenas a própria linha;
+- `createPayment` retirado do frontend e suítes antigas associadas removidas;
+- confirmação manual de orçamento sem consumidor removida do frontend;
+- bypasses de INSERT direto em `quotes`, `standalone_purchases` e `subscriptions` identificados e classificados como P1;
+- grant DML amplo para `authenticated` confirmado no histórico de migrations;
+- guardrail comercial criado e ligado ao Quality Gate;
+- testes antigos que ensinavam bypass de RPC removidos;
+- E2E passou a falhar explicitamente enquanto infraestrutura estiver insegura/inativa;
+- GitHub Actions voltou a gerar runs, mas termina antes dos steps;
+- documentação de comandos obsoleta removida.
 
-Commits centrais desta continuação:
+Commits principais desta continuação:
 
-- `ce67704d495026304d79f25d8c829a9f4ffe8eec` — remove PaymentIntent genérico;
-- `b70f1f533b4866ed6b8c53e74baac28dc531f469` / `fca648a9b9168969e1ad9c7a12b6f0afac282a72` / `b804ffb3ee96f24fa3113e41b49c7ea2a675c15c` / `125768f30e52593c97aeea0ec12527d6a331df11` — remove frontend Stripe órfão;
-- `d10d879b534e0a7ed49747a33aabf4ad6955c37b` — isola webhook Stripe do estado de domínio;
-- `c375f3780c8faa9b8211420b877fb9f755282f9c` / `65d8b98398e79aabd39cb3a4aa3f6a2049d8499f` — remove criações de assinatura inseguras;
-- `7e237bbb1c7d2a80864e2724bb34c3b01b2df22d` / `ba134b36a5764cfda1846c7416751d71632ac8b7` — remove teste/README do v2 legado;
-- `9f9c9b63277b58a2c16cfaa053166691e87cbd37` — bloqueia criação avulsa até correção do estado de depósito;
-- `54100d5da19a4c3e61b10d9f8c35592b5c302a97` — remove testes-placeholder da criação avulsa;
-- `c57200e2877d841512fd79c59b7ec98b4ea51da5` / `2818f19e55e7fb7e939279c31fd9ce0826b78edf` — canonicaliza serviço/UI avulso.
-
-Provas/limitações:
-
-- GitHub Actions no HEAD `2818f19...`: `[]`;
-- Vercel no mesmo HEAD: `failure` por `build-rate-limit`;
-- Supabase `Ordax-2026-1`: `INACTIVE`;
-- tentativa de deploy remoto de tombstone: bloqueada pelo projeto inativo;
-- portanto **não existe prova de build, deploy, migrations ou E2E destas alterações**.
+- `927d801c2c568fdcbd4efd6c3fe04d97a663b985` — remove suíte E2E manual-payment legada;
+- `434dd56c224561e443a094b1bb305d82cfee7ef2` — aposenta criação manual de pagamento no frontend;
+- `d85187f194f301094d8ceb324e0dc6ecae69f75f` / `8685827eb44d71171832c48fbffd062180a54862` / `5801bb583ca14f81d88add42aad1f64518041389` — remove fluxo morto de confirmação de orçamento;
+- `78a0f752287b7103481bb999f4bff5217c083fab` / `5ac007f667fdfd5f69a60a945e0cc222a80ffb20` — remove testes que bypassavam autoridade e placeholder E2E;
+- `96a05bcd0eff51daa25624d1e26b3d135698f563` — adiciona auditor comercial;
+- `b3abe261fb5167c2eb75dd05fc2029e8d7a01f5f` — adiciona auditor ao Quality Gate;
+- `9b916bbcb5e126d3de143be584f4bab37d762f9d` — remove referência de comandos obsoleta;
+- `ba24735ac3e2a1c00bf80a6b109a4e9ac03ece43` — torna gate E2E explicitamente fail-closed.
 
 Next action:
 
-1. continuar auditoria BOLA/IDOR em suporte/pedidos e RPCs privilegiados sem depender do banco remoto;
-2. manter pagamentos/coleções fail-closed enquanto o projeto estiver inativo;
-3. quando houver decisão explícita de restaurar o Supabase, neutralizar primeiro as funções remotas retiradas e só então reconciliar schema/migrations;
-4. recuperar execução real de Quality Gate/build;
-5. executar E2E/smoke somente depois das provas de banco e build.
+1. continuar a auditoria das demais tabelas em `authenticated_dml_tables`, priorizando campos financeiros, permissões e estado operacional;
+2. remover no source qualquer mutação direta que ainda dependa das policies que serão fechadas;
+3. diagnosticar o encerramento pré-step do Actions com a primeira evidência disponível;
+4. manter Supabase e fluxos comerciais fail-closed até a reconciliação oficial.
 
 Do not repeat:
 
-- não reativar projeto Supabase automaticamente;
-- não usar metadata do provedor como autoridade de domínio;
-- não criar estado `paid/active` a partir de payload/comprovante não verificado;
-- não inventar migration filename nem editar migration histórica aplicada;
-- não manter Edge Function sem consumidor que replique autoridade existente;
-- não transformar erro/NULL em sucesso, preço, prazo, capacidade ou disponibilidade fictícia;
-- não criar branch/PR;
-- não declarar migrations aplicadas, CI verde ou GO sem prova.
+- não reativar Supabase automaticamente;
+- não editar migration histórica aplicada;
+- não inventar migration filename;
+- não reabrir INSERT comercial direto para facilitar frontend;
+- não transformar comprovante em pagamento aprovado;
+- não usar metadata externa como autoridade de domínio;
+- não declarar CI verde, deploy válido, migration aplicada ou GO sem prova;
+- não criar branch/PR.
