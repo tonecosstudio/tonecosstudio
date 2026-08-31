@@ -79,6 +79,12 @@ ALTER TABLE public.support_attachments ENABLE ROW LEVEL SECURITY;
 REVOKE INSERT, UPDATE, DELETE ON public.support_attachments FROM anon, authenticated;
 GRANT SELECT ON public.support_attachments TO authenticated;
 
+-- One Storage object can belong to only one attachment record. Besides preserving
+-- consistency, this prevents a client from creating a second metadata row that
+-- aliases an existing object from another message in the same conversation.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_support_attachments_file_path_unique
+  ON public.support_attachments(file_path);
+
 DROP POLICY IF EXISTS "support_attachments_select_own" ON public.support_attachments;
 DROP POLICY IF EXISTS "support_attachments_select_admin" ON public.support_attachments;
 DROP POLICY IF EXISTS "support_attachments_insert_own" ON public.support_attachments;
@@ -196,6 +202,24 @@ BEGIN
     'thumbnail_path',
     false
   );
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM storage.objects o
+    WHERE o.bucket_id = 'support-attachments'
+      AND o.name = v_file_path
+  ) THEN
+    RAISE EXCEPTION 'Support attachment object does not exist' USING ERRCODE = '22023';
+  END IF;
+
+  IF v_thumbnail_path IS NOT NULL AND NOT EXISTS (
+    SELECT 1
+    FROM storage.objects o
+    WHERE o.bucket_id = 'support-attachments'
+      AND o.name = v_thumbnail_path
+  ) THEN
+    RAISE EXCEPTION 'Support attachment thumbnail does not exist' USING ERRCODE = '22023';
+  END IF;
 
   SELECT count(*)
   INTO v_existing_count
