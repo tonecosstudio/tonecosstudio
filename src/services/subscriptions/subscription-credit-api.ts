@@ -17,7 +17,6 @@ import {
   OrderWithItems,
   CreditsBalanceResponse,
   TransactionsResponse,
-  PlanChangeResponse,
   NoRenewalResponse,
   UserCycleCountResponse,
   PlanType,
@@ -26,7 +25,6 @@ import {
 import {
   createSubscriptionCreditIndividualOrderRpc,
   reactivateSubscriptionCreditRenewalRpc,
-  scheduleSubscriptionCreditPlanChangeRpc,
   setSubscriptionCreditNoRenewalRpc,
   updateSubscriptionCreditAutomaticOrderRpc,
 } from '@/services/subscriptions/subscription-credit-mutations-service';
@@ -77,13 +75,6 @@ class SubscriptionCreditAPI {
     }
 
     return data as unknown as Subscription;
-  }
-
-  async schedulePlanChange(
-    subscriptionId: string,
-    newPlanType: PlanType
-  ): Promise<PlanChangeResponse> {
-    return scheduleSubscriptionCreditPlanChangeRpc(subscriptionId, newPlanType);
   }
 
   async setNoRenewal(subscriptionId: string): Promise<NoRenewalResponse> {
