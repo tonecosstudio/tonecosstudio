@@ -1,6 +1,5 @@
 import { CONTACT, NOTIFICATIONS, UI } from "@/config/constants";
 import { supabase } from "@/integrations/supabase/client";
-import { log } from "@/lib/logger";
 import { upsertAdminSystemSettings } from "@/services/admin/config/admin-config-mutations-service";
 
 export interface SystemSettings {
@@ -75,20 +74,54 @@ const PRESENTATION_DEFAULTS = {
   hero_image_url: undefined,
 } satisfies Partial<SystemSettings>;
 
-type SystemSettingsViewError = { message: string } | null;
-
-interface SystemSettingsViewClient {
-  from(table: "system_settings_grouped"): {
-    select(columns: "settings"): {
-      single(): PromiseLike<{
-        data: { settings: Record<string, unknown> } | null;
-        error: SystemSettingsViewError;
-      }>;
-    };
-  };
-}
-
-const systemSettingsView = supabase as unknown as SystemSettingsViewClient;
+/**
+ * Browser-readable settings are intentionally allowlisted. Payment keys, links,
+ * credentials and any future administrative setting must never be fetched by the
+ * normal public settings loader just because they share the system_settings table.
+ */
+const PUBLIC_SYSTEM_SETTING_KEYS = [
+  "company_name",
+  "company_address",
+  "company_logo_url",
+  "cnpj",
+  "legal_name",
+  "contact_email",
+  "support_email",
+  "privacy_email",
+  "dpo_email",
+  "phone_primary",
+  "phone_whatsapp",
+  "business_hours",
+  "website_url",
+  "facebook_url",
+  "instagram_url",
+  "twitter_url",
+  "youtube_url",
+  "default_price_full",
+  "default_price_pix",
+  "default_deposit_amount",
+  "pix_discount_percentage",
+  "max_installments_no_interest",
+  "max_installments_with_interest",
+  "production_days_min",
+  "production_days_max",
+  "shipping_business_days",
+  "sales_duration_days",
+  "delivery_interval_days",
+  "character_choice_days",
+  "balance_payment_days",
+  "exchange_deadline_days",
+  "days_to_next_delivery",
+  "user_online_threshold_minutes",
+  "notification_polling_interval_ms",
+  "toast_duration_ms",
+  "default_page_size",
+  "search_debounce_ms",
+  "input_debounce_ms",
+  "image_compression_quality",
+  "max_image_size_mb",
+  "hero_image_url",
+] as const satisfies readonly (keyof SystemSettings)[];
 
 const NUMERIC_SETTING_KEYS = [
   "default_price_full",
@@ -263,26 +296,20 @@ export function normalizeSystemSettings(rawSettings: unknown): SystemSettings {
 }
 
 export async function readSystemSettings(): Promise<SystemSettings> {
-  const { data: rpcData, error: rpcError } = await supabase.rpc("get_system_settings");
+  const { data, error } = await supabase
+    .from("system_settings")
+    .select("key,value")
+    .in("key", [...PUBLIC_SYSTEM_SETTING_KEYS]);
 
-  if (!rpcError && rpcData) {
-    return normalizeSystemSettings(rpcData);
+  if (error) {
+    throw new Error(`Configurações oficiais do sistema estão indisponíveis: ${error.message}`);
   }
 
-  const { data, error } = await systemSettingsView
-    .from("system_settings_grouped")
-    .select("settings")
-    .single();
+  const settings = Object.fromEntries(
+    (data ?? []).map(({ key, value }) => [key, value]),
+  );
 
-  if (error || !data) {
-    log.error("Failed to fetch system settings from both canonical sources", {
-      rpcError,
-      viewError: error,
-    });
-    throw new Error("Configurações oficiais do sistema estão indisponíveis.");
-  }
-
-  return normalizeSystemSettings(data);
+  return normalizeSystemSettings(settings);
 }
 
 export async function updateSystemSettingValue(
