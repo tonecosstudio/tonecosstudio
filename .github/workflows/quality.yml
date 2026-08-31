@@ -53,6 +53,9 @@ jobs:
       - name: Audit notification authority
         run: node scripts/security/audit-notification-authority.mjs
 
+      - name: Audit public system settings authority
+        run: node scripts/security/audit-public-settings-authority.mjs
+
       - name: Test with coverage thresholds
         run: npm run test:coverage
 
