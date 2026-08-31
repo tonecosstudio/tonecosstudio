@@ -40,7 +40,6 @@ export const AUTH_ROUTES = {
   groups: "/grupos",
   groupDetails: "/grupos/:groupId",
   subscriberDashboard: "/painel-assinante",
-  coinsPurchase: "/coins/purchase",
 } as const;
 
 const PROFILE_SECTION_SEGMENTS = {
