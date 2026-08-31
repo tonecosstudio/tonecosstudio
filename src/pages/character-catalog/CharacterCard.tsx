@@ -1,21 +1,30 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Star, Coins, DollarSign, TrendingDown, Loader2, Info, Crown, Sparkles, ShoppingCart } from 'lucide-react';
-import type { Character, PlanType } from '@/types/subscription-credit-system';
-import { useCharacterPrice, useCharacterPriceDetails } from '@/hooks/useCharacterPrice';
-import { useAuth } from '@/lib/auth';
-import { useNavigate } from 'react-router-dom';
-import { BalanceIndicator } from '@/components/character-catalog/BalanceIndicator';
-import { InsufficientBalanceMessage } from '@/components/character-catalog/InsufficientBalanceMessage';
-import { ASSETS } from '@/config/constants';
-import { PUBLIC_ROUTES } from '@/config/routes';
+import { Link } from "react-router-dom";
+import {
+  Coins,
+  Crown,
+  DollarSign,
+  Info,
+  Loader2,
+  Sparkles,
+  Star,
+  TrendingDown,
+} from "lucide-react";
+import { BalanceIndicator } from "@/components/character-catalog/BalanceIndicator";
+import { InsufficientBalanceMessage } from "@/components/character-catalog/InsufficientBalanceMessage";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from "@/components/ui/tooltip";
+import { ASSETS } from "@/config/constants";
+import { PUBLIC_ROUTES } from "@/config/routes";
+import { useCharacterPrice, useCharacterPriceDetails } from "@/hooks/useCharacterPrice";
+import { useAuth } from "@/lib/auth";
+import type { Character, PlanType } from "@/types/subscription-credit-system";
 
 interface CharacterCardProps {
   character: Character;
@@ -33,63 +42,44 @@ export function CharacterCard({
   onPurchase,
 }: CharacterCardProps) {
   const { user } = useAuth();
-  const navigate = useNavigate();
-
-  // Get contextual price for the character (includes multiplier - RN008)
   const { data: contextualPrice, isLoading: priceLoading } = useCharacterPrice({
     characterId: character.id,
-    userId: user?.id
+    userId: user?.id,
   });
-
-  // Get price details for breakdown display
   const { data: priceDetails } = useCharacterPriceDetails(character.id, user?.id);
 
-  // Use contextual price if available, fallback to character.price_credits
-  const priceInCoins = contextualPrice || character.price_credits;
-  const hasEnoughCredits = availableCredits >= priceInCoins;
-
-  // Check if price is discounted (contextual price is lower than base price)
-  const hasDiscount = contextualPrice && contextualPrice < character.price_credits;
-  const discountAmount = hasDiscount ? character.price_credits - contextualPrice : 0;
+  const priceInCoins = contextualPrice ?? character.price_credits;
+  const hasValidCoinPrice = Number.isFinite(priceInCoins) && priceInCoins > 0;
+  const hasEnoughCredits = hasValidCoinPrice && availableCredits >= priceInCoins;
+  const hasDiscount =
+    hasValidCoinPrice &&
+    Number.isFinite(character.price_credits) &&
+    character.price_credits > 0 &&
+    priceInCoins < character.price_credits;
+  const discountAmount = hasDiscount ? character.price_credits - priceInCoins : 0;
   const discountPercentage = hasDiscount
     ? Math.round((discountAmount / character.price_credits) * 100)
     : 0;
 
-  // Check if character has price multiplier (RN008)
-  const hasMultiplier = priceDetails?.has_multiplier || false;
-  const multiplier = priceDetails?.price_multiplier || 1.0;
+  const hasMultiplier = priceDetails?.has_multiplier === true;
+  const multiplier = priceDetails?.price_multiplier ?? 1;
 
-  // Get multiplier badge info (RN008)
-  const getMultiplierBadge = () => {
+  const multiplierBadge = (() => {
     if (!hasMultiplier) return null;
-
-    if (multiplier >= 2.0) {
-      return { label: 'Raro', icon: Crown, color: 'bg-purple-500' };
-    } else if (multiplier >= 1.5) {
-      return { label: 'Premium', icon: Sparkles, color: 'bg-amber-500' };
-    } else if (multiplier >= 1.3) {
-      return { label: 'Grande', icon: Star, color: 'bg-blue-500' };
-    } else if (multiplier > 1.0) {
-      return { label: 'Especial', icon: Star, color: 'bg-indigo-500' };
-    }
+    if (multiplier >= 2) return { label: "Raro", icon: Crown, className: "bg-purple-500" };
+    if (multiplier >= 1.5) return { label: "Premium", icon: Sparkles, className: "bg-amber-500" };
+    if (multiplier >= 1.3) return { label: "Grande", icon: Star, className: "bg-blue-500" };
+    if (multiplier > 1) return { label: "Especial", icon: Star, className: "bg-indigo-500" };
     return null;
-  };
-
-  const multiplierBadge = getMultiplierBadge();
-
-  // Calculate savings percentage when using credits
-  const savingsPercentage = character.price_cash > 0
-    ? Math.round(((character.price_cash - (priceInCoins * 0.1)) / character.price_cash) * 100)
-    : 0;
+  })();
 
   return (
-    <Card className={`group flex flex-col overflow-hidden bg-card shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-premium ${
-      hasDiscount
-        ? 'border-2 border-green-500/50'
-        : 'border border-border'
-    }`}>
-      {/* Image */}
-      <div className="relative aspect-[3/4] w-full bg-muted overflow-hidden">
+    <Card
+      className={`group flex flex-col overflow-hidden bg-card shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-premium ${
+        hasDiscount ? "border-2 border-green-500/50" : "border border-border"
+      }`}
+    >
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
         <img
           src={character.image_url || ASSETS.FALLBACK_IMAGE_URL}
           alt={character.name}
@@ -98,211 +88,145 @@ export function CharacterCard({
           decoding="async"
         />
 
-        {/* Exclusive badge */}
         {character.is_exclusive_semestral && (
-          <div className="absolute top-3 left-3 z-10">
-            <Badge className="bg-purple-500 text-white border-0 gap-1 shadow-lg">
+          <div className="absolute left-3 top-3 z-10">
+            <Badge className="gap-1 border-0 bg-purple-500 text-white shadow-lg">
               <Star className="h-3 w-3 fill-current" />
               Exclusivo Semestral
             </Badge>
           </div>
         )}
 
-        {/* Multiplier badge (RN008 - Task 9.4) */}
         {multiplierBadge && (
-          <div className="absolute top-3 left-3 z-10" style={{ marginTop: character.is_exclusive_semestral ? '2.5rem' : '0' }}>
+          <div
+            className="absolute left-3 top-3 z-10"
+            style={{ marginTop: character.is_exclusive_semestral ? "2.5rem" : "0" }}
+          >
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge className={`${multiplierBadge.color} text-white border-0 gap-1 shadow-lg cursor-help`}>
+                  <Badge
+                    className={`${multiplierBadge.className} cursor-help gap-1 border-0 text-white shadow-lg`}
+                  >
                     <multiplierBadge.icon className="h-3 w-3" />
                     {multiplierBadge.label}
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  <p className="font-semibold mb-1">Personagem {multiplierBadge.label}</p>
-                  <p className="text-xs mb-2">
-                    Este personagem tem um multiplicador de preço de {multiplier}x devido a suas características especiais.
+                  <p className="mb-1 font-semibold">Personagem {multiplierBadge.label}</p>
+                  <p className="text-xs">
+                    O preço em coins considera o multiplicador oficial de {multiplier}x deste personagem.
                   </p>
-                  {priceDetails && (
-                    <p className="text-xs text-muted-foreground">
-                      Calculo: {priceDetails.collection_price} ðŸª™ (base) x {multiplier} = {priceDetails.final_price} ðŸª™🪙
-                    </p>
-                  )}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
         )}
 
-        {/* Discount badge for contextual pricing (RN009 - Task 9.10) */}
         {hasDiscount && (
-          <div className="absolute top-3 right-3 z-10">
+          <div className="absolute right-3 top-3 z-10">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge className="bg-green-500 text-white border-0 gap-1 shadow-lg cursor-help">
+                  <Badge className="cursor-help gap-1 border-0 bg-green-500 text-white shadow-lg">
                     <TrendingDown className="h-3 w-3" />
                     {discountPercentage}% OFF
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  <p className="font-semibold mb-1">Preço com desconto!</p>
-                  <p className="text-xs mb-2">
-                    Voce esta recebendo um desconto especial neste contexto.
-                  </p>
-                  {priceDetails && (
-                    <div className="text-xs space-y-1 mb-2">
-                      <p className="font-semibold">Breakdown do cálculo:</p>
-                      <p>• Preco base: {priceDetails.collection_price} ðŸª™🪙</p>
-                      {hasMultiplier && (
-                        <p>• Multiplicador do personagem: {multiplier}x</p>
-                      )}
-                      <p>• Preço original: {character.price_credits} 🪙</p>
-                      <p className="text-green-400 font-semibold">• Seu preço: {priceInCoins} 🪙</p>
-                    </div>
-                  )}
-                  <p className="text-xs text-green-400">
-                    Economize {discountAmount} 🪙 neste personagem!
+                  <p className="mb-1 font-semibold">Desconto em coins</p>
+                  <p className="text-xs">
+                    Preço base: {character.price_credits} coins. Preço contextual: {priceInCoins} coins.
                   </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
         )}
-
-        {/* Savings badge for subscribers (only if no discount badge) */}
-        {isSubscriber && savingsPercentage > 0 && !hasDiscount && (
-          <div className="absolute top-3 right-3 z-10">
-            <Badge variant="outline" className="bg-blue-500/90 text-white border-0 gap-1 shadow-lg">
-              <Coins className="h-3 w-3" />
-              Use créditos
-            </Badge>
-          </div>
-        )}
       </div>
 
-      <CardContent className="flex flex-col flex-1 p-6">
-        {/* Character name */}
+      <CardContent className="flex flex-1 flex-col p-6">
         <div className="min-w-0 space-y-2">
           <h3 className="text-lg font-semibold leading-tight">{character.name}</h3>
           {character.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
+            <p className="line-clamp-2 text-sm text-muted-foreground">
               {character.description}
             </p>
           )}
         </div>
 
-        {/* Pricing section */}
         <div className="mt-4 space-y-3">
-          {/* Cash price (always visible) */}
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Preço em dinheiro:</span>
-            <span className="text-lg font-bold">
-              R$ {character.price_cash.toFixed(2)}
-            </span>
+            <span className="text-lg font-bold">R$ {character.price_cash.toFixed(2)}</span>
           </div>
 
-          {/* Credit price (only for subscribers) - Task 9.12 */}
           {isSubscriber && (
             <div className="space-y-2">
               <div className="flex items-center justify-between border-t pt-3">
-                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <span className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Coins className="h-4 w-4" />
                   Preço em créditos:
                 </span>
                 {priceLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                ) : (
+                ) : hasValidCoinPrice ? (
                   <div className="flex items-center gap-2">
                     {hasDiscount && (
                       <span className="text-sm text-muted-foreground line-through">
-                        {character.price_credits} 🪙
+                        {character.price_credits} coins
                       </span>
                     )}
-                    <span className={`text-xl font-bold ${hasDiscount ? 'text-green-600' : 'text-primary'}`}>
-                      {priceInCoins} 🪙
+                    <span className={`text-xl font-bold ${hasDiscount ? "text-green-600" : "text-primary"}`}>
+                      {priceInCoins} coins
                     </span>
                     {(hasDiscount || hasMultiplier) && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            <Info className="h-4 w-4 cursor-help text-muted-foreground" />
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
-                            <p className="font-semibold mb-1">Como funciona o preço?</p>
-                            {priceDetails && (
-                              <div className="text-xs space-y-1 mb-2">
-                                <p className="font-semibold">Cálculo:</p>
-                                <p>1. Preco base: {priceDetails.collection_price} ðŸª™🪙</p>
-                                {hasMultiplier && (
-                                  <p>2. Multiplicador: {multiplier}x ({multiplierBadge?.label})</p>
-                                )}
-                                <p className="text-green-400 font-semibold">
-                                  = Preço final: {priceInCoins} 🪙
-                                </p>
-                              </div>
-                            )}
-                            <p className="text-xs mb-2">
-                              O preço é calculado baseado no seu contexto:
+                            <p className="mb-1 font-semibold">Preço contextual</p>
+                            <p className="text-xs">
+                              O valor em coins é calculado pelas regras de preço ativas. Nenhuma conversão fixa de coins para reais é aplicada nesta tela.
                             </p>
-                            <ul className="text-xs space-y-1 list-disc list-inside">
-                              <li>Contexto de publicacao</li>
-                              <li>Configuracao comercial ativa</li>
-                              <li>Regras de disponibilidade</li>
-                              {hasMultiplier && <li>Características do personagem</li>}
-                            </ul>
-                            {hasDiscount && (
-                              <p className="text-xs mt-2 text-green-400">
-                                Você economiza {discountAmount} 🪙 neste personagem!
-                              </p>
-                            )}
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     )}
                   </div>
+                ) : (
+                  <span className="text-sm text-destructive">Preço indisponível</span>
                 )}
               </div>
 
-              {/* Discount breakdown - Task 9.12 */}
               {hasDiscount && !priceLoading && (
-                <div className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-2 rounded">
-                  💰 Economize {discountAmount} 🪙 ({discountPercentage}% de desconto)
+                <div className="rounded bg-green-50 p-2 text-xs text-green-600 dark:bg-green-950/20 dark:text-green-400">
+                  Economize {discountAmount} coins ({discountPercentage}% no preço em coins).
                 </div>
               )}
 
-              {/* Multiplier info - RN008 */}
-              {hasMultiplier && !priceLoading && priceDetails && (
-                <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 p-2 rounded">
-                  ⭐ {multiplierBadge?.label}: {priceDetails.collection_price} 🪙 × {multiplier} = {priceInCoins} 🪙
+              {hasMultiplier && !priceLoading && priceDetails && hasValidCoinPrice && (
+                <div className="rounded bg-blue-50 p-2 text-xs text-blue-600 dark:bg-blue-950/20 dark:text-blue-400">
+                  {multiplierBadge?.label ?? "Especial"}: {priceDetails.collection_price} coins × {multiplier} = {priceInCoins} coins.
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Comparison for subscribers */}
-          {isSubscriber && savingsPercentage > 0 && !hasDiscount && (
-            <div className="text-xs text-blue-600 dark:text-blue-400 text-center bg-blue-50 dark:bg-blue-950/20 p-2 rounded">
-              💡 Economize {savingsPercentage}% usando créditos ao invés de dinheiro!
             </div>
           )}
         </div>
 
-        {/* Purchase buttons - Task 9A.3 */}
-        <div className="mt-auto pt-6 space-y-2">
+        <div className="mt-auto space-y-2 pt-6">
           {isSubscriber ? (
             <>
-              {/* Balance indicator - Task 9A.1 */}
-              {!priceLoading && (
+              {!priceLoading && hasValidCoinPrice && (
                 <BalanceIndicator
                   currentBalance={availableCredits}
                   requiredAmount={priceInCoins}
                 />
               )}
 
-              {/* Insufficient balance message - Task 9A.2 */}
-              {!hasEnoughCredits && !priceLoading && (
+              {!hasEnoughCredits && !priceLoading && hasValidCoinPrice && (
                 <InsufficientBalanceMessage
                   requiredAmount={priceInCoins}
                   availableAmount={availableCredits}
@@ -310,42 +234,21 @@ export function CharacterCard({
                 />
               )}
 
-              {/* Buy with credits button or Buy Coins button - Task 9A.3 */}
-              {hasEnoughCredits ? (
-                <Button
-                  className="w-full gap-2"
-                  onClick={() => onPurchase(character, true)}
-                  disabled={priceLoading}
-                >
-                  <Coins className="h-4 w-4" />
-                  {priceLoading
-                    ? 'Calculando preço...'
-                    : `Comprar com ${priceInCoins} 🪙`}
-                </Button>
-              ) : (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        className="w-full gap-2"
-                        variant="default"
-                        onClick={() => navigate('/coins/purchase')}
-                        disabled={priceLoading}
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                        Comprar Coins
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">
-                        Você precisa de mais {priceInCoins - availableCredits} 🪙 para acompanhar pagamentos e coins este personagem
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+              <Button
+                className="w-full gap-2"
+                onClick={() => onPurchase(character, true)}
+                disabled={priceLoading || !hasEnoughCredits || !hasValidCoinPrice}
+              >
+                <Coins className="h-4 w-4" />
+                {priceLoading
+                  ? "Calculando preço..."
+                  : !hasValidCoinPrice
+                    ? "Preço em coins indisponível"
+                    : hasEnoughCredits
+                      ? `Comprar com ${priceInCoins} coins`
+                      : "Saldo de coins insuficiente"}
+              </Button>
 
-              {/* Buy with cash button (secondary) */}
               <Button
                 className="w-full gap-2"
                 variant="outline"
@@ -357,7 +260,6 @@ export function CharacterCard({
             </>
           ) : (
             <>
-              {/* Non-subscriber: only cash option */}
               <Button
                 className="w-full gap-2"
                 onClick={() => onPurchase(character, false)}
@@ -365,11 +267,11 @@ export function CharacterCard({
                 <DollarSign className="h-4 w-4" />
                 Comprar por R$ {character.price_cash.toFixed(2)}
               </Button>
-
-              {/* Secondary account call to action */}
-              <p className="text-xs text-center text-muted-foreground">
-                <a href={PUBLIC_ROUTES.login} className="text-primary hover:underline">Entre na sua conta</a>{' '}
-                para acompanhar pagamentos e coins
+              <p className="text-center text-xs text-muted-foreground">
+                <Link to={PUBLIC_ROUTES.login} className="text-primary hover:underline">
+                  Entre na sua conta
+                </Link>{" "}
+                para consultar seu saldo e preços em coins.
               </p>
             </>
           )}
