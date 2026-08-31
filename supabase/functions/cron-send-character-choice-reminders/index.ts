@@ -35,7 +35,7 @@ function bahiaDateParts(date: Date): { year: number; month: number; day: number 
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(date);
-  const get = (type: Intl.DateTimeFormatPartTypes) =>
+  const get = (type: string) =>
     Number(parts.find((part) => part.type === type)?.value);
 
   return { year: get("year"), month: get("month"), day: get("day") };
