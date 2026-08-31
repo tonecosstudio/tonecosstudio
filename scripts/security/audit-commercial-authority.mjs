@@ -27,6 +27,10 @@ const clientAmountRpcs = [
   "notify_quote_payment_for_current_user",
 ];
 
+const unsafeAuthenticatedMutationRpcs = [
+  "activate_subscription_credit_for_current_user",
+];
+
 const migrationFiles = readdirSync(MIGRATIONS_DIR)
   .filter((name) => name.endsWith(".sql"))
   .sort((a, b) => a.localeCompare(b));
@@ -106,9 +110,6 @@ function authenticatedInsertGrantState(table) {
   for (const file of migrationFiles) {
     const source = readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
 
-    // Historical grant migration dynamically grants full DML to every table
-    // listed in authenticated_dml_tables. Treat membership in that list as a
-    // real INSERT grant because PostgREST privileges are separate from RLS.
     if (
       /authenticated_dml_tables\s+text\[\]/i.test(source) &&
       new RegExp(`["']${tablePattern}["']`, "i").test(source) &&
@@ -219,13 +220,22 @@ for (const functionName of clientAmountRpcs) {
   }
 }
 
+for (const functionName of unsafeAuthenticatedMutationRpcs) {
+  const result = authenticatedRpcExecuteState(functionName);
+  if (result.granted) {
+    failures.push(
+      `${functionName}: authenticated can still execute a mutation that activates commercial credit state without payment proof (last evidence: ${result.sourceFile})`,
+    );
+  }
+}
+
 if (failures.length > 0) {
   console.error("Commercial authority audit: FAIL");
   for (const failure of failures) {
     console.error(`- ${failure}`);
   }
   console.error(
-    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority RPCs even when their frontend callers are gone.",
+    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority and unpaid-activation RPCs even when their frontend callers are gone.",
   );
   process.exit(1);
 }
