@@ -53,6 +53,7 @@ interface SubscriptionPlanConfigurationRow {
   price_full: number | null;
   price_pix: number | null;
   coins_included: number | null;
+  total_credits: number | null;
   deliveries_per_cycle: number | null;
   deliveries_total: number | null;
   is_active: boolean | null;
@@ -87,11 +88,26 @@ function normalizePlanType(value: string | null): AdminPlanType | null {
   return PLAN_TYPE_SET.has(value as AdminPlanType) ? (value as AdminPlanType) : null;
 }
 
+function normalizeNonNegativeInteger(value: number | null, label: string, planId: string): number {
+  const normalized = value ?? 0;
+  if (!Number.isInteger(normalized) || normalized < 0) {
+    throw new Error(`Configuracao de ${label} invalida no plano ${planId}.`);
+  }
+  return normalized;
+}
+
 function mapSubscriptionPlan(row: SubscriptionPlanConfigurationRow): PricingTierPlan {
   const planType = normalizePlanType(row.plan_type ?? row.billing_interval);
   const priceFull = row.price_full ?? row.price;
   const deliveriesTotal = row.deliveries_total ?? row.deliveries_per_cycle;
-  const coinsIncluded = row.coins_included ?? 0;
+  const coinsIncluded = normalizeNonNegativeInteger(row.coins_included, "coins_included", row.id);
+  const totalCredits = normalizeNonNegativeInteger(row.total_credits, "total_credits", row.id);
+
+  if (coinsIncluded !== totalCredits) {
+    throw new Error(
+      `Configuracao de creditos inconsistente no plano ${row.id}: coins_included e total_credits divergem.`,
+    );
+  }
 
   return {
     id: row.id,
@@ -100,7 +116,7 @@ function mapSubscriptionPlan(row: SubscriptionPlanConfigurationRow): PricingTier
     price: row.price,
     price_full: priceFull,
     pieces_per_subscription: deliveriesTotal,
-    base_credits: coinsIncluded,
+    base_credits: totalCredits,
     bonus_credits: 0,
     deposit_amount: 0,
     is_active: row.is_active ?? false,
@@ -120,6 +136,7 @@ export async function fetchAdminPricingTierPlans(): Promise<PricingTierPlan[]> {
       price_full,
       price_pix,
       coins_included,
+      total_credits,
       deliveries_per_cycle,
       deliveries_total,
       is_active,
@@ -164,6 +181,11 @@ export async function fetchCoinExchangeRate(): Promise<CoinExchangeRate> {
 }
 
 export async function savePricingTierPlan(input: SavePricingTierPlanInput): Promise<void> {
+  const credits = input.data.coins_included;
+  if (!Number.isInteger(credits) || credits < 0) {
+    throw new Error("Quantidade de coins do plano inválida.");
+  }
+
   await saveSubscriptionPlanConfigurationRpc({
     id: input.id,
     data: {
@@ -175,7 +197,7 @@ export async function savePricingTierPlan(input: SavePricingTierPlanInput): Prom
       price: input.data.price_brl,
       price_full: input.data.price_full,
       price_pix: input.data.price_pix,
-      coins_included: input.data.coins_included,
+      coins_included: credits,
       deliveries_per_cycle: input.data.deliveries_total,
       deliveries_total: input.data.deliveries_total,
       is_active: input.data.is_active,
