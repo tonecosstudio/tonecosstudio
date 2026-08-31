@@ -72,6 +72,9 @@ export function useProductionLimit() {
 
     closeSales: closeSales.mutate,
     reopenSales: reopenSales.mutate,
+    refetch: async () => {
+      await Promise.all([limitQuery.refetch(), salesOpenQuery.refetch()]);
+    },
 
     isClosing: closeSales.isPending,
     isReopening: reopenSales.isPending,
