@@ -102,7 +102,7 @@ Estado: **PENDENTE**
 - [x] manter na raiz apenas README.md, AGENTS.md, URGENTE.md, licença e arquivos técnicos necessários;
 - [x] mover relatórios de fase, sessão, progresso e “final” para docs-archive/root-legacy/2026-pre-urgent;
 - [ ] mover guias vigentes para docs/operations ou docs/setup;
-- [ ] criar mapa documental curto em docs/README.md;
+- [x] criar mapa documental curto em docs/README.md;
 - [x] remover o atalho binário .lnk do Git;
 - [x] mover o launcher .cmd e leia.txt para scripts/catalog/legacy;
 - [ ] eliminar links quebrados, documentos duplicados e afirmações contraditórias;
@@ -151,7 +151,7 @@ Saída: relatório de segurança com achados zerados ou risco formalmente aceito
 Estado: **PENDENTE**
 
 - [ ] restaurar dados ou corrigir a origem que produz 0 personagens/0 modelos;
-- [ ] substituir “catálogo ativo” por estado real e acionável;
+- [x] substituir “catálogo ativo” por estado real e não exibir zero durante falha;
 - [ ] criar estados de erro/retry em vez de cair silenciosamente em defaults;
 - [ ] smoke test de home, universo, personagem, modelo, detalhe, busca e contato;
 - [ ] smoke test de cadastro, login, recuperação e logout;
@@ -303,3 +303,45 @@ Do not repeat:
 - não devolver documentos antigos à raiz;
 - não remover package-lock ou lockfiles Bun antes de uma instalação reproduzível comprovada;
 - não confundir falha de alocação do runner com falha de build.
+
+
+### Checkpoint 2 — 2026-08-30
+
+HEAD funcional: a53dc69cf1732a1ffdf98b46eb7611e7c44fee16
+
+Concluído:
+
+- PR draft #2 aberto contra main;
+- vercel.json passou a ignorar somente commits de documentação;
+- classificador de diff conservador criado em scripts/vercel/should-ignore-build.mjs;
+- falha de classificação mantém a build ativa;
+- a home agora distingue carregamento, indisponibilidade, catálogo parcial, vazio real e catálogo ativo;
+- contadores não apresentam zero falso durante falha da consulta;
+- versão visual v2.0 sem correspondência em package.json removida.
+
+Testes/provas:
+
+- cinco casos do classificador executados com Node: documentação, código, configuração, vazio e diff misto;
+- mudanças em src/, vercel.json e diff misto continuam a build;
+- leitura da branch confirmou vercel.json e o script no commit 0f583d52d16ff147a937ccb45f0cec5a54098f6e;
+- o commit funcional da home é a53dc69cf1732a1ffdf98b46eb7611e7c44fee16.
+
+Bloqueios:
+
+- Vercel ainda reporta build-rate-limit no plano Hobby para commits funcionais;
+- GitHub Actions continua sem iniciar steps;
+- a correção visual ainda exige preview e smoke test quando a cota/runner estiverem disponíveis.
+
+Next action:
+
+- validar se este commit somente documental é corretamente ignorado pela Vercel;
+- restaurar a execução real do Quality Gate;
+- resolver drift Node 22 no CI x Node 24 na Vercel;
+- continuar P2 sem remover lockfiles antes de prova reproduzível.
+
+Do not repeat:
+
+- não usar texto promocional para encobrir falha de dados;
+- não mostrar zero quando a consulta falhou;
+- não consumir preview para documentação;
+- não considerar a correção visual aprovada sem build e smoke test.
