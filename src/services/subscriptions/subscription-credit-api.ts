@@ -169,6 +169,8 @@ class SubscriptionCreditAPI {
       query = query.eq('transaction_type', transactionType);
     }
 
+    const { data, error, count } = await query;
+
     if (error) throw error;
 
     const transactions = (data ?? []) as unknown as SubscriptionCreditTransactionRow[];
