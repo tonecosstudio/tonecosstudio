@@ -1,583 +1,336 @@
 # URGENTE — prontidão para lançamento
 
-Status: **EM EXECUÇÃO — NO-GO para lançamento**
+Status: **EM EXECUÇÃO — NO-GO para lançamento**  
+Atualizado em: **2026-08-30 (America/Bahia)**  
+Branch operacional: **main somente**  
+Base histórica da auditoria: `792e6f882e298fe38bfc57b4025ad09ca631acf9`  
+HEAD funcional auditado antes deste checkpoint: `25b384b2f31f4b4712b55e1f2d619f9fe2c9f945`
 
-Atualizado em: 2026-08-30  
-Branch de execução: **main (única branch operacional)**  
-Base auditada: **main@792e6f882e298fe38bfc57b4025ad09ca631acf9**  
-HEAD consolidado na main: **d65aa40f77c75b608b9ca65b8e6247e1bfa0c66a**
+Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX. Ele descreve o estado atual, os bloqueios reais, as provas existentes e a próxima ordem de execução.
 
-Este documento é o SSOT do trabalho de prontidão para lançamento. Percentuais, datas e declarações antigas não são prova. Um item só muda para concluído quando há comando, teste, workflow, consulta, captura ou observação reproduzível registrada.
+Percentuais antigos, documentos de fase, comentários, screenshots ou afirmações como “pronto”, “85%” ou “100% seguro” não contam como prova de lançamento.
+
+Os checkpoints 0–8 da versão anterior deste documento permanecem preservados no histórico Git em `main@25b384b2f31f4b4712b55e1f2d619f9fe2c9f945` e nos commits anteriores. Eles não são repetidos aqui para evitar transformar o SSOT atual em arquivo histórico.
 
 ## 1. Objetivo
 
 Entregar o ORDAX como produto publicável, profissional e verificável:
 
-- repositório limpo, compreensível e com autoridade documental única;
-- build determinístico, CI obrigatório e dependências controladas;
-- Supabase, autenticação, pagamentos e funções com segurança comprovada;
+- repositório limpo e com autoridade documental única;
+- build determinístico e dependências controladas;
+- CI executável e prova por commit;
+- Supabase, autenticação, Storage, pagamentos e funções com segurança comprovada;
 - catálogo e fluxos essenciais funcionais no ambiente publicado;
-- interface coerente, responsiva, acessível e sem mocks ou legados expostos;
-- release versionada, observável e com rollback ensaiado.
+- interface coerente, responsiva, acessível e sem dados demonstrativos mascarando falhas;
+- configuração comercial fail-closed;
+- release versionada, observável e reversível.
 
-## 2. Veredito da auditoria inicial
+## 2. Decisões operacionais vigentes
 
-**NO-GO.** A base contém hardening relevante, mas o ambiente publicado e a engenharia de release ainda não sustentam lançamento.
+1. Trabalhar diretamente na `main`, conforme instrução explícita do usuário.
+2. Não criar branch ou PR novo sem nova instrução explícita.
+3. Fazer commits pequenos e reversíveis.
+4. `URGENTE.md` é a autoridade de status; `AGENTS.md` é o contrato de continuidade.
+5. Não apagar evidência histórica necessária; remover do estado atual apenas material comprovadamente obsoleto ou concorrente, deixando o Git preservar a versão anterior.
+6. Não declarar lançamento, segurança ou qualidade aprovados sem prova reproduzível.
+7. Frontend nunca é fronteira suficiente de autorização.
+8. Preço, crédito, disponibilidade, pagamento e permissão devem falhar fechados quando a fonte oficial não puder ser validada.
+9. Segredos, `service_role`, chaves privadas e credenciais nunca podem entrar em `VITE_*` nem no bundle do navegador.
+10. Migração remota, reativação paga ou deploy de produção exigem contexto operacional próprio; código versionado não equivale a mudança aplicada remotamente.
 
-### 2.1 Evidências do repositório
+## 3. Estado atual resumido
 
-| Evidência | Estado observado | Consequência |
-|---|---|---|
-| Branch padrão | main sem proteção | mudanças podem entrar sem gate obrigatório |
-| Automação versionada | nenhum arquivo em .github/workflows | não existe CI atual no repositório |
-| Histórico de Actions | 20 execuções mais recentes falharam; todas antigas, de 2026-03 | não existe prova recente de build/teste |
-| Releases | nenhuma release publicada | não há artefato ou versão promovível |
-| package.json | versão 0.0.0 e nome genérico vite_react_shadcn_ts | identidade de pacote/release não consolidada |
-| Lockfiles | package-lock.json, bun.lock e bun.lockb | instalação não tem autoridade única |
-| Testes | 210 arquivos de teste encontrados | boa base, mas sem execução recente comprovada |
-| Banco | 199 migrations SQL | alto custo de replay e risco de drift a medir |
-| Edge Functions | 44 funções de produto no repositório | superfície ampla que exige inventário e testes |
-| Documentação | 41 arquivos Markdown na raiz, 40 em docs e 54 em docs-archive | SSOT contraditório e raiz poluída |
-| AGENTS.md | inexistente na base | continuidade entre agentes sem contrato |
-| Arquivos estranhos na raiz | .cmd, .lnk e leia.txt ligados a operação antiga de Telegram | ruído operacional e risco de execução acidental |
+| Área | Estado | Evidência / consequência |
+| --- | --- | --- |
+| Branch de trabalho | **main somente** | referências antigas podem existir, mas não são usadas para esta execução |
+| Proteção da main | **PENDENTE** | branch continua `protected=false` e sem checks obrigatórios |
+| Quality Gate | **BLOQUEADO NA INFRA** | workflow existe, mas o job mais recente terminou com `runner_id=0` e `steps=[]` |
+| Runtime | **Node 24.x canônico** | manifesto, `.nvmrc`, CI e Vercel foram alinhados |
+| Pacote | **ordax-web@0.1.0** | identidade genérica do template removida |
+| Package manager | **AINDA NÃO CONSOLIDADO** | `package-lock.json`, `bun.lock` e `bun.lockb` permanecem até `npm ci` real provar a cadeia npm |
+| Raiz/documentação | **MELHORADA** | raiz histórica foi reduzida, `AGENTS.md`/`README.md`/`URGENTE.md` são canônicos e o spec `.kiro` concorrente foi removido |
+| Catálogo mock | **REMOVIDO DO RUNTIME** | serviço de produção não possui fallback para catálogo demonstrativo |
+| Preço avulso | **FAIL-CLOSED NO CÓDIGO** | compra não oferece preço inventado quando RPC/configuração falha |
+| Planos/assinatura | **FAIL-CLOSED NO CÓDIGO** | preços, entregas e credits inválidos são rejeitados antes da oferta; UI possui erro/retry |
+| Comprovante de assinatura | **HARDENING VERSIONADO, NÃO PROVADO REMOTAMENTE** | upload exige autenticação, retorna object path privado e migration adiciona bucket privado/RLS por usuário |
+| Supabase remoto | **BLOQUEADOR** | projeto observado anteriormente estava inativo; migrations/policies atuais ainda precisam ser comparadas e aplicadas no ambiente correto |
+| Vercel/smoke visual | **SEM PROVA ATUAL** | mudanças ainda precisam de build publicado e verificação real desktop/mobile |
+| Lançamento | **NO-GO** | CI, banco remoto, E2E, segurança remota e release engineering ainda não têm prova suficiente |
 
-### 2.2 Evidências do ambiente publicado
+## 4. Trabalho concluído na preparação atual
 
-Auditoria pública de https://ordax.com.br em 2026-08-30:
+### 4.1 Governança e estrutura
 
-- a página inicial renderiza e a direção visual é consistente;
-- a própria home informa **0 personagens** e **0 modelos**;
-- /universo termina em **Universo vazio**;
-- o console registra falha ao buscar a view de configurações e usa defaults;
-- o Supabase configurado em supabase/config.toml, projeto pdytjhtjlxvbbeuxgnms (Ordax-2026-1), está **INACTIVE**;
-- 43 Edge Functions aparecem implantadas, mas a função **stripe-webhook** existente no repositório não aparece no ambiente;
-- 13 funções implantadas usam verify_jwt=false; isso pode ser correto para cron/webhook, mas cada uma precisa provar autenticação alternativa, rate limit e fail-closed;
-- os advisors retornaram lista vazia, mas banco/tabelas/migrations não puderam ser inspecionados enquanto o projeto está inativo; portanto isso **não** conta como prova de ausência de vulnerabilidades.
+- [x] inventário inicial de repositório, branches, documentação, Actions, site e Supabase;
+- [x] criação de `AGENTS.md` e `URGENTE.md` como contrato/SSOT;
+- [x] limpeza da raiz e arquivamento do material histórico principal;
+- [x] remoção do `.lnk` operacional antigo;
+- [x] movimentação de launcher/instruções antigas de Telegram para área legacy;
+- [x] remoção do spec `.kiro/specs/final-production-readiness` sem referências ativas;
+- [x] remoção de identidade de template do `package.json`;
+- [x] adoção de Node 24.x como runtime canônico;
+- [x] criação de Quality Gate versionado;
+- [ ] restaurar execução real do Quality Gate;
+- [ ] proteger `main` e exigir checks depois que o gate executar de verdade.
 
-### 2.3 Contradições já confirmadas
+### 4.2 Dados falsos, placeholders e mocks
 
-- README.md declara “85% completo” e “pronto para lançamento”.
-- docs/README.md declara trabalho crítico ainda pendente e usa métricas antigas.
-- CHANGELOG registra uma raiz reduzida a três arquivos, mas hoje há 74 entradas na raiz.
-- A UI mostra “CATALOGO PUBLICO ATIVO”, embora o catálogo publicado esteja vazio.
-- A interface exibe v2.0, enquanto package.json permanece em 0.0.0.
-- Há variável de Sentry documentada, mas a implementação atual mantém SENTRY_ENABLED=false e funciona como no-op.
+- [x] removido mock de catálogo do serviço usado em produção;
+- [x] removidas variáveis `VITE_CATALOG_WEBP_MOCK*`;
+- [x] removido gerador de site mock de catálogo;
+- [x] removidos SVGs de placeholder de produto sem uso e criado fallback neutro;
+- [x] substituído `placeholder.svg` de Open Graph por asset social real;
+- [x] removidos defaults inventados de perfis sociais, telefone, CNPJ e endereço;
+- [x] removida versão visual `v2.0` sem correspondência com o pacote;
+- [x] busca atual por `TODO/FIXME/HACK/XXX` não encontrou ocorrências indexadas;
+- [ ] continuar inventário de feature flags, rotas legadas, duplicidades e conteúdo histórico em `docs/`.
 
-## 3. Princípios de execução
+### 4.3 Preços e assinatura
 
-1. Trabalhar diretamente na main, conforme decisão explícita do usuário, em commits pequenos e reversíveis.
-2. Não apagar histórico: mover documentos comprovadamente obsoletos para docs-archive com índice.
-3. Não declarar “pronto”, “seguro” ou “100%” sem prova reproduzível.
-4. Não fazer deploy, migration remota ou reativação paga como parte de uma simples limpeza.
-5. Não expor service_role, segredos Stripe, OAuth, SMTP ou tokens em VITE_*.
-6. Preferir um único executor, um único schema canônico e um único caminho de release.
-7. Toda função privilegiada precisa de autenticação, autorização, rate limit, validação, idempotência quando aplicável e resposta sem detalhes internos.
-8. Mudanças de UI devem ser verificadas no desktop e em largura móvel, incluindo loading, vazio, erro e sucesso.
+- [x] compra avulsa bloqueia oferta quando preço oficial não pode ser validado;
+- [x] `pricing-settings-service` não converte falha comercial em preço fixo;
+- [x] preços obrigatórios são validados como finitos e coerentes;
+- [x] plano ativo é rejeitado se preço, entregas ou credits forem inválidos;
+- [x] `PlansArcade` exibe estado de indisponibilidade/retry em vez de preço fallback;
+- [x] `SubscribeCollection` não inventa mais coins, preço contextual ou economia fixa;
+- [x] tela de assinatura não apresenta `R$ 0,00` como estado transitório de carregamento;
+- [x] checkout final continua usando RPC server-side e IDs validados;
+- [ ] executar testes automatizados e E2E quando o runner/ambiente estiverem disponíveis.
 
-## 4. Plano de execução
+### 4.4 Comprovantes de pagamento
 
-### P0 — Governança e verdade operacional
+- [x] upload de assinatura exige usuário autenticado mesmo quando `userId` não é passado pelo componente;
+- [x] caminho versionado: `subscriptions/<auth.uid()>/<timestamp>-<token>.<ext>`;
+- [x] componente retorna **object path privado**, não `getPublicUrl()`;
+- [x] README antigo que ensinava bucket público e leitura pública foi substituído;
+- [x] migration `20260831011000_secure_payment_voucher_storage.sql` configura `payment-vouchers` como privado, 5 MB e MIME JPEG/PNG/PDF;
+- [x] migration adiciona RLS de leitura do proprietário/admin, insert do proprietário e delete do proprietário/admin;
+- [x] RPC valida formato do object path e exige que o usuário embutido seja `auth.uid()`;
+- [x] o corpo privilegiado permanece em `private_api` e o wrapper `public` permanece `SECURITY INVOKER`;
+- [x] novos checkouts persistem `payment_voucher_path` e não uma URL pública;
+- [x] registros legados continuam revisáveis durante a transição;
+- [x] testes do componente foram reescritos para o contrato privado;
+- [ ] provar migration, RLS e acesso admin no Supabase remoto correto;
+- [ ] definir/consolidar a arquitetura entre `payment-vouchers` e o fluxo mais completo `payment-proofs`;
+- [ ] garantir malware scan/quarentena em fronteira server-side para uploads que exigirem essa proteção.
+
+## 5. Plano restante por prioridade
+
+### P0 — CI e prova básica
+
+Estado: **BLOQUEADO POR GITHUB ACTIONS / RUNNER**
+
+- [ ] resolver por que `ubuntu-latest` não recebe runner;
+- [ ] executar `npm ci` com Node 24;
+- [ ] executar `format:check`;
+- [ ] executar `typecheck`;
+- [ ] executar `lint`;
+- [ ] executar auditoria Supabase estática;
+- [ ] executar cobertura/testes;
+- [ ] executar build;
+- [ ] executar `npm audit` e corrigir high/critical de forma controlada;
+- [ ] somente após `npm ci` real, consolidar npm e remover lockfiles Bun concorrentes se não forem necessários.
+
+Critério de saída: Quality Gate verde em um commit exato da `main`.
+
+### P1 — Estrutura, legados e documentação
 
 Estado: **EM EXECUÇÃO**
 
-- [x] auditar HEAD, branches, PRs, issues, Actions e releases;
-- [x] auditar árvore do repositório e localizar conflitos de documentação;
-- [x] verificar o site público sem autenticação;
-- [x] correlacionar o projeto Supabase declarado com o ambiente conectado;
-- [x] criar branch inicial de recuperação e consolidá-la por fast-forward na main;
-- [x] criar este SSOT;
-- [x] criar contrato AGENTS.md;
-- [x] substituir declarações promocionais antigas dos READMEs por estado factual;
-- [x] adicionar Quality Gate versionado;
-- [x] obter a primeira execução verde ou registrar falhas reais do gate;
-- [ ] abrir PR e tornar os checks obrigatórios antes do merge;
-- [ ] proteger main contra push direto e exigir revisão/checks.
+- [ ] revisar `docs/` e mover guias vigentes para `docs/operations` ou `docs/setup`;
+- [ ] eliminar links quebrados e duplicidades documentais restantes;
+- [ ] revisar os múltiplos templates `.env*` e deixar clara a finalidade de cada um;
+- [ ] remover ou arquivar configurações de ferramentas órfãs;
+- [ ] documentar arquitetura atual, fronteiras de segurança, runbook de deploy e rollback;
+- [ ] documentar qual pipeline de upload/pagamento é canônico e eliminar segunda autoridade.
 
-Saída: repositório com autoridade clara e mudança bloqueada por prova.
+Critério de saída: nova pessoa/agente consegue identificar rapidamente fonte de verdade, setup, segurança, deploy e rollback sem documentação contraditória.
 
-### P1 — Estrutura e documentação
+### P2 — Supabase e segurança
 
-Estado: **PENDENTE**
+Estado: **BLOQUEADO PARA PROVA REMOTA**
 
-- [x] classificar os 41 Markdown da raiz em canônico, operacional atual ou histórico;
-- [x] manter na raiz apenas README.md, AGENTS.md, URGENTE.md, licença e arquivos técnicos necessários;
-- [x] mover relatórios de fase, sessão, progresso e “final” para docs-archive/root-legacy/2026-pre-urgent;
-- [ ] mover guias vigentes para docs/operations ou docs/setup;
-- [x] criar mapa documental curto em docs/README.md;
-- [x] remover o atalho binário .lnk do Git;
-- [x] mover o launcher .cmd e leia.txt para scripts/catalog/legacy;
-- [ ] eliminar links quebrados, documentos duplicados e afirmações contraditórias;
-- [ ] documentar arquitetura, domínio, ADRs e runbooks mínimos.
-
-Saída: raiz limpa e documentação navegável com um único status vigente.
-
-### P2 — Build, dependências e qualidade
-
-Estado: **PENDENTE**
-
-- [ ] escolher npm como package manager canônico e remover lockfiles concorrentes após CI;
-- [x] corrigir identidade do pacote para ordax-web@0.1.0;
-- [ ] executar npm ci com Node 24;
-- [ ] aprovar format, typecheck, lint, auditoria Supabase, cobertura e build;
-- [ ] corrigir vulnerabilidades high/critical sem upgrades cegos;
-- [ ] revisar dependências de browser e servidor misturadas no mesmo pacote;
-- [ ] validar bundle, code splitting, assets, fontes e cache;
-- [ ] gerar inventário de licenças e dependências de produção.
-
-Saída: build reproduzível e Quality Gate verde.
-
-### P3 — Supabase, segurança e pagamentos
-
-Estado: **BLOQUEADO pelo projeto inativo para prova remota**
-
-- [ ] confirmar que pdytjhtjlxvbbeuxgnms é o projeto de produção correto;
-- [ ] restaurar/ativar somente com autorização operacional e plano de custo;
+- [ ] confirmar o projeto de produção correto antes de qualquer operação remota;
+- [ ] restaurar/ativar somente com autorização operacional e entendimento de custo;
 - [ ] comparar migrations Git x migrations remotas e medir drift;
-- [ ] executar advisors de segurança e performance com banco acessível;
-- [ ] verificar RLS de toda tabela/view exposta, incluindo security_invoker nas views;
-- [ ] revisar SECURITY DEFINER, EXECUTE PUBLIC, search_path e funções privilegiadas;
-- [ ] revisar grants explícitos para Data API conforme mudanças de 2026;
-- [ ] auditar Storage, MIME, tamanho, ownership e upsert;
-- [ ] provar que as 13 funções verify_jwt=false possuem proteção alternativa;
-- [ ] reconciliar 44 funções no Git com 43 implantadas;
-- [ ] implantar e testar stripe-webhook com assinatura, idempotência e replay;
-- [ ] verificar Google OAuth, confirmação de e-mail, redirects e política de senha;
-- [ ] executar testes de BOLA/IDOR para cliente, admin, cobrança e produção;
-- [ ] comprovar que service_role nunca chega ao bundle.
+- [ ] aplicar migrations pendentes de forma controlada;
+- [ ] executar advisors de segurança/performance com banco ativo;
+- [ ] revisar todas as tabelas/views expostas, RLS, grants e `security_invoker`;
+- [ ] revisar cada `SECURITY DEFINER`, `EXECUTE`, `search_path` e schema privilegiado;
+- [ ] testar BOLA/IDOR por cliente, admin, pagamento e produção;
+- [ ] revisar Storage de todos os buckets, não apenas comprovantes;
+- [ ] provar que funções `verify_jwt=false` possuem autenticação alternativa adequada;
+- [ ] reconciliar Edge Functions do Git com as implantadas;
+- [ ] provar que `service_role` não entra no bundle;
+- [ ] implantar/testar webhook Stripe com assinatura, idempotência e replay quando esse fluxo for parte do lançamento.
 
-Saída: relatório de segurança com achados zerados ou risco formalmente aceito.
+Critério de saída: achados críticos/altos resolvidos ou risco explicitamente aceito e documentado.
 
-### P4 — Funcionalidade publicada
+### P3 — Fluxos funcionais
 
 Estado: **PENDENTE**
 
-- [ ] restaurar dados ou corrigir a origem que produz 0 personagens/0 modelos;
-- [x] substituir “catálogo ativo” por estado real e não exibir zero durante falha;
-- [ ] criar estados de erro/retry em vez de cair silenciosamente em defaults;
+- [ ] restaurar/corrigir a origem que deixou o catálogo publicado vazio;
 - [ ] smoke test de home, universo, personagem, modelo, detalhe, busca e contato;
 - [ ] smoke test de cadastro, login, recuperação e logout;
 - [ ] smoke test de perfil, wishlist, dashboard e notificações;
 - [ ] smoke test administrativo com RBAC;
-- [ ] smoke test Stripe em modo teste, webhook, pagamento, falha, reembolso e duplicidade;
-- [ ] testar URLs profundas, refresh e página 404;
-- [ ] testar indisponibilidade do Supabase sem travar a experiência.
+- [ ] smoke test compra/assinatura/pagamento em ambiente de teste;
+- [ ] testar falha, duplicidade, retry, expiração e rejeição de comprovante;
+- [ ] testar URLs profundas, refresh e 404;
+- [ ] testar indisponibilidade do Supabase sem mostrar informação comercial falsa.
 
-Saída: matriz E2E dos fluxos críticos aprovada.
+Critério de saída: matriz E2E aprovada para público, cliente e admin.
 
-### P5 — Produto, UI e conteúdo
+### P4 — Produto, UI, acessibilidade e conteúdo
 
 Estado: **PENDENTE**
 
-- [ ] inventariar mocks, placeholders, feature flags, duplicidades e rotas legadas;
-- [x] remover placeholder.svg do Open Graph e fornecer imagem social real;
-- [ ] alinhar marca, versão, nomenclatura, capitalização e tom;
-- [ ] revisar contraste, foco, teclado, headings, labels e leitura por tecnologia assistiva;
-- [ ] reduzir repetição visual/acessível causada por efeitos de texto;
+- [ ] terminar inventário de flags, rotas e componentes legados;
+- [ ] alinhar nomenclatura, capitalização e tom do produto;
+- [ ] revisar loading, vazio, erro, sucesso e retry das rotas críticas;
+- [ ] revisar contraste, foco, teclado, headings, labels e tecnologia assistiva;
 - [ ] revisar desktop, tablet e mobile;
-- [ ] medir Core Web Vitals e Lighthouse em produção;
-- [ ] validar legal/LGPD, e-mails, CNPJ, endereço, política de privacidade e consentimentos;
+- [ ] medir Lighthouse/Core Web Vitals em ambiente publicado;
+- [ ] validar dados legais/LGPD sem placeholders;
 - [ ] validar catálogo com dados reais, imagens, preços e disponibilidade.
 
-Saída: experiência coerente, acessível e sem conteúdo falso.
+Critério de saída: experiência consistente e sem conteúdo falso ou estado impossível.
 
-### P6 — Release engineering
+### P5 — Release engineering
 
 Estado: **PENDENTE**
 
-- [ ] definir SemVer, changelog real e política de release;
-- [ ] configurar ambiente preview/staging separado de produção;
-- [ ] definir promoção imutável do mesmo artefato;
+- [ ] definir SemVer e política de release;
+- [ ] separar preview/staging de produção;
+- [ ] promover o mesmo artefato imutável entre ambientes;
 - [ ] criar checklist de secrets por ambiente sem valores sensíveis;
-- [ ] configurar logs, alertas, uptime e rastreamento de erros real;
-- [ ] definir backup, restore, rollback e responsáveis;
+- [ ] configurar rastreamento real de erros, logs, uptime e alertas;
+- [ ] definir backup, restore e rollback;
 - [ ] ensaiar migration do zero e restauração;
-- [ ] criar release candidate assinada e notas de versão.
+- [ ] criar RC versionada e notas de versão.
 
-Saída: RC promovível e reversível.
+Critério de saída: release candidate promovível e reversível.
 
-### P7 — Lançamento controlado
+### P6 — Lançamento controlado
 
 Estado: **PENDENTE**
 
 - [ ] congelar escopo;
-- [ ] executar checklist final e go/no-go;
+- [ ] executar go/no-go final;
 - [ ] lançar em canário;
 - [ ] observar erros, auth, pagamentos e latência;
-- [ ] ampliar tráfego somente com SLOs dentro da meta;
+- [ ] ampliar tráfego somente dentro das metas definidas;
 - [ ] registrar release final e retrospectiva.
 
-## 5. Critérios mínimos de GO
+## 6. Bloqueios atuais
 
-O lançamento só pode ser aprovado quando todos forem verdadeiros:
+### 6.1 GitHub Actions
 
-- Quality Gate verde em commit exato;
-- cada push direto na main vinculado a commit reversível e Quality Gate verde;
-- nenhum secret high-confidence no Git ou bundle;
-- nenhum advisory crítico/alto sem mitigação;
-- RLS/grants/funções privilegiadas revisadas;
-- catálogo publicado com dados reais e estados de erro;
-- Stripe testado ponta a ponta e webhook implantado;
-- fluxos público, cliente e admin aprovados;
-- cobertura mínima configurada satisfeita;
-- Lighthouse e acessibilidade medidos, não estimados;
-- backup/restore/rollback ensaiados;
-- RC versionada e release notes coerentes;
-- responsável e janela de observação definidos.
+Último run inspecionado:
 
-## 6. Checkpoints
+- workflow: `Quality Gate`;
+- run: `33346618454`;
+- HEAD: `25b384b2f31f4b4712b55e1f2d619f9fe2c9f945`;
+- job: `Build, test and security`;
+- label solicitada: `ubuntu-latest`;
+- `runner_id=0`;
+- `runner_name=""`;
+- `steps=[]`;
+- duração aproximada: quatro segundos.
 
-Cada checkpoint deve registrar:
+Interpretação: ainda **não existe erro de aplicação reproduzido pelo CI**. O job falha antes de executar checkout, Node, npm, lint, testes ou build. Não repetir o mesmo workflow em loop até a infraestrutura de Actions ser corrigida.
 
-- HEAD;
-- concluído;
-- testes e provas;
-- bloqueios;
-- next_action;
-- do_not_repeat.
+### 6.2 Supabase remoto
 
-### Checkpoint 0 — 2026-08-30
+O hardening de código e migration não prova o estado do ambiente. O projeto observado anteriormente estava inativo, portanto ainda faltam:
 
-HEAD inicial: 792e6f882e298fe38bfc57b4025ad09ca631acf9
+- drift de migrations;
+- aplicação da migration de Storage privado;
+- verificação de policies/grants reais;
+- advisors com banco acessível;
+- testes de owner/admin em `storage.objects`;
+- E2E de checkout.
 
-Concluído:
+### 6.3 Main sem proteção
 
-- inventário inicial do GitHub, código, documentação, site e Supabase;
-- veredito NO-GO baseado em evidências;
-- criação da branch de recuperação;
-- definição do plano e do contrato de continuidade;
-- preparação do primeiro Quality Gate.
+A `main` continua sem proteção e sem status checks obrigatórios. Isso é compatível apenas temporariamente com a instrução atual de execução direta. Antes do lançamento, o processo precisa impedir regressão acidental.
 
-Testes/provas:
+## 7. Critérios mínimos de GO
 
-- árvore GitHub completa: 1.737 arquivos, 1.954 entradas;
-- inspeção pública de /, /universo e /login;
-- consulta do projeto Supabase e inventário de Edge Functions;
-- comparação do inventário Git x funções implantadas.
+O lançamento só pode ser aprovado quando **todos** forem verdadeiros:
 
-Next action:
+- [ ] Quality Gate verde no commit exato da RC;
+- [ ] instalação reproduzível com package manager canônico;
+- [ ] nenhum secret high-confidence no Git ou bundle;
+- [ ] nenhum advisory crítico/alto sem mitigação ou aceitação formal;
+- [ ] RLS, grants, Storage e funções privilegiadas revisados no ambiente ativo;
+- [ ] catálogo publicado com dados reais e estados de falha honestos;
+- [ ] pagamentos do escopo de lançamento testados ponta a ponta;
+- [ ] fluxos público, cliente e admin aprovados;
+- [ ] cobertura mínima configurada satisfeita;
+- [ ] acessibilidade e desempenho medidos, não estimados;
+- [ ] dados legais/LGPD validados;
+- [ ] backup, restore e rollback ensaiados;
+- [ ] RC versionada e release notes coerentes;
+- [ ] monitoramento e responsável pela janela de lançamento definidos.
 
-- executar o Quality Gate, registrar falhas verdadeiras e iniciar P1 sem apagar histórico.
+## 8. Checkpoint atual
 
-Do not repeat:
+### Checkpoint 9 — 2026-08-30
 
-- não reutilizar percentuais antigos;
-- não reauditar a raiz antes de novos commits;
-- não restaurar/deployar Supabase durante limpeza documental;
-- não tratar advisors vazios do projeto inativo como aprovação de segurança.
-
-
-### Checkpoint 1 — 2026-08-30
-
-HEAD: fac687daef7ca0b83f6143141d4114f5c7767c0c
+HEAD de início deste bloco: `ed464a0ed777facee88af698bf8f9f3a4ca7d7fb`  
+HEAD funcional auditado antes da atualização deste SSOT: `25b384b2f31f4b4712b55e1f2d619f9fe2c9f945`
 
 Concluído:
 
-- raiz reduzida de 74 para 33 entradas;
-- raiz Markdown reduzida de 41 documentos concorrentes para AGENTS.md, README.md e URGENTE.md;
-- 40 documentos antigos preservados sem reescrita em docs-archive/root-legacy/2026-pre-urgent;
-- criado índice explicando a autoridade histórica do arquivo;
-- launcher e instrução auxiliar de Telegram movidos para scripts/catalog/legacy;
-- atalho binário telegram-2370335738-images.lnk removido do estado atual;
-- Quality Gate acionado em commits reais.
+- fail-closed comercial estendido de compra avulsa para configuração global, planos e assinatura;
+- planos públicos/checkout agora rejeitam preço, entrega e credits inválidos;
+- assinatura deixou de inventar coins, preço contextual, economia e valor zero de carregamento;
+- upload de comprovante de assinatura passou a exigir autenticação;
+- comprovante novo passou de URL pública para object path privado ligado ao usuário;
+- migration de bucket privado, limites, MIME e RLS adicionada;
+- checkout privado valida propriedade do caminho antes de persistir;
+- arquitetura `private_api` + wrapper público `SECURITY INVOKER` foi preservada;
+- documentação que ensinava bucket público foi corrigida;
+- testes do upload foram alinhados ao contrato privado;
+- spec `.kiro` concorrente e órfão foi removido da `main`;
+- busca por `VITE_SERVICE_ROLE` não encontrou ocorrência indexada;
+- busca por `TODO/FIXME/HACK/XXX` não encontrou ocorrência indexada.
 
 Testes/provas:
 
-- árvore da branch contém 41 arquivos no novo arquivo histórico, incluindo o índice;
-- nenhum .lnk permanece versionado na branch;
-- duas execuções do Quality Gate falharam antes de iniciar steps;
-- jobs 99341593024 e 99341801589 têm steps=null e logs_url=null.
+- Quality Gate run `33346618454` foi disparado no HEAD `25b384...`;
+- job retornou `runner_id=0`, `runner_name=""` e `steps=[]`;
+- portanto typecheck, lint, testes, build e audit **ainda não foram executados** por esse gate;
+- inspeção das migrations confirmou que o checkout privilegiado já havia sido movido para `private_api`; a migration nova foi corrigida para não regredir essa fronteira;
+- novo serviço de comprovante não chama `getPublicUrl()` e retorna apenas o object path;
+- o caminho inclui o usuário autenticado e a RLS versionada exige o mesmo `auth.uid()`.
 
 Bloqueios:
 
-- GitHub Actions não alocou/executou o runner. A causa provável está fora do YAML/código (configuração de Actions, cobrança, limite ou política da conta), mas precisa ser confirmada no GitHub; sem steps/logs não existe erro de aplicação a corrigir.
+- GitHub Actions não aloca runner;
+- Supabase remoto precisa estar ativo e confirmado para aplicar/provar o hardening;
+- mudanças de UI ainda não têm build/smoke visual atual;
+- `main` permanece sem proteção;
+- existem dois conceitos de upload de prova de pagamento (`payment-vouchers` e `payment-proofs`) e a autoridade canônica precisa ser consolidada;
+- malware scanning não deve depender do navegador como única fronteira de segurança.
 
 Next action:
 
-- abrir PR draft;
-- verificar a configuração/limite do GitHub Actions;
-- continuar a classificação de docs/ e docs-archive sem alterar sistema ou produção;
-- após o runner funcionar, corrigir a primeira falha real do Quality Gate.
+1. continuar P1 auditando templates `.env`, documentação vigente, feature flags e rotas legadas;
+2. mapear `payment-vouchers` x `payment-proofs` e definir uma única arquitetura sem quebrar checkout existente;
+3. corrigir defaults silenciosos restantes que afetem comportamento público/comercial;
+4. assim que Actions voltar a alocar runner, executar e corrigir a primeira falha real do Quality Gate;
+5. somente depois de `npm ci` comprovado, decidir remoção de `bun.lock`/`bun.lockb`;
+6. quando o Supabase correto estiver operacional, medir drift e provar RLS/Storage/RPC antes de qualquer declaração de segurança.
 
 Do not repeat:
 
-- não rerodar o mesmo workflow enquanto jobs continuarem sem steps/logs;
-- não devolver documentos antigos à raiz;
-- não remover package-lock ou lockfiles Bun antes de uma instalação reproduzível comprovada;
-- não confundir falha de alocação do runner com falha de build.
-
-
-### Checkpoint 2 — 2026-08-30
-
-HEAD funcional: a53dc69cf1732a1ffdf98b46eb7611e7c44fee16
-
-Concluído:
-
-- PR draft #2 aberto contra main;
-- vercel.json passou a ignorar somente commits de documentação;
-- classificador de diff conservador criado em scripts/vercel/should-ignore-build.mjs;
-- falha de classificação mantém a build ativa;
-- a home agora distingue carregamento, indisponibilidade, catálogo parcial, vazio real e catálogo ativo;
-- contadores não apresentam zero falso durante falha da consulta;
-- versão visual v2.0 sem correspondência em package.json removida.
-
-Testes/provas:
-
-- cinco casos do classificador executados com Node: documentação, código, configuração, vazio e diff misto;
-- mudanças em src/, vercel.json e diff misto continuam a build;
-- leitura da branch confirmou vercel.json e o script no commit 0f583d52d16ff147a937ccb45f0cec5a54098f6e;
-- o commit funcional da home é a53dc69cf1732a1ffdf98b46eb7611e7c44fee16.
-
-Bloqueios:
-
-- Vercel ainda reporta build-rate-limit no plano Hobby para commits funcionais;
-- GitHub Actions continua sem iniciar steps;
-- a correção visual ainda exige preview e smoke test quando a cota/runner estiverem disponíveis.
-
-Next action:
-
-- validar se este commit somente documental é corretamente ignorado pela Vercel;
-- restaurar a execução real do Quality Gate;
-- resolver drift Node 22 no CI x Node 24 na Vercel;
-- continuar P2 sem remover lockfiles antes de prova reproduzível.
-
-Do not repeat:
-
-- não usar texto promocional para encobrir falha de dados;
-- não mostrar zero quando a consulta falhou;
-- não consumir preview para documentação;
-- não considerar a correção visual aprovada sem build e smoke test.
-
-
-### Checkpoint 3 — 2026-08-30
-
-HEAD consolidado na main: d65aa40f77c75b608b9ca65b8e6247e1bfa0c66a
-
-Decisão operacional:
-
-- main passa a ser a única branch de trabalho;
-- novos commits serão feitos diretamente na main;
-- novas branches ou PRs somente com nova instrução explícita do usuário.
-
-Concluído:
-
-- os 10 commits de work/urgente/release-readiness foram aplicados na main por fast-forward sem force;
-- comparação main...work/urgente/release-readiness: identical, ahead=0, behind=0;
-- feature/contextual-pricing-system foi classificada como obsoleta: ahead=0 e behind=1128;
-- Node 24 LTS adotado como runtime canônico no CI e no desenvolvimento;
-- Quality Gate passa a executar somente em push para main ou manualmente.
-
-Testes/provas:
-
-- main avançou de 792e6f882e298fe38bfc57b4025ad09ca631acf9 para d65aa40f77c75b608b9ca65b8e6247e1bfa0c66a sem force;
-- Vercel já está configurada em Node 24.x;
-- Node 24 é LTS e o runtime 24.x é suportado pela Vercel;
-- nenhuma branch remanescente contém commit exclusivo em relação à main.
-
-Bloqueios:
-
-- o conector não oferece exclusão de branch, portanto as referências antigas permanecem apenas como inativas;
-- GitHub Actions ainda precisa voltar a alocar runner;
-- Vercel continua bloqueando builds por limite do plano Hobby.
-
-Next action:
-
-- corrigir a identidade do package.json e consolidar o package manager após execução real do Quality Gate;
-- continuar inventário de mocks, placeholders e legados diretamente na main;
-- revalidar home e catálogo quando a Vercel liberar build.
-
-Do not repeat:
-
-- não criar nova branch para esta execução;
-- não tentar mesclar feature/contextual-pricing-system: ela possui zero commits exclusivos;
-- não alterar Node para 22 enquanto Vercel e o runtime canônico estiverem em Node 24;
-- não confundir referências antigas com branches ativas de desenvolvimento.
-
-
-### Checkpoint 4 — 2026-08-30
-
-HEAD anterior da main: dfd7c5f739b09da130686fe562e8eed0239efc00
-
-Concluído:
-
-- package.json deixou de usar a identidade do template vite_react_shadcn_ts@0.0.0;
-- identidade canônica definida como ordax-web@0.1.0;
-- package-lock.json atualizado no mesmo commit;
-- engines.node fixado em 24.x no manifesto e no lockfile.
-
-Testes/provas:
-
-- package.json e package-lock.json foram parseados como JSON antes da escrita;
-- nome, versão e engine foram atualizados tanto no manifesto quanto na entrada raiz do lockfile;
-- nenhuma dependência ou resolução do lockfile foi alterada.
-
-Bloqueios:
-
-- npm ci e o restante do Quality Gate ainda dependem da alocação do runner do GitHub Actions.
-
-Next action:
-
-- observar a execução do Quality Gate no novo HEAD;
-- se o runner continuar sem steps, avançar com auditorias estáticas que não dependam de instalação;
-- consolidar npm como package manager único somente depois de npm ci real.
-
-Do not repeat:
-
-- não restaurar o nome vite_react_shadcn_ts;
-- não publicar versão 1.0.0 antes dos critérios de GO;
-- não remover package-lock.json;
-- não remover lockfiles concorrentes antes da prova de npm ci.
-
-
-### Checkpoint 5 — 2026-08-30
-
-HEAD anterior da main: a2be72d9d104427b2d7b813187a6ed46064b1e46
-
-Concluído:
-
-- removidas as referências públicas de Open Graph e Twitter para placeholder.svg;
-- criado public/og-image.png com identidade preta/dourada do produto;
-- adicionados metadados de largura, altura e texto alternativo;
-- o asset não depende de catálogo, contadores ou claims de disponibilidade.
-
-Testes/provas:
-
-- imagem validada em 1200x630, formato PNG, 16-bit sRGB;
-- inspeção visual confirmou legibilidade, contraste e margens;
-- texto do asset: ORDAX, Tonecos Studios e Colecionáveis Artesanais Premium;
-- index.html passa a usar URL absoluta https://ordax.com.br/og-image.png.
-
-Bloqueios:
-
-- a URL pública só poderá ser verificada após a Vercel aceitar uma nova build.
-
-Next action:
-
-- validar HTTP 200, content-type image/png e preview social após deploy;
-- continuar o inventário de placeholders e mocks que afetam a experiência pública.
-
-Do not repeat:
-
-- não voltar a usar placeholder.svg em metadados públicos;
-- não colocar números de catálogo ou versão no asset social;
-- não declarar o asset publicado antes de verificar o deploy.
-
-
-### Checkpoint 6 — 2026-08-30
-
-HEAD anterior da main: 69a3c82e9d40c9ae2e311066d346c60c649b0c84
-
-Concluído:
-
-- inventário completo da árvore: 1.743 arquivos, sem truncamento;
-- removida a rota de catálogo mock do serviço usado pela aplicação;
-- removidas VITE_CATALOG_WEBP_MOCK e VITE_CATALOG_WEBP_MOCK_URL dos templates;
-- removidos o módulo mock e o gerador catalog:telegram-webp-site-mock;
-- removidos seis SVGs de placeholder sem uso de produto;
-- criado image-fallback.svg neutro e coerente com a marca;
-- renomeada a constante de PLACEHOLDER_IMAGE_URL para FALLBACK_IMAGE_URL;
-- mocks de teste foram preservados porque não fazem parte do bundle da aplicação.
-
-Testes/provas:
-
-- catalog-models-service.ts ficou sem import, condição ou chamada de mock;
-- busca de referências encontrou o mock de catálogo apenas no serviço removido, templates e script removidos;
-- placeholders coloridos eram referenciados somente por documentação histórica;
-- package.json foi parseado antes da alteração;
-- fallback SVG possui título e descrição acessíveis.
-
-Bloqueios:
-
-- typecheck, lint, testes e build ainda dependem do runner voltar a executar;
-- verificação visual pública depende de nova build da Vercel.
-
-Next action:
-
-- confirmar por busca que não restam referências de runtime ao catálogo mock ou aos placeholders removidos;
-- revisar placeholders legais de CNPJ/telefone e impedir exposição pública de valores falsos;
-- continuar o inventário de feature flags e rotas legadas.
-
-Do not repeat:
-
-- não reintroduzir catálogo mock no serviço de produção;
-- não ativar dados demonstrativos por variável VITE_*;
-- não remover mocks utilitários de teste;
-- não usar arquivos de docs-archive como justificativa para manter assets públicos obsoletos.
-
-
-### Checkpoint 7 — 2026-08-30
-
-HEAD anterior da main: 832fbf78d7994252762a92dcbade827c6f829819
-
-Concluído:
-
-- versão fallback da aplicação alinhada para 0.1.0;
-- removidos defaults inventados de Facebook, Instagram, X e YouTube;
-- removidos CNPJ e telefone de exemplo da configuração de runtime;
-- endereço padrão “São Paulo, Brasil” removido;
-- formulário administrativo mantém apenas exemplos visivelmente genéricos;
-- critério de GO alinhado à decisão do usuário de trabalhar diretamente na main.
-
-Testes/provas:
-
-- busca exata mostrou que os defaults sociais e placeholders eram usados somente no formulário administrativo;
-- system settings passa a usar endereço vazio quando não há configuração real;
-- templates .env não sugerem mais perfis sociais ou localização como se fossem oficiais;
-- nenhum valor real de usuário, CNPJ ou telefone foi inventado.
-
-Bloqueios:
-
-- emails @ordax.com.br ainda precisam de verificação operacional de entrega;
-- dados legais reais continuam necessários antes do lançamento;
-- build e testes automatizados continuam bloqueados pelo runner.
-
-Next action:
-
-- revisar feature flags e rotas legadas;
-- verificar se páginas legais distinguem configuração ausente de dado oficial;
-- impedir preços default de serem usados em compra quando a configuração remota falhar.
-
-Do not repeat:
-
-- não preencher dados legais por suposição;
-- não usar localização do usuário ou do desenvolvedor como endereço da empresa;
-- não criar perfis sociais presumidos;
-- não alterar a decisão de main única sem nova instrução.
-
-
-### Checkpoint 8 — 2026-08-30
-
-HEAD anterior da main: ca5b825de2c48977037cba0da41d132fe8eb07b3
-
-Concluído:
-
-- fluxo BuyCharacter deixou de usar preços hardcoded como fallback;
-- erro ao carregar coleção agora é distinguido de coleção inexistente;
-- ausência, erro ou inconsistência de preço bloqueia a oferta e a reserva;
-- RPC de preço agora exige linha presente e valores monetários finitos e coerentes;
-- valores numéricos retornados pelo PostgREST são normalizados antes do uso;
-- usuário recebe estado de erro com retry sem ver preço estimado.
-
-Testes/provas:
-
-- removidas todas as referências a PRICING.DEFAULT_* e system settings em BuyCharacter;
-- validação rejeita preço zero/negativo, PIX maior que preço cheio e entrada maior que o total;
-- price_full, price_pix, entrada e saldos vêm exclusivamente do RPC validado;
-- rota de compra continua escondida enquanto PUBLIC_COLLECTIONS_ENABLED=false.
-
-Bloqueios:
-
-- testes automatizados existentes não foram executados porque o runner permanece indisponível;
-- o fluxo só poderá ser testado ponta a ponta após Supabase e preview voltarem.
-
-Next action:
-
-- estender fail-closed para páginas de planos e assinatura;
-- revisar retorno silencioso de defaults em pricing-settings-service;
-- executar testes de preço e reserva assim que o Quality Gate funcionar.
-
-Do not repeat:
-
-- não usar preço fixo como fallback em tela de compra;
-- não converter falha de preço em oferta estimada;
-- não habilitar PUBLIC_COLLECTIONS_ENABLED antes dos fluxos comerciais serem testados;
-- não permitir reserva quando o RPC não retornar configuração válida.
+- não reintroduzir preço/coins hardcoded como fallback comercial;
+- não voltar a usar bucket público, `getPublicUrl()` ou URL HTTPS arbitrária como prova de pagamento nova;
+- não mover o corpo privilegiado do checkout de volta para o schema `public`;
+- não criar branch/PR nesta execução;
+- não remover lockfiles concorrentes antes de instalação npm reproduzível;
+- não rerodar Actions repetidamente enquanto continuar `runner_id=0` e `steps=[]`;
+- não declarar migration aplicada, CI verde ou produto pronto sem prova.
