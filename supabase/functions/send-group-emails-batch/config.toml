@@ -1,2 +1,0 @@
-# Uses EMAIL_WEBHOOK_SECRET or admin JWT fallback for local development.
-verify_jwt = false
