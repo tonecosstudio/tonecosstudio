@@ -36,7 +36,9 @@ export function ArcadeNav() {
   const location = useLocation();
   const { user } = useAuth();
   const { data: isAdmin } = useCurrentUserIsAdmin({ currentUserId: user?.id });
-  const { data: balanceData, isLoading: balanceLoading } = useCoinsBalance();
+  const { data: balanceData, isLoading: balanceLoading } = useCoinsBalance(user?.id, {
+    enabled: !!user,
+  });
   const userBalance = balanceData?.balance ?? 0;
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -98,11 +100,12 @@ export function ArcadeNav() {
             <button
               onClick={() => navigate(AUTH_ROUTES.notifications)}
               className="relative text-[hsl(0,0%,55%)] transition-colors hover:text-[hsl(var(--gold-accent))]"
+              aria-label="Abrir notificações"
             >
               <Bell className="h-4 w-4" />
             </button>
           )}
-          <CoinCounter balance={userBalance} isLoading={balanceLoading} />
+          {user && <CoinCounter balance={userBalance} isLoading={balanceLoading} />}
           {!user && (
             <button
               onClick={() => navigate(PUBLIC_ROUTES.login)}
@@ -114,6 +117,8 @@ export function ArcadeNav() {
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="text-[hsl(0,0%,55%)] transition-colors hover:text-[hsl(var(--gold-accent))] lg:hidden"
+            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? (
               <X className="h-5 w-5" />
