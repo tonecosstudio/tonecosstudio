@@ -41,18 +41,26 @@ export function SendPaymentLinkDialog({
   );
   const [copiedPix, setCopiedPix] = useState(false);
 
-  const copyPixKey = () => {
+  const copyPixKey = async () => {
     if (!pixKey) return;
-    navigator.clipboard.writeText(pixKey);
-    setCopiedPix(true);
-    toast({ title: "Chave PIX copiada!" });
-    setTimeout(() => setCopiedPix(false), 2000);
+
+    try {
+      await navigator.clipboard.writeText(pixKey);
+      setCopiedPix(true);
+      toast({ title: "Chave PIX copiada!" });
+      setTimeout(() => setCopiedPix(false), 2000);
+    } catch {
+      toast({
+        title: "Não foi possível copiar a chave PIX",
+        variant: "destructive",
+      });
+    }
   };
 
   const getPaymentTypeLabel = () => {
     switch (paymentType) {
       case "voucher":
-        return "Voucher (R$ 100)";
+        return "Voucher";
       case "deposit":
         return "Sinal";
       case "final":
@@ -113,7 +121,7 @@ export function SendPaymentLinkDialog({
                 className="flex-1"
               />
               {pixKey && (
-                <Button type="button" variant="outline" size="icon" onClick={copyPixKey}>
+                <Button type="button" variant="outline" size="icon" onClick={() => void copyPixKey()}>
                   {copiedPix ? (
                     <Check className="h-4 w-4 text-green-500" />
                   ) : (
