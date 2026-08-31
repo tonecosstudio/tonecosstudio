@@ -12,7 +12,7 @@ import { useCollectionPricing } from "@/hooks/useCollectionPricing";
 import {
   createStandalonePurchaseReservation,
   getStandalonePurchaseCollectionBySlug,
-} from "@/lib/standalone-purchase-service";
+} from "@/services/payments/standalone-purchase-reservation-service";
 import { log } from "@/lib/logger";
 import { PUBLIC_ROUTES, subscribeCollectionPath } from "@/config/routes";
 
@@ -104,7 +104,6 @@ export default function BuyCharacter() {
 
   const characters = collection.collection_characters || [];
 
-  // Pegar o personagem do mês atual (revealed)
   const currentMonthCharacter = characters.find((c) => c.status === "revealed");
 
   const priceFull = pricing.price_full;
@@ -119,7 +118,6 @@ export default function BuyCharacter() {
       keywords={["compra avulsa", "peça única", collection.name]}
     >
       <div className="container max-w-5xl py-12">
-        {/* Header */}
         <div className="mb-8">
           <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -132,7 +130,6 @@ export default function BuyCharacter() {
             </p>
           </div>
 
-          {/* Valor da Peça */}
           <Card className="bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground mb-2">Valor da Peça</p>
@@ -162,14 +159,12 @@ export default function BuyCharacter() {
           </Card>
         ) : (
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Informações da Compra */}
             <div>
               <Card>
                 <CardHeader>
                   <CardTitle>Sistema de Reserva de Produção</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Sistema de Reserva */}
                   <div>
                     <p className="text-sm text-muted-foreground mb-4">
                       Para garantir sua peça neste ciclo:
@@ -192,7 +187,6 @@ export default function BuyCharacter() {
                     </div>
                   </div>
 
-                  {/* Pagamento do Saldo */}
                   <div className="bg-muted/50 rounded-lg p-4">
                     <p className="text-sm font-semibold mb-3">Pagamento do saldo:</p>
                     <div className="space-y-2 text-sm">
@@ -206,7 +200,6 @@ export default function BuyCharacter() {
                     </div>
                   </div>
 
-                  {/* Processo */}
                   <div className="space-y-4">
                     <h3 className="font-bold text-lg">Como Funciona</h3>
 
@@ -273,7 +266,6 @@ export default function BuyCharacter() {
                     </div>
                   </div>
 
-                  {/* Benefícios - Inclui */}
                   <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-5">
                     <h4 className="font-bold text-green-900 mb-4">Inclui</h4>
                     <div className="space-y-2">
@@ -305,9 +297,7 @@ export default function BuyCharacter() {
               </Card>
             </div>
 
-            {/* Personagem do Mês */}
             <div>
-              {/* Contador de Vagas */}
               <ProductionLimitBadge />
 
               <Card className="mt-4">
@@ -358,7 +348,6 @@ export default function BuyCharacter() {
                                 description: `Sua reserva de ${currentMonthCharacter.name} foi criada com sucesso.`,
                               });
 
-                              // Redirecionar para página de acompanhamento
                               setTimeout(() => {
                                 navigate(`/meus-pedidos`);
                               }, 1500);
@@ -372,68 +361,34 @@ export default function BuyCharacter() {
                               let errorMessage = "Ocorreu um erro ao criar sua compra.";
                               const message = error instanceof Error ? error.message : "";
 
-                              if (message.includes('CUTOFF_PASSED')) {
+                              if (message.includes("temporarily unavailable")) {
+                                errorMessage =
+                                  "As reservas estão temporariamente indisponíveis enquanto validamos o fluxo de pagamento.";
+                              } else if (message.includes("CUTOFF_PASSED")) {
                                 errorMessage = "O prazo para compras deste ciclo já passou.";
-                              } else if (message.includes('CAPACITY_EXCEEDED')) {
+                              } else if (message.includes("CAPACITY_EXCEEDED")) {
                                 errorMessage = "Capacidade esgotada para este ciclo.";
-                              } else if (message.includes('CYCLE_NOT_OPEN')) {
+                              } else if (message.includes("CYCLE_NOT_OPEN")) {
                                 errorMessage = "Ciclo não está aberto para novas compras.";
                               }
 
                               toast({
-                                title: "Erro ao criar compra",
+                                title: "Não foi possível criar a reserva",
                                 description: errorMessage,
                                 variant: "destructive",
                               });
                             }
                           }}
                         >
-                          <span className="text-lg">
-                            Reservar com R$ {depositAmount.toFixed(2)}
-                          </span>
+                          <CreditCard className="w-5 h-5 mr-2" />
+                          Reservar Agora - R$ {depositAmount.toFixed(2)}
                         </Button>
-                        <p className="text-sm text-center text-muted-foreground">
-                          Pagamento do saldo após conclusão da peça.
-                        </p>
+
+                        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                          <Smartphone className="w-4 h-4" />
+                          <span>PIX ou cartão de crédito</span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Info sobre assinatura - Sutil */}
-                  <div className="mt-6 p-4 bg-muted/30 border border-muted rounded-lg">
-                    <p className="text-xs text-muted-foreground text-center mb-2">
-                      Quer receber personagens todos os meses?
-                    </p>
-                    <Button asChild variant="ghost" size="sm" className="w-full text-xs h-8">
-                      <Link to={subscribeCollectionPath(collectionSlug)}>
-                        Conheça os Planos de Assinatura →
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Formas de Pagamento */}
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <span>💳</span>
-                    Formas de Pagamento
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-4 p-4 border-2 rounded-lg">
-                    <Smartphone className="w-6 h-6 text-primary flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="font-bold text-sm">Pagamento à Vista</p>
-                      <p className="text-xs text-muted-foreground">PIX ou transferência bancária</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 p-4 border rounded-lg">
-                    <CreditCard className="w-6 h-6 text-primary flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm">Cartão de Crédito</p>
-                      <p className="text-xs text-muted-foreground">Parcelamento disponível</p>
                     </div>
                   </div>
                 </CardContent>
@@ -445,4 +400,3 @@ export default function BuyCharacter() {
     </Page>
   );
 }
-
