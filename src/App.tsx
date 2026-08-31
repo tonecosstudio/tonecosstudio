@@ -3,8 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useSentry } from "@/hooks/use-sentry";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MainLayout } from "@/components/layouts/MainLayout";
@@ -51,7 +50,6 @@ const CustomerOrderProgressPage = lazy(() => import("./pages/CustomerOrderProgre
 const GroupsArcade = lazy(() => import("./pages/GroupsArcade"));
 const MemberGroupDetailsPage = lazy(() => import("./pages/MemberGroupDetailsPage"));
 const SubscriberDashboardArcade = lazy(() => import("./pages/SubscriberDashboardArcade"));
-const CoinsPurchaseArcade = lazy(() => import("./pages/CoinsPurchaseArcade"));
 
 // Admin pages
 const AdminHome = lazy(() => import("./pages/admin/analytics/AdminHome"));
@@ -70,11 +68,10 @@ const AdminGroupDetailsPage = lazy(() => import("./pages/admin/users/AdminGroupD
 const OrdersPage = lazy(() => import("./pages/admin/production/OrdersPage"));
 const ProductionHub = lazy(() => import("./pages/admin/production/ProductionHub"));
 
-// ─── Loading fallback ────────────────────────────────────────────────
 function PageLoader() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
     </div>
   );
 }
@@ -86,7 +83,6 @@ function HiddenCollectionsPage() {
 }
 
 function AppContent() {
-  useSentry();
   useAuthProfileSync();
 
   return (
@@ -102,150 +98,215 @@ function AppContent() {
         <MainLayout>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-            {/* Public */}
-            <Route path={PUBLIC_ROUTES.home} element={<LandingPage />} />
-            <Route path={PUBLIC_ROUTES.landing} element={<LandingPage />} />
-            <Route path={PUBLIC_ROUTES.migrateOrder} element={<RequireAuth><MigratePedido /></RequireAuth>} />
-            <Route path={PUBLIC_ROUTES.catalog} element={<CatalogArcade />} />
-            <Route path={PUBLIC_ROUTES.catalogUniverseTheme} element={<CatalogArcade />} />
-            <Route path={PUBLIC_ROUTES.catalogUniverseFranchise} element={<CatalogArcade />} />
-            <Route path={PUBLIC_ROUTES.catalogUniverseCharacter} element={<CatalogArcade />} />
-            <Route path={PUBLIC_ROUTES.catalogModels} element={<CatalogModelsArcade />} />
-            <Route path={PUBLIC_ROUTES.catalogCharacter} element={<CatalogCharacterArcade />} />
-            <Route path={PUBLIC_ROUTES.catalogDetails} element={<ModelDetails />} />
-            <Route path={PUBLIC_ROUTES.about} element={<AboutArcade />} />
-            <Route
-              path={PUBLIC_ROUTES.plans}
-              element={PUBLIC_COLLECTIONS_ENABLED ? <PlansArcade /> : <HiddenCollectionsPage />}
-            />
-            <Route
-              path={PUBLIC_ROUTES.collections}
-              element={
-                PUBLIC_COLLECTIONS_ENABLED ? <CollectionsShowcase /> : <HiddenCollectionsPage />
-              }
-            />
-            <Route
-              path={PUBLIC_ROUTES.collectionsArcade}
-              element={
-                PUBLIC_COLLECTIONS_ENABLED ? <CollectionsArcade /> : <HiddenCollectionsPage />
-              }
-            />
-            <Route
-              path={PUBLIC_ROUTES.collectionCharacterDetails}
-              element={
-                PUBLIC_COLLECTIONS_ENABLED ? <CharacterDetails /> : <HiddenCollectionsPage />
-              }
-            />
-            <Route
-              path={PUBLIC_ROUTES.characterDetails}
-              element={
-                PUBLIC_COLLECTIONS_ENABLED ? <CharacterDetails /> : <HiddenCollectionsPage />
-              }
-            />
-            <Route
-              path={PUBLIC_ROUTES.characterSelect}
-              element={<CharacterSelect />}
-            />
-            <Route
-              path={PUBLIC_ROUTES.collectionDetails}
-              element={
-                PUBLIC_COLLECTIONS_ENABLED ? <CollectionDetailsArcade /> : <HiddenCollectionsPage />
-              }
-            />
-            <Route
-              path={PUBLIC_ROUTES.buyCharacter}
-              element={PUBLIC_COLLECTIONS_ENABLED ? <BuyCharacter /> : <HiddenCollectionsPage />}
-            />
-            <Route path={PUBLIC_ROUTES.terms} element={<TermsArcade />} />
-            <Route path={PUBLIC_ROUTES.privacy} element={<PrivacyArcade />} />
-            <Route path={PUBLIC_ROUTES.contact} element={<ContactArcade />} />
-            <Route path={PUBLIC_ROUTES.login} element={<LoginArcade />} />
-            <Route
-              path={PUBLIC_ROUTES.preLaunch}
-              element={PUBLIC_COLLECTIONS_ENABLED ? <PreLaunchArcade /> : <HiddenCollectionsPage />}
-            />
+              {/* Public */}
+              <Route path={PUBLIC_ROUTES.home} element={<LandingPage />} />
+              <Route path={PUBLIC_ROUTES.landing} element={<LandingPage />} />
+              <Route
+                path={PUBLIC_ROUTES.migrateOrder}
+                element={
+                  <RequireAuth>
+                    <MigratePedido />
+                  </RequireAuth>
+                }
+              />
+              <Route path={PUBLIC_ROUTES.catalog} element={<CatalogArcade />} />
+              <Route path={PUBLIC_ROUTES.catalogUniverseTheme} element={<CatalogArcade />} />
+              <Route path={PUBLIC_ROUTES.catalogUniverseFranchise} element={<CatalogArcade />} />
+              <Route path={PUBLIC_ROUTES.catalogUniverseCharacter} element={<CatalogArcade />} />
+              <Route path={PUBLIC_ROUTES.catalogModels} element={<CatalogModelsArcade />} />
+              <Route path={PUBLIC_ROUTES.catalogCharacter} element={<CatalogCharacterArcade />} />
+              <Route path={PUBLIC_ROUTES.catalogDetails} element={<ModelDetails />} />
+              <Route path={PUBLIC_ROUTES.about} element={<AboutArcade />} />
+              <Route
+                path={PUBLIC_ROUTES.plans}
+                element={PUBLIC_COLLECTIONS_ENABLED ? <PlansArcade /> : <HiddenCollectionsPage />}
+              />
+              <Route
+                path={PUBLIC_ROUTES.collections}
+                element={
+                  PUBLIC_COLLECTIONS_ENABLED ? <CollectionsShowcase /> : <HiddenCollectionsPage />
+                }
+              />
+              <Route
+                path={PUBLIC_ROUTES.collectionsArcade}
+                element={PUBLIC_COLLECTIONS_ENABLED ? <CollectionsArcade /> : <HiddenCollectionsPage />}
+              />
+              <Route
+                path={PUBLIC_ROUTES.collectionCharacterDetails}
+                element={PUBLIC_COLLECTIONS_ENABLED ? <CharacterDetails /> : <HiddenCollectionsPage />}
+              />
+              <Route
+                path={PUBLIC_ROUTES.characterDetails}
+                element={PUBLIC_COLLECTIONS_ENABLED ? <CharacterDetails /> : <HiddenCollectionsPage />}
+              />
+              <Route path={PUBLIC_ROUTES.characterSelect} element={<CharacterSelect />} />
+              <Route
+                path={PUBLIC_ROUTES.collectionDetails}
+                element={
+                  PUBLIC_COLLECTIONS_ENABLED ? <CollectionDetailsArcade /> : <HiddenCollectionsPage />
+                }
+              />
+              <Route
+                path={PUBLIC_ROUTES.buyCharacter}
+                element={PUBLIC_COLLECTIONS_ENABLED ? <BuyCharacter /> : <HiddenCollectionsPage />}
+              />
+              <Route path={PUBLIC_ROUTES.terms} element={<TermsArcade />} />
+              <Route path={PUBLIC_ROUTES.privacy} element={<PrivacyArcade />} />
+              <Route path={PUBLIC_ROUTES.contact} element={<ContactArcade />} />
+              <Route path={PUBLIC_ROUTES.login} element={<LoginArcade />} />
+              <Route
+                path={PUBLIC_ROUTES.preLaunch}
+                element={PUBLIC_COLLECTIONS_ENABLED ? <PreLaunchArcade /> : <HiddenCollectionsPage />}
+              />
 
-            {/* Auth-required */}
-            <Route path={AUTH_ROUTES.profile} element={<RequireAuth><ProfileArcade /></RequireAuth>} />
-            <Route path={AUTH_ROUTES.profileSection} element={<RequireAuth><ProfileArcade /></RequireAuth>} />
-            <Route path={AUTH_ROUTES.paymentDetails} element={<RequireAuth><PaymentDetails /></RequireAuth>} />
-            <Route
-              path={AUTH_ROUTES.subscribeCollection}
-              element={
-                PUBLIC_COLLECTIONS_ENABLED ? (
-                  <RequireAuth><SubscribeCollection /></RequireAuth>
-                ) : (
-                  <HiddenCollectionsPage />
-                )
-              }
-            />
-            <Route path={AUTH_ROUTES.wishlist} element={<RequireAuth><WishlistArcade /></RequireAuth>} />
-            <Route path={AUTH_ROUTES.dashboard} element={<RequireAuth><DashboardArcade /></RequireAuth>} />
-            <Route path={AUTH_ROUTES.notifications} element={<RequireAuth><NotificationsArcade /></RequireAuth>} />
-            <Route path={AUTH_ROUTES.orderProgress} element={<RequireAuth><CustomerOrderProgressPage /></RequireAuth>} />
-            <Route path={AUTH_ROUTES.groups} element={<RequireAuth><GroupsArcade /></RequireAuth>} />
-            <Route path={AUTH_ROUTES.groupDetails} element={<RequireAuth><MemberGroupDetailsPage /></RequireAuth>} />
-            <Route
-              path={AUTH_ROUTES.subscriberDashboard}
-              element={
-                PUBLIC_COLLECTIONS_ENABLED ? (
-                  <RequireAuth><SubscriberDashboardArcade /></RequireAuth>
-                ) : (
-                  <HiddenCollectionsPage />
-                )
-              }
-            />
-            <Route path={AUTH_ROUTES.coinsPurchase} element={<RequireAuth><CoinsPurchaseArcade /></RequireAuth>} />
+              {/* Auth-required */}
+              <Route
+                path={AUTH_ROUTES.profile}
+                element={
+                  <RequireAuth>
+                    <ProfileArcade />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path={AUTH_ROUTES.profileSection}
+                element={
+                  <RequireAuth>
+                    <ProfileArcade />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path={AUTH_ROUTES.paymentDetails}
+                element={
+                  <RequireAuth>
+                    <PaymentDetails />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path={AUTH_ROUTES.subscribeCollection}
+                element={
+                  PUBLIC_COLLECTIONS_ENABLED ? (
+                    <RequireAuth>
+                      <SubscribeCollection />
+                    </RequireAuth>
+                  ) : (
+                    <HiddenCollectionsPage />
+                  )
+                }
+              />
+              <Route
+                path={AUTH_ROUTES.wishlist}
+                element={
+                  <RequireAuth>
+                    <WishlistArcade />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path={AUTH_ROUTES.dashboard}
+                element={
+                  <RequireAuth>
+                    <DashboardArcade />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path={AUTH_ROUTES.notifications}
+                element={
+                  <RequireAuth>
+                    <NotificationsArcade />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path={AUTH_ROUTES.orderProgress}
+                element={
+                  <RequireAuth>
+                    <CustomerOrderProgressPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path={AUTH_ROUTES.groups}
+                element={
+                  <RequireAuth>
+                    <GroupsArcade />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path={AUTH_ROUTES.groupDetails}
+                element={
+                  <RequireAuth>
+                    <MemberGroupDetailsPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path={AUTH_ROUTES.subscriberDashboard}
+                element={
+                  PUBLIC_COLLECTIONS_ENABLED ? (
+                    <RequireAuth>
+                      <SubscriberDashboardArcade />
+                    </RequireAuth>
+                  ) : (
+                    <HiddenCollectionsPage />
+                  )
+                }
+              />
+              <Route
+                path={AUTH_ROUTES.coinsPurchase}
+                element={<Navigate to={PUBLIC_ROUTES.catalog} replace />}
+              />
 
+              {/* Admin */}
+              <Route path={ADMIN_ROUTES.home} element={<RequireAdmin><AdminHome /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.users} element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.userDetails} element={<RequireAdmin><AdminUserDetails /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.userDetailsSection} element={<RequireAdmin><AdminUserDetails /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.catalog} element={<RequireAdmin><AdminCollectionsHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.catalogCollections} element={<RequireAdmin><AdminCollectionsHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.catalogCreditCharacters} element={<RequireAdmin><AdminCollectionsHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.financialHub} element={<RequireAdmin><AdminFinancialHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.financialCollections} element={<RequireAdmin><AdminFinancialHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.orders} element={<RequireAdmin><OrdersPage /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.production} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.productionKanban} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.productionList} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.productionCalendar} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.productionAnalytics} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.productionChoices} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.credits} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.creditsCoins} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.creditsCycles} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.creditsPlans} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.creditsAnalytics} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.audit} element={<RequireAdmin><AuditTrail /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.packaging} element={<RequireAdmin><AdminPackaging /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.analytics} element={<RequireAdmin><AdminAnalytics /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.settings} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.settingsOperational} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.settingsHolidays} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.settingsLegal} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.payments} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.paymentMethods} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.paymentKeys} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.paymentCalculator} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.paymentDetails} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.communication} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.communicationGroups} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.communicationQuickReplies} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.communicationTemplates} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.communicationNotifications} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.communicationHistory} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.communicationConversation} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+              <Route path={ADMIN_ROUTES.groupDetails} element={<RequireAdmin><AdminGroupDetailsPage /></RequireAdmin>} />
 
-            {/* Admin */}
-            <Route path={ADMIN_ROUTES.home} element={<RequireAdmin><AdminHome /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.users} element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.userDetails} element={<RequireAdmin><AdminUserDetails /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.userDetailsSection} element={<RequireAdmin><AdminUserDetails /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.catalog} element={<RequireAdmin><AdminCollectionsHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.catalogCollections} element={<RequireAdmin><AdminCollectionsHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.catalogCreditCharacters} element={<RequireAdmin><AdminCollectionsHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.financialHub} element={<RequireAdmin><AdminFinancialHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.financialCollections} element={<RequireAdmin><AdminFinancialHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.orders} element={<RequireAdmin><OrdersPage /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.production} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.productionKanban} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.productionList} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.productionCalendar} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.productionAnalytics} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.productionChoices} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.credits} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.creditsCoins} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.creditsCycles} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.creditsPlans} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.creditsAnalytics} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.audit} element={<RequireAdmin><AuditTrail /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.packaging} element={<RequireAdmin><AdminPackaging /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.analytics} element={<RequireAdmin><AdminAnalytics /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.settings} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.settingsOperational} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.settingsHolidays} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.settingsLegal} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.payments} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.paymentMethods} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.paymentKeys} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.paymentCalculator} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.paymentDetails} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.communication} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.communicationGroups} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.communicationQuickReplies} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.communicationTemplates} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.communicationNotifications} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.communicationHistory} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.communicationConversation} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
-            <Route path={ADMIN_ROUTES.groupDetails} element={<RequireAdmin><AdminGroupDetailsPage /></RequireAdmin>} />
-
-
-            {/* 404 */}
-            <Route path="*" element={<NotFoundArcade />} />
-          </Routes>
-        </Suspense>
+              <Route path="*" element={<NotFoundArcade />} />
+            </Routes>
+          </Suspense>
         </MainLayout>
 
         <CustomerChat />
