@@ -3,8 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchProductionMetrics,
   subscribeToProductionMetricsChanges,
-} from "@/services/admin/production/production-service";
-export type { ProductionMetrics } from "@/services/admin/production/production-service";
+} from "@/services/admin/production/production-metrics-service";
+export type { ProductionMetrics } from "@/services/admin/production/production-metrics-service";
 
 interface UseProductionMetricsOptions {
   refetchInterval?: number;
