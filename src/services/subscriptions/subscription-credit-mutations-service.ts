@@ -3,8 +3,6 @@ import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import type {
   Character,
   NoRenewalResponse,
-  PlanChangeResponse,
-  PlanType,
   ProductionCycle,
 } from "@/types/subscription-credit-system";
 
@@ -49,10 +47,6 @@ type CharacterPatch = {
 
 interface SubscriptionCreditMutationRpcClient {
   rpc(
-    fn: "schedule_subscription_credit_plan_change",
-    args: { p_subscription_id: string; p_new_plan_type: PlanType }
-  ): RpcResult<PlanChangeResponse>;
-  rpc(
     fn: "set_subscription_credit_no_renewal",
     args: { p_subscription_id: string }
   ): RpcResult<NoRenewalResponse>;
@@ -74,30 +68,9 @@ const subscriptionCreditMutationRpc =
   supabase as unknown as SubscriptionCreditMutationRpcClient;
 
 function unwrapRpcData<T>(data: T | null, error: RpcError | null, fallback: string): T {
-  if (error) {
-    throw error;
-  }
-
-  if (data === null) {
-    throw new Error(fallback);
-  }
-
+  if (error) throw error;
+  if (data === null) throw new Error(fallback);
   return data;
-}
-
-export async function scheduleSubscriptionCreditPlanChangeRpc(
-  subscriptionId: string,
-  newPlanType: PlanType
-): Promise<PlanChangeResponse> {
-  const { data, error } = await subscriptionCreditMutationRpc.rpc(
-    "schedule_subscription_credit_plan_change",
-    {
-      p_subscription_id: subscriptionId,
-      p_new_plan_type: newPlanType,
-    }
-  );
-
-  return unwrapRpcData(data, error, "Plan change did not return data");
 }
 
 export async function setSubscriptionCreditNoRenewalRpc(
