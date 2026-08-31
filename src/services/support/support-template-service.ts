@@ -1,16 +1,9 @@
-/**
- * Template Service
- * Processa templates de mensagens com variáveis dinâmicas
- * Substitui placeholders por dados reais do cliente
- */
-
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
-import { parseSystemSettingNumber } from "@/lib/system-settings-values";
 import { formatCurrency } from "@/lib/utils";
-import { BATCH, PRICING } from "@/config/constants";
 import { fetchOrdersByUserId } from "@/services/admin/orders/orders-service";
 import { requireCurrentUserAdminAccess } from "@/services/auth/current-user";
+import { fetchPricingSettings } from "@/services/pricing/pricing-settings-service";
 
 export interface TemplateVariable {
   key: string;
@@ -65,261 +58,93 @@ export interface SystemSettings {
   currentMonthLimit?: number;
   currentMonthSold?: number;
   currentMonthAvailable?: number;
+  currentMonthPercentage?: number;
 }
 
-// Variáveis disponíveis para templates
 export const TEMPLATE_VARIABLES: TemplateVariable[] = [
-  // Cliente
-  {
-    key: "{{NOME_CLIENTE}}",
-    label: "Nome do Cliente",
-    description: "Nome completo do cliente",
-    example: "João Silva",
-  },
-  {
-    key: "{{EMAIL_CLIENTE}}",
-    label: "Email do Cliente",
-    description: "Email do cliente",
-    example: "joao@email.com",
-  },
-
-  // Pedidos
-  {
-    key: "{{ULTIMO_PEDIDO_ID}}",
-    label: "ID do Último Pedido",
-    description: "ID do pedido mais recente",
-    example: "#12345",
-  },
-  {
-    key: "{{ULTIMO_PEDIDO_STATUS}}",
-    label: "Status do Último Pedido",
-    description: "Status atual do último pedido",
-    example: "Em produção",
-  },
-  {
-    key: "{{ULTIMO_PEDIDO_RASTREIO}}",
-    label: "Código de Rastreio",
-    description: "Código de rastreamento do último pedido",
-    example: "BR123456789BR",
-  },
-  {
-    key: "{{ULTIMO_PEDIDO_DATA}}",
-    label: "Data do Último Pedido",
-    description: "Data de criação do último pedido",
-    example: "15/02/2026",
-  },
-
-  // Orçamentos
-  {
-    key: "{{ULTIMO_ORCAMENTO_ID}}",
-    label: "ID do Último Orçamento",
-    description: "ID do orçamento mais recente",
-    example: "#ORC-789",
-  },
-  {
-    key: "{{ULTIMO_ORCAMENTO_VALOR}}",
-    label: "Valor do Último Orçamento",
-    description: "Valor total do último orçamento",
-    example: "R$ 150,00",
-  },
-
-  // Pagamentos
-  {
-    key: "{{ULTIMO_PAGAMENTO_VALOR}}",
-    label: "Valor do Último Pagamento",
-    description: "Valor do pagamento mais recente",
-    example: "R$ 75,00",
-  },
-  {
-    key: "{{ULTIMO_PAGAMENTO_STATUS}}",
-    label: "Status do Último Pagamento",
-    description: "Status do pagamento mais recente",
-    example: "Aprovado",
-  },
-
-  // Assinatura
-  {
-    key: "{{ASSINATURA_PLANO}}",
-    label: "Plano da Assinatura",
-    description: "Nome do plano de assinatura ativo",
-    example: "Premium",
-  },
-  {
-    key: "{{ASSINATURA_STATUS}}",
-    label: "Status da Assinatura",
-    description: "Status da assinatura",
-    example: "Ativa",
-  },
-
-  // Data e Hora
-  {
-    key: "{{DATA_HOJE}}",
-    label: "Data de Hoje",
-    description: "Data atual formatada",
-    example: "22/02/2026",
-  },
-  {
-    key: "{{HORA_ATUAL}}",
-    label: "Hora Atual",
-    description: "Hora atual formatada",
-    example: "14:30",
-  },
-
-  // ===== CONFIGURAÇÕES DO SISTEMA (SSOT) =====
-
-  // Preços
-  {
-    key: "{{PRECO_PADRAO}}",
-    label: "Preço Padrão (Cheio)",
-    description: "Preço padrão cheio das peças (system_settings)",
-    example: "R$ 500,00",
-  },
-  {
-    key: "{{PRECO_PIX}}",
-    label: "Preço PIX",
-    description: "Preço padrão com desconto PIX (system_settings)",
-    example: "R$ 475,00",
-  },
-  {
-    key: "{{VALOR_ENTRADA}}",
-    label: "Valor da Entrada",
-    description: "Valor padrão da entrada (system_settings)",
-    example: "R$ 100,00",
-  },
-
-  // Descontos
-  {
-    key: "{{DESCONTO_PIX}}",
-    label: "Desconto PIX (%)",
-    description: "Percentual de desconto PIX (system_settings)",
-    example: "5%",
-  },
-  {
-    key: "{{DESCONTO_PIX_VALOR}}",
-    label: "Desconto PIX (Valor)",
-    description: "Valor do desconto PIX sobre preço padrão",
-    example: "R$ 25,00",
-  },
-
-  // Limites de Produção
-  {
-    key: "{{LIMITE_MENSAL}}",
-    label: "Limite de Produção Mensal",
-    description: "Limite global de produção do mês (system_settings)",
-    example: "20 peças",
-  },
-  {
-    key: "{{VENDAS_MES_ATUAL}}",
-    label: "Vendas do Mês Atual",
-    description: "Quantidade vendida no mês atual",
-    example: "12 peças",
-  },
-  {
-    key: "{{VAGAS_DISPONIVEIS}}",
-    label: "Vagas Disponíveis",
-    description: "Vagas restantes no mês atual",
-    example: "8 vagas",
-  },
-  {
-    key: "{{PERCENTUAL_VENDIDO}}",
-    label: "Percentual Vendido",
-    description: "Percentual do limite mensal já vendido",
-    example: "60%",
-  },
-
-  // Datas de Abertura
-  {
-    key: "{{DIA_ABERTURA_VENDAS}}",
-    label: "Dia de Abertura das Vendas",
-    description: "Dia do mês em que as vendas abrem (system_settings)",
-    example: "Dia 15",
-  },
+  { key: "{{NOME_CLIENTE}}", label: "Nome do Cliente", description: "Nome completo do cliente", example: "Nome do cliente" },
+  { key: "{{EMAIL_CLIENTE}}", label: "Email do Cliente", description: "Email do cliente", example: "cliente@dominio.com" },
+  { key: "{{ULTIMO_PEDIDO_ID}}", label: "ID do Último Pedido", description: "ID do pedido mais recente", example: "#pedido" },
+  { key: "{{ULTIMO_PEDIDO_STATUS}}", label: "Status do Último Pedido", description: "Status atual do último pedido", example: "Em produção" },
+  { key: "{{ULTIMO_PEDIDO_RASTREIO}}", label: "Código de Rastreio", description: "Código de rastreamento do último pedido", example: "código disponível" },
+  { key: "{{ULTIMO_PEDIDO_DATA}}", label: "Data do Último Pedido", description: "Data de criação do último pedido", example: "data do pedido" },
+  { key: "{{ULTIMO_ORCAMENTO_ID}}", label: "ID do Último Orçamento", description: "ID do orçamento mais recente", example: "#orçamento" },
+  { key: "{{ULTIMO_ORCAMENTO_VALOR}}", label: "Valor do Último Orçamento", description: "Valor total do orçamento mais recente", example: "valor do orçamento" },
+  { key: "{{ULTIMO_PAGAMENTO_VALOR}}", label: "Valor do Último Pagamento", description: "Valor do pagamento mais recente", example: "valor do pagamento" },
+  { key: "{{ULTIMO_PAGAMENTO_STATUS}}", label: "Status do Último Pagamento", description: "Status do pagamento mais recente", example: "Aprovado" },
+  { key: "{{ASSINATURA_PLANO}}", label: "Plano da Assinatura", description: "Plano da assinatura ativa", example: "plano ativo" },
+  { key: "{{ASSINATURA_STATUS}}", label: "Status da Assinatura", description: "Status da assinatura", example: "Ativa" },
+  { key: "{{DATA_HOJE}}", label: "Data de Hoje", description: "Data atual formatada", example: "data atual" },
+  { key: "{{HORA_ATUAL}}", label: "Hora Atual", description: "Hora atual formatada", example: "hora atual" },
+  { key: "{{PRECO_PADRAO}}", label: "Preço Padrão", description: "Preço cheio oficial em system_settings", example: "preço oficial" },
+  { key: "{{PRECO_PIX}}", label: "Preço PIX", description: "Preço PIX oficial em system_settings", example: "preço PIX oficial" },
+  { key: "{{VALOR_ENTRADA}}", label: "Valor da Entrada", description: "Entrada oficial em system_settings", example: "entrada oficial" },
+  { key: "{{DESCONTO_PIX}}", label: "Desconto PIX (%)", description: "Percentual oficial de desconto PIX", example: "percentual configurado" },
+  { key: "{{DESCONTO_PIX_VALOR}}", label: "Desconto PIX (Valor)", description: "Diferença entre preço cheio e PIX", example: "desconto calculado" },
+  { key: "{{LIMITE_MENSAL}}", label: "Limite de Produção Mensal", description: "Limite mensal configurado", example: "limite configurado" },
+  { key: "{{VENDAS_MES_ATUAL}}", label: "Vendas do Mês Atual", description: "Quantidade vendida no mês atual", example: "vendas atuais" },
+  { key: "{{VAGAS_DISPONIVEIS}}", label: "Vagas Disponíveis", description: "Capacidade restante no mês atual", example: "vagas atuais" },
+  { key: "{{PERCENTUAL_VENDIDO}}", label: "Percentual Vendido", description: "Percentual do limite mensal utilizado", example: "percentual atual" },
+  { key: "{{DIA_ABERTURA_VENDAS}}", label: "Dia de Abertura das Vendas", description: "Dia mensal configurado para abertura", example: "dia configurado" },
 ];
 
-/**
- * Busca configurações do sistema (SSOT - Single Source of Truth)
- * Todas as informações vêm do banco de dados, garantindo dados sempre atualizados
- */
-export async function fetchSystemSettings(): Promise<SystemSettings> {
-  const settings: SystemSettings = {
-    pixDiscountPercentage: PRICING.PIX_DISCOUNT_PERCENTAGE,
-    defaultPriceFull: PRICING.DEFAULT_PRICE_FULL,
-    defaultPricePix: PRICING.DEFAULT_PRICE_PIX,
-    defaultDepositAmount: PRICING.DEFAULT_DEPOSIT_AMOUNT,
-    monthlyProductionLimit: BATCH.MONTHLY_PRODUCTION_LIMIT,
-    salesOpenDay: BATCH.SALES_OPEN_DAY,
-  };
-
-  try {
-    // Buscar todas as configurações de uma vez
-    const { data: systemSettings, error } = await supabase
-      .from("system_settings")
-      .select("key, value")
-      .in("key", [
-        "pix_discount_percentage",
-        "default_price_full",
-        "default_price_pix",
-        "default_deposit_amount",
-        "monthly_production_limit",
-        "sales_open_day",
-      ]);
-
-    if (!error && systemSettings) {
-      systemSettings.forEach((setting) => {
-        const value = parseSystemSettingNumber(setting.key, setting.value);
-        switch (setting.key) {
-          case "pix_discount_percentage":
-            settings.pixDiscountPercentage = value;
-            break;
-          case "default_price_full":
-            settings.defaultPriceFull = value;
-            break;
-          case "default_price_pix":
-            settings.defaultPricePix = value;
-            break;
-          case "default_deposit_amount":
-            settings.defaultDepositAmount = value;
-            break;
-          case "monthly_production_limit":
-            settings.monthlyProductionLimit = value;
-            break;
-          case "sales_open_day":
-            settings.salesOpenDay = value;
-            break;
-        }
-      });
-    }
-
-    // Buscar informações do mês atual usando a função do banco
-    try {
-      const { data: productionData, error: prodError } = await supabase.rpc(
-        "get_current_production_limit",
-      );
-
-      if (!prodError && productionData && productionData.length > 0) {
-        const current = productionData[0];
-        settings.currentMonthLimit = current.prod_global_limit;
-        settings.currentMonthSold = current.prod_units_sold;
-        settings.currentMonthAvailable = current.prod_available;
-      }
-    } catch (error) {
-      log.debug("Limite de produção atual indisponível para templates", {
-        error,
-      });
-    }
-  } catch (error) {
-    log.error("Erro ao buscar configurações do sistema para templates", {
-      error,
-    });
-  }
-
-  return settings;
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
 
-/**
- * Busca dados do cliente para substituição de variáveis
- * Versão otimizada que evita erros 404/400 no console
- */
+function formatOptionalCurrency(value: number | null | undefined): string {
+  return isFiniteNumber(value) && value >= 0 ? formatCurrency(value) : "não disponível";
+}
+
+function formatDate(value: string | Date): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return Number.isNaN(date.getTime()) ? "não disponível" : date.toLocaleDateString("pt-BR");
+}
+
+function formatTime(value: Date = new Date()): string {
+  return value.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function translateOrderStatus(status: string): string {
+  const statusMap: Record<string, string> = {
+    pending: "Pendente",
+    confirmed: "Confirmado",
+    in_production: "Em produção",
+    ready: "Pronto",
+    shipped: "Enviado",
+    delivered: "Entregue",
+    cancelled: "Cancelado",
+  };
+  return statusMap[status] ?? status;
+}
+
+function translatePaymentStatus(status: string): string {
+  const statusMap: Record<string, string> = {
+    pending: "Pendente",
+    approved: "Aprovado",
+    rejected: "Rejeitado",
+    cancelled: "Cancelado",
+  };
+  return statusMap[status] ?? status;
+}
+
+export async function fetchSystemSettings(): Promise<SystemSettings> {
+  const pricing = await fetchPricingSettings();
+
+  return {
+    pixDiscountPercentage: pricing.pixDiscountPercentage,
+    defaultPriceFull: pricing.defaultPriceFull,
+    defaultPricePix: pricing.defaultPricePix,
+    defaultDepositAmount: pricing.defaultDepositAmount,
+    monthlyProductionLimit: pricing.monthlyProductionLimit,
+    salesOpenDay: pricing.salesOpenDay,
+    currentMonthLimit: pricing.currentMonthLimit,
+    currentMonthSold: pricing.currentMonthSold,
+    currentMonthAvailable: pricing.currentMonthAvailable,
+    currentMonthPercentage: pricing.currentMonthPercentage,
+  };
+}
+
 export async function fetchCustomerData(userId: string): Promise<CustomerData> {
   await requireCurrentUserAdminAccess();
 
@@ -331,550 +156,156 @@ export async function fetchCustomerData(userId: string): Promise<CustomerData> {
     subscription: null,
   };
 
-  try {
-    // Buscar dados do perfil
-    try {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("full_name, email")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (!error && profile) {
-        customerData.name = profile.full_name ?? undefined;
-        customerData.email = profile.email ?? undefined;
-      }
-    } catch (error) {
-      log.debug("Dados de perfil indisponíveis para template", {
-        error,
-        userId,
-      });
-    }
-
-    // Buscar orçamentos (quotes) - esta tabela provavelmente existe
-    try {
-      const { data: quotes, error } = await supabase
+  const [profileResult, quotesResult, paymentsResult, ordersResult, subscriptionResult] =
+    await Promise.allSettled([
+      supabase.from("profiles").select("full_name, email").eq("id", userId).maybeSingle(),
+      supabase
         .from("quotes")
-        .select("*")
+        .select("id, total_price, total_amount")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (!error) {
-        customerData.quotes = (quotes || []) as CustomerQuoteTemplateData[];
-      }
-    } catch (error) {
-      log.debug("Orçamentos indisponíveis para template", { error, userId });
-    }
-
-    // Buscar pagamentos manuais
-    try {
-      const { data: payments, error } = await supabase
+        .limit(5),
+      supabase
         .from("manual_payments")
-        .select("*")
+        .select("amount, status")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (!error) {
-        customerData.payments = (payments ||
-          []) as CustomerPaymentTemplateData[];
-      }
-    } catch (error) {
-      log.debug("Pagamentos indisponíveis para template", { error, userId });
-    }
-
-    // Buscar pedidos pelo serviço unificado de pedidos
-    try {
-      const orders = await fetchOrdersByUserId(userId);
-      customerData.orders = orders.slice(0, 5).map((order) => ({
-        id: order.id,
-        status: order.status,
-        tracking_code: order.trackingCode,
-        created_at: order.createdAt,
-      }));
-    } catch (error) {
-      log.debug("Pedidos indisponíveis para template", { error, userId });
-    }
-
-    // Buscar assinatura ativa (estrutura real: collection_id, plan_type)
-    try {
-      const { data: subscription, error } = await supabase
+        .limit(5),
+      fetchOrdersByUserId(userId),
+      supabase
         .from("subscriptions")
-        .select(
-          `
-          *,
-          collections (
-            name,
-            description
-          )
-        `,
-        )
+        .select("status, plan_type, collections(name)")
         .eq("user_id", userId)
         .eq("status", "active")
-        .maybeSingle();
+        .maybeSingle(),
+    ]);
 
-      if (!error && subscription) {
-        customerData.subscription =
-          subscription as CustomerSubscriptionTemplateData;
-      }
-    } catch (error) {
-      log.debug("Assinatura indisponível para template", { error, userId });
-    }
-  } catch (error) {
-    log.error("Erro ao buscar dados do cliente para template", {
-      error,
-      userId,
-    });
+  if (profileResult.status === "fulfilled" && !profileResult.value.error) {
+    const profile = profileResult.value.data;
+    customerData.name = profile?.full_name ?? undefined;
+    customerData.email = profile?.email ?? undefined;
+  } else if (profileResult.status === "rejected") {
+    log.debug("Dados de perfil indisponíveis para template", { error: profileResult.reason, userId });
+  }
+
+  if (quotesResult.status === "fulfilled" && !quotesResult.value.error) {
+    customerData.quotes = (quotesResult.value.data ?? []) as CustomerQuoteTemplateData[];
+  } else if (quotesResult.status === "rejected") {
+    log.debug("Orçamentos indisponíveis para template", { error: quotesResult.reason, userId });
+  }
+
+  if (paymentsResult.status === "fulfilled" && !paymentsResult.value.error) {
+    customerData.payments = (paymentsResult.value.data ?? []) as CustomerPaymentTemplateData[];
+  } else if (paymentsResult.status === "rejected") {
+    log.debug("Pagamentos indisponíveis para template", { error: paymentsResult.reason, userId });
+  }
+
+  if (ordersResult.status === "fulfilled") {
+    customerData.orders = ordersResult.value.slice(0, 5).map((order) => ({
+      id: order.id,
+      status: order.status,
+      tracking_code: order.trackingCode,
+      created_at: order.createdAt,
+    }));
+  } else {
+    log.debug("Pedidos indisponíveis para template", { error: ordersResult.reason, userId });
+  }
+
+  if (subscriptionResult.status === "fulfilled" && !subscriptionResult.value.error) {
+    customerData.subscription =
+      (subscriptionResult.value.data as CustomerSubscriptionTemplateData | null) ?? null;
+  } else if (subscriptionResult.status === "rejected") {
+    log.debug("Assinatura indisponível para template", { error: subscriptionResult.reason, userId });
   }
 
   return customerData;
 }
 
-/**
- * Formata data
- */
-function formatDate(date: string | Date): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("pt-BR");
+function replaceAll(template: string, values: Record<string, string>): string {
+  return Object.entries(values).reduce(
+    (output, [key, value]) => output.split(key).join(value),
+    template,
+  );
 }
 
-/**
- * Formata hora
- */
-function formatTime(date: Date = new Date()): string {
-  return date.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-/**
- * Traduz status de pedido
- */
-function translateOrderStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    pending: "Pendente",
-    confirmed: "Confirmado",
-    in_production: "Em produção",
-    ready: "Pronto",
-    shipped: "Enviado",
-    delivered: "Entregue",
-    cancelled: "Cancelado",
-  };
-  return statusMap[status] || status;
-}
-
-/**
- * Traduz status de pagamento
- */
-function translatePaymentStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    pending: "Pendente",
-    approved: "Aprovado",
-    rejected: "Rejeitado",
-    cancelled: "Cancelado",
-  };
-  return statusMap[status] || status;
-}
-
-/**
- * Detecta se o template tem variáveis de pedido
- */
-function hasOrderVariables(template: string): boolean {
-  return /\{\{ULTIMO_PEDIDO_(ID|STATUS|RASTREIO|DATA)\}\}/g.test(template);
-}
-
-/**
- * Detecta se o template tem variáveis de orçamento
- */
-function hasQuoteVariables(template: string): boolean {
-  return /\{\{ULTIMO_ORCAMENTO_(ID|VALOR)\}\}/g.test(template);
-}
-
-/**
- * Detecta se o template tem variáveis de pagamento
- */
-function hasPaymentVariables(template: string): boolean {
-  return /\{\{ULTIMO_PAGAMENTO_(VALOR|STATUS)\}\}/g.test(template);
-}
-
-/**
- * Detecta se o template tem variáveis de assinatura
- */
-function hasSubscriptionVariables(template: string): boolean {
-  return /\{\{ASSINATURA_(PLANO|STATUS)\}\}/g.test(template);
-}
-
-/**
- * Processa template substituindo variáveis por dados reais
- * Busca dados do cliente E configurações do sistema (SSOT)
- * Ajusta mensagem automaticamente quando não há dados
- */
 export async function processTemplate(
   template: string,
   customerData: CustomerData,
 ): Promise<string> {
-  let processed = template;
+  const validation = validateTemplate(template);
+  if (!validation.valid) {
+    throw new Error(`Template contém variáveis desconhecidas: ${validation.unknownVars.join(", ")}`);
+  }
 
-  // Buscar configurações do sistema (SSOT)
   const systemSettings = await fetchSystemSettings();
-
-  // ===== DADOS DO CLIENTE =====
-  processed = processed.replace(
-    /\{\{NOME_CLIENTE\}\}/g,
-    customerData.name || "Cliente",
-  );
-  processed = processed.replace(
-    /\{\{EMAIL_CLIENTE\}\}/g,
-    customerData.email || "",
-  );
-
-  // ===== ÚLTIMO PEDIDO =====
   const lastOrder = customerData.orders?.[0];
-  const hasOrderVars = hasOrderVariables(template);
-
-  if (lastOrder) {
-    // Cliente TEM pedido - substituir normalmente
-    processed = processed.replace(
-      /\{\{ULTIMO_PEDIDO_ID\}\}/g,
-      `#${lastOrder.id.substring(0, 8)}`,
-    );
-    processed = processed.replace(
-      /\{\{ULTIMO_PEDIDO_STATUS\}\}/g,
-      translateOrderStatus(lastOrder.status),
-    );
-    processed = processed.replace(
-      /\{\{ULTIMO_PEDIDO_RASTREIO\}\}/g,
-      lastOrder.tracking_code || "ainda não disponível",
-    );
-    processed = processed.replace(
-      /\{\{ULTIMO_PEDIDO_DATA\}\}/g,
-      formatDate(lastOrder.created_at),
-    );
-  } else if (hasOrderVars) {
-    // Cliente NÃO TEM pedido - substituir mensagem inteira por algo apropriado
-
-    // Detectar tipo de mensagem pelo contexto
-    const isDeliveryMessage =
-      /foi entregue|entregue com sucesso|recebeu|chegou/i.test(template);
-    const isShippedMessage =
-      /foi enviado|já enviamos|em trânsito|rastreamento/i.test(template);
-    const isProductionMessage = /em produção|produzindo|fabricando/i.test(
-      template,
-    );
-    const isStatusMessage = /status|situação|andamento/i.test(template);
-
-    if (isDeliveryMessage) {
-      // Mensagem sobre entrega - cliente não tem pedidos
-      processed = `Olá ${customerData.name || "Cliente"}! 😊\n\nVocê ainda não tem pedidos registrados no sistema.\n\nGostaria de fazer um pedido? Posso te ajudar com informações sobre nossos produtos e preços! 🎯`;
-    } else if (isShippedMessage) {
-      // Mensagem sobre envio - cliente não tem pedidos
-      processed = `Olá ${customerData.name || "Cliente"}! 👋\n\nVocê ainda não tem pedidos registrados no sistema.\n\nAssim que você fizer um pedido, enviaremos o código de rastreamento para acompanhar a entrega! 📦`;
-    } else if (isProductionMessage) {
-      // Mensagem sobre produção - cliente não tem pedidos
-      processed = `Olá ${customerData.name || "Cliente"}! 😊\n\nVocê ainda não tem pedidos em produção no momento.\n\nQuer fazer um pedido? Nosso prazo de produção é de 15-20 dias úteis! 🎨`;
-    } else if (isStatusMessage) {
-      // Mensagem sobre status - cliente não tem pedidos
-      processed = `Olá ${customerData.name || "Cliente"}! 👋\n\nVocê ainda não tem pedidos registrados no sistema.\n\nGostaria de fazer um pedido? Posso te passar todas as informações! 😊`;
-    } else {
-      // Mensagem genérica - remover partes específicas do pedido
-      processed = processed.replace(
-        /Seu pedido \{\{ULTIMO_PEDIDO_ID\}\}[^.!?]*[.!?]/g,
-        "Você ainda não tem pedidos registrados.",
-      );
-      processed = processed.replace(
-        /O pedido \{\{ULTIMO_PEDIDO_ID\}\}[^.!?]*[.!?]/g,
-        "Você ainda não tem pedidos registrados.",
-      );
-      processed = processed.replace(
-        /Pedido \{\{ULTIMO_PEDIDO_ID\}\}[^.!?]*[.!?]/g,
-        "Você ainda não tem pedidos.",
-      );
-
-      // Remover linhas de detalhes
-      processed = processed.replace(
-        /.*Status.*\{\{ULTIMO_PEDIDO_STATUS\}\}.*/g,
-        "",
-      );
-      processed = processed.replace(
-        /.*[Cc]ódigo de rastreamento.*\{\{ULTIMO_PEDIDO_RASTREIO\}\}.*/g,
-        "",
-      );
-      processed = processed.replace(
-        /.*[Rr]astreio.*\{\{ULTIMO_PEDIDO_RASTREIO\}\}.*/g,
-        "",
-      );
-      processed = processed.replace(
-        /.*[Dd]ata.*\{\{ULTIMO_PEDIDO_DATA\}\}.*/g,
-        "",
-      );
-
-      // Substituir variáveis restantes
-      processed = processed.replace(/\{\{ULTIMO_PEDIDO_ID\}\}/g, "");
-      processed = processed.replace(/\{\{ULTIMO_PEDIDO_STATUS\}\}/g, "");
-      processed = processed.replace(/\{\{ULTIMO_PEDIDO_RASTREIO\}\}/g, "");
-      processed = processed.replace(/\{\{ULTIMO_PEDIDO_DATA\}\}/g, "");
-    }
-
-    // Limpar linhas vazias múltiplas
-    processed = processed.replace(/\n\s*\n\s*\n+/g, "\n\n");
-    processed = processed.trim();
-  }
-
-  // ===== ÚLTIMO ORÇAMENTO =====
   const lastQuote = customerData.quotes?.[0];
-  const hasQuoteVars = hasQuoteVariables(template);
-
-  if (lastQuote) {
-    // Cliente TEM orçamento - substituir normalmente
-    processed = processed.replace(
-      /\{\{ULTIMO_ORCAMENTO_ID\}\}/g,
-      `#ORC-${lastQuote.id.substring(0, 6)}`,
-    );
-    processed = processed.replace(
-      /\{\{ULTIMO_ORCAMENTO_VALOR\}\}/g,
-      formatCurrency(lastQuote.total_price || 0),
-    );
-  } else if (hasQuoteVars) {
-    // Cliente NÃO TEM orçamento - detectar contexto
-    const isApprovedMessage = /aprovado|confirmado|aceito/i.test(template);
-    const isPendingMessage = /pendente|aguardando|esperando/i.test(template);
-
-    if (isApprovedMessage) {
-      processed = `Olá ${customerData.name || "Cliente"}! 😊\n\nVocê ainda não tem orçamentos registrados no sistema.\n\nGostaria de solicitar um orçamento? Posso te ajudar com isso! 💰`;
-    } else if (isPendingMessage) {
-      processed = `Olá ${customerData.name || "Cliente"}! 👋\n\nVocê não tem orçamentos pendentes no momento.\n\nPrecisa de um orçamento para algum produto? Estou aqui para ajudar! 😊`;
-    } else {
-      // Remover partes específicas
-      processed = processed.replace(
-        /Seu orçamento \{\{ULTIMO_ORCAMENTO_ID\}\}[^.!?]*[.!?]/g,
-        "Você ainda não tem orçamentos registrados.",
-      );
-      processed = processed.replace(
-        /O orçamento \{\{ULTIMO_ORCAMENTO_ID\}\}[^.!?]*[.!?]/g,
-        "Você ainda não tem orçamentos.",
-      );
-      processed = processed.replace(
-        /Orçamento \{\{ULTIMO_ORCAMENTO_ID\}\}/g,
-        "",
-      );
-      processed = processed.replace(
-        /.*[Vv]alor.*\{\{ULTIMO_ORCAMENTO_VALOR\}\}.*/g,
-        "",
-      );
-      processed = processed.replace(
-        /.*[Tt]otal.*\{\{ULTIMO_ORCAMENTO_VALOR\}\}.*/g,
-        "",
-      );
-
-      processed = processed.replace(/\{\{ULTIMO_ORCAMENTO_ID\}\}/g, "");
-      processed = processed.replace(/\{\{ULTIMO_ORCAMENTO_VALOR\}\}/g, "");
-    }
-
-    processed = processed.replace(/\n\s*\n\s*\n+/g, "\n\n");
-    processed = processed.trim();
-  }
-
-  // ===== ÚLTIMO PAGAMENTO =====
   const lastPayment = customerData.payments?.[0];
-  const hasPaymentVars = hasPaymentVariables(template);
+  const subscription = customerData.subscription;
+  const subscriptionName = subscription?.collections?.name ?? subscription?.plan_type ?? "sem assinatura ativa";
+  const discountValue = systemSettings.defaultPriceFull - systemSettings.defaultPricePix;
+  const currentPercentage =
+    isFiniteNumber(systemSettings.currentMonthPercentage)
+      ? systemSettings.currentMonthPercentage
+      : isFiniteNumber(systemSettings.currentMonthSold) &&
+          isFiniteNumber(systemSettings.currentMonthLimit) &&
+          systemSettings.currentMonthLimit > 0
+        ? (systemSettings.currentMonthSold / systemSettings.currentMonthLimit) * 100
+        : null;
 
-  if (lastPayment) {
-    // Cliente TEM pagamento - substituir normalmente
-    processed = processed.replace(
-      /\{\{ULTIMO_PAGAMENTO_VALOR\}\}/g,
-      formatCurrency(lastPayment.amount || 0),
-    );
-    processed = processed.replace(
-      /\{\{ULTIMO_PAGAMENTO_STATUS\}\}/g,
-      translatePaymentStatus(lastPayment.status),
-    );
-  } else if (hasPaymentVars) {
-    // Cliente NÃO TEM pagamento - detectar contexto
-    const isConfirmedMessage = /confirmado|recebido|aprovado/i.test(template);
-    const isPendingMessage = /aguardando|pendente|esperando/i.test(template);
+  const values: Record<string, string> = {
+    "{{NOME_CLIENTE}}": customerData.name?.trim() || "Cliente",
+    "{{EMAIL_CLIENTE}}": customerData.email?.trim() || "não disponível",
+    "{{ULTIMO_PEDIDO_ID}}": lastOrder ? `#${lastOrder.id.slice(0, 8)}` : "sem pedido",
+    "{{ULTIMO_PEDIDO_STATUS}}": lastOrder ? translateOrderStatus(lastOrder.status) : "sem pedido",
+    "{{ULTIMO_PEDIDO_RASTREIO}}": lastOrder?.tracking_code?.trim() || "não disponível",
+    "{{ULTIMO_PEDIDO_DATA}}": lastOrder ? formatDate(lastOrder.created_at) : "não disponível",
+    "{{ULTIMO_ORCAMENTO_ID}}": lastQuote ? `#ORC-${lastQuote.id.slice(0, 6)}` : "sem orçamento",
+    "{{ULTIMO_ORCAMENTO_VALOR}}": formatOptionalCurrency(lastQuote?.total_price ?? lastQuote?.total_amount),
+    "{{ULTIMO_PAGAMENTO_VALOR}}": formatOptionalCurrency(lastPayment?.amount),
+    "{{ULTIMO_PAGAMENTO_STATUS}}": lastPayment ? translatePaymentStatus(lastPayment.status) : "sem pagamento",
+    "{{ASSINATURA_PLANO}}": subscriptionName,
+    "{{ASSINATURA_STATUS}}": subscription?.status === "active" ? "Ativa" : "sem assinatura ativa",
+    "{{DATA_HOJE}}": formatDate(new Date()),
+    "{{HORA_ATUAL}}": formatTime(),
+    "{{PRECO_PADRAO}}": formatCurrency(systemSettings.defaultPriceFull),
+    "{{PRECO_PIX}}": formatCurrency(systemSettings.defaultPricePix),
+    "{{VALOR_ENTRADA}}": formatCurrency(systemSettings.defaultDepositAmount),
+    "{{DESCONTO_PIX}}": `${systemSettings.pixDiscountPercentage.toFixed(2).replace(".", ",")}%`,
+    "{{DESCONTO_PIX_VALOR}}": formatCurrency(discountValue),
+    "{{LIMITE_MENSAL}}": `${systemSettings.monthlyProductionLimit} peças`,
+    "{{VENDAS_MES_ATUAL}}": isFiniteNumber(systemSettings.currentMonthSold)
+      ? `${systemSettings.currentMonthSold} peças`
+      : "não disponível",
+    "{{VAGAS_DISPONIVEIS}}": isFiniteNumber(systemSettings.currentMonthAvailable)
+      ? `${systemSettings.currentMonthAvailable} vagas`
+      : "não disponível",
+    "{{PERCENTUAL_VENDIDO}}": currentPercentage == null
+      ? "não disponível"
+      : `${currentPercentage.toFixed(0)}%`,
+    "{{DIA_ABERTURA_VENDAS}}": `Dia ${systemSettings.salesOpenDay}`,
+  };
 
-    if (isConfirmedMessage) {
-      processed = `Olá ${customerData.name || "Cliente"}! 😊\n\nVocê ainda não tem pagamentos registrados no sistema.\n\nQuando realizar um pagamento, confirmaremos aqui imediatamente! ✅`;
-    } else if (isPendingMessage) {
-      processed = `Olá ${customerData.name || "Cliente"}! 👋\n\nVocê não tem pagamentos pendentes no momento.\n\nQuando fizer um pedido, te enviaremos as informações de pagamento! 💰`;
-    } else {
-      // Remover partes específicas
-      processed = processed.replace(
-        /Seu pagamento de \{\{ULTIMO_PAGAMENTO_VALOR\}\}[^.!?]*[.!?]/g,
-        "Você ainda não tem pagamentos registrados.",
-      );
-      processed = processed.replace(
-        /Pagamento de \{\{ULTIMO_PAGAMENTO_VALOR\}\}/g,
-        "",
-      );
-      processed = processed.replace(
-        /.*[Vv]alor.*\{\{ULTIMO_PAGAMENTO_VALOR\}\}.*/g,
-        "",
-      );
-      processed = processed.replace(
-        /.*[Ss]tatus.*\{\{ULTIMO_PAGAMENTO_STATUS\}\}.*/g,
-        "",
-      );
+  const processed = replaceAll(template, values).replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
 
-      processed = processed.replace(/\{\{ULTIMO_PAGAMENTO_VALOR\}\}/g, "");
-      processed = processed.replace(/\{\{ULTIMO_PAGAMENTO_STATUS\}\}/g, "");
-    }
-
-    processed = processed.replace(/\n\s*\n\s*\n+/g, "\n\n");
-    processed = processed.trim();
+  if (detectVariables(processed).length > 0) {
+    throw new Error("Template não pôde ser resolvido por completo.");
   }
-
-  // ===== ASSINATURA =====
-  const hasSubVars = hasSubscriptionVariables(template);
-
-  if (customerData.subscription) {
-    // Cliente TEM assinatura - substituir normalmente
-    const planName = customerData.subscription.collections?.name || "N/A";
-    const planType = customerData.subscription.plan_type || "";
-    const fullPlanName = planType ? `${planName} (${planType})` : planName;
-
-    processed = processed.replace(/\{\{ASSINATURA_PLANO\}\}/g, fullPlanName);
-    processed = processed.replace(
-      /\{\{ASSINATURA_STATUS\}\}/g,
-      customerData.subscription.status === "active" ? "Ativa" : "Inativa",
-    );
-  } else if (hasSubVars) {
-    // Cliente NÃO TEM assinatura - detectar contexto
-    const isActiveMessage = /ativa|funcionando|vigente/i.test(template);
-    const isStatusMessage = /status|situação/i.test(template);
-
-    if (isActiveMessage || isStatusMessage) {
-      processed = `Olá ${customerData.name || "Cliente"}! 😊\n\nVocê ainda não tem uma assinatura ativa.\n\nGostaria de conhecer nossos planos de assinatura? Temos ótimas vantagens! 🎯`;
-    } else {
-      // Remover partes específicas
-      processed = processed.replace(
-        /Sua assinatura \{\{ASSINATURA_PLANO\}\}[^.!?]*[.!?]/g,
-        "Você ainda não tem assinatura ativa.",
-      );
-      processed = processed.replace(/Assinatura \{\{ASSINATURA_PLANO\}\}/g, "");
-      processed = processed.replace(
-        /.*[Pp]lano.*\{\{ASSINATURA_PLANO\}\}.*/g,
-        "",
-      );
-      processed = processed.replace(
-        /.*[Ss]tatus.*\{\{ASSINATURA_STATUS\}\}.*/g,
-        "",
-      );
-
-      processed = processed.replace(/\{\{ASSINATURA_PLANO\}\}/g, "");
-      processed = processed.replace(/\{\{ASSINATURA_STATUS\}\}/g, "");
-    }
-
-    processed = processed.replace(/\n\s*\n\s*\n+/g, "\n\n");
-    processed = processed.trim();
-  }
-
-  // ===== DATA E HORA ATUAIS =====
-  processed = processed.replace(/\{\{DATA_HOJE\}\}/g, formatDate(new Date()));
-  processed = processed.replace(/\{\{HORA_ATUAL\}\}/g, formatTime());
-
-  // ===== CONFIGURAÇÕES DO SISTEMA (SSOT) =====
-
-  // Preços
-  processed = processed.replace(
-    /\{\{PRECO_PADRAO\}\}/g,
-    formatCurrency(systemSettings.defaultPriceFull),
-  );
-  processed = processed.replace(
-    /\{\{PRECO_PIX\}\}/g,
-    formatCurrency(systemSettings.defaultPricePix),
-  );
-  processed = processed.replace(
-    /\{\{VALOR_ENTRADA\}\}/g,
-    formatCurrency(systemSettings.defaultDepositAmount),
-  );
-
-  // Descontos
-  processed = processed.replace(
-    /\{\{DESCONTO_PIX\}\}/g,
-    `${systemSettings.pixDiscountPercentage}%`,
-  );
-  const descontoValor =
-    systemSettings.defaultPriceFull - systemSettings.defaultPricePix;
-  processed = processed.replace(
-    /\{\{DESCONTO_PIX_VALOR\}\}/g,
-    formatCurrency(descontoValor),
-  );
-
-  // Limites de Produção
-  processed = processed.replace(
-    /\{\{LIMITE_MENSAL\}\}/g,
-    `${systemSettings.monthlyProductionLimit} peças`,
-  );
-
-  if (systemSettings.currentMonthSold !== undefined) {
-    processed = processed.replace(
-      /\{\{VENDAS_MES_ATUAL\}\}/g,
-      `${systemSettings.currentMonthSold} peças`,
-    );
-  } else {
-    processed = processed.replace(/\{\{VENDAS_MES_ATUAL\}\}/g, "N/A");
-  }
-
-  if (systemSettings.currentMonthAvailable !== undefined) {
-    processed = processed.replace(
-      /\{\{VAGAS_DISPONIVEIS\}\}/g,
-      `${systemSettings.currentMonthAvailable} vagas`,
-    );
-  } else {
-    processed = processed.replace(/\{\{VAGAS_DISPONIVEIS\}\}/g, "N/A");
-  }
-
-  if (
-    systemSettings.currentMonthSold !== undefined &&
-    systemSettings.currentMonthLimit !== undefined
-  ) {
-    const percentual =
-      systemSettings.currentMonthLimit > 0
-        ? Math.round(
-            (systemSettings.currentMonthSold /
-              systemSettings.currentMonthLimit) *
-              100,
-          )
-        : 0;
-    processed = processed.replace(
-      /\{\{PERCENTUAL_VENDIDO\}\}/g,
-      `${percentual}%`,
-    );
-  } else {
-    processed = processed.replace(/\{\{PERCENTUAL_VENDIDO\}\}/g, "N/A");
-  }
-
-  // Datas de Abertura
-  processed = processed.replace(
-    /\{\{DIA_ABERTURA_VENDAS\}\}/g,
-    `Dia ${systemSettings.salesOpenDay}`,
-  );
 
   return processed;
 }
 
-/**
- * Detecta variáveis usadas em um template
- */
 export function detectVariables(template: string): string[] {
   const regex = /\{\{([A-Z_]+)\}\}/g;
-  const matches = template.matchAll(regex);
-  return Array.from(matches, (m) => `{{${m[1]}}}`);
+  return Array.from(template.matchAll(regex), (match) => `{{${match[1]}}}`);
 }
 
-/**
- * Valida se todas as variáveis são conhecidas
- */
 export function validateTemplate(template: string): {
   valid: boolean;
   unknownVars: string[];
 } {
-  const usedVars = detectVariables(template);
-  const knownVars = TEMPLATE_VARIABLES.map((v) => v.key);
-  const unknownVars = usedVars.filter((v) => !knownVars.includes(v));
+  const knownVars = new Set(TEMPLATE_VARIABLES.map((variable) => variable.key));
+  const unknownVars = detectVariables(template).filter((variable) => !knownVars.has(variable));
 
   return {
     valid: unknownVars.length === 0,
