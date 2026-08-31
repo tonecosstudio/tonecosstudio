@@ -1,27 +1,20 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/lib/auth";
-import { useToast } from "@/hooks/use-toast";
+import { AlertTriangle, ArrowLeft, Check, Info } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Check, CreditCard, Smartphone } from "lucide-react";
-import { Link } from "react-router-dom";
-import { ProductionLimitBadge } from "@/components/production/ProductionLimitBadge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCollectionPricing } from "@/hooks/useCollectionPricing";
-import {
-  createStandalonePurchaseReservation,
-  getStandalonePurchaseCollectionBySlug,
-} from "@/services/payments/standalone-purchase-reservation-service";
-import { log } from "@/lib/logger";
+import { getStandalonePurchaseCollectionBySlug } from "@/services/payments/standalone-purchase-reservation-service";
 import { PUBLIC_ROUTES, subscribeCollectionPath } from "@/config/routes";
+import { formatNumber } from "@/lib/utils";
 
 export default function BuyCharacter() {
   const { slug } = useParams<{ slug: string }>();
   const collectionSlug = slug ?? "";
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
+
   const collectionQuery = useQuery({
     queryKey: ["collection", collectionSlug],
     queryFn: () => getStandalonePurchaseCollectionBySlug(collectionSlug),
@@ -35,10 +28,10 @@ export default function BuyCharacter() {
   if (isLoading || isPricingLoading) {
     return (
       <Page title="Carregando..." description="Carregando informações da coleção">
-        <div className="container max-w-4xl py-16 flex items-center justify-center">
+        <div className="container flex max-w-4xl items-center justify-center py-16">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Carregando informações...</p>
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+            <p className="text-muted-foreground">Validando coleção e preço oficial...</p>
           </div>
         </div>
       </Page>
@@ -47,20 +40,13 @@ export default function BuyCharacter() {
 
   if (collectionQuery.isError) {
     return (
-      <Page
-        title="Coleção indisponível"
-        description="Não foi possível carregar a coleção"
-      >
+      <Page title="Coleção indisponível" description="Não foi possível carregar a coleção">
         <div className="container max-w-4xl py-16 text-center">
-          <h1 className="text-3xl font-bold mb-4">
-            Não foi possível carregar esta coleção
-          </h1>
-          <p className="text-muted-foreground mb-6">
-            Nenhuma compra foi iniciada. Tente novamente em instantes.
+          <h1 className="mb-4 text-3xl font-bold">Não foi possível carregar esta coleção</h1>
+          <p className="mb-6 text-muted-foreground">
+            Nenhuma compra foi iniciada. Tente novamente quando o catálogo estiver disponível.
           </p>
-          <Button onClick={() => void collectionQuery.refetch()}>
-            Tentar novamente
-          </Button>
+          <Button onClick={() => void collectionQuery.refetch()}>Tentar novamente</Button>
         </div>
       </Page>
     );
@@ -70,9 +56,9 @@ export default function BuyCharacter() {
     return (
       <Page title="Coleção não encontrada" description="A coleção solicitada não foi encontrada">
         <div className="container max-w-4xl py-16 text-center">
-          <h1 className="text-3xl font-bold mb-4">Coleção não encontrada</h1>
-          <p className="text-muted-foreground mb-6">
-            A coleção que você procura não existe ou foi removida.
+          <h1 className="mb-4 text-3xl font-bold">Coleção não encontrada</h1>
+          <p className="mb-6 text-muted-foreground">
+            A coleção que você procura não existe ou não está disponível.
           </p>
           <Button asChild>
             <Link to={PUBLIC_ROUTES.collections}>Ver todas as coleções</Link>
@@ -84,319 +70,152 @@ export default function BuyCharacter() {
 
   if (pricingQuery.isError || !pricing) {
     return (
-      <Page
-        title="Preço indisponível"
-        description="A compra está temporariamente indisponível"
-      >
+      <Page title="Preço indisponível" description="Os dados comerciais não puderam ser validados">
         <div className="container max-w-4xl py-16 text-center">
-          <h1 className="text-3xl font-bold mb-4">Preço indisponível</h1>
-          <p className="text-muted-foreground mb-6">
-            Não exibimos valores estimados. A reserva será liberada quando o
-            preço oficial desta coleção estiver disponível.
+          <h1 className="mb-4 text-3xl font-bold">Preço indisponível</h1>
+          <p className="mb-6 text-muted-foreground">
+            Não exibimos valores estimados quando a fonte oficial não pode ser validada.
           </p>
-          <Button onClick={() => void pricingQuery.refetch()}>
-            Tentar novamente
-          </Button>
+          <Button onClick={() => void pricingQuery.refetch()}>Tentar novamente</Button>
         </div>
       </Page>
     );
   }
 
-  const characters = collection.collection_characters || [];
+  const characters = collection.collection_characters ?? [];
+  const currentMonthCharacter = characters.find((character) => character.status === "revealed");
 
-  const currentMonthCharacter = characters.find((c) => c.status === "revealed");
-
-  const priceFull = pricing.price_full;
-  const pricePix = pricing.price_pix;
-  const depositAmount = pricing.deposit_amount;
-  const remainingPix = pricing.remaining_pix;
-  const remainingFull = pricing.remaining_full;
   return (
     <Page
-      title={`Comprar Peça Avulsa - ${collection.name}`}
-      description={`Compre uma peça avulsa da coleção ${collection.name}`}
-      keywords={["compra avulsa", "peça única", collection.name]}
+      title={`Peça Avulsa - ${collection.name}`}
+      description={`Consulte a peça e os valores oficiais da coleção ${collection.name}`}
+      keywords={["peça avulsa", "coleção", collection.name]}
     >
       <div className="container max-w-5xl py-12">
-        <div className="mb-8">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold mb-2">Compra Avulsa</h1>
-            <p className="text-muted-foreground text-lg">
-              Coleção: <span className="font-semibold text-foreground">{collection.name}</span>
-            </p>
-          </div>
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Voltar
+        </Button>
 
-          <Card className="bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground mb-2">Valor da Peça</p>
-              <div className="flex items-baseline gap-3 mb-3">
-                <span className="text-5xl font-bold text-primary">R$ {priceFull.toFixed(2)}</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Pagamento à vista:{" "}
-                <span className="font-semibold text-foreground">R$ {pricePix.toFixed(2)}</span> ou
-                até 6x sem juros no cartão
-              </p>
-            </CardContent>
-          </Card>
+        <div className="mb-8">
+          <h1 className="mb-2 text-4xl font-bold">Peça Avulsa</h1>
+          <p className="text-lg text-muted-foreground">
+            Coleção: <span className="font-semibold text-foreground">{collection.name}</span>
+          </p>
         </div>
+
+        <Alert className="mb-8 border-amber-500/50 bg-amber-500/5">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription>
+            <strong>Reserva temporariamente indisponível.</strong> O catálogo e os valores oficiais
+            permanecem visíveis, mas não criamos reserva, cobrança nem recebemos comprovante enquanto
+            o estado inicial de pagamento e a autoridade de criação da compra estão sendo
+            reconciliados no backend.
+          </AlertDescription>
+        </Alert>
+
+        <Card className="mb-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="pt-6">
+            <p className="mb-2 text-sm text-muted-foreground">Valores oficiais configurados</p>
+            <div className="mb-3 flex flex-wrap items-baseline gap-3">
+              <span className="text-4xl font-bold text-primary">
+                R$ {formatNumber(pricing.price_full, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span className="text-sm text-muted-foreground">valor integral</span>
+            </div>
+            <div className="grid gap-3 text-sm sm:grid-cols-3">
+              <PriceFact label="PIX" value={pricing.price_pix} />
+              <PriceFact label="Entrada configurada" value={pricing.deposit_amount} />
+              <PriceFact label="Saldo integral" value={pricing.remaining_full} />
+            </div>
+          </CardContent>
+        </Card>
 
         {!currentMonthCharacter ? (
           <Card>
             <CardContent className="py-16 text-center">
-              <h3 className="text-xl font-semibold mb-2">Nenhum personagem disponível</h3>
-              <p className="text-muted-foreground mb-6">
-                Não há personagem do mês disponível para compra avulsa no momento.
+              <Info className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+              <h2 className="mb-2 text-xl font-semibold">Nenhum personagem revelado neste ciclo</h2>
+              <p className="mb-6 text-muted-foreground">
+                Não há peça avulsa revelada para esta coleção neste momento.
               </p>
-              <Button asChild>
-                <Link to={subscribeCollectionPath(collectionSlug)}>Ver Planos de Assinatura</Link>
+              <Button asChild variant="outline">
+                <Link to={subscribeCollectionPath(collectionSlug)}>Conhecer planos</Link>
               </Button>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid lg:grid-cols-2 gap-8">
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sistema de Reserva de Produção</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Para garantir sua peça neste ciclo:
+          <div className="grid gap-8 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Personagem do ciclo atual</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center">
+                  {currentMonthCharacter.image_url && (
+                    <div className="mx-auto mb-6 aspect-square w-full max-w-sm overflow-hidden rounded-xl border bg-muted">
+                      <img
+                        src={currentMonthCharacter.image_url}
+                        alt={currentMonthCharacter.name}
+                        className="h-full w-full object-cover"
+                        loading="eager"
+                        {...({ fetchpriority: "high" } as Record<string, string>)}
+                      />
+                    </div>
+                  )}
+                  <h2 className="mb-3 text-3xl font-black text-primary">
+                    {currentMonthCharacter.name}
+                  </h2>
+                  {currentMonthCharacter.description && (
+                    <p className="mx-auto max-w-md text-muted-foreground">
+                      {currentMonthCharacter.description}
                     </p>
-                    <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-2 border-primary/30 rounded-xl p-5">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center pb-3 border-b border-primary/20">
-                          <span className="font-semibold">Reserva:</span>
-                          <span className="text-2xl font-bold text-primary">
-                            R$ {depositAmount.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="font-semibold">Saldo:</span>
-                          <span className="text-lg font-semibold">
-                            R$ {remainingFull.toFixed(2)} quando a peça estiver finalizada
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Como será a compra quando reaberta</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <p className="text-sm text-muted-foreground">
+                  Esta explicação é apenas informativa. Nenhuma vaga de produção é reservada por esta
+                  página enquanto o fluxo financeiro estiver bloqueado.
+                </p>
+                {[
+                  "Preço e capacidade validados no servidor",
+                  "Reserva nasce como não paga até existir evidência financeira válida",
+                  "Comprovante enviado nunca equivale a pagamento aprovado",
+                  "Produção só avança após transição autorizada",
+                  "Saldo e envio seguem os prazos persistidos no pedido",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+                    <span className="text-sm">{item}</span>
                   </div>
+                ))}
 
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <p className="text-sm font-semibold mb-3">Pagamento do saldo:</p>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">• À vista:</span>
-                        <span className="font-semibold">R$ {remainingPix.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">• Até 6x sem juros no cartão</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="font-bold text-lg">Como Funciona</h3>
-
-                    <div className="space-y-3">
-                      <div className="flex gap-4 items-start">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-white font-bold shadow-md">
-                          1
-                        </div>
-                        <div className="flex-1 pt-1">
-                          <p className="font-semibold text-base mb-1">Reserva da Produção</p>
-                          <p className="text-sm text-muted-foreground">
-                            Você garante sua vaga no ciclo atual com o pagamento da reserva.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4 items-start">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-white font-bold shadow-md">
-                          2
-                        </div>
-                        <div className="flex-1 pt-1">
-                          <p className="font-semibold text-base mb-1">Produção Artesanal</p>
-                          <p className="text-sm text-muted-foreground">
-                            A peça é esculpida e pintada à mão.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4 items-start">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-white font-bold shadow-md">
-                          3
-                        </div>
-                        <div className="flex-1 pt-1">
-                          <p className="font-semibold text-base mb-1">Acompanhamento</p>
-                          <p className="text-sm text-muted-foreground">
-                            Você recebe atualizações do processo.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4 items-start">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-white font-bold shadow-md">
-                          4
-                        </div>
-                        <div className="flex-1 pt-1">
-                          <p className="font-semibold text-base mb-1">Pagamento do Saldo</p>
-                          <p className="text-sm text-muted-foreground">
-                            Após finalização, o saldo é liberado para pagamento.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4 items-start">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-white font-bold shadow-md">
-                          5
-                        </div>
-                        <div className="flex-1 pt-1">
-                          <p className="font-semibold text-base mb-1">Envio Seguro</p>
-                          <p className="text-sm text-muted-foreground">
-                            Entrega com rastreamento e embalagem premium em MDF.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-5">
-                    <h4 className="font-bold text-green-900 mb-4">Inclui</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                        <span className="text-sm text-green-900">Peça artesanal pintada à mão</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                        <span className="text-sm text-green-900">Caixa premium em MDF</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                        <span className="text-sm text-green-900">Certificado de autenticidade</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                        <span className="text-sm text-green-900">Atualizações do processo</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                        <span className="text-sm text-green-900">
-                          Garantia contra defeitos de fabricação
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div>
-              <ProductionLimitBadge />
-
-              <Card className="mt-4">
-                <CardHeader>
-                  <CardTitle className="text-xl">Personagem do Ciclo Atual</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="border-2 border-primary/30 rounded-xl p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-lg">
-                    <div className="flex flex-col items-center text-center">
-                      {currentMonthCharacter.image_url && (
-                        <div className="w-full aspect-square rounded-xl overflow-hidden bg-muted mb-6 max-w-sm border-4 border-white shadow-xl">
-                          <img
-                            src={currentMonthCharacter.image_url}
-                            alt={currentMonthCharacter.name}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                            loading="eager"
-                            {...({ fetchpriority: "high" } as Record<string, string>)}
-                          />
-                        </div>
-                      )}
-                      <h3 className="text-3xl font-black mb-3 text-primary">
-                        {currentMonthCharacter.name}
-                      </h3>
-                      {currentMonthCharacter.description && (
-                        <p className="text-muted-foreground mb-6 text-base leading-relaxed max-w-md">
-                          {currentMonthCharacter.description}
-                        </p>
-                      )}
-
-                      <div className="w-full space-y-3">
-                        <Button
-                          className="w-full shadow-lg hover:shadow-xl transition-all"
-                          size="lg"
-                          onClick={async () => {
-                            if (!user) {
-                              navigate(PUBLIC_ROUTES.login);
-                              return;
-                            }
-
-                            try {
-                              await createStandalonePurchaseReservation({
-                                collectionId: collection.id,
-                                characterId: currentMonthCharacter.id,
-                              });
-
-                              toast({
-                                title: "Compra criada!",
-                                description: `Sua reserva de ${currentMonthCharacter.name} foi criada com sucesso.`,
-                              });
-
-                              setTimeout(() => {
-                                navigate(`/meus-pedidos`);
-                              }, 1500);
-                            } catch (error) {
-                              log.error("Erro ao criar compra avulsa", {
-                                error,
-                                collectionId: collection.id,
-                                characterId: currentMonthCharacter.id,
-                              });
-
-                              let errorMessage = "Ocorreu um erro ao criar sua compra.";
-                              const message = error instanceof Error ? error.message : "";
-
-                              if (message.includes("temporarily unavailable")) {
-                                errorMessage =
-                                  "As reservas estão temporariamente indisponíveis enquanto validamos o fluxo de pagamento.";
-                              } else if (message.includes("CUTOFF_PASSED")) {
-                                errorMessage = "O prazo para compras deste ciclo já passou.";
-                              } else if (message.includes("CAPACITY_EXCEEDED")) {
-                                errorMessage = "Capacidade esgotada para este ciclo.";
-                              } else if (message.includes("CYCLE_NOT_OPEN")) {
-                                errorMessage = "Ciclo não está aberto para novas compras.";
-                              }
-
-                              toast({
-                                title: "Não foi possível criar a reserva",
-                                description: errorMessage,
-                                variant: "destructive",
-                              });
-                            }
-                          }}
-                        >
-                          <CreditCard className="w-5 h-5 mr-2" />
-                          Reservar Agora - R$ {depositAmount.toFixed(2)}
-                        </Button>
-
-                        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                          <Smartphone className="w-4 h-4" />
-                          <span>PIX ou cartão de crédito</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                <Button asChild className="w-full" variant="outline">
+                  <Link to={PUBLIC_ROUTES.catalog}>Explorar catálogo</Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
     </Page>
+  );
+}
+
+function PriceFact({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border bg-background/80 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 font-semibold">
+        R$ {formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </p>
+    </div>
   );
 }
