@@ -4,9 +4,12 @@ import { parseSystemSettingString } from "@/lib/system-settings-values";
 
 const DEADLINE_KEYS = [
   "production_days_min",
+  "production_days_max",
   "shipping_business_days",
   "sales_duration_days",
   "delivery_interval_days",
+  "character_choice_days",
+  "balance_payment_days",
 ] as const;
 
 export type ProductionDeadlineKey = (typeof DEADLINE_KEYS)[number];
@@ -20,6 +23,38 @@ export type ProductionDeadlineSettingsMap = Record<
   ProductionDeadlineKey,
   ProductionDeadlineSettingValue
 >;
+
+const DEADLINE_MAX: Record<ProductionDeadlineKey, number> = {
+  production_days_min: 3650,
+  production_days_max: 3650,
+  shipping_business_days: 31,
+  sales_duration_days: 3650,
+  delivery_interval_days: 3650,
+  character_choice_days: 365,
+  balance_payment_days: 365,
+};
+
+function parseDeadlineValue(key: ProductionDeadlineKey, value: unknown): number {
+  const parsedValue = parseSystemSettingString(key, value);
+  const parsed = Number(parsedValue);
+
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > DEADLINE_MAX[key]) {
+    throw new Error(`Configuração operacional inválida: ${key}`);
+  }
+
+  return parsed;
+}
+
+function validateProductionRange(settings: ProductionDeadlineSettingsMap): void {
+  const min = Number(settings.production_days_min.value);
+  const max = Number(settings.production_days_max.value);
+
+  if (max < min) {
+    throw new Error(
+      "Configuração operacional inválida: production_days_max é menor que production_days_min",
+    );
+  }
+}
 
 export async function fetchProductionDeadlinesSettings(): Promise<ProductionDeadlineSettingsMap> {
   const { data, error } = await supabase
@@ -38,19 +73,15 @@ export async function fetchProductionDeadlinesSettings(): Promise<ProductionDead
       throw new Error(`Configuração operacional ausente: ${key}`);
     }
 
-    const value = parseSystemSettingString(item.key, item.value);
-    const parsed = Number(value);
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 365) {
-      throw new Error(`Configuração operacional inválida: ${key}`);
-    }
-
     settingsMap[key] = {
-      value: String(parsed),
+      value: String(parseDeadlineValue(key, item.value)),
       description: item.description,
     };
   }
 
-  return settingsMap as ProductionDeadlineSettingsMap;
+  const completeSettings = settingsMap as ProductionDeadlineSettingsMap;
+  validateProductionRange(completeSettings);
+  return completeSettings;
 }
 
 export async function updateProductionDeadlineSetting(input: {
@@ -61,10 +92,7 @@ export async function updateProductionDeadlineSetting(input: {
     throw new Error("Chave de prazo operacional inválida.");
   }
 
-  const parsed = Number(input.value);
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 365) {
-    throw new Error("Prazo operacional deve ser um inteiro entre 1 e 365.");
-  }
+  const parsed = parseDeadlineValue(input.key, input.value);
 
   await updateAdminProductionSetting({
     key: input.key,
