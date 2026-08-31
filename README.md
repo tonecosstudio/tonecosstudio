@@ -4,7 +4,7 @@ Plataforma web da Tonecos Studios para catálogo, clientes, assinaturas, pagamen
 
 ## Estado atual
 
-**NO-GO para lançamento.** A recuperação está sendo executada na branch **work/urgente/release-readiness**.
+**NO-GO para lançamento.** A recuperação está sendo executada diretamente na **main**, única branch operacional.
 
 O site público renderiza, mas o catálogo publicado está vazio e o projeto Supabase declarado pelo repositório está inativo. O repositório também não possuía CI versionado nem release publicada na auditoria de 2026-08-30.
 
@@ -20,7 +20,7 @@ O plano, as evidências e o próximo passo ficam em [URGENTE.md](URGENTE.md). N�
 
 ## Requisitos
 
-- Node.js 22;
+- Node.js 24 LTS;
 - npm;
 - projeto Supabase separado por ambiente;
 - credenciais server-side configuradas fora do Git.
@@ -37,7 +37,7 @@ Nunca coloque service_role, Stripe secret, OAuth secret, SMTP secret ou tokens e
 
 ## Quality Gate
 
-Execute antes de abrir PR:
+Execute antes de cada commit relevante e confirme novamente no push:
 
 - npm run format:check
 - npm run typecheck
@@ -47,7 +47,7 @@ Execute antes de abrir PR:
 - npm run build
 - npm audit --omit=dev --audit-level=high
 
-O GitHub Actions executa o mesmo gate. Um build local isolado não prova prontidão de produção.
+O GitHub Actions deve executar o mesmo gate em cada push para a main. Um build local isolado não prova prontidão de produção.
 
 ## Documentação canônica
 
