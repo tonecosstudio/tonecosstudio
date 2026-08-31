@@ -18,14 +18,12 @@ import {
   CreditsBalanceResponse,
   TransactionsResponse,
   PlanChangeResponse,
-  CancelWithRefundResponse,
   NoRenewalResponse,
   UserCycleCountResponse,
   PlanType,
   isSubscriptionCreditTransactionType,
 } from '@/types/subscription-credit-system';
 import {
-  cancelSubscriptionCreditWithRefundRpc,
   createSubscriptionCreditIndividualOrderRpc,
   reactivateSubscriptionCreditRenewalRpc,
   scheduleSubscriptionCreditPlanChangeRpc,
@@ -65,7 +63,7 @@ class SubscriptionCreditAPI {
 
   async getMySubscription(): Promise<Subscription | null> {
     const userId = await this.getCurrentUserId();
-    
+
     const { data, error } = await subscriptionCreditSupabase
       .from('subscription_credit_subscriptions')
       .select('*, plan:subscription_credit_plans(*)')
@@ -74,7 +72,7 @@ class SubscriptionCreditAPI {
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null; // No rows returned
+      if (error.code === 'PGRST116') return null;
       throw error;
     }
 
@@ -86,10 +84,6 @@ class SubscriptionCreditAPI {
     newPlanType: PlanType
   ): Promise<PlanChangeResponse> {
     return scheduleSubscriptionCreditPlanChangeRpc(subscriptionId, newPlanType);
-  }
-
-  async cancelWithRefund(subscriptionId: string): Promise<CancelWithRefundResponse> {
-    return cancelSubscriptionCreditWithRefundRpc(subscriptionId);
   }
 
   async setNoRenewal(subscriptionId: string): Promise<NoRenewalResponse> {
@@ -104,7 +98,7 @@ class SubscriptionCreditAPI {
 
   async getCreditsBalance(): Promise<CreditsBalanceResponse> {
     const userId = await this.getCurrentUserId();
-    
+
     const { data: subscription, error: subscriptionError } = await subscriptionCreditSupabase
       .from('subscription_credit_subscriptions')
       .select('status')
@@ -223,7 +217,6 @@ class SubscriptionCreditAPI {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // Filter by plan type if specified
     if (planType === 'trimestral') {
       query = query.eq('is_exclusive_semestral', false);
     }
@@ -323,7 +316,7 @@ class SubscriptionCreditAPI {
 
   async getUserOrders(): Promise<{ orders: OrderWithItems[] }> {
     const userId = await this.getCurrentUserId();
-    
+
     const { data, error } = await subscriptionCreditSupabase
       .from('subscription_credit_orders')
       .select('*, items:subscription_credit_order_items(*, character:subscription_credit_characters(*)), cycle:subscription_credit_production_cycles(*)')
@@ -337,7 +330,7 @@ class SubscriptionCreditAPI {
 
   async getUserCycleCount(): Promise<UserCycleCountResponse> {
     const userId = await this.getCurrentUserId();
-    
+
     const { count, error } = await subscriptionCreditSupabase
       .from('subscription_credit_orders')
       .select('*', { count: 'exact', head: true })
@@ -356,11 +349,10 @@ class SubscriptionCreditAPI {
       .select('*')
       .eq('status', 'open')
       .order('close_date', { ascending: true })
-      .maybeSingle(); // Usa maybeSingle em vez de single para não dar erro se não houver dados
+      .maybeSingle();
 
     if (error) throw error;
 
-    // Se não houver ciclo aberto, retorna null
     if (!data) {
       throw new Error('Nenhum ciclo de produção aberto encontrado');
     }
@@ -420,5 +412,4 @@ class SubscriptionCreditAPI {
   }
 }
 
-// Export singleton instance
 export const subscriptionCreditAPI = new SubscriptionCreditAPI();
