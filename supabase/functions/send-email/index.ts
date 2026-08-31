@@ -1,15 +1,18 @@
 // Edge Function: send-email
-// Handles email notifications for chat messages with grouping and retry logic
+// Supports trusted service-to-service email delivery and admin-triggered chat notifications.
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { nowInBahia, toUTC, addDays } from "../_shared/timezone.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
 import { errorToStatus, getServiceClient } from "../_shared/supabase.ts";
-import { EmailService, escapeHtml, getEmailConfig } from "../_shared/email.ts";
+import {
+  EmailService,
+  escapeHtml,
+  getEmailConfig,
+  sanitizeEmailSubject,
+} from "../_shared/email.ts";
 import { isUUID } from "../_shared/validation.ts";
 
-// Types
 interface EmailNotificationRequest {
   conversationId: string;
   messageId: string;
@@ -29,8 +32,22 @@ interface DirectEmailRequest {
 }
 
 function isDirectEmailRequest(payload: unknown): payload is DirectEmailRequest {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return false;
   const data = payload as Partial<DirectEmailRequest>;
-  return !!data?.to && !!data?.subject && !!data?.html;
+  return (
+    typeof data.to === "string" &&
+    data.to.trim().length > 0 &&
+    typeof data.subject === "string" &&
+    data.subject.trim().length > 0 &&
+    typeof data.html === "string" &&
+    data.html.trim().length > 0
+  );
+}
+
+function isServiceRoleRequest(req: Request): boolean {
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const authorization = req.headers.get("Authorization");
+  return Boolean(serviceRoleKey && authorization === `Bearer ${serviceRoleKey}`);
 }
 
 function normalizeEmailLogMetadata(value: unknown): Record<string, unknown> {
@@ -44,9 +61,10 @@ function normalizeEmailLogMetadata(value: unknown): Record<string, unknown> {
 function normalizeEmailType(value: unknown): string {
   if (value === undefined || value === null || value === "") return "other";
   if (typeof value !== "string") throw new Error("emailType must be a string");
-
   const clean = value.trim();
-  if (!clean || clean.length > 80) throw new Error("emailType is invalid");
+  if (!clean || clean.length > 80 || !/^[a-z0-9_-]+$/i.test(clean)) {
+    throw new Error("emailType is invalid");
+  }
   return clean;
 }
 
@@ -58,6 +76,27 @@ function normalizeUserId(value: unknown): string | null {
   return value;
 }
 
+function validateNotificationPayload(value: unknown): EmailNotificationRequest {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Invalid notification payload");
+  }
+  const payload = value as Partial<EmailNotificationRequest>;
+  if (
+    typeof payload.conversationId !== "string" ||
+    !isUUID(payload.conversationId) ||
+    typeof payload.messageId !== "string" ||
+    !isUUID(payload.messageId) ||
+    typeof payload.recipientUserId !== "string" ||
+    !isUUID(payload.recipientUserId) ||
+    typeof payload.messageContent !== "string" ||
+    !payload.messageContent.trim() ||
+    payload.messageContent.length > 5000
+  ) {
+    throw new Error("Invalid notification payload");
+  }
+  return payload as EmailNotificationRequest;
+}
+
 async function createEmailDeliveryLog(
   service: ReturnType<typeof getServiceClient>,
   payload: DirectEmailRequest,
@@ -66,7 +105,7 @@ async function createEmailDeliveryLog(
     p_user_id: normalizeUserId(payload.userId),
     p_recipient_email: payload.to,
     p_email_type: normalizeEmailType(payload.emailType),
-    p_subject: payload.subject,
+    p_subject: sanitizeEmailSubject(payload.subject),
     p_status: "pending",
     p_provider: "edge-function",
     p_metadata: normalizeEmailLogMetadata(payload.metadata),
@@ -76,7 +115,6 @@ async function createEmailDeliveryLog(
     console.error("Error creating email delivery log:", error.message);
     return null;
   }
-
   return typeof data === "string" ? data : null;
 }
 
@@ -86,23 +124,15 @@ async function updateEmailDeliveryLog(
   updates: Record<string, unknown>,
 ): Promise<void> {
   if (!logId) return;
-
   const { error } = await service.rpc("update_email_delivery_log", {
     p_log_id: logId,
     p_updates: updates,
   });
-
-  if (error) {
-    console.error("Error updating email delivery log:", error.message);
-  }
+  if (error) console.error("Error updating email delivery log:", error.message);
 }
 
-// Check if user is online (activity within last 5 minutes)
 async function isUserOnline(supabase: any, userId: string): Promise<boolean> {
-  const fiveMinutesAgo = toUTC(
-    addDays(nowInBahia(), -5 / (24 * 60)),
-  ).toISOString(); // 5 minutes ago in Bahia time
-
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("support_messages")
     .select("created_at")
@@ -112,11 +142,10 @@ async function isUserOnline(supabase: any, userId: string): Promise<boolean> {
     .limit(1);
 
   if (error) {
-    console.error("Error checking user online status:", error);
+    console.error("Error checking user online status:", error.message);
     return false;
   }
-
-  return data && data.length > 0;
+  return Boolean(data?.length);
 }
 
 async function recordEmailNotification(
@@ -140,13 +169,9 @@ async function recordEmailNotification(
     p_error_message: input.errorMessage ?? null,
     p_retry_count: input.retryCount ?? 0,
   });
-
-  if (error) {
-    console.error("Error recording email notification event:", error);
-  }
+  if (error) console.error("Error recording email notification event:", error.message);
 }
 
-// Generate email HTML template
 function generateEmailHTML(data: {
   recipientName: string;
   conversationSubject: string;
@@ -154,149 +179,37 @@ function generateEmailHTML(data: {
   messageContent: string;
   conversationUrl: string;
 }): string {
+  const recipientName = escapeHtml(data.recipientName);
+  const conversationSubject = escapeHtml(data.conversationSubject);
+  const senderName = escapeHtml(data.senderName);
+  const messageContent = escapeHtml(data.messageContent);
+  const conversationUrl = escapeHtml(data.conversationUrl);
+
   return `
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nova mensagem no chat</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 20px auto;
-      background-color: #ffffff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .header {
-      background-color: #2563eb;
-      color: #ffffff;
-      padding: 24px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 600;
-    }
-    .content {
-      padding: 32px 24px;
-    }
-    .greeting {
-      font-size: 16px;
-      margin-bottom: 16px;
-    }
-    .message-box {
-      background-color: #f8fafc;
-      border-left: 4px solid #2563eb;
-      padding: 16px;
-      margin: 24px 0;
-      border-radius: 4px;
-    }
-    .message-sender {
-      font-weight: 600;
-      color: #2563eb;
-      margin-bottom: 8px;
-    }
-    .message-content {
-      color: #475569;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    .cta-button {
-      display: inline-block;
-      background-color: #2563eb;
-      color: #ffffff;
-      text-decoration: none;
-      padding: 12px 32px;
-      border-radius: 6px;
-      font-weight: 600;
-      margin: 24px 0;
-    }
-    .cta-button:hover {
-      background-color: #1d4ed8;
-    }
-    .footer {
-      background-color: #f8fafc;
-      padding: 24px;
-      text-align: center;
-      font-size: 14px;
-      color: #64748b;
-      border-top: 1px solid #e2e8f0;
-    }
-    @media (prefers-color-scheme: dark) {
-      body {
-        background-color: #0f172a;
-      }
-      .container {
-        background-color: #1e293b;
-      }
-      .content {
-        color: #e2e8f0;
-      }
-      .message-box {
-        background-color: #334155;
-      }
-      .message-content {
-        color: #cbd5e1;
-      }
-      .footer {
-        background-color: #0f172a;
-        color: #94a3b8;
-        border-top-color: #334155;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>💬 Nova Mensagem</h1>
+  <body style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+    <h1>Nova mensagem</h1>
+    <p>Olá, ${recipientName}.</p>
+    <p>Você recebeu uma nova mensagem sobre <strong>${conversationSubject}</strong>.</p>
+    <div style="background:#f8fafc;border-left:4px solid #2563eb;padding:16px;margin:24px 0">
+      <strong>${senderName}</strong>
+      <p style="white-space:pre-wrap">${messageContent}</p>
     </div>
-    <div class="content">
-      <p class="greeting">Olá ${data.recipientName},</p>
-      <p>Você recebeu uma nova mensagem no chat sobre: <strong>${data.conversationSubject}</strong></p>
-
-      <div class="message-box">
-        <div class="message-sender">${data.senderName}</div>
-        <div class="message-content">${data.messageContent}</div>
-      </div>
-
-      <center>
-        <a href="${data.conversationUrl}" class="cta-button">Ver Conversa</a>
-      </center>
-
-      <p style="margin-top: 24px; font-size: 14px; color: #64748b;">
-        Clique no botão acima para responder diretamente no chat.
-      </p>
-    </div>
-    <div class="footer">
-      <p>Este é um email automático. Por favor, não responda diretamente.</p>
-      <p>&copy; ${new Date().getFullYear()} Ordax. Todos os direitos reservados.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `.trim();
+    <p><a href="${conversationUrl}">Ver conversa</a></p>
+  </body>
+</html>`.trim();
 }
 
-// Main handler
+async function authorizeDirectRequest(req: Request): Promise<void> {
+  if (isServiceRoleRequest(req)) return;
+  await assertRateLimitedAdmin(req, "send-email-direct");
+}
+
 serve(async (req) => {
-  // CORS headers helper
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    // CORS preflight
     if (req.method === "OPTIONS") {
       return new Response("ok", {
         headers: {
@@ -305,39 +218,39 @@ serve(async (req) => {
         },
       });
     }
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+        status: 405,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const admin = await assertRateLimitedAdmin(req, "send-email");
-    if (admin.rateLimited) return admin.rateLimited;
-
-    // Parse request
-    const payload = await req.json();
+    const payload = await req.json().catch(() => {
+      throw new Error("Invalid JSON payload");
+    });
     const supabase = getServiceClient();
 
     if (isDirectEmailRequest(payload)) {
+      await authorizeDirectRequest(req);
       const logId = await createEmailDeliveryLog(supabase, payload);
       const emailService = new EmailService(
-        getEmailConfig({
-          from: payload.from,
-          fromName: payload.fromName,
-        }),
+        getEmailConfig({ from: payload.from, fromName: payload.fromName }),
       );
+
       try {
         const result = await emailService.sendEmail({
           to: payload.to,
-          subject: payload.subject,
+          subject: sanitizeEmailSubject(payload.subject),
           html: payload.html,
         });
-
         await updateEmailDeliveryLog(supabase, logId, {
           status: "sent",
           sent_at: new Date().toISOString(),
           provider_message_id: result.id,
         });
-
-        return new Response(
-          JSON.stringify({ success: true, emailId: result.id }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        return new Response(JSON.stringify({ success: true, emailId: result.id }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         await updateEmailDeliveryLog(supabase, logId, {
@@ -348,147 +261,113 @@ serve(async (req) => {
       }
     }
 
-    const notificationPayload = payload as EmailNotificationRequest;
+    await assertRateLimitedAdmin(req, "send-email-chat");
+    const notification = validateNotificationPayload(payload);
 
-    // Validate payload
-    if (
-      !notificationPayload.conversationId ||
-      !notificationPayload.messageId ||
-      !notificationPayload.recipientUserId
-    ) {
-      throw new Error("Missing required fields");
-    }
-
-    // Check if user is online
-    const userOnline = await isUserOnline(
-      supabase,
-      notificationPayload.recipientUserId,
-    );
-    if (userOnline) {
-      console.log("User is online, skipping email notification");
+    if (await isUserOnline(supabase, notification.recipientUserId)) {
+      await recordEmailNotification(supabase, {
+        conversationId: notification.conversationId,
+        messageId: notification.messageId,
+        recipientUserId: notification.recipientUserId,
+        status: "skipped",
+        errorMessage: "user_online",
+      });
       return new Response(
         JSON.stringify({ success: true, skipped: true, reason: "user_online" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Get user profile
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("email, full_name")
-      .eq("id", notificationPayload.recipientUserId)
-      .single();
+    const [{ data: profile, error: profileError }, { data: conversation, error: conversationError }, { data: message, error: messageError }] =
+      await Promise.all([
+        supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", notification.recipientUserId)
+          .single(),
+        supabase
+          .from("support_conversations")
+          .select("subject")
+          .eq("id", notification.conversationId)
+          .single(),
+        supabase
+          .from("support_messages")
+          .select("sender_id")
+          .eq("id", notification.messageId)
+          .single(),
+      ]);
 
     if (profileError || !profile?.email) {
-      console.error("User email not found:", profileError);
-
-      // Log failed notification
       await recordEmailNotification(supabase, {
-        conversationId: notificationPayload.conversationId,
-        messageId: notificationPayload.messageId,
-        recipientUserId: notificationPayload.recipientUserId,
+        conversationId: notification.conversationId,
+        messageId: notification.messageId,
+        recipientUserId: notification.recipientUserId,
         status: "failed",
         errorMessage: "no_email",
       });
-
-      return new Response(
-        JSON.stringify({ success: false, error: "User email not found" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      throw new Error("User email not found");
     }
-
-    // Get conversation details
-    const { data: conversation } = await supabase
-      .from("support_conversations")
-      .select("subject")
-      .eq("id", notificationPayload.conversationId)
-      .single();
-
-    // Get sender name (admin)
-    const { data: message } = await supabase
-      .from("support_messages")
-      .select("sender_id")
-      .eq("id", notificationPayload.messageId)
-      .single();
+    if (conversationError || !conversation) throw new Error("Conversation not found");
+    if (messageError || !message) throw new Error("Message not found");
 
     let senderName = "Suporte";
-    if (message?.sender_id) {
+    if (message.sender_id) {
       const { data: senderProfile } = await supabase
         .from("profiles")
         .select("full_name")
         .eq("id", message.sender_id)
-        .single();
-
-      if (senderProfile?.full_name) {
-        senderName = senderProfile.full_name;
-      }
+        .maybeSingle();
+      if (senderProfile?.full_name) senderName = senderProfile.full_name;
     }
 
-    // Configure email service
     const emailConfig = getEmailConfig();
-    const emailService = new EmailService(emailConfig);
-
-    // Generate email HTML
-    const conversationUrl = `${emailConfig.baseUrl}/chat?conversation=${notificationPayload.conversationId}`;
+    const conversationUrl = `${emailConfig.baseUrl}/chat?conversation=${encodeURIComponent(notification.conversationId)}`;
     const emailHTML = generateEmailHTML({
-      recipientName: escapeHtml(profile.full_name || "Cliente"),
-      conversationSubject: escapeHtml(conversation?.subject || "Atendimento"),
-      senderName: escapeHtml(senderName),
-      messageContent: escapeHtml(notificationPayload.messageContent),
+      recipientName: profile.full_name || "Cliente",
+      conversationSubject: conversation.subject || "Atendimento",
+      senderName,
+      messageContent: notification.messageContent,
       conversationUrl,
     });
+    const emailService = new EmailService(emailConfig);
 
-    // Send email with retry logic
     let emailId: string | null = null;
     let lastError: string | null = null;
-    const maxRetries = 3;
-    const retryDelays = [1000, 2000, 4000]; // Exponential backoff
+    let attemptsUsed = 0;
+    const retryDelays = [1000, 2000, 4000];
 
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
+    for (let attempt = 0; attempt < retryDelays.length; attempt += 1) {
+      attemptsUsed = attempt + 1;
       try {
         const result = await emailService.sendEmail({
           to: profile.email,
-          subject: `Nova mensagem: ${conversation?.subject || "Atendimento"}`,
+          subject: sanitizeEmailSubject(
+            `Nova mensagem: ${conversation.subject || "Atendimento"}`,
+          ),
           html: emailHTML,
         });
-
         emailId = result.id;
-        console.log(
-          `Email sent successfully on attempt ${attempt + 1}:`,
-          emailId,
-        );
         break;
       } catch (error) {
-        lastError = (error as Error).message;
-        console.error(`Email send attempt ${attempt + 1} failed:`, error);
-
-        if (attempt < maxRetries - 1) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, retryDelays[attempt]),
-          );
+        lastError = error instanceof Error ? error.message : String(error);
+        if (attempt < retryDelays.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, retryDelays[attempt]));
         }
       }
     }
 
-    // Log notification result
-    const notificationStatus = emailId ? "sent" : "failed";
     await recordEmailNotification(supabase, {
-      conversationId: notificationPayload.conversationId,
-      messageId: notificationPayload.messageId,
-      recipientUserId: notificationPayload.recipientUserId,
-      status: notificationStatus,
-      sentAt: emailId ? toUTC(nowInBahia()).toISOString() : null,
+      conversationId: notification.conversationId,
+      messageId: notification.messageId,
+      recipientUserId: notification.recipientUserId,
+      status: emailId ? "sent" : "failed",
+      sentAt: emailId ? new Date().toISOString() : null,
       errorMessage: lastError,
-      retryCount: emailId ? 0 : maxRetries,
+      retryCount: Math.max(attemptsUsed - 1, 0),
     });
 
     if (!emailId) {
-      throw new Error(
-        `Failed to send email after ${maxRetries} attempts: ${lastError}`,
-      );
+      throw new Error(`Failed to send email after ${attemptsUsed} attempts`);
     }
 
     return new Response(JSON.stringify({ success: true, emailId }), {
