@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import {
   cancelSubscriptionById,
-  createPendingSubscriptionForCurrentUser,
   fetchSubscriptionForUser,
   fetchSubscriptionPlan,
   listAvailableSubscriptionPlans,
@@ -67,29 +66,6 @@ export function useAvailablePlans() {
     queryFn: listAvailableSubscriptionPlans,
     staleTime: CACHE_CONFIG.STALE_TIME,
     gcTime: CACHE_CONFIG.CACHE_TIME,
-  });
-}
-
-export function useCreateSubscription() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: createPendingSubscriptionForCurrentUser,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
-      toast({
-        title: "Assinatura criada!",
-        description: "Agora realize o pagamento para ativar sua assinatura.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao criar assinatura",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
   });
 }
 
