@@ -7,7 +7,6 @@ const DEADLINE_KEYS = [
   "shipping_business_days",
   "sales_duration_days",
   "delivery_interval_days",
-  "monthly_capacity",
 ] as const;
 
 export type ProductionDeadlineKey = (typeof DEADLINE_KEYS)[number];
@@ -17,7 +16,10 @@ export interface ProductionDeadlineSettingValue {
   description: string | null;
 }
 
-export type ProductionDeadlineSettingsMap = Record<string, ProductionDeadlineSettingValue>;
+export type ProductionDeadlineSettingsMap = Record<
+  ProductionDeadlineKey,
+  ProductionDeadlineSettingValue
+>;
 
 export async function fetchProductionDeadlinesSettings(): Promise<ProductionDeadlineSettingsMap> {
   const { data, error } = await supabase
@@ -27,22 +29,47 @@ export async function fetchProductionDeadlinesSettings(): Promise<ProductionDead
 
   if (error) throw error;
 
-  const settingsMap: ProductionDeadlineSettingsMap = {};
-  (data || []).forEach((item) => {
-    settingsMap[item.key] = {
-      value: parseSystemSettingString(item.key, item.value),
+  const rows = data ?? [];
+  const settingsMap = {} as Partial<ProductionDeadlineSettingsMap>;
+
+  for (const key of DEADLINE_KEYS) {
+    const item = rows.find((row) => row.key === key);
+    if (!item) {
+      throw new Error(`Configuração operacional ausente: ${key}`);
+    }
+
+    const value = parseSystemSettingString(item.key, item.value);
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 365) {
+      throw new Error(`Configuração operacional inválida: ${key}`);
+    }
+
+    settingsMap[key] = {
+      value: String(parsed),
       description: item.description,
     };
-  });
+  }
 
-  return settingsMap;
+  return settingsMap as ProductionDeadlineSettingsMap;
 }
 
 export async function updateProductionDeadlineSetting(input: {
-  key: string;
+  key: ProductionDeadlineKey;
   value: string;
-}): Promise<{ key: string; value: string }> {
-  const { key, value } = input;
-  await updateAdminProductionSetting({ key, value });
-  return { key, value };
+}): Promise<{ key: ProductionDeadlineKey; value: string }> {
+  if (!DEADLINE_KEYS.includes(input.key)) {
+    throw new Error("Chave de prazo operacional inválida.");
+  }
+
+  const parsed = Number(input.value);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 365) {
+    throw new Error("Prazo operacional deve ser um inteiro entre 1 e 365.");
+  }
+
+  await updateAdminProductionSetting({
+    key: input.key,
+    value: String(parsed),
+  });
+
+  return { key: input.key, value: String(parsed) };
 }
