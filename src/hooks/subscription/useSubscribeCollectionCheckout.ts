@@ -1,6 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
-  createSubscriptionCheckout,
   getSubscribeCollectionBySlug,
   listSubscribeCollections,
   listSubscribePlans,
@@ -9,7 +8,6 @@ import {
 export type {
   SubscribeCollectionOption,
   SubscribePlan,
-  SubscriptionPaymentMethod,
 } from "@/services/subscriptions/subscription-checkout-service";
 
 export function useSubscribeCollectionCheckout(slug?: string) {
@@ -27,10 +25,6 @@ export function useSubscribeCollectionCheckout(slug?: string) {
     queryKey: ["collection", slug],
     enabled: Boolean(slug),
     queryFn: () => getSubscribeCollectionBySlug(slug as string),
-  });
-
-  const createCheckout = useMutation({
-    mutationFn: createSubscriptionCheckout,
   });
 
   const loadError =
@@ -53,6 +47,5 @@ export function useSubscribeCollectionCheckout(slug?: string) {
     initialCollectionLoading: initialCollectionQuery.isLoading,
     loadError,
     retryLoad,
-    createCheckout,
   };
 }
