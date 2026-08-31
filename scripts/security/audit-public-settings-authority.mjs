@@ -9,7 +9,7 @@ const migrations = readdirSync(MIGRATIONS_DIR)
 
 let publicSelectPolicyPresent = false;
 let policyEvidence = null;
-let latestGenericUpsertSource = null;
+let latestGenericUpsertBody = null;
 let latestGenericUpsertEvidence = null;
 
 for (const file of migrations) {
@@ -32,8 +32,11 @@ for (const file of migrations) {
     policyEvidence = file;
   }
 
-  if (/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.admin_upsert_system_settings\s*\(/i.test(source)) {
-    latestGenericUpsertSource = source;
+  const upsertDefinition = source.match(
+    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.admin_upsert_system_settings\s*\([^)]*\)[\s\S]*?AS\s+\$\$([\s\S]*?)\$\$\s*;/i,
+  );
+  if (upsertDefinition) {
+    latestGenericUpsertBody = upsertDefinition[1];
     latestGenericUpsertEvidence = file;
   }
 }
@@ -41,18 +44,21 @@ for (const file of migrations) {
 const failures = [];
 
 if (publicSelectPolicyPresent) {
-  if (!latestGenericUpsertSource) {
+  if (!latestGenericUpsertBody) {
     failures.push(
       "public.system_settings is publicly readable but no canonical admin_upsert_system_settings implementation was found",
     );
   } else {
-    const hasSensitiveNameGuard =
+    const referencesSensitiveNames =
       /secret|token|password|private[_ ]?key|service[_ ]?role|credential|api[_ ]?key/i.test(
-        latestGenericUpsertSource,
-      ) &&
-      /RAISE\s+EXCEPTION/i.test(latestGenericUpsertSource);
+        latestGenericUpsertBody,
+      );
+    const rejectsSensitiveNames =
+      referencesSensitiveNames &&
+      /RAISE\s+EXCEPTION/i.test(latestGenericUpsertBody) &&
+      /v_key|p_key|key/i.test(latestGenericUpsertBody);
 
-    if (!hasSensitiveNameGuard) {
+    if (!rejectsSensitiveNames) {
       failures.push(
         `public.system_settings remains publicly readable (last policy evidence: ${policyEvidence}) while the latest generic admin upsert (${latestGenericUpsertEvidence}) does not reject secret-like setting names`,
       );
