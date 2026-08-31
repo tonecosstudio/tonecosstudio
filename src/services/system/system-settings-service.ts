@@ -1,4 +1,4 @@
-import { BATCH, CONTACT, NOTIFICATIONS, PLANS, PRICING, UI } from "@/config/constants";
+import { CONTACT, NOTIFICATIONS, UI } from "@/config/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
 import { upsertAdminSystemSettings } from "@/services/admin/config/admin-config-mutations-service";
@@ -31,7 +31,13 @@ export interface SystemSettings {
   max_installments_no_interest: number;
   max_installments_with_interest: number;
 
+  production_days_min: number;
+  production_days_max: number;
   shipping_business_days: number;
+  sales_duration_days: number;
+  delivery_interval_days: number;
+  character_choice_days: number;
+  balance_payment_days: number;
   exchange_deadline_days: number;
   days_to_next_delivery: number;
 
@@ -48,7 +54,7 @@ export interface SystemSettings {
   hero_image_url?: string;
 }
 
-const NON_COMMERCIAL_DEFAULTS = {
+const PRESENTATION_DEFAULTS = {
   company_name: CONTACT.COMPANY_NAME,
   company_address: CONTACT.COMPANY_ADDRESS,
   company_logo_url: CONTACT.COMPANY_LOGO_URL,
@@ -58,11 +64,6 @@ const NON_COMMERCIAL_DEFAULTS = {
   dpo_email: CONTACT.DPO_EMAIL,
   business_hours: CONTACT.BUSINESS_HOURS,
   website_url: CONTACT.WEBSITE_URL,
-  max_installments_no_interest: PRICING.MAX_INSTALLMENTS_NO_INTEREST,
-  max_installments_with_interest: PRICING.MAX_INSTALLMENTS_WITH_INTEREST,
-  shipping_business_days: BATCH.SHIPPING_BUSINESS_DAYS,
-  exchange_deadline_days: BATCH.EXCHANGE_DEADLINE_DAYS,
-  days_to_next_delivery: PLANS.DAYS_TO_NEXT_DELIVERY,
   user_online_threshold_minutes: NOTIFICATIONS.USER_ONLINE_THRESHOLD_MINUTES,
   notification_polling_interval_ms: NOTIFICATIONS.POLLING_INTERVAL_MS,
   toast_duration_ms: NOTIFICATIONS.TOAST_DURATION_MS,
@@ -72,13 +73,7 @@ const NON_COMMERCIAL_DEFAULTS = {
   image_compression_quality: UI.IMAGE_COMPRESSION_QUALITY,
   max_image_size_mb: UI.MAX_IMAGE_SIZE_MB,
   hero_image_url: undefined,
-} satisfies Omit<
-  SystemSettings,
-  | "default_price_full"
-  | "default_price_pix"
-  | "default_deposit_amount"
-  | "pix_discount_percentage"
->;
+} satisfies Partial<SystemSettings>;
 
 type SystemSettingsViewError = { message: string } | null;
 
@@ -102,7 +97,13 @@ const NUMERIC_SETTING_KEYS = [
   "pix_discount_percentage",
   "max_installments_no_interest",
   "max_installments_with_interest",
+  "production_days_min",
+  "production_days_max",
   "shipping_business_days",
+  "sales_duration_days",
+  "delivery_interval_days",
+  "character_choice_days",
+  "balance_payment_days",
   "exchange_deadline_days",
   "days_to_next_delivery",
   "user_online_threshold_minutes",
@@ -137,7 +138,8 @@ function requireFiniteSetting(
   key: keyof SystemSettings,
   options: { min: number; max?: number; integer?: boolean },
 ): number {
-  const value = Number(settings[key]);
+  const raw = settings[key];
+  const value = raw === "" || raw === null || raw === undefined ? Number.NaN : Number(raw);
   const max = options.max ?? Number.POSITIVE_INFINITY;
 
   if (
@@ -182,14 +184,81 @@ export function normalizeSystemSettings(rawSettings: unknown): SystemSettings {
     "pix_discount_percentage",
     { min: 0, max: 100 },
   );
+  const maxInstallmentsNoInterest = requireFiniteSetting(
+    normalized,
+    "max_installments_no_interest",
+    { min: 1, integer: true },
+  );
+  const maxInstallmentsWithInterest = requireFiniteSetting(
+    normalized,
+    "max_installments_with_interest",
+    { min: 1, integer: true },
+  );
+
+  const productionDaysMin = requireFiniteSetting(normalized, "production_days_min", {
+    min: 1,
+    max: 3650,
+    integer: true,
+  });
+  const productionDaysMax = requireFiniteSetting(normalized, "production_days_max", {
+    min: productionDaysMin,
+    max: 3650,
+    integer: true,
+  });
+  const shippingBusinessDays = requireFiniteSetting(normalized, "shipping_business_days", {
+    min: 1,
+    max: 31,
+    integer: true,
+  });
+  const salesDurationDays = requireFiniteSetting(normalized, "sales_duration_days", {
+    min: 1,
+    max: 3650,
+    integer: true,
+  });
+  const deliveryIntervalDays = requireFiniteSetting(normalized, "delivery_interval_days", {
+    min: 1,
+    max: 3650,
+    integer: true,
+  });
+  const characterChoiceDays = requireFiniteSetting(normalized, "character_choice_days", {
+    min: 1,
+    max: 365,
+    integer: true,
+  });
+  const balancePaymentDays = requireFiniteSetting(normalized, "balance_payment_days", {
+    min: 1,
+    max: 365,
+    integer: true,
+  });
+  const exchangeDeadlineDays = requireFiniteSetting(normalized, "exchange_deadline_days", {
+    min: 0,
+    max: 365,
+    integer: true,
+  });
+  const daysToNextDelivery = requireFiniteSetting(normalized, "days_to_next_delivery", {
+    min: 1,
+    max: 3650,
+    integer: true,
+  });
 
   return {
-    ...NON_COMMERCIAL_DEFAULTS,
+    ...PRESENTATION_DEFAULTS,
     ...normalized,
     default_price_full: defaultPriceFull,
     default_price_pix: defaultPricePix,
     default_deposit_amount: defaultDepositAmount,
     pix_discount_percentage: pixDiscountPercentage,
+    max_installments_no_interest: maxInstallmentsNoInterest,
+    max_installments_with_interest: maxInstallmentsWithInterest,
+    production_days_min: productionDaysMin,
+    production_days_max: productionDaysMax,
+    shipping_business_days: shippingBusinessDays,
+    sales_duration_days: salesDurationDays,
+    delivery_interval_days: deliveryIntervalDays,
+    character_choice_days: characterChoiceDays,
+    balance_payment_days: balancePaymentDays,
+    exchange_deadline_days: exchangeDeadlineDays,
+    days_to_next_delivery: daysToNextDelivery,
   } as SystemSettings;
 }
 
