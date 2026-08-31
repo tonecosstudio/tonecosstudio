@@ -10,19 +10,36 @@ export interface ProductionGlobalLimitSetting {
 export async function fetchProductionGlobalLimitSetting(): Promise<ProductionGlobalLimitSetting> {
   const { data, error } = await supabase
     .from("system_settings")
-    .select("*")
+    .select("key, value, description")
     .eq("key", "monthly_production_limit")
     .maybeSingle();
 
   if (error) throw error;
 
   if (!data) {
-    return { key: "monthly_production_limit", value: "100" };
+    throw new Error("Limite mensal de produção não configurado.");
   }
 
-  return data as ProductionGlobalLimitSetting;
+  const value = Number(data.value);
+  if (!Number.isInteger(value) || value < 1 || value > 100000) {
+    throw new Error("Limite mensal de produção inválido.");
+  }
+
+  return {
+    key: data.key,
+    value: String(value),
+    description: data.description,
+  };
 }
 
 export async function updateProductionGlobalLimitSetting(value: string): Promise<void> {
-  await updateAdminProductionSetting({ key: "monthly_production_limit", value });
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100000) {
+    throw new Error("Limite mensal de produção inválido.");
+  }
+
+  await updateAdminProductionSetting({
+    key: "monthly_production_limit",
+    value: String(parsed),
+  });
 }
