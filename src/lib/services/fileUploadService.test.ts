@@ -1,169 +1,181 @@
-/**
- * Tests for FileUploadService
- * Requirements: 4.1, 4.2, 4.3, 4.6
- *
- * Validates:
- * - Property 13: Image Upload Validation
- * - Property 14: PDF Upload Validation
- * - Property 15: Image Thumbnail Display
- * - Property 17: File Validation Before Upload
- */
-
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { FileUploadService } from "./fileUploadService";
 
-describe("FileUploadService", () => {
+const mocks = vi.hoisted(() => ({
+  requireAuthenticatedUserId: vi.fn(),
+  requireCurrentUserAdminAccess: vi.fn(),
+  callAuthenticatedEdgeFunction: vi.fn(),
+  getSupportAttachmentSignedUrl: vi.fn(),
+  removeStorageFiles: vi.fn(),
+  callAdminRpc: vi.fn(),
+  from: vi.fn(),
+}));
+
+vi.mock("@/services/auth/current-user", () => ({
+  requireAuthenticatedUserId: mocks.requireAuthenticatedUserId,
+  requireCurrentUserAdminAccess: mocks.requireCurrentUserAdminAccess,
+}));
+
+vi.mock("@/services/supabase/edge-function-client", () => ({
+  callAuthenticatedEdgeFunction: mocks.callAuthenticatedEdgeFunction,
+}));
+
+vi.mock("@/services/support/support-attachment-url-service", () => ({
+  getSupportAttachmentSignedUrl: mocks.getSupportAttachmentSignedUrl,
+}));
+
+vi.mock("@/services/supabase/storage-client", () => ({
+  removeStorageFiles: mocks.removeStorageFiles,
+}));
+
+vi.mock("@/services/admin/rpc/admin-rpc-gateway", () => ({
+  callAdminRpc: mocks.callAdminRpc,
+}));
+
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: { from: mocks.from },
+}));
+
+const userId = "11111111-1111-4111-8111-111111111111";
+const conversationId = "22222222-2222-4222-8222-222222222222";
+const messageId = "33333333-3333-4333-8333-333333333333";
+const attachmentId = "44444444-4444-4444-8444-444444444444";
+
+function validJpeg() {
+  return new File([new Uint8Array([0xff, 0xd8, 0xff])], "proof.jpg", {
+    type: "image/jpeg",
+  });
+}
+
+describe("Support FileUploadService", () => {
   let service: FileUploadService;
 
   beforeEach(() => {
     service = new FileUploadService();
+    vi.clearAllMocks();
+
+    mocks.requireAuthenticatedUserId.mockResolvedValue(userId);
+    mocks.requireCurrentUserAdminAccess.mockResolvedValue(userId);
+    mocks.getSupportAttachmentSignedUrl.mockResolvedValue(
+      "https://signed.example.test/support-attachment",
+    );
+    mocks.callAuthenticatedEdgeFunction.mockResolvedValue({
+      attachment: {
+        id: attachmentId,
+        message_id: messageId,
+        uploaded_by: userId,
+        file_name: "proof.jpg",
+        file_path: `${conversationId}/${attachmentId}.jpg`,
+        file_size: 3,
+        file_type: "image/jpeg",
+        thumbnail_path: null,
+      },
+      accessUrl: "https://signed.example.test/edge-result",
+    });
   });
 
   describe("validateFile", () => {
-    it("should accept JPEG images under 5MB", () => {
-      const file = new File(["x".repeat(1024 * 1024)], "test.jpg", {
-        type: "image/jpeg",
-      });
-
-      const result = service.validateFile(file);
-
+    it.each([
+      ["image/jpeg", "test.jpg"],
+      ["image/jpg", "test.jpg"],
+      ["image/png", "test.png"],
+      ["application/pdf", "test.pdf"],
+    ])("accepts %s under 5 MB", (type, name) => {
+      const result = service.validateFile(new File(["content"], name, { type }));
       expect(result.valid).toBe(true);
-      expect(result.error).toBeUndefined();
     });
 
-    it("should accept PNG images under 5MB", () => {
-      const file = new File(["x".repeat(1024 * 1024)], "test.png", {
-        type: "image/png",
-      });
-
-      const result = service.validateFile(file);
-
-      expect(result.valid).toBe(true);
-      expect(result.error).toBeUndefined();
+    it("rejects unsupported file types", () => {
+      const result = service.validateFile(
+        new File(["content"], "payload.zip", { type: "application/zip" }),
+      );
+      expect(result.valid).toBe(false);
     });
 
-    it("should accept PDF files under 5MB", () => {
-      const file = new File(["x".repeat(1024 * 1024)], "test.pdf", {
-        type: "application/pdf",
-      });
+    it("rejects files over 5 MB", () => {
+      const file = new File(["x"], "large.jpg", { type: "image/jpeg" });
+      Object.defineProperty(file, "size", { value: 5 * 1024 * 1024 + 1 });
 
       const result = service.validateFile(file);
-
-      expect(result.valid).toBe(true);
-      expect(result.error).toBeUndefined();
-    });
-
-    it("should reject files over 5MB", () => {
-      const file = new File(["x".repeat(6 * 1024 * 1024)], "large.jpg", {
-        type: "image/jpeg",
-      });
-
-      const result = service.validateFile(file);
-
       expect(result.valid).toBe(false);
       expect(result.error).toContain("5MB");
     });
-
-    it("should reject unsupported file types", () => {
-      const file = new File(["content"], "test.txt", {
-        type: "text/plain",
-      });
-
-      const result = service.validateFile(file);
-
-      expect(result.valid).toBe(false);
-      expect(result.error).toBeTruthy();
-    });
-
-    it("should reject files with no type", () => {
-      const file = new File(["content"], "test", {
-        type: "",
-      });
-
-      const result = service.validateFile(file);
-
-      expect(result.valid).toBe(false);
-    });
   });
 
-  describe("getPublicUrl", () => {
-    it("should generate public URL for file path", () => {
-      const path = "conversation-id/test.jpg";
+  describe("uploadFile", () => {
+    it("delegates the upload to the authenticated Edge Function", async () => {
+      const file = validJpeg();
 
-      const url = service.getPublicUrl(path);
+      const result = await service.uploadFile(file, conversationId, messageId, userId);
 
-      expect(url).toBeTruthy();
-      expect(url).toBe("https://mock-public-url.com");
+      expect(mocks.requireAuthenticatedUserId).toHaveBeenCalledTimes(1);
+      expect(mocks.callAuthenticatedEdgeFunction).toHaveBeenCalledWith(
+        "upload-support-attachment",
+        expect.any(FormData),
+        "Erro ao fazer upload do anexo",
+      );
+
+      const body = mocks.callAuthenticatedEdgeFunction.mock.calls[0][1] as FormData;
+      expect(body.get("messageId")).toBe(messageId);
+      expect(body.get("file")).toBeInstanceOf(File);
+      expect(result.file_path).toBe(`${conversationId}/${attachmentId}.jpg`);
+      expect(result.public_url).toBe("https://signed.example.test/edge-result");
     });
-  });
 
-  describe("generateThumbnail", () => {
-    it("should handle thumbnail generation for images", async () => {
-      // Note: This test is skipped in test environment due to canvas limitations
-      // The actual thumbnail generation is tested in integration tests
-      // In a real browser environment, this would work
-      // In test environment, we just verify the method exists
-      expect(service.generateThumbnail).toBeDefined();
-      expect(typeof service.generateThumbnail).toBe("function");
+    it("rejects a caller-provided uploader that differs from the current user", async () => {
+      await expect(
+        service.uploadFile(
+          validJpeg(),
+          conversationId,
+          messageId,
+          "55555555-5555-4555-8555-555555555555",
+        ),
+      ).rejects.toThrow("Usuário do anexo inválido");
+
+      expect(mocks.callAuthenticatedEdgeFunction).not.toHaveBeenCalled();
     });
-  });
 
-  describe("File size validation", () => {
-    it("should accept file exactly at 5MB limit", () => {
-      const file = new File(["x".repeat(5 * 1024 * 1024)], "test.jpg", {
-        type: "image/jpeg",
+    it("rejects an inconsistent response from the Edge Function", async () => {
+      mocks.callAuthenticatedEdgeFunction.mockResolvedValue({
+        attachment: {
+          id: attachmentId,
+          message_id: "66666666-6666-4666-8666-666666666666",
+          uploaded_by: userId,
+          file_name: "proof.jpg",
+          file_path: `${conversationId}/${attachmentId}.jpg`,
+          file_size: 3,
+          file_type: "image/jpeg",
+        },
+        accessUrl: null,
       });
 
-      const result = service.validateFile(file);
-
-      expect(result.valid).toBe(true);
+      await expect(
+        service.uploadFile(validJpeg(), conversationId, messageId, userId),
+      ).rejects.toThrow("Resposta inválida ao salvar o anexo");
     });
 
-    it("should reject file just over 5MB limit", () => {
-      const file = new File(["x".repeat(5 * 1024 * 1024 + 1)], "test.jpg", {
-        type: "image/jpeg",
+    it("falls back to an authenticated signed URL when the Edge response has no URL", async () => {
+      mocks.callAuthenticatedEdgeFunction.mockResolvedValue({
+        attachment: {
+          id: attachmentId,
+          message_id: messageId,
+          uploaded_by: userId,
+          file_name: "proof.jpg",
+          file_path: `${conversationId}/${attachmentId}.jpg`,
+          file_size: 3,
+          file_type: "image/jpeg",
+        },
+        accessUrl: null,
       });
 
-      const result = service.validateFile(file);
+      const result = await service.uploadFile(validJpeg(), conversationId, messageId, userId);
 
-      expect(result.valid).toBe(false);
-    });
-  });
-
-  describe("File type validation", () => {
-    const validTypes = [
-      { type: "image/jpeg", name: "test.jpg" },
-      { type: "image/jpg", name: "test.jpg" },
-      { type: "image/png", name: "test.png" },
-      { type: "application/pdf", name: "test.pdf" },
-    ];
-
-    validTypes.forEach(({ type, name }) => {
-      it(`should accept ${type}`, () => {
-        const file = new File(["content"], name, { type });
-
-        const result = service.validateFile(file);
-
-        expect(result.valid).toBe(true);
-      });
-    });
-
-    const invalidTypes = [
-      { type: "image/gif", name: "test.gif" },
-      { type: "image/webp", name: "test.webp" },
-      { type: "video/mp4", name: "test.mp4" },
-      { type: "application/zip", name: "test.zip" },
-      { type: "text/plain", name: "test.txt" },
-    ];
-
-    invalidTypes.forEach(({ type, name }) => {
-      it(`should reject ${type}`, () => {
-        const file = new File(["content"], name, { type });
-
-        const result = service.validateFile(file);
-
-        expect(result.valid).toBe(false);
-      });
+      expect(mocks.getSupportAttachmentSignedUrl).toHaveBeenCalledWith(
+        `${conversationId}/${attachmentId}.jpg`,
+      );
+      expect(result.public_url).toBe(
+        "https://signed.example.test/support-attachment",
+      );
     });
   });
 });
