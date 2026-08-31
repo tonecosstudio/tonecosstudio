@@ -1,47 +1,208 @@
 import { useState } from "react";
+import { Building2, Clock, DollarSign, Globe, Loader2, Mail, Palette, RefreshCw, Save } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Loader2,
-  Save,
-  RefreshCw,
-  Building2,
-  Mail,
-  Globe,
-  DollarSign,
-  Clock,
-  Palette,
-} from "lucide-react";
 import ImageUpload from "@/components/admin/shared/ImageUpload";
+import { useToast } from "@/hooks/use-toast";
 import {
   useAdminSystemSettings,
   useUpdateAdminSystemSettings,
 } from "@/hooks/admin/useAdminSystemSettings";
-import { BATCH, CONTACT, NOTIFICATIONS, PLANS, PRICING, UI } from "@/config/constants";
+
+type FieldType = "text" | "email" | "url" | "tel" | "number";
+
+interface SettingField {
+  key: string;
+  label: string;
+  type?: FieldType;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  step?: string;
+}
+
+interface SettingsSection {
+  id: string;
+  label: string;
+  title: string;
+  description: string;
+  icon: typeof Building2;
+  fields: SettingField[];
+}
+
+const SECTIONS: SettingsSection[] = [
+  {
+    id: "company",
+    label: "Empresa",
+    title: "Informações da empresa",
+    description: "Dados institucionais exibidos na plataforma e em documentos.",
+    icon: Building2,
+    fields: [
+      { key: "company_name", label: "Nome da empresa", placeholder: "Nome comercial" },
+      { key: "legal_name", label: "Razão social", placeholder: "Opcional" },
+      { key: "cnpj", label: "CNPJ", placeholder: "00.000.000/0000-00" },
+      { key: "company_address", label: "Endereço", placeholder: "Cidade, Estado, Brasil" },
+      { key: "company_logo_url", label: "URL do logo", type: "url", placeholder: "https://..." },
+    ],
+  },
+  {
+    id: "contact",
+    label: "Contato",
+    title: "Canais de contato",
+    description: "Contatos oficiais usados no site, suporte e documentos legais.",
+    icon: Mail,
+    fields: [
+      { key: "contact_email", label: "Email de contato", type: "email", placeholder: "contato@dominio.com" },
+      { key: "support_email", label: "Email de suporte", type: "email", placeholder: "suporte@dominio.com" },
+      { key: "privacy_email", label: "Email de privacidade", type: "email", placeholder: "privacidade@dominio.com" },
+      { key: "dpo_email", label: "Email do DPO", type: "email", placeholder: "dpo@dominio.com" },
+      { key: "phone_primary", label: "Telefone principal", type: "tel", placeholder: "+55 (DDD) 00000-0000" },
+      { key: "phone_whatsapp", label: "WhatsApp", type: "tel", placeholder: "+55 (DDD) 00000-0000" },
+      { key: "business_hours", label: "Horário de atendimento", placeholder: "Ex.: Segunda a sexta, 9h às 18h" },
+    ],
+  },
+  {
+    id: "website",
+    label: "Website",
+    title: "Website e redes sociais",
+    description: "URLs oficiais. Campos vazios não devem gerar links públicos.",
+    icon: Globe,
+    fields: [
+      { key: "website_url", label: "URL do site", type: "url", placeholder: "https://seu-dominio.com" },
+      { key: "facebook_url", label: "Facebook", type: "url", placeholder: "Opcional" },
+      { key: "instagram_url", label: "Instagram", type: "url", placeholder: "Opcional" },
+      { key: "twitter_url", label: "X / Twitter", type: "url", placeholder: "Opcional" },
+      { key: "youtube_url", label: "YouTube", type: "url", placeholder: "Opcional" },
+    ],
+  },
+  {
+    id: "pricing",
+    label: "Preços",
+    title: "Configuração comercial oficial",
+    description: "Estes valores são fonte oficial. O sistema não usa preços monetários de fallback.",
+    icon: DollarSign,
+    fields: [
+      { key: "default_price_full", label: "Preço padrão cartão (R$)", type: "number", min: 0.01, step: "0.01", placeholder: "Obrigatório" },
+      { key: "default_price_pix", label: "Preço padrão PIX (R$)", type: "number", min: 0.01, step: "0.01", placeholder: "Obrigatório" },
+      { key: "default_deposit_amount", label: "Valor de entrada (R$)", type: "number", min: 0, step: "0.01", placeholder: "Obrigatório" },
+      { key: "pix_discount_percentage", label: "Desconto PIX (%)", type: "number", min: 0, max: 100, step: "0.1", placeholder: "Obrigatório" },
+      { key: "max_installments_no_interest", label: "Parcelas sem juros", type: "number", min: 1, step: "1", placeholder: "Obrigatório" },
+      { key: "max_installments_with_interest", label: "Parcelas com juros", type: "number", min: 1, step: "1", placeholder: "Obrigatório" },
+    ],
+  },
+  {
+    id: "timing",
+    label: "Prazos",
+    title: "Prazos e cronogramas",
+    description: "Parâmetros operacionais usados em produção, troca e entrega.",
+    icon: Clock,
+    fields: [
+      { key: "shipping_business_days", label: "Dias úteis para envio", type: "number", min: 1, step: "1", placeholder: "Obrigatório" },
+      { key: "exchange_deadline_days", label: "Prazo para troca (dias)", type: "number", min: 0, step: "1", placeholder: "Obrigatório" },
+      { key: "days_to_next_delivery", label: "Dias para próxima entrega", type: "number", min: 1, step: "1", placeholder: "Obrigatório" },
+    ],
+  },
+  {
+    id: "ui",
+    label: "Interface",
+    title: "Interface e performance",
+    description: "Parâmetros de experiência que podem ser ajustados sem alterar código.",
+    icon: Palette,
+    fields: [
+      { key: "default_page_size", label: "Itens por página", type: "number", min: 5, step: "1", placeholder: "Obrigatório" },
+      { key: "search_debounce_ms", label: "Debounce de busca (ms)", type: "number", min: 0, step: "1", placeholder: "Obrigatório" },
+      { key: "input_debounce_ms", label: "Debounce de inputs (ms)", type: "number", min: 0, step: "1", placeholder: "Obrigatório" },
+      { key: "image_compression_quality", label: "Qualidade de compressão de imagem", type: "number", min: 0.1, max: 1, step: "0.05", placeholder: "0.1 a 1" },
+      { key: "max_image_size_mb", label: "Tamanho máximo de imagem (MB)", type: "number", min: 1, step: "1", placeholder: "Obrigatório" },
+      { key: "user_online_threshold_minutes", label: "Threshold de usuário online (minutos)", type: "number", min: 1, step: "1", placeholder: "Obrigatório" },
+      { key: "notification_polling_interval_ms", label: "Polling de notificações (ms)", type: "number", min: 1000, step: "1000", placeholder: "Obrigatório" },
+      { key: "toast_duration_ms", label: "Duração de toast (ms)", type: "number", min: 1000, step: "500", placeholder: "Obrigatório" },
+    ],
+  },
+];
+
+const REQUIRED_COMMERCIAL_KEYS = [
+  "default_price_full",
+  "default_price_pix",
+  "default_deposit_amount",
+  "pix_discount_percentage",
+  "max_installments_no_interest",
+  "max_installments_with_interest",
+] as const;
 
 export default function AdminSystemSettings() {
   const { toast } = useToast();
   const [editedSettings, setEditedSettings] = useState<Record<string, string>>({});
-
-  // Buscar todas as configurações
-  const { data: settings, isLoading } = useAdminSystemSettings();
-
+  const { data: settings, isLoading, isError, error, refetch } = useAdminSystemSettings();
   const updateMutation = useUpdateAdminSystemSettings();
 
+  const getValue = (key: string) =>
+    editedSettings[key] ?? settings?.find((setting) => setting.key === key)?.value ?? "";
+
+  const getDescription = (key: string) =>
+    settings?.find((setting) => setting.key === key)?.description ?? "";
+
   const handleChange = (key: string, value: string) => {
-    setEditedSettings((prev) => ({ ...prev, [key]: value }));
+    setEditedSettings((current) => ({ ...current, [key]: value }));
+  };
+
+  const validateCommercialSettings = (): string | null => {
+    const values = Object.fromEntries(
+      REQUIRED_COMMERCIAL_KEYS.map((key) => [key, Number(getValue(key))]),
+    ) as Record<(typeof REQUIRED_COMMERCIAL_KEYS)[number], number>;
+
+    if (!Number.isFinite(values.default_price_full) || values.default_price_full <= 0) {
+      return "Preço padrão cartão deve ser maior que zero.";
+    }
+    if (
+      !Number.isFinite(values.default_price_pix) ||
+      values.default_price_pix <= 0 ||
+      values.default_price_pix > values.default_price_full
+    ) {
+      return "Preço PIX deve ser maior que zero e não pode superar o preço cheio.";
+    }
+    if (
+      !Number.isFinite(values.default_deposit_amount) ||
+      values.default_deposit_amount < 0 ||
+      values.default_deposit_amount > Math.min(values.default_price_full, values.default_price_pix)
+    ) {
+      return "Valor de entrada deve estar entre zero e o menor preço oficial.";
+    }
+    if (
+      !Number.isFinite(values.pix_discount_percentage) ||
+      values.pix_discount_percentage < 0 ||
+      values.pix_discount_percentage > 100
+    ) {
+      return "Desconto PIX deve estar entre 0% e 100%.";
+    }
+    if (
+      !Number.isInteger(values.max_installments_no_interest) ||
+      values.max_installments_no_interest < 1 ||
+      !Number.isInteger(values.max_installments_with_interest) ||
+      values.max_installments_with_interest < 1
+    ) {
+      return "Quantidade de parcelas deve ser um número inteiro positivo.";
+    }
+
+    return null;
   };
 
   const handleSave = () => {
     if (Object.keys(editedSettings).length === 0) {
+      toast({ title: "Nenhuma alteração", description: "Não há alterações para salvar." });
+      return;
+    }
+
+    const commercialError = validateCommercialSettings();
+    if (commercialError) {
       toast({
-        title: "Nenhuma alteração",
-        description: "Não há alterações para salvar.",
+        title: "Configuração comercial inválida",
+        description: commercialError,
+        variant: "destructive",
       });
       return;
     }
@@ -50,14 +211,14 @@ export default function AdminSystemSettings() {
       onSuccess: () => {
         setEditedSettings({});
         toast({
-          title: "ConfiguraÃ§Ãµes atualizadas",
-          description: "As alteraÃ§Ãµes foram salvas com sucesso.",
+          title: "Configurações atualizadas",
+          description: "As alterações foram salvas com sucesso.",
         });
       },
-      onError: (error: Error) => {
+      onError: (mutationError: Error) => {
         toast({
           title: "Erro ao atualizar",
-          description: error.message,
+          description: mutationError.message,
           variant: "destructive",
         });
       },
@@ -72,637 +233,143 @@ export default function AdminSystemSettings() {
     });
   };
 
-  const getValue = (key: string) => {
-    return editedSettings[key] ?? settings?.find((s) => s.key === key)?.value ?? "";
-  };
-
-  const getDescription = (key: string) => {
-    return settings?.find((s) => s.key === key)?.description ?? "";
-  };
-
-  const hasChanges = Object.keys(editedSettings).length > 0;
-
   if (isLoading) {
     return (
       <Page title="Configurações do Sistema - Admin" description="Carregando configurações">
-        <div className="container max-w-6xl py-16 flex items-center justify-center">
+        <div className="flex min-h-[50vh] items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       </Page>
     );
   }
 
-  return (
-    <Page
-      title="Configurações do Sistema - Admin"
-      description="Gerenciar configurações do sistema"
-    >
+  if (isError) {
+    return (
+      <Page title="Configurações do Sistema - Admin" description="Configurações indisponíveis">
+        <Card className="mx-auto mt-12 max-w-2xl border-destructive/40">
+          <CardHeader>
+            <CardTitle>Não foi possível carregar as configurações</CardTitle>
+            <CardDescription>
+              Nenhum valor local será usado como substituto. Restaure a fonte oficial antes de editar preços ou operação.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {error instanceof Error && <p className="text-sm text-muted-foreground">{error.message}</p>}
+            <Button variant="outline" onClick={() => void refetch()}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Tentar novamente
+            </Button>
+          </CardContent>
+        </Card>
+      </Page>
+    );
+  }
 
+  const hasChanges = Object.keys(editedSettings).length > 0;
+
+  return (
+    <Page title="Configurações do Sistema - Admin" description="Gerenciar configurações oficiais">
       <div className="container max-w-6xl py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold">Configurações do Sistema</h1>
-            <p className="text-muted-foreground mt-2">
-              Gerencie todas as configurações da plataforma
+            <p className="mt-2 text-muted-foreground">
+              Edite somente valores reais. Campos comerciais não possuem fallback no runtime.
             </p>
           </div>
-
           <div className="flex gap-2">
             {hasChanges && (
               <Button variant="outline" onClick={handleReset}>
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="mr-2 h-4 w-4" />
                 Descartar
               </Button>
             )}
             <Button onClick={handleSave} disabled={!hasChanges || updateMutation.isPending}>
               {updateMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="mr-2 h-4 w-4" />
               )}
-              Salvar Alterações
+              Salvar alterações
             </Button>
           </div>
         </div>
 
-        {/* Tabs */}
         <Tabs defaultValue="company" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="company">
-              <Building2 className="h-4 w-4 mr-2" />
-              Empresa
-            </TabsTrigger>
-            <TabsTrigger value="contact">
-              <Mail className="h-4 w-4 mr-2" />
-              Contato
-            </TabsTrigger>
-            <TabsTrigger value="website">
-              <Globe className="h-4 w-4 mr-2" />
-              Website
-            </TabsTrigger>
-            <TabsTrigger value="pricing">
-              <DollarSign className="h-4 w-4 mr-2" />
-              Preços
-            </TabsTrigger>
-            <TabsTrigger value="timing">
-              <Clock className="h-4 w-4 mr-2" />
-              Prazos
-            </TabsTrigger>
-            <TabsTrigger value="ui">
-              <Palette className="h-4 w-4 mr-2" />
-              Interface
-            </TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 md:grid-cols-3 xl:grid-cols-6">
+            {SECTIONS.map((section) => {
+              const Icon = section.icon;
+              return (
+                <TabsTrigger key={section.id} value={section.id} className="gap-2">
+                  <Icon className="h-4 w-4" />
+                  {section.label}
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
-          {/* Empresa */}
-          <TabsContent value="company">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informações da Empresa</CardTitle>
-                <CardDescription>Dados básicos da empresa exibidos no site</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4">
-                  <div>
-                    <Label htmlFor="company_name">Nome da Empresa</Label>
-                    <Input
-                      id="company_name"
-                      value={getValue("company_name")}
-                      onChange={(e) => handleChange("company_name", e.target.value)}
-                      placeholder={CONTACT.COMPANY_NAME}
+          {SECTIONS.map((section) => (
+            <TabsContent key={section.id} value={section.id}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>{section.title}</CardTitle>
+                  <CardDescription>{section.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  {section.id === "ui" && (
+                    <ImageUpload
+                      label="Imagem do Hero (Página Coleções)"
+                      description="Imagem opcional da página de coleções. O upload segue as políticas do bucket images."
+                      currentImageUrl={getValue("hero_image_url")}
+                      bucket="images"
+                      folder="hero"
+                      onUploadComplete={(url) => handleChange("hero_image_url", url)}
+                      maxSizeMB={5}
+                      acceptedFormats={["image/png", "image/jpeg", "image/jpg", "image/webp"]}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("company_name")}
-                    </p>
-                  </div>
+                  )}
 
-                  <div>
-                    <Label htmlFor="company_address">Endereço</Label>
-                    <Input
-                      id="company_address"
-                      value={getValue("company_address")}
-                      onChange={(e) => handleChange("company_address", e.target.value)}
-                      placeholder="Cidade, Estado, Brasil"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("company_address")}
-                    </p>
+                  <div className="grid gap-5 md:grid-cols-2">
+                    {section.fields.map((field) => (
+                      <div key={field.key} className="space-y-2">
+                        <Label htmlFor={field.key}>{field.label}</Label>
+                        <Input
+                          id={field.key}
+                          type={field.type ?? "text"}
+                          min={field.min}
+                          max={field.max}
+                          step={field.step}
+                          value={getValue(field.key)}
+                          onChange={(event) => handleChange(field.key, event.target.value)}
+                          placeholder={field.placeholder ?? "Não configurado"}
+                        />
+                        {getDescription(field.key) && (
+                          <p className="text-xs text-muted-foreground">{getDescription(field.key)}</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
-
-                  <div>
-                    <Label htmlFor="company_logo_url">URL do Logo</Label>
-                    <Input
-                      id="company_logo_url"
-                      value={getValue("company_logo_url")}
-                      onChange={(e) => handleChange("company_logo_url", e.target.value)}
-                      placeholder={CONTACT.COMPANY_LOGO_URL}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("company_logo_url")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="legal_name">Razão Social (Opcional)</Label>
-                    <Input
-                      id="legal_name"
-                      value={getValue("legal_name")}
-                      onChange={(e) => handleChange("legal_name", e.target.value)}
-                      placeholder={CONTACT.LEGAL_NAME}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("legal_name")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="cnpj">CNPJ (Opcional)</Label>
-                    <Input
-                      id="cnpj"
-                      value={getValue("cnpj")}
-                      onChange={(e) => handleChange("cnpj", e.target.value)}
-                      placeholder="00.000.000/0000-00"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{getDescription("cnpj")}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Contato */}
-          <TabsContent value="contact">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informações de Contato</CardTitle>
-                <CardDescription>Emails e telefones para contato com clientes</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4">
-                  <div>
-                    <Label htmlFor="contact_email">Email de Contato</Label>
-                    <Input
-                      id="contact_email"
-                      type="email"
-                      value={getValue("contact_email")}
-                      onChange={(e) => handleChange("contact_email", e.target.value)}
-                      placeholder={CONTACT.CONTACT_EMAIL}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("contact_email")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="support_email">Email de Suporte</Label>
-                    <Input
-                      id="support_email"
-                      type="email"
-                      value={getValue("support_email")}
-                      onChange={(e) => handleChange("support_email", e.target.value)}
-                      placeholder={CONTACT.SUPPORT_EMAIL}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("support_email")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="privacy_email">Email de Privacidade</Label>
-                    <Input
-                      id="privacy_email"
-                      type="email"
-                      value={getValue("privacy_email")}
-                      onChange={(e) => handleChange("privacy_email", e.target.value)}
-                      placeholder={CONTACT.PRIVACY_EMAIL}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("privacy_email")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="dpo_email">Email do DPO</Label>
-                    <Input
-                      id="dpo_email"
-                      type="email"
-                      value={getValue("dpo_email")}
-                      onChange={(e) => handleChange("dpo_email", e.target.value)}
-                      placeholder={CONTACT.DPO_EMAIL}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("dpo_email")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone_primary">Telefone Principal (Opcional)</Label>
-                    <Input
-                      id="phone_primary"
-                      type="tel"
-                      value={getValue("phone_primary")}
-                      onChange={(e) => handleChange("phone_primary", e.target.value)}
-                      placeholder="+55 (DDD) 00000-0000"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("phone_primary")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone_whatsapp">WhatsApp (Opcional)</Label>
-                    <Input
-                      id="phone_whatsapp"
-                      type="tel"
-                      value={getValue("phone_whatsapp")}
-                      onChange={(e) => handleChange("phone_whatsapp", e.target.value)}
-                      placeholder="+55 (DDD) 00000-0000"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("phone_whatsapp")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="business_hours">Horário de Atendimento</Label>
-                    <Input
-                      id="business_hours"
-                      value={getValue("business_hours")}
-                      onChange={(e) => handleChange("business_hours", e.target.value)}
-                      placeholder={CONTACT.BUSINESS_HOURS}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("business_hours")}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Website */}
-          <TabsContent value="website">
-            <Card>
-              <CardHeader>
-                <CardTitle>Website e Redes Sociais</CardTitle>
-                <CardDescription>URLs do site e perfis em redes sociais</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4">
-                  <div>
-                    <Label htmlFor="website_url">URL do Site</Label>
-                    <Input
-                      id="website_url"
-                      type="url"
-                      value={getValue("website_url")}
-                      onChange={(e) => handleChange("website_url", e.target.value)}
-                      placeholder={CONTACT.WEBSITE_URL}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("website_url")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="facebook_url">Facebook (Opcional)</Label>
-                    <Input
-                      id="facebook_url"
-                      type="url"
-                      value={getValue("facebook_url")}
-                      onChange={(e) => handleChange("facebook_url", e.target.value)}
-                      placeholder="https://facebook.com/sua-pagina"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("facebook_url")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="instagram_url">Instagram (Opcional)</Label>
-                    <Input
-                      id="instagram_url"
-                      type="url"
-                      value={getValue("instagram_url")}
-                      onChange={(e) => handleChange("instagram_url", e.target.value)}
-                      placeholder="https://instagram.com/seu-perfil"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("instagram_url")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="twitter_url">Twitter/X (Opcional)</Label>
-                    <Input
-                      id="twitter_url"
-                      type="url"
-                      value={getValue("twitter_url")}
-                      onChange={(e) => handleChange("twitter_url", e.target.value)}
-                      placeholder="https://x.com/seu-perfil"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("twitter_url")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="youtube_url">YouTube (Opcional)</Label>
-                    <Input
-                      id="youtube_url"
-                      type="url"
-                      value={getValue("youtube_url")}
-                      onChange={(e) => handleChange("youtube_url", e.target.value)}
-                      placeholder="https://youtube.com/@seu-canal"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("youtube_url")}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Preços */}
-          <TabsContent value="pricing">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configurações de Preços</CardTitle>
-                <CardDescription>Preços padrão e configurações de pagamento</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4">
-                  <div>
-                    <Label htmlFor="default_price_full">Preço Padrão Cartão (R$)</Label>
-                    <Input
-                      id="default_price_full"
-                      type="number"
-                      step="0.01"
-                      value={getValue("default_price_full")}
-                      onChange={(e) => handleChange("default_price_full", e.target.value)}
-                      placeholder={String(PRICING.DEFAULT_PRICE_FULL)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("default_price_full")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="default_price_pix">Preço Padrão PIX (R$)</Label>
-                    <Input
-                      id="default_price_pix"
-                      type="number"
-                      step="0.01"
-                      value={getValue("default_price_pix")}
-                      onChange={(e) => handleChange("default_price_pix", e.target.value)}
-                      placeholder={String(PRICING.DEFAULT_PRICE_PIX)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("default_price_pix")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="default_deposit_amount">Valor de Entrada (R$)</Label>
-                    <Input
-                      id="default_deposit_amount"
-                      type="number"
-                      step="0.01"
-                      value={getValue("default_deposit_amount")}
-                      onChange={(e) => handleChange("default_deposit_amount", e.target.value)}
-                      placeholder={String(PRICING.DEFAULT_DEPOSIT_AMOUNT)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("default_deposit_amount")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="pix_discount_percentage">Desconto PIX (%)</Label>
-                    <Input
-                      id="pix_discount_percentage"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="100"
-                      value={getValue("pix_discount_percentage")}
-                      onChange={(e) => handleChange("pix_discount_percentage", e.target.value)}
-                      placeholder={String(PRICING.PIX_DISCOUNT_PERCENTAGE)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("pix_discount_percentage")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="max_installments_no_interest">Parcelas Sem Juros</Label>
-                    <Input
-                      id="max_installments_no_interest"
-                      type="number"
-                      min="1"
-                      value={getValue("max_installments_no_interest")}
-                      onChange={(e) => handleChange("max_installments_no_interest", e.target.value)}
-                      placeholder={String(PRICING.MAX_INSTALLMENTS_NO_INTEREST)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("max_installments_no_interest")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="max_installments_with_interest">Parcelas Com Juros</Label>
-                    <Input
-                      id="max_installments_with_interest"
-                      type="number"
-                      min="1"
-                      value={getValue("max_installments_with_interest")}
-                      onChange={(e) =>
-                        handleChange("max_installments_with_interest", e.target.value)
-                      }
-                      placeholder={String(PRICING.MAX_INSTALLMENTS_WITH_INTEREST)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("max_installments_with_interest")}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Prazos */}
-          <TabsContent value="timing">
-            <Card>
-              <CardHeader>
-                <CardTitle>Prazos e Cronogramas</CardTitle>
-                <CardDescription>Configurações de produção e entrega</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4">
-                  <div>
-                    <Label htmlFor="shipping_business_days">Dias Úteis para Envio</Label>
-                    <Input
-                      id="shipping_business_days"
-                      type="number"
-                      min="1"
-                      value={getValue("shipping_business_days")}
-                      onChange={(e) => handleChange("shipping_business_days", e.target.value)}
-                      placeholder={String(BATCH.SHIPPING_BUSINESS_DAYS)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("shipping_business_days")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="exchange_deadline_days">Prazo para Troca (dias)</Label>
-                    <Input
-                      id="exchange_deadline_days"
-                      type="number"
-                      min="0"
-                      value={getValue("exchange_deadline_days")}
-                      onChange={(e) => handleChange("exchange_deadline_days", e.target.value)}
-                      placeholder={String(BATCH.EXCHANGE_DEADLINE_DAYS)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("exchange_deadline_days")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="days_to_next_delivery">Dias para Próxima Entrega</Label>
-                    <Input
-                      id="days_to_next_delivery"
-                      type="number"
-                      min="1"
-                      value={getValue("days_to_next_delivery")}
-                      onChange={(e) => handleChange("days_to_next_delivery", e.target.value)}
-                      placeholder={String(PLANS.DAYS_TO_NEXT_DELIVERY)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("days_to_next_delivery")}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Interface */}
-          <TabsContent value="ui">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configurações de Interface</CardTitle>
-                <CardDescription>Configurações de UX e performance</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4">
-                  {/* Hero Image Upload */}
-                  <ImageUpload
-                    label="Imagem do Hero (Página Coleções)"
-                    description="Imagem do guerreiro exibida na página de coleções. Recomendado: proporção 3:4 ou 2:3 (vertical), ex: 600x800px"
-                    currentImageUrl={getValue("hero_image_url")}
-                    bucket="images"
-                    folder="hero"
-                    onUploadComplete={(url) => handleChange("hero_image_url", url)}
-                    maxSizeMB={5}
-                    acceptedFormats={["image/png", "image/jpeg", "image/jpg", "image/webp"]}
-                  />
-
-                  <div>
-                    <Label htmlFor="default_page_size">Itens por Página</Label>
-                    <Input
-                      id="default_page_size"
-                      type="number"
-                      min="5"
-                      value={getValue("default_page_size")}
-                      onChange={(e) => handleChange("default_page_size", e.target.value)}
-                      placeholder={String(UI.DEFAULT_PAGE_SIZE)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("default_page_size")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="search_debounce_ms">Debounce de Busca (ms)</Label>
-                    <Input
-                      id="search_debounce_ms"
-                      type="number"
-                      min="0"
-                      value={getValue("search_debounce_ms")}
-                      onChange={(e) => handleChange("search_debounce_ms", e.target.value)}
-                      placeholder={String(UI.SEARCH_DEBOUNCE_MS)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("search_debounce_ms")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="max_image_size_mb">Tamanho Máximo de Imagem (MB)</Label>
-                    <Input
-                      id="max_image_size_mb"
-                      type="number"
-                      min="1"
-                      value={getValue("max_image_size_mb")}
-                      onChange={(e) => handleChange("max_image_size_mb", e.target.value)}
-                      placeholder={String(UI.MAX_IMAGE_SIZE_MB)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("max_image_size_mb")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="user_online_threshold_minutes">
-                      Threshold Usuário Online (minutos)
-                    </Label>
-                    <Input
-                      id="user_online_threshold_minutes"
-                      type="number"
-                      min="1"
-                      value={getValue("user_online_threshold_minutes")}
-                      onChange={(e) =>
-                        handleChange("user_online_threshold_minutes", e.target.value)
-                      }
-                      placeholder={String(NOTIFICATIONS.USER_ONLINE_THRESHOLD_MINUTES)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getDescription("user_online_threshold_minutes")}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
         </Tabs>
 
-        {/* Footer com botões */}
         {hasChanges && (
           <Card className="mt-6 border-primary">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold">Você tem alterações não salvas</p>
-                  <p className="text-sm text-muted-foreground">
-                    {Object.keys(editedSettings).length} configuração(ões) modificada(s)
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleReset}>
-                    Descartar
-                  </Button>
-                  <Button onClick={handleSave} disabled={updateMutation.isPending}>
-                    {updateMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4 mr-2" />
-                    )}
-                    Salvar Alterações
-                  </Button>
-                </div>
+            <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold">Alterações não salvas</p>
+                <p className="text-sm text-muted-foreground">
+                  {Object.keys(editedSettings).length} configuração(ões) modificada(s).
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleReset}>Descartar</Button>
+                <Button onClick={handleSave} disabled={updateMutation.isPending}>
+                  {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Salvar alterações
+                </Button>
               </div>
             </CardContent>
           </Card>
