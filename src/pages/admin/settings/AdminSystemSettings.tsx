@@ -97,11 +97,17 @@ const SECTIONS: SettingsSection[] = [
   {
     id: "timing",
     label: "Prazos",
-    title: "Prazos e cronogramas",
-    description: "Parâmetros operacionais usados em produção, troca e entrega.",
+    title: "Prazos e cronogramas oficiais",
+    description: "Fonte canônica de prazos operacionais. Campos obrigatórios não possuem fallback local.",
     icon: Clock,
     fields: [
-      { key: "shipping_business_days", label: "Dias úteis para envio", type: "number", min: 1, step: "1", placeholder: "Obrigatório" },
+      { key: "production_days_min", label: "Produção mínima (dias)", type: "number", min: 1, max: 3650, step: "1", placeholder: "Obrigatório" },
+      { key: "production_days_max", label: "Produção máxima (dias)", type: "number", min: 1, max: 3650, step: "1", placeholder: "Obrigatório" },
+      { key: "shipping_business_days", label: "Dia útil de início do envio", type: "number", min: 1, max: 31, step: "1", placeholder: "Obrigatório" },
+      { key: "sales_duration_days", label: "Duração de vendas (dias)", type: "number", min: 1, max: 3650, step: "1", placeholder: "Obrigatório" },
+      { key: "delivery_interval_days", label: "Intervalo de entrega (dias)", type: "number", min: 1, max: 3650, step: "1", placeholder: "Obrigatório" },
+      { key: "character_choice_days", label: "Prazo para escolher personagem (dias)", type: "number", min: 1, max: 365, step: "1", placeholder: "Obrigatório" },
+      { key: "balance_payment_days", label: "Prazo para pagamento do saldo (dias)", type: "number", min: 1, max: 365, step: "1", placeholder: "Obrigatório" },
       { key: "exchange_deadline_days", label: "Prazo para troca (dias)", type: "number", min: 0, step: "1", placeholder: "Obrigatório" },
       { key: "days_to_next_delivery", label: "Dias para próxima entrega", type: "number", min: 1, step: "1", placeholder: "Obrigatório" },
     ],
@@ -132,6 +138,16 @@ const REQUIRED_COMMERCIAL_KEYS = [
   "pix_discount_percentage",
   "max_installments_no_interest",
   "max_installments_with_interest",
+] as const;
+
+const CANONICAL_DEADLINE_KEYS = [
+  "production_days_min",
+  "production_days_max",
+  "shipping_business_days",
+  "sales_duration_days",
+  "delivery_interval_days",
+  "character_choice_days",
+  "balance_payment_days",
 ] as const;
 
 export default function AdminSystemSettings() {
@@ -191,6 +207,33 @@ export default function AdminSystemSettings() {
     return null;
   };
 
+  const validateOperationalDeadlines = (): string | null => {
+    const isEditingCanonicalDeadline = CANONICAL_DEADLINE_KEYS.some((key) => key in editedSettings);
+    if (!isEditingCanonicalDeadline) return null;
+
+    const values = Object.fromEntries(
+      CANONICAL_DEADLINE_KEYS.map((key) => [key, Number(getValue(key))]),
+    ) as Record<(typeof CANONICAL_DEADLINE_KEYS)[number], number>;
+
+    for (const key of CANONICAL_DEADLINE_KEYS) {
+      if (!Number.isInteger(values[key]) || values[key] < 1) {
+        return `Prazo operacional inválido ou ausente: ${key}.`;
+      }
+    }
+
+    if (values.production_days_max < values.production_days_min) {
+      return "Produção máxima não pode ser menor que a produção mínima.";
+    }
+    if (values.shipping_business_days > 31) {
+      return "Dia útil de início do envio deve estar entre 1 e 31.";
+    }
+    if (values.character_choice_days > 365 || values.balance_payment_days > 365) {
+      return "Prazos de escolha e pagamento do saldo não podem superar 365 dias.";
+    }
+
+    return null;
+  };
+
   const handleSave = () => {
     if (Object.keys(editedSettings).length === 0) {
       toast({ title: "Nenhuma alteração", description: "Não há alterações para salvar." });
@@ -202,6 +245,16 @@ export default function AdminSystemSettings() {
       toast({
         title: "Configuração comercial inválida",
         description: commercialError,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const deadlineError = validateOperationalDeadlines();
+    if (deadlineError) {
+      toast({
+        title: "Configuração de prazos inválida",
+        description: deadlineError,
         variant: "destructive",
       });
       return;
@@ -274,7 +327,7 @@ export default function AdminSystemSettings() {
           <div>
             <h1 className="text-3xl font-bold">Configurações do Sistema</h1>
             <p className="mt-2 text-muted-foreground">
-              Edite somente valores reais. Campos comerciais não possuem fallback no runtime.
+              Edite somente valores reais. Preços e prazos operacionais não possuem fallback no runtime.
             </p>
           </div>
           <div className="flex gap-2">
