@@ -50,6 +50,9 @@ jobs:
       - name: Audit profile authority
         run: node scripts/security/audit-profile-authority.mjs
 
+      - name: Audit notification authority
+        run: node scripts/security/audit-notification-authority.mjs
+
       - name: Test with coverage thresholds
         run: npm run test:coverage
 
