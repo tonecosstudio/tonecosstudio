@@ -22,16 +22,22 @@ function unwrapChoiceRpc<T>(prefix: string, data: unknown, error: ChoiceRpcError
     throw new Error(`${prefix}: ${error.message}`);
   }
 
+  if (data === null || data === undefined) {
+    throw new Error(`${prefix}: resposta vazia`);
+  }
+
   return data as T;
 }
 
 export async function submitCharacterChoiceRpc<TChoice>(
   orderId: string,
-  characterId: string
+  collectionCharacterId: string
 ): Promise<TChoice> {
   const { data, error } = await customerChoiceRpc.rpc("customer_submit_character_choice", {
     p_order_id: orderId,
-    p_character_id: characterId,
+    // Legacy argument name: this RPC expects collection_characters.id at the boundary
+    // and resolves the canonical characters.id server-side.
+    p_character_id: collectionCharacterId,
   });
 
   return unwrapChoiceRpc<TChoice>("Erro ao submeter escolha", data, error);
@@ -39,12 +45,13 @@ export async function submitCharacterChoiceRpc<TChoice>(
 
 export async function changeCharacterChoiceRpc<TChoice>(
   choiceId: string,
-  characterId: string,
+  collectionCharacterId: string,
   reason: string
 ): Promise<TChoice> {
   const { data, error } = await customerChoiceRpc.rpc("customer_change_character_choice", {
     p_choice_id: choiceId,
-    p_character_id: characterId,
+    // Legacy argument name; see submitCharacterChoiceRpc above.
+    p_character_id: collectionCharacterId,
     p_reason: reason,
   });
 
