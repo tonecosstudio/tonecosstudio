@@ -1,66 +1,73 @@
 import { useState } from "react";
+import {
+  AlertTriangle,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Info,
+  Package,
+  RefreshCw,
+  Save,
+  Truck,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import {
-  Clock,
-  Truck,
-  Calendar,
-  Package,
-  Save,
-  RefreshCw,
-  Info,
-  AlertTriangle,
-  CheckCircle,
-} from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   useProductionDeadlinesSettings,
   useUpdateProductionDeadlineSetting,
 } from "@/hooks/admin/useProductionDeadlinesSettings";
 
+const SETTING_LABELS = {
+  production_days_min: "Dias de Produção",
+  shipping_business_days: "Dias Úteis de Envio",
+  sales_duration_days: "Duração das Vendas",
+  delivery_interval_days: "Intervalo Total",
+  monthly_capacity: "Capacidade Mensal",
+} as const;
+
+const SETTING_ICONS = {
+  production_days_min: Clock,
+  shipping_business_days: Truck,
+  sales_duration_days: Calendar,
+  delivery_interval_days: RefreshCw,
+  monthly_capacity: Package,
+} as const;
+
 export default function AdminDeadlinesSettings() {
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
-  const { data: settings, isLoading } = useProductionDeadlinesSettings();
+  const {
+    data: settings,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useProductionDeadlinesSettings();
   const updateSetting = useUpdateProductionDeadlineSetting();
 
-  const getSettingLabel = (key: string) => {
-    const labels = {
-      production_days_min: "Dias de Produção",
-      shipping_business_days: "Dias Úteis de Envio",
-      sales_duration_days: "Duração das Vendas",
-      delivery_interval_days: "Intervalo Total",
-      monthly_capacity: "Capacidade Mensal",
-    };
-    return labels[key as keyof typeof labels] || key;
-  };
+  const getSettingLabel = (key: string) =>
+    SETTING_LABELS[key as keyof typeof SETTING_LABELS] || key;
 
   const getSettingIcon = (key: string) => {
-    const icons = {
-      production_days_min: Clock,
-      shipping_business_days: Truck,
-      sales_duration_days: Calendar,
-      delivery_interval_days: RefreshCw,
-      monthly_capacity: Package,
-    };
-    const Icon = icons[key as keyof typeof icons] || Info;
+    const Icon = SETTING_ICONS[key as keyof typeof SETTING_ICONS] || Info;
     return <Icon className="h-5 w-5" />;
   };
 
   const handleChange = (key: string, value: string) => {
-    setEditedValues((prev) => ({ ...prev, [key]: value }));
+    setEditedValues((previous) => ({ ...previous, [key]: value }));
   };
 
   const handleSave = (key: string) => {
     const value = editedValues[key];
-    const numValue = parseInt(value, 10);
+    const numericValue = Number.parseInt(value, 10);
 
-    if (isNaN(numValue) || numValue < 1) {
+    if (!Number.isInteger(numericValue) || numericValue < 1) {
       toast.error("Valor inválido", {
-        description: "Digite um número maior que zero",
+        description: "Digite um número inteiro maior que zero.",
       });
       return;
     }
@@ -70,20 +77,21 @@ export default function AdminDeadlinesSettings() {
       {
         onSuccess: (result) => {
           toast.success(`${getSettingLabel(result.key)} atualizado!`, {
-            description: "Os ciclos serão recalculados automaticamente.",
+            description:
+              "A configuração oficial foi salva e as consultas dependentes serão recarregadas.",
           });
-          setEditedValues((prev) => {
-            const newValues = { ...prev };
-            delete newValues[result.key];
-            return newValues;
+          setEditedValues((previous) => {
+            const next = { ...previous };
+            delete next[result.key];
+            return next;
           });
         },
-        onError: (error: Error, variables) => {
+        onError: (mutationError: Error, variables) => {
           toast.error(`Erro ao atualizar ${getSettingLabel(variables.key)}`, {
-            description: error.message,
+            description: mutationError.message,
           });
         },
-      }
+      },
     );
   };
 
@@ -98,48 +106,81 @@ export default function AdminDeadlinesSettings() {
     );
   }
 
+  if (isError) {
+    return (
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle>Prazos e capacidade indisponíveis</CardTitle>
+          <CardDescription>
+            Não foi possível carregar a configuração oficial. Nenhum valor local será usado como substituto.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {error instanceof Error && (
+            <p className="text-sm text-muted-foreground">{error.message}</p>
+          )}
+          <Button variant="outline" onClick={() => void refetch()}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tentar novamente
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const entries = Object.entries(settings ?? {});
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="mb-2 text-2xl font-bold">Prazos & Capacidade (SSOT)</h2>
         <p className="text-muted-foreground">
-          Configure os prazos oficiais do sistema. Alterações aqui atualizam automaticamente todos os ciclos.
+          Configure os parâmetros oficiais usados pelos cálculos e telas de produção.
         </p>
       </div>
 
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          <strong>Single Source of Truth:</strong> Estes valores são a fonte única de verdade para todo o
-          sistema. Ao alterar, os ciclos de produção serão recalculados automaticamente.
+          <strong>Single Source of Truth:</strong> ao salvar, o valor é atualizado em
+          <code className="mx-1">system_settings</code> e as consultas dependentes do painel são invalidadas para buscar a configuração atualizada. O write atual não executa uma rotina separada de recálculo em massa dos ciclos existentes.
         </AlertDescription>
       </Alert>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {settings &&
-          Object.entries(settings).map(([key, data]) => (
+      {entries.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            Nenhum parâmetro de prazo foi encontrado no cadastro oficial.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {entries.map(([key, data]) => (
             <Card key={key}>
               <CardHeader>
                 <div className="flex items-center gap-2">
                   {getSettingIcon(key)}
                   <CardTitle className="text-lg">{getSettingLabel(key)}</CardTitle>
                 </div>
-                {data.description && <CardDescription className="text-sm">{data.description}</CardDescription>}
+                {data.description && (
+                  <CardDescription className="text-sm">{data.description}</CardDescription>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
                       <Label htmlFor={key} className="text-sm text-muted-foreground">
-                        Valor Atual
+                        Valor atual
                       </Label>
                       <div className="mt-1 flex items-center gap-2">
                         <Input
                           id={key}
                           type="number"
                           min="1"
+                          step="1"
                           value={editedValues[key] !== undefined ? editedValues[key] : data.value}
-                          onChange={(e) => handleChange(key, e.target.value)}
+                          onChange={(event) => handleChange(key, event.target.value)}
                           className="w-24"
                         />
                         <span className="text-sm text-muted-foreground">
@@ -169,13 +210,13 @@ export default function AdminDeadlinesSettings() {
               </CardContent>
             </Card>
           ))}
-      </div>
+        </div>
+      )}
 
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          <strong>Atenção:</strong> Alterar estes valores afeta todo o sistema de produção e envio.
-          Certifique-se de que os novos valores estão corretos antes de salvar.
+          <strong>Atenção:</strong> novos cálculos que consultarem esses parâmetros usarão os valores atualizados. Antes da RC, é necessário provar como pedidos e ciclos já persistidos devem reagir a mudanças de prazo.
         </AlertDescription>
       </Alert>
     </div>
