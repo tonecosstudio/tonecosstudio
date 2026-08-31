@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { PUBLIC_COLLECTIONS_ENABLED } from "@/config/routes";
 import {
   getCharacterDetailsById,
   getCollectionDetailsBySlug,
@@ -102,7 +103,10 @@ export function useShowcaseCollections() {
   });
 }
 
-export function useActiveCollectionPreviews(limit?: number, enabled = true) {
+export function useActiveCollectionPreviews(
+  limit?: number,
+  enabled = PUBLIC_COLLECTIONS_ENABLED,
+) {
   return useQuery({
     queryKey: ["collections-active", limit],
     queryFn: () => listActiveCollectionPreviews(limit),
