@@ -91,7 +91,7 @@ export function CharacterCard({
       {/* Image */}
       <div className="relative aspect-[3/4] w-full bg-muted overflow-hidden">
         <img
-          src={character.image_url || ASSETS.PLACEHOLDER_IMAGE_URL}
+          src={character.image_url || ASSETS.FALLBACK_IMAGE_URL}
           alt={character.name}
           className="h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.02]"
           loading="lazy"

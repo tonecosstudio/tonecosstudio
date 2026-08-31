@@ -78,7 +78,7 @@ export function CollectionDetailModal({
           {/* Large Image */}
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
             <img
-              src={collection.image_url || ASSETS.PLACEHOLDER_IMAGE_URL}
+              src={collection.image_url || ASSETS.FALLBACK_IMAGE_URL}
               alt={collection.name}
               className="w-full h-full object-cover"
             />

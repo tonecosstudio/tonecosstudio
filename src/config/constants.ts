@@ -121,7 +121,7 @@ export const BATCH = {
 
 export const ASSETS = {
   DEFAULT_ICON_URL: "/favicon.ico",
-  PLACEHOLDER_IMAGE_URL: "/placeholder.svg",
+  FALLBACK_IMAGE_URL: "/image-fallback.svg",
 } as const;
 
 export const CONTACT = {

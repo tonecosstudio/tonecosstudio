@@ -19,13 +19,6 @@ import type {
   CatalogModelGalleryImage,
   CatalogModelRow,
 } from "@/types/catalog";
-import {
-  getMockCatalogModelDetails,
-  isWebpCatalogMockEnabled,
-  listMockCatalogModels,
-  listMockForYouCatalogModels,
-  listRecentMockCatalogModels,
-} from "./mock-webp-catalog";
 
 export type CatalogSort = "recent" | "az";
 export type CatalogMode = "public" | "staging";
@@ -1141,10 +1134,6 @@ export async function listCatalogModels(params: {
   page: number;
   filters: CatalogModelFilters;
 }) {
-  if (isWebpCatalogMockEnabled()) {
-    return listMockCatalogModels(params);
-  }
-
   const { needle, page, filters } = params;
   const from = page * CATALOG_PAGE_SIZE;
   const rawWindowSize = Math.max(CATALOG_PAGE_SIZE * (page + 1) * 4, 49);
@@ -1294,10 +1283,6 @@ export async function listForYouCatalogModels(params: {
   excludedIds: string[];
   preferenceTags: Set<string>;
 }) {
-  if (isWebpCatalogMockEnabled()) {
-    return listMockForYouCatalogModels(params);
-  }
-
   const exclude = params.excludedIds.filter(Boolean).slice(0, 50);
 
   let query = catalogModelsGateway
@@ -1337,10 +1322,6 @@ export async function listForYouCatalogModels(params: {
 }
 
 export async function getCatalogModelDetails(modelId: string) {
-  if (isWebpCatalogMockEnabled()) {
-    return getMockCatalogModelDetails(modelId);
-  }
-
   const { data, error } = await catalogModelsGateway
     .from("public_catalog_models")
     .select(CATALOG_MODEL_DETAILS_SELECT)
@@ -1376,10 +1357,6 @@ export async function getCatalogModelDetails(modelId: string) {
 export async function listRecentLandingModels(
   limit = 6,
 ): Promise<CatalogModelRow[]> {
-  if (isWebpCatalogMockEnabled()) {
-    return listRecentMockCatalogModels(limit);
-  }
-
   const { data, error } = await catalogModelsGateway
     .from("public_catalog_models")
     .select(CATALOG_MODEL_SELECT)

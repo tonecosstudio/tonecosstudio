@@ -51,7 +51,6 @@
     "catalog:telegram-webp-visual-overrides": "node scripts/catalog/apply-webp-visual-taxonomy-overrides.mjs",
     "catalog:telegram-webp-anime-taxonomy": "node scripts/catalog/apply-anime-webp-taxonomy-wave.mjs",
     "catalog:telegram-webp-site-import-plan": "node scripts/catalog/build-telegram-webp-site-import-plan.mjs",
-    "catalog:telegram-webp-site-mock": "node scripts/catalog/build-telegram-webp-site-mock.mjs",
     "catalog:ops-v2": "node scripts/catalog/bootstrap-catalog-ops-v2.mjs",
     "catalog:audit-manifest-coverage": "node scripts/catalog/audit-catalog-manifest-coverage.mjs",
     "catalog:audit-structure": "node scripts/catalog/audit-catalog-structure-suspects.mjs",

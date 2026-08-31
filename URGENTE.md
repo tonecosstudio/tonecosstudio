@@ -460,3 +460,45 @@ Do not repeat:
 - não voltar a usar placeholder.svg em metadados públicos;
 - não colocar números de catálogo ou versão no asset social;
 - não declarar o asset publicado antes de verificar o deploy.
+
+
+### Checkpoint 6 — 2026-08-30
+
+HEAD anterior da main: 69a3c82e9d40c9ae2e311066d346c60c649b0c84
+
+Concluído:
+
+- inventário completo da árvore: 1.743 arquivos, sem truncamento;
+- removida a rota de catálogo mock do serviço usado pela aplicação;
+- removidas VITE_CATALOG_WEBP_MOCK e VITE_CATALOG_WEBP_MOCK_URL dos templates;
+- removidos o módulo mock e o gerador catalog:telegram-webp-site-mock;
+- removidos seis SVGs de placeholder sem uso de produto;
+- criado image-fallback.svg neutro e coerente com a marca;
+- renomeada a constante de PLACEHOLDER_IMAGE_URL para FALLBACK_IMAGE_URL;
+- mocks de teste foram preservados porque não fazem parte do bundle da aplicação.
+
+Testes/provas:
+
+- catalog-models-service.ts ficou sem import, condição ou chamada de mock;
+- busca de referências encontrou o mock de catálogo apenas no serviço removido, templates e script removidos;
+- placeholders coloridos eram referenciados somente por documentação histórica;
+- package.json foi parseado antes da alteração;
+- fallback SVG possui título e descrição acessíveis.
+
+Bloqueios:
+
+- typecheck, lint, testes e build ainda dependem do runner voltar a executar;
+- verificação visual pública depende de nova build da Vercel.
+
+Next action:
+
+- confirmar por busca que não restam referências de runtime ao catálogo mock ou aos placeholders removidos;
+- revisar placeholders legais de CNPJ/telefone e impedir exposição pública de valores falsos;
+- continuar o inventário de feature flags e rotas legadas.
+
+Do not repeat:
+
+- não reintroduzir catálogo mock no serviço de produção;
+- não ativar dados demonstrativos por variável VITE_*;
+- não remover mocks utilitários de teste;
+- não usar arquivos de docs-archive como justificativa para manter assets públicos obsoletos.
