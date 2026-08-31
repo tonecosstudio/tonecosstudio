@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   select: vi.fn(),
   single: vi.fn(),
-  loggerWarn: vi.fn(),
+  loggerError: vi.fn(),
   upsertAdminSystemSettings: vi.fn(),
 }));
 
@@ -29,13 +29,20 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 vi.mock("@/lib/logger", () => ({
   log: {
-    warn: mocks.loggerWarn,
+    error: mocks.loggerError,
   },
 }));
 
 vi.mock("@/services/admin/config/admin-config-mutations-service", () => ({
   upsertAdminSystemSettings: mocks.upsertAdminSystemSettings,
 }));
+
+const validCommercialSettings = {
+  default_price_full: "150",
+  default_price_pix: "142.50",
+  default_deposit_amount: "30",
+  pix_discount_percentage: "5",
+};
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -53,7 +60,10 @@ function createWrapper() {
 }
 
 function mockViewResponse(
-  response: { data: unknown; error: { message: string } | null } = { data: null, error: null }
+  response: { data: unknown; error: { message: string } | null } = {
+    data: null,
+    error: null,
+  },
 ) {
   mocks.single.mockResolvedValue(response);
   mocks.select.mockReturnValue({ single: mocks.single });
@@ -68,7 +78,7 @@ describe("useSystemSettings", () => {
       data: {
         company_name: "Ordax Test",
         contact_email: "contato@ordax.test",
-        default_price_full: "150",
+        ...validCommercialSettings,
       },
       error: null,
     });
@@ -76,7 +86,7 @@ describe("useSystemSettings", () => {
     mocks.upsertAdminSystemSettings.mockResolvedValue(undefined);
   });
 
-  it("retorna configuracoes vindas da RPC com defaults centralizados e numeros normalizados", async () => {
+  it("retorna configuracoes vindas da RPC e normaliza valores oficiais", async () => {
     const { result } = renderHook(() => useSystemSettings(), {
       wrapper: createWrapper(),
     });
@@ -87,6 +97,9 @@ describe("useSystemSettings", () => {
       company_name: "Ordax Test",
       contact_email: "contato@ordax.test",
       default_price_full: 150,
+      default_price_pix: 142.5,
+      default_deposit_amount: 30,
+      pix_discount_percentage: 5,
     });
     expect(result.current.data?.support_email).toBeTruthy();
     expect(mocks.rpc).toHaveBeenCalledWith("get_system_settings");
@@ -99,8 +112,8 @@ describe("useSystemSettings", () => {
       data: {
         settings: {
           company_name: "View Company",
-          default_price_pix: "125",
           shipping_business_days: "12",
+          ...validCommercialSettings,
         },
       },
       error: null,
@@ -109,25 +122,39 @@ describe("useSystemSettings", () => {
     const settings = await fetchSystemSettings();
 
     expect(settings.company_name).toBe("View Company");
-    expect(settings.default_price_pix).toBe(125);
+    expect(settings.default_price_pix).toBe(142.5);
     expect(settings.shipping_business_days).toBe(12);
     expect(mocks.from).toHaveBeenCalledWith("system_settings_grouped");
     expect(mocks.select).toHaveBeenCalledWith("settings");
   });
 
-  it("retorna defaults seguros quando RPC e view falham", async () => {
+  it("falha fechado quando RPC e view estao indisponiveis", async () => {
     mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "rpc unavailable" } });
     mockViewResponse({ data: null, error: { message: "view unavailable" } });
 
-    const settings = await fetchSystemSettings();
+    await expect(fetchSystemSettings()).rejects.toThrow(
+      "Configurações oficiais do sistema estão indisponíveis.",
+    );
+    expect(mocks.loggerError).toHaveBeenCalledWith(
+      "Failed to fetch system settings from both canonical sources",
+      {
+        rpcError: { message: "rpc unavailable" },
+        viewError: { message: "view unavailable" },
+      },
+    );
+  });
 
-    expect(settings.company_name).toBeTruthy();
-    expect(settings.contact_email).toBeTruthy();
-    expect(settings.default_price_full).toBeGreaterThan(0);
-    expect(settings.shipping_business_days).toBeGreaterThan(0);
-    expect(mocks.loggerWarn).toHaveBeenCalledWith(
-      "Failed to fetch system settings view, using defaults",
-      { error: { message: "view unavailable" } }
+  it("rejeita payload comercial incompleto em vez de inventar precos", async () => {
+    mocks.rpc.mockResolvedValueOnce({
+      data: {
+        company_name: "Incomplete",
+        default_price_full: "150",
+      },
+      error: null,
+    });
+
+    await expect(fetchSystemSettings()).rejects.toThrow(
+      "Configuração oficial inválida ou ausente: default_price_pix",
     );
   });
 
@@ -142,14 +169,14 @@ describe("useSystemSettings", () => {
   it("retorna multiplas configuracoes especificas atraves do hook derivado", async () => {
     const { result } = renderHook(
       () => useSystemSettingsMultiple(["company_name", "default_price_full"]),
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     );
 
     await waitFor(() =>
       expect(result.current).toEqual({
         company_name: "Ordax Test",
         default_price_full: 150,
-      })
+      }),
     );
   });
 
