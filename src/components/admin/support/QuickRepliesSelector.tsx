@@ -9,7 +9,11 @@ import { Zap, Search, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useQuickRepliesSelector } from "@/hooks/admin/useQuickRepliesSelector";
 import type { QuickReply } from "@/hooks/admin/useQuickRepliesSelector";
-import { processTemplate, fetchCustomerData, detectVariables } from "@/services/support/support-template-service";
+import {
+  processTemplate,
+  fetchCustomerData,
+  detectVariables,
+} from "@/services/support/support-template-service";
 
 interface QuickRepliesSelectorProps {
   onSelect: (message: string) => void;
@@ -17,13 +21,13 @@ interface QuickRepliesSelectorProps {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  saudacao: "Saudacao",
+  saudacao: "Saudação",
   pedido: "Pedido",
   pagamento: "Pagamento",
   rastreamento: "Rastreamento",
-  orcamento: "Orcamento",
-  duvida: "Duvida",
-  tecnico: "Tecnico",
+  orcamento: "Orçamento",
+  duvida: "Dúvida",
+  tecnico: "Técnico",
   despedida: "Despedida",
   outro: "Outro",
 };
@@ -33,23 +37,29 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [previewReply, setPreviewReply] = useState<QuickReply | null>(null);
-  const [processedMessage, setProcessedMessage] = useState<string>("");
+  const [processedMessage, setProcessedMessage] = useState("");
   const [processingTemplate, setProcessingTemplate] = useState(false);
-  const { data: quickReplies = [], isLoading: loading, isError } = useQuickRepliesSelector(isOpen);
+  const [templateError, setTemplateError] = useState<string | null>(null);
+  const { data: quickReplies = [], isLoading: loading, isError } =
+    useQuickRepliesSelector(isOpen);
 
   useEffect(() => {
     if (isOpen && isError) {
-      toast.error("Erro ao carregar respostas rapidas");
+      toast.error("Erro ao carregar respostas rápidas");
     }
   }, [isOpen, isError]);
 
   const filteredReplies = useMemo(() => {
     let filtered = quickReplies as QuickReply[];
-    if (selectedCategory) filtered = filtered.filter((r) => r.category === selectedCategory);
+    if (selectedCategory) {
+      filtered = filtered.filter((reply) => reply.category === selectedCategory);
+    }
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        (r) => r.title.toLowerCase().includes(term) || r.message.toLowerCase().includes(term)
+        (reply) =>
+          reply.title.toLowerCase().includes(term) ||
+          reply.message.toLowerCase().includes(term),
       );
     }
     return filtered;
@@ -59,17 +69,30 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
     const variables = detectVariables(reply.message);
     if (variables.length > 0 && userId) {
       setPreviewReply(reply);
+      setProcessedMessage("");
+      setTemplateError(null);
       setProcessingTemplate(true);
+
       try {
         const customerData = await fetchCustomerData(userId);
         const processed = await processTemplate(reply.message, customerData);
         setProcessedMessage(processed);
-      } catch {
-        toast.error("Erro ao processar template");
-        setProcessedMessage(reply.message);
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Não foi possível validar os dados do template.";
+        setTemplateError(message);
+        setProcessedMessage("");
+        toast.error("Template indisponível: verifique os dados oficiais antes de enviar.");
       } finally {
         setProcessingTemplate(false);
       }
+      return;
+    }
+
+    if (variables.length > 0 && !userId) {
+      toast.error("Selecione um cliente antes de usar um template com variáveis.");
       return;
     }
 
@@ -80,10 +103,16 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
   };
 
   const handleConfirmProcessed = () => {
+    if (!processedMessage || templateError || detectVariables(processedMessage).length > 0) {
+      toast.error("A mensagem não foi validada e não pode ser usada.");
+      return;
+    }
+
     onSelect(processedMessage);
     setIsOpen(false);
     setPreviewReply(null);
     setProcessedMessage("");
+    setTemplateError(null);
     setSearchTerm("");
     setSelectedCategory(null);
   };
@@ -91,41 +120,58 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
   const handleCancelPreview = () => {
     setPreviewReply(null);
     setProcessedMessage("");
+    setTemplateError(null);
   };
 
-  const categories = Array.from(new Set((quickReplies as QuickReply[]).map((r) => r.category)));
+  const categories = Array.from(
+    new Set((quickReplies as QuickReply[]).map((reply) => reply.category)),
+  );
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" type="button">
-          <Zap className="h-4 w-4 mr-2" />
-          Respostas Rapidas
+          <Zap className="mr-2 h-4 w-4" />
+          Respostas Rápidas
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[500px] p-0" align="start">
         {previewReply ? (
           <div className="p-4">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="mb-3 flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">Preview da Mensagem</h3>
+              <h3 className="font-semibold">Preview da mensagem</h3>
             </div>
             <div className="space-y-3">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Template Original:</p>
-                <div className="p-2 bg-muted rounded text-sm">{previewReply.message}</div>
+                <p className="mb-1 text-xs text-muted-foreground">Template original:</p>
+                <div className="rounded bg-muted p-2 text-sm">{previewReply.message}</div>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Mensagem Processada:</p>
-                <div className="p-3 bg-primary/5 border border-primary/20 rounded text-sm">
-                  {processingTemplate ? <span className="text-muted-foreground">Processando...</span> : processedMessage}
+                <p className="mb-1 text-xs text-muted-foreground">Mensagem processada:</p>
+                <div className="rounded border border-primary/20 bg-primary/5 p-3 text-sm">
+                  {processingTemplate ? (
+                    <span className="text-muted-foreground">Processando...</span>
+                  ) : templateError ? (
+                    <span className="text-destructive">{templateError}</span>
+                  ) : (
+                    processedMessage
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button onClick={handleConfirmProcessed} disabled={processingTemplate} className="flex-1">
-                  Usar Esta Mensagem
+                <Button
+                  onClick={handleConfirmProcessed}
+                  disabled={processingTemplate || !!templateError || !processedMessage}
+                  className="flex-1"
+                >
+                  Usar esta mensagem
                 </Button>
-                <Button onClick={handleCancelPreview} variant="outline" disabled={processingTemplate}>
+                <Button
+                  onClick={handleCancelPreview}
+                  variant="outline"
+                  disabled={processingTemplate}
+                >
                   Voltar
                 </Button>
               </div>
@@ -133,26 +179,35 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
           </div>
         ) : (
           <>
-            <div className="p-3 border-b">
+            <div className="border-b p-3">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar respostas..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(event) => setSearchTerm(event.target.value)}
                   className="pl-8"
                 />
               </div>
             </div>
 
             {categories.length > 0 && (
-              <div className="p-3 border-b">
+              <div className="border-b p-3">
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant={selectedCategory === null ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedCategory(null)}>
+                  <Badge
+                    variant={selectedCategory === null ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategory(null)}
+                  >
                     Todas
                   </Badge>
                   {categories.map((category) => (
-                    <Badge key={category} variant={selectedCategory === category ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedCategory(category)}>
+                    <Badge
+                      key={category}
+                      variant={selectedCategory === category ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => setSelectedCategory(category)}
+                    >
                       {CATEGORY_LABELS[category] || category}
                     </Badge>
                   ))}
@@ -164,7 +219,9 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
               {loading ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">Carregando...</div>
               ) : filteredReplies.length === 0 ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">Nenhuma resposta rapida encontrada</div>
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Nenhuma resposta rápida encontrada
+                </div>
               ) : (
                 <div className="p-2">
                   {filteredReplies.map((reply) => {
@@ -172,12 +229,12 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
                     return (
                       <button
                         key={reply.id}
-                        onClick={() => handleSelect(reply)}
-                        className="w-full text-left p-3 rounded-md hover:bg-accent transition-colors"
+                        onClick={() => void handleSelect(reply)}
+                        className="w-full rounded-md p-3 text-left transition-colors hover:bg-accent"
                       >
-                        <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="mb-1 flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{reply.title}</span>
+                            <span className="text-sm font-medium">{reply.title}</span>
                             {reply.shortcut && (
                               <Badge variant="outline" className="text-[10px]">
                                 {reply.shortcut}
@@ -185,7 +242,7 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
                             )}
                             {hasVariables && (
                               <Sparkles
-                                aria-label="Contem variaveis dinamicas"
+                                aria-label="Contém variáveis dinâmicas"
                                 className="h-3 w-3 text-primary"
                               />
                             )}
@@ -194,7 +251,9 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
                             {CATEGORY_LABELS[reply.category] || reply.category}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2">{reply.message}</p>
+                        <p className="line-clamp-2 text-xs text-muted-foreground">
+                          {reply.message}
+                        </p>
                       </button>
                     );
                   })}
@@ -205,10 +264,10 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
             {userId && (
               <>
                 <Separator />
-                <div className="p-3 bg-muted/50">
+                <div className="bg-muted/50 p-3">
                   <p className="text-xs text-muted-foreground">
-                    <Sparkles className="h-3 w-3 inline mr-1" />
-                    Templates com variaveis serao preenchidos automaticamente com dados do cliente
+                    <Sparkles className="mr-1 inline h-3 w-3" />
+                    Templates com variáveis só podem ser usados após validação dos dados oficiais.
                   </p>
                 </div>
               </>
