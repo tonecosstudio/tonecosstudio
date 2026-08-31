@@ -1,6 +1,6 @@
 -- Keep payment evidence private and bind every voucher path to the authenticated owner.
 -- The browser stores only the object path. Access to the object itself remains governed by
--- storage.objects RLS; no public or long-lived signed URL is persisted in business tables.
+-- storage.objects RLS; no public or long-lived signed URL is persisted for new checkouts.
 
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
@@ -86,7 +86,9 @@ ALTER TABLE public.subscriptions
     )
   ) NOT VALID;
 
-CREATE OR REPLACE FUNCTION public.create_subscription_checkout_for_current_user(
+-- Preserve the hardened architecture introduced in 20260622071444:
+-- the privileged body lives in private_api and public remains SECURITY INVOKER.
+CREATE OR REPLACE FUNCTION private_api.create_subscription_checkout_for_current_user(
   p_plan_id uuid,
   p_collection_id uuid,
   p_payment_method text,
@@ -254,11 +256,38 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION private_api.create_subscription_checkout_for_current_user(uuid, uuid, text, text)
+  FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private_api.create_subscription_checkout_for_current_user(uuid, uuid, text, text)
+  TO authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.create_subscription_checkout_for_current_user(
+  p_plan_id uuid,
+  p_collection_id uuid,
+  p_payment_method text,
+  p_payment_voucher_url text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE sql
+SECURITY INVOKER
+SET search_path = public, private_api, pg_temp
+AS $function$
+  SELECT private_api.create_subscription_checkout_for_current_user(
+    p_plan_id,
+    p_collection_id,
+    p_payment_method,
+    p_payment_voucher_url
+  );
+$function$;
+
 REVOKE ALL ON FUNCTION public.create_subscription_checkout_for_current_user(uuid, uuid, text, text)
   FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.create_subscription_checkout_for_current_user(uuid, uuid, text, text)
   TO authenticated, service_role;
 
+-- The admin verifier remains admin-gated as in the existing migration. It accepts the new
+-- private path, while legacy records with a pre-existing URL remain reviewable instead of
+-- becoming orphaned during rollout.
 CREATE OR REPLACE FUNCTION public.admin_verify_subscription_payment_voucher(
   p_subscription_id uuid,
   p_approved boolean,
@@ -314,7 +343,8 @@ BEGIN
     RAISE EXCEPTION 'SUBSCRIPTION_NOT_FOUND' USING ERRCODE = 'P0002';
   END IF;
 
-  IF v_subscription.payment_voucher_path IS NULL THEN
+  IF v_subscription.payment_voucher_path IS NULL
+     AND v_subscription.payment_voucher_url IS NULL THEN
     RAISE EXCEPTION 'SUBSCRIPTION_VOUCHER_REQUIRED' USING ERRCODE = '22023';
   END IF;
 
@@ -391,6 +421,6 @@ GRANT EXECUTE ON FUNCTION public.admin_verify_subscription_payment_voucher(uuid,
 COMMENT ON COLUMN public.subscriptions.payment_voucher_path IS
   'Private payment-vouchers object path owned by the subscription user. Never a public URL.';
 COMMENT ON FUNCTION public.create_subscription_checkout_for_current_user(uuid, uuid, text, text) IS
-  'Creates a subscription checkout for the authenticated user and accepts only an owned private voucher object path.';
+  'Invoker wrapper for private checkout; new vouchers must be owned private storage paths.';
 
 NOTIFY pgrst, 'reload schema';
