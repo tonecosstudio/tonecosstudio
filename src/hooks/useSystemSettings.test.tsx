@@ -12,24 +12,15 @@ import {
 } from "./useSystemSettings";
 
 const mocks = vi.hoisted(() => ({
-  rpc: vi.fn(),
   from: vi.fn(),
   select: vi.fn(),
-  single: vi.fn(),
-  loggerError: vi.fn(),
+  in: vi.fn(),
   upsertAdminSystemSettings: vi.fn(),
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    rpc: mocks.rpc,
     from: mocks.from,
-  },
-}));
-
-vi.mock("@/lib/logger", () => ({
-  log: {
-    error: mocks.loggerError,
   },
 }));
 
@@ -37,12 +28,27 @@ vi.mock("@/services/admin/config/admin-config-mutations-service", () => ({
   upsertAdminSystemSettings: mocks.upsertAdminSystemSettings,
 }));
 
-const validCommercialSettings = {
+const validOfficialSettings = {
   default_price_full: "150",
   default_price_pix: "142.50",
   default_deposit_amount: "30",
   pix_discount_percentage: "5",
+  max_installments_no_interest: "3",
+  max_installments_with_interest: "12",
+  production_days_min: "15",
+  production_days_max: "20",
+  shipping_business_days: "5",
+  sales_duration_days: "30",
+  delivery_interval_days: "90",
+  character_choice_days: "7",
+  balance_payment_days: "5",
+  exchange_deadline_days: "7",
+  days_to_next_delivery: "90",
 };
+
+function asRows(settings: Record<string, string>) {
+  return Object.entries(settings).map(([key, value]) => ({ key, value }));
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -59,34 +65,26 @@ function createWrapper() {
   );
 }
 
-function mockViewResponse(
-  response: { data: unknown; error: { message: string } | null } = {
-    data: null,
-    error: null,
+function mockSettingsResponse(
+  settings: Record<string, string> = {
+    company_name: "Ordax Test",
+    contact_email: "contato@ordax.test",
+    ...validOfficialSettings,
   },
 ) {
-  mocks.single.mockResolvedValue(response);
-  mocks.select.mockReturnValue({ single: mocks.single });
+  mocks.in.mockResolvedValue({ data: asRows(settings), error: null });
+  mocks.select.mockReturnValue({ in: mocks.in });
   mocks.from.mockReturnValue({ select: mocks.select });
 }
 
 describe("useSystemSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mocks.rpc.mockResolvedValue({
-      data: {
-        company_name: "Ordax Test",
-        contact_email: "contato@ordax.test",
-        ...validCommercialSettings,
-      },
-      error: null,
-    });
-    mockViewResponse();
+    mockSettingsResponse();
     mocks.upsertAdminSystemSettings.mockResolvedValue(undefined);
   });
 
-  it("retorna configuracoes vindas da RPC e normaliza valores oficiais", async () => {
+  it("busca somente chaves publicas allowlisted e normaliza valores oficiais", async () => {
     const { result } = renderHook(() => useSystemSettings(), {
       wrapper: createWrapper(),
     });
@@ -100,57 +98,35 @@ describe("useSystemSettings", () => {
       default_price_pix: 142.5,
       default_deposit_amount: 30,
       pix_discount_percentage: 5,
+      character_choice_days: 7,
+      balance_payment_days: 5,
     });
     expect(result.current.data?.support_email).toBeTruthy();
-    expect(mocks.rpc).toHaveBeenCalledWith("get_system_settings");
-    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.from).toHaveBeenCalledWith("system_settings");
+    expect(mocks.select).toHaveBeenCalledWith("key,value");
+
+    const requestedKeys = mocks.in.mock.calls[0]?.[1] as string[];
+    expect(requestedKeys).toContain("default_price_full");
+    expect(requestedKeys).toContain("character_choice_days");
+    expect(requestedKeys).not.toContain("pix_key_voucher");
+    expect(requestedKeys).not.toContain("payment_link_voucher");
   });
 
-  it("usa a view agrupada quando a RPC falha e desembrulha o campo settings", async () => {
-    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "rpc unavailable" } });
-    mockViewResponse({
-      data: {
-        settings: {
-          company_name: "View Company",
-          shipping_business_days: "12",
-          ...validCommercialSettings,
-        },
-      },
-      error: null,
+  it("falha fechado quando a leitura oficial esta indisponivel", async () => {
+    mocks.in.mockResolvedValueOnce({
+      data: null,
+      error: { message: "database unavailable" },
     });
 
-    const settings = await fetchSystemSettings();
-
-    expect(settings.company_name).toBe("View Company");
-    expect(settings.default_price_pix).toBe(142.5);
-    expect(settings.shipping_business_days).toBe(12);
-    expect(mocks.from).toHaveBeenCalledWith("system_settings_grouped");
-    expect(mocks.select).toHaveBeenCalledWith("settings");
-  });
-
-  it("falha fechado quando RPC e view estao indisponiveis", async () => {
-    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "rpc unavailable" } });
-    mockViewResponse({ data: null, error: { message: "view unavailable" } });
-
     await expect(fetchSystemSettings()).rejects.toThrow(
-      "Configurações oficiais do sistema estão indisponíveis.",
-    );
-    expect(mocks.loggerError).toHaveBeenCalledWith(
-      "Failed to fetch system settings from both canonical sources",
-      {
-        rpcError: { message: "rpc unavailable" },
-        viewError: { message: "view unavailable" },
-      },
+      "Configurações oficiais do sistema estão indisponíveis: database unavailable",
     );
   });
 
   it("rejeita payload comercial incompleto em vez de inventar precos", async () => {
-    mocks.rpc.mockResolvedValueOnce({
-      data: {
-        company_name: "Incomplete",
-        default_price_full: "150",
-      },
-      error: null,
+    mockSettingsResponse({
+      company_name: "Incomplete",
+      default_price_full: "150",
     });
 
     await expect(fetchSystemSettings()).rejects.toThrow(
@@ -181,7 +157,7 @@ describe("useSystemSettings", () => {
   });
 
   it("mantem undefined enquanto a configuracao especifica ainda esta carregando", () => {
-    mocks.rpc.mockReturnValueOnce(new Promise(() => undefined));
+    mocks.in.mockReturnValueOnce(new Promise(() => undefined));
 
     const { result } = renderHook(() => useSystemSetting("contact_email"), {
       wrapper: createWrapper(),
