@@ -7,7 +7,7 @@ export interface ProductionGlobalLimitSetting {
   description?: string | null;
 }
 
-export async function fetchProductionGlobalLimitSetting(): Promise<ProductionGlobalLimitSetting> {
+export async function fetchProductionGlobalLimitSetting(): Promise<ProductionGlobalLimitSetting | null> {
   const { data, error } = await supabase
     .from("system_settings")
     .select("key, value, description")
@@ -15,10 +15,7 @@ export async function fetchProductionGlobalLimitSetting(): Promise<ProductionGlo
     .maybeSingle();
 
   if (error) throw error;
-
-  if (!data) {
-    throw new Error("Limite mensal de produção não configurado.");
-  }
+  if (!data) return null;
 
   const value = Number(data.value);
   if (!Number.isInteger(value) || value < 1 || value > 100000) {
