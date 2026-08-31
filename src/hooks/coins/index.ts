@@ -36,6 +36,3 @@ export {
   useRefundPurchase,
   usePurchaseItem,
 } from "./usePurchaseWithCoins";
-
-// Pacotes de coins (hook existente em src/hooks)
-export { useCoinPackages } from "../useCoinPackages";
