@@ -169,7 +169,7 @@ Saída: matriz E2E dos fluxos críticos aprovada.
 Estado: **PENDENTE**
 
 - [ ] inventariar mocks, placeholders, feature flags, duplicidades e rotas legadas;
-- [ ] remover placeholder.svg do Open Graph e fornecer imagem social real;
+- [x] remover placeholder.svg do Open Graph e fornecer imagem social real;
 - [ ] alinhar marca, versão, nomenclatura, capitalização e tom;
 - [ ] revisar contraste, foco, teclado, headings, labels e leitura por tecnologia assistiva;
 - [ ] reduzir repetição visual/acessível causada por efeitos de texto;
@@ -426,3 +426,37 @@ Do not repeat:
 - não publicar versão 1.0.0 antes dos critérios de GO;
 - não remover package-lock.json;
 - não remover lockfiles concorrentes antes da prova de npm ci.
+
+
+### Checkpoint 5 — 2026-08-30
+
+HEAD anterior da main: a2be72d9d104427b2d7b813187a6ed46064b1e46
+
+Concluído:
+
+- removidas as referências públicas de Open Graph e Twitter para placeholder.svg;
+- criado public/og-image.png com identidade preta/dourada do produto;
+- adicionados metadados de largura, altura e texto alternativo;
+- o asset não depende de catálogo, contadores ou claims de disponibilidade.
+
+Testes/provas:
+
+- imagem validada em 1200x630, formato PNG, 16-bit sRGB;
+- inspeção visual confirmou legibilidade, contraste e margens;
+- texto do asset: ORDAX, Tonecos Studios e Colecionáveis Artesanais Premium;
+- index.html passa a usar URL absoluta https://ordax.com.br/og-image.png.
+
+Bloqueios:
+
+- a URL pública só poderá ser verificada após a Vercel aceitar uma nova build.
+
+Next action:
+
+- validar HTTP 200, content-type image/png e preview social após deploy;
+- continuar o inventário de placeholders e mocks que afetam a experiência pública.
+
+Do not repeat:
+
+- não voltar a usar placeholder.svg em metadados públicos;
+- não colocar números de catálogo ou versão no asset social;
+- não declarar o asset publicado antes de verificar o deploy.
