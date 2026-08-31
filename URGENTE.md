@@ -211,7 +211,7 @@ Estado: **PENDENTE**
 O lançamento só pode ser aprovado quando todos forem verdadeiros:
 
 - Quality Gate verde em commit exato;
-- main protegida e sem push direto;
+- cada push direto na main vinculado a commit reversível e Quality Gate verde;
 - nenhum secret high-confidence no Git ou bundle;
 - nenhum advisory crítico/alto sem mitigação;
 - RLS/grants/funções privilegiadas revisadas;
@@ -502,3 +502,43 @@ Do not repeat:
 - não ativar dados demonstrativos por variável VITE_*;
 - não remover mocks utilitários de teste;
 - não usar arquivos de docs-archive como justificativa para manter assets públicos obsoletos.
+
+
+### Checkpoint 7 — 2026-08-30
+
+HEAD anterior da main: 832fbf78d7994252762a92dcbade827c6f829819
+
+Concluído:
+
+- versão fallback da aplicação alinhada para 0.1.0;
+- removidos defaults inventados de Facebook, Instagram, X e YouTube;
+- removidos CNPJ e telefone de exemplo da configuração de runtime;
+- endereço padrão “São Paulo, Brasil” removido;
+- formulário administrativo mantém apenas exemplos visivelmente genéricos;
+- critério de GO alinhado à decisão do usuário de trabalhar diretamente na main.
+
+Testes/provas:
+
+- busca exata mostrou que os defaults sociais e placeholders eram usados somente no formulário administrativo;
+- system settings passa a usar endereço vazio quando não há configuração real;
+- templates .env não sugerem mais perfis sociais ou localização como se fossem oficiais;
+- nenhum valor real de usuário, CNPJ ou telefone foi inventado.
+
+Bloqueios:
+
+- emails @ordax.com.br ainda precisam de verificação operacional de entrega;
+- dados legais reais continuam necessários antes do lançamento;
+- build e testes automatizados continuam bloqueados pelo runner.
+
+Next action:
+
+- revisar feature flags e rotas legadas;
+- verificar se páginas legais distinguem configuração ausente de dado oficial;
+- impedir preços default de serem usados em compra quando a configuração remota falhar.
+
+Do not repeat:
+
+- não preencher dados legais por suposição;
+- não usar localização do usuário ou do desenvolvedor como endereço da empresa;
+- não criar perfis sociais presumidos;
+- não alterar a decisão de main única sem nova instrução.

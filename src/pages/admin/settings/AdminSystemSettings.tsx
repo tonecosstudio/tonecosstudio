@@ -183,7 +183,7 @@ export default function AdminSystemSettings() {
                       id="company_address"
                       value={getValue("company_address")}
                       onChange={(e) => handleChange("company_address", e.target.value)}
-                      placeholder={CONTACT.COMPANY_ADDRESS}
+                      placeholder="Cidade, Estado, Brasil"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("company_address")}
@@ -222,7 +222,7 @@ export default function AdminSystemSettings() {
                       id="cnpj"
                       value={getValue("cnpj")}
                       onChange={(e) => handleChange("cnpj", e.target.value)}
-                      placeholder={CONTACT.CNPJ_PLACEHOLDER}
+                      placeholder="00.000.000/0000-00"
                     />
                     <p className="text-xs text-muted-foreground mt-1">{getDescription("cnpj")}</p>
                   </div>
@@ -303,7 +303,7 @@ export default function AdminSystemSettings() {
                       type="tel"
                       value={getValue("phone_primary")}
                       onChange={(e) => handleChange("phone_primary", e.target.value)}
-                      placeholder={CONTACT.PHONE_PLACEHOLDER}
+                      placeholder="+55 (DDD) 00000-0000"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("phone_primary")}
@@ -317,7 +317,7 @@ export default function AdminSystemSettings() {
                       type="tel"
                       value={getValue("phone_whatsapp")}
                       onChange={(e) => handleChange("phone_whatsapp", e.target.value)}
-                      placeholder={CONTACT.PHONE_PLACEHOLDER}
+                      placeholder="+55 (DDD) 00000-0000"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("phone_whatsapp")}
@@ -371,7 +371,7 @@ export default function AdminSystemSettings() {
                       type="url"
                       value={getValue("facebook_url")}
                       onChange={(e) => handleChange("facebook_url", e.target.value)}
-                      placeholder={CONTACT.FACEBOOK_URL}
+                      placeholder="https://facebook.com/sua-pagina"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("facebook_url")}
@@ -385,7 +385,7 @@ export default function AdminSystemSettings() {
                       type="url"
                       value={getValue("instagram_url")}
                       onChange={(e) => handleChange("instagram_url", e.target.value)}
-                      placeholder={CONTACT.INSTAGRAM_URL}
+                      placeholder="https://instagram.com/seu-perfil"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("instagram_url")}
@@ -399,7 +399,7 @@ export default function AdminSystemSettings() {
                       type="url"
                       value={getValue("twitter_url")}
                       onChange={(e) => handleChange("twitter_url", e.target.value)}
-                      placeholder={CONTACT.X_URL}
+                      placeholder="https://x.com/seu-perfil"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("twitter_url")}
@@ -413,7 +413,7 @@ export default function AdminSystemSettings() {
                       type="url"
                       value={getValue("youtube_url")}
                       onChange={(e) => handleChange("youtube_url", e.target.value)}
-                      placeholder={CONTACT.YOUTUBE_URL}
+                      placeholder="https://youtube.com/@seu-canal"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("youtube_url")}

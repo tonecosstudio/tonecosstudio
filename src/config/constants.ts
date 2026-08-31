@@ -24,7 +24,7 @@ export const ENV = {
   SENTRY_DSN: import.meta.env.VITE_SENTRY_DSN || "",
 
   // Versão da aplicação
-  APP_VERSION: import.meta.env.VITE_APP_VERSION || "1.0.0",
+  APP_VERSION: import.meta.env.VITE_APP_VERSION || "0.1.0",
 
   // Ambiente
   IS_PRODUCTION: import.meta.env.PROD,
@@ -136,23 +136,13 @@ export const CONTACT = {
   WEBSITE_URL: import.meta.env.VITE_WEBSITE_URL || "https://ordax.com.br",
   COMPANY_LOGO_URL:
     import.meta.env.VITE_COMPANY_LOGO_URL || ASSETS.DEFAULT_ICON_URL,
-  FACEBOOK_URL:
-    import.meta.env.VITE_FACEBOOK_URL || "https://facebook.com/ordax",
-  INSTAGRAM_URL:
-    import.meta.env.VITE_INSTAGRAM_URL || "https://instagram.com/ordax",
-  X_URL: import.meta.env.VITE_X_URL || "https://x.com/ordax",
-  YOUTUBE_URL: import.meta.env.VITE_YOUTUBE_URL || "https://youtube.com/@ordax",
   BUSINESS_HOURS:
     import.meta.env.VITE_BUSINESS_HOURS || "Segunda a Sexta, 9h às 18h",
 
   // Empresa
   COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME || "Tonecos Studios",
   LEGAL_NAME: import.meta.env.VITE_LEGAL_NAME || "Tonecos Studios LTDA",
-  CNPJ_PLACEHOLDER:
-    import.meta.env.VITE_CNPJ_PLACEHOLDER || "00.000.000/0000-00",
-  PHONE_PLACEHOLDER:
-    import.meta.env.VITE_PHONE_PLACEHOLDER || "+55 (11) 9999-9999",
-  COMPANY_ADDRESS: import.meta.env.VITE_COMPANY_ADDRESS || "São Paulo, Brasil",
+  COMPANY_ADDRESS: import.meta.env.VITE_COMPANY_ADDRESS || "",
 } as const;
 
 // ============================================================================
