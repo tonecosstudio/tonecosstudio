@@ -98,12 +98,12 @@ export default function AdminPaymentKeys() {
   const getKeyLabel = (key: string) => {
     const labels: Record<string, string> = {
       pix_key_onetime: "Compra Avulsa",
-      pix_key_voucher: "Sistema de Voucher (R$ 100 entrada)",
+      pix_key_voucher: "Sistema de Voucher / Entrada",
       pix_key_subscription_quarterly: "Assinatura Trimestral",
       pix_key_subscription_semiannual: "Assinatura Semestral",
       pix_key_subscription_annual: "Assinatura Anual",
       payment_link_onetime: "Compra Avulsa",
-      payment_link_voucher: "Sistema de Voucher (R$ 100 entrada)",
+      payment_link_voucher: "Sistema de Voucher / Entrada",
       payment_link_subscription_quarterly: "Assinatura Trimestral",
       payment_link_subscription_semiannual: "Assinatura Semestral",
       payment_link_subscription_annual: "Assinatura Anual",
@@ -226,11 +226,11 @@ export default function AdminPaymentKeys() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div>
-              <strong>Compra Avulsa:</strong> Usada quando o cliente compra um quote (orçamento) único.
+              <strong>Compra Avulsa:</strong> Usada quando o cliente paga um orçamento único.
             </div>
             <div>
-              <strong>Sistema de Voucher:</strong> Usada para entrada de R$ 100 no sistema estilo Iron
-              Studios.
+              <strong>Sistema de Voucher:</strong> Usada para instruções de entrada conforme o valor
+              persistido no pedido ou orçamento.
             </div>
             <div>
               <strong>Assinaturas:</strong> Cada período (trimestral, semestral, anual) pode ter sua
