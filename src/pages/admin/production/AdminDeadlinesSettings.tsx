@@ -4,10 +4,12 @@ import {
   Calendar,
   CheckCircle,
   Clock,
-  Info,
+  CreditCard,
   RefreshCw,
   Save,
+  Timer,
   Truck,
+  UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -26,17 +28,33 @@ import type {
 } from "@/services/admin/production/production-deadlines-settings-service";
 
 const SETTING_LABELS: Record<ProductionDeadlineKey, string> = {
-  production_days_min: "Dias de Produção",
-  shipping_business_days: "Dias Úteis de Envio",
-  sales_duration_days: "Duração das Vendas",
-  delivery_interval_days: "Intervalo Total",
+  production_days_min: "Produção mínima",
+  production_days_max: "Produção máxima",
+  shipping_business_days: "Dia útil de início do envio",
+  sales_duration_days: "Duração das vendas",
+  delivery_interval_days: "Intervalo de entrega",
+  character_choice_days: "Prazo para escolher personagem",
+  balance_payment_days: "Prazo para pagamento do saldo",
 };
 
 const SETTING_ICONS: Record<ProductionDeadlineKey, typeof Clock> = {
   production_days_min: Clock,
+  production_days_max: Timer,
   shipping_business_days: Truck,
   sales_duration_days: Calendar,
   delivery_interval_days: RefreshCw,
+  character_choice_days: UserCheck,
+  balance_payment_days: CreditCard,
+};
+
+const SETTING_MAX: Record<ProductionDeadlineKey, number> = {
+  production_days_min: 3650,
+  production_days_max: 3650,
+  shipping_business_days: 31,
+  sales_duration_days: 3650,
+  delivery_interval_days: 3650,
+  character_choice_days: 365,
+  balance_payment_days: 365,
 };
 
 export default function AdminDeadlinesSettings() {
@@ -51,13 +69,38 @@ export default function AdminDeadlinesSettings() {
     setEditedValues((previous) => ({ ...previous, [key]: value }));
   };
 
-  const handleSave = (key: ProductionDeadlineKey) => {
-    const value = editedValues[key];
-    const numericValue = Number(value);
+  const currentValue = (key: ProductionDeadlineKey): number =>
+    Number(editedValues[key] ?? settings?.[key]?.value);
 
-    if (!Number.isInteger(numericValue) || numericValue < 1 || numericValue > 365) {
+  const handleSave = (key: ProductionDeadlineKey) => {
+    const numericValue = currentValue(key);
+    const max = SETTING_MAX[key];
+
+    if (!Number.isInteger(numericValue) || numericValue < 1 || numericValue > max) {
       toast.error("Valor inválido", {
-        description: "Digite um número inteiro entre 1 e 365.",
+        description: `Digite um número inteiro entre 1 e ${max}.`,
+      });
+      return;
+    }
+
+    if (
+      key === "production_days_min" &&
+      Number.isFinite(currentValue("production_days_max")) &&
+      numericValue > currentValue("production_days_max")
+    ) {
+      toast.error("Faixa de produção inválida", {
+        description: "A produção mínima não pode superar a máxima.",
+      });
+      return;
+    }
+
+    if (
+      key === "production_days_max" &&
+      Number.isFinite(currentValue("production_days_min")) &&
+      numericValue < currentValue("production_days_min")
+    ) {
+      toast.error("Faixa de produção inválida", {
+        description: "A produção máxima não pode ser menor que a mínima.",
       });
       return;
     }
@@ -128,18 +171,17 @@ export default function AdminDeadlinesSettings() {
       <div>
         <h2 className="mb-2 text-2xl font-bold">Prazos Operacionais (SSOT)</h2>
         <p className="text-muted-foreground">
-          Configure apenas parâmetros de prazo. O limite mensal de produção possui uma tela e uma
-          chave canônica próprias.
+          Estes sete valores em <code>system_settings</code> são a fonte canônica usada por
+          produção, escolha de personagem, envio e cobrança de saldo.
         </p>
       </div>
 
       <Alert>
-        <Info className="h-4 w-4" />
+        <Clock className="h-4 w-4" />
         <AlertDescription>
-          <strong>Single Source of Truth:</strong> ao salvar, o valor é atualizado em
-          <code className="mx-1">system_settings</code> e as consultas dependentes do painel são
-          invalidadas. O write atual não executa uma rotina separada de recálculo em massa dos
-          ciclos existentes.
+          O prazo de escolha é aplicado quando um pedido entra em
+          <code className="mx-1">awaiting_choice</code>. Se a configuração estiver ausente ou
+          inválida, o backend bloqueia a abertura da janela em vez de assumir um número de dias.
         </AlertDescription>
       </Alert>
 
@@ -169,13 +211,15 @@ export default function AdminDeadlinesSettings() {
                           id={key}
                           type="number"
                           min="1"
-                          max="365"
+                          max={SETTING_MAX[key]}
                           step="1"
                           value={editedValues[key] !== undefined ? editedValues[key] : data.value}
                           onChange={(event) => handleChange(key, event.target.value)}
-                          className="w-24"
+                          className="w-28"
                         />
-                        <span className="text-sm text-muted-foreground">dias</span>
+                        <span className="text-sm text-muted-foreground">
+                          {key === "shipping_business_days" ? "º dia útil" : "dias"}
+                        </span>
                       </div>
                     </div>
                     {hasChanges(key) && (
@@ -206,9 +250,9 @@ export default function AdminDeadlinesSettings() {
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          <strong>Atenção:</strong> novos cálculos que consultarem esses parâmetros usarão os
-          valores atualizados. Antes da RC, é necessário provar como pedidos e ciclos já persistidos
-          devem reagir a mudanças de prazo.
+          <strong>Atenção:</strong> alterar uma configuração não reescreve silenciosamente prazos
+          já persistidos em pedidos existentes. Esse comportamento deve ser tratado por uma operação
+          explícita e auditável se for necessário no futuro.
         </AlertDescription>
       </Alert>
     </div>
