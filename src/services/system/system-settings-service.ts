@@ -48,42 +48,37 @@ export interface SystemSettings {
   hero_image_url?: string;
 }
 
-export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
+const NON_COMMERCIAL_DEFAULTS = {
   company_name: CONTACT.COMPANY_NAME,
   company_address: CONTACT.COMPANY_ADDRESS,
   company_logo_url: CONTACT.COMPANY_LOGO_URL,
-
   contact_email: CONTACT.CONTACT_EMAIL,
   support_email: CONTACT.SUPPORT_EMAIL,
   privacy_email: CONTACT.PRIVACY_EMAIL,
   dpo_email: CONTACT.DPO_EMAIL,
   business_hours: CONTACT.BUSINESS_HOURS,
-
   website_url: CONTACT.WEBSITE_URL,
-
-  default_price_full: PRICING.DEFAULT_PRICE_FULL,
-  default_price_pix: PRICING.DEFAULT_PRICE_PIX,
-  default_deposit_amount: PRICING.DEFAULT_DEPOSIT_AMOUNT,
-  pix_discount_percentage: PRICING.PIX_DISCOUNT_PERCENTAGE,
   max_installments_no_interest: PRICING.MAX_INSTALLMENTS_NO_INTEREST,
   max_installments_with_interest: PRICING.MAX_INSTALLMENTS_WITH_INTEREST,
-
   shipping_business_days: BATCH.SHIPPING_BUSINESS_DAYS,
   exchange_deadline_days: BATCH.EXCHANGE_DEADLINE_DAYS,
   days_to_next_delivery: PLANS.DAYS_TO_NEXT_DELIVERY,
-
   user_online_threshold_minutes: NOTIFICATIONS.USER_ONLINE_THRESHOLD_MINUTES,
   notification_polling_interval_ms: NOTIFICATIONS.POLLING_INTERVAL_MS,
   toast_duration_ms: NOTIFICATIONS.TOAST_DURATION_MS,
-
   default_page_size: UI.DEFAULT_PAGE_SIZE,
   search_debounce_ms: UI.SEARCH_DEBOUNCE_MS,
   input_debounce_ms: UI.INPUT_DEBOUNCE_MS,
   image_compression_quality: UI.IMAGE_COMPRESSION_QUALITY,
   max_image_size_mb: UI.MAX_IMAGE_SIZE_MB,
-
   hero_image_url: undefined,
-};
+} satisfies Omit<
+  SystemSettings,
+  | "default_price_full"
+  | "default_price_pix"
+  | "default_deposit_amount"
+  | "pix_discount_percentage"
+>;
 
 type SystemSettingsViewError = { message: string } | null;
 
@@ -137,6 +132,26 @@ function unwrapSettingsPayload(rawSettings: unknown): Record<string, unknown> {
   return rawSettings;
 }
 
+function requireFiniteSetting(
+  settings: Record<string, unknown>,
+  key: keyof SystemSettings,
+  options: { min: number; max?: number; integer?: boolean },
+): number {
+  const value = Number(settings[key]);
+  const max = options.max ?? Number.POSITIVE_INFINITY;
+
+  if (
+    !Number.isFinite(value) ||
+    value < options.min ||
+    value > max ||
+    (options.integer && !Number.isInteger(value))
+  ) {
+    throw new Error(`Configuração oficial inválida ou ausente: ${String(key)}`);
+  }
+
+  return value;
+}
+
 export function normalizeSystemSettings(rawSettings: unknown): SystemSettings {
   const settings = unwrapSettingsPayload(rawSettings);
   const normalized: Record<string, unknown> = { ...settings };
@@ -151,9 +166,30 @@ export function normalizeSystemSettings(rawSettings: unknown): SystemSettings {
     }
   });
 
+  const defaultPriceFull = requireFiniteSetting(normalized, "default_price_full", {
+    min: Number.EPSILON,
+  });
+  const defaultPricePix = requireFiniteSetting(normalized, "default_price_pix", {
+    min: Number.EPSILON,
+    max: defaultPriceFull,
+  });
+  const defaultDepositAmount = requireFiniteSetting(normalized, "default_deposit_amount", {
+    min: 0,
+    max: Math.min(defaultPriceFull, defaultPricePix),
+  });
+  const pixDiscountPercentage = requireFiniteSetting(
+    normalized,
+    "pix_discount_percentage",
+    { min: 0, max: 100 },
+  );
+
   return {
-    ...DEFAULT_SYSTEM_SETTINGS,
+    ...NON_COMMERCIAL_DEFAULTS,
     ...normalized,
+    default_price_full: defaultPriceFull,
+    default_price_pix: defaultPricePix,
+    default_deposit_amount: defaultDepositAmount,
+    pix_discount_percentage: pixDiscountPercentage,
   } as SystemSettings;
 }
 
@@ -164,11 +200,17 @@ export async function readSystemSettings(): Promise<SystemSettings> {
     return normalizeSystemSettings(rpcData);
   }
 
-  const { data, error } = await systemSettingsView.from("system_settings_grouped").select("settings").single();
+  const { data, error } = await systemSettingsView
+    .from("system_settings_grouped")
+    .select("settings")
+    .single();
 
-  if (error) {
-    log.warn("Failed to fetch system settings view, using defaults", { error });
-    return DEFAULT_SYSTEM_SETTINGS;
+  if (error || !data) {
+    log.error("Failed to fetch system settings from both canonical sources", {
+      rpcError,
+      viewError: error,
+    });
+    throw new Error("Configurações oficiais do sistema estão indisponíveis.");
   }
 
   return normalizeSystemSettings(data);
