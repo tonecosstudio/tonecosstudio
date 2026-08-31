@@ -25,25 +25,12 @@ export interface AdminPreordersStats {
   total_revenue: number;
 }
 
-interface AdminPreordersFilter extends PromiseLike<{ data: PreorderQuote[] | null; error: Error | null }> {
-  order(
-    column: string,
-    options?: { ascending?: boolean }
-  ): Promise<{ data: PreorderQuote[] | null; error: Error | null }>;
+function positiveAmountOrZero(value: number | null | undefined): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0;
 }
-
-interface AdminPreordersGateway {
-  from(table: "quotes"): {
-    select(columns: string): {
-      eq(column: string, value: boolean): AdminPreordersFilter;
-    };
-  };
-}
-
-const adminPreordersGateway = adminPaymentsGateway as unknown as AdminPreordersGateway;
 
 export async function fetchAdminPreorders(): Promise<PreorderQuote[]> {
-  const { data, error } = await adminPreordersGateway
+  const { data, error } = await adminPaymentsGateway
     .from("quotes")
     .select(
       `
@@ -52,7 +39,7 @@ export async function fetchAdminPreorders(): Promise<PreorderQuote[]> {
         id,
         name
       )
-    `
+    `,
     )
     .eq("is_preorder", true)
     .order("created_at", { ascending: false });
@@ -60,40 +47,74 @@ export async function fetchAdminPreorders(): Promise<PreorderQuote[]> {
   if (error) throw error;
 
   return Promise.all(
-    ((data || []) as PreorderQuote[]).map(async (quote) => {
-      const { data: profileData } = await adminPaymentsGateway
+    ((data ?? []) as unknown as PreorderQuote[]).map(async (quote) => {
+      const { data: profileData, error: profileError } = await adminPaymentsGateway
         .from("profiles")
         .select("full_name, email")
         .eq("id", quote.user_id)
         .maybeSingle();
 
+      if (profileError) {
+        throw new Error(
+          `Falha ao carregar o cliente da pré-venda ${quote.id}: ${profileError.message}`,
+        );
+      }
+
       return {
         ...quote,
-        profiles: profileData || { full_name: "N/A", email: "N/A" },
+        profiles: profileData ?? { full_name: "N/A", email: "N/A" },
       };
-    })
+    }),
   );
 }
 
 export async function fetchAdminPreordersStats(): Promise<AdminPreordersStats> {
-  const { data: quotes } = await adminPreordersGateway
+  const { data, error } = await adminPaymentsGateway
     .from("quotes")
     .select("payment_status, deposit_amount, remaining_amount, total_amount, ready_for_final_payment")
     .eq("is_preorder", true);
 
+  if (error) {
+    throw new Error(`Falha ao carregar métricas de pré-vendas: ${error.message}`);
+  }
+
+  const quotes = data ?? [];
+
+  const totalDepositsReceived = quotes.reduce((total, quote) => {
+    if (quote.payment_status !== "deposit_paid" && quote.payment_status !== "fully_paid") {
+      return total;
+    }
+    return total + positiveAmountOrZero(quote.deposit_amount);
+  }, 0);
+
+  const totalOutstandingFinalBalance = quotes.reduce((total, quote) => {
+    if (quote.payment_status !== "deposit_paid") return total;
+    return total + positiveAmountOrZero(quote.remaining_amount);
+  }, 0);
+
+  const totalRevenueReceived = quotes.reduce((total, quote) => {
+    if (quote.payment_status === "fully_paid") {
+      return total + positiveAmountOrZero(quote.total_amount);
+    }
+    if (quote.payment_status === "deposit_paid") {
+      return total + positiveAmountOrZero(quote.deposit_amount);
+    }
+    return total;
+  }, 0);
+
   return {
-    total: quotes?.length || 0,
-    pending_deposit: quotes?.filter((q) => q.payment_status === "pending").length || 0,
-    in_production:
-      quotes?.filter((q) => q.payment_status === "deposit_paid" && !q.ready_for_final_payment).length ||
-      0,
-    ready_for_payment:
-      quotes?.filter((q) => q.payment_status === "deposit_paid" && q.ready_for_final_payment).length ||
-      0,
-    completed: quotes?.filter((q) => q.payment_status === "fully_paid").length || 0,
-    total_deposits: quotes?.reduce((acc, q) => acc + (q.deposit_amount || 0), 0) || 0,
-    total_remaining: quotes?.reduce((acc, q) => acc + (q.remaining_amount || 0), 0) || 0,
-    total_revenue: quotes?.reduce((acc, q) => acc + (q.total_amount || 0), 0) || 0,
+    total: quotes.length,
+    pending_deposit: quotes.filter((quote) => quote.payment_status === "pending").length,
+    in_production: quotes.filter(
+      (quote) => quote.payment_status === "deposit_paid" && !quote.ready_for_final_payment,
+    ).length,
+    ready_for_payment: quotes.filter(
+      (quote) => quote.payment_status === "deposit_paid" && quote.ready_for_final_payment,
+    ).length,
+    completed: quotes.filter((quote) => quote.payment_status === "fully_paid").length,
+    total_deposits: totalDepositsReceived,
+    total_remaining: totalOutstandingFinalBalance,
+    total_revenue: totalRevenueReceived,
   };
 }
 
@@ -110,7 +131,7 @@ interface RegisterAdminPreorderManualPaymentInput {
 }
 
 export async function registerAdminPreorderManualPayment(
-  input: RegisterAdminPreorderManualPaymentInput
+  input: RegisterAdminPreorderManualPaymentInput,
 ): Promise<void> {
   await callAdminRpc("admin_register_preorder_manual_payment", {
     p_quote_id: input.quoteId,
