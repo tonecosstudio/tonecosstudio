@@ -1,6 +1,6 @@
 /**
  * Seção de Informações de Produção
- * 
+ *
  * Exibe informações de produção e escolha de personagem no painel de detalhes do pedido.
  */
 
@@ -8,14 +8,14 @@ import type { ComponentType } from "react";
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Factory, 
-  ExternalLink, 
-  User, 
-  Clock, 
-  CheckCircle, 
+import {
+  Factory,
+  ExternalLink,
+  User,
+  Clock,
+  CheckCircle,
   XCircle,
-  AlertCircle 
+  AlertCircle
 } from 'lucide-react';
 import { ProductionStatusBadge } from './ProductionStatusBadge';
 import { useProductionInfo, useCharacterChoice } from '@/hooks/admin/useProductionInfo';
@@ -31,36 +31,40 @@ interface ProductionInfoSectionProps {
 }
 
 export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
-  // Determinar se deve buscar informações de produção
   const productionOrderType =
     order.type === 'subscription_delivery' || order.type === 'standalone_purchase'
       ? order.type
       : null;
-  
-  const { data: productionInfo, isLoading: isLoadingProduction } = useProductionInfo(
+
+  const {
+    data: productionInfo,
+    isLoading: isLoadingProduction,
+    error: productionError,
+  } = useProductionInfo(
     productionOrderType ? order.id : null,
     productionOrderType
   );
 
-  const { data: characterChoice } = useCharacterChoice(
+  const {
+    data: characterChoice,
+    error: characterChoiceError,
+  } = useCharacterChoice(
     productionOrderType ? order.id : null,
     productionOrderType
   );
 
-  // Apenas mostrar para pedidos elegíveis
   if (!productionOrderType) {
     return null;
   }
 
-  // Se não há informações de produção, não mostrar a seção
-  if (!isLoadingProduction && !productionInfo) {
+  if (!isLoadingProduction && !productionInfo && !productionError) {
     return null;
   }
 
   return (
     <>
       <Separator />
-      
+
       <section>
         <div className="flex items-center gap-2 mb-3">
           <Factory className="h-4 w-4 text-muted-foreground" />
@@ -72,15 +76,20 @@ export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
             <div className="h-4 bg-muted rounded w-1/2 animate-pulse" />
             <div className="h-4 bg-muted rounded w-2/3 animate-pulse" />
           </div>
+        ) : productionError ? (
+          <div className="flex items-start gap-2 text-sm text-destructive" role="alert">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>
+              Não foi possível validar as informações de produção. Tente novamente antes de tomar uma decisão operacional.
+            </span>
+          </div>
         ) : productionInfo ? (
           <div className="space-y-4">
-            {/* Estágio Atual */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Estágio Atual</span>
               <ProductionStatusBadge stage={productionInfo.currentStage} />
             </div>
 
-            {/* Data Estimada de Conclusão */}
             {productionInfo.estimatedCompletionDate && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Previsão de Conclusão</span>
@@ -90,8 +99,12 @@ export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
               </div>
             )}
 
-            {/* Status da Escolha de Personagem */}
-            {characterChoice && (
+            {characterChoiceError ? (
+              <div className="flex items-start gap-2 text-sm text-destructive" role="alert">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>Não foi possível validar a escolha de personagem.</span>
+              </div>
+            ) : characterChoice ? (
               <div className="space-y-3 pt-2">
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <User className="h-4 w-4" />
@@ -131,9 +144,8 @@ export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
 
-            {/* Botão para Dashboard de Produção */}
             <div className="pt-2">
               <Button
                 variant="outline"
@@ -162,9 +174,6 @@ export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
   );
 }
 
-/**
- * Badge de Status da Escolha de Personagem
- */
 function ChoiceStatusBadge({ status }: { status: string }) {
   const config: Record<string, {
     label: string;
@@ -195,10 +204,24 @@ function ChoiceStatusBadge({ status }: { status: string }) {
       label: 'Bloqueado',
       icon: CheckCircle,
       className: 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-950/20 dark:text-gray-400 dark:border-gray-800'
+    },
+    expired: {
+      label: 'Expirado',
+      icon: XCircle,
+      className: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800'
     }
   };
 
-  const statusConfig = config[status] || config.pending;
+  const statusConfig = config[status];
+  if (!statusConfig) {
+    return (
+      <Badge variant="destructive" className="gap-1">
+        <AlertCircle className="h-3 w-3" />
+        <span>Status inválido</span>
+      </Badge>
+    );
+  }
+
   const Icon = statusConfig.icon;
 
   return (
