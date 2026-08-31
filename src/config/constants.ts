@@ -47,8 +47,6 @@ export const BATCH = {
   SALES_DURATION_DAYS: Number(import.meta.env.VITE_SALES_DURATION_DAYS) || 30,
   DELIVERY_INTERVAL_DAYS:
     Number(import.meta.env.VITE_DELIVERY_INTERVAL_DAYS) || 90,
-  CHARACTER_CHOICE_DAYS:
-    Number(import.meta.env.VITE_CHARACTER_CHOICE_DAYS) || 7,
   BALANCE_PAYMENT_DAYS: Number(import.meta.env.VITE_BALANCE_PAYMENT_DAYS) || 5,
   MONTHLY_PRODUCTION_LIMIT:
     Number(import.meta.env.VITE_MONTHLY_PRODUCTION_LIMIT) || 20,
