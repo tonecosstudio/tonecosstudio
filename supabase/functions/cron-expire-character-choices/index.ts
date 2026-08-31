@@ -1,292 +1,92 @@
-/**
- * Cron Job: Character Choice Expiration Handler
- *
- * Runs hourly to handle character choices with expired deadlines.
- *
- * Actions performed:
- * 1. Query choices with expired deadline and status = 'pending'
- * 2. Send notification to admin for each expired choice
- * 3. Update choice status to 'expired'
- * 4. Add to urgent alerts (via production_queue update)
- * 5. Log the expiration
- *
- * Requirements:
- * - 2.2.4: Deadline Management - After deadline expires, admin is notified to manually assign character
- */
-
 import {
+  logCronError,
   logCronStart,
   logCronSuccess,
-  logCronError,
 } from "../_shared/cron-logger.ts";
-import { nowInBahia } from "../_shared/timezone.ts";
 import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
 import { getServiceClient } from "../_shared/supabase.ts";
-import { EmailService, getEmailConfig } from "../_shared/email.ts";
+import {
+  EmailService,
+  escapeHtml,
+  getEmailConfig,
+  sanitizeEmailSubject,
+} from "../_shared/email.ts";
 import { getPublicBaseUrl } from "../_shared/public-url.ts";
 
-interface ExpiredChoice {
+const BAHIA_TIMEZONE = "America/Bahia";
+
+interface ExpiredChoiceRequest {
   id: string;
   user_id: string;
   order_id: string;
-  order_type: string;
+  order_type: "subscription_delivery" | "standalone_purchase";
   collection_id: string;
-  deadline: string;
-  created_at: string;
+  choice_deadline: string;
+  internal_flags: string[] | null;
 }
 
-/**
- * Sends admin notification email about expired character choice
- */
+function requiredAdminEmail(): string {
+  const email = Deno.env.get("ADMIN_EMAIL")?.trim();
+  if (!email) throw new Error("ADMIN_EMAIL is not configured");
+  return email;
+}
+
+function daysExpired(deadline: string, now: Date): number {
+  const deadlineDate = new Date(deadline);
+  if (Number.isNaN(deadlineDate.getTime())) {
+    throw new Error("Persisted choice deadline is invalid");
+  }
+
+  return Math.max(
+    0,
+    Math.floor((now.getTime() - deadlineDate.getTime()) / (24 * 60 * 60 * 1000)),
+  );
+}
+
 async function sendAdminExpirationNotification(params: {
   customerName: string | null;
   customerEmail: string;
   collectionName: string;
-  deadline: string;
-  orderId: string;
-  orderType: string;
+  request: ExpiredChoiceRequest;
   daysExpired: number;
 }): Promise<void> {
-  const adminEmail = getRequiredAdminEmail();
   const baseUrl = getPublicBaseUrl(["FRONTEND_URL", "BASE_URL", "SITE_URL"]);
   const emailService = new EmailService(getEmailConfig({ baseUrl }));
-
-  const subject = `⚠️ Escolha de Personagem Expirada - ${params.collectionName}`;
-  const htmlContent = generateAdminNotificationHTML({ ...params, baseUrl });
-
-  try {
-    await emailService.sendEmail({
-      to: adminEmail,
-      subject,
-      html: htmlContent,
-    });
-
-    console.log(
-      `Admin notification sent for expired choice: ${params.orderId}`,
-    );
-  } catch (error) {
-    console.error(
-      `Failed to send admin notification for ${params.orderId}:`,
-      error,
-    );
-    throw error;
-  }
-}
-
-function getRequiredAdminEmail(): string {
-  const adminEmail = Deno.env.get("ADMIN_EMAIL");
-  if (!adminEmail) {
-    throw new Error("ADMIN_EMAIL is not configured");
-  }
-  return adminEmail;
-}
-
-/**
- * Generates HTML content for the admin notification email
- */
-function generateAdminNotificationHTML(params: {
-  customerName: string | null;
-  customerEmail: string;
-  collectionName: string;
-  deadline: string;
-  orderId: string;
-  orderType: string;
-  daysExpired: number;
-  baseUrl: string;
-}): string {
-  const formattedDeadline = new Date(params.deadline).toLocaleDateString(
-    "pt-BR",
-    {
-      timeZone: "America/Bahia",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    },
+  const deadline = new Date(params.request.choice_deadline).toLocaleString("pt-BR", {
+    timeZone: BAHIA_TIMEZONE,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const subject = sanitizeEmailSubject(
+    `Escolha de personagem expirada - ${params.collectionName}`,
   );
+  const adminUrl = `${baseUrl}/admin/character-choices`;
 
-  const adminUrl = `${params.baseUrl}/admin/character-choices`;
-
-  return `
-<!DOCTYPE html>
+  const html = `
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Escolha de Personagem Expirada</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 20px auto;
-      background-color: #ffffff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .header {
-      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-      color: #ffffff;
-      padding: 32px 24px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0 0 8px 0;
-      font-size: 28px;
-      font-weight: 700;
-    }
-    .header p {
-      margin: 0;
-      font-size: 16px;
-      opacity: 0.95;
-    }
-    .content {
-      padding: 32px 24px;
-    }
-    .alert-box {
-      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-      border-left: 4px solid #dc2626;
-      padding: 24px;
-      margin: 24px 0;
-      border-radius: 8px;
-    }
-    .alert-box h2 {
-      margin: 0 0 16px 0;
-      font-size: 20px;
-      color: #991b1b;
-    }
-    .info-row {
-      margin: 12px 0;
-      font-size: 16px;
-    }
-    .info-label {
-      font-weight: 600;
-      color: #374151;
-      display: inline-block;
-      min-width: 140px;
-    }
-    .info-value {
-      color: #6b7280;
-    }
-    .action-required {
-      background-color: #fef3c7;
-      border-left: 4px solid #f59e0b;
-      padding: 16px;
-      margin: 24px 0;
-      border-radius: 4px;
-      font-size: 14px;
-      color: #92400e;
-    }
-    .cta-button {
-      display: inline-block;
-      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-      color: #ffffff;
-      text-decoration: none;
-      padding: 14px 32px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 16px;
-      margin: 24px 0;
-      transition: transform 0.2s;
-    }
-    .cta-button:hover {
-      transform: translateY(-2px);
-    }
-    .footer {
-      background-color: #f8fafc;
-      padding: 24px;
-      text-align: center;
-      font-size: 14px;
-      color: #64748b;
-      border-top: 1px solid #e2e8f0;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>⚠️ Escolha de Personagem Expirada</h1>
-      <p>Ação Necessária</p>
-    </div>
-    <div class="content">
-      <p style="font-size: 18px; margin-bottom: 24px; color: #374151;">
-        <strong>Alerta:</strong> Um cliente não escolheu seu personagem dentro do prazo.
-      </p>
+  <body style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+    <h1>Escolha de personagem expirada</h1>
+    <p>Um pedido ultrapassou o prazo configurado sem uma escolha válida.</p>
+    <p><strong>Cliente:</strong> ${escapeHtml(params.customerName || "Não informado")}</p>
+    <p><strong>E-mail:</strong> ${escapeHtml(params.customerEmail)}</p>
+    <p><strong>Coleção:</strong> ${escapeHtml(params.collectionName)}</p>
+    <p><strong>Pedido:</strong> ${escapeHtml(params.request.order_id)}</p>
+    <p><strong>Prazo persistido:</strong> ${escapeHtml(deadline)}</p>
+    <p><strong>Dias após o prazo:</strong> ${params.daysExpired}</p>
+    <p>A atribuição manual deve ser feita somente após revisar o pedido e a disponibilidade real.</p>
+    <p><a href="${adminUrl}">Abrir gerenciamento de escolhas</a></p>
+  </body>
+</html>`.trim();
 
-      <div class="alert-box">
-        <h2>📋 Detalhes do Pedido</h2>
-        <div class="info-row">
-          <span class="info-label">Cliente:</span>
-          <span class="info-value">${params.customerName || "Não informado"}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">E-mail:</span>
-          <span class="info-value">${params.customerEmail}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Coleção:</span>
-          <span class="info-value">${params.collectionName}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Pedido:</span>
-          <span class="info-value">#${params.orderId}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Tipo:</span>
-          <span class="info-value">${params.orderType === "subscription_delivery" ? "Assinatura" : "Compra Avulsa"}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Prazo Expirado:</span>
-          <span class="info-value">${formattedDeadline}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Dias Expirado:</span>
-          <span class="info-value" style="color: #dc2626; font-weight: 600;">${params.daysExpired} ${params.daysExpired === 1 ? "dia" : "dias"}</span>
-        </div>
-      </div>
-
-      <div class="action-required">
-        <strong>⚠️ Ação Necessária:</strong> O cliente não escolheu seu personagem dentro do prazo de 7 dias.
-        Por favor, acesse o painel de administração e atribua manualmente um personagem disponível para este pedido.
-      </div>
-
-      <p style="margin-top: 24px;">
-        <strong>Próximos Passos:</strong>
-      </p>
-      <ol style="color: #374151; line-height: 1.8;">
-        <li>Acesse o painel de gerenciamento de escolhas</li>
-        <li>Revise os personagens disponíveis da coleção ${params.collectionName}</li>
-        <li>Atribua um personagem ao pedido #${params.orderId}</li>
-        <li>Notifique o cliente sobre a escolha atribuída (opcional)</li>
-      </ol>
-
-      <div style="text-align: center;">
-        <a href="${adminUrl}" class="cta-button">
-          Gerenciar Escolhas
-        </a>
-      </div>
-
-      <p style="margin-top: 32px; font-size: 14px; color: #64748b;">
-        Este é um alerta automático do sistema de gerenciamento de produção.
-        A escolha foi marcada como "expirada" e adicionada aos alertas urgentes do dashboard.
-      </p>
-    </div>
-    <div class="footer">
-      <p>Este é um e-mail automático da plataforma ORDAX.</p>
-      <p>&copy; ${new Date().getFullYear()} ORDAX. Todos os direitos reservados.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `.trim();
+  await emailService.sendEmail({
+    to: requiredAdminEmail(),
+    subject,
+    html,
+  });
 }
 
 Deno.serve(async (req) => {
@@ -301,214 +101,146 @@ Deno.serve(async (req) => {
     );
     if (forbidden) return forbidden;
 
-    // Start logging
     logId = await logCronStart("cron-expire-character-choices");
 
     const supabase = getServiceClient();
-
-    // Get current Bahia time
-    const bahiaTime = nowInBahia();
-    console.log(`Cron job running at ${bahiaTime.toISOString()} (Bahia time)`);
-
-    // Find character choices with expired deadline and status = 'pending'
-    const { data: expiredChoices, error: choicesError } = await supabase
-      .from("character_choices")
+    const now = new Date();
+    const { data, error } = await supabase
+      .from("production_queue")
       .select(
-        "id, user_id, order_id, order_type, collection_id, deadline, created_at",
+        "id, user_id, order_id, order_type, collection_id, choice_deadline, internal_flags",
       )
-      .eq("status", "pending")
-      .lt("deadline", bahiaTime.toISOString());
+      .eq("current_stage", "awaiting_choice")
+      .eq("choice_status", "pending")
+      .lt("choice_deadline", now.toISOString());
 
-    if (choicesError) {
-      console.error("Failed to fetch expired choices:", choicesError);
-      throw new Error(
-        `Failed to fetch expired choices: ${choicesError.message}`,
-      );
-    }
-
-    console.log(`Found ${expiredChoices?.length || 0} expired choice(s)`);
-
-    if (!expiredChoices || expiredChoices.length === 0) {
-      await logCronSuccess(logId, {
-        totalExpired: 0,
-        executedAt: bahiaTime.toISOString(),
-      });
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          totalExpired: 0,
-          executedAt: bahiaTime.toISOString(),
-        }),
-        { headers: { "Content-Type": "application/json" } },
-      );
+    if (error) {
+      throw new Error(`Failed to fetch expired choice requests: ${error.message}`);
     }
 
     let totalExpired = 0;
-    const errors: Array<{ choiceId: string; error: string }> = [];
+    const errors: Array<{ queueId: string; error: string }> = [];
     const expiredDetails: Array<{
-      choiceId: string;
+      queueId: string;
       orderId: string;
-      customerEmail: string;
-      collectionName: string;
+      customerEmail: string | null;
+      collectionName: string | null;
       daysExpired: number;
     }> = [];
 
-    // Process each expired choice
-    for (const choice of expiredChoices as ExpiredChoice[]) {
+    for (const request of (data || []) as ExpiredChoiceRequest[]) {
       try {
-        console.log(`Processing expired choice: ${choice.id}`);
-
-        // Calculate days expired
-        const deadlineDate = new Date(choice.deadline);
-        const daysExpired = Math.floor(
-          (bahiaTime.getTime() - deadlineDate.getTime()) /
-            (1000 * 60 * 60 * 24),
-        );
-
-        // Get user profile for email
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, email, full_name")
-          .eq("id", choice.user_id)
-          .single();
-
-        if (profileError || !profile || !profile.email) {
-          console.error(
-            `Failed to get profile for user ${choice.user_id}:`,
-            profileError,
-          );
-          errors.push({
-            choiceId: choice.id,
-            error: `Failed to get user profile or email: ${profileError?.message || "Not found"}`,
-          });
-          continue;
+        if (
+          !request.id ||
+          !request.user_id ||
+          !request.order_id ||
+          !request.collection_id ||
+          !request.choice_deadline ||
+          !["subscription_delivery", "standalone_purchase"].includes(request.order_type)
+        ) {
+          throw new Error("Expired choice request is incomplete");
         }
 
-        // Get collection name
-        const { data: collection, error: collectionError } = await supabase
-          .from("collections")
-          .select("id, name")
-          .eq("id", choice.collection_id)
-          .single();
+        const elapsedDays = daysExpired(request.choice_deadline, now);
+        const flags = [...new Set([...(request.internal_flags || []), "choice_expired"])];
 
-        if (collectionError || !collection) {
-          console.error(
-            `Failed to get collection ${choice.collection_id}:`,
-            collectionError,
-          );
-          errors.push({
-            choiceId: choice.id,
-            error: `Failed to get collection: ${collectionError?.message || "Not found"}`,
-          });
-          continue;
-        }
-
-        // Send admin notification
-        await sendAdminExpirationNotification({
-          customerName: profile.full_name,
-          customerEmail: profile.email,
-          collectionName: collection.name,
-          deadline: choice.deadline,
-          orderId: choice.order_id,
-          orderType: choice.order_type,
-          daysExpired,
-        });
-
-        // Update character_choices status to 'expired'
-        const { error: updateChoiceError } = await supabase
-          .from("character_choices")
-          .update({
-            status: "expired",
-            updated_at: bahiaTime.toISOString(),
-          })
-          .eq("id", choice.id);
-
-        if (updateChoiceError) {
-          console.error(
-            `Failed to update choice status for ${choice.id}:`,
-            updateChoiceError,
-          );
-          errors.push({
-            choiceId: choice.id,
-            error: `Failed to update choice status: ${updateChoiceError.message}`,
-          });
-          continue;
-        }
-
-        // Update production_queue to add to urgent alerts
-        // Find the production queue item for this order
-        const { data: queueItem, error: queueFindError } = await supabase
+        const { error: expireError } = await supabase
           .from("production_queue")
-          .select("id, internal_flags")
-          .eq("order_id", choice.order_id)
-          .eq("order_type", choice.order_type)
-          .single();
+          .update({
+            choice_status: "expired",
+            internal_flags: flags,
+            updated_at: now.toISOString(),
+          })
+          .eq("id", request.id)
+          .eq("choice_status", "pending");
 
-        if (queueFindError || !queueItem) {
-          console.warn(
-            `Production queue item not found for order ${choice.order_id}:`,
-            queueFindError,
-          );
-          // Not a critical error - choice is still marked as expired
-        } else {
-          // Add 'choice_expired' flag to internal_flags
-          const currentFlags = queueItem.internal_flags || [];
-          const updatedFlags = [
-            ...new Set([...currentFlags, "choice_expired"]),
-          ];
-
-          const { error: updateQueueError } = await supabase
-            .from("production_queue")
-            .update({
-              internal_flags: updatedFlags,
-              updated_at: bahiaTime.toISOString(),
-            })
-            .eq("id", queueItem.id);
-
-          if (updateQueueError) {
-            console.error(
-              `Failed to update production queue for ${queueItem.id}:`,
-              updateQueueError,
-            );
-            // Not a critical error - choice is still marked as expired
-          }
+        if (expireError) {
+          throw new Error(`Failed to expire choice request: ${expireError.message}`);
         }
 
-        console.log(`Successfully processed expired choice ${choice.id}`);
-        totalExpired++;
+        // Keep any legacy/pre-created pending character_choices row consistent,
+        // but the production queue is the canonical pre-choice authority.
+        const { error: legacyChoiceError } = await supabase
+          .from("character_choices")
+          .update({ status: "expired", updated_at: now.toISOString() })
+          .eq("order_id", request.order_id)
+          .eq("user_id", request.user_id)
+          .eq("status", "pending");
+
+        if (legacyChoiceError) {
+          console.warn(
+            `Failed to synchronize legacy pending choice for queue ${request.id}`,
+            legacyChoiceError,
+          );
+        }
+
+        let customerEmail: string | null = null;
+        let collectionName: string | null = null;
+
+        try {
+          const [{ data: profile, error: profileError }, { data: collection, error: collectionError }] =
+            await Promise.all([
+              supabase
+                .from("profiles")
+                .select("email, full_name")
+                .eq("id", request.user_id)
+                .single(),
+              supabase
+                .from("collections")
+                .select("name")
+                .eq("id", request.collection_id)
+                .single(),
+            ]);
+
+          if (profileError || !profile?.email) {
+            throw new Error(`Customer profile/email unavailable: ${profileError?.message || "not found"}`);
+          }
+          if (collectionError || !collection?.name) {
+            throw new Error(`Collection unavailable: ${collectionError?.message || "not found"}`);
+          }
+
+          customerEmail = profile.email;
+          collectionName = collection.name;
+          await sendAdminExpirationNotification({
+            customerName: profile.full_name,
+            customerEmail: profile.email,
+            collectionName: collection.name,
+            request,
+            daysExpired: elapsedDays,
+          });
+        } catch (notificationError) {
+          errors.push({
+            queueId: request.id,
+            error: `Choice expired, but admin notification failed: ${
+              notificationError instanceof Error
+                ? notificationError.message
+                : String(notificationError)
+            }`,
+          });
+        }
+
+        totalExpired += 1;
         expiredDetails.push({
-          choiceId: choice.id,
-          orderId: choice.order_id,
-          customerEmail: profile.email,
-          collectionName: collection.name,
-          daysExpired,
+          queueId: request.id,
+          orderId: request.order_id,
+          customerEmail,
+          collectionName,
+          daysExpired: elapsedDays,
         });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        console.error(`Error processing expired choice ${choice.id}:`, error);
+      } catch (requestError) {
         errors.push({
-          choiceId: choice.id,
-          error: errorMessage,
+          queueId: request.id || "unknown",
+          error: requestError instanceof Error ? requestError.message : String(requestError),
         });
       }
     }
 
-    // Log success with details
     await logCronSuccess(logId, {
       totalExpired,
       expiredDetails,
       errors: errors.length > 0 ? errors : undefined,
-      executedAt: bahiaTime.toISOString(),
+      executedAt: now.toISOString(),
     });
-
-    console.log(
-      `Cron job completed: ${totalExpired} expired choice(s) processed`,
-    );
-    if (errors.length > 0) {
-      console.warn(`${errors.length} error(s) occurred during processing`);
-    }
 
     return new Response(
       JSON.stringify({
@@ -516,14 +248,11 @@ Deno.serve(async (req) => {
         totalExpired,
         expiredDetails,
         errors: errors.length > 0 ? errors : undefined,
-        executedAt: bahiaTime.toISOString(),
+        executedAt: now.toISOString(),
       }),
       { headers: { "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error("Cron job failed:", error);
-
-    // Log error if we have a log ID
     if (logId) {
       try {
         await logCronError(
@@ -531,7 +260,7 @@ Deno.serve(async (req) => {
           error instanceof Error ? error : new Error(String(error)),
         );
       } catch (logError) {
-        console.error("Failed to log error:", logError);
+        console.error("Failed to log cron error", logError);
       }
     }
 
@@ -540,10 +269,7 @@ Deno.serve(async (req) => {
         success: false,
         error: error instanceof Error ? error.message : String(error),
       }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 });
