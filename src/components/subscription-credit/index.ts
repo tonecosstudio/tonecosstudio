@@ -6,5 +6,4 @@
 export { MySubscriptionSection } from './MySubscriptionSection';
 export { MyCreditsSection } from './MyCreditsSection';
 export { MyAutomaticOrderSection } from './MyAutomaticOrderSection';
-export { SchedulePlanChangeDialog } from './SchedulePlanChangeDialog';
 export { NoRenewalDialog } from './NoRenewalDialog';
