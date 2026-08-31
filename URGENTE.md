@@ -1,9 +1,9 @@
 # URGENTE — prontidão para lançamento
 
 Status: **EM EXECUÇÃO — NO-GO para lançamento**  
-Atualizado em: **2026-08-30 (America/Bahia)**  
+Atualizado em: **2026-08-31 (America/Bahia)**  
 Branch operacional: **main somente**  
-HEAD funcional antes deste checkpoint: `24170497ddf2b5b021412ea2ede23956d4993d02`
+HEAD funcional antes deste checkpoint: `c6436fb570d0a721ef77b6db59a14872a235cd19`
 
 Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX. Histórico detalhado permanece no Git; aqui ficam o estado vigente, bloqueios comprovados, provas e próxima ordem de execução.
 
@@ -25,7 +25,7 @@ Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX
 | --- | --- | --- |
 | Branch | **main somente** | decisão explícita do usuário |
 | Proteção da main | **PENDENTE** | `protected=false`, required checks desligados |
-| Quality Gate | **BLOQUEADO NA INFRA** | run #103 no HEAD `2417049...` falhou antes de qualquer step; job retorna `steps=[]` |
+| Quality Gate | **BLOQUEADO NA INFRA** | run #121 no HEAD `c6436fb...` falhou em ~3 s antes de qualquer step; job retorna `steps=[]` |
 | Runtime | **Node 24.x** | manifesto e workflow alinhados |
 | Pacote | **ordax-web@0.1.0** | identidade de template removida |
 | Package manager | **NÃO CONSOLIDADO** | manter locks concorrentes até `npm ci` real |
@@ -33,7 +33,9 @@ Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX
 | Catálogo mock | **REMOVIDO DO RUNTIME** | sem fallback demonstrativo no serviço público |
 | Comercial BRL | **FAIL-CLOSED NO CÓDIGO** | preço cheio, PIX, entrada e avulsos não recebem defaults comerciais locais |
 | Comercial coins | **FAIL-CLOSED NO CÓDIGO** | referências, poder de compra e editores não inventam 200/240/300/450 ou multiplicadores |
+| Créditos de assinatura | **FAIL-CLOSED VERSIONADO** | pagamento não fabrica 600/1300/2800 por `plan_type`; `coins_included`/`total_credits` sincronizados em novas escritas |
 | Compra de coins | **REMOVIDA** | CTA, rota `/coins/purchase`, redirect e componentes legados sem consumidores removidos |
+| Produção/capacidade | **FAIL-CLOSED VERSIONADO** | status de vendas, limites e ciclos não usam capacidade/default otimista quando fonte oficial falha |
 | Coleções públicas | **DESATIVADAS HONESTAMENTE** | flag também bloqueia query de previews quando `PUBLIC_COLLECTIONS_ENABLED=false` |
 | Payment voucher | **PRIVADO NO CÓDIGO** | object path por usuário + RLS; ainda sem prova remota |
 | Payment proof | **SERVER-AUTHORITY VERSIONADA** | upload/scanner/rate limit/Storage migrados para Edge Function |
@@ -85,6 +87,9 @@ Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX
 - [x] tela `AdminCoinsSystem` não mascara erro de métricas como zeros reais e não exibe exemplos/preços codificados;
 - [x] editor de preços avulsos não inicializa R$ 500/600/750/900, não exibe mapeamento coins fictício e bloqueia configuração incompleta/inconsistente;
 - [x] tela de prazos não promete recálculo automático inexistente de ciclos;
+- [x] pagamento administrativo de assinatura não deriva 600/1300/2800 coins do tipo do plano;
+- [x] idempotência por referência externa foi preservada no corpo privilegiado mais recente;
+- [x] `coins_included` e `total_credits` passam a ser gravados em conjunto e divergência é rejeitada;
 - [ ] testar ponta a ponta em backend/preview operacionais.
 
 ### 3.4 Uploads e Storage
@@ -124,6 +129,22 @@ Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX
 - [x] cache de signed URL é limpo em troca/logout de usuário;
 - [x] cliente não recebe anexos de notas internas via RLS/Storage.
 
+### 3.5 Produção e capacidade
+
+- [x] `monthly_production_limit` é a única chave administrativa de capacidade mensal; `monthly_capacity` foi retirado da tela de prazos;
+- [x] ausência de `monthly_production_limit` não produz valor 100 implícito;
+- [x] `are_sales_open()` falha fechado sem configuração oficial válida;
+- [x] `useProductionLimit` não usa mais `salesOpenQuery.data ?? true`;
+- [x] resposta dos RPCs de produção é validada antes de chegar à UI;
+- [x] admin diferencia configuração ausente, inválida e erro de leitura; ausência permite inicialização explícita sem abrir vendas;
+- [x] `checkSubscriptionCapacity` não cria ciclo corrente pela data local e não considera ciclo futuro inexistente como disponível;
+- [x] erro ao consultar ciclo futuro não é ignorado;
+- [x] testes antigos que aprovavam ciclo futuro inexistente foram substituídos por suíte determinística fail-closed;
+- [x] `cycle-service` não inventa datas a partir de `created_at`, nem status/cycle number ausentes;
+- [x] `admin_get_or_create_delivery_cycle` deixa de ter `p_capacity DEFAULT 100`; criação exige capacidade explícita ou setting oficial;
+- [x] cron de criação de ciclos usa capacidade oficial e retorna falha quando criação/transição fica inconsistente;
+- [ ] consolidar em etapa futura uma única autoridade de calendário para datas de ciclo/feriados e remover aliases de compatibilidade quando o schema remoto for reconciliado.
+
 **Importante:** migrations/Edge Functions versionadas **não foram declaradas aplicadas no Supabase remoto**.
 
 ## 4. Bloqueios comprovados
@@ -132,12 +153,12 @@ Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX
 
 Última prova do código deste checkpoint:
 
-- run `33352678701` / Quality Gate #103;
-- HEAD `24170497ddf2b5b021412ea2ede23956d4993d02`;
-- job `99368918187` — `Build, test and security`;
+- run `33354756200` / Quality Gate #121;
+- HEAD `c6436fb570d0a721ef77b6db59a14872a235cd19`;
+- job `99374671245` — `Build, test and security`;
 - conclusão `failure`;
 - `steps=[]`;
-- execução terminou aproximadamente quatro segundos após iniciar.
+- execução terminou aproximadamente três segundos após iniciar.
 
 Conclusão: a falha continua anterior a checkout/typecheck/lint/test/build. Não tratar como falha de aplicação e não consumir tempo rerodando o mesmo workflow enquanto esse padrão persistir.
 
@@ -156,6 +177,7 @@ Consequências:
 - não editar `src/integrations/supabase/types.ts` manualmente para mascarar drift;
 - não declarar migrations aplicadas, RLS correto ou Edge Functions implantadas;
 - quando o projeto estiver ativo, medir migration drift, aplicar/reconciliar schema e **regenerar tipos oficialmente**;
+- migrations de hardening de créditos/capacidade deste checkpoint também permanecem apenas versionadas até prova remota;
 - não restaurar/alterar outro projeto Supabase por semelhança de nome.
 
 ### Deploy/visual
@@ -186,12 +208,13 @@ Consequências:
 ### P2 — Supabase e segurança remota
 
 - [x] confirmar project ref canônico do repositório;
+- [ ] continuar auditoria estática de RPCs privilegiados por defaults, duplicidade de autoridade e BOLA/IDOR;
 - [ ] restaurar/ativar o projeto correto somente quando essa etapa operacional for deliberadamente executada;
 - [ ] medir migration drift;
 - [ ] aplicar/reconciliar migrations de forma controlada;
 - [ ] regenerar `src/integrations/supabase/types.ts` da fonte remota reconciliada;
 - [ ] provar RLS/grants/Storage/`SECURITY DEFINER`/schemas privados;
-- [ ] auditar todas as funções `verify_jwt=false` e proteção alternativa;
+- [ ] terminar auditoria de funções `verify_jwt=false` e proteção alternativa;
 - [ ] reconciliar funções Git x implantadas;
 - [ ] BOLA/IDOR cliente/admin/pagamento/suporte;
 - [ ] provar ausência de `service_role` no bundle;
@@ -297,3 +320,57 @@ Do not repeat:
 - não tratar validação client-side como fronteira de segurança;
 - não criar branch/PR nesta execução;
 - não declarar migration aplicada, CI verde ou GO sem prova.
+
+## 9. Checkpoint 12 — 2026-08-31
+
+HEAD funcional antes deste documento: `c6436fb570d0a721ef77b6db59a14872a235cd19`
+
+Concluído:
+
+- removidos fallbacks privilegiados de créditos de assinatura por `plan_type`;
+- preservada idempotência de pagamento por referência externa no corpo privilegiado vigente;
+- sincronizado o SSOT de créditos do plano entre `coins_included` e `total_credits` para novas escritas;
+- capacidade mensal consolidada em `monthly_production_limit`;
+- removido fallback administrativo e SQL de capacidade 100 para novos ciclos/meses nos contratos posteriores;
+- `are_sales_open`, hook e painel administrativo agora falham fechados quando o estado oficial não pode ser validado;
+- painel permite inicializar explicitamente um limite ausente sem representar vendas como abertas;
+- `checkSubscriptionCapacity` exige ciclo aberto e todos os ciclos futuros existentes/com capacidade confirmada;
+- suíte de testes de capacidade foi reescrita para provar ausência/erro/capacidade não confirmada como indisponibilidade;
+- serviço de limite de produção ganhou validação estrutural da resposta RPC;
+- `cycle-service` deixou de fabricar datas operacionais/cycle number a partir de valores auxiliares ou relógio local;
+- `admin_get_or_create_delivery_cycle` passou a exigir capacidade explícita ou configuração oficial.
+
+Provas versionadas:
+
+- migration `20260831035000_fail_closed_production_capacity.sql`;
+- migration de hardening de créditos de assinatura adicionada neste checkpoint;
+- migration `20260831043000_remove_admin_cycle_capacity_fallback.sql`;
+- testes `capacity-service.test.ts` e `production-limit-service.test.ts` alinhados ao contrato fail-closed;
+- Quality Gate run `33354756200`, job `99374671245`, conclusão `failure`, `steps=[]`.
+
+Bloqueios:
+
+- nenhum teste/typecheck/build foi realmente executado pelo GitHub Actions;
+- migrations novas ainda não têm prova de aplicação no Supabase canônico;
+- calendário de criação de ciclos ainda possui mais de um caminho legado; consolidar datas/feriados em uma única autoridade continua pendente;
+- schema/tipos Supabase continuam sem reconciliação remota;
+- preview/smoke e proteção da `main` continuam pendentes.
+
+Next action:
+
+1. continuar a auditoria dos RPCs privilegiados de agendamento/entrega, removendo defaults de plano, datas e aliases que possam alterar operação;
+2. revisar `admin_schedule_subscription_deliveries` para derivar quantidade/prazos exclusivamente do plano/assinatura persistidos, não de `CASE plan_type`;
+3. auditar BOLA/IDOR nos RPCs cliente de troca de personagem/coleção e suporte/pagamento;
+4. não gastar ciclos rerodando o Quality Gate enquanto o job continuar com `steps=[]`;
+5. quando o Supabase canônico estiver ativo, reconciliar migrations/tipos e só então executar a validação E2E.
+
+Do not repeat:
+
+- não usar `salesOpen ?? true` nem equivalente;
+- não considerar ciclo inexistente como capacidade disponível;
+- não criar capacidade 100/qualquer número por fallback;
+- não fabricar datas de ciclo a partir de `created_at` ou do relógio do navegador;
+- não creditar coins por `CASE plan_type` quando o valor oficial estiver ausente;
+- não editar migrations históricas para fingir que nunca existiram; corrigir por migrations posteriores;
+- não declarar hardening implantado até haver prova no projeto remoto;
+- manter trabalho somente na `main`.
