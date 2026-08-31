@@ -16,7 +16,7 @@ function toDateOnly(date: Date): string {
 }
 
 function isBusinessDay(date: Date, holidayDates: Set<string>): boolean {
-  const day = date.getDay();
+  const day = date.getUTCDay();
   if (day === 0 || day === 6) return false;
   return !holidayDates.has(toDateOnly(date));
 }
@@ -66,5 +66,7 @@ export function calculateNthBusinessDayOfMonth(
     }
   }
 
-  throw new Error(`Month ${month}/${year} has fewer than ${nthBusinessDay} business days`);
+  throw new Error(
+    `Month ${month}/${year} has fewer than ${nthBusinessDay} business days`,
+  );
 }
