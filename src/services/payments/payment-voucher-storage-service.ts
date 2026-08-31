@@ -8,9 +8,10 @@ import {
   assertCurrentUserId,
   requireAuthenticatedUserId,
 } from "@/services/auth/current-user";
-import { getPublicStorageUrl, uploadStorageFile } from "@/services/supabase/storage-client";
+import { uploadStorageFile } from "@/services/supabase/storage-client";
 
 const STORAGE_BUCKET = "payment-vouchers";
+const SUBSCRIPTIONS_PREFIX = "subscriptions";
 
 export const MAX_PAYMENT_VOUCHER_SIZE = MAX_PAYMENT_PROOF_SIZE;
 export const ALLOWED_PAYMENT_VOUCHER_TYPES = ALLOWED_PAYMENT_PROOF_TYPES;
@@ -21,7 +22,12 @@ function sanitizePathPrefix(pathPrefix: string): string {
     .map((segment) => sanitizeFilename(segment))
     .filter(Boolean);
 
-  return sanitizedSegments.length > 0 ? sanitizedSegments.join("/") : "vouchers";
+  const sanitizedPrefix = sanitizedSegments.join("/");
+  if (sanitizedPrefix !== SUBSCRIPTIONS_PREFIX) {
+    throw new Error("Destino de comprovante não permitido");
+  }
+
+  return sanitizedPrefix;
 }
 
 interface UploadPaymentVoucherInput {
@@ -44,8 +50,8 @@ export async function uploadPaymentVoucher({
   const fileExt = finalName.split(".").pop()?.toLowerCase() || "bin";
   const timestamp = Date.now();
   const randomId = generateSecureToken(8);
-  const fileName = `${authenticatedUserId}-${timestamp}-${randomId}.${fileExt}`;
-  const filePath = `${sanitizePathPrefix(pathPrefix)}/${fileName}`;
+  const fileName = `${timestamp}-${randomId}.${fileExt}`;
+  const filePath = `${sanitizePathPrefix(pathPrefix)}/${authenticatedUserId}/${fileName}`;
 
   const { error: uploadError } = await uploadStorageFile(STORAGE_BUCKET, filePath, file, {
     upsert: false,
@@ -56,5 +62,7 @@ export async function uploadPaymentVoucher({
     throw new Error(`Falha no upload: ${uploadError.message}`);
   }
 
-  return getPublicStorageUrl(STORAGE_BUCKET, filePath);
+  // Return only the private object path. A public or long-lived signed URL must
+  // never be persisted as payment evidence.
+  return filePath;
 }
