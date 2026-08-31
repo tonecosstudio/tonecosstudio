@@ -33,12 +33,26 @@ export function useSubscribeCollectionCheckout(slug?: string) {
     mutationFn: createSubscriptionCheckout,
   });
 
+  const loadError =
+    plansQuery.error ?? collectionsQuery.error ?? initialCollectionQuery.error ?? null;
+
+  const retryLoad = () => {
+    void plansQuery.refetch();
+    void collectionsQuery.refetch();
+    if (slug) {
+      void initialCollectionQuery.refetch();
+    }
+  };
+
   return {
     plans: plansQuery.data,
     plansLoading: plansQuery.isLoading,
     collections: collectionsQuery.data,
     collectionsLoading: collectionsQuery.isLoading,
     initialCollection: initialCollectionQuery.data,
+    initialCollectionLoading: initialCollectionQuery.isLoading,
+    loadError,
+    retryLoad,
     createCheckout,
   };
 }
