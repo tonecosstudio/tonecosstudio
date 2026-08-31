@@ -1,10 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { subscriptionCreditAPI } from "@/services/subscriptions/subscription-credit-api";
-import type {
-  NoRenewalResponse,
-  PlanChangeResponse,
-  PlanType,
-} from "@/types/subscription-credit-system";
+import type { NoRenewalResponse } from "@/types/subscription-credit-system";
 
 type MutationCallbacks<TData> = {
   onSuccess?: (data: TData) => void;
@@ -17,25 +13,6 @@ function toError(error: unknown): Error {
 
 function invalidateSubscriptionCreditQueries(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["subscription-credit"] });
-}
-
-export function useScheduleSubscriptionPlanChange(
-  subscriptionId: string,
-  newPlanType: PlanType,
-  callbacks: MutationCallbacks<PlanChangeResponse> = {}
-) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => subscriptionCreditAPI.schedulePlanChange(subscriptionId, newPlanType),
-    onSuccess: (data) => {
-      invalidateSubscriptionCreditQueries(queryClient);
-      callbacks.onSuccess?.(data);
-    },
-    onError: (error: unknown) => {
-      callbacks.onError?.(toError(error));
-    },
-  });
 }
 
 export function useDisableSubscriptionRenewal(
