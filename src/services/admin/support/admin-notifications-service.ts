@@ -113,28 +113,6 @@ export function fetchAdminNotifications(filter: "all" | "unread"): Promise<Admin
   return fetchAdminNotificationsHistory(filter);
 }
 
-export async function markAdminNotificationRead(notificationId: string): Promise<void> {
-  const { error } = await supabase.rpc("mark_notification_read", {
-    p_notification_id: notificationId,
-  });
-
-  if (error) throw error;
-}
-
-export async function markAllAdminNotificationsRead(): Promise<void> {
-  const { error } = await supabase.rpc("mark_all_notifications_read");
-  if (error) throw error;
-}
-
-export const markNotificationAsRead = markAdminNotificationRead;
-export const markAllNotificationsAsRead = markAllAdminNotificationsRead;
-
-export async function deleteAdminNotification(notificationId: string): Promise<void> {
-  await callAdminRpc("admin_delete_notification", {
-    p_notification_id: notificationId,
-  });
-}
-
 export async function fetchAdminNotificationSettings(): Promise<AdminNotificationSettings> {
   const data = await callAdminRpc<AdminNotificationSettings | null>(
     "admin_get_or_create_notification_settings"
