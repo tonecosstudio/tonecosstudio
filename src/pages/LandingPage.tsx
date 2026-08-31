@@ -202,6 +202,34 @@ export default function LandingPage() {
   const models = modelsQuery.data || [];
   const characterCount = summaryQuery.data?.characterCount ?? 0;
   const modelCount = summaryQuery.data?.modelCount ?? 0;
+  const isCatalogLoading =
+    collectionsQuery.isPending ||
+    modelsQuery.isPending ||
+    summaryQuery.isPending;
+  const hasCatalogError =
+    collectionsQuery.isError || modelsQuery.isError || summaryQuery.isError;
+  const hasCatalogData =
+    collections.length > 0 ||
+    models.length > 0 ||
+    characterCount > 0 ||
+    modelCount > 0;
+
+  const catalogStatus = isCatalogLoading
+    ? "Carregando catálogo"
+    : hasCatalogError
+      ? hasCatalogData
+        ? "Catálogo parcialmente disponível"
+        : "Catálogo temporariamente indisponível"
+      : hasCatalogData
+        ? "Catálogo público ativo"
+        : "Novidades em preparação";
+
+  const characterCountLabel =
+    summaryQuery.isPending || summaryQuery.isError
+      ? "—"
+      : String(characterCount);
+  const modelCountLabel =
+    summaryQuery.isPending || summaryQuery.isError ? "—" : String(modelCount);
 
   return (
     <Page
@@ -231,13 +259,25 @@ export default function LandingPage() {
 
         <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)] px-4 py-2 mb-6 animate-fade-in">
-            <div className="w-2 h-2 bg-[hsl(var(--gold-accent))] rounded-full animate-pulse" />
+          <div
+            className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)] px-4 py-2 mb-6 animate-fade-in"
+            role="status"
+            aria-live="polite"
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${
+                isCatalogLoading
+                  ? "bg-[hsl(var(--gold-accent))] animate-pulse"
+                  : hasCatalogError
+                    ? "bg-amber-500"
+                    : "bg-[hsl(var(--gold-accent))]"
+              }`}
+            />
             <span
               className="text-[9px] text-[hsl(var(--gold-accent))] tracking-[0.3em] uppercase"
               style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
-              Catalogo Publico Ativo
+              {catalogStatus}
             </span>
           </div>
 
@@ -298,8 +338,12 @@ export default function LandingPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 sm:gap-6 max-w-3xl mx-auto">
-            <StatCounter value={String(characterCount)} label="Personagens" icon={Trophy} />
-            <StatCounter value={String(modelCount)} label="Modelos" icon={Shield} />
+            <StatCounter
+              value={characterCountLabel}
+              label="Personagens"
+              icon={Trophy}
+            />
+            <StatCounter value={modelCountLabel} label="Modelos" icon={Shield} />
             <StatCounter value="100%" label="Artesanal" icon={Zap} />
             <StatCounter value="Sob Encomenda" label="Atendimento" icon={Eye} />
           </div>
@@ -426,12 +470,6 @@ export default function LandingPage() {
               style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
             >
               ORDAX
-            </span>
-            <span
-              className="text-[7px] text-[hsl(0,0%,25%)]"
-              style={{ fontFamily: "'Press Start 2P', monospace" }}
-            >
-              v2.0
             </span>
           </div>
 
