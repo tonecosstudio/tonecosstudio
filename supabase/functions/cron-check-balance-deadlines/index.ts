@@ -1,26 +1,17 @@
 /**
  * Cron Job: Balance Deadline Checker
  *
- * Runs daily at 10:00 Bahia Time to check standalone purchase balance payment deadlines.
- *
- * Actions performed:
- * 1. Find standalone purchases with status 'awaiting_balance' AND balance_due_date < today
- * 2. For each overdue purchase, call cancelForNonPayment
- * 3. Find purchases due in 1 day, send urgent reminder
- * 4. Log all actions
- *
- * Requirements:
- * - 4.6: Cancel order and retain deposit if balance not paid by deadline
- * - 17.7: Send balance payment reminder when production complete
- * - 17.8: Send urgent payment reminder 1 day before deadline
+ * Runs daily at the configured schedule and:
+ * - cancels standalone purchases whose persisted balance deadline has passed;
+ * - sends a reminder for purchases whose deadline falls on the next Bahia calendar day;
+ * - uses persisted financial values only (no hardcoded commercial amounts).
  */
 
 import {
+  logCronError,
   logCronStart,
   logCronSuccess,
-  logCronError,
 } from "../_shared/cron-logger.ts";
-import { nowInBahia } from "../_shared/timezone.ts";
 import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
 import { getServiceClient } from "../_shared/supabase.ts";
 import {
@@ -31,442 +22,177 @@ import {
 } from "../_shared/email.ts";
 import { getPublicBaseUrl } from "../_shared/public-url.ts";
 
+const BAHIA_TIMEZONE = "America/Bahia";
+const BAHIA_OFFSET = "-03:00";
+
 interface StandalonePurchase {
   id: string;
   user_id: string;
   collection_id: string;
   status: string;
   balance_due_date: string;
-  balance_amount: number;
+  balance_amount: number | null;
+  deposit_amount: number | null;
 }
 
-/**
- * Sends urgent balance payment reminder email
- */
+interface CalendarDateParts {
+  year: number;
+  month: number;
+  day: number;
+}
+
+function getBahiaCalendarDate(date: Date): CalendarDateParts {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BAHIA_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const read = (type: "year" | "month" | "day") => {
+    const value = Number(parts.find((part) => part.type === type)?.value);
+    if (!Number.isInteger(value)) {
+      throw new Error(`Unable to resolve Bahia calendar ${type}`);
+    }
+    return value;
+  };
+
+  return {
+    year: read("year"),
+    month: read("month"),
+    day: read("day"),
+  };
+}
+
+function getBahiaDayRange(date: Date, offsetDays: number) {
+  const current = getBahiaCalendarDate(date);
+  const target = new Date(
+    Date.UTC(current.year, current.month - 1, current.day + offsetDays),
+  );
+  const year = target.getUTCFullYear();
+  const month = String(target.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(target.getUTCDate()).padStart(2, "0");
+  const key = `${year}-${month}-${day}`;
+
+  return {
+    key,
+    start: `${key}T00:00:00${BAHIA_OFFSET}`,
+    end: `${key}T23:59:59.999${BAHIA_OFFSET}`,
+  };
+}
+
+function requireMoney(value: number | null, label: string): number {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    throw new Error(`${label} is missing or invalid`);
+  }
+  return numericValue;
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+}
+
+function depositRetentionText(depositAmount: number | null): string {
+  const numericValue = Number(depositAmount);
+  const amountText =
+    Number.isFinite(numericValue) && numericValue > 0
+      ? ` de ${formatCurrency(numericValue)}`
+      : "";
+
+  return `o depósito já pago${amountText} será tratado conforme as condições de cancelamento aceitas no pedido`;
+}
+
 async function sendUrgentBalanceReminder(params: {
   to: string;
   userName: string | null;
   collectionName: string;
   balanceAmount: number;
+  depositAmount: number | null;
   dueDate: string;
   purchaseId: string;
 }): Promise<void> {
   const baseUrl = getPublicBaseUrl(["FRONTEND_URL", "BASE_URL", "SITE_URL"]);
   const emailService = new EmailService(getEmailConfig({ baseUrl }));
-
   const subject = sanitizeEmailSubject(
-    `URGENTE: Pagamento do Saldo Vence Amanha - ${params.collectionName}`,
+    `URGENTE: Pagamento do saldo vence amanhã - ${params.collectionName}`,
   );
-  const htmlContent = generateUrgentReminderEmailHTML({
-    userName: params.userName || "Colecionador",
-    collectionName: params.collectionName,
-    balanceAmount: params.balanceAmount,
-    dueDate: params.dueDate,
-    purchaseId: params.purchaseId,
-    baseUrl,
-  });
+  const dueDate = new Date(params.dueDate);
 
-  try {
-    await emailService.sendEmail({
-      to: params.to,
-      subject,
-      html: htmlContent,
-    });
-
-    console.log(`Urgent balance reminder sent to: ${params.to}`);
-  } catch (error) {
-    console.error(`Failed to send urgent reminder to ${params.to}:`, error);
-    throw error;
+  if (Number.isNaN(dueDate.getTime())) {
+    throw new Error("Balance due date is invalid");
   }
-}
 
-/**
- * Generates HTML content for the urgent balance reminder email
- */
-function generateUrgentReminderEmailHTML(params: {
-  userName: string;
-  collectionName: string;
-  balanceAmount: number;
-  dueDate: string;
-  purchaseId: string;
-  baseUrl: string;
-}): string {
-  const formattedAmount = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(params.balanceAmount);
-
-  const formattedDate = new Date(params.dueDate).toLocaleDateString("pt-BR", {
-    timeZone: "America/Bahia",
+  const formattedDate = dueDate.toLocaleDateString("pt-BR", {
+    timeZone: BAHIA_TIMEZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
-  const userName = escapeHtml(params.userName);
+  const userName = escapeHtml(params.userName || "Colecionador");
   const collectionName = escapeHtml(params.collectionName);
-  const purchaseUrl = `${params.baseUrl}/compra-avulsa/${encodeURIComponent(params.purchaseId)}`;
+  const purchaseUrl = `${baseUrl}/compra-avulsa/${encodeURIComponent(params.purchaseId)}`;
+  const retentionText = escapeHtml(depositRetentionText(params.depositAmount));
 
-  return `
-<!DOCTYPE html>
+  const html = `
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pagamento Urgente</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 20px auto;
-      background-color: #ffffff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .header {
-      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-      color: #ffffff;
-      padding: 32px 24px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0 0 8px 0;
-      font-size: 28px;
-      font-weight: 700;
-    }
-    .header p {
-      margin: 0;
-      font-size: 16px;
-      opacity: 0.95;
-    }
-    .content {
-      padding: 32px 24px;
-    }
-    .greeting {
-      font-size: 18px;
-      margin-bottom: 24px;
-      color: #374151;
-    }
-    .urgent-box {
-      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-      border-left: 4px solid #dc2626;
-      padding: 24px;
-      margin: 24px 0;
-      border-radius: 8px;
-    }
-    .urgent-box h2 {
-      margin: 0 0 16px 0;
-      font-size: 20px;
-      color: #991b1b;
-    }
-    .info-row {
-      margin: 12px 0;
-      font-size: 16px;
-    }
-    .info-label {
-      font-weight: 600;
-      color: #374151;
-    }
-    .info-value {
-      color: #6b7280;
-    }
-    .amount {
-      font-size: 32px;
-      font-weight: 700;
-      color: #dc2626;
-      text-align: center;
-      margin: 24px 0;
-    }
-    .warning-text {
-      background-color: #fef3c7;
-      border-left: 4px solid #f59e0b;
-      padding: 16px;
-      margin: 24px 0;
-      border-radius: 4px;
-      font-size: 14px;
-      color: #92400e;
-    }
-    .cta-button {
-      display: inline-block;
-      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-      color: #ffffff;
-      text-decoration: none;
-      padding: 14px 32px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 16px;
-      margin: 24px 0;
-      transition: transform 0.2s;
-    }
-    .cta-button:hover {
-      transform: translateY(-2px);
-    }
-    .footer {
-      background-color: #f8fafc;
-      padding: 24px;
-      text-align: center;
-      font-size: 14px;
-      color: #64748b;
-      border-top: 1px solid #e2e8f0;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>⚠️ Pagamento Urgente!</h1>
-      <p>Prazo vence amanhã</p>
-    </div>
-    <div class="content">
-      <p class="greeting">Olá, ${userName}!</p>
+  <body style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+    <h1>Pagamento do saldo vence amanhã</h1>
+    <p>Olá, ${userName}.</p>
+    <p>Sua peça da coleção <strong>${collectionName}</strong> aguarda o pagamento do saldo.</p>
+    <p><strong>Saldo:</strong> ${escapeHtml(formatCurrency(params.balanceAmount))}</p>
+    <p><strong>Prazo:</strong> ${escapeHtml(formattedDate)}</p>
+    <p>
+      Se o pagamento não for confirmado dentro do prazo, o pedido poderá ser cancelado e
+      ${retentionText}.
+    </p>
+    <p><a href="${purchaseUrl}">Pagar saldo</a></p>
+    <p style="font-size:12px;color:#6b7280">
+      Este aviso usa exclusivamente os valores e o prazo persistidos no seu pedido.
+    </p>
+  </body>
+</html>`.trim();
 
-      <div class="urgent-box">
-        <h2>⏰ Atenção: Prazo Final Amanhã</h2>
-        <div class="info-row">
-          <span class="info-label">Coleção:</span>
-          <span class="info-value">${collectionName}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Prazo Final:</span>
-          <span class="info-value">${formattedDate}</span>
-        </div>
-      </div>
-
-      <p style="text-align: center; font-size: 18px; color: #374151; margin: 24px 0;">
-        Valor do Saldo:
-      </p>
-      <div class="amount">${formattedAmount}</div>
-
-      <div class="warning-text">
-        <strong>⚠️ Importante:</strong> Este é o último dia para realizar o pagamento do saldo.
-        Se o pagamento não for confirmado até amanhã, seu pedido será cancelado automaticamente
-        e o depósito de R$ 100,00 será retido como Arras Confirmatórias (depósito não reembolsável),
-        conforme os termos de compra.
-      </div>
-
-      <p style="margin-top: 24px;">
-        Sua peça exclusiva da coleção <strong>${collectionName}</strong> já está pronta
-        e aguardando apenas a confirmação do pagamento do saldo para ser enviada.
-      </p>
-
-      <div style="text-align: center;">
-        <a href="${purchaseUrl}" class="cta-button">
-          Pagar Saldo Agora
-        </a>
-      </div>
-
-      <p style="margin-top: 32px; font-size: 14px; color: #64748b;">
-        Após a confirmação do pagamento, sua peça será enviada imediatamente e você receberá
-        o código de rastreamento por e-mail.
-      </p>
-
-      <p style="margin-top: 16px; font-size: 14px; color: #64748b;">
-        Dúvidas? Entre em contato conosco através do chat no site ou responda este e-mail.
-      </p>
-    </div>
-    <div class="footer">
-      <p>Este é um e-mail automático da plataforma ORDAX.</p>
-      <p>&copy; ${new Date().getFullYear()} ORDAX. Todos os direitos reservados.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `.trim();
+  await emailService.sendEmail({ to: params.to, subject, html });
 }
 
-/**
- * Sends cancellation notice email
- */
 async function sendCancellationNotice(params: {
   to: string;
   userName: string | null;
   collectionName: string;
+  depositAmount: number | null;
   purchaseId: string;
 }): Promise<void> {
   const baseUrl = getPublicBaseUrl(["FRONTEND_URL", "BASE_URL", "SITE_URL"]);
   const emailService = new EmailService(getEmailConfig({ baseUrl }));
-
-  const subject = sanitizeEmailSubject(
-    `Pedido Cancelado - ${params.collectionName}`,
-  );
-  const htmlContent = generateCancellationEmailHTML({
-    userName: params.userName || "Colecionador",
-    collectionName: params.collectionName,
-    purchaseId: params.purchaseId,
-  });
-
-  try {
-    await emailService.sendEmail({
-      to: params.to,
-      subject,
-      html: htmlContent,
-    });
-
-    console.log(`Cancellation notice sent to: ${params.to}`);
-  } catch (error) {
-    console.error(`Failed to send cancellation notice to ${params.to}:`, error);
-    throw error;
-  }
-}
-
-/**
- * Generates HTML content for the cancellation notice email
- */
-function generateCancellationEmailHTML(params: {
-  userName: string;
-  collectionName: string;
-  purchaseId: string;
-}): string {
-  const userName = escapeHtml(params.userName);
+  const subject = sanitizeEmailSubject(`Pedido cancelado - ${params.collectionName}`);
+  const userName = escapeHtml(params.userName || "Colecionador");
   const collectionName = escapeHtml(params.collectionName);
   const purchaseId = escapeHtml(params.purchaseId);
+  const retentionText = escapeHtml(depositRetentionText(params.depositAmount));
 
-  return `
-<!DOCTYPE html>
+  const html = `
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pedido Cancelado</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 20px auto;
-      background-color: #ffffff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .header {
-      background-color: #6b7280;
-      color: #ffffff;
-      padding: 32px 24px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0 0 8px 0;
-      font-size: 24px;
-      font-weight: 600;
-    }
-    .content {
-      padding: 32px 24px;
-    }
-    .greeting {
-      font-size: 18px;
-      margin-bottom: 24px;
-      color: #374151;
-    }
-    .info-box {
-      background-color: #f3f4f6;
-      border-left: 4px solid #6b7280;
-      padding: 20px;
-      margin: 24px 0;
-      border-radius: 4px;
-    }
-    .info-box h2 {
-      margin: 0 0 12px 0;
-      font-size: 18px;
-      color: #374151;
-    }
-    .info-row {
-      margin: 8px 0;
-      font-size: 14px;
-    }
-    .info-label {
-      font-weight: 600;
-      color: #374151;
-    }
-    .info-value {
-      color: #6b7280;
-    }
-    .explanation-box {
-      background-color: #fffbeb;
-      border-left: 4px solid #f59e0b;
-      padding: 16px;
-      margin: 24px 0;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    .footer {
-      background-color: #f8fafc;
-      padding: 24px;
-      text-align: center;
-      font-size: 14px;
-      color: #64748b;
-      border-top: 1px solid #e2e8f0;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Pedido Cancelado</h1>
-    </div>
-    <div class="content">
-      <p class="greeting">Olá, ${userName},</p>
+  <body style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+    <h1>Pedido cancelado</h1>
+    <p>Olá, ${userName}.</p>
+    <p>
+      O pedido <strong>#${purchaseId}</strong> da coleção <strong>${collectionName}</strong>
+      foi cancelado porque o saldo não foi confirmado dentro do prazo persistido no pedido.
+    </p>
+    <p>Conforme as condições aplicáveis ao pedido, ${retentionText}.</p>
+    <p style="font-size:12px;color:#6b7280">
+      Em caso de dúvida, entre em contato pelos canais oficiais de suporte.
+    </p>
+  </body>
+</html>`.trim();
 
-      <p>
-        Informamos que seu pedido da coleção <strong>${collectionName}</strong>
-        foi cancelado devido ao não recebimento do pagamento do saldo dentro do prazo estabelecido.
-      </p>
-
-      <div class="info-box">
-        <h2>Detalhes do Pedido</h2>
-        <div class="info-row">
-          <span class="info-label">Coleção:</span>
-          <span class="info-value">${collectionName}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">ID do Pedido:</span>
-          <span class="info-value">${purchaseId}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Status:</span>
-          <span class="info-value">Cancelado</span>
-        </div>
-      </div>
-
-      <div class="explanation-box">
-        <strong>Sobre o Depósito:</strong><br>
-        Conforme os termos de compra, o depósito de R$ 100,00 foi retido como
-        <strong>Arras Confirmatórias</strong> (depósito não reembolsável). Este valor
-        foi utilizado para reservar sua peça e iniciar a produção, e não pode ser
-        devolvido quando o pagamento do saldo não é concluído dentro do prazo.
-      </div>
-
-      <p style="margin-top: 24px;">
-        Entendemos que imprevistos acontecem. Se você ainda tem interesse em adquirir
-        peças da ORDAX, ficaremos felizes em atendê-lo em uma nova compra.
-      </p>
-
-      <p style="margin-top: 16px; font-size: 14px; color: #64748b;">
-        Caso tenha dúvidas ou precise de esclarecimentos, entre em contato conosco
-        através do chat no site ou respondendo este e-mail.
-      </p>
-    </div>
-    <div class="footer">
-      <p>Este é um e-mail automático da plataforma ORDAX.</p>
-      <p>&copy; ${new Date().getFullYear()} ORDAX. Todos os direitos reservados.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `.trim();
+  await emailService.sendEmail({ to: params.to, subject, html });
 }
 
 Deno.serve(async (req) => {
@@ -481,279 +207,153 @@ Deno.serve(async (req) => {
     );
     if (forbidden) return forbidden;
 
-    // Start logging
     logId = await logCronStart("cron-check-balance-deadlines");
 
     const supabase = getServiceClient();
+    const now = new Date();
+    const currentInstant = now.toISOString();
+    const tomorrow = getBahiaDayRange(now, 1);
 
-    // Get current Bahia time
-    const bahiaTime = nowInBahia();
-    const currentDate = bahiaTime.toISOString();
-
-    console.log(`Cron job running at ${bahiaTime.toISOString()} (Bahia time)`);
-    console.log(`Checking for balance deadlines on or before: ${currentDate}`);
-
-    // Calculate tomorrow's date for urgent reminders (1 day before deadline)
-    const tomorrow = new Date(bahiaTime);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStart = new Date(
-      tomorrow.getFullYear(),
-      tomorrow.getMonth(),
-      tomorrow.getDate(),
-    );
-    const tomorrowEnd = new Date(
-      tomorrow.getFullYear(),
-      tomorrow.getMonth(),
-      tomorrow.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
-
-    console.log(
-      `Tomorrow range: ${tomorrowStart.toISOString()} to ${tomorrowEnd.toISOString()}`,
-    );
-
-    // 1. Find overdue purchases (balance_due_date < today)
     const { data: overduePurchases, error: overdueError } = await supabase
       .from("standalone_purchases")
       .select(
-        "id, user_id, collection_id, status, balance_due_date, balance_amount",
+        "id, user_id, collection_id, status, balance_due_date, balance_amount, deposit_amount",
       )
       .eq("status", "awaiting_balance")
       .not("balance_due_date", "is", null)
-      .lt("balance_due_date", currentDate);
+      .lt("balance_due_date", currentInstant);
 
     if (overdueError) {
-      throw new Error(
-        `Failed to fetch overdue purchases: ${overdueError.message}`,
-      );
+      throw new Error(`Failed to fetch overdue purchases: ${overdueError.message}`);
     }
 
-    console.log(`Found ${overduePurchases?.length || 0} overdue purchase(s)`);
-
-    // 2. Find purchases due tomorrow (for urgent reminders)
-    const { data: dueTomorrowPurchases, error: dueTomorrowError } =
-      await supabase
-        .from("standalone_purchases")
-        .select(
-          "id, user_id, collection_id, status, balance_due_date, balance_amount",
-        )
-        .eq("status", "awaiting_balance")
-        .not("balance_due_date", "is", null)
-        .gte("balance_due_date", tomorrowStart.toISOString())
-        .lte("balance_due_date", tomorrowEnd.toISOString());
+    const { data: dueTomorrowPurchases, error: dueTomorrowError } = await supabase
+      .from("standalone_purchases")
+      .select(
+        "id, user_id, collection_id, status, balance_due_date, balance_amount, deposit_amount",
+      )
+      .eq("status", "awaiting_balance")
+      .not("balance_due_date", "is", null)
+      .gte("balance_due_date", tomorrow.start)
+      .lte("balance_due_date", tomorrow.end);
 
     if (dueTomorrowError) {
-      throw new Error(
-        `Failed to fetch purchases due tomorrow: ${dueTomorrowError.message}`,
-      );
+      throw new Error(`Failed to fetch purchases due tomorrow: ${dueTomorrowError.message}`);
     }
-
-    console.log(
-      `Found ${dueTomorrowPurchases?.length || 0} purchase(s) due tomorrow`,
-    );
 
     let purchasesCancelled = 0;
     let remindersSent = 0;
-    const errors: Array<{ purchaseId: string; error: string; action: string }> =
-      [];
+    const errors: Array<{ purchaseId: string; error: string; action: string }> = [];
 
-    // 3. Process overdue purchases - cancel and send notice
-    if (overduePurchases && overduePurchases.length > 0) {
-      for (const purchase of overduePurchases as StandalonePurchase[]) {
-        try {
-          console.log(`Processing overdue purchase: ${purchase.id}`);
+    for (const purchase of (overduePurchases || []) as StandalonePurchase[]) {
+      try {
+        const [{ data: profile, error: profileError }, { data: collection, error: collectionError }] =
+          await Promise.all([
+            supabase
+              .from("profiles")
+              .select("email, full_name")
+              .eq("id", purchase.user_id)
+              .single(),
+            supabase
+              .from("collections")
+              .select("name")
+              .eq("id", purchase.collection_id)
+              .single(),
+          ]);
 
-          // Get user profile for email
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("id, email, full_name")
-            .eq("id", purchase.user_id)
-            .single();
-
-          if (profileError || !profile) {
-            console.error(
-              `Failed to get profile for user ${purchase.user_id}:`,
-              profileError,
-            );
-            errors.push({
-              purchaseId: purchase.id,
-              error: `Failed to get user profile: ${profileError?.message || "Not found"}`,
-              action: "cancel",
-            });
-            continue;
-          }
-
-          // Get collection name
-          const { data: collection, error: collectionError } = await supabase
-            .from("collections")
-            .select("id, name")
-            .eq("id", purchase.collection_id)
-            .single();
-
-          if (collectionError || !collection) {
-            console.error(
-              `Failed to get collection ${purchase.collection_id}:`,
-              collectionError,
-            );
-            errors.push({
-              purchaseId: purchase.id,
-              error: `Failed to get collection: ${collectionError?.message || "Not found"}`,
-              action: "cancel",
-            });
-            continue;
-          }
-
-          // Cancel the purchase using Edge Function
-          const { error: cancelError } = await supabase.functions.invoke(
-            "cancel-standalone-for-non-payment",
-            {
-              headers: { "x-cron-secret": Deno.env.get("CRON_SECRET") ?? "" },
-              body: { purchaseId: purchase.id },
-            },
-          );
-
-          if (cancelError) {
-            console.error(
-              `Failed to cancel purchase ${purchase.id}:`,
-              cancelError,
-            );
-            errors.push({
-              purchaseId: purchase.id,
-              error: `Failed to cancel: ${cancelError.message}`,
-              action: "cancel",
-            });
-            continue;
-          }
-
-          console.log(`Cancelled purchase ${purchase.id} for non-payment`);
-          purchasesCancelled++;
-
-          // Send cancellation notice email
-          if (profile.email) {
-            try {
-              await sendCancellationNotice({
-                to: profile.email,
-                userName: profile.full_name,
-                collectionName: collection.name,
-                purchaseId: purchase.id,
-              });
-            } catch (emailError) {
-              console.error(
-                `Failed to send cancellation email for purchase ${purchase.id}:`,
-                emailError,
-              );
-              // Don't add to errors - cancellation was successful
-            }
-          }
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          console.error(
-            `Error processing overdue purchase ${purchase.id}:`,
-            error,
-          );
-          errors.push({
-            purchaseId: purchase.id,
-            error: errorMessage,
-            action: "cancel",
-          });
+        if (profileError || !profile) {
+          throw new Error(`Customer profile unavailable: ${profileError?.message || "not found"}`);
         }
+        if (collectionError || !collection?.name) {
+          throw new Error(`Collection unavailable: ${collectionError?.message || "not found"}`);
+        }
+
+        const { error: cancelError } = await supabase.rpc(
+          "cancel_standalone_purchase_for_non_payment",
+          { p_purchase_id: purchase.id, p_now: currentInstant },
+        );
+
+        if (cancelError) {
+          throw new Error(`Failed to cancel purchase: ${cancelError.message}`);
+        }
+
+        purchasesCancelled += 1;
+
+        if (profile.email) {
+          try {
+            await sendCancellationNotice({
+              to: profile.email,
+              userName: profile.full_name,
+              collectionName: collection.name,
+              depositAmount: purchase.deposit_amount,
+              purchaseId: purchase.id,
+            });
+          } catch (emailError) {
+            console.error(`Cancellation email failed for ${purchase.id}`, emailError);
+          }
+        }
+      } catch (error) {
+        errors.push({
+          purchaseId: purchase.id,
+          error: error instanceof Error ? error.message : String(error),
+          action: "cancel",
+        });
       }
     }
 
-    // 4. Process purchases due tomorrow - send urgent reminders
-    if (dueTomorrowPurchases && dueTomorrowPurchases.length > 0) {
-      for (const purchase of dueTomorrowPurchases as StandalonePurchase[]) {
-        try {
-          console.log(`Sending urgent reminder for purchase: ${purchase.id}`);
+    for (const purchase of (dueTomorrowPurchases || []) as StandalonePurchase[]) {
+      try {
+        const balanceAmount = requireMoney(purchase.balance_amount, "Balance amount");
+        const [{ data: profile, error: profileError }, { data: collection, error: collectionError }] =
+          await Promise.all([
+            supabase
+              .from("profiles")
+              .select("email, full_name")
+              .eq("id", purchase.user_id)
+              .single(),
+            supabase
+              .from("collections")
+              .select("name")
+              .eq("id", purchase.collection_id)
+              .single(),
+          ]);
 
-          // Get user profile for email
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("id, email, full_name")
-            .eq("id", purchase.user_id)
-            .single();
-
-          if (profileError || !profile || !profile.email) {
-            console.error(
-              `Failed to get profile for user ${purchase.user_id}:`,
-              profileError,
-            );
-            errors.push({
-              purchaseId: purchase.id,
-              error: `Failed to get user profile or email: ${profileError?.message || "Not found"}`,
-              action: "reminder",
-            });
-            continue;
-          }
-
-          // Get collection name
-          const { data: collection, error: collectionError } = await supabase
-            .from("collections")
-            .select("id, name")
-            .eq("id", purchase.collection_id)
-            .single();
-
-          if (collectionError || !collection) {
-            console.error(
-              `Failed to get collection ${purchase.collection_id}:`,
-              collectionError,
-            );
-            errors.push({
-              purchaseId: purchase.id,
-              error: `Failed to get collection: ${collectionError?.message || "Not found"}`,
-              action: "reminder",
-            });
-            continue;
-          }
-
-          // Send urgent reminder email
-          await sendUrgentBalanceReminder({
-            to: profile.email,
-            userName: profile.full_name,
-            collectionName: collection.name,
-            balanceAmount: purchase.balance_amount,
-            dueDate: purchase.balance_due_date,
-            purchaseId: purchase.id,
-          });
-
-          console.log(`Sent urgent reminder for purchase ${purchase.id}`);
-          remindersSent++;
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          console.error(
-            `Error sending reminder for purchase ${purchase.id}:`,
-            error,
-          );
-          errors.push({
-            purchaseId: purchase.id,
-            error: errorMessage,
-            action: "reminder",
-          });
+        if (profileError || !profile?.email) {
+          throw new Error(`Customer profile/email unavailable: ${profileError?.message || "not found"}`);
         }
+        if (collectionError || !collection?.name) {
+          throw new Error(`Collection unavailable: ${collectionError?.message || "not found"}`);
+        }
+
+        await sendUrgentBalanceReminder({
+          to: profile.email,
+          userName: profile.full_name,
+          collectionName: collection.name,
+          balanceAmount,
+          depositAmount: purchase.deposit_amount,
+          dueDate: purchase.balance_due_date,
+          purchaseId: purchase.id,
+        });
+
+        remindersSent += 1;
+      } catch (error) {
+        errors.push({
+          purchaseId: purchase.id,
+          error: error instanceof Error ? error.message : String(error),
+          action: "reminder",
+        });
       }
     }
 
-    // Log success with details
     await logCronSuccess(logId, {
       purchasesCancelled,
       remindersSent,
       overdueCount: overduePurchases?.length || 0,
       dueTomorrowCount: dueTomorrowPurchases?.length || 0,
       errors: errors.length > 0 ? errors : undefined,
-      currentDate,
+      executedAt: currentInstant,
+      tomorrowBahia: tomorrow.key,
     });
-
-    console.log(
-      `Cron job completed: ${purchasesCancelled} purchase(s) cancelled, ${remindersSent} reminder(s) sent`,
-    );
-    if (errors.length > 0) {
-      console.warn(`${errors.length} error(s) occurred during processing`);
-    }
 
     return new Response(
       JSON.stringify({
@@ -763,14 +363,12 @@ Deno.serve(async (req) => {
         overdueCount: overduePurchases?.length || 0,
         dueTomorrowCount: dueTomorrowPurchases?.length || 0,
         errors: errors.length > 0 ? errors : undefined,
-        currentDate,
+        executedAt: currentInstant,
+        tomorrowBahia: tomorrow.key,
       }),
       { headers: { "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error("Cron job failed:", error);
-
-    // Log error if we have a log ID
     if (logId) {
       try {
         await logCronError(
@@ -778,7 +376,7 @@ Deno.serve(async (req) => {
           error instanceof Error ? error : new Error(String(error)),
         );
       } catch (logError) {
-        console.error("Failed to log error:", logError);
+        console.error("Failed to log cron error", logError);
       }
     }
 
@@ -787,10 +385,7 @@ Deno.serve(async (req) => {
         success: false,
         error: error instanceof Error ? error.message : String(error),
       }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 });
