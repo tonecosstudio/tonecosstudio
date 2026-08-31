@@ -14,21 +14,18 @@ function getErrorMessage(error: Error): string {
 export function useProductionLimit() {
   const queryClient = useQueryClient();
 
-  // Query para buscar limite atual
   const limitQuery = useQuery({
     queryKey: ["production-limit"],
     queryFn: getCurrentProductionLimit,
-    refetchInterval: 30000, // Atualiza a cada 30 segundos
+    refetchInterval: 30000,
   });
 
-  // Query para verificar se vendas estão abertas
   const salesOpenQuery = useQuery({
     queryKey: ["sales-open"],
     queryFn: checkSalesOpen,
-    refetchInterval: 60000, // Atualiza a cada 1 minuto
+    refetchInterval: 60000,
   });
 
-  // Mutation para fechar vendas (admin)
   const closeSales = useMutation({
     mutationFn: closeMonthlySales,
     onSuccess: () => {
@@ -43,7 +40,6 @@ export function useProductionLimit() {
     },
   });
 
-  // Mutation para reabrir vendas (admin)
   const reopenSales = useMutation({
     mutationFn: reopenMonthlySales,
     onSuccess: () => {
@@ -58,25 +54,25 @@ export function useProductionLimit() {
     },
   });
 
+  const limit = limitQuery.data;
+  const salesOpen = salesOpenQuery.data === true;
+
   return {
-    // Dados
-    limit: limitQuery.data,
-    isLoading: limitQuery.isLoading,
-    isError: limitQuery.isError,
-    salesOpen: salesOpenQuery.data ?? true,
+    limit,
+    isLoading: limitQuery.isLoading || salesOpenQuery.isLoading,
+    isError: limitQuery.isError || salesOpenQuery.isError,
+    error: limitQuery.error ?? salesOpenQuery.error ?? null,
+    salesOpen,
 
-    // Computed
-    available: limitQuery.data?.prod_available ?? 0,
-    total: limitQuery.data?.prod_global_limit ?? 0,
-    percentage: limitQuery.data?.prod_percentage_sold ?? 0,
-    isClosed: limitQuery.data?.prod_is_closed ?? false,
-    isAlmostFull: (limitQuery.data?.prod_percentage_sold ?? 0) >= 80,
+    available: limit?.prod_available ?? 0,
+    total: limit?.prod_global_limit ?? 0,
+    percentage: limit?.prod_percentage_sold ?? 0,
+    isClosed: limit?.prod_is_closed ?? true,
+    isAlmostFull: limit ? limit.prod_percentage_sold >= 80 : false,
 
-    // Mutations
     closeSales: closeSales.mutate,
     reopenSales: reopenSales.mutate,
 
-    // Loading states
     isClosing: closeSales.isPending,
     isReopening: reopenSales.isPending,
   };
