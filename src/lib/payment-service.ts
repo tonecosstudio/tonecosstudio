@@ -1,6 +1,5 @@
 export {
   approvePayment,
-  createPayment,
   getMyPaymentById,
   getPaymentById,
   listPaymentsByUser,
