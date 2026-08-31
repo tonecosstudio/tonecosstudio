@@ -10,8 +10,6 @@ import {
   type ActiveSubscriptionSummary,
 } from "@/services/subscriptions/subscription-summary-service";
 
-type RpcError = { message?: string } | null;
-
 export type DbSubscription = ActiveSubscriptionSummary;
 
 export interface DbSubscriptionPlan {
@@ -28,24 +26,6 @@ export interface DbSubscriptionPlan {
   created_at: string;
   updated_at: string;
 }
-
-export interface CreatePendingSubscriptionInput {
-  plan_type: string;
-  payment_method: string;
-}
-
-interface SubscriptionMutationRpcClient {
-  rpc(
-    functionName: "create_pending_subscription_for_current_user",
-    args: {
-      p_plan_type: string;
-      p_payment_method: string;
-    },
-  ): PromiseLike<{ data: unknown; error: RpcError }>;
-}
-
-const subscriptionMutationRpc =
-  supabase as unknown as SubscriptionMutationRpcClient;
 
 export async function fetchSubscriptionForUser(
   userId?: string | null,
@@ -95,42 +75,6 @@ export async function listAvailableSubscriptionPlans(): Promise<
   }
 
   return data || [];
-}
-
-function mapCreateSubscriptionError(message: string | undefined): string {
-  const value = message ?? "";
-
-  if (value.includes("INVALID_SUBSCRIPTION_PLAN_TYPE")) return "Plano invalido";
-  if (value.includes("INVALID_SUBSCRIPTION_PAYMENT_METHOD")) {
-    return "Forma de pagamento indisponivel";
-  }
-  if (value.includes("SUBSCRIPTION_PLAN_NOT_FOUND"))
-    return "Plano nao encontrado";
-  if (value.includes("SUBSCRIPTION_ALREADY_EXISTS")) {
-    return "Voce ja possui uma assinatura ativa ou pendente";
-  }
-
-  return value || "Erro ao criar assinatura";
-}
-
-export async function createPendingSubscriptionForCurrentUser(
-  input: CreatePendingSubscriptionInput,
-): Promise<{ success: true; subscription: DbSubscription }> {
-  await requireAuthenticatedUserId();
-
-  const { data, error } = await subscriptionMutationRpc.rpc(
-    "create_pending_subscription_for_current_user",
-    {
-      p_plan_type: input.plan_type,
-      p_payment_method: input.payment_method,
-    },
-  );
-
-  if (error) {
-    throw new Error(mapCreateSubscriptionError(error.message));
-  }
-
-  return { success: true, subscription: data as DbSubscription };
 }
 
 export async function cancelSubscriptionById(
