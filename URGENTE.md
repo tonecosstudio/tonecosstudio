@@ -3,9 +3,9 @@
 Status: **EM EXECUÇÃO — NO-GO para lançamento**  
 Atualizado em: **2026-08-31 (America/Bahia)**  
 Branch operacional: **main somente**  
-HEAD funcional antes deste documento: `e70dc98d4e8c45beea887817513dc9263c280764`
+HEAD funcional antes deste documento: `2818f19e55e7fb7e939279c31fd9ce0826b78edf`
 
-Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX. O histórico detalhado dos checkpoints anteriores permanece no Git; aqui ficam o estado vigente, as provas, os bloqueios e a próxima ordem de execução.
+Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX. O histórico detalhado permanece no Git; este documento mantém apenas regras vigentes, estado atual, bloqueios, provas e próxima ordem de execução.
 
 ## 1. Regras vigentes
 
@@ -16,46 +16,55 @@ Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX
 5. Segredos e `service_role` nunca entram em `VITE_*` ou bundle do navegador.
 6. Um domínio deve ter uma autoridade canônica; remover mocks, executores e caminhos paralelos desnecessários.
 7. Código/migration versionado não equivale a deploy ou prova remota.
-8. Não editar arquivos gerados para esconder drift de schema; regenerar a partir da fonte oficial.
+8. Não editar migrations históricas nem tipos gerados para mascarar drift.
 9. Não declarar GO, CI verde, migration aplicada ou segurança remota sem prova reproduzível.
-10. `timestamptz` representa um instante real; Bahia deve ser usada para regra/calendário/apresentação sem deslocar artificialmente o instante antes de `toISOString()`.
+10. `timestamptz` representa um instante real; Bahia é regra/calendário/apresentação, não um deslocamento artificial antes de `toISOString()`.
+11. Comprovante enviado não equivale a pagamento aprovado; somente contrato server-side canônico pode promover estado financeiro.
+12. Metadata de provedor externo não é autoridade para alterar pedido/assinatura do domínio sem vínculo e valor validados pelo servidor.
 
 ## 2. Estado atual
 
 | Área | Estado | Observação |
 | --- | --- | --- |
 | Branch | **main somente** | decisão explícita do usuário |
+| HEAD funcional | `2818f19e55e7fb7e939279c31fd9ce0826b78edf` | checkpoint 15 antes deste documento |
 | Proteção da main | **PENDENTE** | `protected=false`, required checks desligados |
-| Quality Gate | **SEM PROVA NO HEAD ATUAL** | HEAD `e70dc98...` não possui GitHub Actions associado; status externo Vercel falha por `build-rate-limit` |
+| Quality Gate | **SEM PROVA NO HEAD ATUAL** | GitHub Actions associado = nenhum; Vercel falha por `build-rate-limit` |
 | Runtime | **Node 24.x** | manifesto/workflow alinhados |
 | Pacote | **ordax-web@0.1.0** | identidade de template removida |
 | Package manager | **NÃO CONSOLIDADO** | manter locks concorrentes até `npm ci` real |
-| Comercial BRL/coins | **FAIL-CLOSED NO CÓDIGO AUDITADO** | sem usar preço/entrada fictícios nos caminhos corrigidos |
-| Compra de coins | **REMOVIDA** | rota/CTA/componentes legados removidos |
-| Créditos de assinatura | **FAIL-CLOSED VERSIONADO** | sem `CASE plan_type` fabricando créditos |
+| Coleções públicas | **DESATIVADAS** | `PUBLIC_COLLECTIONS_ENABLED = false`; compra/assinatura pública ficam escondidas |
+| Comercial BRL/coins | **FAIL-CLOSED NO CÓDIGO AUDITADO** | sem preço/entrada/crédito fictício nos caminhos corrigidos |
+| Stripe genérico | **REMOVIDO DO SOURCE** | endpoint client-controlled de PaymentIntent e frontend órfão removidos |
+| Stripe webhook | **ISOLADO DO DOMÍNIO** | somente espelha estado em tabelas Stripe; metadata não muda `orders/subscriptions` |
+| Criação de assinatura legada | **REMOVIDA DO SOURCE** | `create-subscription` e `create-subscription-v2` não tinham consumidor e ativavam assinatura sem prova de pagamento |
+| Compra avulsa | **FAIL-CLOSED NO SOURCE** | criação bloqueada enquanto RPC puder marcar `deposit_paid` sem pagamento comprovado |
+| Saldo avulso | **CONTRATO AUDITADO** | owner-only, deadline/status validados, comprovante não aprova pagamento |
 | Produção/capacidade | **FAIL-CLOSED VERSIONADO** | sem abertura/capacidade otimista quando fonte oficial falha |
-| Prazos operacionais | **SSOT VERSIONADO** | sete prazos canônicos em `system_settings`; runtime não usa fallback local para decidir operação |
-| Escolha de personagem | **SSOT VERSIONADO** | solicitação pré-escolha vive na `production_queue`; `character_choices` nasce na escolha real |
-| Crons críticos | **ENDURECIDOS NO SOURCE** | instantes UTC reais + calendário Bahia explícito nos fluxos corrigidos |
-| Agendamento de entregas | **SSOT VERSIONADO** | quantidade/tipo vêm de assinatura/plano persistidos; `shipping_business_days` é configurável |
-| Scheduler legado | **REMOVIDO DO SOURCE** | `supabase/functions/schedule-deliveries` não tinha consumidor e duplicava autoridade |
+| Prazos operacionais | **SSOT VERSIONADO** | sete prazos canônicos em `system_settings` |
+| Escolha de personagem | **SSOT VERSIONADO** | pré-escolha em `production_queue`; escolha real em `character_choices` |
+| Crons críticos | **ENDURECIDOS NO SOURCE** | instantes UTC reais + calendário Bahia explícito |
+| Agendamento de entregas | **SSOT VERSIONADO** | plano/quantidade persistidos + `shipping_business_days` oficial |
 | Métricas de produção | **MEDIDAS/FAIL-CLOSED** | placeholders 0 removidos do caminho ativo |
 | Uploads sensíveis | **SERVER-AUTHORITY VERSIONADA** | comprovantes/suporte privados; scanner server-only |
-| Supabase canônico | **CONFIRMADO, MAS INATIVO** | `pdytjhtjlxvbbeuxgnms` = `Ordax-2026-1`; último estado observado `INACTIVE` |
-| Tipos Supabase | **DRIFT COMPROVADO** | geração oficial bloqueada pelo projeto inativo; não editar `types.ts` manualmente |
+| Supabase canônico | **INATIVO** | `pdytjhtjlxvbbeuxgnms` = `Ordax-2026-1`; `get_project` confirmou `INACTIVE` |
+| Drift de Edge Functions | **COMPROVADO** | remoto ainda lista endpoints retirados do Git como ACTIVE; tombstone não pôde ser deployado porque projeto está inativo |
+| Tipos Supabase | **SEM REGENERAÇÃO OFICIAL** | projeto inativo impede prova/geração confiável |
 | Deploy/visual | **SEM PROVA ATUAL** | Vercel bloqueado por limite de build; smoke recente ausente |
-| Lançamento | **NO-GO** | CI, banco remoto, E2E, segurança e release engineering sem prova suficiente |
+| Lançamento | **NO-GO** | CI, banco remoto, pagamentos E2E, segurança e release engineering sem prova suficiente |
 
 ## 3. Hardening concluído
 
-### Governança, limpeza e superfícies falsas
+### Governança e limpeza
 
 - [x] `AGENTS.md`, `README.md` e `URGENTE.md` consolidados como contrato/SSOT;
-- [x] ruído/legados de raiz e documentação enganosa arquivados/removidos do caminho ativo;
-- [x] catálogo mock e placeholders demonstrativos removidos do runtime;
-- [x] compra fake de coins removida integralmente;
-- [x] feature pública de coleções não executa queries de preview quando desativada;
-- [x] `schedule-deliveries` removido após prova de ausência de consumidor no código;
+- [x] ruído/legados/documentação enganosa removidos ou arquivados do caminho ativo;
+- [x] catálogo mock/placeholders demonstrativos removidos do runtime auditado;
+- [x] compra fake de coins removida;
+- [x] `schedule-deliveries` removido por ausência de consumidor e autoridade duplicada;
+- [x] `cancel-standalone-for-non-payment` removido do source; cron usa RPC atômico diretamente;
+- [x] `send-group-emails-batch` removido por ausência de consumidor e superfície privilegiada desnecessária;
+- [x] wrapper `src/lib/standalone-purchase-service.ts` removido; página aponta ao serviço canônico;
 - [ ] continuar inventário de flags, rotas, no-ops e integrações opcionais.
 
 ### Comercial, assinatura e pagamentos
@@ -64,118 +73,90 @@ Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX
 - [x] editores administrativos não inicializam/salvam valores exemplo como configuração real;
 - [x] equivalência fictícia coins↔reais removida;
 - [x] pagamento administrativo de assinatura exige créditos persistidos;
-- [x] idempotência por referência externa preservada no corpo privilegiado vigente;
 - [x] `coins_included` e `total_credits` sincronizados em novas escritas; divergência rejeitada;
-- [x] comprovantes e anexos sensíveis migrados para autoridade server-side/buckets privados;
-- [x] cron de saldo não afirma depósito fixo de R$ 100; usa `deposit_amount`/`balance_amount` persistidos;
-- [x] `StandalonePurchaseButton` não exibe entrada fictícia quando não possui o valor oficial;
-- [ ] testar pagamento/assinatura ponta a ponta em ambiente operacional.
+- [x] comprovantes/anexos sensíveis usam autoridade server-side/buckets privados nos caminhos endurecidos;
+- [x] cron de saldo usa `deposit_amount`/`balance_amount` persistidos e RPC atômico;
+- [x] UI não fabrica depósito fixo quando não possui valor oficial;
+- [x] `create-payment-intent` genérico removido: cliente não pode escolher `amount`/metadata e obter PaymentIntent por esse caminho;
+- [x] serviço/hook/componente/browser Stripe órfãos desse fluxo foram removidos;
+- [x] `stripe-webhook` não promove mais `orders`/`subscriptions` a partir de metadata Stripe;
+- [x] `create-subscription` e `create-subscription-v2` removidos do source por ativarem assinatura sem verificação de pagamento e não possuírem consumidor ativo;
+- [x] `create-standalone-purchase` bloqueia criação com `PAYMENT_FLOW_UNAVAILABLE` enquanto o RPC legado ainda puder iniciar `deposit_paid` sem prova;
+- [x] `submit_standalone_balance_voucher` auditado: ownership, status e deadline são validados e o comprovante não altera status para pago;
+- [ ] criar/aplicar migration corretiva para compra avulsa quando o Supabase estiver operacional: estado inicial não pago + aprovação de depósito canônica;
+- [ ] retirar/invalidar `create_subscription_atomic` legado no banco, após prova de ausência de consumidor e com migration gerada oficialmente;
+- [ ] testar assinatura/pagamento/compra avulsa ponta a ponta em ambiente operacional.
 
-### Produção, capacidade e ciclos
+### Produção, capacidade, ciclos e entregas
 
-- [x] `monthly_production_limit` é a autoridade de capacidade mensal;
+- [x] `monthly_production_limit` é autoridade de capacidade mensal;
 - [x] ausência de configuração não vira capacidade 100 nem vendas abertas;
-- [x] RPC/hook/UI validam estado de produção antes de exibir ações/métricas;
 - [x] ciclo futuro inexistente não equivale a capacidade disponível;
-- [x] `cycle-service` não inventa datas operacionais a partir de `created_at`/relógio do cliente;
-- [x] `admin_get_or_create_delivery_cycle` exige capacidade explícita ou setting oficial no caminho endurecido;
-- [x] `cron-transition-cycles` usa instante UTC real, datas Bahia explícitas, capacidade oficial e `shipping_business_days` oficial;
-- [x] helper Edge de dias úteis usa datas UTC date-only de forma determinística;
-- [ ] reconciliar as funções SQL históricas de calendário com o timezone canônico Bahia quando o banco puder ser validado remotamente.
+- [x] `admin_get_or_create_delivery_cycle` exige capacidade explícita ou setting oficial;
+- [x] `cron-transition-cycles` usa instante UTC real, Bahia explícita e `shipping_business_days` oficial;
+- [x] `admin_schedule_subscription_deliveries` deriva plano/quantidade da assinatura/plano persistidos;
+- [x] `shipping_date` precisa existir; não é fabricada;
+- [x] cron mensal usa menor `delivery_number` ausente, evitando colisão após pausa;
+- [x] `pause-subscription` delega cutoff/estado/capacidade ao RPC atômico;
+- [ ] reconciliar funções SQL históricas de calendário/timezone quando o banco puder ser validado;
+- [ ] revisar bônus Semestral como política de produto antes da RC.
 
-### Agendamento de assinatura
+### Escolha de personagem
 
-- [x] `admin_schedule_subscription_deliveries` deriva `plan_type`/`deliveries_total` de assinatura/plano persistidos;
-- [x] `plan_type` do caller só pode coincidir com o plano persistido;
-- [x] drift entre assinatura/plano bloqueia;
-- [x] `shipping_date` precisa existir; não é fabricada por fallback;
-- [x] resposta de agendamento malformada não vira array vazio silencioso;
-- [x] cron mensal usa `shipping_business_days` oficial em vez de 5 fixo;
-- [x] criação mensal usa o menor `delivery_number` ausente, evitando colisão após pausa que remove uma entrega;
-- [ ] revisar regra de bônus Semestral como política de produto separada antes da RC.
-
-### Escolhas de coleção/personagem
-
-- [x] BOLA do `change_delivery_collection_choice_for_current_user` revisada: `auth.uid()` e ownership validados server-side;
-- [x] `NULL` em `is_active/status` não é tratado como coleção ativa;
-- [x] mudança real de coleção limpa referências antigas de personagem;
-- [x] troca de personagem exige relação `characters ↔ collection_characters ↔ coleção da entrega`;
-- [x] corrigida tradução `collection_characters.id` → `characters.id` no fluxo de `character_choices`;
-- [x] `customer_submit_character_choice`/`customer_change_character_choice` exigem deadline persistido;
-- [x] `production_queue` é a autoridade da solicitação antes de existir uma escolha;
-- [x] entrar em `awaiting_choice` exige `system_settings.character_choice_days` válido e persiste `choice_deadline`;
-- [x] lembretes/expiração usam a solicitação pendente na fila, não uma `character_choices` fictícia;
-- [x] trigger/invariante de banco impede `submitted` sem solicitação aberta única e compatível;
-- [x] erro de leitura de produção/escolha não é mais mascarado como ausência de registro;
-- [x] respostas RPC vazias de escolha do cliente são erro explícito.
-
-### Prazos e configurações
-
-- [x] `deadline-service.ts` não cai para constantes locais quando `system_settings` falha;
-- [x] sete prazos operacionais são exigidos e validados;
-- [x] as duas telas administrativas de prazo foram alinhadas ao mesmo conjunto canônico;
-- [x] `admin_update_production_setting` rejeita `monthly_capacity` legado;
-- [x] `admin_upsert_system_settings` valida no servidor configurações críticas comerciais/operacionais;
-- [x] `system-settings-service` não injeta prazos/parcelas operacionais para mascarar ausência de configuração;
-- [ ] remover `VITE_CHARACTER_CHOICE_DAYS=7` dos dois templates `.env` quando a proteção do conector permitir editar esses arquivos sem expor/alterar placeholders de credenciais; o runtime já não lê essa variável.
+- [x] BOLA de mudança de coleção revisada com `auth.uid()`/ownership server-side;
+- [x] troca de personagem exige vínculo com a coleção da entrega;
+- [x] tradução `collection_characters.id` → `characters.id` corrigida;
+- [x] `production_queue` é a autoridade pré-escolha;
+- [x] `character_choice_days` oficial gera deadline persistido ao entrar em `awaiting_choice`;
+- [x] lembretes/expiração usam solicitação pendente real;
+- [x] trigger/invariante impede escolha `submitted` sem solicitação aberta compatível;
+- [x] erro de leitura não é mascarado como ausência de registro.
 
 ### Edge Functions, tempo e notificações
 
-- [x] `cron-check-balance-deadlines` compara deadlines com instante UTC real e chama diretamente o RPC atômico de cancelamento;
-- [x] `cron-reveal-characters` compara `timestamptz` com instante real e evita dupla revelação concorrente;
-- [x] `cron-update-tracking` valida erro de persistência e usa timestamp real do carrier/execução;
-- [x] `pause-subscription` não possui segunda regra de cutoff; `pause_subscription_atomic` é a autoridade;
-- [x] confirmação de pausa exibe o cronograma realmente retornado pela transação;
-- [x] `send-email` aceita service-to-service apenas com `service_role` e mantém admin para chamadas humanas;
-- [x] presença de chat usa `Date.now() - 5min`, sem conversão artificial Bahia→UTC;
-- [x] conteúdo textual do e-mail de chat é escapado no gerador e assunto é sanitizado.
-
-### Métricas de produção
-
-- [x] caminho ativo movido para `production-metrics-service.ts`;
-- [x] durações derivadas de dados persistidos;
-- [x] ausência de timestamps completos => indisponível, não `0h`;
-- [x] score médio só aparece quando os itens possuem score medido;
-- [x] status/data operacional inválido bloqueia métricas parciais;
-- [x] taxa de conclusão usa escala 0–100 de forma única;
-- [ ] remover implementação antiga não consumida após prova de typecheck real.
+- [x] `cron-check-balance-deadlines` usa instante real e RPC atômico;
+- [x] `cron-reveal-characters` usa instante real e evita dupla revelação concorrente;
+- [x] `cron-update-tracking` valida persistência e timestamp real;
+- [x] `send-alert-digest` não depende do RPC fantasma `get_production_metrics`; deriva métricas persistidas e aceita cron/admin autenticado;
+- [x] `send-email` separa service-to-service de chamada humana admin;
+- [x] `email-delivery-webhook` não adivinha registro pelo último e-mail do destinatário;
+- [x] conteúdo de e-mail/chat auditado usa escape/sanitização nos caminhos corrigidos;
+- [x] Stripe webhook valida assinatura do provedor e persiste somente estado Stripe;
+- [ ] terminar inventário de `verify_jwt=false` e `SECURITY DEFINER` com prova remota quando o projeto estiver ativo.
 
 ## 4. Bloqueios comprovados
 
 ### GitHub Actions / Vercel
 
-No HEAD funcional deste checkpoint (`e70dc98d4e8c45beea887817513dc9263c280764`), ainda não existe GitHub Actions associado que prove checkout/typecheck/lint/test/build.
+No HEAD `2818f19e55e7fb7e939279c31fd9ce0826b78edf`:
 
-No HEAD anterior imediatamente verificado (`ae0227fd85d2ed9f49be8e758fef397b3a1b8e9e`):
+- `fetch_commit_workflow_runs` retornou `[]`;
+- combined status contém somente `Vercel = failure`;
+- URL do status contém `upgradeToPro=build-rate-limit`.
 
-- `fetch_commit_workflow_runs` retornou lista vazia;
-- o combined status continha somente `Vercel = failure`;
-- o destino do status indica `upgradeToPro=build-rate-limit`, portanto a prova observada é bloqueio de infraestrutura/plano, não erro de compilação demonstrado.
-
-A última execução GitHub Actions conhecida antes desta rodada continuava sendo o Quality Gate #133 / run `33355470028`, que falhou antes dos steps (`steps=[]`).
-
-Conclusão: **não há prova real de build/test no código atual**. Não marcar CI verde e não rerodar em loop sem corrigir a causa de infraestrutura.
+Conclusão: **não existe prova de typecheck/lint/test/build no HEAD atual**. Não interpretar a falha Vercel como erro de source nem marcar CI verde.
 
 ### Supabase
 
-- `supabase/config.toml` aponta `project_id = "pdytjhtjlxvbbeuxgnms"`;
-- projeto conectado: `Ordax-2026-1`;
-- último estado observado: `INACTIVE`;
-- geração oficial de tipos permanece dependente do projeto ativo/saudável;
-- migrations de hardening deste plano estão **versionadas, não provadas como aplicadas**.
+Projeto canônico: `pdytjhtjlxvbbeuxgnms` (`Ordax-2026-1`). Estado confirmado: **INACTIVE**.
 
-Consequências:
+Consequências observadas nesta rodada:
 
-- não editar `src/integrations/supabase/types.ts` manualmente;
-- não declarar RLS/grants/functions/Storage efetivos até prova no projeto ativo;
-- quando a etapa remota for deliberadamente iniciada: ativar o projeto correto, medir drift, reconciliar migrations, aplicar mudanças de forma controlada e regenerar tipos oficialmente;
-- executar advisors (`security` e `performance`) depois de DDL aplicado e corrigir findings relevantes antes do GO.
+- `execute_sql` não conseguiu fornecer prova do banco operacional;
+- tentativa de deploy de tombstone para `create-payment-intent` falhou porque o serviço do projeto não está disponível enquanto `INACTIVE`;
+- `list_edge_functions` ainda lista versões ACTIVE de funções retiradas do Git, incluindo `create-payment-intent`, `schedule-deliveries`, `cancel-standalone-for-non-payment`, `send-group-emails-batch`, `create-subscription` e `create-subscription-v2`;
+- source removido **não significa endpoint remoto removido**;
+- não restaurar projeto automaticamente sem decisão operacional explícita;
+- quando restaurado, primeira ação é medir drift e neutralizar/deletar endpoints retirados antes de qualquer tráfego de produção;
+- migrations corretivas devem ser geradas pelo fluxo oficial (`supabase migration new`/`db pull`) e depois verificadas; não inventar filename nem editar migration histórica aplicada;
+- regenerar tipos oficialmente e executar advisors `security`/`performance` depois da reconciliação.
 
 ### Deploy/visual
 
 - mudanças recentes não possuem build/smoke público comprovado;
-- Vercel está bloqueado por limite de build no status observado;
-- não aprovar UI somente por inspeção estática.
+- Vercel está bloqueado por limite de build;
+- coleções públicas permanecem desativadas, reduzindo exposição dos fluxos comerciais ainda em correção;
+- não aprovar UI por inspeção estática.
 
 ## 5. Próxima ordem de execução
 
@@ -185,28 +166,26 @@ Consequências:
 - [ ] `npm ci` em Node 24;
 - [ ] format/typecheck/lint/test/coverage/build;
 - [ ] `npm audit` e correção controlada de high/critical;
-- [ ] proteger `main` somente quando o Quality Gate executar de verdade.
+- [ ] proteger `main` somente quando Quality Gate executar de verdade.
 
-### P1 — Superfícies e legados
+### P1 — Supabase/pagamentos
 
-- [ ] continuar inventário de telas/no-ops/flags/rotas/integradores opcionais;
-- [ ] revisar `.env*` e claims operacionais/documentação ativa;
-- [ ] remover serviços de compatibilidade sem consumidores quando seguro;
-- [ ] remover implementação antiga de métricas após prova de typecheck.
+- [ ] decidir operacionalmente quando restaurar `Ordax-2026-1`;
+- [ ] ao restaurar, neutralizar endpoints remotos retirados antes de tráfego;
+- [ ] medir migration/schema drift;
+- [ ] criar migration correta para compra avulsa: `awaiting_deposit`/equivalente pendente, sem `deposit_paid_at` até aprovação real;
+- [ ] retirar RPC `create_subscription_atomic` legado se a prova remota confirmar ausência de consumidor;
+- [ ] provar RLS/grants/Storage/Edge Functions/advisors;
+- [ ] regenerar tipos;
+- [ ] testar pagamentos E2E e idempotência.
 
-### P2 — Supabase e segurança
+### P2 — Segurança e domínio
 
-- [x] project ref canônico confirmado;
-- [x] BOLA de mudança de coleção revisada e integridade de escolha endurecida;
-- [x] origem/definição de `choice_deadline` consolidada no fluxo versionado;
-- [ ] continuar auditoria de RPCs cliente de pagamento, suporte e pedidos por BOLA/IDOR;
-- [ ] terminar inventário de `SECURITY DEFINER`/`verify_jwt=false` e proteção alternativa;
-- [ ] reconciliar helpers SQL históricos de timezone (`America/Sao_Paulo` → contrato canônico Bahia) com prova de banco;
-- [ ] quando o projeto estiver ativo, medir migration drift e reconciliar schema;
-- [ ] regenerar tipos oficialmente;
-- [ ] provar RLS/grants/Storage/Edge Functions no ambiente ativo;
+- [ ] continuar auditoria BOLA/IDOR em suporte, pedidos e RPCs cliente;
+- [ ] concluir inventário `SECURITY DEFINER`/`verify_jwt=false`;
 - [ ] provar ausência de `service_role` no bundle;
-- [ ] testar scanner server-side real e comportamento fail-closed.
+- [ ] testar scanner server-side real e fail-closed;
+- [ ] reconciliar helpers SQL históricos de timezone com Bahia.
 
 ### P3 — Funcionalidade/UI
 
@@ -214,7 +193,6 @@ Consequências:
 - [ ] auth completo;
 - [ ] cliente: perfil/wishlist/dashboard/notificações/suporte;
 - [ ] admin/RBAC;
-- [ ] compra/assinatura/pagamento em ambiente de teste;
 - [ ] desktop/tablet/mobile + loading/vazio/erro/retry;
 - [ ] acessibilidade e Lighthouse/Core Web Vitals medidos.
 
@@ -237,85 +215,85 @@ Todos devem estar verdadeiros:
 - [ ] nenhum secret high-confidence em Git/bundle;
 - [ ] nenhum risco crítico/alto aberto sem mitigação/aceitação formal;
 - [ ] RLS, grants, Storage e funções privilegiadas provados no ambiente ativo;
-- [ ] catálogo real e estados de falha honestos;
 - [ ] pagamentos/uploads testados ponta a ponta;
+- [ ] catálogo real e estados de falha honestos;
 - [ ] fluxos público/cliente/admin aprovados;
-- [ ] cobertura mínima satisfeita;
 - [ ] acessibilidade/desempenho medidos;
 - [ ] dados legais/LGPD validados;
 - [ ] backup/restore/rollback ensaiados;
 - [ ] RC versionada, monitorada e reversível.
 
-## 7. Checkpoint 12 — 2026-08-31
+## 7. Checkpoints recentes
 
-HEAD funcional: `c6436fb570d0a721ef77b6db59a14872a235cd19`
+### Checkpoint 12 — 2026-08-31
 
-Foco: produção/capacidade fail-closed, remoção de capacidade 100, validação de ciclos e testes determinísticos. Quality Gate #121 continuou morrendo antes de qualquer step. Detalhes completos permanecem no histórico Git deste arquivo.
+HEAD funcional: `c6436fb570d0a721ef77b6db59a14872a235cd19`  
+Foco: produção/capacidade fail-closed, remoção de capacidade 100, validação de ciclos e testes determinísticos.
 
-## 8. Checkpoint 13 — 2026-08-31
+### Checkpoint 13 — 2026-08-31
 
-HEAD funcional antes deste documento: `8d538fd6ecf06d24ef12f2c8ea8e4ebeebd58164`
+HEAD funcional: `8d538fd6ecf06d24ef12f2c8ea8e4ebeebd58164`  
+Foco: SSOT de agendamento, integridade de escolha cliente e métricas medidas.
 
-Foco: SSOT de agendamento, integridade de escolha cliente e métricas medidas. Provas centrais: migrations `20260831044500_harden_subscription_delivery_schedule_ssot.sql`, `20260831051000_harden_delivery_choice_integrity.sql`, `20260831053500_fix_customer_character_choice_ids_and_deadlines.sql` e Quality Gate #133 ainda sem steps. Detalhes permanecem no histórico Git.
+### Checkpoint 14 — 2026-08-31
 
-## 9. Checkpoint 14 — 2026-08-31
+HEAD funcional: `e70dc98d4e8c45beea887817513dc9263c280764`  
+Foco: deadlines/tempo, crons, pausa, envio interno de e-mail, remoção de scheduler legado e hardcodes comerciais encontrados.
 
-HEAD funcional antes deste documento: `e70dc98d4e8c45beea887817513dc9263c280764`
+### Checkpoint 15 — 2026-08-31
+
+HEAD funcional antes deste documento: `2818f19e55e7fb7e939279c31fd9ce0826b78edf`
 
 Concluído:
 
-- erro de consulta de produção/escolha deixou de ser mascarado como ausência de registro;
-- `production_queue` passou a ser autoridade pré-escolha para `choice_status`/`choice_deadline`;
-- transição para `awaiting_choice` exige `character_choice_days` oficial e persiste o prazo;
-- lembrete e expiração foram alinhados à fila e deixaram de depender de uma escolha pendente fictícia;
-- sete prazos operacionais foram alinhados entre runtime, painel e validações do backend;
-- fallbacks locais de prazo/configuração foram removidos dos consumidores auditados;
-- hardcode de “7 dias” e hardcode comercial de depósito de R$ 100 foram removidos dos caminhos encontrados nesta rodada;
-- cron de saldo usa valores persistidos e o RPC atômico de cancelamento;
-- crons de ciclos, revelação, entregas e tracking deixaram de transformar Bahia em um falso instante UTC;
-- `shipping_business_days` substituiu o 5º dia útil fixo nos crons corrigidos;
-- numeração de entrega mensal evita colisão após pausa;
-- `pause-subscription` delega cutoff/estado/capacidade ao RPC atômico e apresenta o cronograma efetivamente persistido;
-- `send-email` ganhou caminho interno explícito service-role, mantendo autorização admin nas chamadas humanas;
-- `schedule-deliveries` foi removido do source por ausência de consumidor e por duplicar mutações administrativas;
-- `StandalonePurchaseButton` deixou de fabricar o valor de entrada.
+- endpoint genérico `create-payment-intent` removido porque permitia ao cliente escolher `amount`/metadata e não tinha consumidor de UI;
+- serviço, hook, componente Stripe e browser client órfãos desse fluxo removidos;
+- `stripe-webhook` deixou de usar `orderId`/`subscriptionId` de metadata para promover estado do domínio;
+- `create-subscription` e `create-subscription-v2` removidos: sem consumidor ativo e capazes de criar assinatura `active` sem prova real de pagamento;
+- `send-alert-digest` consolidado sobre dados versionados, sem RPC fantasma;
+- funções privilegiadas mortas adicionais removidas (`cancel-standalone-for-non-payment`, `send-group-emails-batch`);
+- `create_standalone_purchase_atomic` auditado e identificado como P1: calcula preço/coleção/capacidade corretamente, porém inicia `deposit_paid` e `deposit_paid_at = now()` mesmo sem comprovante;
+- por esse motivo `create-standalone-purchase` passou a falhar fechado com `PAYMENT_FLOW_UNAVAILABLE` até migration corretiva aplicada/testada;
+- teste-placeholder que documentava `deposit_paid` como comportamento correto foi removido;
+- `submit_standalone_balance_voucher` auditado e mantido: owner-only, status/deadline validados e sem promoção automática para pago;
+- wrapper de serviço avulso removido; import canônico passou a `src/services/payments/standalone-purchase-reservation-service.ts`;
+- `PUBLIC_COLLECTIONS_ENABLED = false` confirmado, mantendo compra/assinatura públicas escondidas durante o hardening;
+- Supabase remoto confirmado `INACTIVE`; endpoints antigos continuam listados como ACTIVE e não puderam ser tombstonados/deployados nesse estado.
 
-Commits desta continuação, entre outros:
+Commits centrais desta continuação:
 
-- `9e77a70bd10fe72a6b9f5b152f6ebf596412a776` — saldo/deadline;
-- `e1256b2ef5a1985cceb6d03c2a568835874c7d26` — dias úteis Edge;
-- `4c9fc29511d284c4caaea79e8ef46d0ec616cb4f` — transição de ciclos;
-- `197e119bcf7400bdba20d8468a200d052c16bf6a` — pausa de assinatura;
-- `cedebaed16c82f5d36f3db1b61599798c12151c9` — revelação;
-- `f79271a340114dfa12b1a8f07e4d584740121cd6` — criação mensal de entregas;
-- `2ca99dd791e6b443ba8c6f12d627fec49550c7ea` — tracking;
-- `3c432384dfb1064966245dd84c3e525bf5ce95ab` — envio de e-mail;
-- `0124392ec4b12fbbc4791498931c0110cbc78a74` / `ae0227fd85d2ed9f49be8e758fef397b3a1b8e9e` — remoção do scheduler legado;
-- `e70dc98d4e8c45beea887817513dc9263c280764` — remoção de depósito hardcoded no botão de compra.
+- `ce67704d495026304d79f25d8c829a9f4ffe8eec` — remove PaymentIntent genérico;
+- `b70f1f533b4866ed6b8c53e74baac28dc531f469` / `fca648a9b9168969e1ad9c7a12b6f0afac282a72` / `b804ffb3ee96f24fa3113e41b49c7ea2a675c15c` / `125768f30e52593c97aeea0ec12527d6a331df11` — remove frontend Stripe órfão;
+- `d10d879b534e0a7ed49747a33aabf4ad6955c37b` — isola webhook Stripe do estado de domínio;
+- `c375f3780c8faa9b8211420b877fb9f755282f9c` / `65d8b98398e79aabd39cb3a4aa3f6a2049d8499f` — remove criações de assinatura inseguras;
+- `7e237bbb1c7d2a80864e2724bb34c3b01b2df22d` / `ba134b36a5764cfda1846c7416751d71632ac8b7` — remove teste/README do v2 legado;
+- `9f9c9b63277b58a2c16cfaa053166691e87cbd37` — bloqueia criação avulsa até correção do estado de depósito;
+- `54100d5da19a4c3e61b10d9f8c35592b5c302a97` — remove testes-placeholder da criação avulsa;
+- `c57200e2877d841512fd79c59b7ec98b4ea51da5` / `2818f19e55e7fb7e939279c31fd9ce0826b78edf` — canonicaliza serviço/UI avulso.
 
 Provas/limitações:
 
-- main confirmada no HEAD funcional `e70dc98...` antes deste checkpoint;
-- branch continua `protected=false`;
-- no HEAD `ae0227...`, GitHub Actions associado = nenhum;
-- combined status no mesmo HEAD = Vercel `failure` por `build-rate-limit`;
-- Supabase canônico permanece sem prova operacional remota e o último estado observado é `INACTIVE`;
-- portanto não existe prova de typecheck/lint/test/build/deploy dessas alterações.
+- GitHub Actions no HEAD `2818f19...`: `[]`;
+- Vercel no mesmo HEAD: `failure` por `build-rate-limit`;
+- Supabase `Ordax-2026-1`: `INACTIVE`;
+- tentativa de deploy remoto de tombstone: bloqueada pelo projeto inativo;
+- portanto **não existe prova de build, deploy, migrations ou E2E destas alterações**.
 
 Next action:
 
-1. continuar auditoria de superfícies ativas por valor comercial hardcoded, fail-open e autoridade duplicada;
-2. revisar suporte/pagamentos/pedidos por BOLA/IDOR e RPCs privilegiados;
-3. reconciliar timezone SQL e schema somente com o Supabase canônico operacional e prova de migration;
-4. restaurar Quality Gate/build real e corrigir qualquer erro de source encontrado;
-5. somente depois executar E2E/smoke e avançar para RC.
+1. continuar auditoria BOLA/IDOR em suporte/pedidos e RPCs privilegiados sem depender do banco remoto;
+2. manter pagamentos/coleções fail-closed enquanto o projeto estiver inativo;
+3. quando houver decisão explícita de restaurar o Supabase, neutralizar primeiro as funções remotas retiradas e só então reconciliar schema/migrations;
+4. recuperar execução real de Quality Gate/build;
+5. executar E2E/smoke somente depois das provas de banco e build.
 
 Do not repeat:
 
-- não usar defaults comerciais, prazo, créditos, capacidade ou disponibilidade como substituto de dado oficial;
-- não tratar um `Date` deslocado para Bahia como instante UTC para banco;
-- não manter Edge Function sem consumidor que replique autoridade já existente;
-- não transformar RPC/query vazia ou erro em sucesso/array vazio/zero real;
-- não editar migrations históricas ou tipos gerados para mascarar drift;
+- não reativar projeto Supabase automaticamente;
+- não usar metadata do provedor como autoridade de domínio;
+- não criar estado `paid/active` a partir de payload/comprovante não verificado;
+- não inventar migration filename nem editar migration histórica aplicada;
+- não manter Edge Function sem consumidor que replique autoridade existente;
+- não transformar erro/NULL em sucesso, preço, prazo, capacidade ou disponibilidade fictícia;
 - não criar branch/PR;
 - não declarar migrations aplicadas, CI verde ou GO sem prova.
