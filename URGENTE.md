@@ -3,7 +3,7 @@
 Status: **EM EXECUÇÃO — NO-GO para lançamento**  
 Atualizado em: **2026-08-31 (America/Bahia)**  
 Branch operacional: **main somente**  
-HEAD funcional antes deste documento: `6fb1d70cf87e26296ccb52d0778c20f7dc149739`
+HEAD funcional antes deste documento: `2f8bb14ba89b301448b330712ac423b45417ed60`
 
 Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX. O histórico detalhado permanece no Git; aqui ficam somente regras vigentes, estado atual, bloqueios comprovados, provas e próxima ordem de execução.
 
@@ -22,62 +22,67 @@ Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX
 11. Comprovante enviado não equivale a pagamento aprovado.
 12. Metadata de provedor externo não é autoridade para alterar pedido/assinatura do domínio.
 13. Tabelas comerciais não devem aceitar mutação direta do navegador quando já existe RPC/contrato canônico que deriva preço, estado e ownership.
-14. Grants devem ser avaliados pelo **estado efetivo após todas as migrations**, não por uma policy ou migration histórica isolada.
+14. Grants/policies devem ser avaliados pelo **estado efetivo após todas as migrations**, não por uma migration histórica isolada.
 15. `timestamptz` representa instante real; Bahia é regra/calendário/apresentação, não deslocamento artificial antes de `toISOString()`.
-16. Nome de operação comercial deve corresponder ao efeito real: não chamar de reembolso/extorno um fluxo que não movimenta dinheiro.
+16. Nome de operação comercial deve corresponder ao efeito real; não prometer pagamento, reembolso, reserva ou aprovação quando o backend não executa esse efeito.
+17. Quando um fluxo financeiro está bloqueado no backend, a UI deve ser informativa/read-only; não solicitar pagamento ou comprovante para depois falhar.
 
 ## 2. Estado atual
 
 | Área | Estado | Observação |
 | --- | --- | --- |
 | Branch | **main somente** | decisão explícita vigente |
-| HEAD funcional | `6fb1d70cf87e26296ccb52d0778c20f7dc149739` | antes deste update do SSOT |
+| HEAD funcional | `2f8bb14ba89b301448b330712ac423b45417ed60` | antes deste update do SSOT |
 | Proteção da main | **PENDENTE** | branch não protegida; checks obrigatórios desligados |
-| GitHub Actions | **FALHA ANTES DOS STEPS** | run `33397209149`, HEAD `aabc26e...`, job `99504490862`, `steps=[]`, `runner_id=0` |
-| Vercel | **SEM PROVA DE DEPLOY VÁLIDO** | não usar status isolado como prova de erro de source |
+| GitHub Actions | **FALHA ANTES DOS STEPS** | run `33452684424`, job `99685862649`, `steps=[]`, `runner_id=0` |
+| Vercel | **SEM PROVA DE DEPLOY VÁLIDO** | status isolado não prova erro de source nem release válida |
 | Runtime | **Node 24.x** | manifesto/workflow alinhados |
-| Coleções públicas | **DESATIVADAS** | reduz exposição dos fluxos comerciais em hardening |
 | Supabase canônico | **INACTIVE** | `pdytjhtjlxvbbeuxgnms` / `Ordax-2026-1` |
-| Drift de Edge Functions | **COMPROVADO** | remoto ainda mantém funções retiradas do Git; projeto inativo impede neutralização atual |
-| Compra avulsa | **P1 / FAIL-CLOSED NO SOURCE** | INSERT cliente efetivo + RPC atômico nasce em `deposit_paid`; frontend público bloqueado |
-| Assinatura principal | **P1 NO DATA API** | checkout canônico deriva preço, mas INSERT direto de `subscriptions` continua mais permissivo |
-| Assinatura por créditos | **P1 — ATIVAÇÃO SEM PAGAMENTO** | `activate_subscription_credit_for_current_user` cria assinatura `active` e aloca créditos sem prova financeira |
-| Refund legado de créditos | **RETIRADO DO FRONTEND / DÍVIDA DB** | RPC retorna `refund_amount=0`; UI que prometia estorno proporcional/7 dias foi removida |
-| Quotes | **DML DIRETO FECHADO** | migration posterior revoga INSERT/UPDATE de `authenticated` |
-| Profiles | **SELF-SERVICE RESTRITO** | DML amplo revogado; UPDATE posterior limitado a colunas editáveis; role protegida por trigger |
-| Suporte | **DML DIRETO FECHADO** | mensagens/anexos/conversas passam por RPCs após revogações |
-| Produção/escolhas | **DML DIRETO FECHADO/AUTORITATIVO** | produção admin-only; escolhas do cliente passam por RPC |
+| Drift de Edge Functions | **COMPROVADO** | remoto pode manter funções retiradas do Git; projeto inativo impede neutralização/prova atual |
+| Assinatura pública | **BROWSE-ONLY** | planos/coleções consultáveis; pagamento, comprovante e checkout removidos da UI |
+| Compra avulsa | **BROWSE-ONLY / P1 DB** | preço/personagem consultáveis; reserva/CTA financeiro removidos da UI |
+| Notificações admin | **READ-ONLY / P2 DB** | leitura mantida; mark-read/delete retirados do frontend até privilégio ser reconciliado |
+| Assinatura por créditos | **P1 DB** | RPC de ativação ainda precisa exigir prova financeira canônica |
+| Criação manual de pagamento | **REMOVIDA DO FRONTEND** | RPC legado ainda aceita `p_amount` |
+| Confirmação de pagamento por orçamento | **REMOVIDA DO FRONTEND** | RPC legado de `p_amount` permanece dívida de banco |
+| Quotes | **DML DIRETO FECHADO** | revoke posterior invalida falso positivo histórico |
+| Profiles | **SELF-SERVICE RESTRITO** | DML amplo revogado; UPDATE apenas por colunas aprovadas; role protegida |
+| Suporte | **DML DIRETO FECHADO** | conversa/mensagem/anexo passam por RPCs validados após revogações |
+| Produção/escolhas | **AUTORIDADE SERVER-SIDE** | produção admin-only; escolha cliente por RPC/estado da fila |
 | Coins | **SEM BYPASS DE CRÉDITO IDENTIFICADO** | saldo/ledger escritos por autoridade administrativa/RPC atômico |
-| Notificações | **P2 AUTORIDADE/FUNCIONALIDADE** | `user_notifications` amplo demais; RPCs invoker de `admin_notifications` podem não ter UPDATE/DELETE suficiente |
-| Criação manual de pagamento | **REMOVIDA DO FRONTEND** | RPC legado continua executável e aceita `p_amount` |
-| Confirmação de pagamento por orçamento | **REMOVIDA DO FRONTEND** | RPC legado de `p_amount` permanece versionado |
-| E2E | **BLOQUEADO EXPLICITAMENTE** | `npm run test:e2e` retorna `E2E_BLOCKED` até ambiente canônico ser reconciliado |
+| E2E | **BLOQUEADO EXPLICITAMENTE** | não fingir E2E enquanto ambiente canônico está inativo/inseguro |
 | Lançamento | **NO-GO** | banco, CI, E2E, deploy e release engineering ainda sem prova suficiente |
 
 ## 3. Hardening concluído no source
 
-### Segurança e autoridade
+### Autoridade comercial e pagamentos
 
 - [x] `create-payment-intent` genérico e frontend Stripe órfão removidos;
-- [x] `stripe-webhook` não altera estado do domínio a partir de metadata do provedor;
-- [x] `create-subscription` e `create-subscription-v2` removidos por ativarem assinatura sem prova financeira;
-- [x] criação avulsa bloqueada com `PAYMENT_FLOW_UNAVAILABLE` enquanto o contrato de depósito permanecer inseguro;
-- [x] saldo avulso auditado: ownership/status/deadline validados e comprovante não significa aprovação;
-- [x] upload de comprovante manual auditado: owner-only e primeira evidência muda apenas para `under_review`;
+- [x] `stripe-webhook` não promove estado de pedido/assinatura a partir de metadata do provedor;
+- [x] `create-subscription` e `create-subscription-v2` inseguros removidos;
+- [x] checkout principal de assinatura fail-closed no service e posteriormente **retirado da UI/hook/service de mutação**;
+- [x] `SubscribeCollection` virou página de consulta: não seleciona pagamento, não recebe comprovante e não confirma assinatura;
+- [x] criação avulsa tombstonada no Edge com `PAYMENT_FLOW_UNAVAILABLE`;
+- [x] `BuyCharacter` virou página de consulta: não reserva, não cobra e não recebe comprovante;
+- [x] `createStandalonePurchaseReservation` retirado do service de página;
+- [x] `StandalonePurchaseButton` e `useStandalonePurchaseAvailability` órfãos removidos;
+- [x] suíte antiga de criação avulsa removida por codificar `deposit_paid` e entrada fixa de R$ 100 como comportamento correto;
+- [x] saldo avulso auditado: ownership/status/deadline validados; comprovante não significa aprovação;
+- [x] upload de comprovante manual auditado: primeira evidência vai para revisão, não para pago;
+- [x] `createPayment`, confirmação morta de orçamento e UI manual órfã removidos;
+- [x] ativação de assinatura por créditos retirada do frontend enquanto o RPC não comprova pagamento;
+- [x] UI de “cancelamento com reembolso” removida onde backend não movimenta dinheiro;
+- [x] Stripe/webhooks endurecidos para não adivinhar registro alvo nem ignorar persistência crítica.
+
+### Notificações e suporte
+
 - [x] suporte auditado contra BOLA/IDOR em conversa, mensagem e anexo;
-- [x] cancelamento de assinatura principal valida ownership no Edge e novamente no RPC atômico;
-- [x] `createPayment`, confirmação morta de orçamento e telas Stripe órfãs removidas;
-- [x] ativação de assinatura por créditos retirada do frontend; RPC inseguro permanece bloqueio de banco;
-- [x] diálogo/API/hook de “cancelamento com reembolso” de créditos removidos porque backend não processa reembolso financeiro;
-- [x] pedido individual por créditos auditado: valida assinatura, personagem, saldo, plano e capacidade e debita atomicamente;
-- [x] pedido automático por créditos auditado: débito ocorre no fechamento admin do ciclo; sem saldo, pedido é cancelado;
-- [x] DML direto das tabelas `subscription_credit_*` é revogado de `authenticated` no contrato versionado;
-- [x] suites antigas/placeholders que codificavam fluxos inseguros foram removidos;
-- [x] `test:e2e` falha fechado enquanto a infraestrutura canônica não puder ser validada;
-- [x] auditor comercial interpreta grants/revokes pelo estado efetivo e bloqueia ativação gratuita de créditos;
-- [x] auditor de profiles distingue grant de coluna de grant de tabela;
-- [x] auditor de notificações criado e ligado ao Quality Gate;
-- [x] contrato TS de `mark_all_notifications_read` alinhado ao retorno `void` versionado.
+- [x] DML direto de `support_conversations` e `support_messages` revogado no estado efetivo;
+- [x] `AdminNotificationHistory` tornou-se explicitamente read-only;
+- [x] `NotificationCenter` não marca mais notificações automaticamente ao clicar;
+- [x] hooks/services frontend de mark-read/mark-all/delete removidos enquanto o contrato SQL está inconsistente;
+- [x] erros de leitura de notificações não viram “lista vazia” silenciosa;
+- [x] auditor de autoridade de notificações ligado ao Quality Gate.
 
 ### Produção, capacidade e calendário
 
@@ -86,76 +91,66 @@ Este arquivo é o **SSOT operacional** da preparação para lançamento do ORDAX
 - [x] ciclos inexistentes não viram disponibilidade fictícia;
 - [x] scheduling deriva plano/quantidade persistidos e exige `shipping_date` real;
 - [x] cron mensal evita colisão de `delivery_number` após pausa;
-- [x] deadlines e calendário usam instantes reais com Bahia explícita;
+- [x] deadlines e calendário usam instantes reais; Bahia não altera artificialmente timestamps UTC;
 - [x] escolha real de personagem usa `character_choices`; pré-escolha usa `production_queue`;
 - [x] seleção de personagem valida vínculo com coleção/entrega;
-- [x] DML direto de `subscription_deliveries` e `character_choices` foi revogado para o navegador.
+- [x] DML direto de `subscription_deliveries` e `character_choices` revogado do navegador.
 
-## 4. P1 comprovado — autoridade comercial residual
+### Governança/limpeza
+
+- [x] `URGENTE.md` é SSOT operacional atual; histórico detalhado permanece no Git;
+- [x] funções/componentes/hooks sem consumidor que duplicavam autoridade foram removidos nos fluxos auditados;
+- [x] mocks/placeholders e suítes que ensinavam comportamento financeiro incorreto foram removidos;
+- [x] `test:e2e` não finge cobertura quando o ambiente canônico não está disponível;
+- [x] auditor comercial considera grant/revoke efetivo e não mantém falsos positivos de `quotes/profiles/support`;
+- [x] auditor de profiles diferencia grant de coluna de grant de tabela.
+
+## 4. P1 comprovados — banco/comercial
 
 ### 4.1 `standalone_purchases`
 
-- não foi encontrada revogação posterior do INSERT de `authenticated`;
-- `standalone_purchases_insert_own` continua potencialmente alcançável;
-- o RPC atômico canônico deriva preço/capacidade, porém cria a compra como `deposit_paid` e `deposit_paid_at=now()` mesmo sem prova/aprovação financeira suficiente.
+O estado versionado ainda exige correção oficial de banco:
 
-**Ação:** manter compra pública bloqueada; após restaurar/reconciliar Supabase, gerar migration oficial que revogue INSERT direto e faça a compra nascer em estado não pago.
+- INSERT direto de `authenticated`/policy histórica continua como risco efetivo até existir revoke posterior comprovado;
+- `create_standalone_purchase_atomic` deriva preço/capacidade corretamente, porém cria a linha como `deposit_paid` e define `deposit_paid_at=now()` antes de prova/aprovação financeira suficiente;
+- o Edge está tombstonado e a UI não possui mais criação, mas isso não substitui a migration de banco.
+
+**Remediação:** revogar INSERT direto e fazer a compra nascer em estado explicitamente não pago (`awaiting_deposit` ou equivalente). Só autoridade financeira validada/idempotente pode promover para depósito pago.
 
 ### 4.2 `subscriptions`
 
-- não foi encontrada revogação posterior do INSERT de `authenticated`;
-- `subscriptions_insert_own_pending_checkout` permite campos comerciais que o RPC canônico deveria derivar do plano;
-- aprovação administrativa promove a linha existente sem recalcular todos esses campos.
+- `subscriptions_insert_own_pending_checkout` permanece mais permissiva que o RPC canônico;
+- campos como valor/quantidade de entregas podem divergir do plano se a Data API contornar o RPC;
+- checkout UI está retirado, mas o privilégio/policy precisa ser reconciliado antes de reativação pública.
 
-**Ação:** revogar INSERT direto e manter criação somente pelo RPC server-authoritative.
+**Remediação:** revogar INSERT direto de `authenticated`; criação deve ocorrer somente por contrato que derive plano, preço, entregas e estado de registros persistidos.
 
 ### 4.3 assinatura por créditos
 
-`activate_subscription_credit_for_current_user`:
+O RPC `activate_subscription_credit_for_current_user` historicamente cria assinatura ativa e aloca créditos sem uma prova financeira canônica/idempotente suficiente.
 
-- aceita usuário autenticado;
-- escolhe plano ativo;
-- cria `subscription_credit_subscriptions.status='active'`;
-- aloca `base_credits + bonus_credits` como saldo disponível;
-- registra transaction `allocation`;
-- recebe `payment_method_id`, mas não comprova/cobra pagamento.
-
-A implementação foi posteriormente movida a `private_api`, porém o wrapper público continua executável por `authenticated`. Remover o caller frontend **não elimina a superfície PostgREST**.
-
-**Ação:** retirar/reformular esse RPC no banco antes de qualquer reativação pública. Ativação e alocação só podem ocorrer após prova financeira canônica/idempotente.
+**Remediação:** retirar/reformular a superfície; ativação/alocação de créditos somente após evento financeiro autoritativo.
 
 ### 4.4 RPCs de valor informado pelo cliente
 
-- `create_manual_payment_for_current_user` permanece executável por `authenticated` e aceita `p_amount`;
-- `notify_quote_payment_for_current_user` permanece executável por `authenticated` e aceita `p_amount`.
+- `create_manual_payment_for_current_user` aceita `p_amount`;
+- `notify_quote_payment_for_current_user` aceita `p_amount`.
 
-Os callers frontend foram removidos, mas a superfície SQL continua dívida de banco.
+Os callers frontend foram retirados, mas as superfícies SQL precisam ser removidas ou reescritas para derivar valor da entidade comercial oficial.
 
-### Falsos positivos descartados
-
-- `quotes`: INSERT/UPDATE revogados posteriormente;
-- `profiles`: DML amplo revogado; self-service reaberto apenas por colunas aprovadas;
-- suporte: DML de mensagem/anexo/conversa revogado e mutações passam por RPC;
-- `character_choices` e `subscription_deliveries`: DML direto revogado;
-- `subscription_credit_*`: DML direto das tabelas revogado; o P1 é o RPC de ativação, não INSERT direto;
-- `user_coins`/`coin_transactions`: sem caminho de cliente para creditar saldo arbitrariamente identificado.
-
-**Conclusão:** reativar o Supabase antes de reconciliar esses P1 é **NO-GO**.
-
-## 5. P2 comprovado — contratos funcionais/autorização
+## 5. P2 comprovados — menor privilégio/contrato
 
 ### Notificações
 
-1. `user_notifications` mantém UPDATE de linha inteira para o proprietário, embora o produto precise somente de `is_read/read_at`.
-2. `admin_notifications` teve DML revogado, mas `mark_notification_read`, `mark_all_notifications_read` e `admin_delete_notification` foram convertidos para `SECURITY INVOKER`; sem grants mínimos posteriores, podem falhar por privilégio insuficiente.
+- `user_notifications` historicamente permite UPDATE próprio mais amplo do que apenas estado de leitura;
+- `admin_notifications` teve DML revogado, mas RPCs posteriores `SECURITY INVOKER` de leitura/exclusão podem não possuir grants mínimos para executar;
+- frontend foi colocado em read-only até o banco ser corrigido.
 
-O guardrail `scripts/security/audit-notification-authority.mjs` exige menor privilégio: UPDATE por coluna ou RPC autorizado; não reabrir DML amplo.
+**Remediação preferida:** manter DML amplo revogado e conceder apenas o mínimo necessário por coluna/RPC auditado (`is_read`, `read_at`, `updated_at` para leitura; exclusão admin por fronteira explicitamente autorizada).
 
-### Cancelamento “com reembolso” do subsistema de créditos
+### Exports legados sem consumidor
 
-O RPC histórico cancela a assinatura e expira créditos, mas retorna `refund_amount = 0` e não movimenta dinheiro. A superfície frontend que estimava valores hardcoded e prometia reembolso em 7 dias foi removida.
-
-**Ação:** no banco reconciliado, renomear/reformular para cancelamento sem promessa financeira ou integrar um fluxo real de reembolso idempotente antes de voltar a expor essa opção.
+`standalone-purchase-service.ts` ainda contém exports históricos de criação/disponibilidade (`createWithDeposit`, `canCreateStandalonePurchase`) sem consumidor runtime após a limpeza desta rodada. Não existe caminho ativo da UI até eles, mas devem ser removidos quando o arquivo for refatorado sem afetar operações pós-compra legítimas.
 
 ## 6. Infraestrutura bloqueada
 
@@ -163,13 +158,13 @@ O RPC histórico cancela a assinatura e expira créditos, mas retorna `refund_am
 
 Prova mais recente:
 
-- run `33397209149`, Quality Gate, HEAD `aabc26e3cb031ababf5c55dbd5cdf782dd7be708`;
-- job `99504490862` = `completed/failure`;
-- duração aproximada: 3 segundos;
+- run `33452684424` (`Quality Gate`, HEAD `2f8bb14ba89b301448b330712ac423b45417ed60`) = `completed/failure`;
+- job `99685862649` = `completed/failure`;
 - `steps=[]`;
-- `runner_id=0` e `runner_name=''`.
+- `runner_id=0`, `runner_name=''`;
+- duração aproximada: 2 segundos.
 
-Portanto não existe prova de execução de `npm ci`, format, typecheck, lint, auditorias, testes ou build. Não atribuir essa falha ao source até existir step/log.
+**Conclusão:** o job não chega a provisionar runner/steps. Não existe prova de `npm ci`, format, typecheck, lint, auditores, testes ou build. Não atribuir essa falha ao source até existir step/log.
 
 ### Supabase
 
@@ -183,7 +178,9 @@ Enquanto permanecer inativo:
 - não reativar automaticamente;
 - não assumir que remover source removeu função remota já publicada.
 
-Quando houver decisão explícita para restaurar, a ordem é: **neutralizar drift remoto → medir migration/schema drift → gerar migrations oficiais → aplicar/verificar → advisors/tipos → E2E**.
+Quando houver decisão explícita para restaurar, a ordem é:
+
+**neutralizar drift remoto → medir migration/schema drift → gerar migrations oficiais → aplicar/verificar → advisors/tipos → E2E**.
 
 ## 7. Próxima ordem de execução
 
@@ -201,31 +198,30 @@ Quando houver decisão explícita para restaurar, a ordem é: **neutralizar drif
 ### P1 — Supabase/comercial
 
 - [ ] decidir quando restaurar `Ordax-2026-1`;
-- [ ] neutralizar Edge Functions remotas retiradas do Git antes de tráfego;
+- [ ] neutralizar Edge Functions remotas retiradas/tombstonadas no Git antes de tráfego;
 - [ ] medir drift de schema/migrations;
 - [ ] revogar INSERT direto de `subscriptions` e `standalone_purchases` por migration oficial;
 - [ ] corrigir estado inicial do depósito avulso;
 - [ ] retirar/reformular RPCs de `p_amount` do cliente;
-- [ ] retirar/reformular `activate_subscription_credit_for_current_user` para exigir prova de pagamento;
-- [ ] reconciliar cancelamento/refund de créditos com semântica financeira real;
+- [ ] retirar/reformular ativação gratuita de assinatura por créditos;
 - [ ] provar checkout/ativação com preço, entregas e créditos derivados do plano persistido;
 - [ ] advisors, RLS/grants/Storage/functions, tipos e E2E.
 
-### P2 — segurança e domínio
+### P2 — segurança/domínio
 
 - [ ] corrigir menor privilégio de notificações por migration oficial;
-- [ ] concluir inventário de `SECURITY DEFINER` e `verify_jwt=false`;
-- [ ] continuar inventário do grant DML histórico pelo estado efetivo final;
+- [ ] concluir inventário de `SECURITY DEFINER`, wrappers `private_api` e `verify_jwt=false`;
+- [ ] remover exports legados sem consumidor de `standalone-purchase-service` sem tocar nas operações pós-compra válidas;
 - [ ] provar ausência de `service_role` no bundle;
 - [ ] testar scanner server-side real/fail-closed;
 - [ ] reconciliar helpers SQL históricos de timezone.
 
-### P3 — produto e release
+### P3 — produto/release
 
 - [ ] smoke público e catálogo real;
 - [ ] auth, perfil, wishlist, dashboard, notificações e suporte;
 - [ ] admin/RBAC;
-- [ ] loading/vazio/erro/retry em desktop/tablet/mobile;
+- [ ] estados loading/vazio/erro/retry em desktop/tablet/mobile;
 - [ ] acessibilidade/Lighthouse/Core Web Vitals medidos;
 - [ ] staging/preview separado de produção;
 - [ ] artefato imutável, secrets checklist, monitoramento e alertas;
@@ -234,54 +230,41 @@ Quando houver decisão explícita para restaurar, a ordem é: **neutralizar drif
 
 ## 8. Critérios mínimos de GO
 
-Nenhum GO enquanto faltar qualquer item abaixo:
+Nenhum GO enquanto qualquer item abaixo estiver ausente:
 
 - Quality Gate executado até o fim e verde no HEAD da release;
 - build/deploy reproduzível e smoke comprovado;
 - Supabase ativo, reconciliado e sem drift crítico;
 - auditores de autoridade verdes;
-- nenhuma função remota retirada ainda exposta;
-- pagamentos/assinaturas/compra avulsa E2E provados com idempotência;
+- nenhuma função remota retirada/tombstonada no Git ainda exposta com lógica antiga;
+- pagamentos/assinatura/compra avulsa E2E provados com idempotência;
 - RLS/grants/Storage/advisors revisados no banco real;
 - segredos e RBAC provados;
 - rollback e recuperação ensaiados.
 
-## 9. Checkpoint atual
+## 9. Checkpoint desta continuação
 
-Concluído nesta continuação:
+Concluído nesta rodada:
 
-- suporte, produção, choices, profiles, quotes e coins reavaliados pelo privilégio efetivo final;
-- falsos P1 derivados de policies históricas sem grant efetivo removidos;
-- auditor comercial/profile/notification corrigidos e ligados ao Quality Gate;
-- ativação gratuita de assinatura por créditos confirmada como P1 e adicionada ao auditor comercial;
-- callers frontend de ativação por créditos removidos;
-- pedido individual e pedido automático por créditos auditados; débito/capacidade são server-side;
-- falsa superfície “cancelar com reembolso” removida do frontend (componente, export, hook, API e cliente RPC);
-- Quality Gate mais recente confirmado sem runner/steps, portanto ainda sem prova de source.
+- notificações admin tornadas read-only na página de histórico e no centro global;
+- hooks/service client de mark-read/mark-all/delete retirados enquanto o contrato SQL está inconsistente;
+- assinatura transformada em browse-only; pagamento, upload de comprovante e mutation removidos da UI/hook/service;
+- compra avulsa transformada em browse-only; CTA de reserva, cobrança e criação removidos;
+- serviço de reserva avulsa ficou somente leitura;
+- `StandalonePurchaseButton` e hook de disponibilidade órfãos removidos;
+- suíte de criação avulsa obsoleta removida por afirmar `deposit_paid` e R$ 100 fixos como invariantes;
+- Quality Gate rechecado uma vez no HEAD funcional: continua sem runner/steps.
 
-Commits recentes relevantes:
+Commits principais desta continuação:
 
-- `aabc26e3cb031ababf5c55dbd5cdf782dd7be708` — bloqueia ativação gratuita de créditos no auditor comercial;
-- `1e69cd8927d126e07ea6bf19bae6fb695339be49` — remove diálogo de reembolso enganoso;
-- `d36adff8cb8f011db9847d3a3ad95c73a7055fd2` — remove export do diálogo;
-- `6fc607aa59385e502d6567e7957d1f4e132f6718` — remove hook de refund;
-- `409acec11fd137b04a14ecebc7de7453d1f19e5e` — remove cliente RPC de refund;
-- `6fb1d70cf87e26296ccb52d0778c20f7dc149739` — remove método de refund da API de créditos.
+- `180cf2edd0e9baf6a910f5d9694eaff95f5dd6bb` — fail-close de mutações no histórico de notificações;
+- `d52681e3c5ad51eb5822f578e9c6bba4c734fb46` — centro de notificações read-only;
+- `6bdf90e3cca532ffb33af230471997a0baecd033` — remoção do client de mutação de notificações;
+- `8d94437736253c9e907fc8dda70956910ba70785` — assinatura browse-only;
+- `a9c91b8a2453ba80ebdbf4e5b249faf5e26a9aad` — remoção da mutation de checkout do service;
+- `0bfe2726b0d2bd48d518c5b2d9d25f87bb343025` — compra avulsa browse-only;
+- `90e80d28dac519c59065e40d3f7ee8bbe7c766a6` — serviço de reserva avulsa somente leitura;
+- `ef87cbf67cb1aceeda334bea6a61ca0d1bd536d1` / `b6e208ddd678f8648671d165e3f4239949db9dc5` — remoção de botão/hook órfãos;
+- `2f8bb14ba89b301448b330712ac423b45417ed60` — remoção da suíte de criação avulsa obsoleta.
 
-Next action:
-
-1. auditar renovação e mudança de plano do subsistema de créditos, procurando alocação adicional sem pagamento;
-2. continuar inventário de `SECURITY DEFINER`/`authenticated` com efeitos comerciais;
-3. manter fluxos públicos fail-closed;
-4. restaurar/migrar Supabase somente por decisão operacional explícita e fluxo oficial.
-
-Do not repeat:
-
-- não classificar policy histórica como vulnerabilidade sem verificar o grant efetivo final;
-- não editar migration histórica;
-- não inventar nome/timestamp de migration;
-- não reativar Supabase automaticamente;
-- não abrir pagamento/assinatura/compra pública enquanto P1 permanecer;
-- não reabrir DML amplo apenas para fazer RPC invoker funcionar;
-- não criar branch/PR;
-- não declarar CI verde, migration aplicada, deploy válido ou GO sem prova.
+Próxima ação: **seguir no P2/P1 estático sem repetir CI: remover autoridade/API legada sem consumidor, continuar inventário de mutações privilegiadas e preparar a lista exata de migrations oficiais necessárias para quando o Supabase puder ser reconciliado.**
