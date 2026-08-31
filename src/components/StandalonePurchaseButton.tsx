@@ -1,17 +1,18 @@
 /**
- * Standalone Purchase Button Component
- * 
- * Button component that enforces cutoff rules for standalone purchases.
- * Displays appropriate messages when purchase is not allowed.
- * 
- * Requirements: 7.6
+ * Botão de compra avulsa.
+ *
+ * A disponibilidade operacional vem do backend. Este componente não fabrica
+ * preço, entrada, saldo, capacidade ou prazo comercial.
  */
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useEffect, useState } from "react";
 import { AlertCircle, Clock } from "lucide-react";
-import { isBeforeCutoff, formatTimeUntilCutoff } from "@/lib/cutoff-middleware";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  formatTimeUntilCutoff,
+  isBeforeCutoff,
+} from "@/lib/cutoff-middleware";
 import { useStandalonePurchaseAvailability } from "@/hooks/useStandalonePurchaseAvailability";
 
 interface StandalonePurchaseButtonProps {
@@ -22,112 +23,72 @@ interface StandalonePurchaseButtonProps {
   disabled?: boolean;
 }
 
-/**
- * Button component for creating standalone purchases
- * 
- * This component checks:
- * 1. If current time is before cutoff
- * 2. If cycle is still open
- * 3. If capacity is available
- * 
- * Requirements: 7.6
- */
 export function StandalonePurchaseButton({
   cycleId,
   collectionId: _collectionId,
   collectionName,
   onPurchase,
-  disabled = false
+  disabled = false,
 }: StandalonePurchaseButtonProps) {
-  const [timeUntilCutoff, setTimeUntilCutoff] = useState<string>("");
-  const { canPurchase, reason, isLoading } = useStandalonePurchaseAvailability(cycleId);
+  const [timeUntilCutoff, setTimeUntilCutoff] = useState("");
+  const [beforeCutoff, setBeforeCutoff] = useState(true);
+  const { canPurchase, reason, isLoading } =
+    useStandalonePurchaseAvailability(cycleId);
 
-  // Update countdown timer
   useEffect(() => {
-    const updateCountdown = () => {
-      setTimeUntilCutoff(formatTimeUntilCutoff());
-    };
-
+    const updateCountdown = () => setTimeUntilCutoff(formatTimeUntilCutoff());
     updateCountdown();
-    const interval = setInterval(updateCountdown, 60000); // Update every minute
-
+    const interval = setInterval(updateCountdown, 60_000);
     return () => clearInterval(interval);
   }, []);
 
-  // Check if before cutoff for UI display
-  const [beforeCutoff, setBeforeCutoff] = useState(true);
   useEffect(() => {
+    let active = true;
+
     const checkCutoff = async () => {
-      const result = await isBeforeCutoff();
-      setBeforeCutoff(result);
+      try {
+        const result = await isBeforeCutoff();
+        if (active) setBeforeCutoff(result);
+      } catch {
+        // UI must fail closed when cutoff authority is unavailable.
+        if (active) setBeforeCutoff(false);
+      }
     };
 
-    checkCutoff();
-    const interval = setInterval(checkCutoff, 60000); // Check every minute
-
-    return () => clearInterval(interval);
+    void checkCutoff();
+    const interval = setInterval(() => void checkCutoff(), 60_000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, []);
 
   if (isLoading) {
-    return (
-      <Button disabled>
-        Checking availability...
-      </Button>
-    );
+    return <Button disabled>Verificando disponibilidade...</Button>;
   }
 
   return (
     <div className="space-y-4">
-      {/* Cutoff countdown - show when before cutoff */}
       {beforeCutoff && canPurchase && (
         <Alert>
           <Clock className="h-4 w-4" />
           <AlertDescription>
-            Time until cutoff: {timeUntilCutoff}
+            Tempo restante neste ciclo: {timeUntilCutoff}
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Error messages - show when purchase not allowed */}
       {!canPurchase && reason && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {reason === "Cutoff has passed - production has started" && (
-              <>
-                <strong>Purchase not available</strong>
-                <br />
-                The cutoff deadline has passed. Production has started for this cycle.
-                Please wait for the next cycle to make a purchase.
-              </>
-            )}
-            {reason?.includes("Cycle is") && (
-              <>
-                <strong>Cycle not accepting purchases</strong>
-                <br />
-                {reason}. Only open cycles accept new standalone purchases.
-              </>
-            )}
-            {reason === "Capacity limit exceeded" && (
-              <>
-                <strong>Sold out</strong>
-                <br />
-                The production capacity for this cycle has been reached.
-                Please check back next cycle.
-              </>
-            )}
-            {!reason.includes("Cutoff") && !reason.includes("Cycle") && !reason.includes("Capacity") && (
-              <>
-                <strong>Purchase not available</strong>
-                <br />
-                {reason}
-              </>
-            )}
+            <strong>Compra indisponível</strong>
+            <br />
+            {reason}
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Purchase button */}
       <Button
         onClick={onPurchase}
         disabled={disabled || !canPurchase || !beforeCutoff}
@@ -135,16 +96,15 @@ export function StandalonePurchaseButton({
         size="lg"
       >
         {!canPurchase
-          ? "Purchase Not Available"
+          ? "Compra indisponível"
           : !beforeCutoff
-          ? "Cutoff Passed"
-          : `Purchase ${collectionName}`}
+            ? "Prazo encerrado"
+            : `Comprar ${collectionName}`}
       </Button>
 
-      {/* Additional info */}
       {canPurchase && beforeCutoff && (
-        <p className="text-sm text-muted-foreground text-center">
-          Deposit: R$ 100,00 • Balance due after production
+        <p className="text-center text-sm text-muted-foreground">
+          Valores de entrada e saldo serão apresentados a partir da configuração oficial da compra.
         </p>
       )}
     </div>
