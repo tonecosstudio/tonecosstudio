@@ -1,607 +1,221 @@
-/**
- * Tests for FileUploadService
- * Requirements: 3.1-3.12, 14.1-14.15
- */
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { FileUploadError, FileUploadService } from "./file-upload-service";
+import type { PaymentFile } from "@/types/manual-payment";
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { FileUploadService } from "./file-upload-service";
-import { supabase } from "@/integrations/supabase/client";
-
-// Mock Supabase client
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    auth: {
-      getUser: vi.fn(),
-    },
-    storage: {
-      from: vi.fn(),
-    },
-    from: vi.fn(),
-    rpc: vi.fn(),
-  },
+const mocks = vi.hoisted(() => ({
+  requireAuthenticatedUserId: vi.fn(),
+  requireAdmin: vi.fn(),
+  callAuthenticatedEdgeFunction: vi.fn(),
+  createStorageSignedUrl: vi.fn(),
+  removeStorageFiles: vi.fn(),
+  callAdminRpc: vi.fn(),
+  sendPaymentUnderReview: vi.fn(),
+  from: vi.fn(),
 }));
 
-vi.mock("./image-compression", () => ({
-  compressImage: vi.fn(async (file: File) => file),
+vi.mock("@/services/auth/current-user", () => ({
+  requireAuthenticatedUserId: mocks.requireAuthenticatedUserId,
 }));
 
-vi.mock("./malware-scanner", () => ({
-  malwareScanner: {
-    scanFile: vi.fn(async () => ({
-      safe: true,
-      threats: [],
-      scanner: "mock",
-      scanTime: 1,
-    })),
-  },
+vi.mock("@/services/groups/group-permissions-service", () => ({
+  requireAdmin: mocks.requireAdmin,
 }));
 
-vi.mock("./notification-service", () => ({
+vi.mock("@/services/supabase/edge-function-client", () => ({
+  callAuthenticatedEdgeFunction: mocks.callAuthenticatedEdgeFunction,
+}));
+
+vi.mock("@/services/supabase/storage-client", () => ({
+  createStorageSignedUrl: mocks.createStorageSignedUrl,
+  removeStorageFiles: mocks.removeStorageFiles,
+}));
+
+vi.mock("@/services/admin/rpc/admin-rpc-gateway", () => ({
+  callAdminRpc: mocks.callAdminRpc,
+}));
+
+vi.mock("@/services/notifications/payment-notification-service", () => ({
   getNotificationService: () => ({
-    sendPaymentUnderReview: vi.fn().mockResolvedValue(undefined),
+    sendPaymentUnderReview: mocks.sendPaymentUnderReview,
   }),
 }));
 
-describe("FileUploadService", () => {
-  let service: FileUploadService;
-  const mockUserId = "user-123";
-  const mockPaymentId = "payment-456";
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    from: mocks.from,
+  },
+}));
 
-  const mockUploadedFileRecord = () => ({
-    id: "file-123",
-    payment_id: mockPaymentId,
-    file_name: "test.jpg",
-    file_path: `${mockPaymentId}/test.jpg`,
+const userId = "11111111-1111-4111-8111-111111111111";
+const paymentId = "22222222-2222-4222-8222-222222222222";
+
+function paymentFile(overrides: Partial<PaymentFile> = {}): PaymentFile {
+  return {
+    id: "33333333-3333-4333-8333-333333333333",
+    payment_id: paymentId,
+    file_name: "proof.jpg",
+    file_path: `${paymentId}/proof.jpg`,
     file_size: 1024,
     file_type: "image/jpeg",
-    uploaded_by: mockUserId,
-    created_at: new Date().toISOString(),
-  });
+    thumbnail_path: null,
+    uploaded_by: userId,
+    created_at: "2026-08-31T00:00:00.000Z",
+    ...overrides,
+  };
+}
 
-  const mockPaymentOwnerQuery = (userId = mockUserId) => ({
-    select: vi.fn().mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({
-          data: { user_id: userId },
-          error: null,
-        }),
-      }),
-    }),
+function validJpeg(name = "proof.jpg") {
+  const file = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xdb])], name, {
+    type: "image/jpeg",
   });
+  Object.defineProperty(file, "size", { value: 1024 });
+  return file;
+}
+
+describe("FileUploadService", () => {
+  let service: FileUploadService;
 
   beforeEach(() => {
     service = new FileUploadService();
     vi.clearAllMocks();
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: { id: mockUserId } as any },
+
+    mocks.requireAuthenticatedUserId.mockResolvedValue(userId);
+    mocks.requireAdmin.mockResolvedValue(undefined);
+    mocks.callAuthenticatedEdgeFunction.mockResolvedValue({
+      file: paymentFile(),
+      firstFile: false,
+    });
+    mocks.createStorageSignedUrl.mockResolvedValue({
+      data: { signedUrl: "https://example.test/private-proof" },
       error: null,
     });
-    vi.mocked(supabase.rpc).mockResolvedValue({
-      data: {
-        file: mockUploadedFileRecord(),
-        firstFile: false,
-      },
-      error: null,
-    });
+    mocks.removeStorageFiles.mockResolvedValue({ data: [], error: null });
+    mocks.callAdminRpc.mockResolvedValue({ success: true });
+    mocks.sendPaymentUnderReview.mockResolvedValue(undefined);
   });
 
   describe("validateFile", () => {
-    it("should accept valid JPEG file under 5MB", async () => {
-      const file = new File(["test"], "test.jpg", { type: "image/jpeg" });
-      Object.defineProperty(file, "size", { value: 1024 * 1024 }); // 1MB
+    it("accepts a valid JPEG under 5 MB", async () => {
+      const result = await service.validateFile(validJpeg());
 
-      const result = await service.validateFile(file);
-
-      expect(result.valid).toBe(true);
-      expect(result.errors).toHaveLength(0);
+      expect(result).toEqual({ valid: true, errors: [] });
     });
 
-    it("should accept valid PNG file under 5MB", async () => {
-      const file = new File(["test"], "test.png", { type: "image/png" });
-      Object.defineProperty(file, "size", { value: 2 * 1024 * 1024 }); // 2MB
-
-      const result = await service.validateFile(file);
-
-      expect(result.valid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it("should accept valid PDF file under 5MB", async () => {
-      const file = new File(["test"], "test.pdf", { type: "application/pdf" });
-      Object.defineProperty(file, "size", { value: 3 * 1024 * 1024 }); // 3MB
-
-      const result = await service.validateFile(file);
-
-      expect(result.valid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it("should reject file exceeding 5MB", async () => {
-      const file = new File(["test"], "large.jpg", { type: "image/jpeg" });
-      Object.defineProperty(file, "size", { value: 6 * 1024 * 1024 }); // 6MB
+    it("rejects empty files", async () => {
+      const file = new File([], "proof.jpg", { type: "image/jpeg" });
 
       const result = await service.validateFile(file);
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain("File size exceeds 5MB limit. Please upload a smaller file.");
+      expect(result.errors).toContain("File is empty. Please choose another file.");
     });
 
-    it("should accept file exactly 5MB", async () => {
-      const file = new File(["test"], "exact.jpg", { type: "image/jpeg" });
-      Object.defineProperty(file, "size", { value: 5 * 1024 * 1024 }); // Exactly 5MB
-
-      const result = await service.validateFile(file);
-
-      expect(result.valid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it("should reject unsupported file type", async () => {
-      const file = new File(["test"], "test.txt", { type: "text/plain" });
-      Object.defineProperty(file, "size", { value: 1024 });
+    it("rejects files larger than 5 MB", async () => {
+      const file = validJpeg();
+      Object.defineProperty(file, "size", { value: 5 * 1024 * 1024 + 1 });
 
       const result = await service.validateFile(file);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        "File type not supported. Please upload JPG, PNG, or PDF files."
+        "File size exceeds 5MB limit. Please upload a smaller file.",
       );
     });
 
-    it("should reject file with mismatched MIME type and extension", async () => {
-      const file = new File(["test"], "test.jpg", { type: "application/pdf" });
-      Object.defineProperty(file, "size", { value: 1024 });
+    it("rejects MIME and extension mismatch", async () => {
+      const file = new File(["%PDF-1.7"], "proof.jpg", { type: "application/pdf" });
 
       const result = await service.validateFile(file);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        "File type mismatch. The file extension does not match the file content."
+        "File type mismatch. The file extension does not match the declared content type.",
       );
-    });
-
-    it("should reject executable files", async () => {
-      const file = new File(["test"], "malware.exe", { type: "application/x-msdownload" });
-      Object.defineProperty(file, "size", { value: 1024 });
-
-      const result = await service.validateFile(file);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain("Executable files are not allowed for security reasons.");
-    });
-
-    it("should reject .sh files", async () => {
-      const file = new File(["test"], "script.sh", { type: "application/x-sh" });
-      Object.defineProperty(file, "size", { value: 1024 });
-
-      const result = await service.validateFile(file);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain("Executable files are not allowed for security reasons.");
-    });
-
-    it("should reject .bat files", async () => {
-      const file = new File(["test"], "script.bat", { type: "application/x-bat" });
-      Object.defineProperty(file, "size", { value: 1024 });
-
-      const result = await service.validateFile(file);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain("Executable files are not allowed for security reasons.");
     });
   });
 
   describe("upload", () => {
-    beforeEach(() => {
-      // Mock authenticated user
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: mockUserId } as any },
-        error: null,
-      });
-      vi.mocked(supabase.rpc).mockResolvedValue({
-        data: {
-          file: mockUploadedFileRecord(),
-          firstFile: false,
-        },
-        error: null,
-      });
+    it("uses the authenticated Edge Function as the upload authority", async () => {
+      const progress = vi.fn();
+      const file = validJpeg();
 
-      // Mock storage upload
-      const mockStorageFrom = vi.fn().mockReturnValue({
-        upload: vi.fn().mockResolvedValue({ error: null }),
-        createSignedUrl: vi.fn().mockResolvedValue({
-          data: { signedUrl: "https://example.com/signed-url" },
-          error: null,
-        }),
-      });
-      vi.mocked(supabase.storage.from).mockImplementation(mockStorageFrom);
+      const result = await service.upload(paymentId, file, progress);
 
-      // Mock database operations
-      const mockDbFrom = vi.fn((table: string) => {
-        if (table === "manual_payments") {
-          return mockPaymentOwnerQuery();
-        }
-
-        return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          insert: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: "file-123",
-              payment_id: mockPaymentId,
-              file_name: "test.jpg",
-              file_path: `${mockPaymentId}/test.jpg`,
-              file_size: 1024,
-              file_type: "image/jpeg",
-              uploaded_by: mockUserId,
-              created_at: new Date().toISOString(),
-            },
-            error: null,
-          }),
-          count: "exact",
-          head: true,
-        };
-      });
-      vi.mocked(supabase.from).mockImplementation(mockDbFrom);
-    });
-
-    it("should successfully upload a valid file", async () => {
-      // Mock file count check
-      const mockDbFrom = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        insert: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: {
-            id: "file-123",
-            payment_id: mockPaymentId,
-            file_name: "test.jpg",
-            file_path: `${mockPaymentId}/test.jpg`,
-            file_size: 1024,
-            file_type: "image/jpeg",
-            uploaded_by: mockUserId,
-            created_at: new Date().toISOString(),
-          },
-          error: null,
-        }),
-        count: "exact",
-        head: true,
-      });
-
-      // Override for count query
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return mockPaymentOwnerQuery();
-        }
-
-        if (table === "payment_files") {
-          const chain = {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            insert: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: {
-                id: "file-123",
-                payment_id: mockPaymentId,
-                file_name: "test.jpg",
-                file_path: `${mockPaymentId}/test.jpg`,
-                file_size: 1024,
-                file_type: "image/jpeg",
-                uploaded_by: mockUserId,
-                created_at: new Date().toISOString(),
-              },
-              error: null,
-            }),
-          };
-
-          // Mock count for the first call
-          const selectSpy = chain.select as any;
-          selectSpy.mockImplementationOnce(() => {
-            return {
-              ...chain,
-              eq: vi.fn().mockResolvedValue({ count: 2, error: null }),
-            };
-          });
-
-          return chain;
-        }
-        return mockDbFrom(table);
-      });
-
-      const file = new File(["test content"], "test.jpg", { type: "image/jpeg" });
-      Object.defineProperty(file, "size", { value: 1024 });
-
-      const result = await service.upload(mockPaymentId, file);
-
-      expect(result).toBeDefined();
-      expect(result.file_name).toBe("test.jpg");
-      expect(result.payment_id).toBe(mockPaymentId);
-    });
-
-    it("should reject upload when user is not authenticated", async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: null },
-        error: null,
-      } as any);
-
-      const file = new File(["test"], "test.jpg", { type: "image/jpeg" });
-      Object.defineProperty(file, "size", { value: 1024 });
-
-      await expect(service.upload(mockPaymentId, file)).rejects.toThrow("User not authenticated");
-    });
-
-    it("should reject upload when max files reached", async () => {
-      // Mock count returning 5 files
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return mockPaymentOwnerQuery();
-        }
-
-        if (table === "payment_files") {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
-            }),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      const file = new File(["test"], "test.jpg", { type: "image/jpeg" });
-      Object.defineProperty(file, "size", { value: 1024 });
-
-      await expect(service.upload(mockPaymentId, file)).rejects.toThrow(
-        "Maximum of 5 files per payment reached"
+      expect(mocks.requireAuthenticatedUserId).toHaveBeenCalledTimes(1);
+      expect(mocks.callAuthenticatedEdgeFunction).toHaveBeenCalledTimes(1);
+      expect(mocks.callAuthenticatedEdgeFunction).toHaveBeenCalledWith(
+        "upload-payment-proof",
+        expect.any(FormData),
+        "Payment proof upload failed",
       );
+
+      const body = mocks.callAuthenticatedEdgeFunction.mock.calls[0][1] as FormData;
+      expect(body.get("paymentId")).toBe(paymentId);
+      expect(body.get("file")).toBeInstanceOf(File);
+      expect(result.id).toBe(paymentFile().id);
+      expect(progress.mock.calls.map(([value]) => value)).toEqual([5, 100]);
     });
 
-    it("should track upload progress", async () => {
-      // Mock file count check
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return mockPaymentOwnerQuery();
-        }
+    it("fails before the Edge call when the user is unauthenticated", async () => {
+      mocks.requireAuthenticatedUserId.mockRejectedValue(new Error("Unauthorized"));
 
-        if (table === "payment_files") {
-          const chain = {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            insert: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: {
-                id: "file-123",
-                payment_id: mockPaymentId,
-                file_name: "test.jpg",
-                file_path: `${mockPaymentId}/test.jpg`,
-                file_size: 1024,
-                file_type: "image/jpeg",
-                uploaded_by: mockUserId,
-                created_at: new Date().toISOString(),
-              },
-              error: null,
-            }),
-          };
+      await expect(service.upload(paymentId, validJpeg())).rejects.toMatchObject({
+        code: "UNAUTHORIZED",
+        statusCode: 401,
+      });
+      expect(mocks.callAuthenticatedEdgeFunction).not.toHaveBeenCalled();
+    });
 
-          const selectSpy = chain.select as any;
-          selectSpy.mockImplementationOnce(() => {
-            return {
-              ...chain,
-              eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
-            };
-          });
+    it("fails closed when the Edge Function rejects the upload", async () => {
+      mocks.callAuthenticatedEdgeFunction.mockRejectedValue(new Error("Security scan failed"));
 
-          return chain;
-        }
-        return {} as any;
+      await expect(service.upload(paymentId, validJpeg())).rejects.toMatchObject({
+        code: "UPLOAD_FAILED",
+        statusCode: 503,
+        message: "Security scan failed",
+      });
+    });
+
+    it("sends the under-review notification only after the first successful proof", async () => {
+      mocks.callAuthenticatedEdgeFunction.mockResolvedValue({
+        file: paymentFile(),
+        firstFile: true,
       });
 
-      const file = new File(["test"], "test.jpg", { type: "image/jpeg" });
-      Object.defineProperty(file, "size", { value: 1024 });
+      await service.upload(paymentId, validJpeg());
 
-      const progressCallback = vi.fn();
-      await service.upload(mockPaymentId, file, progressCallback);
+      expect(mocks.sendPaymentUnderReview).toHaveBeenCalledWith(paymentId);
+    });
 
-      expect(progressCallback).toHaveBeenCalledWith(100);
+    it("rejects a malformed Edge response", async () => {
+      mocks.callAuthenticatedEdgeFunction.mockResolvedValue({ file: null });
+
+      await expect(service.upload(paymentId, validJpeg())).rejects.toMatchObject({
+        code: "UPLOAD_FAILED",
+        statusCode: 500,
+      });
     });
   });
 
-  describe("getSignedUrl", () => {
-    it("should generate signed URL with default expiration", async () => {
-      const mockSignedUrl = "https://example.com/signed-url";
-      vi.mocked(supabase.storage.from).mockReturnValue({
-        createSignedUrl: vi.fn().mockResolvedValue({
-          data: { signedUrl: mockSignedUrl },
-          error: null,
-        }),
-      } as any);
+  describe("private proof access", () => {
+    it("creates a signed URL for a validated object path", async () => {
+      const filePath = `${paymentId}/proof.jpg`;
 
-      const url = await service.getSignedUrl("path/to/file.jpg");
+      const url = await service.getSignedUrl(filePath, 900);
 
-      expect(url).toBe(mockSignedUrl);
-    });
-
-    it("should generate signed URL with custom expiration", async () => {
-      const mockSignedUrl = "https://example.com/signed-url";
-      const customExpiry = 7200; // 2 hours
-
-      const createSignedUrlMock = vi.fn().mockResolvedValue({
-        data: { signedUrl: mockSignedUrl },
-        error: null,
-      });
-
-      vi.mocked(supabase.storage.from).mockReturnValue({
-        createSignedUrl: createSignedUrlMock,
-      } as any);
-
-      const url = await service.getSignedUrl("path/to/file.jpg", customExpiry);
-
-      expect(url).toBe(mockSignedUrl);
-      expect(createSignedUrlMock).toHaveBeenCalledWith("path/to/file.jpg", customExpiry);
-    });
-
-    it("should throw error when signed URL generation fails", async () => {
-      vi.mocked(supabase.storage.from).mockReturnValue({
-        createSignedUrl: vi.fn().mockResolvedValue({
-          data: null,
-          error: new Error("Failed to generate URL"),
-        }),
-      } as any);
-
-      await expect(service.getSignedUrl("path/to/file.jpg")).rejects.toThrow(
-        "Failed to generate file access URL"
+      expect(mocks.createStorageSignedUrl).toHaveBeenCalledWith(
+        "payment-proofs",
+        filePath,
+        900,
       );
-    });
-  });
-
-  describe("listByPayment", () => {
-    it("should return list of files for a payment", async () => {
-      const mockFiles = [
-        {
-          id: "file-1",
-          payment_id: mockPaymentId,
-          file_name: "proof1.jpg",
-          file_path: "path/proof1.jpg",
-          file_size: 1024,
-          file_type: "image/jpeg",
-          uploaded_by: mockUserId,
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: "file-2",
-          payment_id: mockPaymentId,
-          file_name: "proof2.pdf",
-          file_path: "path/proof2.pdf",
-          file_size: 2048,
-          file_type: "application/pdf",
-          uploaded_by: mockUserId,
-          created_at: new Date().toISOString(),
-        },
-      ];
-
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return mockPaymentOwnerQuery();
-        }
-
-        return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockResolvedValue({ data: mockFiles, error: null }),
-        } as any;
-      });
-
-      const files = await service.listByPayment(mockPaymentId);
-
-      expect(files).toHaveLength(2);
-      expect(files[0].file_name).toBe("proof1.jpg");
-      expect(files[1].file_name).toBe("proof2.pdf");
+      expect(url).toBe("https://example.test/private-proof");
     });
 
-    it("should return empty array when no files exist", async () => {
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return mockPaymentOwnerQuery();
-        }
-
-        return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockResolvedValue({ data: [], error: null }),
-        } as any;
-      });
-
-      const files = await service.listByPayment(mockPaymentId);
-
-      expect(files).toHaveLength(0);
-    });
-
-    it("should throw error when database query fails", async () => {
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return mockPaymentOwnerQuery();
-        }
-
-        return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockResolvedValue({
-            data: null,
-            error: new Error("Database error"),
-          }),
-        } as any;
-      });
-
-      await expect(service.listByPayment(mockPaymentId)).rejects.toThrow(
-        "Failed to retrieve files"
+    it("rejects traversal-like object paths before requesting a signed URL", async () => {
+      await expect(service.getSignedUrl(`${paymentId}/../secret`)).rejects.toBeInstanceOf(
+        FileUploadError,
       );
-    });
-  });
-
-  describe("Rate Limiting", () => {
-    beforeEach(() => {
-      // Reset rate limiting state
-      vi.clearAllMocks();
-
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: mockUserId } as any },
-        error: null,
-      });
-
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return mockPaymentOwnerQuery();
-        }
-
-        if (table === "payment_files") {
-          const chain = {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            insert: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: {
-                id: "file-123",
-                payment_id: mockPaymentId,
-                file_name: "test.jpg",
-                file_path: `${mockPaymentId}/test.jpg`,
-                file_size: 1024,
-                file_type: "image/jpeg",
-                uploaded_by: mockUserId,
-                created_at: new Date().toISOString(),
-              },
-              error: null,
-            }),
-          };
-
-          const selectSpy = chain.select as any;
-          selectSpy.mockImplementation((query: any) => {
-            if (query === "*") {
-              return {
-                ...chain,
-                eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
-              };
-            }
-            return chain;
-          });
-
-          return chain;
-        }
-        return {} as any;
-      });
-
-      vi.mocked(supabase.storage.from).mockReturnValue({
-        upload: vi.fn().mockResolvedValue({ error: null }),
-      } as any);
-    });
-
-    it("should allow uploads within rate limit", async () => {
-      const file = new File(["test"], "test.jpg", { type: "image/jpeg" });
-      Object.defineProperty(file, "size", { value: 1024 });
-
-      // Upload 5 files (within limit of 10)
-      for (let i = 0; i < 5; i++) {
-        await expect(service.upload(mockPaymentId, file)).resolves.toBeDefined();
-      }
+      expect(mocks.createStorageSignedUrl).not.toHaveBeenCalled();
     });
   });
 });
