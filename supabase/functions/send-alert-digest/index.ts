@@ -1,10 +1,44 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import { EmailService, getEmailConfig } from "../_shared/email.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
+import {
+  EmailService,
+  escapeHtml,
+  getEmailConfig,
+  sanitizeEmailSubject,
+} from "../_shared/email.ts";
 import { getPublicBaseUrl } from "../_shared/public-url.ts";
 import { ADMIN_ACCESS_ROLES } from "../_shared/roles.ts";
 import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
 import { getServiceClient } from "../_shared/supabase.ts";
+
+const BAHIA_TIMEZONE = "America/Bahia";
+const BAHIA_OFFSET = "-03:00";
+const PRODUCTION_STATUSES = new Set([
+  "awaiting_choice",
+  "ready_for_production",
+  "in_production",
+  "completed",
+  "on_hold",
+  "cancelled",
+]);
+const CHOICE_STATUSES = new Set([
+  "pending",
+  "submitted",
+  "approved",
+  "rejected",
+  "locked",
+  "expired",
+]);
+
+interface QueueRow {
+  id: string;
+  production_status: string;
+  choice_status: string | null;
+  choice_deadline: string | null;
+  estimated_completion_date: string | null;
+  scheduled_production_date: string | null;
+}
 
 interface AlertDigestData {
   deadlineCritical: number;
@@ -15,45 +49,183 @@ interface AlertDigestData {
   scheduledToday: number;
 }
 
-serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
+function json(
+  body: unknown,
+  corsHeaders: HeadersInit,
+  status = 200,
+): Response {
+  return new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
+}
 
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+function parseOptionalDate(
+  value: string | null,
+  label: string,
+  itemId: string,
+): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`Invalid ${label} for production item ${itemId}`);
+  }
+  return parsed;
+}
+
+function getBahiaDateKey(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BAHIA_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const read = (type: "year" | "month" | "day") =>
+    parts.find((part) => part.type === type)?.value;
+  const year = read("year");
+  const month = read("month");
+  const day = read("day");
+  if (!year || !month || !day) {
+    throw new Error("Unable to resolve Bahia calendar date");
+  }
+  return `${year}-${month}-${day}`;
+}
+
+function getBahiaDayRange(date: Date) {
+  const key = getBahiaDateKey(date);
+  return {
+    key,
+    start: new Date(`${key}T00:00:00${BAHIA_OFFSET}`),
+    end: new Date(`${key}T23:59:59.999${BAHIA_OFFSET}`),
+  };
+}
+
+function calculateDigestData(rows: QueueRow[], now: Date): AlertDigestData {
+  const today = getBahiaDayRange(now);
+  let deadlineCritical = 0;
+  let deadlineUrgent = 0;
+  let blocked = 0;
+  let overdue = 0;
+  let scheduledToday = 0;
+
+  for (const row of rows) {
+    if (!row.id) throw new Error("Production item without id");
+    if (!PRODUCTION_STATUSES.has(row.production_status)) {
+      throw new Error(`Invalid production_status for production item ${row.id}`);
+    }
+    if (row.choice_status && !CHOICE_STATUSES.has(row.choice_status)) {
+      throw new Error(`Invalid choice_status for production item ${row.id}`);
+    }
+
+    const choiceDeadline = parseOptionalDate(
+      row.choice_deadline,
+      "choice_deadline",
+      row.id,
+    );
+    if (choiceDeadline) {
+      const hoursUntilDeadline =
+        (choiceDeadline.getTime() - now.getTime()) / 3_600_000;
+      if (
+        row.choice_status === "pending" &&
+        hoursUntilDeadline > 0 &&
+        hoursUntilDeadline < 24
+      ) {
+        deadlineCritical += 1;
+      } else if (
+        row.choice_status === "pending" &&
+        hoursUntilDeadline >= 24 &&
+        hoursUntilDeadline < 72
+      ) {
+        deadlineUrgent += 1;
+      }
+    }
+
+    if (row.production_status === "on_hold") blocked += 1;
+
+    const estimatedCompletion = parseOptionalDate(
+      row.estimated_completion_date,
+      "estimated_completion_date",
+      row.id,
+    );
+    if (
+      estimatedCompletion &&
+      estimatedCompletion < now &&
+      row.production_status !== "completed" &&
+      row.production_status !== "cancelled"
+    ) {
+      overdue += 1;
+    }
+
+    const scheduledDate = parseOptionalDate(
+      row.scheduled_production_date,
+      "scheduled_production_date",
+      row.id,
+    );
+    if (scheduledDate && scheduledDate >= today.start && scheduledDate <= today.end) {
+      scheduledToday += 1;
+    }
   }
 
-  try {
-    const forbidden = await requireRateLimitedSharedSecret(
+  return {
+    deadlineCritical,
+    deadlineUrgent,
+    blocked,
+    overdue,
+    totalItems: rows.length,
+    scheduledToday,
+  };
+}
+
+async function authorize(req: Request): Promise<Response | null> {
+  if (req.headers.has("x-cron-secret")) {
+    return await requireRateLimitedSharedSecret(
       req,
       "CRON_SECRET",
       "x-cron-secret",
       "send-alert-digest",
     );
-    if (forbidden) return forbidden;
+  }
 
-    const supabaseClient = getServiceClient();
+  const admin = await assertRateLimitedAdmin(req, "send-alert-digest-manual");
+  return admin.rateLimited ?? null;
+}
 
-    const { data: metricsData, error: metricsError } = await supabaseClient.rpc(
-      "get_production_metrics",
-    );
+serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
 
-    if (metricsError) {
-      throw new Error(`Failed to fetch metrics: ${metricsError.message}`);
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: {
+        ...corsHeaders,
+        "Access-Control-Allow-Methods": "POST",
+      },
+    });
+  }
+
+  try {
+    if (req.method !== "POST") {
+      return json({ error: "Method not allowed" }, corsHeaders, 405);
     }
 
-    const metrics =
-      typeof metricsData === "string" ? JSON.parse(metricsData) : metricsData;
+    const forbidden = await authorize(req);
+    if (forbidden) return forbidden;
 
-    const alertData: AlertDigestData = {
-      deadlineCritical: metrics?.urgent?.deadline_critical ?? 0,
-      deadlineUrgent: metrics?.urgent?.deadline_urgent ?? 0,
-      blocked: metrics?.urgent?.blocked ?? 0,
-      overdue: metrics?.urgent?.overdue ?? 0,
-      totalItems: metrics?.overall?.total_items ?? 0,
-      scheduledToday: metrics?.scheduled?.today ?? 0,
-    };
+    const supabase = getServiceClient();
+    const now = new Date();
 
-    const { data: settings, error: settingsError } = await supabaseClient
+    const { data: queueRows, error: queueError } = await supabase
+      .from("production_queue")
+      .select(
+        "id, production_status, choice_status, choice_deadline, estimated_completion_date, scheduled_production_date",
+      );
+
+    if (queueError) {
+      throw new Error(`Failed to fetch production queue: ${queueError.message}`);
+    }
+
+    const alertData = calculateDigestData((queueRows || []) as QueueRow[], now);
+
+    const { data: settings, error: settingsError } = await supabase
       .from("admin_notification_settings")
       .select("user_id")
       .eq("email_enabled", true);
@@ -68,10 +240,10 @@ serve(async (req) => {
       ...new Set((settings || []).map((row) => row.user_id).filter(Boolean)),
     ];
     if (userIds.length === 0) {
-      return json({ message: "No subscribers found" }, corsHeaders);
+      return json({ success: true, message: "No subscribers found" }, corsHeaders);
     }
 
-    const { data: profiles, error: profilesError } = await supabaseClient
+    const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("id, email")
       .in("id", userIds)
@@ -81,20 +253,23 @@ serve(async (req) => {
       throw new Error(`Failed to fetch admin emails: ${profilesError.message}`);
     }
 
-    const subscribers = (profiles || []).filter((profile) =>
-      Boolean(profile.email),
+    const subscribers = (profiles || []).filter(
+      (profile) => typeof profile.email === "string" && profile.email.trim(),
     );
     if (subscribers.length === 0) {
-      return json({ message: "No subscribers found" }, corsHeaders);
+      return json({ success: true, message: "No subscribers found" }, corsHeaders);
     }
 
-    const emailSubject = `Resumo diario de producao - ${new Date().toLocaleDateString("pt-BR")}`;
-    const emailBody = generateEmailBody(
-      alertData,
-      getPublicBaseUrl(["SITE_URL", "BASE_URL"]),
-    );
+    const bahiaDate = now.toLocaleDateString("pt-BR", {
+      timeZone: BAHIA_TIMEZONE,
+    });
+    const siteUrl = getPublicBaseUrl(["SITE_URL", "BASE_URL"]);
+    const emailBody = generateEmailBody(alertData, siteUrl, bahiaDate);
     const emailService = new EmailService(
-      getEmailConfig({ fromName: "ORDAX Producao" }),
+      getEmailConfig({ fromName: "ORDAX Produção" }),
+    );
+    const subject = sanitizeEmailSubject(
+      `Resumo diário de produção - ${bahiaDate}`,
     );
 
     const results = await Promise.all(
@@ -102,107 +277,68 @@ serve(async (req) => {
         try {
           const result = await emailService.sendEmail({
             to: subscriber.email,
-            subject: emailSubject,
+            subject,
             html: emailBody,
           });
-          return { email: subscriber.email, success: true, emailId: result.id };
+          return { userId: subscriber.id, success: true, emailId: result.id };
         } catch (error) {
-          const message =
-            error instanceof Error ? error.message : String(error);
           console.error(
-            `Failed to send alert digest to ${subscriber.email}:`,
-            message,
+            `Failed to send alert digest to admin ${subscriber.id}`,
+            error,
           );
-          return {
-            email: subscriber.email,
-            success: false,
-            error: "Email delivery failed",
-          };
+          return { userId: subscriber.id, success: false };
         }
       }),
     );
 
+    const failureCount = results.filter((result) => !result.success).length;
     return json(
       {
-        message: "Email digest sent",
+        success: failureCount === 0,
         totalSubscribers: subscribers.length,
-        successCount: results.filter((result) => result.success).length,
-        failureCount: results.filter((result) => !result.success).length,
-        results,
+        successCount: results.length - failureCount,
+        failureCount,
+        generatedAt: now.toISOString(),
       },
       corsHeaders,
+      failureCount === 0 ? 200 : 207,
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("Error in send-alert-digest function:", message);
-    return json({ error: "Internal server error" }, corsHeaders, 500);
+    console.error("Error in send-alert-digest function:", error);
+    return json({ success: false, error: "Internal server error" }, corsHeaders, 500);
   }
 });
 
-function json(body: unknown, corsHeaders: HeadersInit, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-    status,
-  });
-}
-
-function generateEmailBody(data: AlertDigestData, siteUrl: string): string {
+function generateEmailBody(
+  data: AlertDigestData,
+  siteUrl: string,
+  bahiaDate: string,
+): string {
   const hasUrgentAlerts =
     data.deadlineCritical > 0 ||
     data.deadlineUrgent > 0 ||
     data.blocked > 0 ||
     data.overdue > 0;
+  const dashboardUrl = new URL("/admin/production", siteUrl).toString();
 
-  return `<!DOCTYPE html>
+  return `<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Resumo diario de producao</title>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937; background: #f3f4f6; margin: 0; padding: 24px; }
-    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 28px; }
-    h1 { font-size: 24px; margin: 0 0 16px; color: #111827; }
-    h2 { font-size: 18px; margin: 0 0 12px; color: #111827; }
-    .section { margin: 20px 0; padding: 16px; border-radius: 6px; background: ${hasUrgentAlerts ? "#fff7ed" : "#ecfdf5"}; border-left: 4px solid ${hasUrgentAlerts ? "#f97316" : "#22c55e"}; }
-    .stats { margin: 20px 0; padding: 16px; border-radius: 6px; background: #f9fafb; }
-    .item { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
-    .item:last-child { border-bottom: 0; }
-    .value { font-weight: 700; }
-    .button { display: inline-block; padding: 12px 18px; background: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 700; }
-    .footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Resumo diario de producao</h1>
-    <p>Resumo dos alertas e atividades de producao de ${new Date().toLocaleDateString("pt-BR")}.</p>
-
-    <div class="section">
-      <h2>${hasUrgentAlerts ? "Alertas urgentes" : "Tudo em ordem"}</h2>
-      ${
-        hasUrgentAlerts
-          ? `
-      <div class="item"><span>Prazo critico (&lt; 24h)</span><span class="value">${data.deadlineCritical}</span></div>
-      <div class="item"><span>Escolhas pendentes</span><span class="value">${data.deadlineUrgent}</span></div>
-      <div class="item"><span>Itens bloqueados</span><span class="value">${data.blocked}</span></div>
-      <div class="item"><span>Tempo excedido</span><span class="value">${data.overdue}</span></div>`
-          : "<p>Nao ha alertas urgentes no momento.</p>"
-      }
-    </div>
-
-    <div class="stats">
-      <h2>Estatisticas</h2>
-      <div class="item"><span>Total de itens em producao</span><span class="value">${data.totalItems}</span></div>
-      <div class="item"><span>Agendados para hoje</span><span class="value">${data.scheduledToday}</span></div>
-    </div>
-
-    <p><a href="${siteUrl}/admin/production" class="button">Ver dashboard de producao</a></p>
-
-    <div class="footer">
-      <p>Voce recebeu este email porque as notificacoes por email estao habilitadas nas configuracoes administrativas.</p>
-    </div>
-  </div>
-</body>
+  <body style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+    <h1>Resumo diário de produção</h1>
+    <p>Data operacional: ${escapeHtml(bahiaDate)}.</p>
+    <h2>${hasUrgentAlerts ? "Alertas urgentes" : "Tudo em ordem"}</h2>
+    <ul>
+      <li>Prazo crítico (&lt; 24h): <strong>${data.deadlineCritical}</strong></li>
+      <li>Escolhas pendentes (24–72h): <strong>${data.deadlineUrgent}</strong></li>
+      <li>Itens bloqueados: <strong>${data.blocked}</strong></li>
+      <li>Previsão excedida: <strong>${data.overdue}</strong></li>
+    </ul>
+    <h2>Operação</h2>
+    <ul>
+      <li>Total na fila: <strong>${data.totalItems}</strong></li>
+      <li>Agendados hoje: <strong>${data.scheduledToday}</strong></li>
+    </ul>
+    <p><a href="${escapeHtml(dashboardUrl)}">Ver dashboard de produção</a></p>
+  </body>
 </html>`;
 }
