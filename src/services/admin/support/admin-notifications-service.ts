@@ -121,10 +121,9 @@ export async function markAdminNotificationRead(notificationId: string): Promise
   if (error) throw error;
 }
 
-export async function markAllAdminNotificationsRead(): Promise<number> {
-  const { data, error } = await supabase.rpc("mark_all_notifications_read");
+export async function markAllAdminNotificationsRead(): Promise<void> {
+  const { error } = await supabase.rpc("mark_all_notifications_read");
   if (error) throw error;
-  return data ?? 0;
 }
 
 export const markNotificationAsRead = markAdminNotificationRead;
