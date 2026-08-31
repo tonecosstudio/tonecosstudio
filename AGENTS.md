@@ -17,8 +17,10 @@ Documentos históricos nunca podem sobrescrever o estado observado no código, C
 
 ## Regras de mudança
 
-- Nunca escrever diretamente na main.
-- Antes de escrever, registrar a branch e o HEAD de base.
+- A main é a única branch operacional enquanto esta decisão do usuário estiver vigente.
+- Escrever diretamente na main, em commits pequenos e reversíveis.
+- Antes de escrever, registrar o HEAD atual da main e confirmar que ele não avançou.
+- Não criar branch ou PR sem uma nova instrução explícita do usuário.
 - Não misturar limpeza documental, mudança de schema e deploy no mesmo checkpoint.
 - Não apagar histórico útil: arquivar com índice e motivo.
 - Não criar um segundo SSOT, segundo executor ou segundo mecanismo de autorização.
@@ -30,7 +32,7 @@ Documentos históricos nunca podem sobrescrever o estado observado no código, C
 
 ## Toolchain canônica
 
-- Node.js 22.
+- Node.js 24 LTS.
 - npm e package-lock.json como caminho de CI.
 - TypeScript strict.
 - Vitest para testes.
@@ -42,7 +44,7 @@ Os lockfiles Bun permanecem apenas até P2 classificá-los e removê-los com CI 
 
 ## Quality Gate
 
-Para uma mudança ser candidata a merge:
+Para uma mudança permanecer na main e ser candidata a release:
 
 1. npm ci;
 2. npm run format:check;

@@ -3,8 +3,9 @@
 Status: **EM EXECUÇÃO — NO-GO para lançamento**
 
 Atualizado em: 2026-08-30  
-Branch de execução: **work/urgente/release-readiness**  
-Base auditada: **main@792e6f882e298fe38bfc57b4025ad09ca631acf9**
+Branch de execução: **main (única branch operacional)**  
+Base auditada: **main@792e6f882e298fe38bfc57b4025ad09ca631acf9**  
+HEAD consolidado na main: **d65aa40f77c75b608b9ca65b8e6247e1bfa0c66a**
 
 Este documento é o SSOT do trabalho de prontidão para lançamento. Percentuais, datas e declarações antigas não são prova. Um item só muda para concluído quando há comando, teste, workflow, consulta, captura ou observação reproduzível registrada.
 
@@ -64,7 +65,7 @@ Auditoria pública de https://ordax.com.br em 2026-08-30:
 
 ## 3. Princípios de execução
 
-1. Não alterar a main diretamente.
+1. Trabalhar diretamente na main, conforme decisão explícita do usuário, em commits pequenos e reversíveis.
 2. Não apagar histórico: mover documentos comprovadamente obsoletos para docs-archive com índice.
 3. Não declarar “pronto”, “seguro” ou “100%” sem prova reproduzível.
 4. Não fazer deploy, migration remota ou reativação paga como parte de uma simples limpeza.
@@ -83,7 +84,7 @@ Estado: **EM EXECUÇÃO**
 - [x] auditar árvore do repositório e localizar conflitos de documentação;
 - [x] verificar o site público sem autenticação;
 - [x] correlacionar o projeto Supabase declarado com o ambiente conectado;
-- [x] criar branch exclusiva de recuperação;
+- [x] criar branch inicial de recuperação e consolidá-la por fast-forward na main;
 - [x] criar este SSOT;
 - [x] criar contrato AGENTS.md;
 - [x] substituir declarações promocionais antigas dos READMEs por estado factual;
@@ -345,3 +346,48 @@ Do not repeat:
 - não mostrar zero quando a consulta falhou;
 - não consumir preview para documentação;
 - não considerar a correção visual aprovada sem build e smoke test.
+
+
+### Checkpoint 3 — 2026-08-30
+
+HEAD consolidado na main: d65aa40f77c75b608b9ca65b8e6247e1bfa0c66a
+
+Decisão operacional:
+
+- main passa a ser a única branch de trabalho;
+- novos commits serão feitos diretamente na main;
+- novas branches ou PRs somente com nova instrução explícita do usuário.
+
+Concluído:
+
+- os 10 commits de work/urgente/release-readiness foram aplicados na main por fast-forward sem force;
+- comparação main...work/urgente/release-readiness: identical, ahead=0, behind=0;
+- feature/contextual-pricing-system foi classificada como obsoleta: ahead=0 e behind=1128;
+- Node 24 LTS adotado como runtime canônico no CI e no desenvolvimento;
+- Quality Gate passa a executar somente em push para main ou manualmente.
+
+Testes/provas:
+
+- main avançou de 792e6f882e298fe38bfc57b4025ad09ca631acf9 para d65aa40f77c75b608b9ca65b8e6247e1bfa0c66a sem force;
+- Vercel já está configurada em Node 24.x;
+- Node 24 é LTS e o runtime 24.x é suportado pela Vercel;
+- nenhuma branch remanescente contém commit exclusivo em relação à main.
+
+Bloqueios:
+
+- o conector não oferece exclusão de branch, portanto as referências antigas permanecem apenas como inativas;
+- GitHub Actions ainda precisa voltar a alocar runner;
+- Vercel continua bloqueando builds por limite do plano Hobby.
+
+Next action:
+
+- corrigir a identidade do package.json e consolidar o package manager após execução real do Quality Gate;
+- continuar inventário de mocks, placeholders e legados diretamente na main;
+- revalidar home e catálogo quando a Vercel liberar build.
+
+Do not repeat:
+
+- não criar nova branch para esta execução;
+- não tentar mesclar feature/contextual-pricing-system: ela possui zero commits exclusivos;
+- não alterar Node para 22 enquanto Vercel e o runtime canônico estiverem em Node 24;
+- não confundir referências antigas com branches ativas de desenvolvimento.
