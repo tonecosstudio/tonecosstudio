@@ -96,9 +96,10 @@ export async function fetchPricingSettings(): Promise<PricingSettings> {
       throw new Error(`Falha ao carregar configuração comercial: ${error.message}`);
     }
 
-    const settingValues = new Map<string, unknown>(
-      (systemSettings ?? []).map((setting) => [setting.key, setting.value]),
-    );
+    const settingValues = new Map<string, unknown>();
+    (systemSettings ?? []).forEach((setting) => {
+      settingValues.set(setting.key, setting.value);
+    });
 
     const defaultPriceFull = assertFiniteInRange(
       "default_price_full",
