@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { subscriptionCreditAPI } from "@/services/subscriptions/subscription-credit-api";
 import type {
-  CancelWithRefundResponse,
   NoRenewalResponse,
   PlanChangeResponse,
   PlanType,
@@ -29,24 +28,6 @@ export function useScheduleSubscriptionPlanChange(
 
   return useMutation({
     mutationFn: () => subscriptionCreditAPI.schedulePlanChange(subscriptionId, newPlanType),
-    onSuccess: (data) => {
-      invalidateSubscriptionCreditQueries(queryClient);
-      callbacks.onSuccess?.(data);
-    },
-    onError: (error: unknown) => {
-      callbacks.onError?.(toError(error));
-    },
-  });
-}
-
-export function useCancelSubscriptionWithRefund(
-  subscriptionId: string,
-  callbacks: MutationCallbacks<CancelWithRefundResponse> = {}
-) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => subscriptionCreditAPI.cancelWithRefund(subscriptionId),
     onSuccess: (data) => {
       invalidateSubscriptionCreditQueries(queryClient);
       callbacks.onSuccess?.(data);
