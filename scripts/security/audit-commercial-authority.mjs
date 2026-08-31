@@ -35,6 +35,10 @@ function escaped(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function normalizeSql(statement) {
+  return statement.replace(/\s+/g, " ").trim();
+}
+
 function policyState(policyName) {
   const name = escaped(policyName);
   let state = "absent";
@@ -66,6 +70,34 @@ function policyState(policyName) {
   return { state, sourceFile };
 }
 
+function roleListContainsAuthenticated(statement, keyword) {
+  const match = statement.match(new RegExp(`\\b${keyword}\\s+(.+)$`, "i"));
+  if (!match) return false;
+  return match[1]
+    .split(",")
+    .map((role) => role.trim().replace(/["']/g, ""))
+    .some((role) => role.toLowerCase() === "authenticated");
+}
+
+function statementTargetsTable(statement, table) {
+  return new RegExp(`\\bON(?: TABLE)? public\\.${escaped(table)}\\b`, "i").test(statement);
+}
+
+function privilegeClause(statement, keyword, table) {
+  const prefix = new RegExp(`^${keyword}\\s+`, "i");
+  return statement
+    .replace(prefix, "")
+    .split(new RegExp(`\\s+ON(?:\\s+TABLE)?\\s+public\\.${escaped(table)}\\b`, "i"))[0]
+    ?.trim();
+}
+
+function clauseIncludesInsert(clause) {
+  if (!clause) return false;
+  if (/^ALL(?: PRIVILEGES)?$/i.test(clause)) return true;
+  if (/\bINSERT\s*\(/i.test(clause)) return false;
+  return /(?:^|,)\s*INSERT\s*(?:,|$)/i.test(clause);
+}
+
 function authenticatedInsertGrantState(table) {
   const tablePattern = escaped(table);
   let granted = false;
@@ -88,22 +120,27 @@ function authenticatedInsertGrantState(table) {
       sourceFile = file;
     }
 
-    const explicitGrant = new RegExp(
-      `GRANT\\s+(?:ALL(?:\\s+PRIVILEGES)?|[^;]*\\bINSERT\\b[^;]*)\\s+ON(?:\\s+TABLE)?\\s+public\\.${tablePattern}\\s+TO\\s+authenticated`,
-      "i",
-    );
-    if (explicitGrant.test(source)) {
-      granted = true;
-      sourceFile = file;
-    }
+    for (const rawStatement of source.split(";")) {
+      const statement = normalizeSql(rawStatement);
+      if (!statement || !statementTargetsTable(statement, table)) continue;
 
-    const explicitRevoke = new RegExp(
-      `REVOKE\\s+(?:ALL(?:\\s+PRIVILEGES)?|[^;]*\\bINSERT\\b[^;]*)\\s+ON(?:\\s+TABLE)?\\s+public\\.${tablePattern}\\s+FROM\\s+authenticated`,
-      "i",
-    );
-    if (explicitRevoke.test(source)) {
-      granted = false;
-      sourceFile = file;
+      if (
+        /^GRANT\b/i.test(statement) &&
+        roleListContainsAuthenticated(statement, "TO") &&
+        clauseIncludesInsert(privilegeClause(statement, "GRANT", table))
+      ) {
+        granted = true;
+        sourceFile = file;
+      }
+
+      if (
+        /^REVOKE\b/i.test(statement) &&
+        roleListContainsAuthenticated(statement, "FROM") &&
+        clauseIncludesInsert(privilegeClause(statement, "REVOKE", table))
+      ) {
+        granted = false;
+        sourceFile = file;
+      }
     }
   }
 
@@ -157,17 +194,17 @@ const failures = [];
 
 for (const { table, forbiddenPolicies } of criticalTables) {
   const grant = authenticatedInsertGrantState(table);
-  if (grant.granted) {
-    failures.push(
-      `${table}: authenticated still has direct INSERT privilege (last evidence: ${grant.sourceFile})`,
-    );
-  }
+  if (!grant.granted) continue;
+
+  failures.push(
+    `${table}: authenticated still has direct INSERT privilege (last evidence: ${grant.sourceFile})`,
+  );
 
   for (const policy of forbiddenPolicies) {
     const policyResult = policyState(policy);
     if (policyResult.state === "present") {
       failures.push(
-        `${table}: forbidden direct-client INSERT policy ${policy} is still effective (last evidence: ${policyResult.sourceFile})`,
+        `${table}: direct INSERT privilege is reachable through ${policy} (last policy evidence: ${policyResult.sourceFile})`,
       );
     }
   }
@@ -188,7 +225,7 @@ if (failures.length > 0) {
     console.error(`- ${failure}`);
   }
   console.error(
-    "\nExpected remediation: revoke direct authenticated INSERT on critical commercial tables, drop direct-client INSERT policies, and route writes through server-authoritative RPCs that derive price/state from canonical records.",
+    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority RPCs even when their frontend callers are gone.",
   );
   process.exit(1);
 }
