@@ -6,7 +6,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
 import { parseSystemSettingNumber } from "@/lib/system-settings-values";
-import { BATCH, PRICING } from "@/config/constants";
+import { BATCH } from "@/config/constants";
 
 export { formatCurrency } from "@/lib/utils";
 
@@ -31,9 +31,53 @@ export interface TaxRates {
   taxInstallment10xClient: number;
 }
 
+const REQUIRED_COMMERCIAL_KEYS = [
+  "default_price_full",
+  "default_price_pix",
+  "default_deposit_amount",
+  "pix_discount_percentage",
+] as const;
+
+const OPTIONAL_OPERATIONAL_KEYS = [
+  "monthly_production_limit",
+  "sales_open_day",
+] as const;
+
 let cachedSettings: PricingSettings | null = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000;
+
+function assertFiniteInRange(
+  key: string,
+  value: number,
+  { min, max = Number.POSITIVE_INFINITY }: { min: number; max?: number },
+): number {
+  if (!Number.isFinite(value) || value < min || value > max) {
+    throw new Error(`Configuração comercial inválida: ${key}`);
+  }
+
+  return value;
+}
+
+function readRequiredSetting(settings: Map<string, unknown>, key: string): number {
+  if (!settings.has(key)) {
+    throw new Error(`Configuração comercial ausente: ${key}`);
+  }
+
+  return parseSystemSettingNumber(key, settings.get(key));
+}
+
+function readOptionalSetting(
+  settings: Map<string, unknown>,
+  key: string,
+  fallback: number,
+): number {
+  if (!settings.has(key)) {
+    return fallback;
+  }
+
+  return parseSystemSettingNumber(key, settings.get(key));
+}
 
 export async function fetchPricingSettings(): Promise<PricingSettings> {
   const now = Date.now();
@@ -41,77 +85,107 @@ export async function fetchPricingSettings(): Promise<PricingSettings> {
     return cachedSettings;
   }
 
-  const settings: PricingSettings = {
-    defaultPriceFull: PRICING.DEFAULT_PRICE_FULL,
-    defaultPricePix: PRICING.DEFAULT_PRICE_PIX,
-    defaultDepositAmount: PRICING.DEFAULT_DEPOSIT_AMOUNT,
-    pixDiscountPercentage: PRICING.PIX_DISCOUNT_PERCENTAGE,
-    monthlyProductionLimit: BATCH.MONTHLY_PRODUCTION_LIMIT,
-    salesOpenDay: BATCH.SALES_OPEN_DAY,
-  };
-
   try {
+    const keys = [...REQUIRED_COMMERCIAL_KEYS, ...OPTIONAL_OPERATIONAL_KEYS];
     const { data: systemSettings, error } = await supabase
       .from("system_settings")
       .select("key, value")
-      .in("key", [
-        "default_price_full",
-        "default_price_pix",
-        "default_deposit_amount",
-        "pix_discount_percentage",
-        "monthly_production_limit",
-        "sales_open_day",
-      ]);
+      .in("key", keys);
 
-    if (!error && systemSettings) {
-      systemSettings.forEach((setting) => {
-        const value = parseSystemSettingNumber(setting.key, setting.value);
-        switch (setting.key) {
-          case "default_price_full":
-            settings.defaultPriceFull = value;
-            break;
-          case "default_price_pix":
-            settings.defaultPricePix = value;
-            break;
-          case "default_deposit_amount":
-            settings.defaultDepositAmount = value;
-            break;
-          case "pix_discount_percentage":
-            settings.pixDiscountPercentage = value;
-            break;
-          case "monthly_production_limit":
-            settings.monthlyProductionLimit = value;
-            break;
-          case "sales_open_day":
-            settings.salesOpenDay = value;
-            break;
-        }
-      });
+    if (error) {
+      throw new Error(`Falha ao carregar configuração comercial: ${error.message}`);
     }
+
+    const settingValues = new Map<string, unknown>(
+      (systemSettings ?? []).map((setting) => [setting.key, setting.value]),
+    );
+
+    const defaultPriceFull = assertFiniteInRange(
+      "default_price_full",
+      readRequiredSetting(settingValues, "default_price_full"),
+      { min: Number.EPSILON },
+    );
+    const defaultPricePix = assertFiniteInRange(
+      "default_price_pix",
+      readRequiredSetting(settingValues, "default_price_pix"),
+      { min: Number.EPSILON, max: defaultPriceFull },
+    );
+    const defaultDepositAmount = assertFiniteInRange(
+      "default_deposit_amount",
+      readRequiredSetting(settingValues, "default_deposit_amount"),
+      { min: 0, max: Math.min(defaultPriceFull, defaultPricePix) },
+    );
+    const pixDiscountPercentage = assertFiniteInRange(
+      "pix_discount_percentage",
+      readRequiredSetting(settingValues, "pix_discount_percentage"),
+      { min: 0, max: 100 },
+    );
+
+    const monthlyProductionLimit = assertFiniteInRange(
+      "monthly_production_limit",
+      readOptionalSetting(
+        settingValues,
+        "monthly_production_limit",
+        BATCH.MONTHLY_PRODUCTION_LIMIT,
+      ),
+      { min: 1 },
+    );
+    const salesOpenDay = assertFiniteInRange(
+      "sales_open_day",
+      readOptionalSetting(settingValues, "sales_open_day", BATCH.SALES_OPEN_DAY),
+      { min: 1, max: 31 },
+    );
+
+    if (!Number.isInteger(monthlyProductionLimit) || !Number.isInteger(salesOpenDay)) {
+      throw new Error("Configuração operacional de vendas deve usar números inteiros");
+    }
+
+    const settings: PricingSettings = {
+      defaultPriceFull,
+      defaultPricePix,
+      defaultDepositAmount,
+      pixDiscountPercentage,
+      monthlyProductionLimit,
+      salesOpenDay,
+    };
 
     try {
       const { data: productionData, error: prodError } = await supabase.rpc(
-        "get_current_production_limit"
+        "get_current_production_limit",
       );
 
       if (!prodError && productionData && productionData.length > 0) {
         const current = productionData[0];
-        settings.currentMonthLimit = current.prod_global_limit;
-        settings.currentMonthSold = current.prod_units_sold;
-        settings.currentMonthAvailable = current.prod_available;
-        settings.currentMonthPercentage = current.prod_percentage_sold;
+        const currentMonthLimit = Number(current.prod_global_limit);
+        const currentMonthSold = Number(current.prod_units_sold);
+        const currentMonthAvailable = Number(current.prod_available);
+        const currentMonthPercentage = Number(current.prod_percentage_sold);
+
+        if (
+          [
+            currentMonthLimit,
+            currentMonthSold,
+            currentMonthAvailable,
+            currentMonthPercentage,
+          ].every(Number.isFinite)
+        ) {
+          settings.currentMonthLimit = currentMonthLimit;
+          settings.currentMonthSold = currentMonthSold;
+          settings.currentMonthAvailable = currentMonthAvailable;
+          settings.currentMonthPercentage = currentMonthPercentage;
+        }
       }
     } catch {
-      // Older databases may not have the production limit RPC yet.
+      // Production metrics are optional and must never replace commercial pricing.
     }
 
     cachedSettings = settings;
     cacheTimestamp = now;
+    return settings;
   } catch (error) {
-    log.error("Erro ao buscar configuracoes de precos", { error });
+    log.error("Erro ao buscar configurações de preços", { error });
+    throw error;
   }
-
-  return settings;
 }
 
 export function clearPricingCache() {
@@ -137,7 +211,8 @@ export function calculateRemaining(totalPrice: number, depositAmount: number): n
 
 export function calculateNetValues(fullPrice: number, pixDiscountPercentage: number) {
   const pixPrice = calculatePixPrice(fullPrice, pixDiscountPercentage);
-  const safePercentage = (amount: number, base: number) => (base > 0 ? (amount / base) * 100 : 0);
+  const safePercentage = (amount: number, base: number) =>
+    base > 0 ? (amount / base) * 100 : 0;
 
   const pixTax = pixPrice * TAX_RATES.taxPix;
   const netPix = pixPrice - pixTax;
