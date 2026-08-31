@@ -24,8 +24,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
-import { PRICING } from "@/config/constants";
 import { adminOrdersPath } from "@/config/routes";
+
+function isValidPaymentAmount(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function formatAmount(value: number | null | undefined): string {
+  return isValidPaymentAmount(value) ? `R$ ${value.toFixed(2)}` : "Indisponível";
+}
 
 export default function AdminPreorders() {
   const { toast } = useToast();
@@ -53,6 +60,16 @@ export default function AdminPreorders() {
   });
 
   const handleReleaseFinalPayment = (quoteId: string) => {
+    const quote = preorders.find((item) => item.id === quoteId);
+    if (!quote || !isValidPaymentAmount(quote.remaining_amount)) {
+      toast({
+        title: "Pagamento indisponível",
+        description: "O valor restante oficial não está configurado para este pedido.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     releaseFinalPaymentMutation.mutate(quoteId, {
       onSuccess: () => {
         toast({
@@ -75,17 +92,17 @@ export default function AdminPreorders() {
     if (!quote) {
       toast({
         title: "Erro ao registrar pagamento",
-        description: "Pedido nao encontrado",
+        description: "Pedido não encontrado",
         variant: "destructive",
       });
       return;
     }
 
     const amount = paymentType === "deposit" ? quote.deposit_amount : quote.remaining_amount;
-    if (amount == null) {
+    if (!isValidPaymentAmount(amount)) {
       toast({
-        title: "Erro ao registrar pagamento",
-        description: "Valor de pagamento nao disponivel",
+        title: "Pagamento indisponível",
+        description: "O valor oficial deste pagamento não está disponível.",
         variant: "destructive",
       });
       return;
@@ -107,21 +124,21 @@ export default function AdminPreorders() {
             variant: "destructive",
           });
         },
-      }
+      },
     );
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight mb-2">Pre-vendas</h2>
+        <h2 className="mb-2 text-2xl font-bold tracking-tight">Pré-vendas</h2>
         <p className="text-muted-foreground">Gerencie pedidos com pagamento de sinal</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4 mb-8">
+      <div className="mb-8 grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Pre-vendas</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de Pré-vendas</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -130,7 +147,7 @@ export default function AdminPreorders() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Em Producao</CardTitle>
+            <CardTitle className="text-sm font-medium">Em Produção</CardTitle>
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -155,14 +172,14 @@ export default function AdminPreorders() {
             <div className="text-2xl font-bold text-green-600">
               R$ {(stats?.total_revenue || 0).toFixed(2)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="mt-1 text-xs text-muted-foreground">
               Sinais: R$ {(stats?.total_deposits || 0).toFixed(2)}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="flex gap-2 mb-6 overflow-x-auto">
+      <div className="mb-6 flex gap-2 overflow-x-auto">
         <Button
           variant={selectedTab === "pending_deposit" ? "default" : "outline"}
           onClick={() => setSelectedTab("pending_deposit")}
@@ -175,7 +192,7 @@ export default function AdminPreorders() {
           onClick={() => setSelectedTab("in_production")}
           className="whitespace-nowrap"
         >
-          Em Producao ({stats?.in_production || 0})
+          Em Produção ({stats?.in_production || 0})
         </Button>
         <Button
           variant={selectedTab === "ready_for_payment" ? "default" : "outline"}
@@ -189,7 +206,7 @@ export default function AdminPreorders() {
           onClick={() => setSelectedTab("completed")}
           className="whitespace-nowrap"
         >
-          Concluidos ({stats?.completed || 0})
+          Concluídos ({stats?.completed || 0})
         </Button>
       </div>
 
@@ -200,144 +217,180 @@ export default function AdminPreorders() {
         </CardHeader>
         <CardContent>
           {filteredPreorders.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <div className="py-8 text-center text-muted-foreground">
+              <Package className="mx-auto mb-4 h-12 w-12 opacity-50" />
               <p>Nenhum pedido nesta categoria</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredPreorders.map((quote) => (
-                <div key={quote.id} className="p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p className="font-medium">#{quote.id.slice(0, 8)}</p>
-                        {quote.payment_status === "pending" && (
-                          <Badge variant="secondary">
-                            <Clock className="h-3 w-3 mr-1" />
-                            Aguardando Sinal
-                          </Badge>
-                        )}
-                        {quote.payment_status === "deposit_paid" && !quote.ready_for_final_payment && (
-                          <Badge variant="default" className="bg-blue-500">
-                            <Package className="h-3 w-3 mr-1" />
-                            Em Producao
-                          </Badge>
-                        )}
-                        {quote.payment_status === "deposit_paid" && quote.ready_for_final_payment && (
-                          <Badge variant="default" className="bg-orange-500">
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                            Aguardando Pagamento
-                          </Badge>
-                        )}
-                        {quote.payment_status === "fully_paid" && (
-                          <Badge variant="default" className="bg-green-500">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Pago
-                          </Badge>
-                        )}
+              {filteredPreorders.map((quote) => {
+                const hasDepositAmount = isValidPaymentAmount(quote.deposit_amount);
+                const hasRemainingAmount = isValidPaymentAmount(quote.remaining_amount);
+
+                return (
+                  <div
+                    key={quote.id}
+                    className="rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-2 flex items-center gap-2">
+                          <p className="font-medium">#{quote.id.slice(0, 8)}</p>
+                          {quote.payment_status === "pending" && (
+                            <Badge variant="secondary">
+                              <Clock className="mr-1 h-3 w-3" />
+                              Aguardando Sinal
+                            </Badge>
+                          )}
+                          {quote.payment_status === "deposit_paid" && !quote.ready_for_final_payment && (
+                            <Badge variant="default" className="bg-blue-500">
+                              <Package className="mr-1 h-3 w-3" />
+                              Em Produção
+                            </Badge>
+                          )}
+                          {quote.payment_status === "deposit_paid" && quote.ready_for_final_payment && (
+                            <Badge variant="default" className="bg-orange-500">
+                              <AlertCircle className="mr-1 h-3 w-3" />
+                              Aguardando Pagamento
+                            </Badge>
+                          )}
+                          {quote.payment_status === "fully_paid" && (
+                            <Badge variant="default" className="bg-green-500">
+                              <CheckCircle2 className="mr-1 h-3 w-3" />
+                              Pago
+                            </Badge>
+                          )}
+                        </div>
+
+                        <p className="mb-2 text-sm text-muted-foreground">
+                          Cliente: {quote.profiles?.full_name || quote.profiles?.email || "Sem nome"}
+                        </p>
+                        <p className="mb-3 text-sm text-muted-foreground">
+                          {quote.quote_items?.length} item(ns):{" "}
+                          {quote.quote_items?.map((item) => item.name).filter(Boolean).join(", ")}
+                        </p>
+
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Sinal:</span>
+                            <p className="font-medium">{formatAmount(quote.deposit_amount)}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Restante:</span>
+                            <p className="font-medium">{formatAmount(quote.remaining_amount)}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Total:</span>
+                            <p className="font-medium">{formatAmount(quote.total_amount)}</p>
+                          </div>
+                        </div>
+
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Criado em{" "}
+                          {format(new Date(quote.created_at), "dd/MM/yyyy 'às' HH:mm", {
+                            locale: ptBR,
+                          })}
+                        </p>
                       </div>
 
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Cliente: {quote.profiles?.full_name || quote.profiles?.email || "Sem nome"}
-                      </p>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {quote.quote_items?.length} item(ns):{" "}
-                        {quote.quote_items?.map((item) => item.name).filter(Boolean).join(", ")}
-                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(adminOrdersPath({ type: "quote", search: quote.id }))}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          Ver
+                        </Button>
 
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Sinal:</span>
-                          <p className="font-medium">R$ {quote.deposit_amount?.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Restante:</span>
-                          <p className="font-medium">R$ {quote.remaining_amount?.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Total:</span>
-                          <p className="font-medium">R$ {quote.total_amount?.toFixed(2)}</p>
-                        </div>
-                      </div>
+                        {quote.payment_status === "pending" && hasDepositAmount && (
+                          <SendPaymentLinkDialog
+                            quoteId={quote.id}
+                            amount={quote.deposit_amount}
+                            paymentType="voucher"
+                            customerName={quote.profiles?.full_name || "Cliente"}
+                            customerEmail={quote.profiles?.email || ""}
+                          />
+                        )}
 
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Criado em{" "}
-                        {format(new Date(quote.created_at), "dd/MM/yyyy 'as' HH:mm", { locale: ptBR })}
-                      </p>
-                    </div>
+                        {quote.payment_status === "pending" && !hasDepositAmount && (
+                          <Button size="sm" variant="outline" disabled>
+                            Valor do sinal indisponível
+                          </Button>
+                        )}
 
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => navigate(adminOrdersPath({ type: "quote", search: quote.id }))}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Ver
-                      </Button>
+                        {quote.payment_status === "deposit_paid" &&
+                          quote.ready_for_final_payment &&
+                          hasRemainingAmount && (
+                            <SendPaymentLinkDialog
+                              quoteId={quote.id}
+                              amount={quote.remaining_amount}
+                              paymentType="final"
+                              customerName={quote.profiles?.full_name || "Cliente"}
+                              customerEmail={quote.profiles?.email || ""}
+                            />
+                          )}
 
-                      {quote.payment_status === "pending" && (
-                        <SendPaymentLinkDialog
-                          quoteId={quote.id}
-                          amount={quote.deposit_amount ?? PRICING.DEFAULT_DEPOSIT_AMOUNT}
-                          paymentType="voucher"
-                          customerName={quote.profiles?.full_name || "Cliente"}
-                          customerEmail={quote.profiles?.email || ""}
-                        />
-                      )}
-
-                      {quote.payment_status === "deposit_paid" && quote.ready_for_final_payment && (
-                        <SendPaymentLinkDialog
-                          quoteId={quote.id}
-                          amount={quote.remaining_amount || 0}
-                          paymentType="final"
-                          customerName={quote.profiles?.full_name || "Cliente"}
-                          customerEmail={quote.profiles?.email || ""}
-                        />
-                      )}
-
-                      {quote.payment_status === "deposit_paid" && !quote.ready_for_final_payment && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="default">
-                              <Send className="h-4 w-4 mr-2" />
-                              Liberar Pagamento
+                        {quote.payment_status === "deposit_paid" &&
+                          quote.ready_for_final_payment &&
+                          !hasRemainingAmount && (
+                            <Button size="sm" variant="outline" disabled>
+                              Valor final indisponível
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Liberar Pagamento Final?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                O cliente sera notificado para pagar o restante de{" "}
-                                <strong>R$ {quote.remaining_amount?.toFixed(2)}</strong>.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleReleaseFinalPayment(quote.id)}>
-                                Sim, Liberar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
+                          )}
 
-                      {quote.payment_status === "pending" && (
-                        <Button size="sm" variant="outline" onClick={() => handleMarkAsPaid(quote.id, "deposit")}>
-                          Marcar Sinal Pago
-                        </Button>
-                      )}
+                        {quote.payment_status === "deposit_paid" && !quote.ready_for_final_payment && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="default" disabled={!hasRemainingAmount}>
+                                <Send className="mr-2 h-4 w-4" />
+                                Liberar Pagamento
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Liberar Pagamento Final?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  O cliente será notificado para pagar o restante de{" "}
+                                  <strong>{formatAmount(quote.remaining_amount)}</strong>.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleReleaseFinalPayment(quote.id)}>
+                                  Sim, Liberar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
 
-                      {quote.payment_status === "deposit_paid" && quote.ready_for_final_payment && (
-                        <Button size="sm" variant="outline" onClick={() => handleMarkAsPaid(quote.id, "final")}>
-                          Marcar Final Pago
-                        </Button>
-                      )}
+                        {quote.payment_status === "pending" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={!hasDepositAmount}
+                            onClick={() => handleMarkAsPaid(quote.id, "deposit")}
+                          >
+                            Marcar Sinal Pago
+                          </Button>
+                        )}
+
+                        {quote.payment_status === "deposit_paid" && quote.ready_for_final_payment && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={!hasRemainingAmount}
+                            onClick={() => handleMarkAsPaid(quote.id, "final")}
+                          >
+                            Marcar Final Pago
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
