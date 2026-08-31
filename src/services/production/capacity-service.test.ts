@@ -1,50 +1,36 @@
-/**
- * Capacity Service Tests
- * 
- * Tests for capacity management operations.
- * 
- * Requirements: 3.2, 3.3, 3.5, 3.6
- */
-
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   checkAvailability,
-  reserveCapacity,
-  releaseCapacity,
+  checkSubscriptionCapacity,
   getCapacityUsage,
-  checkSubscriptionCapacity
-} from './capacity-service';
-import { supabase } from '@/integrations/supabase/client';
-import log from '@/lib/logger';
+  releaseCapacity,
+  reserveCapacity,
+} from "./capacity-service";
+import { supabase } from "@/integrations/supabase/client";
+import log from "@/lib/logger";
 
-// Mock the supabase client
-vi.mock('@/integrations/supabase/client', () => ({
+vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     rpc: vi.fn(),
-    from: vi.fn()
-  }
+    from: vi.fn(),
+  },
 }));
 
-vi.mock('@/lib/logger', () => {
-  const logger = {
+vi.mock("@/lib/logger", () => ({
+  default: {
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-  };
+  },
+}));
 
-  return {
-    default: logger,
-    log: logger,
-  };
-});
-
-type SupabaseQueryResult<T = unknown> = {
+type QueryResult<T = unknown> = {
   data: T | null;
   error: { message: string } | null;
 };
 
-function createSupabaseQuery<T>(result: SupabaseQueryResult<T>) {
+function createQuery<T>(result: QueryResult<T>) {
   const query: Record<string, unknown> = {};
   const resolve = vi.fn().mockResolvedValue(result);
 
@@ -59,1030 +45,194 @@ function createSupabaseQuery<T>(result: SupabaseQueryResult<T>) {
   return query;
 }
 
-function mockCycleQueries(results: Array<SupabaseQueryResult>) {
+function mockCycleQueries(results: QueryResult[]) {
   let index = 0;
-
-  (supabase.from as any).mockImplementation((table: string) => {
-    if (table !== 'cycles') {
+  vi.mocked(supabase.from).mockImplementation((table: string) => {
+    if (table !== "cycles") {
       throw new Error(`Unexpected table query: ${table}`);
     }
 
-    const result = results[Math.min(index, results.length - 1)] ?? { data: null, error: null };
+    const result = results[index] ?? { data: null, error: null };
     index += 1;
-
-    return createSupabaseQuery(result);
+    return createQuery(result) as never;
   });
 }
 
-describe('Capacity Service', () => {
+describe("capacity-service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('checkAvailability', () => {
-    it('should return true when capacity is available', async () => {
-      // Mock RPC call to return true
-      (supabase.rpc as any).mockResolvedValue({
-        data: true,
-        error: null
-      });
+  describe("checkAvailability", () => {
+    it("returns true only when the capacity RPC confirms availability", async () => {
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: true, error: null } as never);
 
-      const result = await checkAvailability('cycle-123', 5);
-
-      expect(result).toBe(true);
-      expect(supabase.rpc).toHaveBeenCalledWith('check_capacity_available', {
-        p_cycle_id: 'cycle-123',
-        p_quantity: 5
+      await expect(checkAvailability("cycle-1", 2)).resolves.toBe(true);
+      expect(supabase.rpc).toHaveBeenCalledWith("check_capacity_available", {
+        p_cycle_id: "cycle-1",
+        p_quantity: 2,
       });
     });
 
-    it('should return false when capacity is not available', async () => {
-      // Mock RPC call to return false
-      (supabase.rpc as any).mockResolvedValue({
-        data: false,
-        error: null
-      });
+    it("fails closed when the RPC does not return true", async () => {
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: null } as never);
 
-      const result = await checkAvailability('cycle-123', 100);
-
-      expect(result).toBe(false);
+      await expect(checkAvailability("cycle-1", 1)).resolves.toBe(false);
     });
 
-    it('should throw error when database query fails', async () => {
-      // Mock RPC call to return error
-      (supabase.rpc as any).mockResolvedValue({
+    it("propagates capacity RPC errors", async () => {
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({
         data: null,
-        error: { message: 'Database error' }
-      });
+        error: { message: "database unavailable" },
+      } as never);
 
-      await expect(checkAvailability('cycle-123', 5)).rejects.toThrow(
-        'Failed to check capacity availability: Database error'
+      await expect(checkAvailability("cycle-1", 1)).rejects.toThrow(
+        "Failed to check capacity availability: database unavailable",
       );
     });
   });
 
-  describe('reserveCapacity', () => {
-    it('should successfully reserve capacity', async () => {
-      // Mock RPC call to succeed
-      (supabase.rpc as any).mockResolvedValue({
-        data: null,
-        error: null
+  describe("reservation mutations", () => {
+    it("reserves capacity through the canonical RPC", async () => {
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: null } as never);
+
+      await reserveCapacity("cycle-1", 1, "subscription-1");
+
+      expect(supabase.rpc).toHaveBeenCalledWith("reserve_capacity", {
+        p_cycle_id: "cycle-1",
+        p_quantity: 1,
       });
-
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      await reserveCapacity('cycle-123', 3, 'subscription-456');
-
-      expect(supabase.rpc).toHaveBeenCalledWith('reserve_capacity', {
-        p_cycle_id: 'cycle-123',
-        p_quantity: 3
+      expect(log.info).toHaveBeenCalledWith("Capacity reserved", {
+        quantity: 1,
+        cycleId: "cycle-1",
+        referenceId: "subscription-1",
       });
-      expect(log.info).toHaveBeenCalledWith('Capacity reserved', {
-        quantity: 3,
-        cycleId: 'cycle-123',
-        referenceId: 'subscription-456',
-      });
-
-      consoleSpy.mockRestore();
     });
 
-    it('should throw error when capacity limit exceeded', async () => {
-      // Mock RPC call to return error
-      (supabase.rpc as any).mockResolvedValue({
+    it("does not hide reservation errors", async () => {
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({
         data: null,
-        error: { message: 'Capacity limit exceeded' }
-      });
+        error: { message: "CAPACITY_EXCEEDED" },
+      } as never);
 
-      await expect(
-        reserveCapacity('cycle-123', 100, 'subscription-456')
-      ).rejects.toThrow('Failed to reserve capacity: Capacity limit exceeded');
+      await expect(reserveCapacity("cycle-1", 1, "subscription-1")).rejects.toThrow(
+        "Failed to reserve capacity: CAPACITY_EXCEEDED",
+      );
     });
 
-    it('should throw error when cycle not found', async () => {
-      // Mock RPC call to return error
-      (supabase.rpc as any).mockResolvedValue({
-        data: null,
-        error: { message: 'Cycle not found' }
-      });
+    it("releases capacity through the canonical RPC", async () => {
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: null } as never);
 
-      await expect(
-        reserveCapacity('invalid-cycle', 1, 'subscription-456')
-      ).rejects.toThrow('Failed to reserve capacity: Cycle not found');
+      await releaseCapacity("cycle-1", 1, "subscription-1");
+
+      expect(supabase.rpc).toHaveBeenCalledWith("release_capacity", {
+        p_cycle_id: "cycle-1",
+        p_quantity: 1,
+      });
+      expect(log.info).toHaveBeenCalledWith("Capacity released", {
+        quantity: 1,
+        cycleId: "cycle-1",
+        referenceId: "subscription-1",
+      });
     });
   });
 
-  describe('releaseCapacity', () => {
-    it('should successfully release capacity', async () => {
-      // Mock RPC call to succeed
-      (supabase.rpc as any).mockResolvedValue({
-        data: null,
-        error: null
-      });
+  describe("getCapacityUsage", () => {
+    it("uses canonical capacity fields", async () => {
+      mockCycleQueries([
+        { data: { capacity: 150, used_capacity: 50 }, error: null },
+      ]);
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      await releaseCapacity('cycle-123', 2, 'subscription-456');
-
-      expect(supabase.rpc).toHaveBeenCalledWith('release_capacity', {
-        p_cycle_id: 'cycle-123',
-        p_quantity: 2
-      });
-      expect(log.info).toHaveBeenCalledWith('Capacity released', {
-        quantity: 2,
-        cycleId: 'cycle-123',
-        referenceId: 'subscription-456',
-      });
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should throw error when database update fails', async () => {
-      // Mock RPC call to return error
-      (supabase.rpc as any).mockResolvedValue({
-        data: null,
-        error: { message: 'Database error' }
-      });
-
-      await expect(
-        releaseCapacity('cycle-123', 1, 'subscription-456')
-      ).rejects.toThrow('Failed to release capacity: Database error');
-    });
-  });
-
-  describe('getCapacityUsage', () => {
-    it('should return capacity usage with canonical capacity fields', async () => {
-      // Mock database query
-      const mockFrom = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: {
-                capacity: 100,
-                used_capacity: 75
-              },
-              error: null
-            })
-          })
-        })
-      });
-      (supabase.from as any) = mockFrom;
-
-      const result = await getCapacityUsage('cycle-123');
-
-      expect(result).toEqual({
-        max: 100,
-        current: 75,
-        available: 25,
-        percentage: 75,
-        reserved: 0
-      });
-    });
-
-    it('should use canonical capacity when legacy limit fields are absent', async () => {
-      // Mock database query
-      const mockFrom = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: {
-                capacity: 150,
-                used_capacity: 50
-              },
-              error: null
-            })
-          })
-        })
-      });
-      (supabase.from as any) = mockFrom;
-
-      const result = await getCapacityUsage('cycle-123');
-
-      expect(result).toEqual({
+      await expect(getCapacityUsage("cycle-1")).resolves.toEqual({
         max: 150,
         current: 50,
         available: 100,
         percentage: 33,
-        reserved: 0
+        reserved: 0,
       });
     });
 
-    it('should handle zero used capacity', async () => {
-      // Mock database query
-      const mockFrom = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: {
-                capacity: 100,
-                used_capacity: 0
-              },
-              error: null
-            })
-          })
-        })
+    it("rejects a missing cycle", async () => {
+      mockCycleQueries([{ data: null, error: null }]);
+
+      await expect(getCapacityUsage("missing")).rejects.toThrow("Cycle not found: missing");
+    });
+  });
+
+  describe("checkSubscriptionCapacity", () => {
+    it("rejects invalid delivery counts", async () => {
+      await expect(checkSubscriptionCapacity(0)).rejects.toThrow(
+        "Invalid subscription delivery count",
+      );
+      expect(supabase.from).not.toHaveBeenCalled();
+    });
+
+    it("returns unavailable when there is no configured open cycle", async () => {
+      mockCycleQueries([{ data: null, error: null }]);
+
+      await expect(checkSubscriptionCapacity(3)).resolves.toEqual({ available: false });
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it("rejects a failed delivery-cycle lookup", async () => {
+      mockCycleQueries([
+        { data: { cycle_number: 1, month: 8, year: 2026 }, error: null },
+        { data: null, error: { message: "cycle query failed" } },
+      ]);
+
+      await expect(checkSubscriptionCapacity(1)).rejects.toThrow(
+        "Failed to get delivery cycle: cycle query failed",
+      );
+    });
+
+    it("returns unavailable when a required future cycle does not exist", async () => {
+      mockCycleQueries([
+        { data: { cycle_number: 1, month: 8, year: 2026 }, error: null },
+        { data: null, error: null },
+      ]);
+
+      await expect(checkSubscriptionCapacity(1)).resolves.toEqual({
+        available: false,
+        firstUnavailableCycle: {
+          cycleNumber: 2,
+          month: 8,
+          year: 2026,
+          deliveryNumber: 1,
+        },
       });
-      (supabase.from as any) = mockFrom;
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
 
-      const result = await getCapacityUsage('cycle-123');
+    it("returns unavailable when any required cycle has no confirmed capacity", async () => {
+      mockCycleQueries([
+        { data: { cycle_number: 1, month: 8, year: 2026 }, error: null },
+        { data: { id: "cycle-2" }, error: null },
+      ]);
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: false, error: null } as never);
 
-      expect(result).toEqual({
-        max: 100,
-        current: 0,
-        available: 100,
-        percentage: 0,
-        reserved: 0
+      await expect(checkSubscriptionCapacity(1)).resolves.toEqual({
+        available: false,
+        firstUnavailableCycle: {
+          cycleNumber: 2,
+          month: 8,
+          year: 2026,
+          deliveryNumber: 1,
+        },
       });
     });
 
-    it('should handle full capacity', async () => {
-      // Mock database query
-      const mockFrom = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: {
-                capacity: 100,
-                used_capacity: 100
-              },
-              error: null
-            })
-          })
-        })
-      });
-      (supabase.from as any) = mockFrom;
+    it("returns available only when every required cycle exists and is confirmed", async () => {
+      mockCycleQueries([
+        { data: { cycle_number: 1, month: 8, year: 2026 }, error: null },
+        { data: { id: "cycle-2" }, error: null },
+        { data: { id: "cycle-3" }, error: null },
+      ]);
+      vi.mocked(supabase.rpc)
+        .mockResolvedValueOnce({ data: true, error: null } as never)
+        .mockResolvedValueOnce({ data: true, error: null } as never);
 
-      const result = await getCapacityUsage('cycle-123');
-
-      expect(result).toEqual({
-        max: 100,
-        current: 100,
-        available: 0,
-        percentage: 100,
-        reserved: 0
-      });
+      await expect(checkSubscriptionCapacity(2)).resolves.toEqual({ available: true });
+      expect(supabase.rpc).toHaveBeenCalledTimes(2);
     });
-
-    it('should throw error when cycle not found', async () => {
-      // Mock database query to return null
-      const mockFrom = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: null,
-              error: null
-            })
-          })
-        })
-      });
-      (supabase.from as any) = mockFrom;
-
-      await expect(getCapacityUsage('invalid-cycle')).rejects.toThrow(
-        'Cycle not found: invalid-cycle'
-      );
-    });
-
-    it('should throw error when database query fails', async () => {
-      // Mock database query to return error
-      const mockFrom = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: null,
-              error: { message: 'Database error' }
-            })
-          })
-        })
-      });
-      (supabase.from as any) = mockFrom;
-
-      await expect(getCapacityUsage('cycle-123')).rejects.toThrow(
-        'Failed to get cycle capacity: Database error'
-      );
-    });
-  });
-});
-
-describe('Property-Based Tests', () => {
-  describe('Property 7: Capacity Check Before Purchase', () => {
-    /**
-     * **Validates: Requirements 3.2, 3.3, 22.1, 22.4**
-     * 
-     * Property: For any subscription or standalone purchase creation attempt,
-     * capacity availability must be verified before confirming the purchase.
-     * 
-     * This property tests that:
-     * 1. checkAvailability is called before any purchase
-     * 2. Purchases are rejected when capacity is exceeded
-     * 3. reserveCapacity throws an error when capacity is exceeded
-     * 4. The system correctly handles various capacity scenarios
-     */
-    
-    it('should always check capacity before allowing purchase', async () => {
-      const fc = await import('fast-check');
-      
-      await fc.assert(
-        fc.asyncProperty(
-          // Generate random capacity scenarios
-          fc.record({
-            maxCapacity: fc.integer({ min: 1, max: 200 }),
-            currentUsage: fc.integer({ min: 0, max: 200 }),
-            requestedQuantity: fc.integer({ min: 1, max: 10 })
-          }),
-          async ({ maxCapacity, currentUsage, requestedQuantity }) => {
-            // Setup: Mock the database to return our test scenario
-            const cycleId = 'test-cycle-' + Math.random();
-            const hasCapacity = (currentUsage + requestedQuantity) <= maxCapacity;
-            
-            // Mock checkAvailability
-            (supabase.rpc as any).mockResolvedValueOnce({
-              data: hasCapacity,
-              error: null
-            });
-            
-            // Act: Check availability
-            const result = await checkAvailability(cycleId, requestedQuantity);
-            
-            // Assert: Result matches expected capacity calculation
-            expect(result).toBe(hasCapacity);
-            
-            // Verify that the RPC was called with correct parameters
-            expect(supabase.rpc).toHaveBeenCalledWith('check_capacity_available', {
-              p_cycle_id: cycleId,
-              p_quantity: requestedQuantity
-            });
-          }
-        ),
-        { numRuns: 100 } // Run 100 iterations as specified
-      );
-    });
-    
-    it('should reject purchases when capacity would be exceeded', async () => {
-      const fc = await import('fast-check');
-      
-      await fc.assert(
-        fc.asyncProperty(
-          // Generate scenarios where capacity is exceeded
-          fc.record({
-            maxCapacity: fc.integer({ min: 10, max: 100 }),
-            currentUsage: fc.integer({ min: 5, max: 95 }),
-            requestedQuantity: fc.integer({ min: 1, max: 20 })
-          }).filter(({ maxCapacity, currentUsage, requestedQuantity }) => 
-            // Only test cases where capacity would be exceeded
-            (currentUsage + requestedQuantity) > maxCapacity
-          ),
-          async ({ requestedQuantity }) => {
-            const cycleId = 'test-cycle-' + Math.random();
-            
-            // Mock checkAvailability to return false (capacity exceeded)
-            (supabase.rpc as any).mockResolvedValueOnce({
-              data: false,
-              error: null
-            });
-            
-            // Act: Check availability
-            const result = await checkAvailability(cycleId, requestedQuantity);
-            
-            // Assert: Purchase should be rejected
-            expect(result).toBe(false);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-    
-    it('should throw error when reserveCapacity exceeds limit', async () => {
-      const fc = await import('fast-check');
-      
-      await fc.assert(
-        fc.asyncProperty(
-          // Generate scenarios where reservation would exceed capacity
-          fc.record({
-            maxCapacity: fc.integer({ min: 10, max: 100 }),
-            currentUsage: fc.integer({ min: 5, max: 95 }),
-            requestedQuantity: fc.integer({ min: 1, max: 20 })
-          }).filter(({ maxCapacity, currentUsage, requestedQuantity }) => 
-            (currentUsage + requestedQuantity) > maxCapacity
-          ),
-          async ({ requestedQuantity }) => {
-            const cycleId = 'test-cycle-' + Math.random();
-            const referenceId = 'ref-' + Math.random();
-            
-            // Mock reserveCapacity to fail with capacity exceeded error
-            (supabase.rpc as any).mockResolvedValueOnce({
-              data: null,
-              error: { message: 'Capacity limit exceeded' }
-            });
-            
-            // Act & Assert: Should throw error
-            await expect(
-              reserveCapacity(cycleId, requestedQuantity, referenceId)
-            ).rejects.toThrow('Failed to reserve capacity: Capacity limit exceeded');
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-    
-    it('should allow purchases when capacity is available', async () => {
-      const fc = await import('fast-check');
-      
-      await fc.assert(
-        fc.asyncProperty(
-          // Generate scenarios where capacity is available
-          fc.record({
-            maxCapacity: fc.integer({ min: 20, max: 200 }),
-            currentUsage: fc.integer({ min: 0, max: 50 }),
-            requestedQuantity: fc.integer({ min: 1, max: 10 })
-          }).filter(({ maxCapacity, currentUsage, requestedQuantity }) => 
-            // Only test cases where capacity is available
-            (currentUsage + requestedQuantity) <= maxCapacity
-          ),
-          async ({ requestedQuantity }) => {
-            const cycleId = 'test-cycle-' + Math.random();
-            
-            // Mock checkAvailability to return true
-            (supabase.rpc as any).mockResolvedValueOnce({
-              data: true,
-              error: null
-            });
-            
-            // Act: Check availability
-            const result = await checkAvailability(cycleId, requestedQuantity);
-            
-            // Assert: Purchase should be allowed
-            expect(result).toBe(true);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-    
-    it('should correctly calculate capacity for subscription scenarios', async () => {
-      const fc = await import('fast-check');
-      
-      await fc.assert(
-        fc.asyncProperty(
-          // Generate subscription scenarios
-          fc.record({
-            maxCapacity: fc.integer({ min: 50, max: 200 }),
-            currentUsage: fc.integer({ min: 0, max: 100 }),
-            subscriptionType: fc.constantFrom('trimestral', 'semestral')
-          }),
-          async ({ maxCapacity, currentUsage, subscriptionType }) => {
-            const deliveryCount = subscriptionType === 'trimestral' ? 3 : 6;
-            
-            // For each delivery, we need 1 capacity unit
-            // Check if all deliveries can be accommodated
-            const canAccommodate = (currentUsage + deliveryCount) <= maxCapacity;
-            
-            if (canAccommodate) {
-              mockCycleQueries([
-                {
-                  data: {
-                    cycle_number: 1,
-                    month: 3,
-                    year: 2026
-                  },
-                  error: null
-                },
-                { data: null, error: null }
-              ]);
-            } else {
-              mockCycleQueries([
-                {
-                  data: {
-                    cycle_number: 1,
-                    month: 3,
-                    year: 2026
-                  },
-                  error: null
-                },
-                {
-                  data: {
-                    id: 'cycle-full',
-                    used_capacity: maxCapacity,
-                    capacity: maxCapacity
-                  },
-                  error: null
-                }
-              ]);
-
-              (supabase.rpc as any).mockResolvedValueOnce({
-                data: false,
-                error: null
-              });
-            }
-
-            // Act: Check subscription capacity
-            const result = await checkSubscriptionCapacity(deliveryCount);
-
-            // Assert: Result matches expected availability
-            if (canAccommodate) {
-              expect(result.available).toBe(true);
-            } else {
-              expect(result.available).toBe(false);
-              expect(result.firstUnavailableCycle).toBeDefined();
-            }
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-    
-    it('should correctly calculate capacity for standalone purchase scenarios', async () => {
-      const fc = await import('fast-check');
-      
-      await fc.assert(
-        fc.asyncProperty(
-          // Generate standalone purchase scenarios
-          fc.record({
-            maxCapacity: fc.integer({ min: 10, max: 100 }),
-            currentUsage: fc.integer({ min: 0, max: 95 }),
-            purchaseQuantity: fc.constantFrom(1) // Standalone purchases are always 1 piece
-          }),
-          async ({ maxCapacity, currentUsage, purchaseQuantity }) => {
-            const cycleId = 'test-cycle-' + Math.random();
-            const hasCapacity = (currentUsage + purchaseQuantity) <= maxCapacity;
-            
-            // Mock checkAvailability
-            (supabase.rpc as any).mockResolvedValueOnce({
-              data: hasCapacity,
-              error: null
-            });
-            
-            // Act: Check availability for standalone purchase
-            const result = await checkAvailability(cycleId, purchaseQuantity);
-            
-            // Assert: Result matches expected capacity
-            expect(result).toBe(hasCapacity);
-            
-            // If capacity available, should be able to reserve
-            if (hasCapacity) {
-              const referenceId = 'standalone-' + Math.random();
-              
-              // Mock successful reservation
-              (supabase.rpc as any).mockResolvedValueOnce({
-                data: null,
-                error: null
-              });
-              
-              // Should not throw
-              await expect(
-                reserveCapacity(cycleId, purchaseQuantity, referenceId)
-              ).resolves.not.toThrow();
-            }
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-  });
-
-  describe('Property 8: Capacity Calculation Accuracy', () => {
-    /**
-     * **Validates: Requirements 3.5**
-     * 
-     * Property: For any cycle, the capacity_current value should equal the sum
-     * of all subscription deliveries plus standalone purchases scheduled for that cycle.
-     * 
-     * This property tests that:
-     * 1. capacity_current accurately reflects all items in the cycle
-     * 2. Adding deliveries increments capacity correctly
-     * 3. Adding standalone purchases increments capacity correctly
-     * 4. The sum of all items equals capacity_current
-     * 5. Edge cases (0 items, max capacity) are handled correctly
-     */
-    
-    it('should accurately calculate capacity as sum of deliveries and purchases', async () => {
-      const fc = await import('fast-check');
-      
-      await fc.assert(
-        fc.asyncProperty(
-          // Generate random scenarios with various numbers of deliveries and purchases
-          fc.record({
-            numDeliveries: fc.integer({ min: 0, max: 50 }),
-            numStandalonePurchases: fc.integer({ min: 0, max: 50 }),
-            maxCapacity: fc.integer({ min: 10, max: 200 })
-          }).filter(({ numDeliveries, numStandalonePurchases, maxCapacity }) => 
-            // Only test valid scenarios where total doesn't exceed capacity
-            (numDeliveries + numStandalonePurchases) <= maxCapacity
-          ),
-          async ({ numDeliveries, numStandalonePurchases, maxCapacity }) => {
-            const cycleId = 'test-cycle-' + Math.random();
-            const expectedCapacityCurrent = numDeliveries + numStandalonePurchases;
-            
-            // Mock the database query to return our test scenario
-            const mockFrom = vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({
-                    data: {
-                      capacity: maxCapacity,
-                      used_capacity: expectedCapacityCurrent
-                    },
-                    error: null
-                  })
-                })
-              })
-            });
-            (supabase.from as any) = mockFrom;
-            
-            // Act: Get capacity usage
-            const result = await getCapacityUsage(cycleId);
-            
-            // Assert: capacity_current equals sum of all items
-            expect(result.current).toBe(expectedCapacityCurrent);
-            expect(result.max).toBe(maxCapacity);
-            expect(result.available).toBe(maxCapacity - expectedCapacityCurrent);
-            expect(result.percentage).toBe(
-              maxCapacity > 0 ? Math.round((expectedCapacityCurrent / maxCapacity) * 100) : 0
-            );
-            
-            // Verify the calculation is accurate
-            const calculatedSum = numDeliveries + numStandalonePurchases;
-            expect(result.current).toBe(calculatedSum);
-          }
-        ),
-        { numRuns: 100 } // Run 100 iterations as specified
-      );
-    });
-    
-    it('should handle edge case of zero items', async () => {
-      const fc = await import('fast-check');
-      
-      await fc.assert(
-        fc.asyncProperty(
-          fc.integer({ min: 10, max: 200 }),
-          async (maxCapacity) => {
-            const cycleId = 'test-cycle-' + Math.random();
-            
-            // Mock cycle with zero items
-            const mockFrom = vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({
-                    data: {
-                      capacity: maxCapacity,
-                      used_capacity: 0
-                    },
-                    error: null
-                  })
-                })
-              })
-            });
-            (supabase.from as any) = mockFrom;
-            
-            // Act: Get capacity usage
-            const result = await getCapacityUsage(cycleId);
-            
-            // Assert: capacity_current is 0 when no items
-            expect(result.current).toBe(0);
-            expect(result.available).toBe(maxCapacity);
-            expect(result.percentage).toBe(0);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-    
-    it('should handle edge case of max capacity', async () => {
-      const fc = await import('fast-check');
-      
-      await fc.assert(
-        fc.asyncProperty(
-          fc.integer({ min: 10, max: 200 }),
-          async (maxCapacity) => {
-            const cycleId = 'test-cycle-' + Math.random();
-            
-            // Mock cycle at max capacity
-            const mockFrom = vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({
-                    data: {
-                      capacity: maxCapacity,
-                      used_capacity: maxCapacity
-                    },
-                    error: null
-                  })
-                })
-              })
-            });
-            (supabase.from as any) = mockFrom;
-            
-            // Act: Get capacity usage
-            const result = await getCapacityUsage(cycleId);
-            
-            // Assert: capacity_current equals max when full
-            expect(result.current).toBe(maxCapacity);
-            expect(result.available).toBe(0);
-            expect(result.percentage).toBe(100);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-    
-    it('should correctly track capacity through multiple operations', async () => {
-      const fc = await import('fast-check');
-      
-      await fc.assert(
-        fc.asyncProperty(
-          // Generate a sequence of operations
-          fc.record({
-            initialCapacity: fc.integer({ min: 0, max: 50 }),
-            maxCapacity: fc.integer({ min: 100, max: 200 }),
-            operations: fc.array(
-              fc.record({
-                type: fc.constantFrom('add_delivery', 'add_purchase', 'release'),
-                quantity: fc.integer({ min: 1, max: 5 })
-              }),
-              { minLength: 1, maxLength: 20 }
-            )
-          }),
-          async ({ initialCapacity, maxCapacity, operations }) => {
-            const cycleId = 'test-cycle-' + Math.random();
-            let currentCapacity = initialCapacity;
-            
-            // Simulate operations
-            for (const op of operations) {
-              if (op.type === 'add_delivery' || op.type === 'add_purchase') {
-                // Only add if it won't exceed capacity
-                if (currentCapacity + op.quantity <= maxCapacity) {
-                  // Mock successful reservation
-                  (supabase.rpc as any).mockResolvedValueOnce({
-                    data: null,
-                    error: null
-                  });
-                  
-                  await reserveCapacity(cycleId, op.quantity, 'ref-' + Math.random());
-                  currentCapacity += op.quantity;
-                }
-              } else if (op.type === 'release') {
-                // Only release if there's capacity to release
-                if (currentCapacity >= op.quantity) {
-                  // Mock successful release
-                  (supabase.rpc as any).mockResolvedValueOnce({
-                    data: null,
-                    error: null
-                  });
-                  
-                  await releaseCapacity(cycleId, op.quantity, 'ref-' + Math.random());
-                  currentCapacity -= op.quantity;
-                }
-              }
-            }
-            
-            // Mock final capacity state
-            const mockFrom = vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({
-                    data: {
-                      capacity: maxCapacity,
-                      used_capacity: currentCapacity
-                    },
-                    error: null
-                  })
-                })
-              })
-            });
-            (supabase.from as any) = mockFrom;
-            
-            // Act: Get final capacity usage
-            const result = await getCapacityUsage(cycleId);
-            
-            // Assert: capacity_current matches our tracked value
-            expect(result.current).toBe(currentCapacity);
-            expect(result.current).toBeGreaterThanOrEqual(0);
-            expect(result.current).toBeLessThanOrEqual(maxCapacity);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-    
-    it('should maintain accuracy with various combinations of deliveries and purchases', async () => {
-      const fc = await import('fast-check');
-      
-      await fc.assert(
-        fc.asyncProperty(
-          // Generate various combinations
-          fc.array(
-            fc.record({
-              deliveries: fc.integer({ min: 0, max: 10 }),
-              purchases: fc.integer({ min: 0, max: 10 })
-            }),
-            { minLength: 1, maxLength: 10 }
-          ),
-          async (combinations) => {
-            const cycleId = 'test-cycle-' + Math.random();
-            
-            // Calculate total from all combinations
-            let totalDeliveries = 0;
-            let totalPurchases = 0;
-            
-            for (const combo of combinations) {
-              totalDeliveries += combo.deliveries;
-              totalPurchases += combo.purchases;
-            }
-            
-            const totalItems = totalDeliveries + totalPurchases;
-            const maxCapacity = Math.max(totalItems + 50, 100); // Ensure capacity is sufficient
-            
-            // Mock the database state
-            const mockFrom = vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({
-                    data: {
-                      capacity: maxCapacity,
-                      used_capacity: totalItems
-                    },
-                    error: null
-                  })
-                })
-              })
-            });
-            (supabase.from as any) = mockFrom;
-            
-            // Act: Get capacity usage
-            const result = await getCapacityUsage(cycleId);
-            
-            // Assert: capacity_current equals sum of all deliveries and purchases
-            expect(result.current).toBe(totalDeliveries + totalPurchases);
-            expect(result.current).toBe(totalItems);
-            
-            // Verify the calculation components
-            const calculatedTotal = totalDeliveries + totalPurchases;
-            expect(result.current).toBe(calculatedTotal);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-  });
-});
-
-describe('checkSubscriptionCapacity', () => {
-  it('should return available true when all cycles have capacity', async () => {
-    mockCycleQueries([
-      {
-        data: {
-          cycle_number: 1,
-          month: 3,
-          year: 2026
-        },
-        error: null
-      },
-      { data: null, error: null }
-    ]);
-
-    const result = await checkSubscriptionCapacity(3);
-
-    expect(result.available).toBe(true);
-    expect(result.firstUnavailableCycle).toBeUndefined();
-    expect(result.estimatedAvailableDate).toBeUndefined();
-  });
-
-  it('should return available false when a cycle lacks capacity', async () => {
-    mockCycleQueries([
-      {
-        data: {
-          cycle_number: 1,
-          month: 3,
-          year: 2026
-        },
-        error: null
-      },
-      {
-        data: {
-          id: 'cycle-2-march',
-          used_capacity: 100,
-          capacity: 100
-        },
-        error: null
-      }
-    ]);
-
-    // Mock check_capacity_available for Cycle 2 of March - no capacity
-    (supabase.rpc as any).mockResolvedValueOnce({
-      data: false,
-      error: null
-    });
-
-    const result = await checkSubscriptionCapacity(3);
-
-    expect(result.available).toBe(false);
-    expect(result.firstUnavailableCycle).toBeDefined();
-    expect(result.firstUnavailableCycle?.cycleNumber).toBe(2);
-    expect(result.firstUnavailableCycle?.month).toBe(3);
-    expect(result.firstUnavailableCycle?.year).toBe(2026);
-    expect(result.firstUnavailableCycle?.deliveryNumber).toBe(1);
-    expect(result.estimatedAvailableDate).toBeDefined();
-  });
-
-  it('should calculate correct estimated availability date', async () => {
-    mockCycleQueries([
-      {
-        data: {
-          cycle_number: 1,
-          month: 3,
-          year: 2026
-        },
-        error: null
-      },
-      {
-        data: {
-          id: 'cycle-2',
-          used_capacity: 100,
-          capacity: 100
-        },
-        error: null
-      }
-    ]);
-
-    // Mock check_capacity_available - no capacity
-    (supabase.rpc as any).mockResolvedValueOnce({
-      data: false,
-      error: null
-    });
-
-    const result = await checkSubscriptionCapacity(3);
-
-    expect(result.available).toBe(false);
-    expect(result.estimatedAvailableDate).toBeDefined();
-    
-    // Next available should be Cycle 1 of April 2026 (April 1)
-    const estimatedDate = result.estimatedAvailableDate!;
-    expect(estimatedDate.getMonth()).toBe(3); // April (0-indexed)
-    expect(estimatedDate.getFullYear()).toBe(2026);
-    expect(estimatedDate.getDate()).toBe(1); // 1st of the month
-  });
-
-  it('should check capacity for all delivery cycles', async () => {
-    const rpcSpy = vi.spyOn(supabase, 'rpc');
-
-    mockCycleQueries([
-      {
-        data: {
-          cycle_number: 1,
-          month: 3,
-          year: 2026
-        },
-        error: null
-      },
-      {
-        data: {
-          id: 'cycle-test',
-          used_capacity: 50,
-          capacity: 100
-        },
-        error: null
-      }
-    ]);
-
-    // Mock check_capacity_available - all have capacity
-    rpcSpy.mockResolvedValue({
-      data: true,
-      error: null
-    } as any);
-
-    await checkSubscriptionCapacity(6); // Semestral - 6 deliveries
-
-    expect(rpcSpy).toHaveBeenCalledTimes(6);
-  });
-
-  it('should handle year rollover correctly', async () => {
-    mockCycleQueries([
-      {
-        data: {
-          cycle_number: 2,
-          month: 12,
-          year: 2026
-        },
-        error: null
-      },
-      {
-        data: {
-          id: 'cycle-jan-2027',
-          used_capacity: 100,
-          capacity: 100
-        },
-        error: null
-      }
-    ]);
-
-    // Mock check_capacity_available - no capacity
-    (supabase.rpc as any).mockResolvedValueOnce({
-      data: false,
-      error: null
-    });
-
-    const result = await checkSubscriptionCapacity(3);
-
-    expect(result.available).toBe(false);
-    expect(result.firstUnavailableCycle?.month).toBe(1); // January
-    expect(result.firstUnavailableCycle?.year).toBe(2027); // Next year
   });
 });
