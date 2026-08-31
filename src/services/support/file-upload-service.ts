@@ -1,8 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
-import { removeStorageFiles, uploadStorageFile } from "@/services/supabase/storage-client";
-import { getSupportAttachmentPublicUrl } from "@/services/support/support-attachment-url-service";
+import {
+  requireAuthenticatedUserId,
+  requireCurrentUserAdminAccess,
+} from "@/services/auth/current-user";
+import { callAuthenticatedEdgeFunction } from "@/services/supabase/edge-function-client";
+import { removeStorageFiles } from "@/services/supabase/storage-client";
+import { getSupportAttachmentSignedUrl } from "@/services/support/support-attachment-url-service";
 import { validateFile } from "@/lib/validations/support";
 import type { FileMetadata, ValidationResult } from "@/types/support";
 
@@ -10,219 +15,119 @@ const BUCKET_NAME = "support-attachments";
 
 interface SupportAttachmentRecord {
   id: string;
+  message_id: string;
+  uploaded_by: string;
   file_name: string;
   file_path: string;
   file_size: number;
   file_type: string;
   thumbnail_path?: string | null;
+  created_at?: string;
 }
 
-interface SupportAttachmentRpcError {
-  message: string;
+interface SupportAttachmentUploadResponse {
+  attachment: SupportAttachmentRecord;
+  accessUrl: string | null;
 }
-
-interface SupportAttachmentRpcClient {
-  rpc(
-    name: "record_support_attachment_upload",
-    args: {
-      p_message_id: string;
-      p_uploaded_by: string;
-      p_file_name: string;
-      p_file_path: string;
-      p_file_size: number;
-      p_file_type: string;
-      p_thumbnail_path?: string | null;
-      p_public_url?: string | null;
-    }
-  ): Promise<{ data: SupportAttachmentRecord | null; error: SupportAttachmentRpcError | null }>;
-}
-
-const supportAttachmentRpc = supabase as unknown as SupportAttachmentRpcClient;
 
 export class FileUploadService {
-  /**
-   * Valida um arquivo antes do upload.
-   */
   validateFile(file: File): ValidationResult {
     return validateFile(file);
   }
 
   /**
-   * Faz upload de um arquivo para o Supabase Storage.
+   * Uploads a support attachment through the authenticated Edge Function.
+   * The browser performs UX validation only; authorization, file-signature
+   * validation, malware scanning and Storage writes are server-side.
    */
   async uploadFile(
     file: File,
     conversationId: string,
     messageId: string,
-    uploadedBy: string
+    uploadedBy: string,
   ): Promise<FileMetadata> {
     const validation = this.validateFile(file);
     if (!validation.valid) {
       throw new Error(validation.error || "Arquivo inválido");
     }
 
-    const timestamp = Date.now();
-    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const filePath = `${conversationId}/${timestamp}_${sanitizedFileName}`;
+    const currentUserId = await requireAuthenticatedUserId();
+    if (!uploadedBy || uploadedBy !== currentUserId) {
+      throw new Error("Usuário do anexo inválido");
+    }
 
-    const { error: uploadError } = await uploadStorageFile(BUCKET_NAME, filePath, file, {
-      cacheControl: "3600",
-      upsert: false,
-    });
+    const body = new FormData();
+    body.set("messageId", messageId);
+    body.set("file", file);
 
-    if (uploadError) {
+    let response: SupportAttachmentUploadResponse;
+    try {
+      response = await callAuthenticatedEdgeFunction<SupportAttachmentUploadResponse, FormData>(
+        "upload-support-attachment",
+        body,
+        "Erro ao fazer upload do anexo",
+      );
+    } catch (error) {
       log.error("Erro ao fazer upload de anexo", {
-        error: uploadError,
+        error,
         conversationId,
         messageId,
         uploadedBy,
         fileName: file.name,
       });
-      throw new Error("Erro ao fazer upload do arquivo");
+      throw new Error(error instanceof Error ? error.message : "Erro ao fazer upload do arquivo");
     }
 
-    const { data: attachmentData, error: dbError } = await supportAttachmentRpc.rpc(
-      "record_support_attachment_upload",
-      {
-        p_message_id: messageId,
-        p_uploaded_by: uploadedBy,
-        p_file_name: file.name,
-        p_file_path: filePath,
-        p_file_size: file.size,
-        p_file_type: file.type,
-        p_thumbnail_path: null,
-        p_public_url: null,
-      }
-    );
-
-    if (dbError || !attachmentData) {
-      await this.deleteFile(filePath);
-      log.error("Erro ao salvar metadata do anexo", {
-        error: dbError,
+    const attachment = response?.attachment;
+    if (
+      !attachment?.id ||
+      attachment.message_id !== messageId ||
+      attachment.uploaded_by !== currentUserId ||
+      !attachment.file_path?.startsWith(`${conversationId}/`)
+    ) {
+      log.error("Resposta inválida do upload de suporte", {
         conversationId,
         messageId,
-        uploadedBy,
-        filePath,
+        attachmentId: attachment?.id,
       });
-      throw new Error("Erro ao salvar informações do arquivo");
+      throw new Error("Resposta inválida ao salvar o anexo");
     }
 
-    const publicUrl = this.getPublicUrl(filePath);
+    let accessUrl = response.accessUrl;
+    if (!accessUrl) {
+      try {
+        accessUrl = await getSupportAttachmentSignedUrl(attachment.file_path);
+      } catch (error) {
+        log.warn("Anexo salvo sem URL temporária imediata", {
+          error,
+          attachmentId: attachment.id,
+        });
+      }
+    }
 
     return {
-      id: attachmentData.id,
-      file_name: attachmentData.file_name,
-      file_path: attachmentData.file_path,
-      file_size: attachmentData.file_size,
-      file_type: attachmentData.file_type,
-      thumbnail_path: attachmentData.thumbnail_path ?? undefined,
-      public_url: publicUrl,
+      id: attachment.id,
+      file_name: attachment.file_name,
+      file_path: attachment.file_path,
+      file_size: attachment.file_size,
+      file_type: attachment.file_type,
+      thumbnail_path: attachment.thumbnail_path ?? undefined,
+      // Compatibility field for optimistic UI. The value is a short-lived
+      // signed URL, never a public Storage URL.
+      public_url: accessUrl ?? "",
     };
   }
 
   /**
-   * Gera thumbnail para imagens (200x200px).
-   */
-  async generateThumbnail(file: File, conversationId: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onload = (event) => {
-        const img = new Image();
-
-        img.onload = async () => {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-
-          if (!ctx) {
-            reject(new Error("Erro ao criar contexto do canvas"));
-            return;
-          }
-
-          const maxSize = 200;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height && width > maxSize) {
-            height = (height * maxSize) / width;
-            width = maxSize;
-          } else if (height > maxSize) {
-            width = (width * maxSize) / height;
-            height = maxSize;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob(
-            async (blob) => {
-              if (!blob) {
-                reject(new Error("Erro ao gerar thumbnail"));
-                return;
-              }
-
-              const timestamp = Date.now();
-              const thumbnailPath = `${conversationId}/thumb_${timestamp}_${file.name}`;
-
-              const { error } = await uploadStorageFile(BUCKET_NAME, thumbnailPath, blob, {
-                cacheControl: "3600",
-                upsert: false,
-              });
-
-              if (error) {
-                reject(error);
-                return;
-              }
-
-              resolve(thumbnailPath);
-            },
-            file.type,
-            0.8
-          );
-        };
-
-        img.onerror = () => {
-          reject(new Error("Erro ao carregar imagem"));
-        };
-
-        img.src = event.target?.result as string;
-      };
-
-      reader.onerror = () => {
-        reject(new Error("Erro ao ler arquivo"));
-      };
-
-      reader.readAsDataURL(file);
-    });
-  }
-
-  /**
-   * Obtém URL pública de um arquivo.
-   */
-  getPublicUrl(path: string): string {
-    return getSupportAttachmentPublicUrl(path);
-  }
-
-  /**
-   * Deleta um arquivo do storage.
-   */
-  async deleteFile(path: string): Promise<void> {
-    const { error } = await removeStorageFiles(BUCKET_NAME, [path]);
-
-    if (error) {
-      log.error("Erro ao deletar arquivo do storage", { error, path });
-      throw new Error("Erro ao deletar arquivo");
-    }
-  }
-
-  /**
-   * Deleta um anexo (arquivo + metadata).
+   * Deletes an attachment as admin. Storage RLS independently enforces the
+   * admin-only delete boundary.
    */
   async deleteAttachment(attachmentId: string): Promise<void> {
+    await requireCurrentUserAdminAccess();
+
     const { data: attachment, error: fetchError } = await supabase
       .from("support_attachments")
-      .select("*")
+      .select("file_path, thumbnail_path")
       .eq("id", attachmentId)
       .single();
 
@@ -236,13 +141,13 @@ export class FileUploadService {
     }
 
     const { error: storageError } = await removeStorageFiles(BUCKET_NAME, filesToDelete);
-
     if (storageError) {
       log.error("Erro ao deletar arquivos do storage", {
         error: storageError,
         attachmentId,
         filesToDelete,
       });
+      throw new Error("Erro ao deletar arquivo do anexo");
     }
 
     try {
@@ -253,14 +158,17 @@ export class FileUploadService {
       });
     } catch (error) {
       log.error("Erro ao deletar metadata do anexo", { error, attachmentId });
-      throw new Error("Erro ao deletar anexo");
+      throw new Error("Arquivo removido, mas houve erro ao remover o registro do anexo");
     }
   }
 
   /**
-   * Lista anexos de uma mensagem.
+   * Lists attachments visible to the current authenticated user and hydrates
+   * each private object with a short-lived signed URL.
    */
   async listAttachments(messageId: string) {
+    await requireAuthenticatedUserId();
+
     const { data, error } = await supabase
       .from("support_attachments")
       .select("*")
@@ -272,13 +180,30 @@ export class FileUploadService {
       throw new Error("Erro ao carregar anexos");
     }
 
-    return (data || []).map((attachment) => ({
-      ...attachment,
-      public_url: this.getPublicUrl(attachment.file_path),
-      thumbnail_url: attachment.thumbnail_path
-        ? this.getPublicUrl(attachment.thumbnail_path)
-        : undefined,
-    }));
+    return Promise.all(
+      (data || []).map(async (attachment) => {
+        let accessUrl: string | null = null;
+        let thumbnailUrl: string | null = null;
+
+        try {
+          accessUrl = await getSupportAttachmentSignedUrl(attachment.file_path);
+          if (attachment.thumbnail_path) {
+            thumbnailUrl = await getSupportAttachmentSignedUrl(attachment.thumbnail_path);
+          }
+        } catch (signedUrlError) {
+          log.warn("Falha ao gerar URL temporária do anexo", {
+            error: signedUrlError,
+            attachmentId: attachment.id,
+          });
+        }
+
+        return {
+          ...attachment,
+          access_url: accessUrl,
+          thumbnail_url: thumbnailUrl,
+        };
+      }),
+    );
   }
 }
 
