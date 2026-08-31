@@ -15,6 +15,7 @@ interface SubscriptionCheckoutRpcClient {
     p_plan_id: string;
     p_collection_id: string;
     p_payment_method: SubscriptionPaymentMethod;
+    // Legacy RPC argument name. New callers pass a private object path, not a URL.
     p_payment_voucher_url: string | null;
   }): PromiseLike<{ data: unknown; error: RpcError }>;
 }
@@ -115,7 +116,10 @@ function mapSubscriptionCheckoutError(message: string | undefined): string {
   if (value.includes("INVALID_SUBSCRIPTION_PAYMENT_METHOD")) {
     return "Forma de pagamento indisponivel";
   }
-  if (value.includes("INVALID_PAYMENT_VOUCHER_URL")) {
+  if (
+    value.includes("INVALID_PAYMENT_VOUCHER_PATH") ||
+    value.includes("INVALID_PAYMENT_VOUCHER_URL")
+  ) {
     return "Comprovante de pagamento invalido";
   }
   if (value.includes("SUBSCRIPTION_PLAN_NOT_FOUND")) {
