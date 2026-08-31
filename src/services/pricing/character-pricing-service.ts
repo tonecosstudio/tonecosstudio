@@ -1,7 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
 import { assertCurrentUserId } from "@/services/auth/current-user";
-import type { PriceInCoins } from "@/types/contextual-pricing";
+import {
+  isValidMultiplier,
+  isValidPriceInCoins,
+  type PriceInCoins,
+} from "@/types/contextual-pricing";
 
 export interface CharacterPriceParams {
   characterId: string;
@@ -118,11 +122,47 @@ function requirePriceInCoins(
   value: number | null,
   context: string,
 ): PriceInCoins {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
+  if (!isValidPriceInCoins(value as number)) {
     throw new Error(`Preco do personagem indisponivel: ${context}`);
   }
 
-  return value;
+  return value as PriceInCoins;
+}
+
+function requireBasePrice(
+  rows: BasePriceReferenceRow[],
+  acceptedNames: readonly string[],
+  label: string,
+): PriceInCoins {
+  const rawValue = rows.find((row) =>
+    acceptedNames.includes(row.collection_types?.name ?? ""),
+  )?.base_price_coins;
+
+  if (!isValidPriceInCoins(rawValue as number)) {
+    throw new Error(`Configuracao oficial de preco ausente ou invalida: ${label}`);
+  }
+
+  return rawValue as PriceInCoins;
+}
+
+function requireContextMultiplier(
+  rows: PricingContextMultiplierRow[],
+  context: string,
+): number {
+  const rawValue = rows.find((row) => row.user_context === context)?.multiplier;
+
+  if (
+    typeof rawValue !== "number" ||
+    !Number.isFinite(rawValue) ||
+    !isValidMultiplier(rawValue) ||
+    rawValue > 10
+  ) {
+    throw new Error(
+      `Configuracao oficial de multiplicador ausente ou invalida: ${context}`,
+    );
+  }
+
+  return rawValue;
 }
 
 async function resolvePricingUserId(
@@ -225,8 +265,16 @@ export async function getCharacterPriceDetails(
     collectionPrice,
     character.collection_id,
   );
-  const multiplier = character.price_multiplier ?? 1.0;
-  const finalPrice = Math.round(basePrice * multiplier) as PriceInCoins;
+  const multiplier = character.price_multiplier ?? 1;
+
+  if (!isValidMultiplier(multiplier) || multiplier > 10) {
+    throw new Error("Multiplicador do personagem invalido.");
+  }
+
+  const finalPrice = requirePriceInCoins(
+    Math.round(basePrice * multiplier),
+    characterId,
+  );
 
   return {
     character_id: character.id,
@@ -235,7 +283,7 @@ export async function getCharacterPriceDetails(
     price_multiplier: multiplier,
     final_price: finalPrice,
     has_multiplier:
-      character.price_multiplier !== null && character.price_multiplier !== 1.0,
+      character.price_multiplier !== null && character.price_multiplier !== 1,
     formula: `${basePrice} x ${multiplier} = ${finalPrice} coins`,
   };
 }
@@ -254,7 +302,7 @@ export async function hasCharacterMultiplier(
     return false;
   }
 
-  return data?.price_multiplier !== null && data?.price_multiplier !== 1.0;
+  return data?.price_multiplier !== null && data?.price_multiplier !== 1;
 }
 
 export async function getCharacterPricesReference(): Promise<CharacterPricesReference> {
@@ -283,38 +331,53 @@ export async function getCharacterPricesReference(): Promise<CharacterPricesRefe
     throw multipliersError;
   }
 
-  const activeBasePrices = basePrices || [];
-  const activeMultipliers = multipliers || [];
+  const activeBasePrices = basePrices ?? [];
+  const activeMultipliers = multipliers ?? [];
 
-  const subscriptionBase =
-    activeBasePrices.find((p) => p.collection_types?.name === "subscription")
-      ?.base_price_coins || 200;
-  const standardBase =
-    activeBasePrices.find(
-      (p) => p.collection_types?.name === "standard_catalog",
-    )?.base_price_coins || 300;
-  const premiumBase =
-    activeBasePrices.find((p) => p.collection_types?.name === "premium_catalog")
-      ?.base_price_coins || 450;
+  const subscriptionBase = requireBasePrice(
+    activeBasePrices,
+    ["subscription"],
+    "subscription",
+  );
+  const standardBase = requireBasePrice(
+    activeBasePrices,
+    ["standard_catalog", "standard"],
+    "standard_catalog",
+  );
+  const premiumBase = requireBasePrice(
+    activeBasePrices,
+    ["premium_catalog", "premium"],
+    "premium_catalog",
+  );
 
-  const chosenMultiplier =
-    activeMultipliers.find((m) => m.user_context === "subscribed_chosen")
-      ?.multiplier || 1.0;
-  const notChosenMultiplier =
-    activeMultipliers.find((m) => m.user_context === "subscribed_not_chosen")
-      ?.multiplier || 1.2;
-  const noSubscriptionMultiplier =
-    activeMultipliers.find((m) => m.user_context === "no_subscription")
-      ?.multiplier || 1.5;
+  const chosenMultiplier = requireContextMultiplier(
+    activeMultipliers,
+    "subscribed_chosen",
+  );
+  const notChosenMultiplier = requireContextMultiplier(
+    activeMultipliers,
+    "subscribed_not_chosen",
+  );
+  const noSubscriptionMultiplier = requireContextMultiplier(
+    activeMultipliers,
+    "no_subscription",
+  );
 
-  const baseReference = subscriptionBase;
+  const activeCollectionPrice = requirePriceInCoins(
+    Math.round(subscriptionBase * chosenMultiplier),
+    "subscription/subscribed_chosen",
+  );
+  const secondaryCollectionPrice = requirePriceInCoins(
+    Math.round(subscriptionBase * notChosenMultiplier),
+    "subscription/subscribed_not_chosen",
+  );
 
   return {
-    colecaoAtiva: Math.round(baseReference * chosenMultiplier),
-    colecaoSecundaria: Math.round(baseReference * notChosenMultiplier),
+    colecaoAtiva: activeCollectionPrice,
+    colecaoSecundaria: secondaryCollectionPrice,
     catalogoGeral: standardBase,
     premium: premiumBase,
-    baseReference,
+    baseReference: subscriptionBase,
     multipliers: {
       chosen: chosenMultiplier,
       notChosen: notChosenMultiplier,
