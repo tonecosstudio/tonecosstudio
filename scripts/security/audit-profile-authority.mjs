@@ -12,6 +12,55 @@ let lastEvidence = null;
 let editableColumnGrantFound = false;
 let roleTriggerFound = false;
 
+function normalizeSql(statement) {
+  return statement.replace(/\s+/g, " ").trim();
+}
+
+function isProfilesAuthenticatedGrant(statement) {
+  return /\bON(?: TABLE)? public\.profiles TO authenticated\b/i.test(statement);
+}
+
+function isProfilesAuthenticatedRevoke(statement) {
+  return /\bON(?: TABLE)? public\.profiles FROM authenticated\b/i.test(statement);
+}
+
+function grantsTableUpdate(statement) {
+  if (!/^GRANT\b/i.test(statement) || !isProfilesAuthenticatedGrant(statement)) {
+    return false;
+  }
+
+  const privilegeClause = statement
+    .replace(/^GRANT\s+/i, "")
+    .split(/\s+ON(?:\s+TABLE)?\s+public\.profiles\s+TO\s+authenticated/i)[0]
+    ?.trim();
+
+  if (!privilegeClause) return false;
+
+  if (/^ALL(?: PRIVILEGES)?$/i.test(privilegeClause)) return true;
+
+  // Column-level UPDATE, e.g. `GRANT UPDATE (full_name, phone) ...`, does not
+  // restore the table-level UPDATE privilege revoked by the canonical RPC migration.
+  if (/\bUPDATE\s*\(/i.test(privilegeClause)) return false;
+
+  return /(?:^|,)\s*UPDATE\s*(?:,|$)/i.test(privilegeClause);
+}
+
+function revokesTableUpdate(statement) {
+  if (!/^REVOKE\b/i.test(statement) || !isProfilesAuthenticatedRevoke(statement)) {
+    return false;
+  }
+
+  const privilegeClause = statement
+    .replace(/^REVOKE\s+/i, "")
+    .split(/\s+ON(?:\s+TABLE)?\s+public\.profiles\s+FROM\s+authenticated/i)[0]
+    ?.trim();
+
+  if (!privilegeClause) return false;
+  if (/^ALL(?: PRIVILEGES)?$/i.test(privilegeClause)) return true;
+  if (/\bUPDATE\s*\(/i.test(privilegeClause)) return false;
+  return /(?:^|,)\s*UPDATE\s*(?:,|$)/i.test(privilegeClause);
+}
+
 for (const file of migrations) {
   const source = readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
 
@@ -26,26 +75,27 @@ for (const file of migrations) {
     lastEvidence = file;
   }
 
-  if (
-    /GRANT\s+(?:ALL(?:\s+PRIVILEGES)?|[^;]*\bUPDATE\b[^;]*)\s+ON(?:\s+TABLE)?\s+public\.profiles\s+TO\s+authenticated/i.test(
-      source,
-    )
-  ) {
-    tableUpdateGranted = true;
-    lastEvidence = file;
-  }
+  for (const rawStatement of source.split(";")) {
+    const statement = normalizeSql(rawStatement);
+    if (!statement) continue;
 
-  if (
-    /REVOKE\s+(?:ALL(?:\s+PRIVILEGES)?|[^;]*\bUPDATE\b[^;]*)\s+ON(?:\s+TABLE)?\s+public\.profiles\s+FROM\s+authenticated/i.test(
-      source,
-    )
-  ) {
-    tableUpdateGranted = false;
-    lastEvidence = file;
-  }
+    if (grantsTableUpdate(statement)) {
+      tableUpdateGranted = true;
+      lastEvidence = file;
+    }
 
-  if (/GRANT\s+UPDATE\s*\([^)]*\)\s+ON\s+public\.profiles\s+TO\s+authenticated/is.test(source)) {
-    editableColumnGrantFound = true;
+    if (revokesTableUpdate(statement)) {
+      tableUpdateGranted = false;
+      lastEvidence = file;
+    }
+
+    if (
+      /^GRANT\s+UPDATE\s*\([^)]*\)\s+ON(?:\s+TABLE)?\s+public\.profiles\s+TO\s+authenticated$/i.test(
+        statement,
+      )
+    ) {
+      editableColumnGrantFound = true;
+    }
   }
 
   if (
