@@ -1,115 +1,114 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, AlertCircle, Star, Package, ShoppingCart, Sparkles } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  Package,
+  RefreshCw,
+  Save,
+  ShoppingCart,
+  Sparkles,
+  Star,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { useStandalonePricing, useUpdateStandalonePricing } from "@/hooks/admin/useStandalonePricingAdmin";
+import {
+  useStandalonePricing,
+  useUpdateStandalonePricing,
+} from "@/hooks/admin/useStandalonePricingAdmin";
+import type { StandalonePricing } from "@/services/admin/pricing/standalone-pricing-admin-service";
+
+type StandaloneType = StandalonePricing["character_type"];
+
+interface OfficialStandaloneValues {
+  rows: Record<StandaloneType, StandalonePricing>;
+  pixDiscount: number;
+}
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Erro inesperado";
 }
 
+function isValidMoney(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function isValidDiscount(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100;
+}
+
+function readOfficialValues(
+  pricing: StandalonePricing[] | undefined,
+): OfficialStandaloneValues | null {
+  if (!pricing) return null;
+
+  const requiredTypes: StandaloneType[] = [
+    "colecao_ativa",
+    "colecao_secundaria",
+    "catalogo_geral",
+    "premium",
+  ];
+
+  const rows = Object.fromEntries(
+    requiredTypes.map((type) => [type, pricing.find((row) => row.character_type === type)]),
+  ) as Partial<Record<StandaloneType, StandalonePricing | undefined>>;
+
+  if (
+    requiredTypes.some((type) => {
+      const row = rows[type];
+      return (
+        !row?.id ||
+        !isValidMoney(row.price_full) ||
+        !isValidMoney(row.price_pix) ||
+        !isValidDiscount(row.pix_discount_percentage)
+      );
+    })
+  ) {
+    return null;
+  }
+
+  const completeRows = rows as Record<StandaloneType, StandalonePricing>;
+  const discounts = new Set(
+    requiredTypes.map((type) => completeRows[type].pix_discount_percentage),
+  );
+
+  if (discounts.size !== 1) return null;
+
+  return {
+    rows: completeRows,
+    pixDiscount: completeRows.colecao_ativa.pix_discount_percentage,
+  };
+}
+
 export function EditStandalonePricingForm() {
   const { toast } = useToast();
-  const { data: pricing, isLoading } = useStandalonePricing();
+  const pricingQuery = useStandalonePricing();
   const updateMutation = useUpdateStandalonePricing();
+  const officialValues = useMemo(
+    () => readOfficialValues(pricingQuery.data),
+    [pricingQuery.data],
+  );
 
-  const colecaoAtiva = pricing?.find((p) => p.character_type === "colecao_ativa");
-  const colecaoSecundaria = pricing?.find((p) => p.character_type === "colecao_secundaria");
-  const catalogoGeral = pricing?.find((p) => p.character_type === "catalogo_geral");
-  const premium = pricing?.find((p) => p.character_type === "premium");
-
-  const [priceColecaoAtiva, setPriceColecaoAtiva] = useState(500);
-  const [priceColecaoSecundaria, setPriceColecaoSecundaria] = useState(600);
-  const [priceCatalogoGeral, setPriceCatalogoGeral] = useState(750);
-  const [pricePremium, setPricePremium] = useState(900);
-  const [pixDiscount, setPixDiscount] = useState(5);
+  const [priceColecaoAtiva, setPriceColecaoAtiva] = useState<number | null>(null);
+  const [priceColecaoSecundaria, setPriceColecaoSecundaria] = useState<number | null>(null);
+  const [priceCatalogoGeral, setPriceCatalogoGeral] = useState<number | null>(null);
+  const [pricePremium, setPricePremium] = useState<number | null>(null);
+  const [pixDiscount, setPixDiscount] = useState<number | null>(null);
 
   useEffect(() => {
-    if (colecaoAtiva) {
-      setPriceColecaoAtiva(colecaoAtiva.price_full);
-      setPixDiscount(colecaoAtiva.pix_discount_percentage);
-    }
-    if (colecaoSecundaria) setPriceColecaoSecundaria(colecaoSecundaria.price_full);
-    if (catalogoGeral) setPriceCatalogoGeral(catalogoGeral.price_full);
-    if (premium) setPricePremium(premium.price_full);
-  }, [colecaoAtiva, colecaoSecundaria, catalogoGeral, premium]);
+    if (!officialValues) return;
 
-  const pixColecaoAtiva = Math.round(priceColecaoAtiva * (1 - pixDiscount / 100) * 100) / 100;
-  const pixColecaoSecundaria = Math.round(priceColecaoSecundaria * (1 - pixDiscount / 100) * 100) / 100;
-  const pixCatalogoGeral = Math.round(priceCatalogoGeral * (1 - pixDiscount / 100) * 100) / 100;
-  const pixPremium = Math.round(pricePremium * (1 - pixDiscount / 100) * 100) / 100;
+    setPriceColecaoAtiva(officialValues.rows.colecao_ativa.price_full);
+    setPriceColecaoSecundaria(officialValues.rows.colecao_secundaria.price_full);
+    setPriceCatalogoGeral(officialValues.rows.catalogo_geral.price_full);
+    setPricePremium(officialValues.rows.premium.price_full);
+    setPixDiscount(officialValues.pixDiscount);
+  }, [officialValues]);
 
-  const handleSave = () => {
-    if (
-      priceColecaoAtiva < 1 ||
-      priceColecaoSecundaria < 1 ||
-      priceCatalogoGeral < 1 ||
-      pricePremium < 1
-    ) {
-      toast({
-        title: "Valores invalidos",
-        description: "Todos os precos devem ser maiores que zero.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (
-      priceColecaoAtiva >= priceColecaoSecundaria ||
-      priceColecaoSecundaria >= priceCatalogoGeral ||
-      priceCatalogoGeral >= pricePremium
-    ) {
-      toast({
-        title: "Hierarquia invalida",
-        description: "Precos devem seguir: Colecao Ativa < Secundaria < Catalogo < Premium",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (pixDiscount < 0 || pixDiscount > 100) {
-      toast({
-        title: "Desconto invalido",
-        description: "Desconto PIX deve estar entre 0% e 100%",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    updateMutation.mutate(
-      {
-        updates: [
-          { id: colecaoAtiva?.id, price: priceColecaoAtiva },
-          { id: colecaoSecundaria?.id, price: priceColecaoSecundaria },
-          { id: catalogoGeral?.id, price: priceCatalogoGeral },
-          { id: premium?.id, price: pricePremium },
-        ],
-        pixDiscount,
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: "Precos atualizados!",
-            description: "Os precos avulsos foram atualizados com sucesso.",
-          });
-        },
-        onError: (error: unknown) => {
-          toast({
-            title: "Erro ao atualizar precos",
-            description: getErrorMessage(error),
-            variant: "destructive",
-          });
-        },
-      }
-    );
-  };
-
-  if (isLoading) {
+  if (pricingQuery.isPending) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
@@ -119,24 +118,157 @@ export function EditStandalonePricingForm() {
     );
   }
 
+  if (pricingQuery.isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            Não foi possível carregar os preços avulsos oficiais. Nenhum valor de exemplo foi
+            carregado no editor.
+          </span>
+          <Button variant="outline" size="sm" onClick={() => void pricingQuery.refetch()}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tentar novamente
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!officialValues) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          A configuração de preços avulsos está incompleta, inválida ou usa descontos PIX
+          inconsistentes entre categorias. O editor foi bloqueado para impedir que valores
+          fictícios sejam persistidos como preços reais.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  const effectiveDiscount = pixDiscount ?? Number.NaN;
+  const calculatePix = (price: number | null) =>
+    price !== null && Number.isFinite(effectiveDiscount)
+      ? Math.round(price * (1 - effectiveDiscount / 100) * 100) / 100
+      : null;
+
+  const handleSave = () => {
+    const prices = [
+      priceColecaoAtiva,
+      priceColecaoSecundaria,
+      priceCatalogoGeral,
+      pricePremium,
+    ];
+
+    if (prices.some((price) => price === null || !isValidMoney(price))) {
+      toast({
+        title: "Valores inválidos",
+        description: "Todos os preços devem ser números maiores que zero.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isValidDiscount(pixDiscount)) {
+      toast({
+        title: "Desconto inválido",
+        description: "Desconto PIX deve estar entre 0% e 100%.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const [active, secondary, standard, premium] = prices as number[];
+    if (active >= secondary || secondary >= standard || standard >= premium) {
+      toast({
+        title: "Hierarquia inválida",
+        description: "Preços devem seguir: Coleção Ativa < Secundária < Catálogo < Premium.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateMutation.mutate(
+      {
+        updates: [
+          { id: officialValues.rows.colecao_ativa.id, price: active },
+          { id: officialValues.rows.colecao_secundaria.id, price: secondary },
+          { id: officialValues.rows.catalogo_geral.id, price: standard },
+          { id: officialValues.rows.premium.id, price: premium },
+        ],
+        pixDiscount,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Preços atualizados!",
+            description: "Os preços avulsos foram atualizados com sucesso.",
+          });
+        },
+        onError: (error: unknown) => {
+          toast({
+            title: "Erro ao atualizar preços",
+            description: getErrorMessage(error),
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
+  const cards = [
+    {
+      type: "Coleção Ativa",
+      icon: Star,
+      value: priceColecaoAtiva,
+      setValue: setPriceColecaoAtiva,
+      pix: calculatePix(priceColecaoAtiva),
+    },
+    {
+      type: "Coleção Secundária",
+      icon: Package,
+      value: priceColecaoSecundaria,
+      setValue: setPriceColecaoSecundaria,
+      pix: calculatePix(priceColecaoSecundaria),
+    },
+    {
+      type: "Catálogo Geral",
+      icon: ShoppingCart,
+      value: priceCatalogoGeral,
+      setValue: setPriceCatalogoGeral,
+      pix: calculatePix(priceCatalogoGeral),
+    },
+    {
+      type: "Premium",
+      icon: Sparkles,
+      value: pricePremium,
+      setValue: setPricePremium,
+      pix: calculatePix(pricePremium),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Precos em REAIS (R$) para compras avulsas. Mapeamento direto com precos em coins.
+          Esta tela edita somente preços avulsos em reais. Ela não presume equivalência fixa entre
+          reais e coins.
         </AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader>
-          <CardTitle>Editar Precos Avulsos (em R$)</CardTitle>
-          <CardDescription>Valores para compras avulsas - mapeamento direto com sistema de coins</CardDescription>
+          <CardTitle>Editar Preços Avulsos (R$)</CardTitle>
+          <CardDescription>Valores carregados exclusivamente das quatro linhas oficiais ativas</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
             <div className="space-y-2">
-              <Label htmlFor="pix-discount" className="text-blue-900 font-semibold">
+              <Label htmlFor="pix-discount" className="font-semibold text-blue-900">
                 Desconto PIX (%)
               </Label>
               <Input
@@ -145,8 +277,8 @@ export function EditStandalonePricingForm() {
                 step="0.1"
                 min="0"
                 max="100"
-                value={pixDiscount}
-                onChange={(e) => setPixDiscount(Number(e.target.value))}
+                value={pixDiscount ?? ""}
+                onChange={(e) => setPixDiscount(e.target.value === "" ? null : Number(e.target.value))}
                 disabled={updateMutation.isPending}
                 className="max-w-xs"
               />
@@ -154,116 +286,44 @@ export function EditStandalonePricingForm() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="border-2 border-yellow-200 bg-yellow-50/30">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Star className="h-5 w-5 text-yellow-600" />
-                    <CardTitle className="text-lg">Colecao Ativa</CardTitle>
-                  </div>
-                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
-                    200 coins
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Label htmlFor="price-colecao-ativa">Preco Cheio (R$)</Label>
-                <Input
-                  id="price-colecao-ativa"
-                  type="number"
-                  step="0.01"
-                  min="1"
-                  value={priceColecaoAtiva}
-                  onChange={(e) => setPriceColecaoAtiva(Number(e.target.value))}
-                  disabled={updateMutation.isPending}
-                />
-                <div className="text-sm">PIX: R$ {pixColecaoAtiva.toFixed(2)}</div>
-              </CardContent>
-            </Card>
+            {cards.map((card) => {
+              const Icon = card.icon;
+              const inputId = `standalone-${card.type.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
-            <Card className="border-2 border-blue-200 bg-blue-50/30">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-blue-600" />
-                    <CardTitle className="text-lg">Colecao Secundaria</CardTitle>
-                  </div>
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                    240 coins
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Label htmlFor="price-colecao-secundaria">Preco Cheio (R$)</Label>
-                <Input
-                  id="price-colecao-secundaria"
-                  type="number"
-                  step="0.01"
-                  min="1"
-                  value={priceColecaoSecundaria}
-                  onChange={(e) => setPriceColecaoSecundaria(Number(e.target.value))}
-                  disabled={updateMutation.isPending}
-                />
-                <div className="text-sm">PIX: R$ {pixColecaoSecundaria.toFixed(2)}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-purple-200 bg-purple-50/30">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5 text-purple-600" />
-                    <CardTitle className="text-lg">Catalogo Geral</CardTitle>
-                  </div>
-                  <Badge variant="secondary" className="bg-purple-100 text-purple-700">
-                    300 coins
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Label htmlFor="price-catalogo-geral">Preco Cheio (R$)</Label>
-                <Input
-                  id="price-catalogo-geral"
-                  type="number"
-                  step="0.01"
-                  min="1"
-                  value={priceCatalogoGeral}
-                  onChange={(e) => setPriceCatalogoGeral(Number(e.target.value))}
-                  disabled={updateMutation.isPending}
-                />
-                <div className="text-sm">PIX: R$ {pixCatalogoGeral.toFixed(2)}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-orange-200 bg-orange-50/30">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-orange-600" />
-                    <CardTitle className="text-lg">Premium</CardTitle>
-                  </div>
-                  <Badge variant="secondary" className="bg-orange-100 text-orange-700">
-                    450 coins
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Label htmlFor="price-premium">Preco Cheio (R$)</Label>
-                <Input
-                  id="price-premium"
-                  type="number"
-                  step="0.01"
-                  min="1"
-                  value={pricePremium}
-                  onChange={(e) => setPricePremium(Number(e.target.value))}
-                  disabled={updateMutation.isPending}
-                />
-                <div className="text-sm">PIX: R$ {pixPremium.toFixed(2)}</div>
-              </CardContent>
-            </Card>
+              return (
+                <Card key={card.type}>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">{card.type}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Label htmlFor={inputId}>Preço Cheio (R$)</Label>
+                    <Input
+                      id={inputId}
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={card.value ?? ""}
+                      onChange={(e) => card.setValue(e.target.value === "" ? null : Number(e.target.value))}
+                      disabled={updateMutation.isPending}
+                    />
+                    <div className="text-sm text-muted-foreground">
+                      PIX: {card.pix === null ? "indisponível" : `R$ ${card.pix.toFixed(2)}`}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
-          <Button onClick={handleSave} disabled={updateMutation.isPending} className="w-full" size="lg">
+          <Button
+            onClick={handleSave}
+            disabled={updateMutation.isPending}
+            className="w-full"
+            size="lg"
+          >
             {updateMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -272,7 +332,7 @@ export function EditStandalonePricingForm() {
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
-                Salvar Todos os Precos
+                Salvar Todos os Preços
               </>
             )}
           </Button>
