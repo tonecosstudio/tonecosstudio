@@ -1,24 +1,8 @@
-/**
- * Cron Job: Character Choice Reminder Sender
- *
- * Runs daily at 09:00 Bahia Time to send character choice reminders to customers.
- *
- * Actions performed:
- * 1. Find choices with deadline in 5 days → send first reminder
- * 2. Find choices with deadline in 2 days → send second reminder
- * 3. Find choices with deadline in 1 day → send final reminder
- * 4. Log reminder sent with timestamp
- *
- * Requirements:
- * - 2.2.4: Deadline Management - Send reminders at 5, 2, and 1 day before deadline
- */
-
 import {
+  logCronError,
   logCronStart,
   logCronSuccess,
-  logCronError,
 } from "../_shared/cron-logger.ts";
-import { nowInBahia } from "../_shared/timezone.ts";
 import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
 import { getServiceClient } from "../_shared/supabase.ts";
 import {
@@ -29,328 +13,105 @@ import {
 } from "../_shared/email.ts";
 import { getPublicBaseUrl } from "../_shared/public-url.ts";
 
-interface CharacterChoice {
+const BAHIA_TIMEZONE = "America/Bahia";
+const REMINDER_OFFSETS = [5, 2, 1] as const;
+type ReminderOffset = (typeof REMINDER_OFFSETS)[number];
+
+interface PendingChoiceRequest {
   id: string;
   user_id: string;
   order_id: string;
-  order_type: string;
+  order_type: "subscription_delivery" | "standalone_purchase";
   collection_id: string;
-  deadline: string;
-  reminders_sent: number;
-  last_reminder_at: string | null;
+  choice_deadline: string;
+  choice_reminders_sent: number;
+  choice_last_reminder_at: string | null;
 }
 
-/**
- * Reminder types based on days until deadline
- */
-type ReminderType = "first" | "second" | "final";
+function bahiaDateParts(date: Date): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BAHIA_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
 
-/**
- * Gets the reminder type based on days until deadline
- */
-function getReminderType(daysUntilDeadline: number): ReminderType | null {
-  if (daysUntilDeadline === 5) return "first";
-  if (daysUntilDeadline === 2) return "second";
-  if (daysUntilDeadline === 1) return "final";
-  return null;
+  return { year: get("year"), month: get("month"), day: get("day") };
 }
 
-/**
- * Sends character choice reminder email
- */
-async function sendCharacterChoiceReminder(params: {
+function bahiaDayKey(date: Date): string {
+  const { year, month, day } = bahiaDateParts(date);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function targetBahiaRange(now: Date, daysAhead: ReminderOffset) {
+  const current = bahiaDateParts(now);
+  const target = new Date(Date.UTC(current.year, current.month - 1, current.day + daysAhead));
+  const year = target.getUTCFullYear();
+  const month = String(target.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(target.getUTCDate()).padStart(2, "0");
+  const date = `${year}-${month}-${day}`;
+
+  return {
+    start: `${date}T00:00:00-03:00`,
+    end: `${date}T23:59:59.999-03:00`,
+  };
+}
+
+function reminderLabel(daysRemaining: ReminderOffset): string {
+  if (daysRemaining === 1) return "Último dia para escolher";
+  if (daysRemaining === 2) return "Prazo de escolha se aproximando";
+  return "Escolha seu personagem";
+}
+
+function buildChoiceUrl(baseUrl: string, request: PendingChoiceRequest): string {
+  const path = request.order_type === "subscription_delivery" ? "assinatura" : "compra-avulsa";
+  return `${baseUrl}/${path}/${encodeURIComponent(request.order_id)}`;
+}
+
+async function sendReminder(params: {
   to: string;
   userName: string | null;
   collectionName: string;
-  deadline: string;
-  orderId: string;
-  orderType: string;
-  reminderType: ReminderType;
+  request: PendingChoiceRequest;
+  daysRemaining: ReminderOffset;
 }): Promise<void> {
   const baseUrl = getPublicBaseUrl(["FRONTEND_URL", "BASE_URL", "SITE_URL"]);
   const emailService = new EmailService(getEmailConfig({ baseUrl }));
-
-  const subject = getEmailSubject(params.reminderType, params.collectionName);
-  const htmlContent = generateReminderEmailHTML({
-    userName: params.userName || "Colecionador",
-    collectionName: params.collectionName,
-    deadline: params.deadline,
-    orderId: params.orderId,
-    orderType: params.orderType,
-    reminderType: params.reminderType,
-    baseUrl,
-  });
-
-  try {
-    await emailService.sendEmail({
-      to: params.to,
-      subject,
-      html: htmlContent,
-    });
-
-    console.log(`${params.reminderType} reminder sent to: ${params.to}`);
-  } catch (error) {
-    console.error(
-      `Failed to send ${params.reminderType} reminder to ${params.to}:`,
-      error,
-    );
-    throw error;
-  }
-}
-
-/**
- * Gets email subject based on reminder type
- */
-function getEmailSubject(
-  reminderType: ReminderType,
-  collectionName: string,
-): string {
-  switch (reminderType) {
-    case "first":
-      return sanitizeEmailSubject(`Escolha seu Personagem - ${collectionName}`);
-    case "second":
-      return sanitizeEmailSubject(
-        `Lembrete: Escolha seu Personagem - ${collectionName}`,
-      );
-    case "final":
-      return sanitizeEmailSubject(
-        `URGENTE: Ultimo Dia para Escolher - ${collectionName}`,
-      );
-  }
-}
-
-/**
- * Generates HTML content for the reminder email
- */
-function generateReminderEmailHTML(params: {
-  userName: string;
-  collectionName: string;
-  deadline: string;
-  orderId: string;
-  orderType: string;
-  reminderType: ReminderType;
-  baseUrl: string;
-}): string {
-  const formattedDate = new Date(params.deadline).toLocaleDateString("pt-BR", {
-    timeZone: "America/Bahia",
+  const userName = escapeHtml(params.userName || "Colecionador");
+  const collectionName = escapeHtml(params.collectionName);
+  const deadline = new Date(params.request.choice_deadline).toLocaleString("pt-BR", {
+    timeZone: BAHIA_TIMEZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
+  const choiceUrl = buildChoiceUrl(baseUrl, params.request);
+  const subject = sanitizeEmailSubject(
+    `${reminderLabel(params.daysRemaining)} - ${params.collectionName}`,
+  );
 
-  const daysRemaining =
-    params.reminderType === "first"
-      ? 5
-      : params.reminderType === "second"
-        ? 2
-        : 1;
-  const urgencyLevel =
-    params.reminderType === "final"
-      ? "high"
-      : params.reminderType === "second"
-        ? "medium"
-        : "low";
-
-  const orderPath =
-    params.orderType === "subscription_delivery"
-      ? "assinatura"
-      : "compra-avulsa";
-  const choiceUrl = `${params.baseUrl}/${orderPath}/${encodeURIComponent(params.orderId)}`;
-  const userName = escapeHtml(params.userName);
-  const collectionName = escapeHtml(params.collectionName);
-
-  return `
-<!DOCTYPE html>
+  const html = `
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Escolha seu Personagem</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 20px auto;
-      background-color: #ffffff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .header {
-      background: ${urgencyLevel === "high" ? "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)" : urgencyLevel === "medium" ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"};
-      color: #ffffff;
-      padding: 32px 24px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0 0 8px 0;
-      font-size: 28px;
-      font-weight: 700;
-    }
-    .header p {
-      margin: 0;
-      font-size: 16px;
-      opacity: 0.95;
-    }
-    .content {
-      padding: 32px 24px;
-    }
-    .greeting {
-      font-size: 18px;
-      margin-bottom: 24px;
-      color: #374151;
-    }
-    .info-box {
-      background: ${urgencyLevel === "high" ? "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)" : urgencyLevel === "medium" ? "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)" : "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)"};
-      border-left: 4px solid ${urgencyLevel === "high" ? "#dc2626" : urgencyLevel === "medium" ? "#f59e0b" : "#3b82f6"};
-      padding: 24px;
-      margin: 24px 0;
-      border-radius: 8px;
-    }
-    .info-box h2 {
-      margin: 0 0 16px 0;
-      font-size: 20px;
-      color: ${urgencyLevel === "high" ? "#991b1b" : urgencyLevel === "medium" ? "#92400e" : "#1e40af"};
-    }
-    .info-row {
-      margin: 12px 0;
-      font-size: 16px;
-    }
-    .info-label {
-      font-weight: 600;
-      color: #374151;
-    }
-    .info-value {
-      color: #6b7280;
-    }
-    .countdown {
-      font-size: 48px;
-      font-weight: 700;
-      color: ${urgencyLevel === "high" ? "#dc2626" : urgencyLevel === "medium" ? "#f59e0b" : "#3b82f6"};
-      text-align: center;
-      margin: 24px 0;
-    }
-    .countdown-label {
-      font-size: 16px;
-      color: #6b7280;
-      text-align: center;
-      margin-top: -16px;
-    }
-    .cta-button {
-      display: inline-block;
-      background: ${urgencyLevel === "high" ? "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)" : urgencyLevel === "medium" ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"};
-      color: #ffffff;
-      text-decoration: none;
-      padding: 14px 32px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 16px;
-      margin: 24px 0;
-      transition: transform 0.2s;
-    }
-    .cta-button:hover {
-      transform: translateY(-2px);
-    }
-    .footer {
-      background-color: #f8fafc;
-      padding: 24px;
-      text-align: center;
-      font-size: 14px;
-      color: #64748b;
-      border-top: 1px solid #e2e8f0;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>${params.reminderType === "final" ? "🚨 Último Dia!" : params.reminderType === "second" ? "⏰ Lembrete" : "✨ Escolha seu Personagem"}</h1>
-      <p>${collectionName}</p>
-    </div>
-    <div class="content">
-      <p class="greeting">Olá, ${userName}!</p>
+  <body style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+    <h1>${escapeHtml(reminderLabel(params.daysRemaining))}</h1>
+    <p>Olá, ${userName}.</p>
+    <p>
+      Sua escolha da coleção <strong>${collectionName}</strong> ainda está pendente.
+      ${params.daysRemaining === 1 ? "Resta 1 dia." : `Restam ${params.daysRemaining} dias.`}
+    </p>
+    <p><strong>Prazo configurado:</strong> ${escapeHtml(deadline)}</p>
+    <p><a href="${choiceUrl}">Fazer minha escolha</a></p>
+    <p style="font-size:12px;color:#6b7280">Este lembrete usa o prazo persistido no seu pedido.</p>
+  </body>
+</html>`.trim();
 
-      ${
-        params.reminderType === "first"
-          ? `
-      <p>
-        Sua peça exclusiva da coleção <strong>${collectionName}</strong> está quase pronta
-        para entrar em produção! Agora é hora de escolher qual personagem você deseja receber.
-      </p>
-      `
-          : params.reminderType === "second"
-            ? `
-      <p>
-        Este é um lembrete importante: você ainda não escolheu seu personagem da coleção
-        <strong>${collectionName}</strong>. O prazo está se aproximando!
-      </p>
-      `
-            : `
-      <p>
-        <strong>Atenção!</strong> Este é o último dia para escolher seu personagem da coleção
-        <strong>${collectionName}</strong>. Após o prazo, um personagem será atribuído
-        automaticamente pela nossa equipe.
-      </p>
-      `
-      }
-
-      <div class="info-box">
-        <h2>${params.reminderType === "final" ? "⏰ Prazo Final" : params.reminderType === "second" ? "📅 Prazo se Aproximando" : "📅 Prazo para Escolha"}</h2>
-        <div class="countdown">${daysRemaining}</div>
-        <div class="countdown-label">${daysRemaining === 1 ? "dia restante" : "dias restantes"}</div>
-        <div class="info-row" style="margin-top: 24px;">
-          <span class="info-label">Prazo Final:</span>
-          <span class="info-value">${formattedDate}</span>
-        </div>
-      </div>
-
-      ${
-        params.reminderType === "final"
-          ? `
-      <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 4px; font-size: 14px; color: #92400e;">
-        <strong>⚠️ Importante:</strong> Se você não escolher seu personagem até o final do dia,
-        nossa equipe selecionará um personagem disponível para você. Faça sua escolha agora para
-        garantir que você receba exatamente o personagem que deseja!
-      </div>
-      `
-          : ""
-      }
-
-      <p style="margin-top: 24px;">
-        Acesse sua área de pedidos e escolha entre os personagens disponíveis da coleção.
-        É rápido e fácil!
-      </p>
-
-      <div style="text-align: center;">
-        <a href="${choiceUrl}" class="cta-button">
-          ${params.reminderType === "final" ? "Escolher Agora!" : "Fazer Minha Escolha"}
-        </a>
-      </div>
-
-      <p style="margin-top: 32px; font-size: 14px; color: #64748b;">
-        Após fazer sua escolha, ela será revisada pela nossa equipe e, uma vez aprovada,
-        sua peça entrará em produção imediatamente.
-      </p>
-
-      <p style="margin-top: 16px; font-size: 14px; color: #64748b;">
-        Dúvidas? Entre em contato conosco através do chat no site ou responda este e-mail.
-      </p>
-    </div>
-    <div class="footer">
-      <p>Este é um e-mail automático da plataforma ORDAX.</p>
-      <p>&copy; ${new Date().getFullYear()} ORDAX. Todos os direitos reservados.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `.trim();
+  await emailService.sendEmail({ to: params.to, subject, html });
 }
 
 Deno.serve(async (req) => {
@@ -365,217 +126,129 @@ Deno.serve(async (req) => {
     );
     if (forbidden) return forbidden;
 
-    // Start logging
     logId = await logCronStart("cron-send-character-choice-reminders");
 
     const supabase = getServiceClient();
-
-    // Get current Bahia time
-    const bahiaTime = nowInBahia();
-    console.log(`Cron job running at ${bahiaTime.toISOString()} (Bahia time)`);
-
-    // Calculate target dates for reminders (5, 2, and 1 day before deadline)
-    const targetDates = [5, 2, 1].map((days) => {
-      const targetDate = new Date(bahiaTime);
-      targetDate.setDate(targetDate.getDate() + days);
-      // Set to start of day
-      const startOfDay = new Date(
-        targetDate.getFullYear(),
-        targetDate.getMonth(),
-        targetDate.getDate(),
-      );
-      // Set to end of day
-      const endOfDay = new Date(
-        targetDate.getFullYear(),
-        targetDate.getMonth(),
-        targetDate.getDate(),
-        23,
-        59,
-        59,
-        999,
-      );
-      return { days, startOfDay, endOfDay };
-    });
-
+    const now = new Date();
+    const todayKey = bahiaDayKey(now);
     let totalRemindersSent = 0;
-    const errors: Array<{
-      choiceId: string;
-      error: string;
-      reminderType: string;
-    }> = [];
-    const remindersByType: Record<ReminderType, number> = {
-      first: 0,
-      second: 0,
-      final: 0,
-    };
+    const remindersByOffset: Record<string, number> = { "5": 0, "2": 0, "1": 0 };
+    const errors: Array<{ queueId: string; error: string; daysRemaining: number }> = [];
 
-    // Process each reminder type
-    for (const { days, startOfDay, endOfDay } of targetDates) {
-      const reminderType = getReminderType(days);
-      if (!reminderType) continue;
-
-      console.log(
-        `Checking for ${reminderType} reminders (${days} days until deadline)`,
-      );
-      console.log(
-        `Date range: ${startOfDay.toISOString()} to ${endOfDay.toISOString()}`,
-      );
-
-      // Find choices with deadline in the target range
-      const { data: choices, error: choicesError } = await supabase
-        .from("character_choices")
+    for (const daysRemaining of REMINDER_OFFSETS) {
+      const range = targetBahiaRange(now, daysRemaining);
+      const { data, error } = await supabase
+        .from("production_queue")
         .select(
-          "id, user_id, order_id, order_type, collection_id, deadline, reminders_sent, last_reminder_at",
+          "id, user_id, order_id, order_type, collection_id, choice_deadline, choice_reminders_sent, choice_last_reminder_at",
         )
-        .eq("status", "pending")
-        .gte("deadline", startOfDay.toISOString())
-        .lte("deadline", endOfDay.toISOString());
+        .eq("current_stage", "awaiting_choice")
+        .eq("choice_status", "pending")
+        .gte("choice_deadline", range.start)
+        .lte("choice_deadline", range.end);
 
-      if (choicesError) {
-        console.error(
-          `Failed to fetch choices for ${reminderType} reminder:`,
-          choicesError,
-        );
+      if (error) {
         errors.push({
-          choiceId: "query",
-          error: `Failed to fetch choices: ${choicesError.message}`,
-          reminderType,
+          queueId: "query",
+          error: error.message,
+          daysRemaining,
         });
         continue;
       }
 
-      console.log(
-        `Found ${choices?.length || 0} choice(s) for ${reminderType} reminder`,
-      );
-
-      if (!choices || choices.length === 0) continue;
-
-      // Process each choice
-      for (const choice of choices as CharacterChoice[]) {
+      for (const request of (data || []) as PendingChoiceRequest[]) {
         try {
-          console.log(
-            `Processing ${reminderType} reminder for choice: ${choice.id}`,
-          );
+          if (
+            !request.id ||
+            !request.user_id ||
+            !request.order_id ||
+            !request.collection_id ||
+            !request.choice_deadline ||
+            !["subscription_delivery", "standalone_purchase"].includes(request.order_type)
+          ) {
+            throw new Error("Choice request is incomplete");
+          }
 
-          // Get user profile for email
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("id, email, full_name")
-            .eq("id", choice.user_id)
-            .single();
-
-          if (profileError || !profile || !profile.email) {
-            console.error(
-              `Failed to get profile for user ${choice.user_id}:`,
-              profileError,
-            );
-            errors.push({
-              choiceId: choice.id,
-              error: `Failed to get user profile or email: ${profileError?.message || "Not found"}`,
-              reminderType,
-            });
+          if (
+            request.choice_last_reminder_at &&
+            bahiaDayKey(new Date(request.choice_last_reminder_at)) === todayKey
+          ) {
             continue;
           }
 
-          // Get collection name
-          const { data: collection, error: collectionError } = await supabase
-            .from("collections")
-            .select("id, name")
-            .eq("id", choice.collection_id)
-            .single();
+          const [{ data: profile, error: profileError }, { data: collection, error: collectionError }] =
+            await Promise.all([
+              supabase
+                .from("profiles")
+                .select("email, full_name")
+                .eq("id", request.user_id)
+                .single(),
+              supabase
+                .from("collections")
+                .select("name")
+                .eq("id", request.collection_id)
+                .single(),
+            ]);
 
-          if (collectionError || !collection) {
-            console.error(
-              `Failed to get collection ${choice.collection_id}:`,
-              collectionError,
-            );
-            errors.push({
-              choiceId: choice.id,
-              error: `Failed to get collection: ${collectionError?.message || "Not found"}`,
-              reminderType,
-            });
-            continue;
+          if (profileError || !profile?.email) {
+            throw new Error(`Customer profile/email unavailable: ${profileError?.message || "not found"}`);
+          }
+          if (collectionError || !collection?.name) {
+            throw new Error(`Collection unavailable: ${collectionError?.message || "not found"}`);
           }
 
-          // Send reminder email
-          await sendCharacterChoiceReminder({
+          await sendReminder({
             to: profile.email,
             userName: profile.full_name,
             collectionName: collection.name,
-            deadline: choice.deadline,
-            orderId: choice.order_id,
-            orderType: choice.order_type,
-            reminderType,
+            request,
+            daysRemaining,
           });
 
-          // Update character_choices record with reminder info
           const { error: updateError } = await supabase
-            .from("character_choices")
+            .from("production_queue")
             .update({
-              reminders_sent: choice.reminders_sent + 1,
-              last_reminder_at: bahiaTime.toISOString(),
+              choice_reminders_sent: Math.max(0, request.choice_reminders_sent || 0) + 1,
+              choice_last_reminder_at: now.toISOString(),
+              updated_at: now.toISOString(),
             })
-            .eq("id", choice.id);
+            .eq("id", request.id)
+            .eq("choice_status", "pending");
 
           if (updateError) {
-            console.error(
-              `Failed to update reminder count for choice ${choice.id}:`,
-              updateError,
-            );
-            // Don't add to errors - reminder was sent successfully
+            throw new Error(`Reminder audit update failed: ${updateError.message}`);
           }
 
-          console.log(`Sent ${reminderType} reminder for choice ${choice.id}`);
-          totalRemindersSent++;
-          remindersByType[reminderType]++;
+          totalRemindersSent += 1;
+          remindersByOffset[String(daysRemaining)] += 1;
         } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          console.error(
-            `Error processing ${reminderType} reminder for choice ${choice.id}:`,
-            error,
-          );
           errors.push({
-            choiceId: choice.id,
-            error: errorMessage,
-            reminderType,
+            queueId: request.id || "unknown",
+            error: error instanceof Error ? error.message : String(error),
+            daysRemaining,
           });
         }
       }
     }
 
-    // Log success with details
     await logCronSuccess(logId, {
       totalRemindersSent,
-      firstReminders: remindersByType.first,
-      secondReminders: remindersByType.second,
-      finalReminders: remindersByType.final,
+      remindersByOffset,
       errors: errors.length > 0 ? errors : undefined,
-      executedAt: bahiaTime.toISOString(),
+      executedAt: now.toISOString(),
     });
-
-    console.log(`Cron job completed: ${totalRemindersSent} reminder(s) sent`);
-    console.log(`  - First reminders (5 days): ${remindersByType.first}`);
-    console.log(`  - Second reminders (2 days): ${remindersByType.second}`);
-    console.log(`  - Final reminders (1 day): ${remindersByType.final}`);
-    if (errors.length > 0) {
-      console.warn(`${errors.length} error(s) occurred during processing`);
-    }
 
     return new Response(
       JSON.stringify({
         success: true,
         totalRemindersSent,
-        remindersByType,
+        remindersByOffset,
         errors: errors.length > 0 ? errors : undefined,
-        executedAt: bahiaTime.toISOString(),
+        executedAt: now.toISOString(),
       }),
       { headers: { "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error("Cron job failed:", error);
-
-    // Log error if we have a log ID
     if (logId) {
       try {
         await logCronError(
@@ -583,7 +256,7 @@ Deno.serve(async (req) => {
           error instanceof Error ? error : new Error(String(error)),
         );
       } catch (logError) {
-        console.error("Failed to log error:", logError);
+        console.error("Failed to log cron error", logError);
       }
     }
 
@@ -592,10 +265,7 @@ Deno.serve(async (req) => {
         success: false,
         error: error instanceof Error ? error.message : String(error),
       }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 });
