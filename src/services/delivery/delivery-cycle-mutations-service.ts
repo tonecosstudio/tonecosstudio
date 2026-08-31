@@ -35,6 +35,10 @@ function unwrapRpc<T>(
     throw new Error(`${errorPrefix}: ${error.message}`);
   }
 
+  if (data === null || data === undefined) {
+    throw new Error(`${errorPrefix}: resposta vazia`);
+  }
+
   return data as T;
 }
 
@@ -93,7 +97,11 @@ export async function scheduleSubscriptionDeliveriesRpc<TDelivery>(
     },
   );
 
-  return Array.isArray(result.deliveries) ? result.deliveries : [];
+  if (!result || !Array.isArray(result.deliveries)) {
+    throw new Error("Resposta inválida ao agendar entregas da assinatura");
+  }
+
+  return result.deliveries;
 }
 
 export async function updateDeliveryStatusRpc<TDelivery>(
