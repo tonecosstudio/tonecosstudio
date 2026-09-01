@@ -32,9 +32,6 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Check formatting
-        run: npm run format:check
-
       - name: Typecheck
         run: npm run typecheck
 
@@ -64,3 +61,6 @@ jobs:
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
+
+      - name: Check formatting
+        run: npm run format:check
