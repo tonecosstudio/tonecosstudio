@@ -17,15 +17,12 @@ import {
   OrderWithItems,
   CreditsBalanceResponse,
   TransactionsResponse,
-  NoRenewalResponse,
   UserCycleCountResponse,
   PlanType,
   isSubscriptionCreditTransactionType,
 } from '@/types/subscription-credit-system';
 import {
   createSubscriptionCreditIndividualOrderRpc,
-  reactivateSubscriptionCreditRenewalRpc,
-  setSubscriptionCreditNoRenewalRpc,
   updateSubscriptionCreditAutomaticOrderRpc,
 } from '@/services/subscriptions/subscription-credit-mutations-service';
 
@@ -75,14 +72,6 @@ class SubscriptionCreditAPI {
     }
 
     return data as unknown as Subscription;
-  }
-
-  async setNoRenewal(subscriptionId: string): Promise<NoRenewalResponse> {
-    return setSubscriptionCreditNoRenewalRpc(subscriptionId);
-  }
-
-  async reactivateRenewal(subscriptionId: string): Promise<NoRenewalResponse> {
-    return reactivateSubscriptionCreditRenewalRpc(subscriptionId);
   }
 
   // ============ Credits ============
