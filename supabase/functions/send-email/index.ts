@@ -4,7 +4,11 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
-import { errorToStatus, getServiceClient } from "../_shared/supabase.ts";
+import {
+  errorToStatus,
+  getServiceClient,
+  hasServiceRoleAuthorization,
+} from "../_shared/supabase.ts";
 import {
   EmailService,
   escapeHtml,
@@ -31,6 +35,8 @@ interface DirectEmailRequest {
   metadata?: Record<string, unknown>;
 }
 
+type ServiceClient = ReturnType<typeof getServiceClient>;
+
 function isDirectEmailRequest(payload: unknown): payload is DirectEmailRequest {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return false;
   const data = payload as Partial<DirectEmailRequest>;
@@ -42,12 +48,6 @@ function isDirectEmailRequest(payload: unknown): payload is DirectEmailRequest {
     typeof data.html === "string" &&
     data.html.trim().length > 0
   );
-}
-
-function isServiceRoleRequest(req: Request): boolean {
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const authorization = req.headers.get("Authorization");
-  return Boolean(serviceRoleKey && authorization === `Bearer ${serviceRoleKey}`);
 }
 
 function normalizeEmailLogMetadata(value: unknown): Record<string, unknown> {
@@ -98,7 +98,7 @@ function validateNotificationPayload(value: unknown): EmailNotificationRequest {
 }
 
 async function createEmailDeliveryLog(
-  service: ReturnType<typeof getServiceClient>,
+  service: ServiceClient,
   payload: DirectEmailRequest,
 ): Promise<string | null> {
   const { data, error } = await service.rpc("create_email_delivery_log", {
@@ -119,7 +119,7 @@ async function createEmailDeliveryLog(
 }
 
 async function updateEmailDeliveryLog(
-  service: ReturnType<typeof getServiceClient>,
+  service: ServiceClient,
   logId: string | null,
   updates: Record<string, unknown>,
 ): Promise<void> {
@@ -131,9 +131,9 @@ async function updateEmailDeliveryLog(
   if (error) console.error("Error updating email delivery log:", error.message);
 }
 
-async function isUserOnline(supabase: any, userId: string): Promise<boolean> {
+async function isUserOnline(service: ServiceClient, userId: string): Promise<boolean> {
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-  const { data, error } = await supabase
+  const { data, error } = await service
     .from("support_messages")
     .select("created_at")
     .eq("sender_id", userId)
@@ -149,7 +149,7 @@ async function isUserOnline(supabase: any, userId: string): Promise<boolean> {
 }
 
 async function recordEmailNotification(
-  supabase: any,
+  service: ServiceClient,
   input: {
     conversationId: string;
     messageId: string;
@@ -160,7 +160,7 @@ async function recordEmailNotification(
     retryCount?: number;
   },
 ): Promise<void> {
-  const { error } = await supabase.rpc("record_email_notification_event", {
+  const { error } = await service.rpc("record_email_notification_event", {
     p_conversation_id: input.conversationId,
     p_message_id: input.messageId,
     p_recipient_user_id: input.recipientUserId,
@@ -202,7 +202,7 @@ function generateEmailHTML(data: {
 }
 
 async function authorizeDirectRequest(req: Request): Promise<void> {
-  if (isServiceRoleRequest(req)) return;
+  if (hasServiceRoleAuthorization(req)) return;
   await assertRateLimitedAdmin(req, "send-email-direct");
 }
 
@@ -218,6 +218,7 @@ serve(async (req) => {
         },
       });
     }
+
     if (req.method !== "POST") {
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
         status: 405,
@@ -278,24 +279,27 @@ serve(async (req) => {
       );
     }
 
-    const [{ data: profile, error: profileError }, { data: conversation, error: conversationError }, { data: message, error: messageError }] =
-      await Promise.all([
-        supabase
-          .from("profiles")
-          .select("email, full_name")
-          .eq("id", notification.recipientUserId)
-          .single(),
-        supabase
-          .from("support_conversations")
-          .select("subject")
-          .eq("id", notification.conversationId)
-          .single(),
-        supabase
-          .from("support_messages")
-          .select("sender_id")
-          .eq("id", notification.messageId)
-          .single(),
-      ]);
+    const [
+      { data: profile, error: profileError },
+      { data: conversation, error: conversationError },
+      { data: message, error: messageError },
+    ] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", notification.recipientUserId)
+        .single(),
+      supabase
+        .from("support_conversations")
+        .select("subject")
+        .eq("id", notification.conversationId)
+        .single(),
+      supabase
+        .from("support_messages")
+        .select("sender_id")
+        .eq("id", notification.messageId)
+        .single(),
+    ]);
 
     if (profileError || !profile?.email) {
       await recordEmailNotification(supabase, {
