@@ -191,6 +191,33 @@ function authenticatedRpcExecuteState(functionName) {
   return { granted, sourceFile };
 }
 
+function subscriptionCreditBalanceBindingState() {
+  let safe = false;
+  let sourceFile = null;
+
+  for (const file of migrationFiles) {
+    const source = readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
+
+    const definesImplementation =
+      /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.|private_api\.)create_subscription_credit_individual_order\s*\(/i.test(
+        source,
+      );
+
+    if (!definesImplementation) continue;
+
+    const hasCreditBalanceLookup =
+      /FROM\s+public\.subscription_credit_user_credits/i.test(source) &&
+      /WHERE\s+user_id\s*=\s*v_user_id/i.test(source);
+
+    if (!hasCreditBalanceLookup) continue;
+
+    safe = /subscription_id\s*=\s*v_subscription\.id/i.test(source);
+    sourceFile = file;
+  }
+
+  return { safe, sourceFile };
+}
+
 const failures = [];
 
 for (const { table, forbiddenPolicies } of criticalTables) {
@@ -229,13 +256,20 @@ for (const functionName of unsafeAuthenticatedMutationRpcs) {
   }
 }
 
+const creditBalanceBinding = subscriptionCreditBalanceBindingState();
+if (!creditBalanceBinding.safe) {
+  failures.push(
+    `create_subscription_credit_individual_order: credit balance lookup is not bound to the active subscription_id (last implementation evidence: ${creditBalanceBinding.sourceFile ?? "not found"})`,
+  );
+}
+
 if (failures.length > 0) {
   console.error("Commercial authority audit: FAIL");
   for (const failure of failures) {
     console.error(`- ${failure}`);
   }
   console.error(
-    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority and unpaid-activation RPCs even when their frontend callers are gone.",
+    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority and unpaid-activation RPCs even when their frontend callers are gone. Credit debits must bind the selected balance row to the active subscription, not merely to user_id.",
   );
   process.exit(1);
 }
