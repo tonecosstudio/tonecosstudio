@@ -1,12 +1,11 @@
 /**
  * ProductionKanbanBoard Component
- * 
+ *
  * Provides a visual kanban board with columns for each production stage:
  * - Drag-and-drop support using @dnd-kit
  * - Column collapse/expand functionality
  * - Item count per column
- * - "Add to stage" button per column
- * 
+ *
  * Features:
  * - Visual organization by production stage
  * - Drag items between stages to update status
@@ -14,30 +13,24 @@
  * - Real-time updates
  */
 
-import { useState, useMemo, type MouseEvent } from "react";
+import { useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  closestCorners,
+  useDraggable,
+  useDroppable,
   useSensor,
   useSensors,
-  closestCorners,
-  useDroppable,
-  useDraggable,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { ChevronDown, ChevronRight, Package, MoreVertical, UserPlus, AlertCircle, Eye } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronRight, Package } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import type {
   Priority,
@@ -56,7 +49,6 @@ interface ProductionKanbanBoardProps {
   filters: ProductionFilters;
 }
 
-// Stage configuration with labels and colors
 const STAGE_COLORS: Record<ProductionStage, string> = {
   awaiting_payment: "bg-slate-100 border-slate-300 dark:bg-slate-900/30 dark:border-slate-700",
   payment_confirmed: "bg-emerald-100 border-emerald-300 dark:bg-emerald-900/30 dark:border-emerald-700",
@@ -85,11 +77,10 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
   const [collapsedColumns, setCollapsedColumns] = useState<Set<ProductionStage>>(new Set());
   const [activeItem, setActiveItem] = useState<ProductionQueueItem | null>(null);
 
-  // Configure drag sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // 8px movement required to start drag
+        distance: 8,
       },
     })
   );
@@ -97,17 +88,14 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
   const { data: queueData, isLoading } = useProductionPipelineQueue(filters);
   const updateStageMutation = useMoveProductionKanbanItem(filters);
 
-  // Group items by stage
   const itemsByStage = useMemo(() => {
     const grouped = new Map<ProductionStage, ProductionQueueItem[]>();
-    
-    // Initialize all stages with empty arrays
-    STAGE_CONFIG.forEach(stage => {
+
+    STAGE_CONFIG.forEach((stage) => {
       grouped.set(stage.key, []);
     });
 
-    // Group items by current stage
-    queueData?.data.forEach(item => {
+    queueData?.data.forEach((item) => {
       const stageItems = grouped.get(item.currentStage) || [];
       stageItems.push(item);
       grouped.set(item.currentStage, stageItems);
@@ -116,26 +104,23 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
     return grouped;
   }, [queueData]);
 
-  // Toggle column collapse
   const toggleColumn = (stage: ProductionStage) => {
-    setCollapsedColumns(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(stage)) {
-        newSet.delete(stage);
+    setCollapsedColumns((previous) => {
+      const next = new Set(previous);
+      if (next.has(stage)) {
+        next.delete(stage);
       } else {
-        newSet.add(stage);
+        next.add(stage);
       }
-      return newSet;
+      return next;
     });
   };
 
-  // Handle drag start
   const handleDragStart = (event: DragStartEvent) => {
-    const item = queueData?.data.find(i => i.id === event.active.id);
+    const item = queueData?.data.find((candidate) => candidate.id === event.active.id);
     setActiveItem(item || null);
   };
 
-  // Validate stage transition
   const validateStageTransition = (
     item: ProductionQueueItem,
     newStage: ProductionStage
@@ -143,33 +128,31 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
     const currentIndex = STAGE_ORDER.indexOf(item.currentStage);
     const newIndex = STAGE_ORDER.indexOf(newStage);
 
-    // Can't move to the same stage
     if (currentIndex === newIndex) {
       return { valid: false, error: "O item já está neste estágio." };
     }
 
-    // Can't skip stages (can only move to adjacent stages or backwards)
     if (newIndex > currentIndex + 1) {
-      return { 
-        valid: false, 
-        error: "Não é possível pular estágios. Complete o estágio atual primeiro." 
+      return {
+        valid: false,
+        error: "Não é possível pular estágios. Complete o estágio atual primeiro.",
       };
     }
 
-    // Special validation: can't move from awaiting_choice if choice is still pending
-    if (item.currentStage === "awaiting_choice" && newIndex > currentIndex) {
-      if (item.choiceStatus === "pending") {
-        return {
-          valid: false,
-          error: "Aguardando escolha do personagem pelo cliente. Não é possível avançar.",
-        };
-      }
+    if (
+      item.currentStage === "awaiting_choice" &&
+      newIndex > currentIndex &&
+      item.choiceStatus === "pending"
+    ) {
+      return {
+        valid: false,
+        error: "Aguardando escolha do personagem pelo cliente. Não é possível avançar.",
+      };
     }
 
     return { valid: true };
   };
 
-  // Handle drag end
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveItem(null);
@@ -178,18 +161,11 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
       return;
     }
 
-    // Extract stage from droppable ID (format: "stage-{stageName}")
     const newStage = over.id.toString().replace("stage-", "") as ProductionStage;
     const itemId = active.id.toString();
+    const item = queueData?.data.find((candidate) => candidate.id === itemId);
+    if (!item || item.currentStage === newStage) return;
 
-    // Find the item being moved
-    const item = queueData?.data.find(i => i.id === itemId);
-    if (!item) return;
-
-    // Don't update if dropping in the same stage
-    if (item.currentStage === newStage) return;
-
-    // Validate stage transition
     const validation = validateStageTransition(item, newStage);
     if (!validation.valid) {
       toast({
@@ -200,7 +176,6 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
       return;
     }
 
-    // Update the stage with rollback on error
     updateStageMutation.mutate(
       { itemId, newStage },
       {
@@ -215,10 +190,9 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
           });
         },
         onSuccess: () => {
-          // Show success notification
           toast({
             title: "Estágio atualizado com sucesso",
-            description: `O item foi movido para "${STAGE_CONFIG.find(s => s.key === newStage)?.label}".`,
+            description: `O item foi movido para "${STAGE_CONFIG.find((stage) => stage.key === newStage)?.label}".`,
           });
         },
       }
@@ -243,10 +217,9 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-4 overflow-x-auto pb-4">
-        {STAGE_CONFIG.map(stage => {
+        {STAGE_CONFIG.map((stage) => {
           const items = itemsByStage.get(stage.key) || [];
           const isCollapsed = collapsedColumns.has(stage.key);
-          const itemCount = items.length;
 
           return (
             <KanbanColumn
@@ -255,7 +228,7 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
               label={stage.label}
               color={stage.color}
               items={items}
-              itemCount={itemCount}
+              itemCount={items.length}
               isCollapsed={isCollapsed}
               onToggleCollapse={() => toggleColumn(stage.key)}
             />
@@ -263,16 +236,11 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
         })}
       </div>
 
-      <DragOverlay>
-        {activeItem ? (
-          <KanbanCard item={activeItem} isDragging />
-        ) : null}
-      </DragOverlay>
+      <DragOverlay>{activeItem ? <KanbanCard item={activeItem} isDragging /> : null}</DragOverlay>
     </DndContext>
   );
 }
 
-// Kanban Column Component
 interface KanbanColumnProps {
   stage: ProductionStage;
   label: string;
@@ -297,9 +265,7 @@ function KanbanColumn({
   });
 
   return (
-    <div
-      className={`flex-shrink-0 ${isCollapsed ? "w-16" : "w-80"} transition-all duration-200`}
-    >
+    <div className={`flex-shrink-0 ${isCollapsed ? "w-16" : "w-80"} transition-all duration-200`}>
       <Card className={`border-2 ${color} shadow-sm h-full ${isOver ? "ring-2 ring-primary" : ""}`}>
         <CardHeader className="p-4 border-b border-border">
           <div className="flex items-center justify-between gap-2">
@@ -344,9 +310,7 @@ function KanbanColumn({
                 Nenhum item neste estágio
               </div>
             ) : (
-              items.map(item => (
-                <KanbanCard key={item.id} item={item} />
-              ))
+              items.map((item) => <KanbanCard key={item.id} item={item} />)
             )}
           </CardContent>
         )}
@@ -355,14 +319,12 @@ function KanbanColumn({
   );
 }
 
-// Kanban Card Component
 interface KanbanCardProps {
   item: ProductionQueueItem;
   isDragging?: boolean;
 }
 
 function KanbanCard({ item, isDragging = false }: KanbanCardProps) {
-  const { toast } = useToast();
   const { attributes, listeners, setNodeRef, transform, isDragging: isBeingDragged } = useDraggable({
     id: item.id,
   });
@@ -387,63 +349,36 @@ function KanbanCard({ item, isDragging = false }: KanbanCardProps) {
     low: "Baixo",
   };
 
-  // Calculate deadline countdown
   const getDeadlineInfo = () => {
     if (!item.choiceDeadline) return null;
-    
+
     const deadline = new Date(item.choiceDeadline);
     const now = new Date();
     const diffMs = deadline.getTime() - now.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
-    
+
     if (diffMs < 0) {
       return { text: "Prazo expirado", color: "text-red-600", urgent: true };
-    } else if (diffHours < 24) {
-      return { text: `${diffHours}h restantes`, color: "text-red-600", urgent: true };
-    } else if (diffDays < 3) {
-      return { text: `${diffDays}d restantes`, color: "text-orange-600", urgent: true };
-    } else {
-      return { text: `${diffDays}d restantes`, color: "text-muted-foreground", urgent: false };
     }
+    if (diffHours < 24) {
+      return { text: `${diffHours}h restantes`, color: "text-red-600", urgent: true };
+    }
+    if (diffDays < 3) {
+      return { text: `${diffDays}d restantes`, color: "text-orange-600", urgent: true };
+    }
+    return { text: `${diffDays}d restantes`, color: "text-muted-foreground", urgent: false };
   };
 
   const deadlineInfo = getDeadlineInfo();
 
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    return name
+  const getInitials = (name: string) =>
+    name
       .split(" ")
-      .map(n => n[0])
+      .map((part) => part[0])
       .join("")
       .toUpperCase()
       .slice(0, 2);
-  };
-
-  // Handle quick actions
-  const handleAssign = (e: MouseEvent) => {
-    e.stopPropagation();
-    toast({
-      title: "Atribuir item",
-      description: "Funcionalidade de atribuição será implementada em breve.",
-    });
-  };
-
-  const handleBlock = (e: MouseEvent) => {
-    e.stopPropagation();
-    toast({
-      title: "Bloquear item",
-      description: "Funcionalidade de bloqueio será implementada em breve.",
-    });
-  };
-
-  const handleViewDetails = (e: MouseEvent) => {
-    e.stopPropagation();
-    toast({
-      title: "Ver detalhes",
-      description: "Funcionalidade de visualização de detalhes será implementada em breve.",
-    });
-  };
 
   return (
     <Card
@@ -451,53 +386,23 @@ function KanbanCard({ item, isDragging = false }: KanbanCardProps) {
       style={style}
       {...listeners}
       {...attributes}
-      className={`
-        cursor-move hover:shadow-md transition-shadow
-        ${isBeingDragged || isDragging ? "opacity-50" : ""}
-      `}
+      className={`cursor-move hover:shadow-md transition-shadow ${
+        isBeingDragged || isDragging ? "opacity-50" : ""
+      }`}
     >
       <CardContent className="p-3 space-y-2">
-        {/* Header: Customer Name and Quick Actions */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm truncate" title={item.customerName}>
-              {item.customerName}
-            </div>
-            {/* Order Number */}
-            <div className="text-xs text-muted-foreground truncate" title={`Pedido: ${item.orderId.slice(0, 8)}`}>
-              #{item.orderId.slice(0, 8)}
-            </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm truncate" title={item.customerName}>
+            {item.customerName}
           </div>
-          
-          {/* Quick Actions Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 hover:bg-accent"
-              >
-                <MoreVertical className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onClick={handleAssign}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Atribuir
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleBlock}>
-                <AlertCircle className="h-4 w-4 mr-2" />
-                Bloquear
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleViewDetails}>
-                <Eye className="h-4 w-4 mr-2" />
-                Ver detalhes
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div
+            className="text-xs text-muted-foreground truncate"
+            title={`Pedido: ${item.orderId.slice(0, 8)}`}
+          >
+            #{item.orderId.slice(0, 8)}
+          </div>
         </div>
 
-        {/* Collection Name with Icon */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Package className="h-3 w-3 flex-shrink-0" />
           <span className="truncate" title={item.collectionName}>
@@ -505,21 +410,16 @@ function KanbanCard({ item, isDragging = false }: KanbanCardProps) {
           </span>
         </div>
 
-        {/* Character Name (if chosen) */}
         {item.characterName && (
           <div className="text-xs text-muted-foreground truncate" title={item.characterName}>
             Personagem: {item.characterName}
           </div>
         )}
 
-        {/* Priority Badge */}
-        <Badge
-          className={`text-xs ${priorityColors[item.priority] || priorityColors.normal}`}
-        >
+        <Badge className={`text-xs ${priorityColors[item.priority] || priorityColors.normal}`}>
           {priorityLabels[item.priority] || item.priority}
         </Badge>
 
-        {/* Deadline Countdown (if applicable) */}
         {deadlineInfo && item.choiceStatus === "pending" && (
           <div className={`text-xs font-medium ${deadlineInfo.color} flex items-center gap-1`}>
             {deadlineInfo.urgent && <AlertCircle className="h-3 w-3" />}
@@ -527,7 +427,6 @@ function KanbanCard({ item, isDragging = false }: KanbanCardProps) {
           </div>
         )}
 
-        {/* Assigned Team Member Avatar */}
         {item.assignedToName && (
           <div className="flex items-center gap-2 pt-1 border-t border-border">
             <Avatar className="h-6 w-6">
