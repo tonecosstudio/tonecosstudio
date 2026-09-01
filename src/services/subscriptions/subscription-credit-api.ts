@@ -21,30 +21,12 @@ import {
   PlanType,
   isSubscriptionCreditTransactionType,
 } from '@/types/subscription-credit-system';
-import {
-  createSubscriptionCreditIndividualOrderRpc,
-  updateSubscriptionCreditAutomaticOrderRpc,
-} from '@/services/subscriptions/subscription-credit-mutations-service';
 
 interface PaginationMeta {
   page: number;
   limit: number;
   total: number;
   total_pages: number;
-}
-
-interface AutomaticOrderItem {
-  character: Character;
-}
-
-interface AutomaticOrderRow {
-  id: string;
-  items: AutomaticOrderItem[];
-  total_credits: number;
-  is_locked: boolean;
-  cycle: {
-    close_date: string;
-  };
 }
 
 type SubscriptionStatusRow = Pick<SubscriptionCreditSubscriptionRow, 'id' | 'status'>;
@@ -250,57 +232,6 @@ class SubscriptionCreditAPI {
   }
 
   // ============ Orders ============
-
-  async createIndividualOrder(
-    characterId: string,
-    _useCredits: boolean = true
-  ): Promise<{
-    order_id: string;
-    credits_debited: number;
-    production_cycle_id: string;
-  }> {
-    return createSubscriptionCreditIndividualOrderRpc(characterId);
-  }
-
-  async getAutomaticOrder(orderId: string): Promise<{
-    order_id: string;
-    characters: Character[];
-    total_credits: number;
-    is_locked: boolean;
-    cycle_close_date: string;
-  }> {
-    const userId = await this.getCurrentUserId();
-
-    const { data: order, error: orderError } = await subscriptionCreditSupabase
-      .from('subscription_credit_orders')
-      .select('*, items:subscription_credit_order_items(*, character:subscription_credit_characters(*)), cycle:subscription_credit_production_cycles(*)')
-      .eq('id', orderId)
-      .eq('user_id', userId)
-      .single();
-
-    if (orderError) throw orderError;
-
-    const automaticOrder = order as unknown as AutomaticOrderRow;
-
-    return {
-      order_id: automaticOrder.id,
-      characters: automaticOrder.items.map((item) => item.character),
-      total_credits: automaticOrder.total_credits,
-      is_locked: automaticOrder.is_locked,
-      cycle_close_date: automaticOrder.cycle.close_date,
-    };
-  }
-
-  async updateAutomaticOrder(
-    orderId: string,
-    characterIds: string[]
-  ): Promise<{
-    order_id: string;
-    characters: Character[];
-    total_credits: number;
-  }> {
-    return updateSubscriptionCreditAutomaticOrderRpc(orderId, characterIds);
-  }
 
   async getUserOrders(): Promise<{ orders: OrderWithItems[] }> {
     const userId = await this.getCurrentUserId();
