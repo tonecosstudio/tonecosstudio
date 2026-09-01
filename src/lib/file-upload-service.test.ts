@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
   createStorageSignedUrl: vi.fn(),
   removeStorageFiles: vi.fn(),
   callAdminRpc: vi.fn(),
-  sendPaymentUnderReview: vi.fn(),
   from: vi.fn(),
 }));
 
@@ -32,12 +31,6 @@ vi.mock("@/services/supabase/storage-client", () => ({
 
 vi.mock("@/services/admin/rpc/admin-rpc-gateway", () => ({
   callAdminRpc: mocks.callAdminRpc,
-}));
-
-vi.mock("@/services/notifications/payment-notification-service", () => ({
-  getNotificationService: () => ({
-    sendPaymentUnderReview: mocks.sendPaymentUnderReview,
-  }),
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -91,7 +84,6 @@ describe("FileUploadService", () => {
     });
     mocks.removeStorageFiles.mockResolvedValue({ data: [], error: null });
     mocks.callAdminRpc.mockResolvedValue({ success: true });
-    mocks.sendPaymentUnderReview.mockResolvedValue(undefined);
   });
 
   describe("validateFile", () => {
@@ -135,7 +127,7 @@ describe("FileUploadService", () => {
   });
 
   describe("upload", () => {
-    it("uses the authenticated Edge Function as the upload authority", async () => {
+    it("uses the authenticated Edge Function as the only browser upload authority", async () => {
       const progress = vi.fn();
       const file = validJpeg();
 
@@ -156,6 +148,18 @@ describe("FileUploadService", () => {
       expect(progress.mock.calls.map(([value]) => value)).toEqual([5, 100]);
     });
 
+    it("does not depend on firstFile metadata in the browser response", async () => {
+      mocks.callAuthenticatedEdgeFunction.mockResolvedValue({
+        file: paymentFile(),
+        firstFile: true,
+      });
+
+      const result = await service.upload(paymentId, validJpeg());
+
+      expect(result.id).toBe(paymentFile().id);
+      expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+    });
+
     it("fails before the Edge call when the user is unauthenticated", async () => {
       mocks.requireAuthenticatedUserId.mockRejectedValue(new Error("Unauthorized"));
 
@@ -174,17 +178,6 @@ describe("FileUploadService", () => {
         statusCode: 503,
         message: "Security scan failed",
       });
-    });
-
-    it("sends the under-review notification only after the first successful proof", async () => {
-      mocks.callAuthenticatedEdgeFunction.mockResolvedValue({
-        file: paymentFile(),
-        firstFile: true,
-      });
-
-      await service.upload(paymentId, validJpeg());
-
-      expect(mocks.sendPaymentUnderReview).toHaveBeenCalledWith(paymentId);
     });
 
     it("rejects a malformed Edge response", async () => {
