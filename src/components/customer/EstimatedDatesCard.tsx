@@ -87,6 +87,12 @@ function DateDisplay({ label, date, icon, isPast: isDatePast }: DateDisplayProps
   );
 }
 
+function safeIsPast(date: string | null): boolean {
+  if (!date) return false;
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime()) ? false : isPast(parsed);
+}
+
 export function EstimatedDatesCard({
   estimatedCompletionDate,
   estimatedShippingDate,
@@ -96,9 +102,12 @@ export function EstimatedDatesCard({
   productionStatus,
   className,
 }: EstimatedDatesCardProps) {
-  const completionPast = estimatedCompletionDate ? isPast(new Date(estimatedCompletionDate)) : false;
-  const shippingPast = estimatedShippingDate ? isPast(new Date(estimatedShippingDate)) : false;
-  const deliveryPast = estimatedDeliveryDate ? isPast(new Date(estimatedDeliveryDate)) : false;
+  const hasEstimate = Boolean(
+    estimatedCompletionDate || estimatedShippingDate || estimatedDeliveryDate
+  );
+  const completionPast = safeIsPast(estimatedCompletionDate);
+  const shippingPast = safeIsPast(estimatedShippingDate);
+  const deliveryPast = safeIsPast(estimatedDeliveryDate);
   const isBlocked = productionStatus === "on_hold";
 
   return (
@@ -123,12 +132,19 @@ export function EstimatedDatesCard({
             variant="outline"
             className={cn(
               "border px-3 py-1 text-sm",
-              isOnTrack
-                ? "border-emerald-500/25 bg-emerald-500/12 text-emerald-200"
-                : "border-red-500/25 bg-red-500/12 text-red-200"
+              !hasEstimate
+                ? "border-[hsl(0,0%,25%)] bg-[hsl(0,0%,12%)] text-[hsl(0,0%,70%)]"
+                : isOnTrack
+                  ? "border-emerald-500/25 bg-emerald-500/12 text-emerald-200"
+                  : "border-red-500/25 bg-red-500/12 text-red-200"
             )}
           >
-            {isOnTrack ? (
+            {!hasEstimate ? (
+              <>
+                <Clock className="mr-1 h-4 w-4" />
+                Sem previsão
+              </>
+            ) : isOnTrack ? (
               <>
                 <CheckCircle2 className="mr-1 h-4 w-4" />
                 No Prazo
@@ -171,10 +187,10 @@ export function EstimatedDatesCard({
           />
         ) : null}
 
-        {!estimatedCompletionDate && !estimatedShippingDate && !estimatedDeliveryDate ? (
+        {!hasEstimate ? (
           <div className="py-8 text-center text-[hsl(0,0%,58%)]">
             <Clock className="mx-auto mb-3 h-12 w-12 text-[hsl(0,0%,32%)]" />
-            <p className="text-sm">As datas estimadas serão calculadas em breve.</p>
+            <p className="text-sm">As datas estimadas ainda não foram definidas.</p>
           </div>
         ) : null}
 
@@ -184,7 +200,7 @@ export function EstimatedDatesCard({
             <AlertTitle>Produção pausada</AlertTitle>
             <AlertDescription>
               {delayReason ||
-                "Seu pedido está temporariamente pausado. Entraremos em contato em breve com mais informações."}
+                "Seu pedido está temporariamente pausado. Novas informações serão exibidas quando forem registradas."}
             </AlertDescription>
           </Alert>
         ) : !isOnTrack && delayReason ? (
@@ -195,11 +211,11 @@ export function EstimatedDatesCard({
           </Alert>
         ) : null}
 
-        {isOnTrack && !isBlocked && estimatedDeliveryDate ? (
+        {hasEstimate && isOnTrack && !isBlocked && estimatedDeliveryDate ? (
           <div className="rounded-sm border border-emerald-500/20 bg-emerald-500/10 p-4">
             <p className="flex items-center gap-2 text-sm text-emerald-100">
               <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-              Tudo está correndo conforme o planejado.
+              Tudo está correndo conforme o planejamento registrado.
             </p>
           </div>
         ) : null}
