@@ -1,30 +1,8 @@
-import { supabase } from "@/integrations/supabase/client";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import type {
   Character,
   ProductionCycle,
 } from "@/types/subscription-credit-system";
-
-type RpcError = {
-  message: string;
-};
-
-type RpcResult<T> = Promise<{
-  data: T | null;
-  error: RpcError | null;
-}>;
-
-type IndividualOrderResponse = {
-  order_id: string;
-  credits_debited: number;
-  production_cycle_id: string;
-};
-
-type AutomaticOrderUpdateResponse = {
-  order_id: string;
-  characters: Character[];
-  total_credits: number;
-};
 
 type ProductionCycleCloseResponse = {
   cycleId: string;
@@ -44,50 +22,9 @@ type CharacterPatch = {
   image_url?: string | null;
 };
 
-interface SubscriptionCreditMutationRpcClient {
-  rpc(
-    fn: "create_subscription_credit_individual_order",
-    args: { p_character_id: string }
-  ): RpcResult<IndividualOrderResponse>;
-  rpc(
-    fn: "update_subscription_credit_automatic_order",
-    args: { p_order_id: string; p_character_ids: string[] }
-  ): RpcResult<AutomaticOrderUpdateResponse>;
-}
-
-const subscriptionCreditMutationRpc =
-  supabase as unknown as SubscriptionCreditMutationRpcClient;
-
-function unwrapRpcData<T>(data: T | null, error: RpcError | null, fallback: string): T {
-  if (error) throw error;
+function requireRpcData<T>(data: T | null, fallback: string): T {
   if (data === null) throw new Error(fallback);
   return data;
-}
-
-export async function createSubscriptionCreditIndividualOrderRpc(
-  characterId: string
-): Promise<IndividualOrderResponse> {
-  const { data, error } = await subscriptionCreditMutationRpc.rpc(
-    "create_subscription_credit_individual_order",
-    { p_character_id: characterId }
-  );
-
-  return unwrapRpcData(data, error, "Individual order creation did not return data");
-}
-
-export async function updateSubscriptionCreditAutomaticOrderRpc(
-  orderId: string,
-  characterIds: string[]
-): Promise<AutomaticOrderUpdateResponse> {
-  const { data, error } = await subscriptionCreditMutationRpc.rpc(
-    "update_subscription_credit_automatic_order",
-    {
-      p_order_id: orderId,
-      p_character_ids: characterIds,
-    }
-  );
-
-  return unwrapRpcData(data, error, "Automatic order update did not return data");
 }
 
 export async function adjustSubscriptionCreditCreditsRpc(
@@ -124,7 +61,7 @@ export async function createSubscriptionCreditCharacterRpc(data: {
     },
   );
 
-  return unwrapRpcData(character, null, "Character creation did not return data");
+  return requireRpcData(character, "Character creation did not return data");
 }
 
 export async function updateSubscriptionCreditCharacterRpc(
@@ -163,7 +100,7 @@ export async function updateSubscriptionCreditCharacterRpc(
     },
   );
 
-  return unwrapRpcData(character, null, "Character update did not return data");
+  return requireRpcData(character, "Character update did not return data");
 }
 
 export async function deactivateSubscriptionCreditCharacterRpc(
@@ -174,7 +111,7 @@ export async function deactivateSubscriptionCreditCharacterRpc(
     { p_character_id: id }
   );
 
-  return unwrapRpcData(data, null, "Character deactivation did not return data");
+  return requireRpcData(data, "Character deactivation did not return data");
 }
 
 export async function createSubscriptionCreditProductionCycleRpc(data: {
@@ -191,7 +128,7 @@ export async function createSubscriptionCreditProductionCycleRpc(data: {
     },
   );
 
-  return unwrapRpcData(cycle, null, "Production cycle creation did not return data");
+  return requireRpcData(cycle, "Production cycle creation did not return data");
 }
 
 export async function closeSubscriptionCreditProductionCycleRpc(
@@ -202,5 +139,5 @@ export async function closeSubscriptionCreditProductionCycleRpc(
     { p_cycle_id: id }
   );
 
-  return unwrapRpcData(data, null, "Production cycle closing did not return data");
+  return requireRpcData(data, "Production cycle closing did not return data");
 }
