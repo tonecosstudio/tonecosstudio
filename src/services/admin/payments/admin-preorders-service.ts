@@ -69,16 +69,19 @@ export async function fetchAdminPreorders(): Promise<PreorderQuote[]> {
 }
 
 export async function fetchAdminPreordersStats(): Promise<AdminPreordersStats> {
+  // `ready_for_final_payment` is present in the migration history but the generated
+  // Supabase types are stale while the canonical project is inactive. Select the
+  // row shape and narrow it locally rather than editing generated types by hand.
   const { data, error } = await adminPaymentsGateway
     .from("quotes")
-    .select("payment_status, deposit_amount, remaining_amount, total_amount, ready_for_final_payment")
+    .select("*")
     .eq("is_preorder", true);
 
   if (error) {
     throw new Error(`Falha ao carregar métricas de pré-vendas: ${error.message}`);
   }
 
-  const quotes = data ?? [];
+  const quotes = (data ?? []) as unknown as PreorderQuote[];
 
   const totalDepositsReceived = quotes.reduce((total, quote) => {
     if (quote.payment_status !== "deposit_paid" && quote.payment_status !== "fully_paid") {
