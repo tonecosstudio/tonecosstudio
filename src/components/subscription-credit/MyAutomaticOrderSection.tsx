@@ -4,10 +4,9 @@
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Package, Calendar, Lock, AlertTriangle, Edit } from 'lucide-react';
+import { Package, Calendar, Lock, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAutomaticSubscriptionOrder } from '@/hooks/subscription/useSubscriptionCreditQueries';
@@ -60,7 +59,6 @@ export function MyAutomaticOrderSection({ subscriptionId }: MyAutomaticOrderSect
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Cycle Close Date */}
         {cycleCloseDate && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
@@ -73,7 +71,6 @@ export function MyAutomaticOrderSection({ subscriptionId }: MyAutomaticOrderSect
           </div>
         )}
 
-        {/* Locked Warning */}
         {isLocked && (
           <Alert className="bg-yellow-50 border-yellow-200">
             <Lock className="h-4 w-4 text-yellow-600" />
@@ -84,18 +81,16 @@ export function MyAutomaticOrderSection({ subscriptionId }: MyAutomaticOrderSect
           </Alert>
         )}
 
-        {/* Insufficient Credits Warning */}
         {!automaticOrder.credits_debited && automaticOrder.status === 'pending' && (
-          <Alert className="bg-red-50 border-red-200">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-sm text-red-900">
-              <strong>Saldo insuficiente!</strong> Você não tem créditos suficientes para este
-              pedido. Adicione créditos ou remova personagens.
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              Pedido aguardando o fechamento do ciclo. Os créditos ainda não foram debitados; a
+              confirmação depende do saldo válido no momento do processamento.
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Character List */}
         <div className="space-y-2">
           <h4 className="font-semibold text-sm">Personagens:</h4>
           <div className="space-y-2">
@@ -126,15 +121,6 @@ export function MyAutomaticOrderSection({ subscriptionId }: MyAutomaticOrderSect
             ))}
           </div>
         </div>
-
-        {/* Modify Button */}
-        {!isLocked && (
-          <Button variant="outline" className="w-full" disabled>
-            <Edit className="h-4 w-4 mr-2" />
-            Modificar Seleção
-            <span className="ml-2 text-xs text-muted-foreground">(Em breve)</span>
-          </Button>
-        )}
       </CardContent>
     </Card>
   );
