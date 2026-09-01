@@ -38,6 +38,12 @@ function getServiceRoleKey() {
   return service;
 }
 
+export function hasServiceRoleAuthorization(req: Request): boolean {
+  const authorization = req.headers.get("Authorization");
+  if (!authorization?.startsWith("Bearer ")) return false;
+  return authorization === `Bearer ${getServiceRoleKey()}`;
+}
+
 export async function getClaims(req: Request) {
   const client = getAnonClientWithAuth(req);
   const authHeader = req.headers.get("Authorization") || "";
