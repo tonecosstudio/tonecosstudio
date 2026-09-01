@@ -133,6 +133,31 @@ function latestFunctionSecurityMode(functionName) {
   return { mode, evidence };
 }
 
+function latestCreateAdminNotificationPolicy() {
+  let allowsCustomerPaymentNotification = false;
+  let evidence = null;
+
+  for (const file of migrations) {
+    const source = readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
+
+    if (/DROP\s+FUNCTION(?:\s+IF\s+EXISTS)?\s+(?:public\.)?create_admin_notification\s*\(/i.test(source)) {
+      allowsCustomerPaymentNotification = false;
+      evidence = file;
+    }
+
+    if (/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?create_admin_notification\s*\(/i.test(source)) {
+      allowsCustomerPaymentNotification =
+        /payment_created/i.test(source) &&
+        /payment_under_review/i.test(source) &&
+        /manual_payments/i.test(source) &&
+        /mp\.user_id\s*=\s*auth\.uid\(\)/i.test(source);
+      evidence = file;
+    }
+  }
+
+  return { allowsCustomerPaymentNotification, evidence };
+}
+
 function validateColumnGrant(table, state, failures) {
   if (!state.columnGrant) {
     failures.push(
@@ -173,6 +198,7 @@ if (adminNotifications.tableUpdateGranted) {
 const markOneMode = latestFunctionSecurityMode("mark_notification_read");
 const markAllMode = latestFunctionSecurityMode("mark_all_notifications_read");
 const deleteMode = latestFunctionSecurityMode("admin_delete_notification");
+const adminCreationPolicy = latestCreateAdminNotificationPolicy();
 
 if (markOneMode.mode === "SECURITY INVOKER" || markAllMode.mode === "SECURITY INVOKER") {
   validateColumnGrant("admin_notifications", adminNotifications, failures);
@@ -192,11 +218,17 @@ if (!deleteMode.mode) {
   failures.push("admin_delete_notification security mode could not be determined from migrations");
 }
 
+if (adminCreationPolicy.allowsCustomerPaymentNotification) {
+  failures.push(
+    `create_admin_notification: generic admin-notification RPC still contains a customer-owned manual-payment exception (${adminCreationPolicy.evidence}); validated payment events must create admin alerts server-side instead`,
+  );
+}
+
 if (failures.length > 0) {
   console.error("Notification authority audit: FAIL");
   for (const failure of failures) console.error(`- ${failure}`);
   console.error(
-    "\nExpected remediation: revoke table-level UPDATE from authenticated. For SECURITY INVOKER read-state RPCs, grant UPDATE only on is_read/read_at/updated_at and retain owner/recipient RLS, or use an explicitly authorized SECURITY DEFINER RPC. Admin deletion should remain behind an admin-asserting RPC instead of reopening broad direct DELETE.",
+    "\nExpected remediation: revoke table-level UPDATE from authenticated. For read state, grant only is_read/read_at/updated_at or use a narrowly authorized RPC. Admin deletion must stay behind an admin-asserting boundary. Generic admin-notification creation must not be customer-executable; trusted Edge/RPC payment events should create those alerts after ownership and state validation.",
   );
   process.exit(1);
 }
