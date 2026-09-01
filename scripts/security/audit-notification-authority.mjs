@@ -6,6 +6,22 @@ const MIGRATIONS_DIR = path.join(ROOT, "supabase", "migrations");
 const migrations = readdirSync(MIGRATIONS_DIR)
   .filter((name) => name.endsWith(".sql"))
   .sort((a, b) => a.localeCompare(b));
+const PAYMENT_PROOF_EDGE_PATH = path.join(
+  ROOT,
+  "supabase",
+  "functions",
+  "upload-payment-proof",
+  "index.ts",
+);
+const PAYMENT_FILE_CLIENT_PATH = path.join(
+  ROOT,
+  "src",
+  "services",
+  "payments",
+  "payment-file-upload-service.ts",
+);
+const paymentProofEdgeSource = readFileSync(PAYMENT_PROOF_EDGE_PATH, "utf8");
+const paymentFileClientSource = readFileSync(PAYMENT_FILE_CLIENT_PATH, "utf8");
 
 const allowedReadMutationColumns = new Set(["is_read", "read_at", "updated_at"]);
 
@@ -224,11 +240,33 @@ if (adminCreationPolicy.allowsCustomerPaymentNotification) {
   );
 }
 
+const edgeOwnsFirstProofNotification =
+  /uploadResult\.firstFile\s*===\s*true/.test(paymentProofEdgeSource) &&
+  /notifyAdminsPaymentUnderReview\s*\(/.test(paymentProofEdgeSource) &&
+  /service\.rpc\(\s*["']create_admin_notification["']/.test(paymentProofEdgeSource) &&
+  /p_type:\s*["']payment_under_review["']/.test(paymentProofEdgeSource);
+
+if (!edgeOwnsFirstProofNotification) {
+  failures.push(
+    "upload-payment-proof: first-proof admin notification is not owned by the validated Edge Function",
+  );
+}
+
+if (
+  /getNotificationService|sendPaymentUnderReview|create_admin_notification/.test(
+    paymentFileClientSource,
+  )
+) {
+  failures.push(
+    "payment-file-upload-service: browser still contains admin-notification authority after proof upload",
+  );
+}
+
 if (failures.length > 0) {
   console.error("Notification authority audit: FAIL");
   for (const failure of failures) console.error(`- ${failure}`);
   console.error(
-    "\nExpected remediation: revoke table-level UPDATE from authenticated. For read state, grant only is_read/read_at/updated_at or use a narrowly authorized RPC. Admin deletion must stay behind an admin-asserting boundary. Generic admin-notification creation must not be customer-executable; trusted Edge/RPC payment events should create those alerts after ownership and state validation.",
+    "\nExpected remediation: revoke table-level UPDATE from authenticated. For read state, grant only is_read/read_at/updated_at or use a narrowly authorized RPC. Admin deletion must stay behind an admin-asserting boundary. Generic admin-notification creation must not be customer-executable; trusted Edge/RPC payment events should create those alerts after ownership and state validation. Payment-proof review alerts must remain server-owned and must not be recreated in the browser.",
   );
   process.exit(1);
 }
