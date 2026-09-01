@@ -26,7 +26,7 @@ export interface CustomerQuoteTemplateData {
 
 export interface CustomerPaymentTemplateData {
   amount?: number | null;
-  status: string;
+  status: string | null;
 }
 
 export interface CustomerSubscriptionTemplateData {
@@ -117,7 +117,9 @@ function translateOrderStatus(status: string): string {
   return statusMap[status] ?? status;
 }
 
-function translatePaymentStatus(status: string): string {
+function translatePaymentStatus(status: string | null): string {
+  if (!status) return "não disponível";
+
   const statusMap: Record<string, string> = {
     pending: "Pendente",
     approved: "Aprovado",
