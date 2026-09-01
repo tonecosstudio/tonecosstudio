@@ -2,7 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import type {
   Character,
-  NoRenewalResponse,
   ProductionCycle,
 } from "@/types/subscription-credit-system";
 
@@ -47,14 +46,6 @@ type CharacterPatch = {
 
 interface SubscriptionCreditMutationRpcClient {
   rpc(
-    fn: "set_subscription_credit_no_renewal",
-    args: { p_subscription_id: string }
-  ): RpcResult<NoRenewalResponse>;
-  rpc(
-    fn: "reactivate_subscription_credit_renewal",
-    args: { p_subscription_id: string }
-  ): RpcResult<NoRenewalResponse>;
-  rpc(
     fn: "create_subscription_credit_individual_order",
     args: { p_character_id: string }
   ): RpcResult<IndividualOrderResponse>;
@@ -71,28 +62,6 @@ function unwrapRpcData<T>(data: T | null, error: RpcError | null, fallback: stri
   if (error) throw error;
   if (data === null) throw new Error(fallback);
   return data;
-}
-
-export async function setSubscriptionCreditNoRenewalRpc(
-  subscriptionId: string
-): Promise<NoRenewalResponse> {
-  const { data, error } = await subscriptionCreditMutationRpc.rpc(
-    "set_subscription_credit_no_renewal",
-    { p_subscription_id: subscriptionId }
-  );
-
-  return unwrapRpcData(data, error, "Renewal update did not return data");
-}
-
-export async function reactivateSubscriptionCreditRenewalRpc(
-  subscriptionId: string
-): Promise<NoRenewalResponse> {
-  const { data, error } = await subscriptionCreditMutationRpc.rpc(
-    "reactivate_subscription_credit_renewal",
-    { p_subscription_id: subscriptionId }
-  );
-
-  return unwrapRpcData(data, error, "Renewal reactivation did not return data");
 }
 
 export async function createSubscriptionCreditIndividualOrderRpc(
