@@ -99,7 +99,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
         if (newData.status === "approved" && newData.character_name) {
           toast({
             title: "Escolha Aprovada!",
-            description: `Sua escolha do personagem "${newData.character_name}" foi aprovada. A producao comecara em breve!`,
+            description: `Sua escolha do personagem "${newData.character_name}" foi aprovada e registrada para a proxima etapa.`,
             duration: 8000,
           });
         } else if (newData.status === "rejected") {
@@ -113,7 +113,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
         } else if (newData.status === "locked") {
           toast({
             title: "Escolha Confirmada",
-            description: "Sua escolha foi confirmada e a producao foi iniciada!",
+            description: "Sua escolha foi confirmada e nao pode mais ser alterada.",
             duration: 5000,
           });
         }
