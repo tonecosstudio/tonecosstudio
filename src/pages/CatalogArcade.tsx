@@ -275,9 +275,7 @@ function getUniverseFranchiseKeyForCharacter(
   row: CatalogCharacterRow,
   fallbackThemeKey: string,
 ) {
-  return (
-    slugifyUniverseSegment(row.source_title || "") || fallbackThemeKey
-  );
+  return slugifyUniverseSegment(row.source_title || "") || fallbackThemeKey;
 }
 
 export default function CatalogArcade() {
@@ -296,6 +294,8 @@ export default function CatalogArcade() {
   const activeFranchise = (franchiseKey || legacyFranchise).trim().toLowerCase();
   const activeCharacter = (characterSlug || legacyCharacter).trim().toLowerCase();
   const hasLegacyQuery = Boolean(legacyTheme || legacyFranchise || legacyCharacter);
+  const shouldRedirectLegacyModel =
+    activeTheme && isUuidLikePathParam(activeTheme) && !activeFranchise && !activeCharacter;
 
   useEffect(() => {
     if (!hasLegacyQuery) return;
@@ -318,18 +318,20 @@ export default function CatalogArcade() {
     navigate,
   ]);
 
-  if (activeTheme && isUuidLikePathParam(activeTheme) && !activeFranchise && !activeCharacter) {
-    return <Navigate to={catalogModelDetailsPath(activeTheme)} replace />;
-  }
-
   const universeQuery = useQuery({
     queryKey: ["catalog-universe-index"],
     queryFn: listCatalogUniverseIndex,
   });
 
-  const themes = universeQuery.data?.themes ?? [];
-  const franchises = universeQuery.data?.franchises ?? [];
-  const characters = universeQuery.data?.characters ?? [];
+  const themes = useMemo(() => universeQuery.data?.themes ?? [], [universeQuery.data?.themes]);
+  const franchises = useMemo(
+    () => universeQuery.data?.franchises ?? [],
+    [universeQuery.data?.franchises],
+  );
+  const characters = useMemo(
+    () => universeQuery.data?.characters ?? [],
+    [universeQuery.data?.characters],
+  );
 
   const currentTheme = useMemo(
     () => themes.find((theme) => theme.key === activeTheme) ?? null,
@@ -354,18 +356,13 @@ export default function CatalogArcade() {
 
   const visibleCharacters = useMemo(() => {
     if (!activeTheme || !activeFranchise || !currentFranchise) return [];
-    return characters.filter(
-      (row) => {
-        const rowThemeKey = getUniverseThemeKeyForCharacter(row);
-        if (rowThemeKey !== activeTheme) return false;
+    return characters.filter((row) => {
+      const rowThemeKey = getUniverseThemeKeyForCharacter(row);
+      if (rowThemeKey !== activeTheme) return false;
 
-        const rowFranchiseKey = getUniverseFranchiseKeyForCharacter(
-          row,
-          rowThemeKey,
-        );
-        return rowFranchiseKey === currentFranchise.key;
-      },
-    );
+      const rowFranchiseKey = getUniverseFranchiseKeyForCharacter(row, rowThemeKey);
+      return rowFranchiseKey === currentFranchise.key;
+    });
   }, [activeFranchise, activeTheme, characters, currentFranchise]);
 
   const currentCharacter = useMemo(
@@ -387,7 +384,10 @@ export default function CatalogArcade() {
     enabled: Boolean(currentCharacter),
   });
 
-  const visibleModels = characterModelsQuery.data ?? [];
+  const visibleModels = useMemo(
+    () => characterModelsQuery.data ?? [],
+    [characterModelsQuery.data],
+  );
 
   const stats = useMemo(() => {
     if (currentCharacter) {
@@ -478,6 +478,10 @@ export default function CatalogArcade() {
       : currentTheme
         ? ">> SUBPASTAS"
         : ">> TEMAS PRINCIPAIS";
+
+  if (shouldRedirectLegacyModel) {
+    return <Navigate to={catalogModelDetailsPath(activeTheme)} replace />;
+  }
 
   return (
     <Page
