@@ -17,7 +17,7 @@ jobs:
   quality:
     name: Build, test and security
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -38,8 +38,53 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Reject runtime mocks and placeholders
+        run: npm run scan:mocks
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Reject dependency cycles
+        run: npm run deps:cycles
+
+  unit:
+    name: Unit coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
       - name: Test with coverage thresholds
         run: npm run test:coverage
+
+  build:
+    name: Production build and dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
 
       - name: Build production bundle
         run: npm run build
@@ -47,8 +92,23 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
-      - name: Check formatting
-        run: npm run format:check
+  authority:
+    name: Authority audits
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
 
       - name: Audit Supabase boundaries
         if: always()
