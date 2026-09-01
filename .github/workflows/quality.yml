@@ -53,6 +53,9 @@ jobs:
       - name: Audit public system settings authority
         run: node scripts/security/audit-public-settings-authority.mjs
 
+      - name: Audit fail-closed upload scanner
+        run: node scripts/security/audit-secure-upload-scanner.mjs
+
       - name: Test with coverage thresholds
         run: npm run test:coverage
 
