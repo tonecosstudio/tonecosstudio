@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Coins, History, TrendingDown, TrendingUp, Clock } from 'lucide-react';
+import { Coins, History, TrendingDown, TrendingUp, Clock, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CreditsBalanceResponse } from '@/types/subscription-credit-system';
@@ -28,7 +28,9 @@ interface MyCreditsSectionProps {
 export function MyCreditsSection({ credits }: MyCreditsSectionProps) {
   const [showHistory, setShowHistory] = useState(false);
 
-  const usagePercentage = (credits.used_credits / credits.total_credits) * 100;
+  const usagePercentage = credits.total_credits > 0
+    ? Math.min(100, Math.max(0, (credits.used_credits / credits.total_credits) * 100))
+    : 0;
 
   return (
     <>
@@ -41,7 +43,6 @@ export function MyCreditsSection({ credits }: MyCreditsSectionProps) {
           <CardDescription>Saldo disponível para compras</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Credit Balance Numbers */}
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-primary">{credits.available_credits}</div>
@@ -57,7 +58,6 @@ export function MyCreditsSection({ credits }: MyCreditsSectionProps) {
             </div>
           </div>
 
-          {/* Visual Credit Bar */}
           <div>
             <div className="flex items-center justify-between mb-2 text-sm">
               <span className="text-muted-foreground">Uso de Créditos</span>
@@ -79,7 +79,6 @@ export function MyCreditsSection({ credits }: MyCreditsSectionProps) {
             </div>
           </div>
 
-          {/* View History Button */}
           <Button
             variant="outline"
             className="w-full"
@@ -91,13 +90,11 @@ export function MyCreditsSection({ credits }: MyCreditsSectionProps) {
         </CardContent>
       </Card>
 
-      {/* Transaction History Dialog */}
       <TransactionHistoryDialog isOpen={showHistory} onOpenChange={setShowHistory} />
     </>
   );
 }
 
-// Transaction History Dialog Component
 function TransactionHistoryDialog({
   isOpen,
   onOpenChange,
@@ -107,7 +104,7 @@ function TransactionHistoryDialog({
 }) {
   const transactionsQuery = useSubscriptionCreditTransactions(isOpen);
 
-  const transactions = transactionsQuery.data?.transactions || [];
+  const transactions = transactionsQuery.data?.transactions ?? [];
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -152,6 +149,21 @@ function TransactionHistoryDialog({
         <ScrollArea className="h-[500px] pr-4">
           {transactionsQuery.isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+          ) : transactionsQuery.isError ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <AlertTriangle className="h-6 w-6 text-destructive" />
+              <p className="text-sm text-muted-foreground">
+                Não foi possível carregar o histórico de créditos.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void transactionsQuery.refetch()}
+              >
+                Tentar novamente
+              </Button>
+            </div>
           ) : transactions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               Nenhuma transação encontrada
