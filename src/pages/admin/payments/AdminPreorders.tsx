@@ -224,8 +224,14 @@ export default function AdminPreorders() {
           ) : (
             <div className="space-y-4">
               {filteredPreorders.map((quote) => {
-                const hasDepositAmount = isValidPaymentAmount(quote.deposit_amount);
-                const hasRemainingAmount = isValidPaymentAmount(quote.remaining_amount);
+                const depositAmount = isValidPaymentAmount(quote.deposit_amount)
+                  ? quote.deposit_amount
+                  : null;
+                const remainingAmount = isValidPaymentAmount(quote.remaining_amount)
+                  ? quote.remaining_amount
+                  : null;
+                const hasDepositAmount = depositAmount !== null;
+                const hasRemainingAmount = remainingAmount !== null;
 
                 return (
                   <div
@@ -303,10 +309,10 @@ export default function AdminPreorders() {
                           Ver
                         </Button>
 
-                        {quote.payment_status === "pending" && hasDepositAmount && (
+                        {quote.payment_status === "pending" && depositAmount !== null && (
                           <SendPaymentLinkDialog
                             quoteId={quote.id}
-                            amount={quote.deposit_amount}
+                            amount={depositAmount}
                             paymentType="voucher"
                             customerName={quote.profiles?.full_name || "Cliente"}
                             customerEmail={quote.profiles?.email || ""}
@@ -321,10 +327,10 @@ export default function AdminPreorders() {
 
                         {quote.payment_status === "deposit_paid" &&
                           quote.ready_for_final_payment &&
-                          hasRemainingAmount && (
+                          remainingAmount !== null && (
                             <SendPaymentLinkDialog
                               quoteId={quote.id}
-                              amount={quote.remaining_amount}
+                              amount={remainingAmount}
                               paymentType="final"
                               customerName={quote.profiles?.full_name || "Cliente"}
                               customerEmail={quote.profiles?.email || ""}
