@@ -222,6 +222,33 @@ function subscriptionCreditBalanceBindingState() {
   return { safe, sourceFile };
 }
 
+function subscriptionCreditCycleCloseBindingState() {
+  let safe = false;
+  let sourceFile = null;
+
+  for (const file of migrationFiles) {
+    const source = readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
+
+    const definesImplementation =
+      /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.|private_api\.)admin_close_subscription_credit_production_cycle\s*\(/i.test(
+        source,
+      );
+
+    if (!definesImplementation) continue;
+
+    const hasCreditBalanceLookup =
+      /FROM\s+public\.subscription_credit_user_credits/i.test(source) &&
+      /WHERE\s+user_id\s*=\s*v_order\.user_id/i.test(source);
+
+    if (!hasCreditBalanceLookup) continue;
+
+    safe = /subscription_id\s*=\s*v_order\.subscription_id/i.test(source);
+    sourceFile = file;
+  }
+
+  return { safe, sourceFile };
+}
+
 const failures = [];
 
 for (const { table, forbiddenPolicies } of criticalTables) {
@@ -276,13 +303,20 @@ if (!creditBalanceBinding.safe) {
   );
 }
 
+const cycleCloseBinding = subscriptionCreditCycleCloseBindingState();
+if (!cycleCloseBinding.safe) {
+  failures.push(
+    `admin_close_subscription_credit_production_cycle: credit balance lookup is not bound to each order subscription_id (last implementation evidence: ${cycleCloseBinding.sourceFile ?? "not found"})`,
+  );
+}
+
 if (failures.length > 0) {
   console.error("Commercial authority audit: FAIL");
   for (const failure of failures) {
     console.error(`- ${failure}`);
   }
   console.error(
-    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority, unpaid-activation, and fake-refund RPCs even when their frontend callers are gone. Credit debits must bind the selected balance row to the active subscription, not merely to user_id.",
+    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority, unpaid-activation, and fake-refund RPCs even when their frontend callers are gone. Credit debits must bind the selected balance row to the exact active/order subscription, not merely to user_id.",
   );
   process.exit(1);
 }
