@@ -47,13 +47,16 @@ Os lockfiles Bun permanecem apenas até P2 classificá-los e removê-los com CI 
 Para uma mudança permanecer na main e ser candidata a release:
 
 1. npm ci;
-2. npm run format:check;
-3. npm run typecheck;
-4. npm run lint;
-5. npm run security:supabase-access;
+2. npm run typecheck;
+3. npm run lint;
+4. npm run security:supabase-access;
+5. auditores de autoridade comercial, profiles, notificações e configurações públicas;
 6. npm run test:coverage;
 7. npm run build;
-8. npm audit --omit=dev --audit-level=high.
+8. npm audit --omit=dev --audit-level=high;
+9. npm run format:check.
+
+A formatação continua requisito de GO. Ela fica por último enquanto a baseline histórica estiver fora do padrão, para não impedir que erros funcionais, de segurança, testes, build e dependências sejam descobertos e corrigidos primeiro. A dívida de formatação deve permanecer explícita até um commit mecânico controlado normalizar a baseline.
 
 Falha deve ser corrigida ou registrada como bloqueio explícito; nunca ocultada reduzindo o gate sem justificativa.
 
