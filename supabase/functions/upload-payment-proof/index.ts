@@ -16,6 +16,7 @@ const STORAGE_BUCKET = "payment-proofs";
 const MAX_FILES_PER_PAYMENT = 5;
 const UPLOAD_RATE_LIMIT = { maxRequests: 10, windowSeconds: 60 * 60 } as const;
 const PAYMENT_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ADMIN_PAYMENTS_PATH = "/admin/pagamentos";
 
 function json(req: Request, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -50,6 +51,37 @@ async function logMalwareIncident(
 
   if (error) {
     log.error("security_incident_log_failed", { error, paymentId, userId });
+  }
+}
+
+async function notifyAdminsPaymentUnderReview(
+  service: ReturnType<typeof getServiceClient>,
+  paymentId: string,
+  referenceNumber: string | null,
+): Promise<void> {
+  const label = referenceNumber?.trim() || paymentId;
+  const { error } = await service.rpc("create_admin_notification", {
+    p_type: "payment_under_review",
+    p_title: "Pagamento em revisao",
+    p_message: `Pagamento ${label} recebeu comprovante e precisa de analise.`,
+    p_priority: "high",
+    p_icon: "CreditCard",
+    p_action_url: ADMIN_PAYMENTS_PATH,
+    p_related_id: paymentId,
+    p_related_type: "payment",
+    p_metadata: {
+      payment_id: paymentId,
+      reference_number: referenceNumber,
+      source: "upload-payment-proof",
+    },
+    p_recipient_user_id: null,
+  });
+
+  if (error) {
+    log.error("admin_payment_notification_failed", {
+      error,
+      paymentId,
+    });
   }
 }
 
@@ -94,7 +126,7 @@ serve(async (req) => {
     const service = getServiceClient();
     const { data: payment, error: paymentError } = await service
       .from("manual_payments")
-      .select("id, user_id")
+      .select("id, user_id, reference_number")
       .eq("id", paymentId)
       .maybeSingle();
 
@@ -165,11 +197,21 @@ serve(async (req) => {
       throw new SecureUploadError("Failed to save file record", 500, "DATABASE_ERROR");
     }
 
+    const uploadResult = uploadRecord as { firstFile?: boolean };
+    if (uploadResult.firstFile === true) {
+      await notifyAdminsPaymentUnderReview(
+        service,
+        paymentId,
+        typeof payment.reference_number === "string" ? payment.reference_number : null,
+      );
+    }
+
     log.info("payment_proof_uploaded", {
       paymentId,
       userId,
       fileType: mimeType,
       fileSize: fileValue.size,
+      firstFile: uploadResult.firstFile === true,
     });
 
     return json(req, uploadRecord, 201);
