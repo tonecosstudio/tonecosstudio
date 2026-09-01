@@ -11,9 +11,24 @@ interface SubscriptionPlanLimitResult {
   collections_count: number;
 }
 
+const SENSITIVE_PUBLIC_SETTING_KEY_PATTERN =
+  /(^|_)(secret|token|password|private_key|service_role|credential|api_key|client_secret|access_token|refresh_token)($|_)/i;
+
 function assertFiniteNumber(value: number, label: string): void {
   if (!Number.isFinite(value)) {
     throw new Error(`${label} invalido`);
+  }
+}
+
+function assertPublicSystemSettingKeys(updates: Record<string, string>): void {
+  for (const rawKey of Object.keys(updates)) {
+    const key = rawKey.trim().toLowerCase();
+
+    if (!key || SENSITIVE_PUBLIC_SETTING_KEY_PATTERN.test(key)) {
+      throw new Error(
+        `Configuracao sensivel nao pode ser salva em system_settings publico: ${rawKey}`,
+      );
+    }
   }
 }
 
@@ -24,6 +39,8 @@ function compactPayload(input: Record<string, JsonValue | undefined>): JsonObjec
 }
 
 export async function upsertAdminSystemSettings(updates: Record<string, string>): Promise<void> {
+  assertPublicSystemSettingKeys(updates);
+
   await callAdminRpc("admin_upsert_system_settings", {
     p_updates: updates,
   });
