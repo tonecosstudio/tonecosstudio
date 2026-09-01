@@ -38,24 +38,6 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Audit Supabase boundaries
-        run: npm run security:supabase-access
-
-      - name: Audit commercial authority
-        run: node scripts/security/audit-commercial-authority.mjs
-
-      - name: Audit profile authority
-        run: node scripts/security/audit-profile-authority.mjs
-
-      - name: Audit notification authority
-        run: node scripts/security/audit-notification-authority.mjs
-
-      - name: Audit public system settings authority
-        run: node scripts/security/audit-public-settings-authority.mjs
-
-      - name: Audit fail-closed upload scanner
-        run: node scripts/security/audit-secure-upload-scanner.mjs
-
       - name: Test with coverage thresholds
         run: npm run test:coverage
 
@@ -67,3 +49,27 @@ jobs:
 
       - name: Check formatting
         run: npm run format:check
+
+      - name: Audit Supabase boundaries
+        if: always()
+        run: npm run security:supabase-access
+
+      - name: Audit profile authority
+        if: always()
+        run: node scripts/security/audit-profile-authority.mjs
+
+      - name: Audit notification authority
+        if: always()
+        run: node scripts/security/audit-notification-authority.mjs
+
+      - name: Audit public system settings authority
+        if: always()
+        run: node scripts/security/audit-public-settings-authority.mjs
+
+      - name: Audit fail-closed upload scanner
+        if: always()
+        run: node scripts/security/audit-secure-upload-scanner.mjs
+
+      - name: Audit commercial authority
+        if: always()
+        run: node scripts/security/audit-commercial-authority.mjs
