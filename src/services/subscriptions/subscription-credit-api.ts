@@ -47,7 +47,7 @@ interface AutomaticOrderRow {
   };
 }
 
-type SubscriptionStatusRow = Pick<SubscriptionCreditSubscriptionRow, 'status'>;
+type SubscriptionStatusRow = Pick<SubscriptionCreditSubscriptionRow, 'id' | 'status'>;
 
 class SubscriptionCreditAPI {
   private async getCurrentUserId(): Promise<string> {
@@ -81,33 +81,41 @@ class SubscriptionCreditAPI {
 
     const { data: subscription, error: subscriptionError } = await subscriptionCreditSupabase
       .from('subscription_credit_subscriptions')
-      .select('status')
+      .select('id,status')
       .eq('user_id', userId)
       .eq('status', 'active')
       .maybeSingle();
 
     if (subscriptionError) throw subscriptionError;
 
-    const subscriptionStatus =
-      (subscription as unknown as SubscriptionStatusRow | null)?.status ?? 'cancelled';
+    const activeSubscription = subscription as unknown as SubscriptionStatusRow | null;
+    if (!activeSubscription) {
+      return {
+        total_credits: 0,
+        used_credits: 0,
+        available_credits: 0,
+        expired_credits: 0,
+        subscription_status: 'cancelled',
+      };
+    }
 
     const { data, error } = await subscriptionCreditSupabase
       .from('subscription_credit_user_credits')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .eq('subscription_id', activeSubscription.id)
+      .maybeSingle();
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return {
-          total_credits: 0,
-          used_credits: 0,
-          available_credits: 0,
-          expired_credits: 0,
-          subscription_status: subscriptionStatus,
-        };
-      }
-      throw error;
+    if (error) throw error;
+
+    if (!data) {
+      return {
+        total_credits: 0,
+        used_credits: 0,
+        available_credits: 0,
+        expired_credits: 0,
+        subscription_status: activeSubscription.status,
+      };
     }
 
     const credits = data as unknown as SubscriptionCreditUserCreditsRow;
@@ -117,7 +125,7 @@ class SubscriptionCreditAPI {
       used_credits: credits.used_credits,
       available_credits: credits.available_credits,
       expired_credits: credits.expired_credits,
-      subscription_status: subscriptionStatus,
+      subscription_status: activeSubscription.status,
     };
   }
 
