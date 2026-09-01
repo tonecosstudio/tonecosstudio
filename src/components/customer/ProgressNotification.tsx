@@ -84,7 +84,7 @@ export function useProgressNotification() {
         if (characterName) {
           toast({
             title: "Escolha aprovada",
-            description: `Sua escolha do personagem "${characterName}" foi aprovada. A producao comecara em breve.`,
+            description: `Sua escolha do personagem "${characterName}" foi aprovada e registrada para a proxima etapa.`,
             duration: 8000,
           });
         }
@@ -106,7 +106,7 @@ export function useProgressNotification() {
           title: "Pedido enviado",
           description: trackingCode
             ? `Seu pedido foi enviado. Codigo de rastreamento: ${trackingCode}.`
-            : "Seu pedido foi enviado. O codigo de rastreamento sera disponibilizado em breve.",
+            : "Seu pedido foi enviado. O codigo de rastreamento ainda nao esta disponivel.",
           duration: 8000,
         });
         break;
@@ -114,7 +114,7 @@ export function useProgressNotification() {
       case "choice_locked":
         toast({
           title: "Escolha confirmada",
-          description: "Sua escolha foi confirmada e a producao foi iniciada.",
+          description: "Sua escolha foi confirmada e nao pode mais ser alterada.",
           duration: 5000,
         });
         break;
@@ -123,7 +123,7 @@ export function useProgressNotification() {
         const reason = blockReason || "Motivo nao especificado";
         toast({
           title: "Producao pausada",
-          description: `A producao do seu pedido foi pausada temporariamente. Motivo: ${reason}. Entraremos em contato em breve.`,
+          description: `A producao do seu pedido foi pausada temporariamente. Motivo: ${reason}. Novas atualizacoes aparecerao no acompanhamento do pedido quando forem registradas.`,
           variant: "destructive",
           duration: 10000,
         });
@@ -133,7 +133,7 @@ export function useProgressNotification() {
       case "production_unblocked":
         toast({
           title: "Producao retomada",
-          description: "A producao do seu pedido foi retomada. Obrigado pela paciencia.",
+          description: "A producao do seu pedido foi retomada.",
           duration: 5000,
         });
         break;
