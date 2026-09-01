@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUserId } from "@/services/auth/current-user";
+import { subscribeToAuthSessionChanges } from "@/services/auth/auth-session-service";
 import { createStorageSignedUrl } from "@/services/supabase/storage-client";
 
 const SUPPORT_ATTACHMENTS_BUCKET = "support-attachments";
@@ -18,7 +19,7 @@ function clearSignedUrlCache(): void {
   signedUrlCache.clear();
 }
 
-supabase.auth.onAuthStateChange((_event, session) => {
+subscribeToAuthSessionChanges((session) => {
   const nextUserId = session?.user?.id ?? null;
   if (nextUserId !== cacheUserId) {
     clearSignedUrlCache();
@@ -51,10 +52,9 @@ function cacheSignedUrl(filePath: string, url: string, expiresIn: number): void 
 }
 
 async function assertCacheUser(): Promise<void> {
-  const { data, error } = await supabase.auth.getUser();
-  const userId = data.user?.id ?? null;
+  const userId = await getCurrentUserId();
 
-  if (error || !userId) {
+  if (!userId) {
     clearSignedUrlCache();
     cacheUserId = null;
     throw new Error("Authentication required for support attachment access");
