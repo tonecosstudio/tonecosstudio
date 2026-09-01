@@ -4,14 +4,12 @@
  * Browser responsibilities are intentionally limited to UX validation, local preview helpers,
  * authenticated reads and admin deletion. The upload authority lives in the authenticated
  * `upload-payment-proof` Edge Function, which performs ownership, rate-limit, file-signature,
- * malware-scan and Storage checks server-side before persisting metadata.
+ * malware-scan, Storage checks and first-proof admin notification server-side.
  */
 
 import { supabase } from "@/integrations/supabase/client";
 import type { PaymentFile, FileValidationResult } from "@/types/manual-payment";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
-import { getNotificationService } from "@/services/notifications/payment-notification-service";
-import { logError } from "@/lib/logger";
 import { requireAdmin } from "@/services/groups/group-permissions-service";
 import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 import {
@@ -39,7 +37,6 @@ interface SignedUrlOptions {
 
 interface PaymentFileUploadResult {
   file: PaymentFile;
-  firstFile?: boolean;
 }
 
 export class FileUploadError extends Error {
@@ -238,15 +235,6 @@ export class FileUploadService {
     }
 
     onProgress?.(100);
-
-    if (uploadResult.firstFile) {
-      try {
-        await getNotificationService().sendPaymentUnderReview(paymentId);
-      } catch (error) {
-        logError("Failed to send under review notification", error, "file-upload");
-      }
-    }
-
     return uploadResult.file;
   }
 
