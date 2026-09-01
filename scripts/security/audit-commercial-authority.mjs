@@ -31,6 +31,10 @@ const unsafeAuthenticatedMutationRpcs = [
   "activate_subscription_credit_for_current_user",
 ];
 
+const misleadingFinancialMutationRpcs = [
+  "cancel_subscription_credit_with_refund",
+];
+
 const migrationFiles = readdirSync(MIGRATIONS_DIR)
   .filter((name) => name.endsWith(".sql"))
   .sort((a, b) => a.localeCompare(b));
@@ -256,6 +260,15 @@ for (const functionName of unsafeAuthenticatedMutationRpcs) {
   }
 }
 
+for (const functionName of misleadingFinancialMutationRpcs) {
+  const result = authenticatedRpcExecuteState(functionName);
+  if (result.granted) {
+    failures.push(
+      `${functionName}: authenticated can still execute a financial mutation advertised as a refund even though the versioned implementation does not perform a refund (last evidence: ${result.sourceFile})`,
+    );
+  }
+}
+
 const creditBalanceBinding = subscriptionCreditBalanceBindingState();
 if (!creditBalanceBinding.safe) {
   failures.push(
@@ -269,7 +282,7 @@ if (failures.length > 0) {
     console.error(`- ${failure}`);
   }
   console.error(
-    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority and unpaid-activation RPCs even when their frontend callers are gone. Credit debits must bind the selected balance row to the active subscription, not merely to user_id.",
+    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority, unpaid-activation, and fake-refund RPCs even when their frontend callers are gone. Credit debits must bind the selected balance row to the active subscription, not merely to user_id.",
   );
   process.exit(1);
 }
