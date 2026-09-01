@@ -41,10 +41,7 @@ function getCharacterPageModelKind(
   const normalizedCharacter = normalizeCharacterPageText(characterName);
 
   if (!normalizedRaw || normalizedRaw === normalizedCharacter) return "direct";
-  if (
-    /^busto\b/i.test(raw) ||
-    /^painel\b/i.test(raw)
-  ) {
+  if (/^busto\b/i.test(raw) || /^painel\b/i.test(raw)) {
     return "wrapped";
   }
   if (
@@ -130,7 +127,7 @@ export default function CatalogCharacterArcade() {
     queryFn: () => listCatalogCharacterModels({ characterName, sourceTitle }),
     enabled: Boolean(characterName),
   });
-  const rows = modelsQuery.data ?? [];
+  const rows = useMemo(() => modelsQuery.data ?? [], [modelsQuery.data]);
   const availableTags = useMemo(() => {
     const tagSource = rows.flatMap((row) => getCatalogPublicTags(row, 6));
     return Array.from(new Set(tagSource)).slice(0, 8);
@@ -314,7 +311,7 @@ export default function CatalogCharacterArcade() {
             </div>
 
             <div className="flex flex-col justify-center gap-4 p-4 md:p-5">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.4fr)]">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.4fr)]">
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.75)]">
                     Personagem
