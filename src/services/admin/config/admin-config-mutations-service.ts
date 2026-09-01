@@ -12,7 +12,7 @@ interface SubscriptionPlanLimitResult {
 }
 
 const SENSITIVE_PUBLIC_SETTING_KEY_PATTERN =
-  /(^|_)(secret|token|password|private_key|service_role|credential|api_key|client_secret|access_token|refresh_token)($|_)/i;
+  /(^|_)(secret|token|password|private_key|service[_-]?role|credential|api_key|client_secret|access_token|refresh_token)($|_)/i;
 
 function assertFiniteNumber(value: number, label: string): void {
   if (!Number.isFinite(value)) {
@@ -34,7 +34,7 @@ function assertPublicSystemSettingKeys(updates: Record<string, string>): void {
 
 function compactPayload(input: Record<string, JsonValue | undefined>): JsonObject {
   return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined)
+    Object.entries(input).filter(([, value]) => value !== undefined),
   ) as JsonObject;
 }
 
@@ -46,14 +46,20 @@ export async function upsertAdminSystemSettings(updates: Record<string, string>)
   });
 }
 
-export async function updateAdminPaymentSetting(input: { key: string; value: string }): Promise<void> {
+export async function updateAdminPaymentSetting(input: {
+  key: string;
+  value: string;
+}): Promise<void> {
   await callAdminRpc("admin_update_payment_setting", {
     p_key: input.key,
     p_value: input.value,
   });
 }
 
-export async function updateAdminProductionSetting(input: { key: string; value: string }): Promise<void> {
+export async function updateAdminProductionSetting(input: {
+  key: string;
+  value: string;
+}): Promise<void> {
   await callAdminRpc("admin_update_production_setting", {
     p_key: input.key,
     p_value: input.value,
@@ -62,7 +68,7 @@ export async function updateAdminProductionSetting(input: { key: string; value: 
 
 export async function updateSubscriptionPlanCollectionLimitRpc(
   planId: string,
-  newLimit: number
+  newLimit: number,
 ): Promise<SubscriptionPlanLimitResult> {
   if (!Number.isInteger(newLimit)) {
     throw new Error("Limite de colecoes invalido");
@@ -71,9 +77,9 @@ export async function updateSubscriptionPlanCollectionLimitRpc(
   const data = await callAdminRpc<SubscriptionPlanLimitResult[]>(
     "admin_update_subscription_plan_collection_limit",
     {
-    p_plan_id: planId,
-    p_collections_count: newLimit,
-    }
+      p_plan_id: planId,
+      p_collections_count: newLimit,
+    },
   );
 
   const result = data?.[0];
@@ -173,7 +179,7 @@ export async function assignCollectionsToTierRpc(input: {
 
 export async function updatePurchaseModeRpc(
   modeKey: string,
-  input: Record<string, JsonValue | undefined>
+  input: Record<string, JsonValue | undefined>,
 ): Promise<void> {
   const payload = compactPayload(input);
   await callAdminRpc("admin_update_purchase_mode", {
@@ -241,9 +247,12 @@ export async function bulkUpdateCharacterPriceMultipliersRpc(input: {
   characterIds: string[];
   newMultiplier: number | null;
 }): Promise<{ updated: number }> {
-  const data = await callAdminRpc<{ updated: number }>("admin_bulk_update_character_price_multipliers", {
-    p_character_ids: input.characterIds,
-    p_new_multiplier: input.newMultiplier,
-  });
+  const data = await callAdminRpc<{ updated: number }>(
+    "admin_bulk_update_character_price_multipliers",
+    {
+      p_character_ids: input.characterIds,
+      p_new_multiplier: input.newMultiplier,
+    },
+  );
   return data;
 }
