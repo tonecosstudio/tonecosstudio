@@ -33,23 +33,8 @@ jobs:
           npm install --save-exact sharp@0.35.4 dompurify@3.4.14 react-router-dom@7.18.3 react-router@7.18.3
 
       - name: Migrate React Router v7 compatibility
-        shell: bash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path("src/App.tsx")
-          text = path.read_text()
-          legacy = '''      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >'''
-          if legacy not in text:
-              raise SystemExit("Expected React Router v6 future flags were not found")
-          path.write_text(text.replace(legacy, "      <BrowserRouter>"))
-          PY
+          node -e 'const fs=require("fs");const p="src/App.tsx";let s=fs.readFileSync(p,"utf8");const r=/<BrowserRouter\s+future=\{\{\s*v7_startTransition:\s*true,\s*v7_relativeSplatPath:\s*true,?\s*\}\}\s*>/m;if(!r.test(s))throw new Error("Expected React Router v6 future flags were not found");fs.writeFileSync(p,s.replace(r,"<BrowserRouter>"));'
           npx prettier --write src/App.tsx
 
       - name: Verify application after dependency updates
