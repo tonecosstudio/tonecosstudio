@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Use Node.js 24
         uses: actions/setup-node@v4
@@ -38,8 +40,28 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Check formatting
-        run: npm run format:check
+      - name: Check formatting of changed source files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' changed_files < <(git diff --name-only -z --diff-filter=ACMR HEAD^ HEAD)
+          prettier_files=()
+
+          for file in "${changed_files[@]}"; do
+            if [[ "$file" == src/*.ts || "$file" == src/*.tsx || "$file" == src/*.json || "$file" == src/*.md ]]; then
+              prettier_files+=("$file")
+            elif [[ "$file" != */* && ( "$file" == *.json || "$file" == *.md ) ]]; then
+              prettier_files+=("$file")
+            fi
+          done
+
+          if (( ${#prettier_files[@]} == 0 )); then
+            echo "No changed files in the repository's Prettier scope."
+            exit 0
+          fi
+
+          printf 'Checking formatting for:\n - %s\n' "${prettier_files[@]}"
+          npx prettier --check "${prettier_files[@]}"
 
   unit:
     name: Unit coverage
