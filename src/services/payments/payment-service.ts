@@ -20,7 +20,7 @@ import { loadPaymentTimeline } from "@/services/payments/payment-timeline-servic
 
 type PaymentDetailsRow = Omit<
   PaymentDetails,
-  "timeline" | "audit_logs" | "conversation" | "customer_name" | "customer_email"
+  "timeline" | "conversation" | "customer_name" | "customer_email"
 >;
 
 /**
@@ -64,7 +64,6 @@ async function fetchPaymentById(id: string): Promise<PaymentDetails | null> {
   return {
     ...result,
     timeline,
-    audit_logs: timeline,
     customer_name: profileResult.data?.full_name,
     customer_email: profileResult.data?.email,
   };

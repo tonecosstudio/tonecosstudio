@@ -87,7 +87,6 @@ function createPayment(overrides: Partial<PaymentDetails> = {}): PaymentDetails 
         created_at: "2026-09-13T12:00:00Z",
       },
     ],
-    audit_logs: [],
     customer_name: "Cliente Teste",
     customer_email: "cliente@example.com",
     ...overrides,
