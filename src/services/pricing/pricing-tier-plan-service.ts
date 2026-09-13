@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 import type {
@@ -23,7 +24,7 @@ interface PricingTierPlanRpcClient {
       p_display_order?: number;
       p_created_by: string;
     },
-  ): Promise<{ data: CreateTierWithPlansResult | null; error: PricingTierRpcError | null }>;
+  ): Promise<{ data: unknown; error: PricingTierRpcError | null }>;
   rpc(
     name: "update_tier_and_recalculate_plans",
     args: {
@@ -37,6 +38,34 @@ interface PricingTierPlanRpcClient {
 }
 
 const pricingTierPlanRpc = supabase as unknown as PricingTierPlanRpcClient;
+
+const createTierWithPlansResultSchema = z.object({
+  tier_id: z.string().uuid(),
+  plans_created: z.number().int().nonnegative(),
+});
+
+const updateTierAndRecalculateResultSchema = z.object({
+  plans_updated: z.number().int().nonnegative(),
+  collections_updated: z.number().int().nonnegative(),
+});
+
+function parseCreateTierWithPlansResult(value: unknown): CreateTierWithPlansResult {
+  const parsed = createTierWithPlansResultSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new Error("Resposta invalida ao criar nivel com planos");
+  }
+
+  return parsed.data;
+}
+
+function parseUpdateTierAndRecalculateResult(value: unknown): UpdateTierAndRecalculateResult {
+  const parsed = updateTierAndRecalculateResultSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new Error("Resposta invalida ao atualizar nivel e recalcular planos");
+  }
+
+  return parsed.data;
+}
 
 export async function createTierWithPlans(
   input: CreateTierWithPlansInput,
@@ -58,11 +87,7 @@ export async function createTierWithPlans(
     throw new Error(`Erro ao criar nivel com planos: ${error.message}`);
   }
 
-  if (!data) {
-    throw new Error("Nenhum resultado retornado");
-  }
-
-  return data;
+  return parseCreateTierWithPlansResult(data);
 }
 
 export async function updateTierAndRecalculatePlans(params: {
@@ -85,5 +110,5 @@ export async function updateTierAndRecalculatePlans(params: {
     throw new Error(`Erro ao atualizar nivel: ${error.message}`);
   }
 
-  return data as UpdateTierAndRecalculateResult;
+  return parseUpdateTierAndRecalculateResult(data);
 }
