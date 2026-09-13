@@ -48,6 +48,10 @@ const criticalTables = [
     table: "payment_files",
     forbiddenPolicies: [],
   },
+  {
+    table: "production_photo_metadata",
+    forbiddenPolicies: [],
+  },
 ];
 
 const forbiddenDirectDml = ["INSERT", "UPDATE", "DELETE"];
