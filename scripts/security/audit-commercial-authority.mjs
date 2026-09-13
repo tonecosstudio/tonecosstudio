@@ -28,6 +28,10 @@ const criticalTables = [
     table: "quote_payments",
     forbiddenPolicies: [],
   },
+  {
+    table: "manual_payments",
+    forbiddenPolicies: [],
+  },
 ];
 
 const forbiddenDirectDml = ["INSERT", "UPDATE", "DELETE"];
