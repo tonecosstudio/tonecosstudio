@@ -11,6 +11,11 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
+import {
+  requireAdminRpcMatchingId,
+  requireAdminRpcRecord,
+  requireAdminRpcUuid,
+} from "@/services/admin/rpc/admin-rpc-results";
 
 export interface ConversationReminder {
   id: string;
@@ -48,28 +53,73 @@ interface ConversationReminderTableClient {
 
 const conversationReminderTable = supabase as unknown as ConversationReminderTableClient;
 
+function requireReminder(
+  value: unknown,
+  expected: {
+    conversationId: string;
+    reminderType: ConversationReminder["reminder_type"];
+    scheduledFor: string;
+  },
+): ConversationReminder {
+  const operation = "Reminder creation";
+  const record = requireAdminRpcRecord(value, operation);
+  const id = requireAdminRpcUuid(record.id, operation);
+  requireAdminRpcUuid(record.conversation_id, operation);
+
+  const scheduledTime =
+    typeof record.scheduled_for === "string" ? Date.parse(record.scheduled_for) : Number.NaN;
+  const expectedTime = Date.parse(expected.scheduledFor);
+  const createdTime =
+    typeof record.created_at === "string" ? Date.parse(record.created_at) : Number.NaN;
+
+  if (
+    record.conversation_id !== expected.conversationId ||
+    record.reminder_type !== expected.reminderType ||
+    !Number.isFinite(scheduledTime) ||
+    scheduledTime !== expectedTime ||
+    record.sent_at !== null ||
+    record.is_active !== true ||
+    !Number.isFinite(createdTime)
+  ) {
+    throw new Error(`${operation} returned inconsistent reminder data`);
+  }
+
+  return {
+    id,
+    conversation_id: record.conversation_id as string,
+    reminder_type: record.reminder_type as ConversationReminder["reminder_type"],
+    scheduled_for: record.scheduled_for as string,
+    sent_at: null,
+    is_active: true,
+    created_at: record.created_at as string,
+  };
+}
+
 export async function createReminder(
   conversationId: string,
   reminderType: ConversationReminder["reminder_type"],
   scheduledFor: Date
 ): Promise<ConversationReminder> {
-  const data = await callAdminRpc<ConversationReminder | null>("admin_create_conversation_reminder", {
+  const scheduledForIso = scheduledFor.toISOString();
+  const data = await callAdminRpc<unknown>("admin_create_conversation_reminder", {
     p_conversation_id: conversationId,
     p_reminder_type: reminderType,
-    p_scheduled_for: scheduledFor.toISOString(),
+    p_scheduled_for: scheduledForIso,
   });
 
-  if (!data) {
-    throw new Error("Failed to create reminder: No reminder returned");
-  }
-
-  return data;
+  return requireReminder(data, {
+    conversationId,
+    reminderType,
+    scheduledFor: scheduledForIso,
+  });
 }
 
 export async function cancelReminder(reminderId: string): Promise<void> {
-  await callAdminRpc("admin_cancel_conversation_reminder", {
+  const result = await callAdminRpc<unknown>("admin_cancel_conversation_reminder", {
     p_reminder_id: reminderId,
   });
+
+  requireAdminRpcMatchingId(result, reminderId, "Reminder cancellation");
 }
 
 export async function getReminders(
