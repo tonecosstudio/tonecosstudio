@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchAdminPreordersStats } from "./admin-preorders-service";
+import {
+  fetchAdminPreordersStats,
+  registerAdminPreorderManualPayment,
+  releaseAdminPreorderFinalPayment,
+} from "./admin-preorders-service";
 
 const mocks = vi.hoisted(() => ({
   from: vi.fn(),
@@ -17,6 +21,9 @@ vi.mock("@/services/admin/payments/admin-payments-gateway", () => ({
 vi.mock("@/services/admin/rpc/admin-rpc-gateway", () => ({
   callAdminRpc: mocks.callAdminRpc,
 }));
+
+const QUOTE_ID = "11111111-1111-4111-8111-111111111111";
+const PAYMENT_ID = "22222222-2222-4222-8222-222222222222";
 
 describe("admin-preorders-service", () => {
   beforeEach(() => {
@@ -73,6 +80,46 @@ describe("admin-preorders-service", () => {
 
     await expect(fetchAdminPreordersStats()).rejects.toThrow(
       "Falha ao carregar métricas de pré-vendas: database unavailable",
+    );
+  });
+
+  it("confirma liberação do saldo final somente quando o RPC devolve o quote correto", async () => {
+    mocks.callAdminRpc.mockResolvedValueOnce(QUOTE_ID);
+
+    await expect(releaseAdminPreorderFinalPayment(QUOTE_ID)).resolves.toBeUndefined();
+  });
+
+  it("falha fechado se a liberação do saldo final não devolver o quote solicitado", async () => {
+    mocks.callAdminRpc.mockResolvedValueOnce(PAYMENT_ID);
+
+    await expect(releaseAdminPreorderFinalPayment(QUOTE_ID)).rejects.toThrow(
+      "Preorder final payment release returned an unexpected resource id",
+    );
+  });
+
+  it("aceita registro de pagamento manual somente com UUID de pagamento válido", async () => {
+    mocks.callAdminRpc.mockResolvedValueOnce(PAYMENT_ID);
+
+    await expect(
+      registerAdminPreorderManualPayment({
+        quoteId: QUOTE_ID,
+        paymentType: "deposit",
+        amount: 100,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("falha fechado se o registro de pagamento manual retornar payload inválido", async () => {
+    mocks.callAdminRpc.mockResolvedValueOnce(null);
+
+    await expect(
+      registerAdminPreorderManualPayment({
+        quoteId: QUOTE_ID,
+        paymentType: "final",
+        amount: 400,
+      }),
+    ).rejects.toThrow(
+      "Preorder manual payment registration returned an invalid resource id",
     );
   });
 });
