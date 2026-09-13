@@ -1,4 +1,8 @@
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
+import {
+  requireAdminRpcMatchingId,
+  requireAdminRpcUuid,
+} from "@/services/admin/rpc/admin-rpc-results";
 import { adminPaymentsGateway } from "@/services/admin/payments/admin-payments-gateway";
 
 export interface PreorderQuote {
@@ -122,9 +126,11 @@ export async function fetchAdminPreordersStats(): Promise<AdminPreordersStats> {
 }
 
 export async function releaseAdminPreorderFinalPayment(quoteId: string): Promise<void> {
-  await callAdminRpc("admin_release_preorder_final_payment", {
+  const result = await callAdminRpc<unknown>("admin_release_preorder_final_payment", {
     p_quote_id: quoteId,
   });
+
+  requireAdminRpcMatchingId(result, quoteId, "Preorder final payment release");
 }
 
 interface RegisterAdminPreorderManualPaymentInput {
@@ -136,9 +142,11 @@ interface RegisterAdminPreorderManualPaymentInput {
 export async function registerAdminPreorderManualPayment(
   input: RegisterAdminPreorderManualPaymentInput,
 ): Promise<void> {
-  await callAdminRpc("admin_register_preorder_manual_payment", {
+  const result = await callAdminRpc<unknown>("admin_register_preorder_manual_payment", {
     p_quote_id: input.quoteId,
     p_payment_type: input.paymentType,
     p_amount: input.amount,
   });
+
+  requireAdminRpcUuid(result, "Preorder manual payment registration");
 }
