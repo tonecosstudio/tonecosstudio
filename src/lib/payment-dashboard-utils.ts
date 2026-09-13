@@ -174,7 +174,7 @@ export function exportPaymentDetailsToCsv(payment: PaymentDetails): void {
     ["Aprovado por", payment.approved_by || ""],
     ["Motivo da rejeicao", payment.rejection_reason || ""],
     ["Arquivos", String(payment.files.length)],
-    ["Registros de auditoria", String(payment.audit_logs.length)],
+    ["Eventos da linha do tempo", String(payment.timeline.length)],
     ["Conversa", payment.conversation?.id || ""],
     ["Status da conversa", payment.conversation?.status || ""],
   ];
