@@ -1,40 +1,67 @@
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import type { OrderStatus } from "@/types/admin/orders";
 
+async function callAdminRpcExpectingId(
+  functionName: string,
+  args: Record<string, unknown>,
+  expectedId: string,
+): Promise<void> {
+  const result = await callAdminRpc<unknown>(functionName, args);
+  if (result !== expectedId) {
+    throw new Error("Admin operation returned an unexpected resource id");
+  }
+}
+
 export async function updateManualPaymentStatus(
   paymentId: string,
   status: OrderStatus,
   rejectionReason?: string | null
 ): Promise<void> {
-  await callAdminRpc("admin_update_manual_payment_status", {
-    p_payment_id: paymentId,
-    p_status: status,
-    p_rejection_reason: rejectionReason ?? null,
-  });
+  await callAdminRpcExpectingId(
+    "admin_update_manual_payment_status",
+    {
+      p_payment_id: paymentId,
+      p_status: status,
+      p_rejection_reason: rejectionReason ?? null,
+    },
+    paymentId,
+  );
 }
 
 export async function updateQuoteStatusRpc(quoteId: string, status: string): Promise<void> {
-  await callAdminRpc("admin_update_quote_status", {
-    p_quote_id: quoteId,
-    p_status: status,
-  });
+  await callAdminRpcExpectingId(
+    "admin_update_quote_status",
+    {
+      p_quote_id: quoteId,
+      p_status: status,
+    },
+    quoteId,
+  );
 }
 
 export async function updateSubscriptionDeliveryDates(
   deliveryId: string,
   actualDeliveryDate?: string | null
 ): Promise<void> {
-  await callAdminRpc("admin_update_subscription_delivery_dates", {
-    p_delivery_id: deliveryId,
-    p_actual_delivery_date: actualDeliveryDate ?? null,
-  });
+  await callAdminRpcExpectingId(
+    "admin_update_subscription_delivery_dates",
+    {
+      p_delivery_id: deliveryId,
+      p_actual_delivery_date: actualDeliveryDate ?? null,
+    },
+    deliveryId,
+  );
 }
 
 export async function updateQuoteTrackingCode(quoteId: string, trackingCode: string): Promise<void> {
-  await callAdminRpc("admin_update_quote_tracking_code", {
-    p_quote_id: quoteId,
-    p_tracking_code: trackingCode,
-  });
+  await callAdminRpcExpectingId(
+    "admin_update_quote_tracking_code",
+    {
+      p_quote_id: quoteId,
+      p_tracking_code: trackingCode,
+    },
+    quoteId,
+  );
 }
 
 export async function recordOrderStatusHistory(input: {
