@@ -5,6 +5,8 @@ type AdminRpcArgs = Record<string, unknown>;
 const ADMIN_OPERATION_ERROR = "Admin operation failed";
 
 const CONFIRMED_SUCCESS_RPCS = new Set([
+  "admin_add_coins_to_user",
+  "admin_process_subscription_payment",
   "admin_cancel_standalone_purchase",
   "admin_mark_standalone_production_complete",
   "admin_approve_standalone_payment_voucher",
