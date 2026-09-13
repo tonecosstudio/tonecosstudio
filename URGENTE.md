@@ -1,177 +1,257 @@
-# URGENTE — SSOT de prontidão do MVP
+# URGENTE — OrdaX MVP / Launch Readiness
 
-Status: **EM EXECUÇÃO — NO-GO para lançamento público**  
-Atualizado em: **2026-09-13 (America/Bahia)**  
-Branch operacional: **main somente**  
-Base auditada deste checkpoint: `b6be08202eaab360831c6dc3161e6d6eee1bc393`
+> **SSOT operacional do repositório `washingtonmsdj/ordax`.**
+> Este arquivo descreve o estado comprovado do produto, bloqueios reais e a próxima sequência de execução.
+> Não usar documentação arquivada como autoridade quando divergir do código, migrations, testes ou evidência operacional atual.
 
-Este arquivo é o **SSOT operacional** para levar o ORDAX ao MVP. Histórico resolvido permanece no Git; aqui ficam apenas regras vigentes, evidências atuais, bloqueadores e a próxima ordem de execução.
+## 0. Estado atual
 
-## 1. Regras de operação
+**Status de lançamento público: NO-GO.**
 
-1. Trabalhar diretamente na `main`; não criar branch/PR sem nova instrução explícita.
-2. Antes de cada escrita, confirmar o HEAD e preservar trabalho concorrente.
-3. Fazer mudanças pequenas, reversíveis e comprováveis.
-4. Não reduzir thresholds, desligar auditor, excluir código de coverage ou mascarar erro apenas para deixar CI verde.
-5. Frontend não é fronteira de autorização. Identidade, preço, crédito, pagamento, capacidade, prazo e ownership devem ser derivados/validados server-side.
-6. Segredos e `service_role` nunca entram em `VITE_*` ou bundle do navegador.
-7. Um domínio deve ter uma autoridade canônica. Remover mocks, aliases, executores e caminhos paralelos quando duplicarem autoridade.
-8. Código/migration versionado não equivale a deploy nem prova remota.
-9. Não editar migration histórica aplicada nem tipo gerado para esconder drift.
-10. Migration nova deve usar o fluxo oficial Supabase e somente após reconciliação do projeto canônico.
-11. Não declarar GO, CI verde, migration aplicada, RLS seguro ou deploy válido sem evidência reproduzível.
-12. Funcionalidade crítica incompleta deve falhar fechada ou permanecer fora da navegação pública do MVP.
+O OrdaX avançou e possui build/deploy de produção funcionando no Vercel, mas ainda não existe evidência suficiente para declarar o MVP pronto para lançamento público porque:
 
-## 2. Estado real deste checkpoint
+1. o **GitHub Actions Quality Gate continua sem executar steps** por falha externa de provisionamento do runner;
+2. o **Supabase canônico continua inativo**, impedindo reconciliar migrations, grants/RLS e executar o smoke autenticado completo contra o backend real;
+3. a cobertura, os auditores de autoridade, o `npm audit` e o conjunto completo de testes ainda precisam ser reexecutados no gate canônico do mesmo release candidate;
+4. fluxos autenticados críticos ainda precisam de smoke E2E reproduzível no ambiente canônico antes do GO.
 
-| Área | Estado | Evidência / observação |
-| --- | --- | --- |
-| `main` | **SSOT** | HEAD `b6be082` |
-| GitHub Actions | **BLOQUEIO EXTERNO** | runs `34744672254` e `34744715325`: quatro jobs encerram em segundos com `conclusion=failure`, `steps=null` e sem logs; runner não chegou a executar o workflow |
-| Última prova executada de runner | **HISTÓRICA** | run `33469624445` executou `npm ci`, typecheck e lint; coverage e três auditores falharam naquele source antigo |
-| TypeScript | **ÚLTIMA PROVA EXECUTADA OK** | passou no run histórico; sem nova execução por indisponibilidade do runner |
-| ESLint | **ÚLTIMA PROVA EXECUTADA OK** | passou no run histórico; sem nova execução por indisponibilidade do runner |
-| Coverage | **CORREÇÃO EM CURSO / SEM NOVA MEDIÇÃO** | thresholds preservados; `catalog-utils.edge-cases.test.ts` adicionado em `0ff35cf` e ajustado em `b6be082`; runner atual não executa steps |
-| Build | **SEM PROVA DO HEAD** | job atual não iniciou steps |
-| Audit de dependências | **SEM PROVA DO HEAD** | job atual não iniciou steps; não suprimir `npm audit` |
-| Formatting | **SEM PROVA DO HEAD** | job atual não iniciou steps |
-| Auditor Supabase | **ÚLTIMA PROVA EXECUTADA PASSOU** | run histórico |
-| Auditor profiles | **ÚLTIMA PROVA EXECUTADA PASSOU** | run histórico |
-| Auditor notification | **SOURCE ENDURECIDO / REEXECUÇÃO PENDENTE** | migration `20260902072000_mvp_authority_hardening.sql` revoga UPDATE amplo e restringe read-state; precisa reexecução do auditor |
-| Auditor public settings | **SOURCE ENDURECIDO / REEXECUÇÃO PENDENTE** | migration de 02/09 rejeita chaves secret-like em `public.system_settings`; precisa reexecução do auditor |
-| Auditor commercial | **BLOQUEADO POR DÍVIDA SQL + REMOTO INATIVO** | grant histórico ainda inclui `quotes` em DML autenticado; hardening de 02/09 revoga INSERT de `standalone_purchases`/`subscriptions`, mas não há evidência posterior de `REVOKE INSERT ... quotes` |
-| Supabase canônico | **INACTIVE** | `pdytjhtjlxvbbeuxgnms` / `Ordax-2026-1`; não criar migration ad hoc nem declarar estado remoto reconciliado |
-| Vercel | **BLOQUEIO EXTERNO** | status do HEAD anterior apontou `BUILD_RATE_LIMIT`; revalidar após capacidade disponível |
-| Lançamento público | **NO-GO** | CI executável, coverage, banco/RLS, E2E e deploy ainda sem prova completa |
+### Base funcional auditada neste checkpoint
 
-## 3. Hardening já consolidado no source
+- `main`: `da822cff42090f38d8614ef2b87827e0ba578392`
+- commit: `security: audit commercial RPC grants across schemas`
+- parent funcional: `d1e9f0111f258648c0c25ecfae69d9177c73e018`
+- observação: o commit que atualiza este próprio `URGENTE.md` é documental e será posterior a `da822cf`; a base funcional acima é a que foi analisada e provada neste checkpoint.
 
-- [x] autoridade privilegiada foi progressivamente retirada do navegador nos fluxos auditados;
-- [x] fluxos financeiros inseguros/incompletos foram removidos da UI ou tornados browse-only/fail-closed;
-- [x] suporte foi endurecido contra BOLA/IDOR e DML direto indevido;
-- [x] scanner de upload é fail-closed;
-- [x] Node 24 + npm/package-lock são a base operacional do CI;
-- [x] Quality Gate foi dividido em jobs independentes (`quality`, `unit`, `build`, `authority`);
-- [x] thresholds de coverage permanecem em 70% lines/functions/statements e 65% branches;
-- [x] `public.system_settings` possui rejeição server-side de nomes secret/token/password/private-key/service-role/credential/API-key no source versionado;
-- [x] criação genérica de admin notification está restrita a `service_role` no hardening versionado;
-- [x] UPDATE amplo de notification read-state foi substituído por grant de colunas no hardening versionado;
-- [x] `standalone_purchases` e `subscriptions` perderam INSERT autenticado no hardening versionado;
-- [x] testes reais adicionais cobrem caminhos de tag, variante, títulos, taxonomia e sensibilidade de catálogo (`0ff35cf`, `b6be082`).
+## 0.1 Evidência operacional do checkpoint
 
-## 4. P0 — ordem obrigatória para recuperar a prova de release
+### GitHub Actions — BLOQUEIO EXTERNO
 
-### P0.1 — recuperar execução real do Quality Gate
+Quality Gate do commit `da822cff42090f38d8614ef2b87827e0ba578392`:
 
-- [x] dividir Quality Gate em quatro provas independentes;
-- [x] manter thresholds e auditores fail-closed;
-- [ ] recuperar/provisionar GitHub-hosted runner para que os jobs executem steps novamente;
-- [ ] executar `npm ci`, typecheck, lint e formatting no HEAD atual;
-- [ ] executar `npm run test:coverage` no HEAD atual e medir percentuais reais;
-- [ ] continuar cobertura por comportamento somente se algum threshold permanecer abaixo da meta;
-- [ ] obter build de produção verde;
-- [ ] obter `npm audit --omit=dev --audit-level=high` verde ou triagem explícita de vulnerabilidade;
-- [ ] reexecutar todos os auditores de autoridade no source atual.
+- run: `34762446095`
+- conclusão: `failure`
+- `Unit coverage`: `failure`, `steps=null`
+- `Production build and dependency audit`: `failure`, `steps=null`
+- `Build, test and security`: `failure`, `steps=null`
+- `Authority audits`: `failure`, `steps=null`
 
-### P0.2 — autoridades
+O mesmo padrão já havia ocorrido no run do commit `d1e9f011...`. Portanto, a falha atual do Quality Gate acontece **antes da execução dos comandos do repositório**. Não tratar essa conclusão genérica de `failure` como regressão de código até existir um job com steps efetivamente executados.
 
-- [x] `public system settings`: source contém rejeição server-side de chaves secret-like; falta prova executada do auditor atual e prova remota;
-- [ ] `notification`: source de 02/09 contém hardening relevante; reexecutar auditor para confirmar todos os RPCs/grants/evidências, sem inferir PASS;
-- [ ] `commercial`: reconciliar `quotes` no remoto e gerar migration oficial para remover INSERT autenticado/policy legada se o estado efetivo confirmar a dívida;
-- [ ] não criar migration ad hoc enquanto o projeto Supabase canônico estiver inativo.
+### Vercel — PASS PARA BUILD/DEPLOY DO HEAD FUNCIONAL
 
-### P0.3 — Supabase/RLS
+Projeto Vercel canônico desta aplicação:
 
-Quando houver capacidade para restaurar o projeto canônico:
+- projeto: `ordax`
+- project id: `prj_yfe9KqNRdWfYNnY6HSXBfT0D2Vsu`
+- repositório vinculado: `washingtonmsdj/ordax`
+- deployment de `da822cff...`: `dpl_JAsM2oxpZwrug8cmzTK5gMCsNsnY`
+- estado: `READY`
+- target: `production`
+- Vite build: `built in 13.72s`
+- build Vercel: `Build Completed in /vercel/output [20s]`
+- deploy: `Deployment completed`
+- homepage do deployment: HTTP `200`
+- erros de runtime nas últimas 24h no momento da inspeção: nenhum erro agregado encontrado.
 
-1. reativar/confirmar `Ordax-2026-1`;
-2. medir migration/schema drift contra o remoto antes de escrever nova migration;
-3. confirmar grants/policies efetivos de `quotes`, notifications, settings e superfícies comerciais;
-4. gerar qualquer migration necessária pelo fluxo oficial Supabase;
-5. aplicar e verificar migrations;
-6. executar advisors e regenerar tipos a partir do estado remoto válido;
-7. executar testes negativos de isolamento multiusuário: usuário A não pode SELECT/INSERT/UPDATE/DELETE dados do usuário B;
-8. provar Storage/RLS/functions e ownership de uploads/artefatos.
+O antigo `BUILD_RATE_LIMIT` do Vercel **não é mais um bloqueio atual**. Não reabrir esse diagnóstico sem uma nova evidência de falha.
+
+### Supabase canônico — BLOQUEIO EXTERNO
+
+- project id registrado: `pdytjhtjlxvbbeuxgnms`
+- referência operacional anterior: `Ordax-2026-1`
+- estado conhecido: inativo
+
+Enquanto o projeto estiver inativo, não afirmar que o estado remoto de migrations, grants, RLS, funções ou dados está reconciliado com o repositório. Também não criar migrations corretivas especulativas apenas para compensar um estado remoto que ainda não foi observado.
+
+## 0.2 Hardening consolidado neste checkpoint
+
+### Contrato de Edge Functions autenticadas
+
+Commit `d1e9f0111f258648c0c25ecfae69d9177c73e018`:
+
+- `callAuthenticatedEdgeFunctionData` agora falha fechado quando a Edge Function retorna resposta vazia ou envelope malformado;
+- elimina `TypeError` acidental e sucesso ambíguo em caminhos que esperam `{ data }`;
+- protege consumidores como `admin-rpc-gateway` e relatórios de pricing;
+- testes cobrem `null`, `undefined`, objeto sem `data`, array e payload primitivo, além do caminho válido.
+
+### Auditoria de autoridade comercial multi-schema
+
+Commit `da822cff42090f38d8614ef2b87827e0ba578392`:
+
+- o auditor comercial deixou de rastrear apenas funções `public`;
+- grants/revokes/drops perigosos agora são calculados **independentemente para `public` e `private_api`**;
+- um `REVOKE` em `public` não pode mais mascarar um `GRANT` ainda ativo em `private_api`;
+- a mensagem de falha agora identifica explicitamente o schema vulnerável;
+- prova sintética local do auditor:
+  - `public` revogado + `private_api` concedido => **FAIL** identificando `private_api.notify_quote_payment_for_current_user`;
+  - após `REVOKE` de `private_api` => **PASS**.
+
+A execução canônica do auditor sobre todo o repositório ainda depende da volta dos runners do GitHub Actions.
+
+### Autoridade comercial — correção do diagnóstico anterior
+
+O diagnóstico antigo de que `quotes` tinha grant histórico de `INSERT` sem evidência posterior de revogação estava desatualizado.
+
+A sequência versionada contém:
+
+- grant DML histórico para `quotes` em `20260429000001_harden_public_grants.sql`;
+- **`REVOKE INSERT, UPDATE ON public.quotes FROM anon, authenticated`** em `20260525073000_support_payment_mutation_rpcs.sql`;
+- hardening adicional em `20260902072000_mvp_authority_hardening.sql`, revogando criação direta de estado comercial sensível e execução autenticada de RPCs legados perigosos tanto em `public` quanto em `private_api`.
+
+Portanto, **não criar uma nova migration apenas para repetir o REVOKE de `quotes` sem primeiro observar o Supabase canônico**. O que falta é prova executada + reconciliação remota, não repetir uma correção que já existe no histórico versionado.
+
+## 1. Critério de GO
+
+O lançamento público só pode receber GO quando houver evidência reproduzível, no mesmo release candidate, de:
+
+- instalação determinística (`npm ci`);
+- TypeScript strict sem erro;
+- lint sem erro bloqueante;
+- auditores de acesso/autoridade PASS;
+- testes unitários/integrados PASS;
+- cobertura mínima configurada PASS;
+- build de produção PASS;
+- `npm audit --audit-level=high` sem vulnerabilidade bloqueante;
+- `format:check` conforme política do repositório;
+- Supabase canônico reconciliado com migrations, grants e RLS esperados;
+- smoke autenticado dos fluxos críticos;
+- deploy de produção observável;
+- rollback definido e verificável.
+
+Build verde isolado não equivale a launch readiness.
+
+## 2. P0 — bloqueadores antes do MVP público
+
+### P0.1 — restaurar o Quality Gate executável
+
+- [x] workflow existe e dispara em `main`;
+- [x] a falha atual foi isolada como ausência de execução dos steps (`steps=null`), não como erro de comando do projeto;
+- [x] build equivalente de produção foi provado no Vercel para `da822cff...`;
+- [ ] obter ao menos um run do GitHub Actions no qual os jobs realmente iniciem e executem seus steps;
+- [ ] nesse run, fechar `typecheck`, lint, auditors, tests, coverage, build, audit e format no mesmo HEAD.
+
+**Regra:** não alterar testes, lint ou scripts apenas para fazer desaparecer um `failure` cujo job nunca iniciou.
+
+### P0.2 — autoridade comercial e fronteiras de confiança
+
+- [x] auditor de INSERT direto para tabelas comerciais críticas existe;
+- [x] auditor de RPCs perigosos existe;
+- [x] auditor agora acompanha `public` e `private_api` separadamente;
+- [x] source versionado contém REVOKE posterior de `quotes` para `authenticated`;
+- [x] hardening versionado revoga RPCs legados de amount authority/unpaid activation/fake refund do cliente autenticado;
+- [x] binding de crédito por `subscription_id` está versionado no hardening MVP;
+- [ ] reexecutar o auditor comercial completo sobre o HEAD quando o runner estiver disponível;
+- [ ] reconciliar o estado efetivo do Supabase canônico antes de qualquer nova migration de autoridade;
+- [ ] provar que operações comerciais do browser chegam apenas às fronteiras server-authoritative previstas.
+
+### P0.3 — Supabase / RLS / migrations
+
+- [ ] reativar ou tornar novamente observável o projeto canônico por um caminho autorizado;
+- [ ] comparar migrations locais x migrations aplicadas remotamente;
+- [ ] verificar grants efetivos para `anon`, `authenticated` e `service_role` nas tabelas críticas;
+- [ ] verificar RLS/policies reais de `quotes`, compras, subscriptions, payments, notifications, support e storage;
+- [ ] validar funções `SECURITY DEFINER`, wrappers `SECURITY INVOKER` e schema `private_api` contra o estado remoto;
+- [ ] registrar drift real antes de corrigir qualquer drift.
+
+**Proibido:** inventar migration para um estado remoto não observado.
 
 ### P0.4 — fluxos essenciais do MVP
 
-- [ ] cadastro/login/logout/refresh e recuperação de sessão;
-- [ ] workspace principal;
-- [ ] IA/chat real, persistência e histórico;
-- [ ] sessões e artefatos essenciais com ownership;
-- [ ] upload real com MIME/tamanho/path/ownership e falha fechada;
-- [ ] créditos/ledger sem bypass;
-- [ ] Stripe: provar ponta a ponta e idempotência **ou manter billing desabilitado no MVP**;
-- [ ] OAuth/integrações: provar callbacks/secrets por ambiente **ou manter fora do MVP**;
-- [ ] E2E real no ambiente canônico após Supabase estar seguro.
+Validar no ambiente canônico, com usuários/roles de teste controlados:
 
-### P0.5 — deploy e operação
+- [ ] autenticação e restauração de sessão;
+- [ ] catálogo/coleções/modelos públicos;
+- [ ] criação/checkout compatível com a autoridade comercial atual;
+- [ ] área do cliente e progresso de pedido;
+- [ ] pagamentos/comprovantes conforme fronteira server-side;
+- [ ] suporte e anexos;
+- [ ] notificações;
+- [ ] admin: usuários, pedidos, coleções, produção, financeiro e configurações críticas;
+- [ ] navegação direta/refresh nas rotas críticas;
+- [ ] loading, empty, error e success states sem atividade fictícia.
 
-- [ ] Vercel/deploy do HEAD aprovado deve ficar verde;
-- [ ] smoke de produção: auth → workspace → IA → sessão → upload/artefato;
-- [ ] logs/erros devem carregar release SHA/correlation id suficiente para diagnóstico;
-- [ ] documentar e provar rollback do frontend sem depender de migration destrutiva;
-- [ ] proteger a `main` somente depois que checks obrigatórios estiverem estáveis e reproduzíveis.
+### P0.5 — deploy, smoke e rollback
 
-## 5. Escopo de MVP
+- [x] deployment de produção do source HEAD funcional `da822cff...` ficou `READY`;
+- [x] build Vite/produção desse deployment concluiu com sucesso;
+- [x] raiz do deployment respondeu HTTP `200`;
+- [x] consulta agregada de runtime não encontrou erros nas últimas 24h no momento deste checkpoint;
+- [ ] smoke autenticado completo das rotas P0.4;
+- [ ] validar domínio canônico, assets críticos e callbacks externos necessários;
+- [ ] provar procedimento de rollback para um release anterior saudável;
+- [ ] registrar receipt final do release candidate.
 
-### Deve estar sólido
+## 3. P1 — qualidade necessária após remover os bloqueadores P0
 
-1. autenticação;
-2. workspace principal;
-3. IA/chat funcional;
-4. persistência/histórico de sessões;
-5. artefatos essenciais;
-6. upload com ownership;
-7. créditos/ledger se fizerem parte da experiência pública;
-8. billing somente se necessário para monetização imediata e totalmente provado.
+- ampliar cobertura por risco, não por número artificial;
+- priorizar auth, authority boundaries, pagamentos, pedidos, produção, admin RPC gateway e integrações Supabase;
+- remover duplicações e wrappers obsoletos somente quando não forem parte de contratos ainda necessários;
+- manter tipagem estrita e respostas remotas validadas/fail-closed em operações críticas;
+- revisar acessibilidade e responsividade das rotas que fazem parte do MVP;
+- reduzir bundles grandes somente com evidência de impacto real e sem sacrificar clareza arquitetural;
+- revisar observabilidade de erros para que falhas de backend não apareçam ao usuário como sucesso/estado vazio.
 
-### Deve ficar atrás de feature flag ou fora da navegação se não estiver 100%
+## 4. Princípios de implementação
 
-- 3D experimental;
-- Drive/Notion e integrações não essenciais;
-- Codespaces/fork/write e superfícies de código não fundamentais ao valor inicial;
-- WebContainers experimentais;
-- notificações/mutações administrativas sem contrato server-side comprovado;
-- qualquer checkout, pagamento ou OAuth parcial.
+1. Corrigir a causa raiz, não esconder sintomas.
+2. Não adicionar hardcode para contornar backend, auth, preço, role ou status.
+3. Não manter código legado apenas por medo de removê-lo; primeiro provar que não há contrato/call site necessário.
+4. Não remover funcionalidade válida só porque está quebrada; corrigir quando fizer parte do produto.
+5. UI nunca é fronteira de autorização.
+6. O browser não é autoridade para preço, pagamento, role, crédito ou estado comercial sensível.
+7. `service_role` permanece exclusivamente server-side.
+8. Mudanças de schema são migrations ordenadas e reproduzíveis.
+9. Cada mudança relevante deve ter teste/prova proporcional ao risco.
+10. Commits pequenos, reversíveis e diretamente na `main`, conforme `AGENTS.md`.
 
-O MVP deve ser menor e confiável, não uma coleção de telas parcialmente reais.
+## 5. Bloqueios externos atuais
 
-## 6. Gate de GO
+### GitHub Actions
 
-O ORDAX só muda para **MVP GO** quando houver evidência do mesmo release candidato para:
+**Bloqueado:** runner não provisiona os jobs; runs recentes terminam com `steps=null`.
 
-- [ ] `npm ci` em Node 24;
-- [ ] typecheck;
-- [ ] lint;
-- [ ] formatting;
-- [ ] unit/coverage nos thresholds vigentes;
-- [ ] build;
-- [ ] audit de dependências;
-- [ ] todos os auditores de autoridade;
-- [ ] Supabase/migrations/RLS/storage reconciliados e testados;
-- [ ] E2E dos fluxos essenciais;
-- [ ] deploy verde;
-- [ ] smoke de produção;
-- [ ] observabilidade mínima;
-- [ ] rollback documentado/provado;
-- [ ] nenhuma tela pública crítica simulando funcionalidade indisponível.
+Impacto: impede prova canônica consolidada de typecheck/lint/auditors/tests/coverage/build/audit/format.
 
-## 7. Bloqueios externos atuais
+### Supabase
 
-1. **GitHub Actions não está provisionando runner para os jobs atuais.** Runs `34744672254` e `34744715325` encerraram com `steps=null`; isso bloqueia a medição de coverage e as provas de build/audit/authority do HEAD.
-2. **Supabase `Ordax-2026-1` está INACTIVE.** Não alterar estado remoto nem fabricar migration de correção antes de medir o banco canônico.
-3. **Vercel apresentou `BUILD_RATE_LIMIT`.** Revalidar quando houver capacidade; não tratar como defeito de source sem evidência.
+**Bloqueado:** projeto canônico registrado está inativo.
 
-## 8. Próxima ação
+Impacto: impede reconciliação remota e smoke autenticado real dos fluxos que dependem do backend.
 
-Sequência imediata:
+### Vercel
 
-1. preservar o avanço de coverage já versionado e medir assim que o runner voltar;
-2. enquanto o runner estiver indisponível, revisar source-only de módulos grandes/ramificados e adicionar testes apenas onde houver comportamento relevante não coberto;
-3. não abrir migration para `quotes` antes de reativar/reconciliar o Supabase canônico;
-4. assim que o runner executar, usar o relatório real de coverage para atacar somente os arquivos/branches restantes;
-5. reexecutar os auditores e separar PASS de source, PASS remoto e bloqueios externos;
-6. avançar para RLS/E2E/deploy/smoke sem reabrir itens já comprovados.
+**Não bloqueado neste checkpoint.** `da822cff...` foi construído e publicado em produção com estado `READY`.
 
-**Critério operacional:** cada checkpoint novo registra somente HEAD, evidência, concluído, bloqueio restante e próxima ação. Não declarar sucesso por inferência quando a ferramenta externa não executou.
+## 6. Próxima sequência de execução
+
+1. Enquanto GitHub Actions e Supabase estiverem indisponíveis, continuar apenas trabalho local/source-first que produza valor comprovável sem inventar estado remoto: contratos fail-closed, testes de alto risco, auditores estáticos, limpeza arquitetural segura e inspeção de runtime/deploy do OrdaX.
+2. Investigar os próximos pontos com maior risco funcional, especialmente fronteiras admin/financeiro/pagamentos e serviços que transformam respostas remotas em estado de UI.
+3. Quando o GitHub runner voltar, executar imediatamente o Quality Gate completo no HEAD atual e corrigir somente falhas reais dos steps.
+4. Quando o Supabase canônico voltar, reconciliar migrations/grants/RLS antes de escrever qualquer correção de schema.
+5. Após ambos estarem disponíveis, executar o smoke P0.4, provar rollback e só então reavaliar GO/NO-GO.
+
+## 7. Do not repeat
+
+- Não voltar ao repositório `novo-ordax-os`; este SSOT é exclusivamente de `washingtonmsdj/ordax`.
+- Não tratar `BUILD_RATE_LIMIT` do Vercel como bloqueio atual sem nova evidência; os deployments recentes estão verdes.
+- Não repetir a afirmação de que não existe REVOKE posterior para `quotes`; há REVOKE versionado em `20260525073000_support_payment_mutation_rpcs.sql`.
+- Não assumir que source migration = estado remoto aplicado; Supabase precisa ser observado e reconciliado.
+- Não tentar “corrigir” o GitHub Actions alterando testes/comandos enquanto os jobs continuarem com `steps=null`.
+- Não declarar PASS dos auditores completos só com prova sintética; a prova sintética valida a lógica alterada, enquanto o run canônico continua pendente.
+- Não criar branch, PR ou SSOT paralelo sem instrução explícita.
+- Não declarar o OrdaX pronto para lançamento enquanto P0 permanecer aberto.
+
+## 8. Checkpoint desta sessão
+
+Concluído:
+
+- `d1e9f011...` — fail-closed para envelopes inválidos em Edge Functions autenticadas + cobertura dos casos inválidos;
+- `da822cff...` — auditor comercial passou a rastrear permissões perigosas por schema (`public` e `private_api`);
+- prova sintética FAIL/PASS do novo comportamento do auditor;
+- confirmação de que o Quality Gate segue bloqueado antes dos steps;
+- confirmação de build/deploy Vercel `READY` para `da822cff...`;
+- homepage do deployment respondeu `200`;
+- nenhum erro agregado de runtime encontrado nas últimas 24h no momento da consulta;
+- diagnóstico de `quotes` corrigido no SSOT: existe REVOKE posterior no source versionado.
+
+**Next action:** continuar a auditoria dos caminhos de maior risco no código (admin/financeiro/pagamentos e contratos de dados remotos), adicionando correções e provas pequenas e reversíveis, sem depender de GitHub runner ou Supabase enquanto esses serviços estiverem bloqueados.
