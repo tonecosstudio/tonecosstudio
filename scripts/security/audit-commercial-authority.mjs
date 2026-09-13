@@ -35,6 +35,8 @@ const misleadingFinancialMutationRpcs = [
   "cancel_subscription_credit_with_refund",
 ];
 
+const rpcSchemas = ["public", "private_api"];
+
 const migrationFiles = readdirSync(MIGRATIONS_DIR)
   .filter((name) => name.endsWith(".sql"))
   .sort((a, b) => a.localeCompare(b));
@@ -152,47 +154,62 @@ function authenticatedInsertGrantState(table) {
   return { granted, sourceFile };
 }
 
-function authenticatedRpcExecuteState(functionName) {
+function authenticatedRpcExecuteStates(functionName) {
   const fn = escaped(functionName);
-  let granted = false;
-  let sourceFile = null;
+  const states = new Map(
+    rpcSchemas.map((schema) => [
+      schema,
+      { schema, granted: false, sourceFile: null },
+    ]),
+  );
 
   for (const file of migrationFiles) {
     const source = readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
-    const events = [];
 
-    for (const match of source.matchAll(
-      new RegExp(
-        `GRANT\\s+EXECUTE\\s+ON\\s+FUNCTION\\s+(?:public\\.)?${fn}\\s*\\([^;]*?\\)\\s+TO\\s+[^;]*\\bauthenticated\\b`,
-        "gi",
-      ),
-    )) {
-      events.push({ index: match.index ?? 0, granted: true });
-    }
+    for (const schema of rpcSchemas) {
+      const qualifiedFunctionPattern =
+        schema === "public"
+          ? `(?:public\\.)?${fn}`
+          : `${escaped(schema)}\\.${fn}`;
+      const events = [];
 
-    for (const match of source.matchAll(
-      new RegExp(
-        `REVOKE\\s+(?:ALL|EXECUTE)\\s+ON\\s+FUNCTION\\s+(?:public\\.)?${fn}\\s*\\([^;]*?\\)\\s+FROM\\s+[^;]*\\bauthenticated\\b`,
-        "gi",
-      ),
-    )) {
-      events.push({ index: match.index ?? 0, granted: false });
-    }
+      for (const match of source.matchAll(
+        new RegExp(
+          `GRANT\\s+EXECUTE\\s+ON\\s+FUNCTION\\s+${qualifiedFunctionPattern}\\s*\\([^;]*?\\)\\s+TO\\s+[^;]*\\bauthenticated\\b`,
+          "gi",
+        ),
+      )) {
+        events.push({ index: match.index ?? 0, granted: true });
+      }
 
-    for (const match of source.matchAll(
-      new RegExp(`DROP\\s+FUNCTION(?:\\s+IF\\s+EXISTS)?\\s+(?:public\\.)?${fn}\\s*\\(`, "gi"),
-    )) {
-      events.push({ index: match.index ?? 0, granted: false });
-    }
+      for (const match of source.matchAll(
+        new RegExp(
+          `REVOKE\\s+(?:ALL|EXECUTE)\\s+ON\\s+FUNCTION\\s+${qualifiedFunctionPattern}\\s*\\([^;]*?\\)\\s+FROM\\s+[^;]*\\bauthenticated\\b`,
+          "gi",
+        ),
+      )) {
+        events.push({ index: match.index ?? 0, granted: false });
+      }
 
-    events.sort((a, b) => a.index - b.index);
-    for (const event of events) {
-      granted = event.granted;
-      sourceFile = file;
+      for (const match of source.matchAll(
+        new RegExp(
+          `DROP\\s+FUNCTION(?:\\s+IF\\s+EXISTS)?\\s+${qualifiedFunctionPattern}\\s*\\(`,
+          "gi",
+        ),
+      )) {
+        events.push({ index: match.index ?? 0, granted: false });
+      }
+
+      events.sort((a, b) => a.index - b.index);
+      const state = states.get(schema);
+      for (const event of events) {
+        state.granted = event.granted;
+        state.sourceFile = file;
+      }
     }
   }
 
-  return { granted, sourceFile };
+  return [...states.values()];
 }
 
 function subscriptionCreditBalanceBindingState() {
@@ -270,29 +287,32 @@ for (const { table, forbiddenPolicies } of criticalTables) {
 }
 
 for (const functionName of clientAmountRpcs) {
-  const result = authenticatedRpcExecuteState(functionName);
-  if (result.granted) {
-    failures.push(
-      `${functionName}: authenticated can still execute a legacy RPC that accepts client-supplied amount (last evidence: ${result.sourceFile})`,
-    );
+  for (const result of authenticatedRpcExecuteStates(functionName)) {
+    if (result.granted) {
+      failures.push(
+        `${result.schema}.${functionName}: authenticated can still execute a legacy RPC that accepts client-supplied amount (last evidence: ${result.sourceFile})`,
+      );
+    }
   }
 }
 
 for (const functionName of unsafeAuthenticatedMutationRpcs) {
-  const result = authenticatedRpcExecuteState(functionName);
-  if (result.granted) {
-    failures.push(
-      `${functionName}: authenticated can still execute a mutation that activates commercial credit state without payment proof (last evidence: ${result.sourceFile})`,
-    );
+  for (const result of authenticatedRpcExecuteStates(functionName)) {
+    if (result.granted) {
+      failures.push(
+        `${result.schema}.${functionName}: authenticated can still execute a mutation that activates commercial credit state without payment proof (last evidence: ${result.sourceFile})`,
+      );
+    }
   }
 }
 
 for (const functionName of misleadingFinancialMutationRpcs) {
-  const result = authenticatedRpcExecuteState(functionName);
-  if (result.granted) {
-    failures.push(
-      `${functionName}: authenticated can still execute a financial mutation advertised as a refund even though the versioned implementation does not perform a refund (last evidence: ${result.sourceFile})`,
-    );
+  for (const result of authenticatedRpcExecuteStates(functionName)) {
+    if (result.granted) {
+      failures.push(
+        `${result.schema}.${functionName}: authenticated can still execute a financial mutation advertised as a refund even though the versioned implementation does not perform a refund (last evidence: ${result.sourceFile})`,
+      );
+    }
   }
 }
 
@@ -316,7 +336,7 @@ if (failures.length > 0) {
     console.error(`- ${failure}`);
   }
   console.error(
-    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority, unpaid-activation, and fake-refund RPCs even when their frontend callers are gone. Credit debits must bind the selected balance row to the exact active/order subscription, not merely to user_id.",
+    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority, unpaid-activation, and fake-refund RPCs in every executable schema even when their frontend callers are gone. Credit debits must bind the selected balance row to the exact active/order subscription, not merely to user_id.",
   );
   process.exit(1);
 }
