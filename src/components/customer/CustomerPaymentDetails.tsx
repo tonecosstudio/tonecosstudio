@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -26,7 +26,12 @@ import { FileUploadComponent } from "@/components/customer/FileUploadComponent";
 import { UploadedFilesList } from "@/components/customer/UploadedFilesList";
 import { useToast } from "@/hooks/use-toast";
 import { getMyPaymentById } from "@/lib/payment-service";
-import type { PaymentAuditLog, PaymentDetails, PaymentFile, PaymentStatus } from "@/types/manual-payment";
+import type {
+  PaymentDetails,
+  PaymentFile,
+  PaymentStatus,
+  PaymentTimelineAction,
+} from "@/types/manual-payment";
 
 interface CustomerPaymentDetailsProps {
   paymentId: string;
@@ -90,7 +95,7 @@ function getStatusConfig(status: PaymentStatus) {
   }
 }
 
-function getTimelineActionLabel(actionType: PaymentAuditLog["action_type"]) {
+function getTimelineActionLabel(actionType: PaymentTimelineAction) {
   switch (actionType) {
     case "status_changed":
       return "Status alterado";
@@ -218,6 +223,9 @@ export function CustomerPaymentDetails({
 
   const statusConfig = getStatusConfig(payment.status);
   const isUploadAllowed = ["pending", "rejected", "requires_info"].includes(payment.status);
+  const latestInfoRequest = [...payment.timeline]
+    .reverse()
+    .find((event) => event.action_type === "info_requested" && event.notes);
 
   return (
     <div className="space-y-6">
@@ -250,9 +258,9 @@ export function CustomerPaymentDetails({
         <AlertTitle>Orientacao</AlertTitle>
         <AlertDescription>
           {statusConfig.guidance}
-          {payment.status === "requires_info" && payment.audit_logs?.[0]?.notes ? (
+          {payment.status === "requires_info" && latestInfoRequest?.notes ? (
             <div className="mt-3 rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03] p-3">
-              <strong>Mensagem da equipe:</strong> {payment.audit_logs[0].notes}
+              <strong>Mensagem da equipe:</strong> {latestInfoRequest.notes}
             </div>
           ) : null}
           {payment.status === "rejected" && payment.rejection_reason ? (
@@ -369,13 +377,13 @@ export function CustomerPaymentDetails({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {payment.audit_logs.length > 0 ? (
+              {payment.timeline.length > 0 ? (
                 <div className="space-y-4">
-                  {payment.audit_logs
+                  {payment.timeline
                     .slice()
                     .reverse()
-                    .map((log) => (
-                      <div key={log.id} className="flex gap-4">
+                    .map((event) => (
+                      <div key={event.id} className="flex gap-4">
                         <div className="flex flex-col items-center">
                           <div className="mt-1 h-3 w-3 rounded-full bg-[hsl(var(--gold-accent))]" />
                           <div className="mt-2 h-full w-px bg-[hsl(0,0%,16%)]" />
@@ -383,21 +391,21 @@ export function CustomerPaymentDetails({
                         <div className="flex-1 pb-4">
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <div>
-                              <p className="font-medium">{getTimelineActionLabel(log.action_type)}</p>
-                              {log.old_status && log.new_status ? (
+                              <p className="font-medium">{getTimelineActionLabel(event.action_type)}</p>
+                              {event.old_status && event.new_status ? (
                                 <p className="text-sm text-zinc-400">
-                                  De <span className="font-medium">{log.old_status}</span> para{" "}
-                                  <span className="font-medium">{log.new_status}</span>
+                                  De <span className="font-medium">{event.old_status}</span> para{" "}
+                                  <span className="font-medium">{event.new_status}</span>
                                 </p>
                               ) : null}
                             </div>
                             <span className="text-sm text-zinc-400">
-                              {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                              {format(new Date(event.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                             </span>
                           </div>
-                          {log.notes ? (
+                          {event.notes ? (
                             <div className="mt-3 rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03] p-3 text-sm">
-                              {log.notes}
+                              {event.notes}
                             </div>
                           ) : null}
                         </div>
@@ -430,7 +438,7 @@ export function CustomerPaymentDetails({
                   {payment.status === "under_review" ? " O comprovante ja esta em analise." : ""}
                 </AlertDescription>
               </Alert>
-            )}
+            ) : null}
 
             <UploadedFilesList paymentId={paymentId} files={payment.files} />
           </div>
@@ -444,51 +452,43 @@ export function CustomerPaymentDetails({
                 Historico completo
               </CardTitle>
               <CardDescription className="text-zinc-400">
-                Registros de auditoria e eventos detalhados.
+                Eventos registrados para este pagamento.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {payment.audit_logs.length > 0 ? (
+              {payment.timeline.length > 0 ? (
                 <div className="space-y-4">
-                  {payment.audit_logs.map((log) => (
-                    <Card key={log.id} className="overflow-hidden border-[hsl(0,0%,14%)] bg-[hsl(0,0%,8%)]">
+                  {payment.timeline.map((event) => (
+                    <Card key={event.id} className="overflow-hidden border-[hsl(0,0%,14%)] bg-[hsl(0,0%,8%)]">
                       <div className="p-4">
                         <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="border-[hsl(0,0%,18%)] text-zinc-200">
-                                {log.action_type}
-                              </Badge>
-                              {log.admin_id ? (
-                                <span className="text-sm text-zinc-400">
-                                  por Admin {log.admin_id.substring(0, 8)}
-                                </span>
-                              ) : null}
-                            </div>
-                            <h4 className="mt-2 font-medium">{getTimelineActionLabel(log.action_type)}</h4>
+                            <Badge variant="outline" className="border-[hsl(0,0%,18%)] text-zinc-200">
+                              {getTimelineActionLabel(event.action_type)}
+                            </Badge>
                           </div>
                           <span className="text-sm text-zinc-400">
-                            {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
+                            {format(new Date(event.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
                           </span>
                         </div>
 
-                        {log.old_status && log.new_status ? (
+                        {event.old_status && event.new_status ? (
                           <div className="mb-2 flex items-center gap-2 text-sm">
                             <span className="text-zinc-400">Status:</span>
                             <Badge variant="outline" className="border-[hsl(0,0%,18%)] bg-white/[0.03] text-zinc-200">
-                              {log.old_status}
+                              {event.old_status}
                             </Badge>
-                            <ArrowLeft className="h-3 w-3 text-zinc-500" />
-                            <Badge variant="outline" className={getStatusConfig(log.new_status as PaymentStatus).badgeClass}>
-                              {log.new_status}
+                            <ArrowLeft className="h-3 w-3 rotate-180 text-zinc-500" />
+                            <Badge variant="outline" className={getStatusConfig(event.new_status).badgeClass}>
+                              {event.new_status}
                             </Badge>
                           </div>
                         ) : null}
 
-                        {log.notes ? (
+                        {event.notes ? (
                           <div className="mt-3 rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03] p-3">
-                            <p className="mb-1 text-sm font-medium">Notas</p>
-                            <p className="text-sm">{log.notes}</p>
+                            <p className="mb-1 text-sm font-medium">Detalhes</p>
+                            <p className="text-sm">{event.notes}</p>
                           </div>
                         ) : null}
                       </div>
@@ -496,9 +496,7 @@ export function CustomerPaymentDetails({
                   ))}
                 </div>
               ) : (
-                <p className="italic text-zinc-500">
-                  Nenhum registro de auditoria encontrado.
-                </p>
+                <p className="italic text-zinc-500">Nenhum evento encontrado.</p>
               )}
             </CardContent>
           </Card>
