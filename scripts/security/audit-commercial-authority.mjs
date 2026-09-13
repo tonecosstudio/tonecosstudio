@@ -32,6 +32,14 @@ const criticalTables = [
     table: "manual_payments",
     forbiddenPolicies: [],
   },
+  {
+    table: "order_status_history",
+    forbiddenPolicies: [],
+  },
+  {
+    table: "payment_info_requests",
+    forbiddenPolicies: [],
+  },
 ];
 
 const forbiddenDirectDml = ["INSERT", "UPDATE", "DELETE"];
