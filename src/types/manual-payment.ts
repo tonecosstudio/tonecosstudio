@@ -129,11 +129,13 @@ export interface PaymentTimelineEvent {
 }
 
 /**
- * Temporary source-compatibility alias while UI callers migrate from the old
- * table-shaped name. It resolves to sanitized timeline events, never a database
- * `payment_audit_log` row, and should disappear with the remaining callers.
+ * Temporary UI compatibility shape while the final admin detail component moves
+ * from the old table-shaped naming to `PaymentTimelineEvent`. The server timeline
+ * never returns actor identity; `admin_id` therefore remains absent at runtime.
  */
-export type PaymentAuditLog = PaymentTimelineEvent;
+export interface PaymentAuditLog extends PaymentTimelineEvent {
+  admin_id?: string | null;
+}
 
 /**
  * Support Conversation extension with payment_id
@@ -219,8 +221,8 @@ export interface PaymentDetails extends ManualPayment {
   payment_method: PaymentMethod;
   files: PaymentFile[];
   timeline: PaymentTimelineEvent[];
-  /** @deprecated Use `timeline`. Kept only while existing UI callers are migrated. */
-  audit_logs: PaymentTimelineEvent[];
+  /** @deprecated Use `timeline`. Kept only while the final admin UI caller migrates. */
+  audit_logs: PaymentAuditLog[];
   conversation?: SupportConversation;
   customer_name?: string;
   customer_email?: string;
