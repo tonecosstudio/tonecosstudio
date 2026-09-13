@@ -43,9 +43,9 @@ export type PaymentStatus = "pending" | "under_review" | "requires_info" | "appr
 export type PaymentType = "one_time" | "recurring";
 
 /**
- * Audit log action types
+ * Sanitized timeline actions returned by the authenticated payment timeline boundary.
  */
-export type PaymentAuditAction =
+export type PaymentTimelineAction =
   | "created"
   | "status_changed"
   | "file_uploaded"
@@ -115,17 +115,16 @@ export interface PaymentFile {
 }
 
 /**
- * Payment audit log entry
- * Table: payment_audit_log
+ * Sanitized payment timeline event assembled server-side from canonical sources.
+ * This is not a direct table row.
  */
-export interface PaymentAuditLog {
+export interface PaymentTimelineEvent {
   id: string;
   payment_id: string;
-  action_type: PaymentAuditAction;
-  admin_id?: string | null;
-  old_status?: string | null;
-  new_status?: string | null;
-  notes?: string | null;
+  action_type: PaymentTimelineAction;
+  old_status: PaymentStatus | null;
+  new_status: PaymentStatus | null;
+  notes: string | null;
   created_at: string;
 }
 
@@ -212,7 +211,7 @@ export interface PaymentListItem {
 export interface PaymentDetails extends ManualPayment {
   payment_method: PaymentMethod;
   files: PaymentFile[];
-  audit_logs: PaymentAuditLog[];
+  timeline: PaymentTimelineEvent[];
   conversation?: SupportConversation;
   customer_name?: string;
   customer_email?: string;
