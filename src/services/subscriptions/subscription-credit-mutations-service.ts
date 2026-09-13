@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import type {
   Character,
@@ -22,9 +23,63 @@ type CharacterPatch = {
   image_url?: string | null;
 };
 
-function requireRpcData<T>(data: T | null, fallback: string): T {
-  if (data === null) throw new Error(fallback);
-  return data;
+const characterSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1),
+  description: z.string().nullable(),
+  price_cash: z.number().finite().nonnegative(),
+  price_credits: z.number().int().nonnegative(),
+  is_exclusive_semestral: z.boolean(),
+  is_active: z.boolean(),
+  is_standard_collection: z.boolean(),
+  image_url: z.string().nullable(),
+  created_at: z.string().min(1),
+  updated_at: z.string().min(1),
+});
+
+const productionCycleSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1),
+  capacity_limit: z.number().int().positive(),
+  current_count: z.number().int().nonnegative(),
+  status: z.enum(["open", "full", "closed"]),
+  close_date: z.string().min(1),
+  created_at: z.string().min(1),
+  updated_at: z.string().min(1),
+  closed_at: z.string().nullable(),
+});
+
+const creditAdjustmentSchema = z.object({
+  subscription_id: z.string().uuid(),
+  total_credits: z.number().int().nonnegative(),
+  available_credits: z.number().int().nonnegative(),
+});
+
+const productionCycleCloseSchema = z.object({
+  cycleId: z.string().uuid(),
+  confirmedOrders: z.number().int().nonnegative(),
+  pendingOrders: z.number().int().nonnegative(),
+  totalCreditsDebited: z.number().int().nonnegative(),
+});
+
+function parseCharacter(value: unknown, fallback: string): Character {
+  const parsed = characterSchema.safeParse(value);
+  if (!parsed.success) throw new Error(fallback);
+  return parsed.data;
+}
+
+function requireCharacterId(value: unknown, expectedId: string, fallback: string): Character {
+  const character = parseCharacter(value, fallback);
+  if (character.id !== expectedId) throw new Error(fallback);
+  return character;
+}
+
+function parseProductionCycle(value: unknown, fallback: string): ProductionCycle {
+  const parsed = productionCycleSchema.safeParse(value);
+  if (!parsed.success || parsed.data.current_count > parsed.data.capacity_limit) {
+    throw new Error(fallback);
+  }
+  return parsed.data;
 }
 
 export async function adjustSubscriptionCreditCreditsRpc(
@@ -32,11 +87,16 @@ export async function adjustSubscriptionCreditCreditsRpc(
   amount: number,
   reason: string
 ): Promise<void> {
-  await callAdminRpc("admin_adjust_subscription_credit_credits", {
+  const value = await callAdminRpc<unknown>("admin_adjust_subscription_credit_credits", {
     p_subscription_id: subscriptionId,
     p_amount: amount,
     p_reason: reason,
   });
+
+  const parsed = creditAdjustmentSchema.safeParse(value);
+  if (!parsed.success || parsed.data.subscription_id !== subscriptionId) {
+    throw new Error("Credit adjustment did not return confirmed data");
+  }
 }
 
 export async function createSubscriptionCreditCharacterRpc(data: {
@@ -48,7 +108,7 @@ export async function createSubscriptionCreditCharacterRpc(data: {
   isStandardCollection?: boolean;
   imageUrl?: string;
 }): Promise<Character> {
-  const character = await callAdminRpc<Character | null>(
+  const character = await callAdminRpc<unknown>(
     "admin_create_subscription_credit_character",
     {
       p_name: data.name,
@@ -61,7 +121,7 @@ export async function createSubscriptionCreditCharacterRpc(data: {
     },
   );
 
-  return requireRpcData(character, "Character creation did not return data");
+  return parseCharacter(character, "Character creation did not return valid data");
 }
 
 export async function updateSubscriptionCreditCharacterRpc(
@@ -92,7 +152,7 @@ export async function updateSubscriptionCreditCharacterRpc(
   if (data.isActive !== undefined) patch.is_active = data.isActive;
   if (data.imageUrl !== undefined) patch.image_url = data.imageUrl;
 
-  const character = await callAdminRpc<Character | null>(
+  const character = await callAdminRpc<unknown>(
     "admin_update_subscription_credit_character",
     {
       p_character_id: id,
@@ -100,18 +160,28 @@ export async function updateSubscriptionCreditCharacterRpc(
     },
   );
 
-  return requireRpcData(character, "Character update did not return data");
+  return requireCharacterId(character, id, "Character update did not return matching data");
 }
 
 export async function deactivateSubscriptionCreditCharacterRpc(
   id: string
 ): Promise<Character> {
-  const data = await callAdminRpc<Character | null>(
+  const value = await callAdminRpc<unknown>(
     "admin_deactivate_subscription_credit_character",
     { p_character_id: id }
   );
 
-  return requireRpcData(data, "Character deactivation did not return data");
+  const character = requireCharacterId(
+    value,
+    id,
+    "Character deactivation did not return matching data",
+  );
+
+  if (character.is_active) {
+    throw new Error("Character deactivation was not confirmed");
+  }
+
+  return character;
 }
 
 export async function createSubscriptionCreditProductionCycleRpc(data: {
@@ -119,7 +189,7 @@ export async function createSubscriptionCreditProductionCycleRpc(data: {
   capacityLimit: number;
   closeDate: string;
 }): Promise<ProductionCycle> {
-  const cycle = await callAdminRpc<ProductionCycle | null>(
+  const value = await callAdminRpc<unknown>(
     "admin_create_subscription_credit_production_cycle",
     {
       p_name: data.name,
@@ -128,16 +198,21 @@ export async function createSubscriptionCreditProductionCycleRpc(data: {
     },
   );
 
-  return requireRpcData(cycle, "Production cycle creation did not return data");
+  return parseProductionCycle(value, "Production cycle creation did not return valid data");
 }
 
 export async function closeSubscriptionCreditProductionCycleRpc(
   id: string
 ): Promise<ProductionCycleCloseResponse> {
-  const data = await callAdminRpc<ProductionCycleCloseResponse | null>(
+  const value = await callAdminRpc<unknown>(
     "admin_close_subscription_credit_production_cycle",
     { p_cycle_id: id }
   );
 
-  return requireRpcData(data, "Production cycle closing did not return data");
+  const parsed = productionCycleCloseSchema.safeParse(value);
+  if (!parsed.success || parsed.data.cycleId !== id) {
+    throw new Error("Production cycle closing did not return matching data");
+  }
+
+  return parsed.data;
 }
