@@ -41,7 +41,7 @@ function getFixtureClient(): SupabaseClient<Database> {
     throw new Error("Performance fixture client requested outside VITEST_PERFORMANCE mode");
   }
 
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseUrl = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
@@ -196,7 +196,7 @@ describePerformance("Performance: manual payment reads", () => {
         .limit(100);
 
       if (error) throw error;
-      return data;
+      return data ?? [];
     });
 
     expect(result.length).toBeGreaterThan(0);
@@ -212,7 +212,7 @@ describePerformance("Performance: manual payment reads", () => {
         .range(0, 24);
 
       if (error) throw error;
-      return data;
+      return data ?? [];
     });
 
     expect(result.length).toBeLessThanOrEqual(25);
@@ -226,6 +226,7 @@ describePerformance("Performance: manual payment reads", () => {
       .eq("id", paymentIds[0])
       .single();
     if (sampleError) throw sampleError;
+    if (!sample) throw new Error("Performance payment fixture could not be reloaded");
 
     const { result, duration } = await measureTime(async () => {
       const [referenceResult, statusResult] = await Promise.all([
@@ -299,6 +300,7 @@ describePerformance("Performance: payment details", () => {
         .single();
 
       if (error) throw error;
+      if (!data) throw new Error("Performance payment detail fixture could not be loaded");
       return data;
     });
 
