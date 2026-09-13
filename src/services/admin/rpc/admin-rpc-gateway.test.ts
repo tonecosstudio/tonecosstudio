@@ -38,8 +38,25 @@ describe("admin-rpc-gateway", () => {
     ).resolves.toEqual(response);
   });
 
+  it("accepts confirmed subscription payment mutations", async () => {
+    const response = {
+      success: true,
+      payment: { id: "payment-1" },
+      coins_credited: 100,
+      new_balance: 500,
+      message: "processed",
+    };
+    callEdgeFunctionData.mockResolvedValueOnce(response);
+
+    await expect(
+      callAdminRpc("admin_process_subscription_payment", {
+        p_subscription_id: "subscription-1",
+      }),
+    ).resolves.toEqual(response);
+  });
+
   it.each([null, undefined, {}, [], "unexpected", { success: false }])(
-    "fails closed when a standalone admin mutation is not explicitly confirmed: %j",
+    "fails closed when a confirmed-success admin mutation is not explicitly confirmed: %j",
     async (response) => {
       callEdgeFunctionData.mockResolvedValueOnce(response as never);
 
@@ -50,6 +67,22 @@ describe("admin-rpc-gateway", () => {
       ).rejects.toThrow("Admin operation failed");
     },
   );
+
+  it("fails closed when subscription payment processing is not confirmed", async () => {
+    callEdgeFunctionData.mockResolvedValueOnce({
+      success: false,
+      payment: { id: "payment-1" },
+      coins_credited: 100,
+      new_balance: 500,
+      message: "not committed",
+    });
+
+    await expect(
+      callAdminRpc("admin_process_subscription_payment", {
+        p_subscription_id: "subscription-1",
+      }),
+    ).rejects.toThrow("not committed");
+  });
 
   it("surfaces an explicit business error from an unconfirmed mutation", async () => {
     callEdgeFunctionData.mockResolvedValueOnce({
