@@ -20,7 +20,17 @@ const criticalTables = [
       "subscriptions_insert_own_pending_checkout",
     ],
   },
+  {
+    table: "payment_links",
+    forbiddenPolicies: [],
+  },
+  {
+    table: "quote_payments",
+    forbiddenPolicies: [],
+  },
 ];
+
+const forbiddenDirectDml = ["INSERT", "UPDATE", "DELETE"];
 
 const clientAmountRpcs = [
   "create_manual_payment_for_current_user",
@@ -101,17 +111,24 @@ function privilegeClause(statement, keyword, table) {
     ?.trim();
 }
 
-function clauseIncludesInsert(clause) {
+function clauseIncludesPrivilege(clause, privilege) {
   if (!clause) return false;
   if (/^ALL(?: PRIVILEGES)?$/i.test(clause)) return true;
-  if (/\bINSERT\s*\(/i.test(clause)) return false;
-  return /(?:^|,)\s*INSERT\s*(?:,|$)/i.test(clause);
+
+  return new RegExp(
+    `(?:^|,)\\s*${escaped(privilege)}(?:\\s*\\([^)]*\\))?\\s*(?:,|$)`,
+    "i",
+  ).test(clause);
 }
 
-function authenticatedInsertGrantState(table) {
+function authenticatedDmlGrantStates(table) {
   const tablePattern = escaped(table);
-  let granted = false;
-  let sourceFile = null;
+  const states = new Map(
+    forbiddenDirectDml.map((privilege) => [
+      privilege,
+      { privilege, granted: false, sourceFile: null },
+    ]),
+  );
 
   for (const file of migrationFiles) {
     const source = readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
@@ -123,8 +140,10 @@ function authenticatedInsertGrantState(table) {
         source,
       )
     ) {
-      granted = true;
-      sourceFile = file;
+      for (const state of states.values()) {
+        state.granted = true;
+        state.sourceFile = file;
+      }
     }
 
     for (const rawStatement of source.split(";")) {
@@ -133,25 +152,33 @@ function authenticatedInsertGrantState(table) {
 
       if (
         /^GRANT\b/i.test(statement) &&
-        roleListContainsAuthenticated(statement, "TO") &&
-        clauseIncludesInsert(privilegeClause(statement, "GRANT", table))
+        roleListContainsAuthenticated(statement, "TO")
       ) {
-        granted = true;
-        sourceFile = file;
+        const clause = privilegeClause(statement, "GRANT", table);
+        for (const state of states.values()) {
+          if (clauseIncludesPrivilege(clause, state.privilege)) {
+            state.granted = true;
+            state.sourceFile = file;
+          }
+        }
       }
 
       if (
         /^REVOKE\b/i.test(statement) &&
-        roleListContainsAuthenticated(statement, "FROM") &&
-        clauseIncludesInsert(privilegeClause(statement, "REVOKE", table))
+        roleListContainsAuthenticated(statement, "FROM")
       ) {
-        granted = false;
-        sourceFile = file;
+        const clause = privilegeClause(statement, "REVOKE", table);
+        for (const state of states.values()) {
+          if (clauseIncludesPrivilege(clause, state.privilege)) {
+            state.granted = false;
+            state.sourceFile = file;
+          }
+        }
       }
     }
   }
 
-  return { granted, sourceFile };
+  return [...states.values()];
 }
 
 function authenticatedRpcExecuteStates(functionName) {
@@ -269,19 +296,23 @@ function subscriptionCreditCycleCloseBindingState() {
 const failures = [];
 
 for (const { table, forbiddenPolicies } of criticalTables) {
-  const grant = authenticatedInsertGrantState(table);
-  if (!grant.granted) continue;
+  const dmlStates = authenticatedDmlGrantStates(table);
 
-  failures.push(
-    `${table}: authenticated still has direct INSERT privilege (last evidence: ${grant.sourceFile})`,
-  );
+  for (const state of dmlStates) {
+    if (!state.granted) continue;
 
-  for (const policy of forbiddenPolicies) {
-    const policyResult = policyState(policy);
-    if (policyResult.state === "present") {
-      failures.push(
-        `${table}: direct INSERT privilege is reachable through ${policy} (last policy evidence: ${policyResult.sourceFile})`,
-      );
+    failures.push(
+      `${table}: authenticated still has direct ${state.privilege} privilege (last evidence: ${state.sourceFile})`,
+    );
+
+    if (state.privilege !== "INSERT") continue;
+    for (const policy of forbiddenPolicies) {
+      const policyResult = policyState(policy);
+      if (policyResult.state === "present") {
+        failures.push(
+          `${table}: direct INSERT privilege is reachable through ${policy} (last policy evidence: ${policyResult.sourceFile})`,
+        );
+      }
     }
   }
 }
@@ -336,7 +367,7 @@ if (failures.length > 0) {
     console.error(`- ${failure}`);
   }
   console.error(
-    "\nExpected remediation: revoke effective authenticated INSERT on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority, unpaid-activation, and fake-refund RPCs in every executable schema even when their frontend callers are gone. Credit debits must bind the selected balance row to the exact active/order subscription, not merely to user_id.",
+    "\nExpected remediation: revoke effective authenticated INSERT/UPDATE/DELETE on critical commercial tables and route writes through server-authoritative RPCs that derive price/state from canonical records. Remove obsolete amount-authority, unpaid-activation, and fake-refund RPCs in every executable schema even when their frontend callers are gone. Credit debits must bind the selected balance row to the exact active/order subscription, not merely to user_id.",
   );
   process.exit(1);
 }
