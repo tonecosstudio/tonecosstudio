@@ -28,11 +28,11 @@ const UPDATE_DELIVERY_STATUS_SCHEMA: Schema = {
 };
 
 interface DeliveryStatusRpcResult {
-  delivery?: Record<string, unknown>;
-  newStatus?: string;
-  previousStatus?: string;
-  trackingCodeAdded?: boolean;
-  trackingCodeChanged?: boolean;
+  delivery: Record<string, unknown>;
+  newStatus: string;
+  previousStatus: string;
+  trackingCodeAdded: boolean;
+  trackingCodeChanged: boolean;
 }
 
 function buildCorreiosTrackingUrl(trackingCode: string): string {
@@ -53,6 +53,34 @@ function validateTrackingCode(code: string): boolean {
 function firstRelation<T>(value: T | T[] | null | undefined): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseDeliveryStatusRpcResult(
+  value: unknown,
+  deliveryId: string,
+  newStatus: DeliveryStatus,
+): DeliveryStatusRpcResult {
+  if (!isRecord(value) || !isRecord(value.delivery)) {
+    throw new Error("Erro ao atualizar status");
+  }
+
+  const delivery = value.delivery;
+  if (
+    delivery.id !== deliveryId ||
+    delivery.status !== newStatus ||
+    value.newStatus !== newStatus ||
+    typeof value.previousStatus !== "string" ||
+    typeof value.trackingCodeAdded !== "boolean" ||
+    typeof value.trackingCodeChanged !== "boolean"
+  ) {
+    throw new Error("Erro ao atualizar status");
+  }
+
+  return value as unknown as DeliveryStatusRpcResult;
 }
 
 async function shouldSendShippingEmail(
@@ -254,10 +282,8 @@ async function updateDeliveryStatus(
     throw new Error("Erro ao atualizar status");
   }
 
-  const result = (data || {}) as DeliveryStatusRpcResult;
-  const delivery = result.delivery || {};
-  const resolvedStatus =
-    typeof result.newStatus === "string" ? result.newStatus : newStatus;
+  const result = parseDeliveryStatusRpcResult(data, deliveryId, newStatus);
+  const delivery = result.delivery;
   const resolvedTrackingCode =
     typeof delivery.tracking_code === "string"
       ? delivery.tracking_code
@@ -266,9 +292,9 @@ async function updateDeliveryStatus(
   await notifySubscriber(
     service,
     deliveryId,
-    resolvedStatus,
+    result.newStatus,
     resolvedTrackingCode,
-    Boolean(result.trackingCodeAdded),
+    result.trackingCodeAdded,
   );
 
   return result;
@@ -323,7 +349,7 @@ serve(async (req: Request) => {
     return json({
       success: true,
       message: `Status da entrega atualizado para: ${newStatus}`,
-      delivery: result.delivery ?? null,
+      delivery: result.delivery,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
