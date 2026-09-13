@@ -1,15 +1,15 @@
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
+import { requireAdminRpcMatchingId } from "@/services/admin/rpc/admin-rpc-results";
 import type { OrderStatus } from "@/types/admin/orders";
 
 async function callAdminRpcExpectingId(
   functionName: string,
   args: Record<string, unknown>,
   expectedId: string,
+  operation: string,
 ): Promise<void> {
   const result = await callAdminRpc<unknown>(functionName, args);
-  if (result !== expectedId) {
-    throw new Error("Admin operation returned an unexpected resource id");
-  }
+  requireAdminRpcMatchingId(result, expectedId, operation);
 }
 
 export async function updateManualPaymentStatus(
@@ -25,6 +25,7 @@ export async function updateManualPaymentStatus(
       p_rejection_reason: rejectionReason ?? null,
     },
     paymentId,
+    "Manual payment status update",
   );
 }
 
@@ -36,6 +37,7 @@ export async function updateQuoteStatusRpc(quoteId: string, status: string): Pro
       p_status: status,
     },
     quoteId,
+    "Quote status update",
   );
 }
 
@@ -50,6 +52,7 @@ export async function updateSubscriptionDeliveryDates(
       p_actual_delivery_date: actualDeliveryDate ?? null,
     },
     deliveryId,
+    "Subscription delivery date update",
   );
 }
 
@@ -61,6 +64,7 @@ export async function updateQuoteTrackingCode(quoteId: string, trackingCode: str
       p_tracking_code: trackingCode,
     },
     quoteId,
+    "Quote tracking update",
   );
 }
 
