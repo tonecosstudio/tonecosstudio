@@ -26,6 +26,16 @@ export interface DbSubscriptionPlan {
   updated_at: string;
 }
 
+interface CancelSubscriptionResponse {
+  success?: boolean;
+  error?: string;
+  message?: string;
+  deliveries_completed?: number;
+  cancelled_deliveries?: number;
+  capacity_released?: number;
+  before_cutoff?: boolean;
+}
+
 export async function fetchSubscriptionForUser(
   userId?: string | null,
 ): Promise<DbSubscription | null> {
@@ -74,13 +84,13 @@ export async function listAvailableSubscriptionPlans(): Promise<
 export async function cancelSubscriptionById(
   subscriptionId: string,
 ): Promise<{ success: true }> {
-  const result = await callAuthenticatedEdgeFunction<{ error?: string } | null>(
-    "cancel-subscription",
-    { subscriptionId },
-    "Erro ao cancelar assinatura",
-  );
-  if (result?.error) {
-    throw new Error(result.error);
+  const fallbackError = "Erro ao cancelar assinatura";
+  const result = await callAuthenticatedEdgeFunction<
+    CancelSubscriptionResponse | null
+  >("cancel-subscription", { subscriptionId }, fallbackError);
+
+  if (!result?.success) {
+    throw new Error(result?.error ?? fallbackError);
   }
 
   return { success: true };
