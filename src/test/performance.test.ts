@@ -12,6 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { fileUploadService } from "@/services/payments/payment-file-upload-service";
+import { getPaymentById } from "@/services/payments/payment-service";
 import { updateManualPaymentStatus } from "@/services/admin/orders/admin-order-status-service";
 
 const isPerformanceTestEnv = process.env.VITEST_PERFORMANCE === "true";
@@ -291,20 +292,11 @@ describePerformance("Performance: payment details", () => {
     await cleanupTestPayments(paymentId ? [paymentId] : []);
   });
 
-  it("loads payment details within the target", async () => {
-    const { result, duration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("manual_payments")
-        .select("*,payment_method:admin_payment_methods(*),files:payment_files(*),audit_logs:payment_audit_log(*)")
-        .eq("id", paymentId)
-        .single();
+  it("loads payment details through the canonical application path within the target", async () => {
+    const { result, duration } = await measureTime(() => getPaymentById(paymentId));
 
-      if (error) throw error;
-      if (!data) throw new Error("Performance payment detail fixture could not be loaded");
-      return data;
-    });
-
-    expect(result.id).toBe(paymentId);
+    expect(result?.id).toBe(paymentId);
+    expect(result?.timeline.length).toBeGreaterThan(0);
     expect(duration).toBeLessThanOrEqual(PERFORMANCE_THRESHOLDS.PAYMENT_DETAILS_LOAD);
   });
 });
