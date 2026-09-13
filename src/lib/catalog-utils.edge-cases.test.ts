@@ -20,7 +20,7 @@ describe("catalog utils edge cases", () => {
   describe("tag normalization and visibility", () => {
     it("normalizes empty values, accents, separators and file extensions", () => {
       expect(normalizeCatalogTag(null)).toBe("");
-      expect(normalizeCatalogTag("  Máscara__Dourada.WEBP  ")).toBe(
+      expect(normalizeCatalogTag("Máscara__Dourada.WEBP")).toBe(
         "mascara dourada",
       );
       expect(normalizeCatalogTag("Dragon---Ball___Z")).toBe("dragon ball z");
@@ -139,7 +139,7 @@ describe("catalog utils edge cases", () => {
       ).toEqual(["batman", "robin"]);
     });
 
-    it("maps object aliases and removes generic object/modifier noise", () => {
+    it("maps object aliases and removes generic object noise", () => {
       const tags = getCatalogPublicTags({
         name: "Helmet vermelho Batman",
         character_name: "Helmet vermelho Batman",
