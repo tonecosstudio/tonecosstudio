@@ -7,6 +7,8 @@ import {
   deletePricingTierRpc,
   saveCollectionTypeRpc,
   savePricingTierPlanRpc,
+  updateAdminPaymentSetting,
+  updateAdminProductionSetting,
   updateCharacterPriceMultiplierRpc,
   updatePricingContextMultipliersRpc,
   updatePurchaseModeRpc,
@@ -38,7 +40,9 @@ describe("admin-config-mutations-service", () => {
     mocks.callAdminRpc.mockResolvedValue(null);
   });
 
-  it("envia configuracoes publicas permitidas ao RPC administrativo", async () => {
+  it("envia configuracoes publicas permitidas e exige a contagem confirmada", async () => {
+    mocks.callAdminRpc.mockResolvedValue({ updated: 2 });
+
     await expect(
       upsertAdminSystemSettings({
         company_name: "OrdaX",
@@ -52,6 +56,11 @@ describe("admin-config-mutations-service", () => {
         shipping_business_days: "5",
       },
     });
+
+    mocks.callAdminRpc.mockResolvedValue({ updated: 1 });
+    await expect(
+      upsertAdminSystemSettings({ company_name: "OrdaX", shipping_business_days: "5" }),
+    ).rejects.toThrow("System settings update returned an unexpected updated");
   });
 
   it.each([
@@ -71,6 +80,30 @@ describe("admin-config-mutations-service", () => {
     );
 
     expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
+  it("rejeita update vazio de system settings antes de chamar o backend", async () => {
+    await expect(upsertAdminSystemSettings({})).rejects.toThrow("Nenhuma configuracao fornecida");
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
+  it("vincula settings de pagamento e producao a chave normalizada", async () => {
+    mocks.callAdminRpc.mockResolvedValueOnce("pix_key_primary").mockResolvedValueOnce("monthly_capacity");
+
+    await expect(
+      updateAdminPaymentSetting({ key: " PIX_KEY_PRIMARY ", value: "123" }),
+    ).resolves.toBeUndefined();
+    await expect(
+      updateAdminProductionSetting({ key: " MONTHLY_CAPACITY ", value: "100" }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("rejeita confirmacao de setting para outra chave", async () => {
+    mocks.callAdminRpc.mockResolvedValue("pix_key_secondary");
+
+    await expect(
+      updateAdminPaymentSetting({ key: "pix_key_primary", value: "123" }),
+    ).rejects.toThrow("Payment setting update returned an unexpected key");
   });
 
   it("aceita limite de plano apenas quando id e quantidade conferem", async () => {
@@ -116,6 +149,13 @@ describe("admin-config-mutations-service", () => {
         pixDiscount: 5,
       }),
     ).rejects.toThrow("Standalone pricing update returned an unexpected updated");
+  });
+
+  it("rejeita pricing avulso sem linhas antes de chamar o backend", async () => {
+    await expect(updateStandalonePricingRpc({ updates: [], pixDiscount: 5 })).rejects.toThrow(
+      "Nenhum preco avulso fornecido",
+    );
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
   });
 
   it("exige exatamente tres linhas no pricing contextual", async () => {
