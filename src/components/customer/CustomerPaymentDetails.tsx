@@ -438,7 +438,7 @@ export function CustomerPaymentDetails({
                   {payment.status === "under_review" ? " O comprovante ja esta em analise." : ""}
                 </AlertDescription>
               </Alert>
-            ) : null}
+            )}
 
             <UploadedFilesList paymentId={paymentId} files={payment.files} />
           </div>
