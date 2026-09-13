@@ -17,6 +17,7 @@ import {
   removeStorageFiles,
 } from "@/services/supabase/storage-client";
 import { callAuthenticatedEdgeFunction } from "@/services/supabase/edge-function-client";
+import { parsePaymentFileUploadResponse } from "@/services/payments/payment-file-upload-response";
 import {
   ALLOWED_PAYMENT_PROOF_EXTENSIONS,
   ALLOWED_PAYMENT_PROOF_TYPES,
@@ -33,10 +34,6 @@ const THUMBNAIL_LOAD_TIMEOUT_MS = 2000;
 interface SignedUrlOptions {
   paymentId?: string;
   requireOwner?: boolean;
-}
-
-interface PaymentFileUploadResult {
-  file: PaymentFile;
 }
 
 export class FileUploadError extends Error {
@@ -192,8 +189,9 @@ export class FileUploadService {
     file: File,
     onProgress?: (progress: number) => void,
   ): Promise<PaymentFile> {
+    let userId: string;
     try {
-      await requireAuthenticatedUserId();
+      userId = await requireAuthenticatedUserId();
     } catch {
       throw new FileUploadError("UNAUTHORIZED", "User not authenticated", 401);
     }
@@ -211,9 +209,9 @@ export class FileUploadService {
     formData.append("paymentId", paymentId);
     formData.append("file", file, file.name);
 
-    let uploadResult: PaymentFileUploadResult;
+    let uploadResult: unknown;
     try {
-      uploadResult = await callAuthenticatedEdgeFunction<PaymentFileUploadResult, FormData>(
+      uploadResult = await callAuthenticatedEdgeFunction<unknown, FormData>(
         "upload-payment-proof",
         formData,
         "Payment proof upload failed",
@@ -226,16 +224,24 @@ export class FileUploadService {
       );
     }
 
-    if (!uploadResult?.file?.id) {
+    let uploadedFile: PaymentFile;
+    try {
+      uploadedFile = parsePaymentFileUploadResponse(uploadResult, {
+        paymentId,
+        userId,
+      });
+    } catch (error) {
       throw new FileUploadError(
         "UPLOAD_FAILED",
-        "Payment proof upload did not return a file record",
+        error instanceof Error
+          ? error.message
+          : "Payment proof upload did not return a valid file record",
         500,
       );
     }
 
     onProgress?.(100);
-    return uploadResult.file;
+    return uploadedFile;
   }
 
   async getSignedUrl(
