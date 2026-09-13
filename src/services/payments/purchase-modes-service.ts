@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 import type {
@@ -30,6 +31,22 @@ interface PurchaseModesSupabaseClient {
 }
 
 const purchaseModesSupabase = supabase as unknown as PurchaseModesSupabaseClient;
+
+const updatePurchaseModeMultiplierResultSchema = z.object({
+  plans_updated: z.number().int().nonnegative(),
+  tiers_affected: z.number().int().nonnegative(),
+});
+
+function parseUpdatePurchaseModeMultiplierResult(
+  value: unknown,
+): UpdatePurchaseModeMultiplierResult {
+  const parsed = updatePurchaseModeMultiplierResultSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new Error("Resposta invalida ao atualizar multiplicador");
+  }
+
+  return parsed.data;
+}
 
 export async function listPurchaseModes(): Promise<PurchaseMode[]> {
   const { data, error } = await purchaseModesSupabase
@@ -74,5 +91,5 @@ export async function updatePurchaseModeMultiplier(params: {
     throw new Error(`Erro ao atualizar multiplicador: ${error.message}`);
   }
 
-  return data as UpdatePurchaseModeMultiplierResult;
+  return parseUpdatePurchaseModeMultiplierResult(data);
 }
