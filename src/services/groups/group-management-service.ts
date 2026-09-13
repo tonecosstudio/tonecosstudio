@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
+import {
+  requireAdminRpcIntegerField,
+  requireAdminRpcRecord,
+} from "@/services/admin/rpc/admin-rpc-results";
 import { requireCurrentUserAdminAccess } from "@/services/auth/current-user";
 import { groupService } from "@/services/groups/group-service";
 import { messageService } from "@/services/support/message-service";
@@ -155,7 +159,37 @@ function parseImportMembersCsv(csv: string) {
 
 export async function syncAllAutomaticGroups(): Promise<void> {
   try {
-    await callAdminRpc("sync_all_automatic_groups");
+    const data = await callAdminRpc<unknown>("sync_all_automatic_groups");
+    const result = requireAdminRpcRecord(data, "Automatic group synchronization");
+
+    if (result.success !== true) {
+      throw new Error("Automatic group synchronization returned invalid data");
+    }
+
+    const summary = requireAdminRpcRecord(
+      result.summary,
+      "Automatic group synchronization summary",
+    );
+    const groupsProcessed = requireAdminRpcIntegerField(
+      summary,
+      "groupsProcessed",
+      "Automatic group synchronization",
+    );
+    requireAdminRpcIntegerField(summary, "totalAdded", "Automatic group synchronization");
+    requireAdminRpcIntegerField(summary, "totalRemoved", "Automatic group synchronization");
+    const errors = requireAdminRpcIntegerField(
+      summary,
+      "errors",
+      "Automatic group synchronization",
+    );
+
+    if (!Array.isArray(result.results) || result.results.length !== groupsProcessed) {
+      throw new Error("Automatic group synchronization returned inconsistent results");
+    }
+
+    if (errors > 0) {
+      throw new Error(`Automatic group synchronization completed with ${errors} error(s)`);
+    }
   } catch (error) {
     throw new Error(
       error instanceof Error ? error.message : "Erro ao sincronizar grupos",
@@ -253,25 +287,32 @@ export async function importGroupMembersFromCsv({
       ]),
     );
 
-    const userIdsToAdd = batch
-      .filter((member) => emailToUserId.has(member.email))
-      .map((member) => emailToUserId.get(member.email)!);
+    const userIdsToAdd = [
+      ...new Set(
+        batch
+          .filter((member) => emailToUserId.has(member.email))
+          .map((member) => emailToUserId.get(member.email)!),
+      ),
+    ];
 
     if (userIdsToAdd.length > 0) {
       try {
-        const importResult = await callAdminRpc<{
-          added?: number;
-          existing?: number;
-          invalid?: number;
-        } | null>("admin_add_chat_group_members", {
+        const importResult = await callAdminRpc<unknown>("admin_add_chat_group_members", {
           p_group_id: groupId,
           p_user_ids: userIdsToAdd,
           p_added_by: importedBy,
         });
-        const result = importResult ?? {};
-        successCount +=
-          Number(result.added ?? 0) + Number(result.existing ?? 0);
-        failedCount += Number(result.invalid ?? 0);
+        const result = requireAdminRpcRecord(importResult, "Group member import");
+        const added = requireAdminRpcIntegerField(result, "added", "Group member import");
+        const existing = requireAdminRpcIntegerField(result, "existing", "Group member import");
+        const invalid = requireAdminRpcIntegerField(result, "invalid", "Group member import");
+
+        if (added + existing + invalid !== userIdsToAdd.length) {
+          throw new Error("Group member import returned inconsistent counts");
+        }
+
+        successCount += added + existing;
+        failedCount += invalid;
       } catch (error) {
         errors.push(
           `Erro ao adicionar membros: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
