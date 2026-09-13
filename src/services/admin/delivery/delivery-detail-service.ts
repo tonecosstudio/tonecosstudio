@@ -81,16 +81,44 @@ export interface UpdateDeliveryStatusInput {
 }
 
 export interface UpdateDeliveryStatusResult {
-  delivery?: {
-    id?: string;
-    status?: string;
-    tracking_code?: string;
+  success: true;
+  message?: string;
+  delivery: {
+    id: string;
+    status: string;
+    tracking_code?: string | null;
     updated_at?: string;
   };
 }
 
 function isPlainRecord(value: Json | null): value is Record<string, Json> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseUpdateDeliveryStatusResult(
+  value: unknown,
+  input: UpdateDeliveryStatusInput,
+): UpdateDeliveryStatusResult {
+  if (!isUnknownRecord(value) || value.success !== true || !isUnknownRecord(value.delivery)) {
+    throw new Error('Erro ao atualizar status');
+  }
+
+  const delivery = value.delivery;
+  if (
+    typeof delivery.id !== 'string' ||
+    delivery.id !== input.deliveryId ||
+    typeof delivery.status !== 'string' ||
+    delivery.status !== input.newStatus ||
+    (value.message !== undefined && typeof value.message !== 'string')
+  ) {
+    throw new Error('Erro ao atualizar status');
+  }
+
+  return value as unknown as UpdateDeliveryStatusResult;
 }
 
 function formatAddress(address: AddressBR | null): string | null {
@@ -198,10 +226,14 @@ export async function fetchDeliveryChangeHistory(deliveryId: string): Promise<Co
   }));
 }
 
-export async function updateDeliveryStatus(input: UpdateDeliveryStatusInput) {
-  return callAuthenticatedEdgeFunction<UpdateDeliveryStatusResult>(
+export async function updateDeliveryStatus(
+  input: UpdateDeliveryStatusInput,
+): Promise<UpdateDeliveryStatusResult> {
+  const response = await callAuthenticatedEdgeFunction<unknown>(
     'update-delivery-status',
     input,
     'Erro ao atualizar status',
   );
+
+  return parseUpdateDeliveryStatusResult(response, input);
 }
