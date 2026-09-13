@@ -13,43 +13,45 @@ O produto continua avançando, mas ainda faltam duas provas externas indispensá
 1. o **GitHub Actions Quality Gate não recebe runner** e termina antes de executar qualquer step;
 2. o **Supabase canônico continua inativo/inobservável**, impedindo reconciliação remota de migrations, grants, RLS, Edge Functions e smoke autenticado real.
 
-Enquanto esses dois bloqueios existirem, não declarar o MVP pronto para lançamento público e não fabricar PASS a partir de inspeção estática.
+O Vercel está saudável e já publicou o HEAD funcional mais recente deste checkpoint, mas deploy frontend verde isolado não substitui Quality Gate executado nem prova remota do Supabase.
 
 ### Base funcional deste checkpoint
 
-- `main`: `18529f67d4c82955a293dd4ee2325fe153d26428`
-- commit: `test: cover admin order mutation id validation`
+- `main`: `2786715363f36b4c7651bb3a06b7c60258e6767b`
+- commit: `refactor: remove legacy payment audit compatibility`
 - observação: o commit que atualiza este próprio `URGENTE.md` será posterior; a base funcional acima é a analisada neste checkpoint.
 
 ## 0.1 Evidência operacional
 
 ### GitHub Actions — BLOQUEIO EXTERNO CONFIRMADO NO HEAD
 
-Quality Gate do commit `18529f67d4c82955a293dd4ee2325fe153d26428`:
+Quality Gate do commit `2786715363f36b4c7651bb3a06b7c60258e6767b`:
 
-- run: `34764740809`
+- run: `34779100953`
 - conclusão agregada: `failure`
 - jobs: 4
-- `Build, test and security`: `steps=[]`, `runner_id=0`
-- `Authority audits`: `steps=[]`, `runner_id=0`
-- `Unit coverage`: `steps=[]`, `runner_id=0`
-- `Production build and dependency audit`: `steps=[]`, `runner_id=0`
+- `Authority audits`: `steps=null`
+- `Production build and dependency audit`: `steps=null`
+- `Unit coverage`: `steps=null`
+- `Build, test and security`: `steps=null`
 
 Logo, **nenhum comando do repositório executou nesse run**. Não alterar testes, lint, scripts ou código para “corrigir” esse `failure` enquanto os jobs continuarem sem runner/steps.
 
-### Vercel — SAUDÁVEL, MAS O DEPLOY OBSERVADO AINDA ESTÁ ATRÁS DO HEAD
+### Vercel — HEAD FUNCIONAL PUBLICADO E READY
 
 Projeto canônico:
 
 - projeto: `ordax`
 - project id: `prj_yfe9KqNRdWfYNnY6HSXBfT0D2Vsu`
 - repositório vinculado: `washingtonmsdj/ordax`
-- último deployment observado na consulta desta sessão: commit `893c3e1a1a68ef7ea5c7201387fb837c4b3ff822`
-- deployment: `dpl_5BXDoxCYHqHmBD6LH5UY7nx5he1N`
+- commit: `2786715363f36b4c7651bb3a06b7c60258e6767b`
+- deployment: `dpl_5UqCiCkuPshbBjtyMLY1tVmLVrxW`
 - estado: `READY`
 - target: `production`
+- framework: Vite
+- aliases observados incluem `ordax.com.br` e `www.ordax.com.br`
 
-Esse deploy prova que o Vercel continua operacional e aceitou o hardening de propagação de pricing. **Não afirmar ainda que `18529f67...` está publicado/READY** até ele aparecer como deployment observado.
+O commit intermediário `cb3af40...` teve deployment `ERROR` por uma regressão JSX detectada durante a própria migração da tela do cliente. Ela foi corrigida em seguida (`c2627d3...`), e os commits posteriores voltaram a `READY`, inclusive o HEAD atual. Não tratar aquele erro intermediário como bloqueio presente.
 
 O antigo `BUILD_RATE_LIMIT` não é bloqueio atual sem nova evidência.
 
@@ -70,15 +72,15 @@ Consequências:
 
 ### Contrato base de Edge Functions autenticadas
 
-- `d1e9f011...` — `callAuthenticatedEdgeFunctionData` passou a falhar fechado para resposta vazia ou envelope `{ data }` malformado.
-- Cobertura versionada para `null`, `undefined`, objeto sem `data`, array e primitivo.
+- `d1e9f011...` — `callAuthenticatedEdgeFunctionData` passou a falhar fechado para resposta vazia ou envelope `{ data }` malformado;
+- cobertura versionada para `null`, `undefined`, objeto sem `data`, array e primitivo.
 
 ### Autoridade comercial multi-schema
 
-- `da822cff...` — auditor de RPCs perigosos passou a acompanhar `public` e `private_api` separadamente.
-- `REVOKE` em um schema não mascara mais `GRANT` perigoso no outro.
-- A prova sintética do auditor demonstrou FAIL com `private_api.notify_quote_payment_for_current_user` concedido e PASS após revogação.
-- O diagnóstico antigo de ausência de REVOKE de `quotes` foi corrigido: há REVOKE versionado em `20260525073000_support_payment_mutation_rpcs.sql` e hardening adicional posterior.
+- `da822cff...` — auditor de RPCs perigosos passou a acompanhar `public` e `private_api` separadamente;
+- `REVOKE` em um schema não mascara mais `GRANT` perigoso no outro;
+- prova sintética demonstrou FAIL com `private_api.notify_quote_payment_for_current_user` concedido e PASS após revogação;
+- o diagnóstico antigo de ausência de REVOKE de `quotes` foi corrigido: há REVOKE versionado em `20260525073000_support_payment_mutation_rpcs.sql` e hardening adicional posterior.
 
 ### Respostas remotas / falso sucesso
 
@@ -87,9 +89,9 @@ Concluído no source:
 - `bc59cf2...` — cancelamento de assinatura exige `success:true`;
 - `893c3e1...` + `9d894f7...` — propagação de pricing exige `ok:true`, contagens válidas e coerência dos resultados;
 - `613a5f9...` — testes do contrato de propagação;
-- `dd6aa88...` + `f5a5313...` — gateway admin passou a exigir confirmação explícita para mutações standalone cujo SQL retorna `{ success:true }`;
+- `dd6aa88...` + `f5a5313...` — gateway admin exige confirmação explícita para mutações standalone cujo SQL retorna `{ success:true }`;
 - `f47db12...` + `c171229...` — mesma proteção para processamento de pagamento de assinatura e crédito manual de coins;
-- `08b3bf2...` — exclusão do registro de comprovante de pagamento também exige `{ success:true }`.
+- `08b3bf2...` — exclusão do registro de comprovante de pagamento exige `{ success:true }`.
 
 ### Entregas
 
@@ -101,7 +103,7 @@ Concluído no source:
 
 ### Comprovantes de pagamento
 
-- `192c1a8...` — `upload-payment-proof` valida o registro retornado pelo RPC contra payment, usuário, path, nome, tamanho e MIME; em retorno inválido remove o objeto recém-enviado do Storage antes de falhar, evitando arquivo órfão;
+- `192c1a8...` — `upload-payment-proof` valida o registro retornado pelo RPC contra payment, usuário, path, nome, tamanho e MIME; em retorno inválido remove o objeto recém-enviado do Storage antes de falhar;
 - `5bf5f51...` — parser browser-side do envelope de upload;
 - `fc8be1f...` — testes do parser para resposta malformada, pagamento divergente, usuário divergente e namespace de Storage divergente;
 - `90fdd84...` — serviço de upload no browser vincula o registro retornado ao `paymentId` e usuário autenticado.
@@ -110,8 +112,43 @@ Concluído no source:
 
 ### Mutações administrativas com retorno de ID
 
-- `7d6cd5d...` — status de pagamento manual, status de quote, data de entrega e tracking de quote agora exigem que o RPC devolva exatamente o ID solicitado;
+- `7d6cd5d...` — status de pagamento manual, status de quote, data de entrega e tracking de quote exigem que o RPC devolva exatamente o ID solicitado;
 - `18529f6...` — testes para retorno correto e retorno `null`/inesperado.
+
+### Pagamentos manuais — autoridade e timeline canônico
+
+Concluído neste ciclo:
+
+- `ef04319...` — DML direto de `authenticated` em `manual_payments` foi revogado; mutações ficam atrás das fronteiras RPC/Edge previstas;
+- `52354f4...` + `f80a001...` — suite de performance deixou de usar DML de browser para fixture e passou a separar setup privilegiado de operações reais medidas;
+- `af17b8d...` — `manual_payments` entrou no auditor comercial para impedir regressão de DML direto;
+- `2efc85f...` — escrita direta em `order_status_history` e `payment_info_requests` foi retirada do browser, preservando leitura necessária;
+- `91a0190...` — essas tabelas auxiliares passaram a ser auditadas;
+- `b7acbfb...` — `admin_payment_methods` perdeu DML direto de `authenticated`; leitura administrativa foi preservada como SELECT;
+- `3444c04...` — `admin_payment_methods` e `payment_files` passaram a ser protegidos pelo auditor;
+- `93c9fb8...` — mudança de status de `manual_payments` passou a gerar `order_status_history` transacionalmente no banco; o fluxo não depende mais de best-effort do browser;
+- `c74fdb0...` — foi criada fronteira autenticada de timeline de pagamento manual, sanitizando eventos e sem expor identidade administrativa;
+- `81bc4ff...` / `a3524e0...` — parser do timeline falha fechado para payload malformado e possui cobertura unitária;
+- `1bd8858...` — `PaymentService` deixou de fazer join com `payment_audit_log`;
+- `bcb9f3a...` — o antigo “security audit test” declarativo/hardcoded foi substituído por verificações executáveis sobre source real;
+- `a7e9887...` — benchmark de detalhes mede o caminho canônico `getPaymentById()` + timeline autenticado;
+- `75ef36e...` — tela admin usa somente timeline canônico e não possui aba duplicada de audit log/IDs internos;
+- `a6887d7...` + `9b49112...` — testes de cliente/admin foram reduzidos e alinhados ao contrato atual;
+- `2786715...` — removidos definitivamente `PaymentAuditLog` e `audit_logs` do contrato manual de pagamentos e do `PaymentService`.
+
+#### Decisão definitiva sobre `payment_audit_log`
+
+`payment_audit_log` aparece em tipos Supabase gerados antigos, mas **não existe migration versionada atual que crie essa tabela**. O código de produto não deve depender dela e não deve ser criada uma migration apenas para ressuscitar esse legado.
+
+As fontes versionadas/canônicas para pagamento manual são:
+
+- `manual_payments` — estado atual;
+- `payment_files` — comprovantes;
+- `payment_info_requests` — pedidos de informação ao cliente;
+- `order_status_history` — transições de estado;
+- endpoint autenticado de timeline — composição sanitizada para UI.
+
+Não editar `src/integrations/supabase/types.ts` manualmente só para apagar uma definição gerada antiga; regenerar tipos apenas quando o Supabase canônico voltar a ser observável e reconciliado.
 
 ## 1. Critério de GO
 
@@ -139,17 +176,19 @@ Build verde isolado não equivale a launch readiness.
 ### P0.1 — Quality Gate executável
 
 - [x] workflow existe e dispara em `main`;
-- [x] ausência de runner/steps foi comprovada também no HEAD `18529f67...`;
+- [x] ausência de runner/steps foi comprovada também no HEAD `2786715...`;
 - [ ] obter run onde os jobs realmente executem;
 - [ ] fechar typecheck/lint/auditors/tests/coverage/build/audit/format no mesmo HEAD.
 
 ### P0.2 — autoridade comercial e fronteiras de confiança
 
-- [x] auditor de INSERT direto para tabelas comerciais críticas existe;
+- [x] auditor de DML direto para tabelas comerciais críticas existe;
 - [x] auditor de RPCs perigosos existe;
 - [x] `public` e `private_api` são rastreados independentemente;
-- [x] REVOKEs comerciais relevantes existem no source;
-- [x] várias mutações financeiras críticas agora falham fechado no cliente/gateway;
+- [x] `manual_payments`, `payment_files`, `payment_info_requests`, `order_status_history` e `admin_payment_methods` estão cobertos pelo hardening/auditoria de autoridade;
+- [x] várias mutações financeiras críticas falham fechado no cliente/gateway;
+- [x] histórico de pagamento manual não depende mais de gravação best-effort do browser;
+- [x] UI de pagamentos deixou de depender da tabela fantasma `payment_audit_log`;
 - [ ] reexecutar auditores completos quando o runner voltar;
 - [ ] reconciliar grants/RLS efetivos no Supabase canônico;
 - [ ] concluir a retirada de chamadas browser-side a RPCs legados de pricing quando houver backend canônico disponível para implantar e provar a fronteira substituta.
@@ -160,7 +199,8 @@ Build verde isolado não equivale a launch readiness.
 - [ ] comparar migrations locais x aplicadas;
 - [ ] verificar grants de `anon`, `authenticated`, `service_role` e `private_api`;
 - [ ] verificar RLS/policies reais em commerce, payments, subscriptions, notifications, support e Storage;
-- [ ] implantar/provar as mudanças source-only de `update-delivery-status` e `upload-payment-proof`;
+- [ ] implantar/provar as mudanças source-only de `update-delivery-status`, `upload-payment-proof` e timeline de pagamento manual;
+- [ ] regenerar tipos Supabase somente após reconciliação real do schema;
 - [ ] registrar drift real antes de qualquer nova correção de schema.
 
 ### P0.4 — fluxos essenciais do MVP
@@ -171,7 +211,7 @@ Validar no ambiente canônico com usuários/roles controlados:
 - [ ] catálogo/coleções/modelos públicos;
 - [ ] checkout/criação compatível com autoridade comercial;
 - [ ] área do cliente e progresso de pedido;
-- [ ] pagamentos, upload/revisão/exclusão de comprovantes;
+- [ ] pagamentos, upload/revisão/exclusão de comprovantes e timeline;
 - [ ] assinatura, crédito/coins e cancelamento;
 - [ ] entregas e tracking;
 - [ ] suporte e anexos;
@@ -182,8 +222,8 @@ Validar no ambiente canônico com usuários/roles controlados:
 
 ### P0.5 — deploy, smoke e rollback
 
-- [x] Vercel está operacional e há deployment recente `READY` (`893c3e1...`);
-- [ ] confirmar deployment `READY` do HEAD funcional mais recente após a fila/integração GitHub → Vercel alcançar esse commit;
+- [x] Vercel operacional;
+- [x] deployment `READY` do HEAD funcional `2786715...` confirmado em produção (`dpl_5UqCiCkuPshbBjtyMLY1tVmLVrxW`);
 - [ ] smoke autenticado P0.4;
 - [ ] validar domínio, assets e callbacks externos necessários;
 - [ ] provar rollback para release saudável anterior;
@@ -216,7 +256,7 @@ Validar no ambiente canônico com usuários/roles controlados:
 
 ### GitHub Actions
 
-**Bloqueado:** run `34764740809` do HEAD funcional `18529f67...` terminou com 4 jobs, todos `steps=[]` e `runner_id=0`.
+**Bloqueado:** run `34779100953` do HEAD funcional `2786715...` terminou com 4 jobs e nenhum step executado (`steps=null`).
 
 ### Supabase
 
@@ -224,15 +264,15 @@ Validar no ambiente canônico com usuários/roles controlados:
 
 ### Vercel
 
-**Não bloqueado como plataforma.** Último deployment observado: `893c3e1...`, `READY`, production. Os commits posteriores ainda não apareceram na listagem consultada deste checkpoint.
+**Não bloqueado.** HEAD funcional `2786715...` está `READY` em production no deployment `dpl_5UqCiCkuPshbBjtyMLY1tVmLVrxW`.
 
 ## 6. Próxima sequência de execução
 
-1. Continuar auditoria source-first de alto risco enquanto runner/Supabase estiverem bloqueados, especialmente financeiro, pagamentos, quotes e contratos de resposta remota.
-2. Não migrar pricing para uma nova fronteira backend que não possa ser implantada/provada; mapear a dívida e preparar migração segura para quando Supabase voltar.
-3. Reconsultar Vercel e confirmar o primeiro deployment `READY` que contenha os commits recentes client-side.
+1. Continuar auditoria source-first de alto risco enquanto runner/Supabase estiverem bloqueados, priorizando pricing, checkout, assinatura, quotes e demais caminhos financeiros que ainda aceitem autoridade de browser ou resposta ambígua.
+2. Não migrar pricing para uma nova fronteira backend que não possa ser implantada/provada; consolidar a semântica e preparar a migração segura para quando Supabase voltar.
+3. Verificar se há outros testes “aspiracionais”/hardcoded que possam produzir PASS sem testar implementação real e substituí-los por prova executável.
 4. Quando GitHub runner voltar, executar Quality Gate completo no HEAD e corrigir somente falhas reais dos steps.
-5. Quando Supabase voltar, reconciliar migrations/grants/RLS, implantar Edge Functions pendentes e rodar smoke P0.4.
+5. Quando Supabase voltar, reconciliar migrations/grants/RLS, implantar Edge Functions pendentes, regenerar tipos e rodar smoke P0.4.
 6. Só após gate + Supabase + smoke + rollback reavaliar GO/NO-GO.
 
 ## 7. Do not repeat
@@ -241,24 +281,32 @@ Validar no ambiente canônico com usuários/roles controlados:
 - Não tratar `BUILD_RATE_LIMIT` como bloqueio atual sem nova evidência.
 - Não dizer que falta REVOKE posterior de `quotes`; ele existe no source.
 - Não assumir migration/Edge Function versionada = aplicada remotamente.
-- Não “corrigir” GitHub Actions alterando código enquanto jobs tiverem `runner_id=0`/`steps=[]`.
+- Não “corrigir” GitHub Actions alterando código enquanto jobs não executarem steps.
 - Não declarar testes adicionados como PASS canônico enquanto o runner não os executar.
 - Não criar branch, PR ou SSOT paralelo sem instrução explícita.
 - Não declarar lançamento pronto enquanto P0 estiver aberto.
+- Não ressuscitar `payment_audit_log` só porque ainda aparece em tipos Supabase gerados antigos.
+- Não editar tipos Supabase gerados manualmente para mascarar drift remoto não reconciliado.
 
 ## 8. Checkpoint desta sessão
 
-Concluído no source até `18529f67...`:
+Concluído no source até `2786715...`:
 
 - hardening fail-closed de pricing, assinatura, coins e mutações standalone;
-- gateway admin com confirmação explícita onde o SQL realmente retorna `{ success:true }`;
+- gateway admin com confirmação explícita onde o SQL realmente retorna sucesso;
 - entrega validada no cliente e na Edge Function;
 - upload de comprovante protegido contra resposta incoerente e objeto órfão;
 - resposta de upload vinculada a payment/usuário/namespace de Storage no browser;
 - mutações administrativas UUID-returning validadas contra o recurso solicitado;
-- testes novos versionados para os contratos críticos acima;
-- Quality Gate do HEAD confirmado como bloqueado antes de qualquer step;
-- Vercel confirmado operacional, com `893c3e1...` `READY` como último deployment observado;
-- Supabase segue bloqueando deploy/prova remota das Edge Functions novas.
+- DML direto de browser removido das principais superfícies do pagamento manual;
+- histórico de status de pagamento manual tornado transacional no banco;
+- timeline autenticado/sanitizado criado e integrado às telas cliente/admin;
+- dependência de `payment_audit_log` removida do código manual;
+- testes de detalhes de pagamento simplificados e alinhados ao contrato atual;
+- security audit test declarativo substituído por verificações reais;
+- benchmark de detalhes alinhado ao caminho canônico;
+- deployment Vercel do HEAD `2786715...` confirmado `READY`;
+- Quality Gate do mesmo HEAD confirmado bloqueado antes de qualquer step;
+- Supabase continua sendo o bloqueio externo para prova remota de migrations/RLS/grants/Edge Functions.
 
-**Next action:** continuar o pente-fino financeiro/comercial pelo próximo caminho que ainda transforma resposta remota ambígua em sucesso, depois revalidar Vercel e atualizar este SSOT somente com evidência nova.
+**Next action:** continuar o pente-fino source-first por pricing/checkout/assinatura e por testes que ainda simulem segurança/autoridade via constantes ou comentários, sem tocar no Supabase remoto até ele voltar a ser observável.
