@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { inferPixDiscountPercentage } from "@/lib/validations/pricing-tiers";
 import { requireAuthenticatedUserId } from "@/services/auth/current-user";
@@ -29,6 +30,7 @@ type PricingTierRow = {
 };
 
 const PROPAGATE_TIER_PRICING_ERROR = "Erro ao propagar precos";
+const createdPricingTierIdSchema = z.string().uuid();
 
 function isPropagationResult(value: unknown): value is PropagationResult {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -44,8 +46,7 @@ function isPropagationResult(value: unknown): value is PropagationResult {
     typeof result.new_price === "number" &&
     Number.isFinite(result.new_price) &&
     typeof result.success === "boolean" &&
-    (result.error_message === undefined ||
-      typeof result.error_message === "string")
+    (result.error_message === undefined || typeof result.error_message === "string")
   );
 }
 
@@ -85,6 +86,15 @@ function parsePropagationResponse(value: unknown): PropagateTierPricingResponse 
   }
 
   return response as PropagateTierPricingResponse;
+}
+
+function parseCreatedPricingTierId(value: unknown): string {
+  const parsed = createdPricingTierIdSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new Error("Resposta invalida ao criar nivel");
+  }
+
+  return parsed.data;
 }
 
 function toPricingTier(row: PricingTierRow): PricingTier {
@@ -232,7 +242,7 @@ export async function createPricingTier(input: CreatePricingTierInput): Promise<
     throw new Error(`Erro ao criar nivel: ${error.message}`);
   }
 
-  return data as string;
+  return parseCreatedPricingTierId(data);
 }
 
 export async function updatePricingTier(params: {
