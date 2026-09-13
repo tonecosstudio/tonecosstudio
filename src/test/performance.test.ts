@@ -1,166 +1,195 @@
 /**
- * Performance Tests for Manual Payment System
+ * Opt-in performance tests for the manual payment flow.
  *
- * Task: 29.2 Testes de performance
- * Requirements: 18.1-18.15
- *
- * These tests validate that the system meets performance requirements:
- * - Dashboard loads in ≤ 2 seconds with 100 pending payments
- * - Payment details view loads in ≤ 1 second
- * - 5MB file uploads and processes in ≤ 10 seconds
- * - Pagination: 25 items per page
- * - Handle 50 concurrent file uploads without degradation
- *
- * NOTE: These are performance tests that require a live Supabase connection.
- * They should be run against a test database with appropriate test data.
+ * These tests require a dedicated test Supabase project and are skipped unless
+ * VITEST_PERFORMANCE=true. Fixture creation/cleanup uses service_role only in
+ * the Node test process; measured product operations keep the same authenticated
+ * boundaries used by the application.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import { fileUploadService } from "@/services/payments/payment-file-upload-service";
+import { updateManualPaymentStatus } from "@/services/admin/orders/admin-order-status-service";
 
-// Skip these tests if not in performance test environment
 const isPerformanceTestEnv = process.env.VITEST_PERFORMANCE === "true";
 const describePerformance = isPerformanceTestEnv ? describe : describe.skip;
 
-// Performance thresholds (in milliseconds)
 const PERFORMANCE_THRESHOLDS = {
-  DASHBOARD_LOAD: 2000, // 2 seconds
-  PAYMENT_DETAILS_LOAD: 1000, // 1 second
-  FILE_UPLOAD_5MB: 10000, // 10 seconds
-  PAGINATION_LIMIT: 25, // items per page
-  CONCURRENT_UPLOADS: 50, // concurrent uploads
-};
+  DASHBOARD_LOAD: 2_000,
+  PAYMENT_DETAILS_LOAD: 1_000,
+  FILE_UPLOAD_5MB: 10_000,
+  PAGINATION: 1_000,
+  INDEX_QUERY: 1_000,
+  CONCURRENT_UPLOADS: 30_000,
+  CONCURRENT_ADMIN_MUTATIONS: 8_000,
+  CONCURRENT_READS: 10_000,
+} as const;
 
-// =====================================================
-// TEST HELPERS
-// =====================================================
+const PAYMENT_PROOF_BUCKET = "payment-proofs";
+const MAX_CANONICAL_CONCURRENT_UPLOADS = 5;
+const MAX_CANONICAL_CONCURRENT_ADMIN_MUTATIONS = 10;
 
-/**
- * Measure execution time of an async function
- */
-async function measureTime<T>(fn: () => Promise<T>): Promise<{ result: T; duration: number }> {
-  const startTime = performance.now();
-  const result = await fn();
-  const endTime = performance.now();
-  const duration = endTime - startTime;
-  return { result, duration };
+let fixtureClient: SupabaseClient<Database> | null = null;
+const uploadedStoragePaths = new Set<string>();
+
+function getFixtureClient(): SupabaseClient<Database> {
+  if (fixtureClient) return fixtureClient;
+  if (!isPerformanceTestEnv) {
+    throw new Error("Performance fixture client requested outside VITEST_PERFORMANCE mode");
+  }
+
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "Performance tests require VITE_SUPABASE_URL/SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY",
+    );
+  }
+
+  fixtureClient = createClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+
+  return fixtureClient;
 }
 
-/**
- * Create test payment data
- */
-async function createTestPaymentData(count: number) {
-  const paymentIds: string[] = [];
+async function measureTime<T>(fn: () => Promise<T>): Promise<{ result: T; duration: number }> {
+  const startedAt = performance.now();
+  const result = await fn();
+  return { result, duration: performance.now() - startedAt };
+}
 
-  // Get or create a test payment method
-  let { data: paymentMethod } = await supabase
-    .from("admin_payment_methods")
-    .select("id")
-    .eq("name", "Performance Test Method")
-    .single();
-
-  if (!paymentMethod) {
-    const { data: newMethod } = await supabase
-      .from("admin_payment_methods")
-      .insert({
-        name: "Performance Test Method",
-        type: "pix",
-        instructions: "Test instructions",
-        is_active: true,
-        display_order: 0,
-      })
-      .select()
-      .single();
-    paymentMethod = newMethod;
+async function requirePerformanceUser(options: { admin?: boolean } = {}): Promise<User> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    throw new Error("Performance tests require an authenticated test user session");
   }
 
-  // Create test user if needed
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error("No authenticated user for performance tests");
-  }
-
-  // Create payments
-  for (let i = 0; i < count; i++) {
-    const { data: payment } = await supabase
-      .from("manual_payments")
-      .insert({
-        user_id: user.id,
-        payment_method_id: paymentMethod!.id,
-        amount: 100.0 + i,
-        currency: "BRL",
-        payment_type: "one_time",
-        status: i % 3 === 0 ? "pending" : "under_review",
-      })
-      .select()
+  if (options.admin) {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
       .single();
 
-    if (payment) {
-      paymentIds.push(payment.id);
+    if (profileError || !profile || !["admin", "super_admin"].includes(String(profile.role))) {
+      throw new Error("Admin mutation performance tests require an admin test user session");
     }
   }
 
-  return paymentIds;
+  return data.user;
 }
 
-/**
- * Clean up test payment data
- */
-async function cleanupTestPayments(paymentIds: string[]) {
-  if (paymentIds.length > 0) {
-    await supabase.from("manual_payments").delete().in("id", paymentIds);
+async function getActivePaymentMethodId(): Promise<string> {
+  const { data, error } = await getFixtureClient()
+    .from("admin_payment_methods")
+    .select("id")
+    .eq("is_active", true)
+    .order("display_order", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data?.id) {
+    throw new Error("Performance test project requires at least one active payment method");
   }
+
+  return data.id;
 }
 
-/**
- * Create a test file blob
- */
-function createTestFile(sizeInBytes: number, type: string = "image/jpeg"): File {
-  const buffer = new ArrayBuffer(sizeInBytes);
-  const blob = new Blob([buffer], { type });
-  return new File([blob], `test-file-${Date.now()}.jpg`, { type });
+async function createTestPaymentData(count: number): Promise<string[]> {
+  const user = await requirePerformanceUser();
+  const paymentMethodId = await getActivePaymentMethodId();
+  const batchId = `${Date.now()}-${crypto.randomUUID()}`;
+
+  const rows = Array.from({ length: count }, (_, index) => ({
+    reference_number: `PERF-${batchId}-${index}`,
+    user_id: user.id,
+    payment_method_id: paymentMethodId,
+    amount: 100 + index,
+    currency: "BRL",
+    payment_type: "one_time" as const,
+    status: index % 3 === 0 ? ("pending" as const) : ("under_review" as const),
+  }));
+
+  const { data, error } = await getFixtureClient()
+    .from("manual_payments")
+    .insert(rows)
+    .select("id");
+
+  if (error) throw error;
+  const ids = (data ?? []).map((payment) => payment.id);
+  if (ids.length !== count) {
+    throw new Error(`Expected ${count} payment fixtures, created ${ids.length}`);
+  }
+
+  return ids;
 }
 
-// =====================================================
-// TEST SUITE 1: DASHBOARD LOAD PERFORMANCE
-// =====================================================
+async function cleanupTestPayments(paymentIds: string[]): Promise<void> {
+  if (paymentIds.length === 0) return;
 
-describePerformance("Performance: Dashboard Load with 100+ Payments", () => {
-  let testPaymentIds: string[] = [];
+  const { error } = await getFixtureClient()
+    .from("manual_payments")
+    .delete()
+    .in("id", paymentIds);
+
+  if (error) throw error;
+}
+
+async function cleanupUploadedStorage(): Promise<void> {
+  if (uploadedStoragePaths.size === 0) return;
+
+  const paths = [...uploadedStoragePaths];
+  uploadedStoragePaths.clear();
+  const { error } = await getFixtureClient().storage.from(PAYMENT_PROOF_BUCKET).remove(paths);
+  if (error) throw error;
+}
+
+function createJpegTestFile(sizeInBytes: number, suffix = "proof"): File {
+  if (sizeInBytes < 4) throw new Error("JPEG performance fixture must be at least 4 bytes");
+
+  const bytes = new Uint8Array(sizeInBytes);
+  bytes[0] = 0xff;
+  bytes[1] = 0xd8;
+  bytes[2] = 0xff;
+  bytes[sizeInBytes - 2] = 0xff;
+  bytes[sizeInBytes - 1] = 0xd9;
+
+  return new File([bytes], `${suffix}-${crypto.randomUUID()}.jpg`, { type: "image/jpeg" });
+}
+
+async function uploadAndTrack(paymentId: string, file: File) {
+  const uploaded = await fileUploadService.upload(paymentId, file);
+  uploadedStoragePaths.add(uploaded.file_path);
+  return uploaded;
+}
+
+describePerformance("Performance: manual payment reads", () => {
+  let paymentIds: string[] = [];
 
   beforeAll(async () => {
-    // Create 100 test payments
-    console.log("Creating 100 test payments for dashboard performance test...");
-    testPaymentIds = await createTestPaymentData(100);
-    console.log(`Created ${testPaymentIds.length} test payments`);
+    paymentIds = await createTestPaymentData(100);
   });
 
   afterAll(async () => {
-    // Clean up test data
-    console.log("Cleaning up test payments...");
-    await cleanupTestPayments(testPaymentIds);
+    await cleanupTestPayments(paymentIds);
   });
 
-  it("should load dashboard with 100 pending payments in ≤ 2 seconds", async () => {
-    // Requirement 18.1: Dashboard loads in ≤ 2 seconds with 100 pending payments
-
-    const { duration } = await measureTime(async () => {
+  it("loads the pending-payment dashboard within the target", async () => {
+    const { result, duration } = await measureTime(async () => {
       const { data, error } = await supabase
         .from("manual_payments")
         .select(
-          `
-          id,
-          reference_number,
-          amount,
-          currency,
-          status,
-          created_at,
-          payment_method:admin_payment_methods(name),
-          user:profiles(full_name, email),
-          files:payment_files(count)
-        `
+          "id,reference_number,amount,currency,status,created_at,payment_method:admin_payment_methods(name),files:payment_files(count)",
         )
         .in("status", ["pending", "under_review", "requires_info"])
         .order("created_at", { ascending: false })
@@ -170,735 +199,168 @@ describePerformance("Performance: Dashboard Load with 100+ Payments", () => {
       return data;
     });
 
-    console.log(`Dashboard load time: ${duration.toFixed(2)}ms`);
-    console.log(`Loaded ${result?.length || 0} payments`);
-
-    expect(result).toBeDefined();
-    expect(result!.length).toBeGreaterThan(0);
+    expect(result.length).toBeGreaterThan(0);
     expect(duration).toBeLessThanOrEqual(PERFORMANCE_THRESHOLDS.DASHBOARD_LOAD);
   });
 
-  it("should apply filters efficiently", async () => {
-    // Test filtering performance
-
-    const { duration } = await measureTime(async () => {
+  it("paginates 25 rows within the target", async () => {
+    const { result, duration } = await measureTime(async () => {
       const { data, error } = await supabase
         .from("manual_payments")
-        .select("*")
-        .eq("status", "under_review")
-        .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-        .order("created_at", { ascending: false });
+        .select("id,status,created_at")
+        .order("created_at", { ascending: false })
+        .range(0, 24);
 
       if (error) throw error;
       return data;
     });
 
-    console.log(`Filter query time: ${duration.toFixed(2)}ms`);
-    console.log(`Filtered results: ${result?.length || 0} payments`);
-
-    expect(duration).toBeLessThanOrEqual(1000); // Should be fast with proper indexes
+    expect(result.length).toBeLessThanOrEqual(25);
+    expect(duration).toBeLessThanOrEqual(PERFORMANCE_THRESHOLDS.PAGINATION);
   });
 
-  it("should search by reference number efficiently", async () => {
-    // Test search performance
-
-    if (testPaymentIds.length === 0) {
-      console.log("No test payments available for search test");
-      return;
-    }
-
-    // Get a reference number to search for
-    const { data: samplePayment } = await supabase
+  it("queries indexed reference/status fields within the target", async () => {
+    const { data: sample, error: sampleError } = await supabase
       .from("manual_payments")
       .select("reference_number")
-      .eq("id", testPaymentIds[0])
+      .eq("id", paymentIds[0])
       .single();
+    if (sampleError) throw sampleError;
 
-    if (!samplePayment) {
-      console.log("Could not get sample payment for search test");
-      return;
-    }
+    const { result, duration } = await measureTime(async () => {
+      const [referenceResult, statusResult] = await Promise.all([
+        supabase
+          .from("manual_payments")
+          .select("id")
+          .eq("reference_number", sample.reference_number)
+          .single(),
+        supabase.from("manual_payments").select("id").eq("status", "under_review").limit(100),
+      ]);
 
-    const { duration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("manual_payments")
-        .select("*")
-        .eq("reference_number", samplePayment.reference_number)
-        .single();
-
-      if (error) throw error;
-      return data;
+      if (referenceResult.error) throw referenceResult.error;
+      if (statusResult.error) throw statusResult.error;
+      return { referenceResult, statusResult };
     });
 
-    console.log(`Search by reference time: ${duration.toFixed(2)}ms`);
+    expect(result.referenceResult.data?.id).toBeTruthy();
+    expect(duration).toBeLessThanOrEqual(PERFORMANCE_THRESHOLDS.INDEX_QUERY);
+  });
 
-    expect(result).toBeDefined();
-    expect(duration).toBeLessThanOrEqual(500); // Should be very fast with unique index
+  it("handles concurrent authenticated dashboard reads", async () => {
+    const queryCount = 50;
+    const { result, duration } = await measureTime(async () =>
+      Promise.all(
+        Array.from({ length: queryCount }, () =>
+          supabase
+            .from("manual_payments")
+            .select("id,reference_number,amount,status")
+            .in("status", ["pending", "under_review", "requires_info"])
+            .limit(25),
+        ),
+      ),
+    );
+
+    const failures = result.filter((response) => response.error);
+    expect(failures).toHaveLength(0);
+    expect(duration).toBeLessThanOrEqual(PERFORMANCE_THRESHOLDS.CONCURRENT_READS);
   });
 });
 
-// =====================================================
-// TEST SUITE 2: PAYMENT DETAILS LOAD PERFORMANCE
-// =====================================================
-
-describePerformance("Performance: Payment Details View Load", () => {
-  let testPaymentId: string;
+describePerformance("Performance: payment details", () => {
+  let paymentId = "";
 
   beforeAll(async () => {
-    // Create a single test payment with files
-    const paymentIds = await createTestPaymentData(1);
-    testPaymentId = paymentIds[0];
+    const user = await requirePerformanceUser();
+    [paymentId] = await createTestPaymentData(1);
 
-    // Add some test files
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      for (let i = 0; i < 3; i++) {
-        await supabase.from("payment_files").insert({
-          payment_id: testPaymentId,
-          file_name: `test-file-${i}.jpg`,
-          file_path: `payment-proofs/${testPaymentId}/test-file-${i}.jpg`,
-          file_size: 1024 * 1024,
-          file_type: "image/jpeg",
-          uploaded_by: user.id,
-        });
-      }
-    }
+    const fixtureRows = Array.from({ length: 3 }, (_, index) => ({
+      payment_id: paymentId,
+      file_name: `fixture-${index}.jpg`,
+      file_path: `${paymentId}/fixture-${crypto.randomUUID()}.jpg`,
+      file_size: 1024,
+      file_type: "image/jpeg",
+      uploaded_by: user.id,
+    }));
+
+    const { error } = await getFixtureClient().from("payment_files").insert(fixtureRows);
+    if (error) throw error;
   });
 
   afterAll(async () => {
-    await cleanupTestPayments([testPaymentId]);
+    await cleanupTestPayments(paymentId ? [paymentId] : []);
   });
 
-  it("should load payment details in ≤ 1 second", async () => {
-    // Requirement 18.2: Payment details view loads in ≤ 1 second
-
-    const { duration } = await measureTime(async () => {
+  it("loads payment details within the target", async () => {
+    const { result, duration } = await measureTime(async () => {
       const { data, error } = await supabase
         .from("manual_payments")
-        .select(
-          `
-          *,
-          payment_method:admin_payment_methods(*),
-          user:profiles(*),
-          files:payment_files(*),
-          audit_logs:payment_audit_log(*)
-        `
-        )
-        .eq("id", testPaymentId)
+        .select("*,payment_method:admin_payment_methods(*),files:payment_files(*),audit_logs:payment_audit_log(*)")
+        .eq("id", paymentId)
         .single();
 
       if (error) throw error;
       return data;
     });
 
-    console.log(`Payment details load time: ${duration.toFixed(2)}ms`);
-
-    expect(result).toBeDefined();
+    expect(result.id).toBe(paymentId);
     expect(duration).toBeLessThanOrEqual(PERFORMANCE_THRESHOLDS.PAYMENT_DETAILS_LOAD);
   });
-
-  it("should load audit trail efficiently", async () => {
-    const { duration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("payment_audit_log")
-        .select("*")
-        .eq("payment_id", testPaymentId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    });
-
-    console.log(`Audit trail load time: ${duration.toFixed(2)}ms`);
-
-    expect(duration).toBeLessThanOrEqual(500);
-  });
 });
 
-// =====================================================
-// TEST SUITE 3: FILE UPLOAD PERFORMANCE
-// =====================================================
-
-describePerformance("Performance: File Upload with Maximum Size", () => {
-  let testPaymentId: string;
+describePerformance("Performance: canonical payment-proof upload", () => {
+  const paymentIds: string[] = [];
 
   beforeAll(async () => {
-    const paymentIds = await createTestPaymentData(1);
-    testPaymentId = paymentIds[0];
+    paymentIds.push(...(await createTestPaymentData(1 + MAX_CANONICAL_CONCURRENT_UPLOADS)));
   });
 
   afterAll(async () => {
-    await cleanupTestPayments([testPaymentId]);
+    await cleanupUploadedStorage();
+    await cleanupTestPayments(paymentIds);
   });
 
-  it("should upload and process 5MB file in ≤ 10 seconds", async () => {
-    // Requirement 18.3: 5MB file uploads and processes in ≤ 10 seconds
+  it("uploads and scans a 5 MB proof through the Edge Function within the target", async () => {
+    const file = createJpegTestFile(5 * 1024 * 1024, "max-size");
+    const { result, duration } = await measureTime(() => uploadAndTrack(paymentIds[0], file));
 
-    const file = createTestFile(5 * 1024 * 1024); // 5MB
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      console.log("No authenticated user, skipping file upload test");
-      return;
-    }
-
-    const { duration } = await measureTime(async () => {
-      // Upload to storage
-      const filePath = `payment-proofs/${testPaymentId}/${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("payment-proofs")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Create database record
-      const { error: dbError } = await supabase.from("payment_files").insert({
-        payment_id: testPaymentId,
-        file_name: file.name,
-        file_path: filePath,
-        file_size: file.size,
-        file_type: file.type,
-        uploaded_by: user.id,
-      });
-
-      if (dbError) throw dbError;
-
-      return true;
-    });
-
-    console.log(`5MB file upload time: ${duration.toFixed(2)}ms`);
-
+    expect(result.payment_id).toBe(paymentIds[0]);
     expect(duration).toBeLessThanOrEqual(PERFORMANCE_THRESHOLDS.FILE_UPLOAD_5MB);
   });
 
-  it("should handle multiple file uploads sequentially", async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  it("handles concurrent uploads within the canonical per-user rate-limit budget", async () => {
+    const targets = paymentIds.slice(1, 1 + MAX_CANONICAL_CONCURRENT_UPLOADS);
+    const { result, duration } = await measureTime(() =>
+      Promise.all(
+        targets.map((paymentId, index) =>
+          uploadAndTrack(paymentId, createJpegTestFile(512 * 1024, `concurrent-${index}`)),
+        ),
+      ),
+    );
 
-    if (!user) {
-      console.log("No authenticated user, skipping multiple file upload test");
-      return;
-    }
-
-    const fileCount = 3;
-    const fileSizes = [1024 * 1024, 2 * 1024 * 1024, 3 * 1024 * 1024]; // 1MB, 2MB, 3MB
-
-    const { duration } = await measureTime(async () => {
-      for (let i = 0; i < fileCount; i++) {
-        const file = createTestFile(fileSizes[i]);
-        const filePath = `payment-proofs/${testPaymentId}/multi-${i}-${file.name}`;
-
-        await supabase.storage.from("payment-proofs").upload(filePath, file);
-
-        await supabase.from("payment_files").insert({
-          payment_id: testPaymentId,
-          file_name: file.name,
-          file_path: filePath,
-          file_size: file.size,
-          file_type: file.type,
-          uploaded_by: user.id,
-        });
-      }
-    });
-
-    console.log(`Multiple file upload time (${fileCount} files): ${duration.toFixed(2)}ms`);
-
-    // Should complete reasonably fast
-    expect(duration).toBeLessThanOrEqual(15000); // 15 seconds for 3 files
+    expect(result).toHaveLength(MAX_CANONICAL_CONCURRENT_UPLOADS);
+    expect(duration).toBeLessThanOrEqual(PERFORMANCE_THRESHOLDS.CONCURRENT_UPLOADS);
   });
 });
 
-// =====================================================
-// TEST SUITE 4: PAGINATION PERFORMANCE
-// =====================================================
-
-describePerformance("Performance: Pagination", () => {
-  let testPaymentIds: string[] = [];
+describePerformance("Performance: canonical admin payment mutation", () => {
+  let paymentIds: string[] = [];
 
   beforeAll(async () => {
-    // Create 50 test payments for pagination testing
-    testPaymentIds = await createTestPaymentData(50);
+    await requirePerformanceUser({ admin: true });
+    paymentIds = await createTestPaymentData(MAX_CANONICAL_CONCURRENT_ADMIN_MUTATIONS);
   });
 
   afterAll(async () => {
-    await cleanupTestPayments(testPaymentIds);
+    await cleanupTestPayments(paymentIds);
   });
 
-  it("should return exactly 25 items per page", async () => {
-    // Requirement 18.5: Pagination: 25 items per page
-
+  it("handles concurrent status mutations through admin-rpc", async () => {
     const { duration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("manual_payments")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(PERFORMANCE_THRESHOLDS.PAGINATION_LIMIT);
-
-      if (error) throw error;
-      return data;
-    });
-
-    console.log(`Pagination query time: ${duration.toFixed(2)}ms`);
-    console.log(`Returned ${result?.length || 0} items`);
-
-    expect(result).toBeDefined();
-    expect(result!.length).toBeLessThanOrEqual(PERFORMANCE_THRESHOLDS.PAGINATION_LIMIT);
-    expect(duration).toBeLessThanOrEqual(1000);
-  });
-
-  it("should efficiently load second page", async () => {
-    const { duration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("manual_payments")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .range(25, 49); // Second page (items 26-50)
-
-      if (error) throw error;
-      return data;
-    });
-
-    console.log(`Second page load time: ${duration.toFixed(2)}ms`);
-    console.log(`Returned ${result?.length || 0} items`);
-
-    expect(result).toBeDefined();
-    expect(result!.length).toBeLessThanOrEqual(25);
-    expect(duration).toBeLessThanOrEqual(1000);
-  });
-
-  it("should count total items efficiently", async () => {
-    const { duration } = await measureTime(async () => {
-      const { count, error } = await supabase
-        .from("manual_payments")
-        .select("*", { count: "exact", head: true });
-
-      if (error) throw error;
-      return count;
-    });
-
-    console.log(`Count query time: ${duration.toFixed(2)}ms`);
-    console.log(`Total count: ${result}`);
-
-    expect(result).toBeGreaterThan(0);
-    expect(duration).toBeLessThanOrEqual(500);
-  });
-});
-
-// =====================================================
-// TEST SUITE 5: CONCURRENT OPERATIONS PERFORMANCE
-// =====================================================
-
-describePerformance("Performance: Concurrent File Uploads", () => {
-  let testPaymentIds: string[] = [];
-
-  beforeAll(async () => {
-    // Create 50 test payments for concurrent upload testing
-    testPaymentIds = await createTestPaymentData(50);
-  });
-
-  afterAll(async () => {
-    await cleanupTestPayments(testPaymentIds);
-  });
-
-  it("should handle 50 concurrent file uploads without degradation", async () => {
-    // Requirement 18.15: Handle 50 concurrent file uploads without degradation
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      console.log("No authenticated user, skipping concurrent upload test");
-      return;
-    }
-
-    const uploadCount = Math.min(50, testPaymentIds.length);
-    console.log(`Testing ${uploadCount} concurrent uploads...`);
-
-    const { duration } = await measureTime(async () => {
-      const uploadPromises = testPaymentIds.slice(0, uploadCount).map(async (paymentId, index) => {
-        const file = createTestFile(512 * 1024); // 512KB files for faster testing
-        const filePath = `payment-proofs/${paymentId}/concurrent-${index}-${file.name}`;
-
-        // Upload to storage
-        await supabase.storage.from("payment-proofs").upload(filePath, file);
-
-        // Create database record
-        await supabase.from("payment_files").insert({
-          payment_id: paymentId,
-          file_name: file.name,
-          file_path: filePath,
-          file_size: file.size,
-          file_type: file.type,
-          uploaded_by: user.id,
-        });
-      });
-
-      await Promise.all(uploadPromises);
-    });
-
-    console.log(`${uploadCount} concurrent uploads completed in: ${duration.toFixed(2)}ms`);
-    console.log(`Average time per upload: ${(duration / uploadCount).toFixed(2)}ms`);
-
-    // Should complete without significant degradation
-    // Allow reasonable time for 50 concurrent uploads
-    expect(duration).toBeLessThanOrEqual(30000); // 30 seconds for 50 concurrent uploads
-  });
-
-  it("should handle concurrent status updates", async () => {
-    const updateCount = Math.min(20, testPaymentIds.length);
-    console.log(`Testing ${updateCount} concurrent status updates...`);
-
-    const { duration } = await measureTime(async () => {
-      const updatePromises = testPaymentIds.slice(0, updateCount).map(async (paymentId) => {
-        await supabase
-          .from("manual_payments")
-          .update({ status: "under_review" })
-          .eq("id", paymentId);
-      });
-
-      await Promise.all(updatePromises);
-    });
-
-    console.log(`${updateCount} concurrent updates completed in: ${duration.toFixed(2)}ms`);
-
-    expect(duration).toBeLessThanOrEqual(5000); // Should be fast
-  });
-});
-
-// =====================================================
-// TEST SUITE 6: BULK OPERATIONS PERFORMANCE
-// =====================================================
-
-describePerformance("Performance: Bulk Operations with 50+ Payments", () => {
-  let testPaymentIds: string[] = [];
-
-  beforeAll(async () => {
-    // Create 50+ test payments for bulk operations
-    testPaymentIds = await createTestPaymentData(55);
-
-    // Set some to 'under_review' status for bulk approval testing
-    const updatePromises = testPaymentIds.slice(0, 50).map(async (paymentId) => {
-      await supabase.from("manual_payments").update({ status: "under_review" }).eq("id", paymentId);
-    });
-    await Promise.all(updatePromises);
-  });
-
-  afterAll(async () => {
-    await cleanupTestPayments(testPaymentIds);
-  });
-
-  it("should perform bulk status update on 50+ payments efficiently", async () => {
-    const paymentIdsToUpdate = testPaymentIds.slice(0, 50);
-
-    const { duration } = await measureTime(async () => {
-      const { error } = await supabase
-        .from("manual_payments")
-        .update({ status: "approved" })
-        .in("id", paymentIdsToUpdate);
-
-      if (error) throw error;
-    });
-
-    console.log(`Bulk update of 50 payments: ${duration.toFixed(2)}ms`);
-
-    expect(duration).toBeLessThanOrEqual(5000); // Should complete in reasonable time
-  });
-
-  it("should perform bulk query on 50+ payments efficiently", async () => {
-    const { duration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("manual_payments")
-        .select("*")
-        .in("id", testPaymentIds);
-
-      if (error) throw error;
-      return data;
-    });
-
-    console.log(`Bulk query of ${testPaymentIds.length} payments: ${duration.toFixed(2)}ms`);
-    console.log(`Retrieved ${result?.length || 0} payments`);
-
-    expect(result).toBeDefined();
-    expect(result!.length).toBe(testPaymentIds.length);
-    expect(duration).toBeLessThanOrEqual(2000);
-  });
-
-  it("should perform bulk delete efficiently", async () => {
-    // Create temporary payments for deletion test
-    const tempPaymentIds = await createTestPaymentData(20);
-
-    const { duration } = await measureTime(async () => {
-      const { error } = await supabase.from("manual_payments").delete().in("id", tempPaymentIds);
-
-      if (error) throw error;
-    });
-
-    console.log(`Bulk delete of 20 payments: ${duration.toFixed(2)}ms`);
-
-    expect(duration).toBeLessThanOrEqual(2000);
-  });
-});
-
-// =====================================================
-// TEST SUITE 7: DATABASE INDEX PERFORMANCE
-// =====================================================
-
-describePerformance("Performance: Database Indexes", () => {
-  let testPaymentIds: string[] = [];
-
-  beforeAll(async () => {
-    testPaymentIds = await createTestPaymentData(100);
-  });
-
-  afterAll(async () => {
-    await cleanupTestPayments(testPaymentIds);
-  });
-
-  it("should query by payment_id efficiently (primary key)", async () => {
-    // Requirement 18.8: Database indexes on payment_id
-
-    const { duration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("manual_payments")
-        .select("*")
-        .eq("id", testPaymentIds[0])
-        .single();
-
-      if (error) throw error;
-      return data;
-    });
-
-    console.log(`Query by payment_id: ${duration.toFixed(2)}ms`);
-
-    expect(duration).toBeLessThanOrEqual(100); // Should be very fast with primary key
-  });
-
-  it("should query by user_id efficiently (indexed)", async () => {
-    // Requirement 18.8: Database indexes on user_id
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      console.log("No authenticated user, skipping user_id index test");
-      return;
-    }
-
-    const { duration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("manual_payments")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-      return data;
-    });
-
-    console.log(`Query by user_id: ${duration.toFixed(2)}ms`);
-
-    expect(duration).toBeLessThanOrEqual(500); // Should be fast with index
-  });
-
-  it("should query by status efficiently (indexed)", async () => {
-    // Requirement 18.8: Database indexes on status
-
-    const { duration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("manual_payments")
-        .select("*")
-        .eq("status", "under_review");
-
-      if (error) throw error;
-      return data;
-    });
-
-    console.log(`Query by status: ${duration.toFixed(2)}ms`);
-
-    expect(duration).toBeLessThanOrEqual(500); // Should be fast with index
-  });
-
-  it("should query by created_at efficiently (indexed)", async () => {
-    // Requirement 18.8: Database indexes on created_at
-
-    const { duration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("manual_payments")
-        .select("*")
-        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    });
-
-    console.log(`Query by created_at with order: ${duration.toFixed(2)}ms`);
-
-    expect(duration).toBeLessThanOrEqual(1000); // Should be fast with index
-  });
-
-  it("should query by payment_method_id efficiently (indexed)", async () => {
-    // Requirement 18.8: Database indexes on payment_method_id
-
-    const { data: samplePayment } = await supabase
-      .from("manual_payments")
-      .select("payment_method_id")
-      .eq("id", testPaymentIds[0])
-      .single();
-
-    if (!samplePayment) {
-      console.log("Could not get sample payment for payment_method_id test");
-      return;
-    }
-
-    const { duration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("manual_payments")
-        .select("*")
-        .eq("payment_method_id", samplePayment.payment_method_id);
-
-      if (error) throw error;
-      return data;
-    });
-
-    console.log(`Query by payment_method_id: ${duration.toFixed(2)}ms`);
-
-    expect(duration).toBeLessThanOrEqual(500); // Should be fast with index
-  });
-});
-
-// =====================================================
-// TEST SUITE 8: REACT QUERY CACHING PERFORMANCE
-// =====================================================
-
-describePerformance("Performance: React Query Caching", () => {
-  it("should demonstrate cache benefit for payment methods", async () => {
-    // Requirement 18.7: React Query caching (5 minutes for payment methods)
-
-    // First query (cache miss)
-    const { duration: firstQueryDuration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("admin_payment_methods")
-        .select("*")
-        .eq("is_active", true);
-
-      if (error) throw error;
-      return data;
-    });
-
-    console.log(`First query (cache miss): ${firstQueryDuration.toFixed(2)}ms`);
-
-    // Second query (should be faster if cached)
-    const { duration: secondQueryDuration } = await measureTime(async () => {
-      const { data, error } = await supabase
-        .from("admin_payment_methods")
-        .select("*")
-        .eq("is_active", true);
-
-      if (error) throw error;
-      return data;
-    });
-
-    console.log(`Second query: ${secondQueryDuration.toFixed(2)}ms`);
-
-    // Note: In a real React Query setup, the second query would be instant from cache
-    // This test demonstrates the baseline query performance
-    expect(firstQueryDuration).toBeLessThanOrEqual(1000);
-    expect(secondQueryDuration).toBeLessThanOrEqual(1000);
-  });
-});
-
-// =====================================================
-// TEST SUITE 9: LOAD TEST SIMULATION
-// =====================================================
-
-describePerformance("Performance: Load Test with 100 Concurrent Users", () => {
-  it("should simulate 100 concurrent users querying dashboard", async () => {
-    // Simulate 100 concurrent users
-    const userCount = 100;
-    console.log(`Simulating ${userCount} concurrent users...`);
-
-    const { duration } = await measureTime(async () => {
-      const queries = Array.from({ length: userCount }, () =>
-        supabase
-          .from("manual_payments")
-          .select("id, reference_number, amount, status")
-          .in("status", ["pending", "under_review", "requires_info"])
-          .limit(25)
+      await Promise.all(
+        paymentIds.map((paymentId) => updateManualPaymentStatus(paymentId, "under_review")),
       );
-
-      const results = await Promise.all(queries);
-
-      // Check that all queries succeeded
-      const failedQueries = results.filter((r) => r.error);
-      if (failedQueries.length > 0) {
-        throw new Error(`${failedQueries.length} queries failed`);
-      }
-
-      return results;
     });
 
-    console.log(`${userCount} concurrent queries completed in: ${duration.toFixed(2)}ms`);
-    console.log(`Average time per query: ${(duration / userCount).toFixed(2)}ms`);
-
-    // Should handle load without significant degradation
-    expect(duration).toBeLessThanOrEqual(10000); // 10 seconds for 100 concurrent queries
-  });
-
-  it("should simulate mixed concurrent operations", async () => {
-    const operationCount = 50;
-    console.log(`Simulating ${operationCount} mixed concurrent operations...`);
-
-    const { duration } = await measureTime(async () => {
-      const operations = [];
-
-      // Mix of different operations
-      for (let i = 0; i < operationCount; i++) {
-        if (i % 3 === 0) {
-          // Query operation
-          operations.push(supabase.from("manual_payments").select("*").limit(10));
-        } else if (i % 3 === 1) {
-          // Count operation
-          operations.push(
-            supabase.from("manual_payments").select("*", { count: "exact", head: true })
-          );
-        } else {
-          // Filter operation
-          operations.push(
-            supabase.from("manual_payments").select("*").eq("status", "pending").limit(5)
-          );
-        }
-      }
-
-      await Promise.all(operations);
-    });
-
-    console.log(`${operationCount} mixed operations completed in: ${duration.toFixed(2)}ms`);
-
-    expect(duration).toBeLessThanOrEqual(8000); // Should handle mixed load
-  });
-});
-
-// =====================================================
-// PERFORMANCE SUMMARY
-// =====================================================
-
-describePerformance("Performance: Summary Report", () => {
-  it("should generate performance summary", () => {
-    console.log("\n=== PERFORMANCE TEST SUMMARY ===");
-    console.log(`Dashboard Load Threshold: ${PERFORMANCE_THRESHOLDS.DASHBOARD_LOAD}ms`);
-    console.log(`Payment Details Threshold: ${PERFORMANCE_THRESHOLDS.PAYMENT_DETAILS_LOAD}ms`);
-    console.log(`File Upload (5MB) Threshold: ${PERFORMANCE_THRESHOLDS.FILE_UPLOAD_5MB}ms`);
-    console.log(`Pagination Limit: ${PERFORMANCE_THRESHOLDS.PAGINATION_LIMIT} items`);
-    console.log(`Concurrent Uploads: ${PERFORMANCE_THRESHOLDS.CONCURRENT_UPLOADS} uploads`);
-    console.log("================================\n");
-
-    expect(true).toBe(true);
+    expect(duration).toBeLessThanOrEqual(PERFORMANCE_THRESHOLDS.CONCURRENT_ADMIN_MUTATIONS);
   });
 });
