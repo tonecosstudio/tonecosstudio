@@ -1,4 +1,11 @@
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
+import {
+  requireAdminRpcIntegerField,
+  requireAdminRpcMatchingId,
+  requireAdminRpcRecord,
+  requireAdminRpcRecordMatchingId,
+  requireAdminRpcUuid,
+} from "@/services/admin/rpc/admin-rpc-results";
 
 type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 
@@ -38,6 +45,46 @@ function compactPayload(input: Record<string, JsonValue | undefined>): JsonObjec
   ) as JsonObject;
 }
 
+function requireUuidArrayField(
+  record: Record<string, unknown>,
+  field: string,
+  operation: string,
+): string[] {
+  const value = record[field];
+  if (!Array.isArray(value)) {
+    throw new Error(`${operation} returned an invalid ${field}`);
+  }
+
+  return value.map((item) => requireAdminRpcUuid(item, operation));
+}
+
+function requireCollectionTypeResult(
+  value: unknown,
+  expectedId?: string | null,
+): Record<string, unknown> {
+  const operation = "Collection type save";
+  const record = requireAdminRpcRecord(value, operation);
+  const id = requireAdminRpcUuid(record.id, operation);
+
+  if (expectedId) {
+    requireAdminRpcMatchingId(id, expectedId, operation);
+  }
+
+  if (
+    typeof record.name !== "string" ||
+    !record.name.trim() ||
+    typeof record.display_name !== "string" ||
+    !record.display_name.trim() ||
+    !Number.isInteger(record.sort_order) ||
+    (record.sort_order as number) < 0 ||
+    typeof record.is_active !== "boolean"
+  ) {
+    throw new Error(`${operation} returned invalid data`);
+  }
+
+  return record;
+}
+
 export async function upsertAdminSystemSettings(updates: Record<string, string>): Promise<void> {
   assertPublicSystemSettingKeys(updates);
 
@@ -74,20 +121,29 @@ export async function updateSubscriptionPlanCollectionLimitRpc(
     throw new Error("Limite de colecoes invalido");
   }
 
-  const data = await callAdminRpc<SubscriptionPlanLimitResult[]>(
-    "admin_update_subscription_plan_collection_limit",
-    {
-      p_plan_id: planId,
-      p_collections_count: newLimit,
-    },
-  );
+  const data = await callAdminRpc<unknown>("admin_update_subscription_plan_collection_limit", {
+    p_plan_id: planId,
+    p_collections_count: newLimit,
+  });
 
-  const result = data?.[0];
-  if (!result) {
-    throw new Error("Plano nao encontrado");
+  if (!Array.isArray(data) || data.length !== 1) {
+    throw new Error("Subscription plan limit update returned invalid data");
   }
 
-  return result;
+  const result = requireAdminRpcRecordMatchingId(
+    data[0],
+    planId,
+    "Subscription plan limit update",
+  );
+
+  if (result.collections_count !== newLimit) {
+    throw new Error("Subscription plan limit update returned an unexpected collections_count");
+  }
+
+  return {
+    id: planId,
+    collections_count: newLimit,
+  };
 }
 
 export async function updateStandalonePricingRpc(input: {
@@ -103,10 +159,12 @@ export async function updateStandalonePricingRpc(input: {
       return { id: update.id, price: update.price };
     });
 
-  await callAdminRpc("admin_update_standalone_pricing", {
+  const result = await callAdminRpc<unknown>("admin_update_standalone_pricing", {
     p_updates: updates,
     p_pix_discount: input.pixDiscount,
   });
+
+  requireAdminRpcIntegerField(result, "updated", "Standalone pricing update", updates.length);
 }
 
 export async function updateCollectionBasePricesRpc(params: {
@@ -118,11 +176,20 @@ export async function updateCollectionBasePricesRpc(params: {
   assertFiniteNumber(params.standardPrice, "Preco standard");
   assertFiniteNumber(params.premiumPrice, "Preco premium");
 
-  await callAdminRpc("admin_update_collection_base_prices", {
+  const result = await callAdminRpc<unknown>("admin_update_collection_base_prices", {
     p_subscription_price: params.subscriptionPrice,
     p_standard_price: params.standardPrice,
     p_premium_price: params.premiumPrice,
   });
+
+  const updated = requireAdminRpcIntegerField(
+    result,
+    "updated",
+    "Collection base pricing update",
+  );
+  if (updated < 3) {
+    throw new Error("Collection base pricing update returned an unexpected updated");
+  }
 }
 
 export async function updatePricingContextMultipliersRpc(params: {
@@ -134,47 +201,70 @@ export async function updatePricingContextMultipliersRpc(params: {
   assertFiniteNumber(params.notChosenMultiplier, "Multiplicador nao escolhida");
   assertFiniteNumber(params.noSubscriptionMultiplier, "Multiplicador sem assinatura");
 
-  await callAdminRpc("admin_update_pricing_context_multipliers", {
+  const result = await callAdminRpc<unknown>("admin_update_pricing_context_multipliers", {
     p_chosen_multiplier: params.chosenMultiplier,
     p_not_chosen_multiplier: params.notChosenMultiplier,
     p_no_subscription_multiplier: params.noSubscriptionMultiplier,
   });
+
+  requireAdminRpcIntegerField(result, "updated", "Pricing context update", 3);
 }
 
 export async function savePricingTierPlanRpc(input: {
   id?: string;
   data: JsonObject;
 }): Promise<void> {
-  await callAdminRpc("admin_save_pricing_tier_plan", {
+  const result = await callAdminRpc<unknown>("admin_save_pricing_tier_plan", {
     p_tier_id: input.id ?? null,
     p_data: input.data,
   });
+
+  if (input.id) {
+    requireAdminRpcMatchingId(result, input.id, "Pricing tier plan save");
+  } else {
+    requireAdminRpcUuid(result, "Pricing tier plan save");
+  }
 }
 
 export async function saveSubscriptionPlanConfigurationRpc(input: {
   id?: string;
   data: Record<string, JsonValue | undefined>;
 }): Promise<void> {
-  await callAdminRpc("admin_save_subscription_plan_configuration", {
+  const result = await callAdminRpc<unknown>("admin_save_subscription_plan_configuration", {
     p_plan_id: input.id ?? null,
     p_data: compactPayload(input.data),
   });
+
+  if (input.id) {
+    requireAdminRpcMatchingId(result, input.id, "Subscription plan configuration save");
+  } else {
+    requireAdminRpcUuid(result, "Subscription plan configuration save");
+  }
 }
 
 export async function deletePricingTierRpc(tierId: string): Promise<void> {
-  await callAdminRpc("admin_delete_pricing_tier", {
+  const result = await callAdminRpc<unknown>("admin_delete_pricing_tier", {
     p_tier_id: tierId,
   });
+
+  requireAdminRpcMatchingId(result, tierId, "Pricing tier deletion");
 }
 
 export async function assignCollectionsToTierRpc(input: {
   tierId: string;
   collectionIds: string[];
 }): Promise<void> {
-  await callAdminRpc("admin_assign_collections_to_tier", {
+  const result = await callAdminRpc<unknown>("admin_assign_collections_to_tier", {
     p_tier_id: input.tierId,
     p_collection_ids: input.collectionIds,
   });
+
+  requireAdminRpcIntegerField(
+    result,
+    "assigned",
+    "Collection tier assignment",
+    input.collectionIds.length,
+  );
 }
 
 export async function updatePurchaseModeRpc(
@@ -182,77 +272,122 @@ export async function updatePurchaseModeRpc(
   input: Record<string, JsonValue | undefined>,
 ): Promise<void> {
   const payload = compactPayload(input);
-  await callAdminRpc("admin_update_purchase_mode", {
+  const result = await callAdminRpc<unknown>("admin_update_purchase_mode", {
     p_mode_key: modeKey,
     p_updates: payload,
   });
+  const record = requireAdminRpcRecord(result, "Purchase mode update");
+
+  requireAdminRpcUuid(record.id, "Purchase mode update");
+  if (record.mode_key !== modeKey) {
+    throw new Error("Purchase mode update returned an unexpected mode_key");
+  }
 }
 
 export async function saveCollectionTypeRpc<T>(input: {
   id?: string | null;
   data: Record<string, JsonValue | undefined>;
 }): Promise<T> {
-  const data = await callAdminRpc<JsonObject>("admin_save_collection_type", {
+  const data = await callAdminRpc<unknown>("admin_save_collection_type", {
     p_type_id: input.id ?? null,
     p_data: compactPayload(input.data),
   });
-  return data as T;
+
+  return requireCollectionTypeResult(data, input.id) as T;
 }
 
 export async function deleteCollectionTypeRpc(typeId: string): Promise<void> {
-  await callAdminRpc("admin_delete_collection_type", {
+  const result = await callAdminRpc<unknown>("admin_delete_collection_type", {
     p_type_id: typeId,
   });
+
+  requireAdminRpcMatchingId(result, typeId, "Collection type deletion");
 }
 
 export async function assignCollectionToTierRpc(input: {
   collectionId: string;
   tierId: string;
 }): Promise<void> {
-  await callAdminRpc("admin_assign_collection_to_tier", {
+  const result = await callAdminRpc<unknown>("admin_assign_collection_to_tier", {
     p_collection_id: input.collectionId,
     p_tier_id: input.tierId,
   });
+
+  requireAdminRpcMatchingId(result, input.collectionId, "Collection tier assignment");
 }
 
 export async function unassignCollectionFromTierRpc(collectionId: string): Promise<void> {
-  await callAdminRpc("admin_unassign_collection_from_tier", {
+  const result = await callAdminRpc<unknown>("admin_unassign_collection_from_tier", {
     p_collection_id: collectionId,
   });
+
+  requireAdminRpcMatchingId(result, collectionId, "Collection tier removal");
 }
 
 export async function bulkAssignCollectionsToTierRpc<T>(input: {
   tierId: string;
   collectionIds: string[];
 }): Promise<T> {
-  const data = await callAdminRpc<JsonObject>("admin_bulk_assign_collections_to_tier", {
+  const data = await callAdminRpc<unknown>("admin_bulk_assign_collections_to_tier", {
     p_tier_id: input.tierId,
     p_collection_ids: input.collectionIds,
   });
-  return data as T;
+  const record = requireAdminRpcRecord(data, "Bulk collection tier assignment");
+
+  if (record.ok !== true) {
+    throw new Error("Bulk collection tier assignment returned invalid data");
+  }
+
+  const success = requireUuidArrayField(record, "success", "Bulk collection tier assignment");
+  const failed = record.failed;
+
+  if (!Array.isArray(failed) || failed.length !== 0 || success.length !== input.collectionIds.length) {
+    throw new Error("Bulk collection tier assignment returned inconsistent results");
+  }
+
+  success.forEach((id, index) => {
+    requireAdminRpcMatchingId(id, input.collectionIds[index], "Bulk collection tier assignment");
+  });
+
+  return record as T;
 }
 
 export async function updateCharacterPriceMultiplierRpc<T>(input: {
   characterId: string;
   newMultiplier: number | null;
 }): Promise<T> {
-  const data = await callAdminRpc<JsonObject>("admin_update_character_price_multiplier", {
+  const data = await callAdminRpc<unknown>("admin_update_character_price_multiplier", {
     p_character_id: input.characterId,
     p_new_multiplier: input.newMultiplier,
   });
-  return data as T;
+  const record = requireAdminRpcRecordMatchingId(
+    data,
+    input.characterId,
+    "Character price multiplier update",
+  );
+
+  if (record.price_multiplier !== input.newMultiplier) {
+    throw new Error("Character price multiplier update returned an unexpected price_multiplier");
+  }
+
+  return record as T;
 }
 
 export async function bulkUpdateCharacterPriceMultipliersRpc(input: {
   characterIds: string[];
   newMultiplier: number | null;
 }): Promise<{ updated: number }> {
-  const data = await callAdminRpc<{ updated: number }>(
-    "admin_bulk_update_character_price_multipliers",
-    {
-      p_character_ids: input.characterIds,
-      p_new_multiplier: input.newMultiplier,
-    },
-  );
-  return data;
+  const data = await callAdminRpc<unknown>("admin_bulk_update_character_price_multipliers", {
+    p_character_ids: input.characterIds,
+    p_new_multiplier: input.newMultiplier,
+  });
+
+  return {
+    updated: requireAdminRpcIntegerField(
+      data,
+      "updated",
+      "Bulk character price multiplier update",
+      input.characterIds.length,
+    ),
+  };
 }
