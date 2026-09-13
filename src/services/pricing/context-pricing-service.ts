@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 import {
@@ -40,7 +41,7 @@ interface ContextPricingRpcClient {
       p_changed_by: string;
       p_reason?: string;
     },
-  ): Promise<{ data: UpdateMultiplierResponse[] | null; error: { message: string } | null }>;
+  ): Promise<{ data: unknown; error: { message: string } | null }>;
   rpc(
     fn: "update_chosen_discount_with_history",
     args: {
@@ -48,10 +49,37 @@ interface ContextPricingRpcClient {
       p_changed_by: string;
       p_reason?: string;
     },
-  ): Promise<{ data: UpdateDiscountResponse[] | null; error: { message: string } | null }>;
+  ): Promise<{ data: unknown; error: { message: string } | null }>;
 }
 
 const contextPricingRpc = supabase as unknown as ContextPricingRpcClient;
+
+const updateMultiplierResponseSchema = z.object({
+  success: z.boolean(),
+  old_multiplier: z.number().finite().positive(),
+  new_multiplier: z.number().finite().positive(),
+  message: z.string(),
+});
+
+const updateDiscountResponseSchema = z.object({
+  success: z.boolean(),
+  old_discount: z.number().int().min(0).max(100),
+  new_discount: z.number().int().min(0).max(100),
+  message: z.string(),
+});
+
+function parseSingleRpcRow<T>(
+  value: unknown,
+  schema: z.ZodType<T>,
+  invalidResponseMessage: string,
+): T {
+  const parsed = z.array(schema).length(1).safeParse(value);
+  if (!parsed.success) {
+    throw new Error(invalidResponseMessage);
+  }
+
+  return parsed.data[0];
+}
 
 export async function listActiveContextPricing(): Promise<PricingContextMultiplier[]> {
   const { data, error } = await supabase
@@ -119,11 +147,11 @@ export async function updateMultiplierWithHistory(
     throw new Error(`Erro ao atualizar multiplicador: ${error.message}`);
   }
 
-  if (!data || data.length === 0) {
-    throw new Error("Nenhum resultado retornado");
-  }
-
-  const result = data[0];
+  const result = parseSingleRpcRow(
+    data,
+    updateMultiplierResponseSchema,
+    "Resposta invalida ao atualizar multiplicador contextual",
+  );
 
   if (!result.success) {
     throw new Error(result.message);
@@ -151,11 +179,11 @@ export async function updateChosenDiscountWithHistory(
     throw new Error(`Erro ao atualizar desconto: ${error.message}`);
   }
 
-  if (!data || data.length === 0) {
-    throw new Error("Nenhum resultado retornado");
-  }
-
-  const result = data[0];
+  const result = parseSingleRpcRow(
+    data,
+    updateDiscountResponseSchema,
+    "Resposta invalida ao atualizar desconto contextual",
+  );
 
   if (!result.success) {
     throw new Error(result.message);
