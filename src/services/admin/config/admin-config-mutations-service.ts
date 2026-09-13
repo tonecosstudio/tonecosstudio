@@ -27,9 +27,13 @@ function assertFiniteNumber(value: number, label: string): void {
   }
 }
 
+function normalizeSettingKey(key: string): string {
+  return key.trim().toLowerCase();
+}
+
 function assertPublicSystemSettingKeys(updates: Record<string, string>): void {
   for (const rawKey of Object.keys(updates)) {
-    const key = rawKey.trim().toLowerCase();
+    const key = normalizeSettingKey(rawKey);
 
     if (!key || SENSITIVE_PUBLIC_SETTING_KEY_PATTERN.test(key)) {
       throw new Error(
@@ -87,30 +91,47 @@ function requireCollectionTypeResult(
 
 export async function upsertAdminSystemSettings(updates: Record<string, string>): Promise<void> {
   assertPublicSystemSettingKeys(updates);
+  const expectedCount = Object.keys(updates).length;
 
-  await callAdminRpc("admin_upsert_system_settings", {
+  if (expectedCount === 0) {
+    throw new Error("Nenhuma configuracao fornecida");
+  }
+
+  const result = await callAdminRpc<unknown>("admin_upsert_system_settings", {
     p_updates: updates,
   });
+
+  requireAdminRpcIntegerField(result, "updated", "System settings update", expectedCount);
 }
 
 export async function updateAdminPaymentSetting(input: {
   key: string;
   value: string;
 }): Promise<void> {
-  await callAdminRpc("admin_update_payment_setting", {
+  const result = await callAdminRpc<unknown>("admin_update_payment_setting", {
     p_key: input.key,
     p_value: input.value,
   });
+
+  const expectedKey = normalizeSettingKey(input.key);
+  if (result !== expectedKey) {
+    throw new Error("Payment setting update returned an unexpected key");
+  }
 }
 
 export async function updateAdminProductionSetting(input: {
   key: string;
   value: string;
 }): Promise<void> {
-  await callAdminRpc("admin_update_production_setting", {
+  const result = await callAdminRpc<unknown>("admin_update_production_setting", {
     p_key: input.key,
     p_value: input.value,
   });
+
+  const expectedKey = normalizeSettingKey(input.key);
+  if (result !== expectedKey) {
+    throw new Error("Production setting update returned an unexpected key");
+  }
 }
 
 export async function updateSubscriptionPlanCollectionLimitRpc(
@@ -158,6 +179,10 @@ export async function updateStandalonePricingRpc(input: {
       assertFiniteNumber(update.price, "Preco avulso");
       return { id: update.id, price: update.price };
     });
+
+  if (updates.length === 0) {
+    throw new Error("Nenhum preco avulso fornecido");
+  }
 
   const result = await callAdminRpc<unknown>("admin_update_standalone_pricing", {
     p_updates: updates,
@@ -293,7 +318,7 @@ export async function saveCollectionTypeRpc<T>(input: {
     p_data: compactPayload(input.data),
   });
 
-  return requireCollectionTypeResult(data, input.id) as T;
+  return requireCollectionTypeResult(data, input.id) as unknown as T;
 }
 
 export async function deleteCollectionTypeRpc(typeId: string): Promise<void> {
@@ -349,7 +374,7 @@ export async function bulkAssignCollectionsToTierRpc<T>(input: {
     requireAdminRpcMatchingId(id, input.collectionIds[index], "Bulk collection tier assignment");
   });
 
-  return record as T;
+  return record as unknown as T;
 }
 
 export async function updateCharacterPriceMultiplierRpc<T>(input: {
@@ -370,7 +395,7 @@ export async function updateCharacterPriceMultiplierRpc<T>(input: {
     throw new Error("Character price multiplier update returned an unexpected price_multiplier");
   }
 
-  return record as T;
+  return record as unknown as T;
 }
 
 export async function bulkUpdateCharacterPriceMultipliersRpc(input: {
