@@ -21,3 +21,44 @@ export function requireAdminRpcMatchingId(
 
   return id;
 }
+
+export function requireAdminRpcRecord(
+  value: unknown,
+  operation: string,
+): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${operation} returned invalid data`);
+  }
+
+  return value as Record<string, unknown>;
+}
+
+export function requireAdminRpcRecordMatchingId(
+  value: unknown,
+  expectedId: string,
+  operation: string,
+): Record<string, unknown> {
+  const record = requireAdminRpcRecord(value, operation);
+  requireAdminRpcMatchingId(record.id, expectedId, operation);
+  return record;
+}
+
+export function requireAdminRpcIntegerField(
+  value: unknown,
+  field: string,
+  operation: string,
+  expected?: number,
+): number {
+  const record = requireAdminRpcRecord(value, operation);
+  const count = record[field];
+
+  if (!Number.isInteger(count) || (count as number) < 0) {
+    throw new Error(`${operation} returned an invalid ${field}`);
+  }
+
+  if (expected !== undefined && count !== expected) {
+    throw new Error(`${operation} returned an unexpected ${field}`);
+  }
+
+  return count as number;
+}
