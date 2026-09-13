@@ -127,4 +127,34 @@ describe("edge-function-client", () => {
       ),
     ).resolves.toEqual({ count: 3 });
   });
+
+  it.each([null, undefined])(
+    "fails closed when an authenticated data call returns no envelope (%s)",
+    async (data) => {
+      invoke.mockResolvedValueOnce({ data, error: null } as never);
+
+      await expect(
+        callAuthenticatedEdgeFunctionData(
+          "admin-function",
+          {},
+          "Admin operation failed",
+        ),
+      ).rejects.toThrow("Admin operation failed");
+    },
+  );
+
+  it.each([{ success: true }, [], "unexpected"])(
+    "fails closed when an authenticated data call returns a malformed envelope: %j",
+    async (data) => {
+      invoke.mockResolvedValueOnce({ data, error: null } as never);
+
+      await expect(
+        callAuthenticatedEdgeFunctionData(
+          "report-function",
+          {},
+          "Unable to load report",
+        ),
+      ).rejects.toThrow("Unable to load report");
+    },
+  );
 });

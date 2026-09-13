@@ -62,11 +62,19 @@ export async function callAuthenticatedEdgeFunctionData<TData, TBody = unknown>(
   body: TBody,
   fallbackErrorMessage: string,
 ): Promise<TData> {
-  const payload = await callAuthenticatedEdgeFunction<{ data: TData }, TBody>(
+  const payload = await callAuthenticatedEdgeFunction<unknown, TBody>(
     functionName,
     body,
     fallbackErrorMessage,
   );
 
-  return payload.data;
+  if (
+    !payload ||
+    typeof payload !== "object" ||
+    !Object.prototype.hasOwnProperty.call(payload, "data")
+  ) {
+    throw new Error(fallbackErrorMessage);
+  }
+
+  return (payload as { data: TData }).data;
 }
