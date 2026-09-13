@@ -1,379 +1,273 @@
-/**
- * Tests for Photo Metadata Service
- *
- * Tests cover:
- * - Creating photo metadata
- * - Updating photo metadata (customer visibility)
- * - Getting photos with metadata (filtered by role)
- * - Deleting photo metadata
- * - Bulk operations
- *
- * Task: 4.4.3 Implement photo permissions
- */
-
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-  createPhotoMetadata,
-  updatePhotoMetadata,
-  getStagePhotosWithMetadata,
-  deletePhotoMetadata,
-  bulkCreatePhotoMetadata,
-  isUserAdmin,
-} from "../production/photo-metadata-service";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  bulkCreatePhotoMetadata,
+  createPhotoMetadata,
+  deletePhotoMetadata,
+  getStagePhotosWithMetadata,
+  isUserAdmin,
+  updatePhotoMetadata,
+} from "../production/photo-metadata-service";
 
-// Mock Supabase client
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getUser: vi.fn(),
     },
-    from: vi.fn(),
     rpc: vi.fn(),
   },
 }));
+
+vi.mock("@/services/admin/rpc/admin-rpc-gateway", () => ({
+  callAdminRpc: vi.fn(),
+}));
+
+const callAdminRpcMock = vi.mocked(callAdminRpc);
+const stageId = "11111111-1111-4111-8111-111111111111";
+const photoId = "22222222-2222-4222-8222-222222222222";
+const photoId2 = "33333333-3333-4333-8333-333333333333";
+const userId = "44444444-4444-4444-8444-444444444444";
+const photoUrl = "https://example.com/photo.jpg";
+
+function photoRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: photoId,
+    photo_url: photoUrl,
+    production_stage_id: stageId,
+    customer_visible: true,
+    caption: "Final product",
+    uploaded_by: userId,
+    uploaded_by_name: "Admin User",
+    uploaded_at: "2026-09-13T12:00:00Z",
+    ...overrides,
+  };
+}
 
 describe("Photo Metadata Service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  // ============================================================================
-  // Create Photo Metadata
-  // ============================================================================
-
   describe("createPhotoMetadata", () => {
-    it("should create photo metadata with customer visibility", async () => {
-      const mockMetadata = {
-        id: "meta-1",
-        photo_url: "https://example.com/photo.jpg",
-        production_stage_id: "stage-1",
-        customer_visible: true,
-        caption: "Final product",
-        uploaded_by: "user-123",
-        uploaded_by_name: "Admin User",
-        uploaded_at: "2024-01-15T10:00:00Z",
-      };
-
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as never);
+    it("creates metadata through the admin gateway and binds the returned row", async () => {
+      callAdminRpcMock.mockResolvedValue(photoRow());
 
       const result = await createPhotoMetadata({
-        photoUrl: "https://example.com/photo.jpg",
-        productionStageId: "stage-1",
+        photoUrl: `  ${photoUrl}  `,
+        productionStageId: stageId,
         customerVisible: true,
-        caption: "Final product",
+        caption: "  Final product  ",
         uploadedByName: "Admin User",
       });
 
-      expect(result.customerVisible).toBe(true);
-      expect(result.caption).toBe("Final product");
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_create_photo_metadata", {
-        p_photo_url: "https://example.com/photo.jpg",
-        p_production_stage_id: "stage-1",
+      expect(result).toMatchObject({
+        id: photoId,
+        photoUrl,
+        productionStageId: stageId,
+        customerVisible: true,
+        caption: "Final product",
+      });
+      expect(callAdminRpcMock).toHaveBeenCalledWith("admin_create_photo_metadata", {
+        p_photo_url: `  ${photoUrl}  `,
+        p_production_stage_id: stageId,
         p_customer_visible: true,
-        p_caption: "Final product",
+        p_caption: "  Final product  ",
         p_uploaded_by_name: "Admin User",
       });
     });
 
-    it("should create photo metadata without customer visibility (admin only)", async () => {
-      const mockMetadata = {
-        id: "meta-2",
-        photo_url: "https://example.com/wip.jpg",
-        production_stage_id: "stage-1",
-        customer_visible: false,
-        uploaded_by: "user-123",
-        uploaded_at: "2024-01-15T10:00:00Z",
-      };
-
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as never);
-
-      const result = await createPhotoMetadata({
-        photoUrl: "https://example.com/wip.jpg",
-        productionStageId: "stage-1",
-        customerVisible: false,
-      });
-
-      expect(result.customerVisible).toBe(false);
-    });
-
-    it("should throw error if creation fails", async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
-        data: null,
-        error: { message: "Database error" },
-      } as never);
+    it.each([
+      null,
+      {},
+      photoRow({ id: "invalid" }),
+      photoRow({ photo_url: "https://example.com/other.jpg" }),
+      photoRow({ production_stage_id: "55555555-5555-4555-8555-555555555555" }),
+      photoRow({ customer_visible: false }),
+      photoRow({ caption: "Other caption" }),
+    ])("rejects malformed or mismatched create responses %#", async (value) => {
+      callAdminRpcMock.mockResolvedValue(value as never);
 
       await expect(
         createPhotoMetadata({
-          photoUrl: "https://example.com/photo.jpg",
-          productionStageId: "stage-1",
+          photoUrl,
+          productionStageId: stageId,
           customerVisible: true,
-        })
-      ).rejects.toThrow("Failed to create photo metadata");
+          caption: "Final product",
+        }),
+      ).rejects.toThrow();
     });
   });
-
-  // ============================================================================
-  // Update Photo Metadata
-  // ============================================================================
 
   describe("updatePhotoMetadata", () => {
-    it("should toggle customer visibility", async () => {
-      const mockMetadata = {
-        id: "meta-1",
-        photo_url: "https://example.com/photo.jpg",
-        production_stage_id: "stage-1",
-        customer_visible: true,
-        uploaded_at: "2024-01-15T10:00:00Z",
-      };
+    it("confirms changed visibility and caption for the requested photo", async () => {
+      callAdminRpcMock.mockResolvedValue(
+        photoRow({ customer_visible: false, caption: "Revisada" }),
+      );
 
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as never);
-
-      const result = await updatePhotoMetadata("https://example.com/photo.jpg", {
-        customerVisible: true,
+      const result = await updatePhotoMetadata(` ${photoUrl} `, {
+        customerVisible: false,
+        caption: "  Revisada  ",
       });
 
-      expect(result.customerVisible).toBe(true);
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_update_photo_metadata", {
-        p_photo_url: "https://example.com/photo.jpg",
-        p_updates: { customer_visible: true },
+      expect(result.customerVisible).toBe(false);
+      expect(result.caption).toBe("Revisada");
+      expect(callAdminRpcMock).toHaveBeenCalledWith("admin_update_photo_metadata", {
+        p_photo_url: ` ${photoUrl} `,
+        p_updates: { customer_visible: false, caption: "  Revisada  " },
       });
     });
 
-    it("should update caption", async () => {
-      const mockMetadata = {
-        id: "meta-1",
-        photo_url: "https://example.com/photo.jpg",
-        production_stage_id: "stage-1",
-        customer_visible: false,
-        caption: "Updated caption",
-        uploaded_at: "2024-01-15T10:00:00Z",
-      };
+    it.each([
+      photoRow({ photo_url: "https://example.com/other.jpg" }),
+      photoRow({ customer_visible: false }),
+      photoRow({ caption: "Other caption" }),
+    ])("rejects an update response that does not match the request %#", async (value) => {
+      callAdminRpcMock.mockResolvedValue(value);
 
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as never);
-
-      const result = await updatePhotoMetadata("https://example.com/photo.jpg", {
-        caption: "Updated caption",
-      });
-
-      expect(result.caption).toBe("Updated caption");
+      await expect(
+        updatePhotoMetadata(photoUrl, {
+          customerVisible: true,
+          caption: "Final product",
+        }),
+      ).rejects.toThrow();
     });
   });
 
-  // ============================================================================
-  // Get Photos with Metadata (Permission Filtering)
-  // ============================================================================
-
   describe("getStagePhotosWithMetadata", () => {
-    it("should return all photos for admin users", async () => {
-      const mockPhotos = [
-        {
-          photo_url: "https://example.com/photo1.jpg",
-          customer_visible: true,
-          caption: "Final product",
-          uploaded_by_name: "Admin",
-          uploaded_at: "2024-01-15T10:00:00Z",
-        },
-        {
-          photo_url: "https://example.com/photo2.jpg",
-          customer_visible: false,
-          caption: "Work in progress",
-          uploaded_by_name: "Admin",
-          uploaded_at: "2024-01-15T11:00:00Z",
-        },
-      ];
-
+    it("maps the rows returned by the read RPC", async () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
-        data: mockPhotos,
+        data: [
+          {
+            photo_url: photoUrl,
+            customer_visible: true,
+            caption: "Final product",
+            uploaded_by_name: "Admin",
+            uploaded_at: "2026-09-13T12:00:00Z",
+          },
+          {
+            photo_url: "https://example.com/internal.jpg",
+            customer_visible: false,
+            caption: "WIP",
+            uploaded_by_name: "Admin",
+            uploaded_at: "2026-09-13T13:00:00Z",
+          },
+        ],
         error: null,
       } as never);
 
-      const result = await getStagePhotosWithMetadata("stage-1");
+      const result = await getStagePhotosWithMetadata(stageId);
 
       expect(result).toHaveLength(2);
-      expect(result[0].customerVisible).toBe(true);
-      expect(result[1].customerVisible).toBe(false);
+      expect(result[0]).toMatchObject({ url: photoUrl, customerVisible: true });
+      expect(result[1]).toMatchObject({ customerVisible: false });
       expect(supabase.rpc).toHaveBeenCalledWith("get_stage_photos_with_metadata", {
-        p_stage_id: "stage-1",
+        p_stage_id: stageId,
       });
     });
 
-    it("should return only customer-visible photos for customers", async () => {
-      const mockPhotos = [
-        {
-          photo_url: "https://example.com/photo1.jpg",
-          customer_visible: true,
-          caption: "Final product",
-          uploaded_by_name: "Admin",
-          uploaded_at: "2024-01-15T10:00:00Z",
-        },
-      ];
-
-      vi.mocked(supabase.rpc).mockResolvedValue({
-        data: mockPhotos,
-        error: null,
-      } as never);
-
-      const result = await getStagePhotosWithMetadata("stage-1");
-
-      expect(result).toHaveLength(1);
-      expect(result[0].customerVisible).toBe(true);
+    it("returns an empty array when the read RPC has no rows", async () => {
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as never);
+      await expect(getStagePhotosWithMetadata(stageId)).resolves.toEqual([]);
     });
 
-    it("should return empty array if no photos", async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
-        data: [],
-        error: null,
-      } as never);
-
-      const result = await getStagePhotosWithMetadata("stage-1");
-
-      expect(result).toHaveLength(0);
-    });
-
-    it("should throw error if RPC fails", async () => {
+    it("surfaces a read RPC error", async () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: null,
         error: { message: "RPC error" },
       } as never);
 
-      await expect(getStagePhotosWithMetadata("stage-1")).rejects.toThrow(
-        "Failed to get photos with metadata"
+      await expect(getStagePhotosWithMetadata(stageId)).rejects.toThrow(
+        "Failed to get photos with metadata: RPC error",
       );
     });
   });
-
-  // ============================================================================
-  // Delete Photo Metadata
-  // ============================================================================
 
   describe("deletePhotoMetadata", () => {
-    it("should delete photo metadata", async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as never);
+    it("accepts the versioned void RPC contract", async () => {
+      callAdminRpcMock.mockResolvedValue(null);
 
-      await deletePhotoMetadata("https://example.com/photo.jpg");
-
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_delete_photo_metadata", {
-        p_photo_url: "https://example.com/photo.jpg",
+      await expect(deletePhotoMetadata(photoUrl)).resolves.toBeUndefined();
+      expect(callAdminRpcMock).toHaveBeenCalledWith("admin_delete_photo_metadata", {
+        p_photo_url: photoUrl,
       });
     });
 
-    it("should throw error if deletion fails", async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
-        data: null,
-        error: { message: "Delete error" },
-      } as never);
-
-      await expect(
-        deletePhotoMetadata("https://example.com/photo.jpg")
-      ).rejects.toThrow("Failed to delete photo metadata");
+    it("surfaces gateway failures", async () => {
+      callAdminRpcMock.mockRejectedValue(new Error("Delete error"));
+      await expect(deletePhotoMetadata(photoUrl)).rejects.toThrow("Delete error");
     });
   });
-
-  // ============================================================================
-  // Bulk Create Photo Metadata
-  // ============================================================================
 
   describe("bulkCreatePhotoMetadata", () => {
-    it("should create multiple photo metadata records", async () => {
-      const mockPhotos = [
-        {
-          id: "meta-1",
-          photo_url: "https://example.com/photo1.jpg",
-          production_stage_id: "stage-1",
+    const input = [
+      { url: "https://example.com/photo1.jpg", customerVisible: true, caption: " A " },
+      { url: "https://example.com/photo2.jpg", customerVisible: false },
+    ];
+
+    it("requires one matching row for every submitted photo", async () => {
+      callAdminRpcMock.mockResolvedValue([
+        photoRow({
+          id: photoId,
+          photo_url: input[0].url,
           customer_visible: true,
-          uploaded_by: "user-123",
-          uploaded_at: "2024-01-15T10:00:00Z",
-        },
-        {
-          id: "meta-2",
-          photo_url: "https://example.com/photo2.jpg",
-          production_stage_id: "stage-1",
+          caption: "A",
+        }),
+        photoRow({
+          id: photoId2,
+          photo_url: input[1].url,
           customer_visible: false,
-          uploaded_by: "user-123",
-          uploaded_at: "2024-01-15T10:00:00Z",
-        },
-      ];
+          caption: null,
+        }),
+      ]);
 
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockPhotos, error: null } as never);
-
-      const result = await bulkCreatePhotoMetadata(
-        "stage-1",
-        [
-          { url: "https://example.com/photo1.jpg", customerVisible: true },
-          { url: "https://example.com/photo2.jpg", customerVisible: false },
-        ],
-        "Admin User"
-      );
+      const result = await bulkCreatePhotoMetadata(stageId, input, "Admin User");
 
       expect(result).toHaveLength(2);
-      expect(result[0].customerVisible).toBe(true);
-      expect(result[1].customerVisible).toBe(false);
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_bulk_create_photo_metadata", {
-        p_production_stage_id: "stage-1",
-        p_photos: [
-          { url: "https://example.com/photo1.jpg", customerVisible: true },
-          { url: "https://example.com/photo2.jpg", customerVisible: false },
-        ],
-        p_uploaded_by_name: "Admin User",
-      });
+      expect(result[0]).toMatchObject({ id: photoId, caption: "A" });
+      expect(result[1]).toMatchObject({ id: photoId2, customerVisible: false });
+    });
+
+    it("rejects missing, extra, reordered or mismatched rows", async () => {
+      callAdminRpcMock.mockResolvedValue([
+        photoRow({ id: photoId, photo_url: input[1].url, customer_visible: false, caption: null }),
+        photoRow({ id: photoId2, photo_url: input[0].url, customer_visible: true, caption: "A" }),
+      ]);
+
+      await expect(bulkCreatePhotoMetadata(stageId, input)).rejects.toThrow(
+        "Bulk photo metadata creation returned inconsistent photo metadata",
+      );
+
+      callAdminRpcMock.mockResolvedValue([photoRow({ photo_url: input[0].url, caption: "A" })]);
+      await expect(bulkCreatePhotoMetadata(stageId, input)).rejects.toThrow(
+        "Bulk photo metadata creation returned an unexpected result count",
+      );
     });
   });
 
-  // ============================================================================
-  // Check Admin Role
-  // ============================================================================
-
   describe("isUserAdmin", () => {
-    it("should return true for admin users", async () => {
-      const mockUser = { user: { id: "user-123" } };
-
+    it("returns the role RPC result for an authenticated user", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: mockUser,
+        data: { user: { id: userId } },
         error: null,
       } as never);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: true, error: null } as never);
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
-        data: true,
-        error: null,
-      } as never);
-
-      const result = await isUserAdmin();
-
-      expect(result).toBe(true);
+      await expect(isUserAdmin()).resolves.toBe(true);
       expect(supabase.rpc).toHaveBeenCalledWith("has_role", {
-        _user_id: "user-123",
+        _user_id: userId,
         _role: "admin",
       });
     });
 
-    it("should return false for non-admin users", async () => {
-      const mockUser = { user: { id: "user-123" } };
-
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: mockUser,
-        error: null,
-      } as never);
-
-      vi.mocked(supabase.rpc).mockResolvedValue({
-        data: false,
-        error: null,
-      } as never);
-
-      const result = await isUserAdmin();
-
-      expect(result).toBe(false);
-    });
-
-    it("should return false if no user is logged in", async () => {
+    it("returns false when there is no authenticated user", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: null },
         error: null,
       } as never);
 
-      const result = await isUserAdmin();
-
-      expect(result).toBe(false);
+      await expect(isUserAdmin()).resolves.toBe(false);
+      expect(supabase.rpc).not.toHaveBeenCalled();
     });
   });
 });
