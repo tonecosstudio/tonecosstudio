@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 
@@ -49,10 +50,26 @@ interface BasePricingRpcClient {
       p_changed_by: string;
       p_reason: string | null;
     },
-  ): Promise<{ data: UpdateBasePriceResponse[] | null; error: { message: string } | null }>;
+  ): Promise<{ data: unknown; error: { message: string } | null }>;
 }
 
 const basePricingRpc = supabase as unknown as BasePricingRpcClient;
+
+const updateBasePriceResponseSchema = z.object({
+  success: z.boolean(),
+  old_price: z.number().int().positive(),
+  new_price: z.number().int().positive(),
+  message: z.string(),
+});
+
+function parseUpdateBasePriceResult(value: unknown): UpdateBasePriceResponse {
+  const parsed = z.array(updateBasePriceResponseSchema).length(1).safeParse(value);
+  if (!parsed.success) {
+    throw new Error("Resposta invalida ao atualizar preco base");
+  }
+
+  return parsed.data[0];
+}
 
 function toCollectionBasePrice(item: CollectionBasePricingRow): CollectionBasePrice {
   return {
@@ -137,11 +154,7 @@ export async function updateBasePriceWithHistory(
     throw new Error(`Erro ao atualizar preco base: ${error.message}`);
   }
 
-  if (!data || data.length === 0) {
-    throw new Error("Nenhum resultado retornado");
-  }
-
-  const result = data[0];
+  const result = parseUpdateBasePriceResult(data);
 
   if (!result.success) {
     throw new Error(result.message);
