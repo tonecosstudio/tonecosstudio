@@ -7,6 +7,7 @@ import type {
   PricingTier,
   PricingTierWithStats,
   PropagateTierPricingResponse,
+  PropagationResult,
   UpdatePricingTierInput,
 } from "@/types/pricing-tiers";
 
@@ -26,6 +27,59 @@ type PricingTierRow = {
   created_by?: string | null;
   updated_by?: string | null;
 };
+
+const PROPAGATE_TIER_PRICING_ERROR = "Erro ao propagar precos";
+
+function isPropagationResult(value: unknown): value is PropagationResult {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const result = value as Partial<PropagationResult>;
+  return (
+    typeof result.collection_id === "string" &&
+    result.collection_id.trim().length > 0 &&
+    typeof result.old_price === "number" &&
+    Number.isFinite(result.old_price) &&
+    typeof result.new_price === "number" &&
+    Number.isFinite(result.new_price) &&
+    typeof result.success === "boolean" &&
+    (result.error_message === undefined ||
+      typeof result.error_message === "string")
+  );
+}
+
+function parsePropagationResponse(value: unknown): PropagateTierPricingResponse {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(PROPAGATE_TIER_PRICING_ERROR);
+  }
+
+  const response = value as Partial<PropagateTierPricingResponse>;
+  if (
+    response.ok !== true ||
+    !Number.isInteger(response.updated_count) ||
+    (response.updated_count ?? -1) < 0 ||
+    !Number.isInteger(response.failed_count) ||
+    (response.failed_count ?? -1) < 0 ||
+    !Array.isArray(response.results) ||
+    !response.results.every(isPropagationResult)
+  ) {
+    throw new Error(PROPAGATE_TIER_PRICING_ERROR);
+  }
+
+  const updatedCount = response.results.filter((result) => result.success).length;
+  const failedCount = response.results.length - updatedCount;
+
+  if (
+    response.updated_count !== updatedCount ||
+    response.failed_count !== failedCount ||
+    response.updated_count + response.failed_count !== response.results.length
+  ) {
+    throw new Error(PROPAGATE_TIER_PRICING_ERROR);
+  }
+
+  return response as PropagateTierPricingResponse;
+}
 
 function toPricingTier(row: PricingTierRow): PricingTier {
   return {
@@ -227,9 +281,11 @@ export async function deactivatePricingTier(tierId: string): Promise<string> {
 export async function propagateTierPricing(
   tierId: string,
 ): Promise<PropagateTierPricingResponse> {
-  return callAuthenticatedEdgeFunction<PropagateTierPricingResponse>(
+  const response = await callAuthenticatedEdgeFunction<unknown>(
     "propagate-tier-pricing",
     { tierId },
-    "Erro ao propagar precos",
+    PROPAGATE_TIER_PRICING_ERROR,
   );
+
+  return parsePropagationResponse(response);
 }
