@@ -55,25 +55,31 @@ function parsePropagationResponse(value: unknown): PropagateTierPricingResponse 
   }
 
   const response = value as Partial<PropagateTierPricingResponse>;
+  const updatedCount = response.updated_count;
+  const failedCount = response.failed_count;
+  const results = response.results;
+
   if (
     response.ok !== true ||
-    !Number.isInteger(response.updated_count) ||
-    (response.updated_count ?? -1) < 0 ||
-    !Number.isInteger(response.failed_count) ||
-    (response.failed_count ?? -1) < 0 ||
-    !Array.isArray(response.results) ||
-    !response.results.every(isPropagationResult)
+    typeof updatedCount !== "number" ||
+    !Number.isInteger(updatedCount) ||
+    updatedCount < 0 ||
+    typeof failedCount !== "number" ||
+    !Number.isInteger(failedCount) ||
+    failedCount < 0 ||
+    !Array.isArray(results) ||
+    !results.every(isPropagationResult)
   ) {
     throw new Error(PROPAGATE_TIER_PRICING_ERROR);
   }
 
-  const updatedCount = response.results.filter((result) => result.success).length;
-  const failedCount = response.results.length - updatedCount;
+  const observedUpdatedCount = results.filter((result) => result.success).length;
+  const observedFailedCount = results.length - observedUpdatedCount;
 
   if (
-    response.updated_count !== updatedCount ||
-    response.failed_count !== failedCount ||
-    response.updated_count + response.failed_count !== response.results.length
+    updatedCount !== observedUpdatedCount ||
+    failedCount !== observedFailedCount ||
+    updatedCount + failedCount !== results.length
   ) {
     throw new Error(PROPAGATE_TIER_PRICING_ERROR);
   }
