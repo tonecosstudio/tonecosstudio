@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 
 type ProductionStageKey =
@@ -30,10 +31,48 @@ type ProductionPhotoRpc = {
   created_by: string | null;
 };
 
+const productionStageSchema = z.enum([
+  "queued",
+  "printing",
+  "finishing",
+  "painting",
+  "inspection",
+  "shipped",
+]);
+
+const productionRowSchema = z.object({
+  id: z.string().uuid(),
+  quote_id: z.string().uuid(),
+  current_stage: productionStageSchema,
+  started_at: z.string().min(1),
+  updated_at: z.string().min(1),
+});
+
+const productionUpdateSchema = z.object({
+  id: z.string().uuid(),
+});
+
+const productionPhotoSchema = z.object({
+  id: z.string().uuid(),
+  quote_id: z.string().uuid(),
+  update_id: z.string().uuid(),
+  url: z.string().url().refine((value) => value.startsWith("http://") || value.startsWith("https://")),
+  caption: z.string().nullable(),
+  created_at: z.string().min(1),
+  created_by: z.string().uuid().nullable(),
+});
+
 export async function ensureQuoteProductionRpc(quoteId: string): Promise<ProductionRowRpc> {
-  return callAdminRpc<ProductionRowRpc>("ensure_quote_production", {
+  const value = await callAdminRpc<unknown>("ensure_quote_production", {
     p_quote_id: quoteId,
   });
+
+  const parsed = productionRowSchema.safeParse(value);
+  if (!parsed.success || parsed.data.quote_id !== quoteId) {
+    throw new Error("Quote production did not return matching data");
+  }
+
+  return parsed.data;
 }
 
 export async function setQuoteProductionStageRpc(input: {
@@ -41,11 +80,18 @@ export async function setQuoteProductionStageRpc(input: {
   stage: ProductionStageKey;
   note?: string;
 }): Promise<ProductionUpdateRpc> {
-  return callAdminRpc<ProductionUpdateRpc>("set_quote_production_stage", {
+  const value = await callAdminRpc<unknown>("set_quote_production_stage", {
     p_quote_id: input.quoteId,
     p_stage: input.stage,
     p_note: input.note ?? null,
   });
+
+  const parsed = productionUpdateSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new Error("Production stage update did not return valid data");
+  }
+
+  return parsed.data;
 }
 
 export async function addQuoteProductionPhotoRpc(input: {
@@ -54,10 +100,22 @@ export async function addQuoteProductionPhotoRpc(input: {
   url: string;
   caption?: string;
 }): Promise<ProductionPhotoRpc> {
-  return callAdminRpc<ProductionPhotoRpc>("add_quote_production_photo", {
+  const value = await callAdminRpc<unknown>("add_quote_production_photo", {
     p_quote_id: input.quoteId,
     p_update_id: input.updateId,
     p_url: input.url,
     p_caption: input.caption ?? null,
   });
+
+  const parsed = productionPhotoSchema.safeParse(value);
+  if (
+    !parsed.success ||
+    parsed.data.quote_id !== input.quoteId ||
+    parsed.data.update_id !== input.updateId ||
+    parsed.data.url !== input.url
+  ) {
+    throw new Error("Production photo did not return matching data");
+  }
+
+  return parsed.data;
 }
