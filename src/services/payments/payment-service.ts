@@ -16,11 +16,18 @@ import type {
 } from "@/types/manual-payment";
 import { assertCurrentUserId, requireAuthenticatedUserId } from "@/services/auth/current-user";
 import { sanitizePostgrestSearchTerm } from "@/lib/postgrest-search";
+import { loadPaymentTimeline } from "@/services/payments/payment-timeline-service";
+
+type PaymentDetailsRow = Omit<
+  PaymentDetails,
+  "timeline" | "conversation" | "customer_name" | "customer_email"
+>;
 
 /**
  * Fetch a payment by ID under database RLS.
  * Customers can resolve only their own rows; admins may resolve rows allowed by
- * the admin RLS policy.
+ * the admin RLS policy. Timeline events come from a separate authenticated
+ * boundary so the browser never depends on internal audit tables directly.
  */
 async function fetchPaymentById(id: string): Promise<PaymentDetails | null> {
   const { data, error } = await supabase
@@ -29,8 +36,7 @@ async function fetchPaymentById(id: string): Promise<PaymentDetails | null> {
       `
       *,
       payment_method:admin_payment_methods(*),
-      files:payment_files(*),
-      audit_logs:payment_audit_log(*)
+      files:payment_files(*)
     `
     )
     .eq("id", id)
@@ -40,23 +46,27 @@ async function fetchPaymentById(id: string): Promise<PaymentDetails | null> {
     throw error;
   }
 
-  const result = data as unknown as PaymentDetails | null;
+  const result = data as unknown as PaymentDetailsRow | null;
 
   if (!result) {
     return null;
   }
 
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select("full_name, email")
-    .eq("id", result.user_id)
-    .maybeSingle();
+  const [timeline, profileResult] = await Promise.all([
+    loadPaymentTimeline(id),
+    supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", result.user_id)
+      .maybeSingle(),
+  ]);
 
   return {
     ...result,
-    customer_name: profileData?.full_name,
-    customer_email: profileData?.email,
-  } as PaymentDetails;
+    timeline,
+    customer_name: profileResult.data?.full_name,
+    customer_email: profileResult.data?.email,
+  };
 }
 
 export async function getPaymentById(id: string): Promise<PaymentDetails | null> {
@@ -114,13 +124,13 @@ export async function listPaymentsByUser(
 
   query = query.order("created_at", { ascending: false });
 
-  const { data, error } = await query;
+  const { data: payments, error } = await query;
 
   if (error) {
     throw new Error(`Failed to list payments: ${error.message}`);
   }
 
-  return data as ManualPayment[];
+  return payments as ManualPayment[];
 }
 
 /**
