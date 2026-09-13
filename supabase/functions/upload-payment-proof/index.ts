@@ -18,6 +18,23 @@ const UPLOAD_RATE_LIMIT = { maxRequests: 10, windowSeconds: 60 * 60 } as const;
 const PAYMENT_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ADMIN_PAYMENTS_PATH = "/admin/pagamentos";
 
+type PaymentFileRecord = {
+  id: string;
+  payment_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string;
+  thumbnail_path: string | null;
+  uploaded_by: string;
+  created_at: string;
+};
+
+type PaymentFileUploadRecord = {
+  file: PaymentFileRecord;
+  firstFile: boolean;
+};
+
 function json(req: Request, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -27,6 +44,45 @@ function json(req: Request, body: unknown, status = 200) {
       "Cache-Control": "no-store",
     },
   });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parsePaymentFileUploadRecord(
+  value: unknown,
+  expected: {
+    paymentId: string;
+    userId: string;
+    filePath: string;
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+  },
+): PaymentFileUploadRecord {
+  if (!isRecord(value) || !isRecord(value.file) || typeof value.firstFile !== "boolean") {
+    throw new SecureUploadError("Failed to save file record", 500, "DATABASE_ERROR");
+  }
+
+  const file = value.file;
+  if (
+    typeof file.id !== "string" ||
+    !PAYMENT_ID_RE.test(file.id) ||
+    file.payment_id !== expected.paymentId ||
+    file.uploaded_by !== expected.userId ||
+    file.file_path !== expected.filePath ||
+    file.file_name !== expected.fileName.slice(0, 255) ||
+    file.file_size !== expected.fileSize ||
+    file.file_type !== expected.mimeType ||
+    (file.thumbnail_path !== null && typeof file.thumbnail_path !== "string") ||
+    typeof file.created_at !== "string" ||
+    file.created_at.length === 0
+  ) {
+    throw new SecureUploadError("Failed to save file record", 500, "DATABASE_ERROR");
+  }
+
+  return value as unknown as PaymentFileUploadRecord;
 }
 
 async function logMalwareIncident(
@@ -191,14 +247,29 @@ serve(async (req) => {
       },
     );
 
-    if (recordError || !uploadRecord) {
+    if (recordError) {
       await service.storage.from(STORAGE_BUCKET).remove([filePath]);
       log.error("payment_file_record_failed", { error: recordError, paymentId, userId });
       throw new SecureUploadError("Failed to save file record", 500, "DATABASE_ERROR");
     }
 
-    const uploadResult = uploadRecord as { firstFile?: boolean };
-    if (uploadResult.firstFile === true) {
+    let uploadResult: PaymentFileUploadRecord;
+    try {
+      uploadResult = parsePaymentFileUploadRecord(uploadRecord, {
+        paymentId,
+        userId,
+        filePath,
+        fileName: fileValue.name,
+        fileSize: fileValue.size,
+        mimeType,
+      });
+    } catch (error) {
+      await service.storage.from(STORAGE_BUCKET).remove([filePath]);
+      log.error("payment_file_record_invalid", { error, paymentId, userId });
+      throw error;
+    }
+
+    if (uploadResult.firstFile) {
       await notifyAdminsPaymentUnderReview(
         service,
         paymentId,
@@ -211,10 +282,10 @@ serve(async (req) => {
       userId,
       fileType: mimeType,
       fileSize: fileValue.size,
-      firstFile: uploadResult.firstFile === true,
+      firstFile: uploadResult.firstFile,
     });
 
-    return json(req, uploadRecord, 201);
+    return json(req, uploadResult, 201);
   } catch (error) {
     if (error instanceof SecureUploadError) {
       return json(req, { error: error.message, code: error.code }, error.status);
