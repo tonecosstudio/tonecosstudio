@@ -10,8 +10,8 @@
 
 HEAD atual da `main`:
 
-- `efec11fb68863d81b5e07a474f3f5890d9c65e6d`
-- `test: cover group message mutation contracts`
+- `69ecf33feb9f10d00fcb4ca4444392fdc8288218`
+- `fix: validate collection mutation RPC results`
 
 O source avançou bastante em autoridade comercial e contratos fail-closed, mas ainda faltam provas externas obrigatórias no mesmo release candidate.
 
@@ -25,7 +25,7 @@ O Quality Gate continua bloqueado externamente antes dos steps:
 - jobs permanecem sem steps executados e sem runner (`runner_id=0`/`steps=[]` ou equivalente);
 - portanto não há prova canônica de `typecheck`, lint, testes, coverage, build, audit ou format.
 
-**Não tratar esse failure como falha de código enquanto o runner não executar os comandos.**
+**Não tratar esse bloqueio como falha de código enquanto o runner não executar os comandos.** O trabalho deste ciclo não depende de GitHub Actions: a verificação é feita por revisão dos contratos source/SQL e por validações locais/estruturais disponíveis, sem transformar ausência de runner em PASS.
 
 ### Vercel
 
@@ -36,14 +36,9 @@ Projeto canônico:
 - team id `team_VPZxAK2VXdTWXI8blJaKQEl0`
 - framework Vite
 
-O deployment do HEAD `efec11fb...` foi observado como **READY em produção**:
+O último deployment observado como **READY em produção** corresponde ao commit `efec11fb68863d81b5e07a474f3f5890d9c65e6d`.
 
-- deployment `dpl_FiCFGdF8U54QmfZkppkGtrphsvCA`;
-- commit `efec11fb68863d81b5e07a474f3f5890d9c65e6d`;
-- target `production`;
-- status `READY`.
-
-O Vercel voltou a compilar o HEAD atual; o bloqueio anterior de `build-rate-limit` não impede mais este checkpoint. Isso prova build/deploy do HEAD, mas não substitui os demais gates.
+Isso não prova os commits posteriores. Não considerar o Vercel como prova do HEAD atual sem novo deployment observado.
 
 ### Supabase
 
@@ -126,13 +121,17 @@ Seis mutações administrativas de subscription-credit validam forma, IDs e inva
 
 Contratos de ciclo, delivery, tracking, personagem e bônus validam identidade e estado retornados, cardinalidade esperada e relações entre subscription/delivery/cycle.
 
-### Grupos / suporte
+### Grupos / suporte / catálogo
 
 - quick replies usam validação runtime de UUID/ID/contagem;
 - mensagens de grupo agora validam retorno de agendamento, incluindo `group_id`, mensagem, status `pending` e timestamp;
 - templates de grupo validam objeto retornado e ID/dados persistidos;
 - exclusões exigem o ID exato retornado;
-- RPCs de grupo são admin-authoritative e tabelas possuem SELECT/RLS sem DML direto de browser.
+- RPCs de grupo são admin-authoritative e tabelas possuem SELECT/RLS sem DML direto de browser;
+- mutações administrativas de catálogo/coleções agora validam IDs retornados para criação/edição/exclusão de coleção e personagem;
+- inserção em lote de personagens exige retorno `inserted` inteiro exatamente igual à quantidade solicitada;
+- criação individual de personagem exige UUID válido;
+- criação de coleção exige UUID válido em vez de aceitar qualquer objeto parcialmente formado.
 
 ## 1. Critério de GO
 
@@ -167,7 +166,7 @@ Vercel READY isolado não equivale a GO.
 
 - [x] auditor de DML direto para tabelas críticas;
 - [x] auditor multi-schema de RPCs perigosos;
-- [x] pagamentos, comprovantes, métodos de pagamento, pricing, produção, logística e grupos com contratos fail-closed no source;
+- [x] pagamentos, comprovantes, métodos de pagamento, pricing, produção, logística, grupos e catálogo com contratos fail-closed no source;
 - [ ] reconciliar grants/RLS reais no Supabase;
 - [ ] consolidar RPCs legados de pricing após backend canônico observável;
 - [ ] continuar pente-fino de `callAdminRpc<T>` de alto risco restantes.
@@ -203,20 +202,21 @@ Checkout de assinatura não deve ser ligado contra backend não observado.
 
 ### P0.5 Deploy / smoke / rollback
 
-- [x] Vercel operacional quando a cota permite;
-- [x] deployment READY do HEAD `efec11fb...` comprovado;
+- [x] Vercel operacional no último checkpoint observado;
+- [x] deployment READY de `efec11fb...` comprovado;
 - [ ] smoke autenticado;
 - [ ] provar rollback;
 - [ ] registrar receipt final.
 
 ## 3. Próxima sequência
 
-1. Continuar source-first nos `callAdminRpc<T>` restantes de alto impacto, priorizando suporte, notificações, grupos e operações comerciais.
+1. Continuar source-first nos `callAdminRpc<T>` restantes de alto impacto, priorizando grupos, suporte, notificações e operações comerciais.
 2. Para cada mutação, confrontar retorno do cliente com a migration SQL correspondente antes de alterar o contrato.
-3. Procurar authority bypass real antes de criar migration; não revogar privilégios sem provar que o produto não depende do DML direto.
-4. Não corrigir GitHub Actions enquanto jobs não executarem steps reais.
-5. Quando Supabase voltar, reconciliar schema/grants/RLS/functions, aplicar mudanças pendentes, regenerar tipos e executar smoke P0.
-6. Só então reavaliar GO/NO-GO.
+3. Executar validações locais/estruturais e testes focados disponíveis sem depender de minutos do GitHub Actions.
+4. Procurar authority bypass real antes de criar migration; não revogar privilégios sem provar que o produto não depende do DML direto.
+5. Não corrigir GitHub Actions enquanto jobs não executarem steps reais.
+6. Quando Supabase voltar, reconciliar schema/grants/RLS/functions, aplicar mudanças pendentes, regenerar tipos e executar smoke P0.
+7. Só então reavaliar GO/NO-GO.
 
 ## 4. Do not repeat
 
