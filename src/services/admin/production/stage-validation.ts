@@ -13,6 +13,7 @@ import {
   currentUserHasAdminAccess,
 } from "@/services/auth/current-user";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
+import { requireAdminRpcUuid } from "@/services/admin/rpc/admin-rpc-results";
 import {
   PRODUCTION_STAGE_ORDER,
   getProductionStageLabel,
@@ -286,7 +287,7 @@ export async function logStageTransition(
     void userId;
     void userName;
 
-    await callAdminRpc(
+    const result = await callAdminRpc<unknown>(
       "admin_log_stage_transition",
       {
         p_production_queue_id: productionQueueId,
@@ -296,6 +297,7 @@ export async function logStageTransition(
         p_justification: justification,
       },
     );
+    requireAdminRpcUuid(result, "Stage transition logging");
   } catch (error) {
     log.error("Failed to log stage transition", { error });
     // Don't throw - logging failure shouldn't block the transition
@@ -368,7 +370,7 @@ export function getNextStage(currentStage: StageType): StageType | null {
  */
 export function getPreviousStage(currentStage: StageType): StageType | null {
   const currentIndex = ORDERED_STAGES.indexOf(currentStage);
-  return currentIndex > 0 ? ORDERED_STAGES[currentIndex - 1] : null;
+  return currentIndex > 0 ? (ORDERED_STAGES[currentIndex - 1] ?? null) : null;
 }
 
 /**
