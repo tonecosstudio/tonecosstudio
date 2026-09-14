@@ -36,9 +36,14 @@ Projeto canônico:
 - team id `team_VPZxAK2VXdTWXI8blJaKQEl0`
 - framework Vite
 
-Último deployment comprovado READY permanece em commit anterior ao HEAD atual. Builds novos foram afetados por `build-rate-limit`.
+O deployment do HEAD `efec11fb...` foi observado como **READY em produção**:
 
-**Não declarar o HEAD atual publicado/compilado pelo Vercel sem deployment READY correspondente.**
+- deployment `dpl_FiCFGdF8U54QmfZkppkGtrphsvCA`;
+- commit `efec11fb68863d81b5e07a474f3f5890d9c65e6d`;
+- target `production`;
+- status `READY`.
+
+O Vercel voltou a compilar o HEAD atual; o bloqueio anterior de `build-rate-limit` não impede mais este checkpoint. Isso prova build/deploy do HEAD, mas não substitui os demais gates.
 
 ### Supabase
 
@@ -199,8 +204,7 @@ Checkout de assinatura não deve ser ligado contra backend não observado.
 ### P0.5 Deploy / smoke / rollback
 
 - [x] Vercel operacional quando a cota permite;
-- [ ] remover/aguardar `build-rate-limit`;
-- [ ] obter deployment READY do mesmo release candidate final;
+- [x] deployment READY do HEAD `efec11fb...` comprovado;
 - [ ] smoke autenticado;
 - [ ] provar rollback;
 - [ ] registrar receipt final.
@@ -211,9 +215,8 @@ Checkout de assinatura não deve ser ligado contra backend não observado.
 2. Para cada mutação, confrontar retorno do cliente com a migration SQL correspondente antes de alterar o contrato.
 3. Procurar authority bypass real antes de criar migration; não revogar privilégios sem provar que o produto não depende do DML direto.
 4. Não corrigir GitHub Actions enquanto jobs não executarem steps reais.
-5. Quando Vercel liberar builds, validar o HEAD mais recente e corrigir qualquer erro real de compilação.
-6. Quando Supabase voltar, reconciliar schema/grants/RLS/functions, aplicar mudanças pendentes, regenerar tipos e executar smoke P0.
-7. Só então reavaliar GO/NO-GO.
+5. Quando Supabase voltar, reconciliar schema/grants/RLS/functions, aplicar mudanças pendentes, regenerar tipos e executar smoke P0.
+6. Só então reavaliar GO/NO-GO.
 
 ## 4. Do not repeat
 
@@ -224,5 +227,5 @@ Checkout de assinatura não deve ser ligado contra backend não observado.
 - Não ressuscitar `payment_audit_log`.
 - Não editar tipos Supabase gerados manualmente para esconder drift.
 - Não revogar RPCs legados de pricing antes da fronteira substituta estar implantada/provada.
-- Não tratar último Vercel READY como prova do HEAD atual quando o HEAD estiver bloqueado.
+- Não tratar Vercel READY como prova de todos os gates.
 - Não declarar lançamento pronto enquanto P0 permanecer aberto.
