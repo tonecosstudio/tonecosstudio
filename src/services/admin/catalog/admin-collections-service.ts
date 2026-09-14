@@ -1,5 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
+import {
+  requireAdminRpcIntegerField,
+  requireAdminRpcMatchingId,
+  requireAdminRpcUuid,
+} from "@/services/admin/rpc/admin-rpc-results";
 import { getPublicStorageUrl, uploadStorageFile } from "@/services/supabase/storage-client";
 
 const MAX_MODEL_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -284,43 +289,47 @@ export async function fetchCharactersByCollection(
 export async function createCollection(
   input: CreateCollectionInput,
 ): Promise<{ id: string }> {
-  const data = await callAdminRpc<JsonObject | null>(
-    "admin_create_collection",
-    {
-      p_payload: input,
-    },
-  );
-  if (!data?.id || typeof data.id !== "string") {
-    throw new Error("Colecao criada sem identificador");
-  }
-  return { id: data.id };
+  const data = await callAdminRpc<unknown>("admin_create_collection", {
+    p_payload: input,
+  });
+  return { id: requireAdminRpcUuid((data as JsonObject | null)?.id, "Colecao criada") };
 }
 
 export async function insertCollectionCharacters(
   characters: CreateCharacterInput[],
-) {
-  await callAdminRpc(
+): Promise<void> {
+  if (characters.length === 0) {
+    throw new Error("Nenhum personagem fornecido para insercao");
+  }
+
+  const result = await callAdminRpc<unknown>(
     "admin_insert_collection_characters",
-    {
-      p_characters: characters,
-    },
+    { p_characters: characters },
+  );
+  requireAdminRpcIntegerField(
+    result,
+    "inserted",
+    "Collection characters insertion",
+    characters.length,
   );
 }
 
-export async function deleteCollectionById(collectionId: string) {
-  await callAdminRpc("admin_delete_collection", {
+export async function deleteCollectionById(collectionId: string): Promise<void> {
+  const result = await callAdminRpc<unknown>("admin_delete_collection", {
     p_collection_id: collectionId,
   });
+  requireAdminRpcMatchingId(result, collectionId, "Collection deletion");
 }
 
 export async function updateCollectionById(
   collectionId: string,
   payload: Record<string, unknown>,
-) {
-  await callAdminRpc("admin_update_collection", {
+): Promise<void> {
+  const result = await callAdminRpc<unknown>("admin_update_collection", {
     p_collection_id: collectionId,
     p_payload: payload as JsonObject,
   });
+  requireAdminRpcMatchingId(result, collectionId, "Collection update");
 }
 
 export async function uploadModelImage(filePath: string, file: File) {
@@ -334,35 +343,31 @@ export function getModelPublicUrl(filePath: string) {
   return getPublicStorageUrl("models", filePath);
 }
 
-export async function insertCollectionCharacter(payload: CreateCharacterInput) {
-  await callAdminRpc(
-    "admin_insert_collection_character",
-    {
-      p_payload: payload,
-    },
-  );
+export async function insertCollectionCharacter(
+  payload: CreateCharacterInput,
+): Promise<void> {
+  const result = await callAdminRpc<unknown>("admin_insert_collection_character", {
+    p_payload: payload,
+  });
+  requireAdminRpcUuid(result, "Collection character creation");
 }
 
 export async function updateCollectionCharacterById(
   characterId: string,
   payload: Record<string, unknown>,
-) {
-  await callAdminRpc(
-    "admin_update_collection_character",
-    {
-      p_character_id: characterId,
-      p_payload: payload as JsonObject,
-    },
-  );
+): Promise<void> {
+  const result = await callAdminRpc<unknown>("admin_update_collection_character", {
+    p_character_id: characterId,
+    p_payload: payload as JsonObject,
+  });
+  requireAdminRpcMatchingId(result, characterId, "Collection character update");
 }
 
-export async function deleteCollectionCharacterById(characterId: string) {
-  await callAdminRpc(
-    "admin_delete_collection_character",
-    {
-      p_character_id: characterId,
-    },
-  );
+export async function deleteCollectionCharacterById(characterId: string): Promise<void> {
+  const result = await callAdminRpc<unknown>("admin_delete_collection_character", {
+    p_character_id: characterId,
+  });
+  requireAdminRpcMatchingId(result, characterId, "Collection character deletion");
 }
 
 export async function countActiveFixedCollections() {
