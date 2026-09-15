@@ -247,7 +247,6 @@ function edgeFunctionName(repoPath) {
   const [, , functionName] = repoPath.split("/");
   return functionName ?? "";
 }
-
 function isTestPath(repoPath) {
   return (
     repoPath.startsWith("src/test/") ||
@@ -312,6 +311,7 @@ const migrationSource = existsSync(MIGRATIONS_DIR)
       .map((entry) => readFileSync(path.join(MIGRATIONS_DIR, entry), "utf8"))
       .join("\n\n")
   : "";
+const missingRateLimitMigrationRequirements = [];
 
 if (
   !/CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+public\.rate_limits/i.test(
@@ -369,7 +369,6 @@ const forbiddenEdgeHardcodedAdminRoleLists = [];
 const forbiddenEdgeRateLimitFailOpen = [];
 const forbiddenEdgeMissingRateLimit = [];
 const forbiddenEdgeDirectSharedSecret = [];
-const missingRateLimitMigrationRequirements = [];
 const importCountsByLayer = new Map();
 const directCallCountsByLayer = new Map();
 
@@ -748,7 +747,6 @@ if (forbiddenRootServiceImports.length > 0) {
   }
   process.exitCode = 1;
 }
-
 if (forbiddenAdminRootServiceImports.length > 0) {
   console.error("");
   console.error(
