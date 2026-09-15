@@ -108,13 +108,6 @@ export const ANALYTICS = {
 
 export const PLANS = {
   TYPES: ["avulso", "mensal", "trimestral", "semestral", "anual"] as const,
-  DEFAULT_DELIVERIES: {
-    avulso: 1,
-    mensal: 1,
-    trimestral: 3,
-    semestral: 6,
-    anual: 12,
-  } as const,
   DAYS_TO_NEXT_DELIVERY:
     Number(import.meta.env.VITE_DAYS_TO_NEXT_DELIVERY) || 30,
 } as const;
