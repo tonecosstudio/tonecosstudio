@@ -1,12 +1,19 @@
 /**
- * Testes unitarios - DeliveryService
+ * Unit tests for DeliveryService.
  *
- * Mantem mutacoes na fronteira RPC e consultas como PostgREST.
+ * Administrative mutations go through the authenticated admin RPC gateway.
+ * User-owned character changes remain on their dedicated RPC. Read queries
+ * continue to use PostgREST.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { deliveryService, Delivery, PlanType } from './deliveryService';
 import { cycleService, Cycle } from './cycleService';
+import { callAdminRpc } from '@/services/admin/rpc/admin-rpc-gateway';
+
+vi.mock('@/services/admin/rpc/admin-rpc-gateway', () => ({
+  callAdminRpc: vi.fn(),
+}));
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
@@ -24,10 +31,20 @@ vi.mock('./cycleService', () => ({
 }));
 
 const { supabase: mockSupabase } = await import('@/integrations/supabase/client');
+const mockCallAdminRpc = vi.mocked(callAdminRpc);
+
+const SUBSCRIPTION_ID = '10000000-0000-4000-8000-000000000001';
+const DELIVERY_ID = '20000000-0000-4000-8000-000000000001';
+const CYCLE_ID = '30000000-0000-4000-8000-000000000001';
+const CHARACTER_ID = '40000000-0000-4000-8000-000000000001';
+
+function uuidFromIndex(index: number): string {
+  return `50000000-0000-4000-8000-${String(index).padStart(12, '0').slice(-12)}`;
+}
 
 describe('DeliveryService', () => {
   const mockCycle: Cycle = {
-    id: 'cycle-1',
+    id: CYCLE_ID,
     created_at: '2026-03-01T00:00:00-03:00',
     updated_at: '2026-03-01T00:00:00-03:00',
     cycle_number: 1,
@@ -45,11 +62,11 @@ describe('DeliveryService', () => {
   };
 
   const mockDelivery: Delivery = {
-    id: 'delivery-1',
+    id: DELIVERY_ID,
     created_at: '2026-03-01T00:00:00-03:00',
     updated_at: '2026-03-01T00:00:00-03:00',
-    subscription_id: 'sub-1',
-    cycle_id: 'cycle-1',
+    subscription_id: SUBSCRIPTION_ID,
+    cycle_id: CYCLE_ID,
     character_id: null,
     delivery_number: 1,
     status: 'scheduled',
@@ -62,52 +79,62 @@ describe('DeliveryService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
   });
 
   function mockScheduledDeliveries(count: number): Delivery[] {
     return Array.from({ length: count }, (_, index) => ({
       ...mockDelivery,
-      id: `delivery-${index + 1}`,
+      id: uuidFromIndex(index + 1),
+      cycle_id: uuidFromIndex(100 + index),
       delivery_number: index + 1,
     }));
   }
 
+  function schedulingEnvelope(planType: PlanType) {
+    const deliveries = mockScheduledDeliveries(planType === 'trimestral' ? 3 : 6);
+    return {
+      deliveries,
+      bonusPiece:
+        planType === 'semestral'
+          ? {
+              id: uuidFromIndex(900),
+              subscription_id: SUBSCRIPTION_ID,
+              delivery_id: deliveries[5].id,
+              description: 'Exclusive bonus piece for Semestral plan',
+              status: 'pending',
+            }
+          : null,
+    };
+  }
+
   describe('scheduleConsecutiveDeliveries', () => {
-    it('deve agendar 3 entregas para plano trimestral via RPC', async () => {
-      const subscriptionId = 'sub-123';
+    it('agenda 3 entregas para plano trimestral via gateway administrativo', async () => {
       const planType: PlanType = 'trimestral';
-      const entryCycleId = 'cycle-2-march-2026';
-      mockSupabase.rpc.mockResolvedValue({
-        data: { deliveries: mockScheduledDeliveries(3) },
-        error: null,
-      });
+      const entryCycleId = CYCLE_ID;
+      mockCallAdminRpc.mockResolvedValueOnce(schedulingEnvelope(planType));
 
       const deliveries = await deliveryService.scheduleConsecutiveDeliveries(
-        subscriptionId,
+        SUBSCRIPTION_ID,
         planType,
-        entryCycleId
+        entryCycleId,
       );
 
       expect(deliveries).toHaveLength(3);
       expect(deliveries.map((delivery) => delivery.delivery_number)).toEqual([1, 2, 3]);
-      expect(mockSupabase.rpc).toHaveBeenCalledWith('admin_schedule_subscription_deliveries', {
-        p_subscription_id: subscriptionId,
+      expect(mockCallAdminRpc).toHaveBeenCalledWith('admin_schedule_subscription_deliveries', {
+        p_subscription_id: SUBSCRIPTION_ID,
         p_plan_type: planType,
         p_entry_cycle_id: entryCycleId,
       });
     });
 
-    it('deve agendar 6 entregas para plano semestral via RPC', async () => {
-      mockSupabase.rpc.mockResolvedValue({
-        data: { deliveries: mockScheduledDeliveries(6) },
-        error: null,
-      });
+    it('agenda 6 entregas e valida o bonus do plano semestral', async () => {
+      mockCallAdminRpc.mockResolvedValueOnce(schedulingEnvelope('semestral'));
 
       const deliveries = await deliveryService.scheduleConsecutiveDeliveries(
-        'sub-456',
+        SUBSCRIPTION_ID,
         'semestral',
-        'cycle-1-march-2026'
+        CYCLE_ID,
       );
 
       expect(deliveries).toHaveLength(6);
@@ -115,51 +142,59 @@ describe('DeliveryService', () => {
       expect(deliveries[5].delivery_number).toBe(6);
     });
 
-    it('deve propagar erro se a RPC de agendamento falhar', async () => {
-      mockSupabase.rpc.mockResolvedValue({
-        data: null,
-        error: { message: 'Database error' },
-      });
+    it('propaga falha do gateway de agendamento', async () => {
+      mockCallAdminRpc.mockRejectedValueOnce(new Error('Database error'));
 
       await expect(
-        deliveryService.scheduleConsecutiveDeliveries('sub-1', 'trimestral', 'cycle-1')
-      ).rejects.toThrow('Erro ao agendar entregas: Database error');
+        deliveryService.scheduleConsecutiveDeliveries(
+          SUBSCRIPTION_ID,
+          'trimestral',
+          CYCLE_ID,
+        ),
+      ).rejects.toThrow('Database error');
     });
   });
 
   describe('updateDeliveryStatus', () => {
-    it('deve atualizar status para shipped via RPC', async () => {
-      await deliveryService.updateDeliveryStatus('delivery-1', 'shipped');
+    it('atualiza status para shipped via gateway administrativo', async () => {
+      mockCallAdminRpc.mockResolvedValueOnce({
+        ...mockDelivery,
+        status: 'shipped',
+      });
 
-      expect(mockSupabase.rpc).toHaveBeenCalledWith('admin_update_delivery_status_legacy', {
-        p_delivery_id: 'delivery-1',
+      await deliveryService.updateDeliveryStatus(DELIVERY_ID, 'shipped');
+
+      expect(mockCallAdminRpc).toHaveBeenCalledWith('admin_update_delivery_status_legacy', {
+        p_delivery_id: DELIVERY_ID,
         p_status: 'shipped',
       });
     });
 
-    it('deve atualizar status para delivered via RPC', async () => {
-      await deliveryService.updateDeliveryStatus('delivery-1', 'delivered');
+    it('atualiza status para delivered via gateway administrativo', async () => {
+      mockCallAdminRpc.mockResolvedValueOnce({
+        ...mockDelivery,
+        status: 'delivered',
+      });
 
-      expect(mockSupabase.rpc).toHaveBeenCalledWith('admin_update_delivery_status_legacy', {
-        p_delivery_id: 'delivery-1',
+      await deliveryService.updateDeliveryStatus(DELIVERY_ID, 'delivered');
+
+      expect(mockCallAdminRpc).toHaveBeenCalledWith('admin_update_delivery_status_legacy', {
+        p_delivery_id: DELIVERY_ID,
         p_status: 'delivered',
       });
     });
 
-    it('deve lancar erro se a RPC de status falhar', async () => {
-      mockSupabase.rpc.mockResolvedValue({
-        data: null,
-        error: { message: 'Update failed' },
-      });
+    it('falha fechado quando o gateway de status falha', async () => {
+      mockCallAdminRpc.mockRejectedValueOnce(new Error('Update failed'));
 
       await expect(
-        deliveryService.updateDeliveryStatus('delivery-1', 'shipped')
+        deliveryService.updateDeliveryStatus(DELIVERY_ID, 'shipped'),
       ).rejects.toThrow('Erro ao atualizar status da entrega: Update failed');
     });
   });
 
   describe('getDeliveriesBySubscription', () => {
-    it('deve retornar entregas ordenadas por numero', async () => {
+    it('retorna entregas ordenadas por numero', async () => {
       const mockDeliveries = [
         { ...mockDelivery, delivery_number: 1 },
         { ...mockDelivery, delivery_number: 2 },
@@ -177,29 +212,28 @@ describe('DeliveryService', () => {
         })),
       });
 
-      const deliveries = await deliveryService.getDeliveriesBySubscription('sub-1');
+      const deliveries = await deliveryService.getDeliveriesBySubscription(SUBSCRIPTION_ID);
 
       expect(deliveries).toHaveLength(3);
       expect(deliveries[0].delivery_number).toBe(1);
       expect(deliveries[2].delivery_number).toBe(3);
     });
 
-    it('deve retornar array vazio se nao houver entregas', async () => {
+    it('retorna array vazio quando nao ha entregas', async () => {
       mockSupabase.from.mockReturnValue({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
-            order: vi.fn().mockResolvedValue({
-              data: null,
-              error: null,
-            }),
+            order: vi.fn().mockResolvedValue({ data: null, error: null }),
           })),
         })),
       });
 
-      await expect(deliveryService.getDeliveriesBySubscription('sub-1')).resolves.toEqual([]);
+      await expect(
+        deliveryService.getDeliveriesBySubscription(SUBSCRIPTION_ID),
+      ).resolves.toEqual([]);
     });
 
-    it('deve lancar erro se falhar ao buscar', async () => {
+    it('propaga falha da consulta de entregas', async () => {
       mockSupabase.from.mockReturnValue({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
@@ -212,53 +246,48 @@ describe('DeliveryService', () => {
       });
 
       await expect(
-        deliveryService.getDeliveriesBySubscription('sub-1')
+        deliveryService.getDeliveriesBySubscription(SUBSCRIPTION_ID),
       ).rejects.toThrow('Erro ao buscar entregas: Query failed');
     });
   });
 
   describe('canChangeCharacter', () => {
-    it('deve retornar true se ciclo esta open', async () => {
+    it('retorna true se o ciclo esta open', async () => {
       mockSupabase.from.mockReturnValue({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             single: vi.fn().mockResolvedValue({
-              data: { cycle_id: 'cycle-1' },
+              data: { cycle_id: CYCLE_ID },
               error: null,
             }),
           })),
         })),
       });
+      vi.mocked(cycleService.getCycleById).mockResolvedValue({ ...mockCycle, status: 'open' });
 
-      vi.mocked(cycleService.getCycleById).mockResolvedValue({
-        ...mockCycle,
-        status: 'open',
-      });
-
-      await expect(deliveryService.canChangeCharacter('delivery-1')).resolves.toBe(true);
+      await expect(deliveryService.canChangeCharacter(DELIVERY_ID)).resolves.toBe(true);
     });
 
-    it('deve retornar false se ciclo esta em production', async () => {
+    it('retorna false se o ciclo esta em production', async () => {
       mockSupabase.from.mockReturnValue({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             single: vi.fn().mockResolvedValue({
-              data: { cycle_id: 'cycle-1' },
+              data: { cycle_id: CYCLE_ID },
               error: null,
             }),
           })),
         })),
       });
-
       vi.mocked(cycleService.getCycleById).mockResolvedValue({
         ...mockCycle,
         status: 'production',
       });
 
-      await expect(deliveryService.canChangeCharacter('delivery-1')).resolves.toBe(false);
+      await expect(deliveryService.canChangeCharacter(DELIVERY_ID)).resolves.toBe(false);
     });
 
-    it('deve retornar false se nao houver cycle_id', async () => {
+    it('retorna false se nao houver cycle_id', async () => {
       mockSupabase.from.mockReturnValue({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
@@ -270,22 +299,33 @@ describe('DeliveryService', () => {
         })),
       });
 
-      await expect(deliveryService.canChangeCharacter('delivery-1')).resolves.toBe(false);
+      await expect(deliveryService.canChangeCharacter(DELIVERY_ID)).resolves.toBe(false);
     });
   });
 
   describe('changeCharacter', () => {
-    it('deve trocar personagem via RPC', async () => {
-      await deliveryService.changeCharacter('delivery-1', 'character-2');
-
-      expect(mockSupabase.rpc).toHaveBeenCalledWith('change_delivery_character_for_current_user', {
-        p_delivery_id: 'delivery-1',
-        p_character_id: 'character-2',
+    it('troca personagem pela RPC dedicada ao usuario', async () => {
+      mockSupabase.rpc.mockResolvedValueOnce({
+        data: {
+          ...mockDelivery,
+          character_id: CHARACTER_ID,
+        },
+        error: null,
       });
+
+      await deliveryService.changeCharacter(DELIVERY_ID, CHARACTER_ID);
+
+      expect(mockSupabase.rpc).toHaveBeenCalledWith(
+        'change_delivery_character_for_current_user',
+        {
+          p_delivery_id: DELIVERY_ID,
+          p_character_id: CHARACTER_ID,
+        },
+      );
     });
 
-    it('deve lancar erro amigavel se troca nao for permitida', async () => {
-      mockSupabase.rpc.mockResolvedValue({
+    it('retorna erro amigavel quando a troca nao e permitida', async () => {
+      mockSupabase.rpc.mockResolvedValueOnce({
         data: null,
         error: {
           message: 'Character changes are not allowed after the cycle enters production',
@@ -293,23 +333,20 @@ describe('DeliveryService', () => {
       });
 
       await expect(
-        deliveryService.changeCharacter('delivery-1', 'character-2')
+        deliveryService.changeCharacter(DELIVERY_ID, CHARACTER_ID),
       ).rejects.toThrow('Nao e possivel trocar o personagem');
     });
   });
 
   describe('getCurrentDelivery', () => {
-    it('deve retornar entrega atual em andamento', async () => {
+    it('retorna a entrega atual em andamento', async () => {
       mockSupabase.from.mockReturnValue({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             in: vi.fn(() => ({
               order: vi.fn(() => ({
                 limit: vi.fn(() => ({
-                  single: vi.fn().mockResolvedValue({
-                    data: mockDelivery,
-                    error: null,
-                  }),
+                  single: vi.fn().mockResolvedValue({ data: mockDelivery, error: null }),
                 })),
               })),
             })),
@@ -317,13 +354,13 @@ describe('DeliveryService', () => {
         })),
       });
 
-      const delivery = await deliveryService.getCurrentDelivery('sub-1');
+      const delivery = await deliveryService.getCurrentDelivery(SUBSCRIPTION_ID);
 
       expect(delivery).toBeDefined();
-      expect(delivery?.id).toBe('delivery-1');
+      expect(delivery?.id).toBe(DELIVERY_ID);
     });
 
-    it('deve retornar null se nao houver entrega atual', async () => {
+    it('retorna null se nao houver entrega atual', async () => {
       mockSupabase.from.mockReturnValue({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
@@ -341,7 +378,7 @@ describe('DeliveryService', () => {
         })),
       });
 
-      await expect(deliveryService.getCurrentDelivery('sub-1')).resolves.toBeNull();
+      await expect(deliveryService.getCurrentDelivery(SUBSCRIPTION_ID)).resolves.toBeNull();
     });
   });
 });
