@@ -6,11 +6,14 @@
  */
 
 import { PropsWithChildren, useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { PUBLIC_ROUTES } from "@/config/routes";
 import { ArcadeNav } from "@/components/arcade/ArcadeNav";
 import { ArcadeFooter } from "@/components/arcade/ArcadeFooter";
 import { ScanlineOverlay, AnimatedGridBg, ArcadeAnimationStyles } from "@/components/arcade/ArcadeEffects";
 
 export function MainLayout({ children }: PropsWithChildren) {
+  const { pathname } = useLocation();
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -18,6 +21,8 @@ export function MainLayout({ children }: PropsWithChildren) {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  if (pathname.replace(/\/$/, "") === PUBLIC_ROUTES.arcadeLab) return <>{children}</>;
 
   return (
     <div className="min-h-screen bg-[hsl(0,0%,5%)] text-[hsl(0,0%,98%)] relative overflow-x-hidden">

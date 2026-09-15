@@ -1,0 +1,1502 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Silkscreen&display=swap");
+
+.arcade-lab {
+  --al-gold: #f3c64e;
+  --al-paper: #f4efe3;
+  --al-muted: #aaaeb2;
+  --al-line: #333b41;
+  --al-bg: #0d1114;
+  background: var(--al-bg);
+  color: var(--al-paper);
+  font-family: "Barlow", sans-serif;
+  min-height: 100vh;
+  background-image: radial-gradient(
+    ellipse at 50% 25%,
+    #232a2e55,
+    transparent 65%
+  );
+}
+.arcade-lab * {
+  box-sizing: border-box;
+}
+.arcade-lab button,
+.arcade-lab a {
+  -webkit-tap-highlight-color: transparent;
+}
+.arcade-lab button {
+  cursor: pointer;
+}
+.arcade-lab a {
+  color: inherit;
+  text-decoration: none;
+}
+.arcade-lab :is(a, button):focus-visible,
+.al-detail-dialog :is(a, button):focus-visible {
+  outline: 3px solid #8ae8ff;
+  outline-offset: 5px;
+  z-index: 5;
+}
+.arcade-lab button:disabled {
+  cursor: wait;
+}
+.al-skip {
+  position: fixed;
+  top: -100px;
+  left: 20px;
+  padding: 15px 25px;
+  background: var(--al-gold);
+  color: #121619 !important;
+  z-index: 100;
+}
+.al-skip:focus {
+  top: 10px;
+}
+.al-header {
+  max-width: 1360px;
+  margin: auto;
+  min-height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px 48px;
+}
+.al-logo {
+  font:
+    900 44px/0.83 "Barlow Condensed",
+    Impact,
+    sans-serif;
+  letter-spacing: -1px;
+  text-shadow: 0 2px 0 #705820;
+  color: var(--al-gold) !important;
+}
+.al-logo > span {
+  color: var(--al-paper);
+}
+.al-logo small {
+  display: block;
+  margin-top: 10px;
+  color: #c0bbae;
+  letter-spacing: 3px;
+  font:
+    500 8px "Barlow",
+    sans-serif;
+  text-shadow: none;
+}
+.al-header nav {
+  display: flex;
+  gap: 38px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.al-header nav a:hover,
+.al-footer a:hover {
+  color: var(--al-gold);
+}
+.al-login {
+  border: 1px solid #5c5d53;
+  padding: 11px 18px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-size: 12px;
+}
+.al-main {
+  max-width: 1360px;
+  padding: 0 48px;
+  margin: auto;
+}
+.al-marquee {
+  border-block: 1px solid var(--al-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  gap: 15px;
+  font:
+    600 10px "Barlow",
+    sans-serif;
+  letter-spacing: 1.5px;
+}
+.al-marquee > span:first-child {
+  color: #ff7a6e;
+}
+.al-marquee span,
+.al-marquee button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.al-marquee b {
+  color: var(--al-paper);
+  margin-left: 5px;
+  font-weight: 500;
+}
+.al-marquee > span:nth-child(2) {
+  color: var(--al-muted);
+  font-size: 9px;
+}
+.al-marquee button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--al-muted);
+  padding: 12px 0;
+}
+.al-lab-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 23px 0;
+  font-size: 10px;
+  color: var(--al-muted);
+  letter-spacing: 1px;
+  scroll-margin-top: 20px;
+}
+.al-lab-bar > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.al-lab-bar > div {
+  display: flex;
+  padding: 3px;
+  border: 1px solid var(--al-line);
+  gap: 3px;
+}
+.al-lab-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font:
+    500 11px "Barlow",
+    sans-serif;
+  border: 0;
+  padding: 8px 12px;
+  background: transparent;
+  color: #b0b7bc;
+}
+.al-lab-bar button[aria-pressed="true"] {
+  background: #2d343a;
+  color: var(--al-paper);
+}
+.al-select {
+  border: 1px solid #465056;
+  background: #12171b;
+  position: relative;
+  box-shadow: 0 14px 65px #0004;
+  scroll-margin-top: 16px;
+}
+.al-select:before,
+.al-select:after {
+  content: "+";
+  position: absolute;
+  top: 7px;
+  color: #8e969a;
+  font: 12px monospace;
+}
+.al-select:before {
+  left: 8px;
+}
+.al-select:after {
+  right: 8px;
+}
+.al-section-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 30px;
+  border-bottom: 1px solid var(--al-line);
+  color: #b4babd;
+  font:
+    500 9px "Barlow",
+    sans-serif;
+  letter-spacing: 1.8px;
+}
+.al-section-top > span {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.al-p1 {
+  background: #b93431;
+  color: white;
+  font:
+    700 11px "Barlow Condensed",
+    sans-serif;
+  padding: 4px 8px;
+  box-shadow: 2px 2px 0 #521612;
+}
+.al-indicator {
+  width: 5px;
+  height: 5px;
+  background: var(--al-gold);
+  box-shadow: 0 0 8px #f3c64e55;
+}
+.al-select-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32px 36px 30px;
+  background: linear-gradient(110deg, #20252955, transparent);
+}
+.al-eyebrow {
+  margin: 0 0 12px;
+  color: var(--al-gold);
+  font:
+    600 9px "Barlow",
+    sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.al-select h1 {
+  margin: 0;
+  font:
+    800 clamp(45px, 5.8vw, 80px)/0.88 "Barlow Condensed",
+    Impact,
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: -0.7px;
+}
+.al-select h1 br {
+  display: none;
+}
+.al-select h1 span {
+  color: var(--al-gold);
+}
+.al-select-heading p:last-child {
+  color: #b7b9b9;
+  font-size: 14px;
+  margin: 15px 0 0;
+}
+.al-select-stamp {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font:
+    600 9px/1.5 "Barlow",
+    sans-serif;
+  letter-spacing: 2px;
+  color: #b8b6a9;
+  margin-left: 15px;
+}
+.al-select-stamp svg {
+  width: 32px;
+  height: 32px;
+  color: var(--al-gold);
+}
+.al-select-stamp b {
+  color: var(--al-gold);
+}
+.al-arena {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 1.13fr 1fr;
+  gap: 28px;
+  padding: 0 36px 28px;
+}
+.al-arena::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.08;
+  background: url("/assets/arcade-lab/stages.png") center top / auto 300%
+    no-repeat;
+}
+.al-arena[data-universe="metal"]::before {
+  background-position: center 50%;
+}
+.al-arena[data-universe="neo"]::before {
+  background-position: center 100%;
+}
+.al-roster-panel {
+  min-width: 0;
+}
+.al-filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.al-filters button {
+  background: #1c2328;
+  border: 1px solid #3b444b;
+  color: #bdc3c6;
+  text-transform: uppercase;
+  padding: 10px 15px;
+  font:
+    600 11px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 1.5px;
+  flex: 1;
+}
+.al-filters button span {
+  font-size: 9px;
+  margin-left: 6px;
+  opacity: 0.8;
+}
+.al-filters button[aria-pressed="true"] {
+  background: var(--al-gold);
+  border-color: var(--al-gold);
+  color: #171b1e;
+  box-shadow: 0 3px 0 #94702a;
+}
+.al-roster {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.al-portrait {
+  position: relative;
+  aspect-ratio: 0.8;
+  border: 1px solid #485055;
+  background: #20252a;
+  padding: 0;
+  color: var(--al-paper);
+  isolation: isolate;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+  min-width: 0;
+}
+.al-portrait .al-fighter-art,
+.al-portrait .al-real-art,
+.al-portrait .al-no-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.al-fighter-art {
+  background-image: url("/assets/arcade-lab/fighters.png");
+  background-size: 300% 200%;
+  background-repeat: no-repeat;
+}
+.al-portrait .al-fighter-art {
+  filter: saturate(0.65) brightness(0.8);
+  transition: filter 0.2s;
+}
+.al-portrait:hover .al-fighter-art,
+.al-portrait[aria-pressed="true"] .al-fighter-art {
+  filter: saturate(1) brightness(1.08);
+}
+.al-portrait:hover {
+  border-color: #cab875;
+  transform: translateY(-2px);
+}
+.al-portrait[aria-pressed="true"] {
+  border: 2px solid var(--al-gold);
+  box-shadow:
+    0 0 0 2px #f3c64e25,
+    0 0 25px #f3c64e16;
+}
+.al-portrait-number {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  font:
+    500 9px "Barlow",
+    sans-serif;
+  color: #ddd;
+  text-shadow: 0 1px 3px #000;
+}
+.al-player-tag {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  background: #c64237;
+  border: 1px solid #ff8b6a;
+  color: white;
+  padding: 3px 7px;
+  box-shadow: 2px 2px 0 #4b1b12;
+  font:
+    700 14px "Barlow Condensed",
+    sans-serif;
+  z-index: 1;
+}
+.al-portrait-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 9px 9px;
+  background: linear-gradient(transparent, #07090bef 65%);
+  font:
+    700 16px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.al-portrait-name svg {
+  color: var(--al-gold);
+  opacity: 0;
+}
+.al-portrait[aria-pressed="true"] .al-portrait-name {
+  color: var(--al-gold);
+}
+.al-portrait[aria-pressed="true"] .al-portrait-name svg {
+  opacity: 1;
+}
+.al-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: #b2b9bc;
+  padding: 17px 0;
+  border-bottom: 1px solid var(--al-line);
+  font:
+    500 8px "Barlow",
+    sans-serif;
+  letter-spacing: 1px;
+}
+.al-controls > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.al-controls kbd {
+  font-size: 12px;
+  border: 1px solid #566067;
+  padding: 2px 5px;
+  color: #d7dfe2;
+}
+.al-roster-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #aab2b7;
+  font-size: 11px;
+  line-height: 1.5;
+  margin-top: 14px;
+}
+.al-roster-note p {
+  margin: 0;
+  max-width: 330px;
+}
+.al-tiny-cross {
+  color: var(--al-gold);
+  font: 22px monospace;
+}
+.al-selected {
+  min-width: 0;
+  position: relative;
+  border: 1px solid #515650;
+  background: #171811;
+  display: flex;
+  flex-direction: column;
+}
+.al-selected-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px;
+  background: linear-gradient(#080b0ce6, transparent);
+  font:
+    500 8px "Barlow",
+    sans-serif;
+  color: #f1e8cb;
+  letter-spacing: 1.2px;
+}
+.al-selected-top > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.al-selected-image {
+  position: relative;
+  min-height: 340px;
+  flex: 1;
+  overflow: hidden;
+}
+.al-selected-image > .al-fighter-art {
+  width: 100%;
+  height: 100%;
+  min-height: 370px;
+  aspect-ratio: 2/3;
+  max-height: 510px;
+}
+.al-selected-image > .al-real-art {
+  width: 100%;
+  height: 400px;
+  object-fit: contain;
+}
+.al-selected-image:after {
+  content: "";
+  position: absolute;
+  inset: 60% 0 0;
+  background: linear-gradient(transparent, #101518);
+  pointer-events: none;
+}
+.al-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent 0 3px, #0002 3px 4px);
+  opacity: 0.5;
+}
+.al-side-label {
+  position: absolute;
+  right: 10px;
+  top: 60px;
+  writing-mode: vertical-rl;
+  color: #eee5c3;
+  text-shadow: 0 1px 3px black;
+  font:
+    500 7px "Barlow",
+    sans-serif;
+  letter-spacing: 3px;
+}
+.al-selected-info {
+  position: relative;
+  padding: 0 24px 24px;
+  margin-top: -77px;
+  z-index: 1;
+  background: linear-gradient(transparent, #101518 55%);
+}
+.al-selected-info .al-eyebrow {
+  margin-bottom: 5px;
+  font-size: 8px;
+  text-shadow: 0 1px 4px #000;
+}
+.al-selected-info h2 {
+  margin: 0;
+  color: var(--al-paper);
+  font:
+    800 66px/0.95 "Barlow Condensed",
+    Impact,
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px #000;
+}
+.al-selected-info p:last-child {
+  margin: 8px 0 20px;
+  font-size: 12px;
+  color: #d3d0c5;
+  text-shadow: 0 1px 4px black;
+}
+.al-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 13px 20px;
+  border: 1px solid #636558;
+  color: var(--al-paper);
+  background: #20262b;
+  font:
+    700 12px "Barlow",
+    sans-serif;
+  text-decoration: none;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.al-button--gold {
+  background: #f3c64e;
+  color: #171a1c !important;
+  border-color: #ffdf80;
+  box-shadow:
+    0 3px 0 #94722b,
+    inset 0 1px 0 #ffe6a0;
+}
+.al-button--gold:hover {
+  background: #ffdb70;
+  transform: translateY(-1px);
+}
+.al-selected-info .al-button {
+  width: 100%;
+  justify-content: space-between;
+}
+.al-machine-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #424b51;
+  padding: 10px 18px;
+  font:
+    500 7px "Barlow",
+    sans-serif;
+  letter-spacing: 1.8px;
+  color: #a8afb2;
+  background: repeating-linear-gradient(
+      135deg,
+      #f3c64e14 0 4px,
+      transparent 4px 10px
+    )
+    left center/5px 100% no-repeat;
+}
+.al-machine-bottom > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.al-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin: 52px 0 23px;
+}
+.al-section-heading h2 {
+  font:
+    700 36px/1 "Barlow Condensed",
+    sans-serif;
+  margin: 0;
+  text-transform: uppercase;
+}
+.al-section-heading > span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #aeb5b9;
+  font:
+    500 8px "Barlow",
+    sans-serif;
+  letter-spacing: 1px;
+}
+.al-mobile-break {
+  display: none;
+}
+.al-universe-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.al-universe-card {
+  position: relative;
+  min-height: 240px;
+  border: 1px solid #434b50;
+  padding: 0;
+  background: #101519;
+  overflow: hidden;
+  text-align: left;
+  color: var(--al-paper);
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
+}
+.al-universe-card:hover {
+  transform: translateY(-4px);
+  border-color: #cfb160;
+}
+.al-universe-card[aria-pressed="true"] {
+  border-color: var(--al-gold);
+}
+.al-stage {
+  position: absolute;
+  inset: 0;
+  background-image: url("/assets/arcade-lab/stages.png");
+  background-size: auto 300%;
+  background-repeat: no-repeat;
+  transition: filter 0.2s;
+}
+.al-universe-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(#05080a22, #060a0c44 30%, #060a0cfa);
+}
+.al-universe-index {
+  position: absolute;
+  top: 15px;
+  left: 16px;
+  border: 1px solid #ffffff50;
+  background: #080b0ed9;
+  padding: 5px 7px;
+  font:
+    500 8px "Barlow",
+    sans-serif;
+  letter-spacing: 1px;
+}
+.al-universe-info {
+  position: absolute;
+  bottom: 0;
+  padding: 22px 18px 17px;
+  width: 100%;
+}
+.al-universe-info > span {
+  font-size: 10px;
+  color: #e0e0d5;
+}
+.al-universe-info h3 {
+  margin: 6px 0 20px;
+  font:
+    700 30px/0.95 "Barlow Condensed",
+    sans-serif;
+  text-transform: uppercase;
+}
+.al-universe-info p {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding-top: 13px;
+  border-top: 1px solid #ffffff40;
+  color: var(--al-gold);
+  font:
+    600 8px "Barlow",
+    sans-serif;
+  letter-spacing: 1.2px;
+}
+.al-caption {
+  color: #a9afb2;
+  font:
+    400 10px/1.6 "Barlow",
+    sans-serif;
+  margin: 12px 0 0;
+}
+.al-coins {
+  position: relative;
+  display: grid;
+  grid-template-columns: 0.75fr 1.25fr;
+  align-items: center;
+  gap: 28px;
+  margin-top: 46px;
+  border: 1px solid #665735;
+  padding: 40px 45px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 12% 50%, #a67b1929, transparent 60%), #15191b;
+}
+.al-coins:after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: repeating-linear-gradient(
+    130deg,
+    #c6a343 0 12px,
+    #292922 12px 24px
+  );
+  opacity: 0.65;
+}
+.al-coin-art {
+  position: relative;
+  min-height: 225px;
+}
+.al-coin {
+  display: grid;
+  place-content: center;
+  position: absolute;
+  width: 142px;
+  height: 142px;
+  border-radius: 50%;
+  border: 8px double #ffe39a;
+  background: radial-gradient(circle at 30% 20%, #ffe8a5, #c69631 65%, #8c541a);
+  box-shadow:
+    5px 7px 0 #72501f,
+    8px 12px 25px #0008,
+    inset 0 0 0 5px #ad7728,
+    inset 0 0 0 7px #f5d173;
+  color: #80531d;
+  font:
+    900 80px/0.8 "Barlow Condensed",
+    sans-serif;
+  text-shadow:
+    1px 1px 0 #ffdb7f,
+    -1px -2px 0 #6d451a;
+}
+.al-coin small {
+  display: block;
+  font:
+    700 9px "Barlow",
+    sans-serif;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-top: 10px;
+}
+.al-coin--back {
+  top: 10px;
+  left: 10px;
+  transform: rotate(-22deg) scale(0.85);
+  filter: brightness(0.8);
+}
+.al-coin--front {
+  top: 35px;
+  left: 85px;
+  transform: rotate(13deg);
+}
+.al-coin-art > span {
+  position: absolute;
+  bottom: 0;
+  left: 35px;
+  font:
+    10px/1.6 "Silkscreen",
+    monospace;
+  letter-spacing: 1px;
+  color: #ceb669;
+}
+.al-coins h2 {
+  margin: 0;
+  font:
+    700 46px/0.95 "Barlow Condensed",
+    sans-serif;
+  text-transform: uppercase;
+}
+.al-coins h2 span {
+  color: var(--al-gold);
+}
+.al-coins-copy > p:not(.al-eyebrow) {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #bdc1bd;
+  max-width: 425px;
+  margin: 16px 0 22px;
+}
+.al-coins .al-button {
+  font-size: 11px;
+}
+.al-coin-side {
+  position: absolute;
+  right: 12px;
+  top: 32px;
+  color: #b6a579;
+  writing-mode: vertical-rl;
+  font-size: 7px;
+  letter-spacing: 2px;
+}
+.al-journey {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid var(--al-line);
+  margin-top: 28px;
+  padding-bottom: 28px;
+  gap: 26px;
+}
+.al-journey > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.al-journey > div > span {
+  color: #bda55b;
+  font:
+    500 22px "Barlow Condensed",
+    sans-serif;
+}
+.al-journey h3 {
+  font-family: "Barlow", sans-serif;
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.al-journey p {
+  margin: 0;
+  font-size: 10px;
+  color: #a6b0b4;
+}
+.al-journey svg {
+  margin-left: auto;
+  color: #858f95;
+  flex-shrink: 0;
+}
+.al-endline {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  padding: 42px 0;
+}
+.al-endline > span {
+  font:
+    15px "Silkscreen",
+    monospace;
+  color: var(--al-gold);
+}
+.al-endline a {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 10px;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #a59a6c;
+  padding-block: 10px;
+}
+.al-footer {
+  max-width: 1360px;
+  margin: auto;
+  padding: 25px 48px;
+  border-top: 1px solid var(--al-line);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 22px;
+  color: #afb7b9;
+}
+.al-footer > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.al-footer strong {
+  font:
+    800 25px "Barlow Condensed",
+    sans-serif;
+  color: #dadbd4;
+}
+.al-footer span {
+  font-size: 7px;
+  letter-spacing: 1px;
+}
+.al-footer p {
+  font-size: 9px;
+  margin: 0;
+}
+.al-footer > a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+}
+.al-state {
+  border: 1px solid #424c52;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 24px;
+  text-align: center;
+  gap: 18px;
+  background: #141b20;
+  color: #bbc5c9;
+}
+.al-state h2 {
+  font:
+    600 32px "Barlow Condensed",
+    sans-serif;
+  color: #f0eadd;
+  margin: 0;
+}
+.al-state p {
+  max-width: 360px;
+  font-size: 14px;
+  margin: 0;
+}
+.al-state > svg {
+  color: var(--al-gold);
+}
+.al-no-art {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  min-height: 180px;
+  color: #bbc4c9;
+  background: #1d272e;
+  font-size: 11px;
+}
+.al-real-art {
+  object-fit: cover;
+}
+.al-detail-dialog {
+  --al-paper: #f4efe3;
+  --al-gold: #f3c64e;
+  color: #f4efe3;
+  background: #151c21;
+  border: 1px solid #596065;
+  border-radius: 0;
+  font-family: "Barlow", sans-serif;
+  max-width: 760px;
+  max-height: 90dvh;
+  overflow: auto;
+}
+.al-detail-dialog h2 {
+  font:
+    700 29px "Barlow Condensed",
+    sans-serif;
+  text-transform: uppercase;
+}
+.al-detail-dialog [id$="description"] {
+  color: #bcc4c8;
+  font-size: 13px;
+}
+.al-detail-body {
+  display: grid;
+  grid-template-columns: 0.9fr 1fr;
+  gap: 28px;
+  align-items: center;
+  margin-top: 10px;
+}
+.al-detail-body > .al-fighter-art {
+  width: 100%;
+  aspect-ratio: 2/3;
+}
+.al-detail-body h3 {
+  font:
+    600 30px/1.05 "Barlow Condensed",
+    sans-serif;
+  margin: 0;
+}
+.al-detail-body p:not(.al-eyebrow) {
+  color: #b7c0c5;
+  line-height: 1.7;
+  font-size: 14px;
+  margin: 18px 0;
+}
+.al-detail-body .al-button {
+  font-size: 11px;
+}
+.al-coins-dialog {
+  max-width: 540px;
+}
+.al-coins-dialog ol {
+  padding-left: 22px;
+  font-size: 14px;
+}
+.al-coins-dialog li {
+  padding: 10px 0;
+}
+.al-coins-dialog li p {
+  color: #b9c3c7;
+  font-size: 13px;
+  margin-top: 5px;
+  line-height: 1.6;
+}
+.arcade-lab[data-effects="off"] * {
+  animation: none !important;
+  transition: none !important;
+}
+.arcade-lab[data-effects="off"] .al-scanlines {
+  display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .al-selected-image {
+    animation: al-reveal 0.28s ease-out;
+  }
+  .al-loading {
+    animation: al-spin 3s linear infinite;
+  }
+}
+@keyframes al-reveal {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes al-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (min-width: 1400px) {
+  .al-arena {
+    grid-template-columns: 1.2fr 1fr;
+  }
+  .al-portrait {
+    aspect-ratio: 0.85;
+  }
+  .al-selected-image > .al-fighter-art {
+    max-height: 530px;
+  }
+}
+@media (max-width: 1050px) {
+  .al-header,
+  .al-footer {
+    padding-inline: 28px;
+  }
+  .al-main {
+    padding-inline: 28px;
+  }
+  .al-select h1 {
+    font-size: 62px;
+  }
+  .al-select h1 br {
+    display: block;
+  }
+  .al-select-heading {
+    padding: 28px;
+  }
+  .al-arena {
+    padding: 0 24px 24px;
+    gap: 20px;
+  }
+  .al-roster {
+    gap: 8px;
+  }
+  .al-filters button {
+    padding: 10px;
+  }
+  .al-selected-image > .al-fighter-art {
+    min-height: 340px;
+  }
+  .al-selected-info {
+    padding-inline: 18px;
+  }
+  .al-roster-note {
+    font-size: 10px;
+  }
+  .al-universe-card {
+    min-height: 210px;
+  }
+  .al-universe-info h3 {
+    font-size: 26px;
+  }
+  .al-coins {
+    padding: 30px;
+  }
+  .al-coins h2 {
+    font-size: 39px;
+  }
+  .al-coin--front {
+    left: 55px;
+  }
+  .al-coin--back {
+    left: -8px;
+  }
+  .al-journey {
+    gap: 15px;
+  }
+  .al-journey svg {
+    display: none;
+  }
+}
+@media (max-width: 740px) {
+  .al-header {
+    min-height: 87px;
+    padding: 18px 20px;
+    gap: 15px;
+  }
+  .al-logo {
+    font-size: 36px;
+  }
+  .al-logo small {
+    font-size: 6px;
+    letter-spacing: 2px;
+  }
+  .al-header nav {
+    gap: 17px;
+    font-size: 11px;
+  }
+  .al-login {
+    padding: 9px;
+    font-size: 11px;
+    gap: 8px;
+  }
+  .al-main {
+    padding-inline: 16px;
+  }
+  .al-marquee {
+    font-size: 8px;
+    letter-spacing: 0.7px;
+  }
+  .al-marquee > span:nth-child(2) {
+    display: none;
+  }
+  .al-marquee button {
+    font-size: 8px;
+  }
+  .al-lab-bar {
+    padding-block: 17px;
+    font-size: 8px;
+  }
+  .al-lab-description {
+    display: none;
+  }
+  .al-lab-bar button {
+    font-size: 10px;
+    padding: 8px;
+  }
+  .al-section-top {
+    padding: 11px 20px;
+    font-size: 7px;
+    letter-spacing: 1px;
+    gap: 10px;
+  }
+  .al-section-top > span {
+    gap: 7px;
+  }
+  .al-select-heading {
+    padding: 25px 20px;
+  }
+  .al-select h1 {
+    font-size: 56px;
+  }
+  .al-eyebrow {
+    font-size: 8px;
+    letter-spacing: 1.4px;
+  }
+  .al-select-heading p:last-child {
+    font-size: 12px;
+  }
+  .al-select-stamp {
+    display: none;
+  }
+  .al-arena {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 0 18px 20px;
+  }
+  .al-roster {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
+  }
+  .al-portrait {
+    aspect-ratio: 0.92;
+  }
+  .al-controls {
+    padding: 13px 0;
+  }
+  .al-roster-note {
+    display: none;
+  }
+  .al-selected {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+  }
+  .al-selected-image {
+    min-height: 0;
+    height: 300px;
+  }
+  .al-selected-image > .al-fighter-art {
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+  .al-selected-image > .al-real-art {
+    height: 100%;
+  }
+  .al-selected-image:after {
+    inset: 0;
+    background: linear-gradient(90deg, transparent 65%, #101518);
+  }
+  .al-selected-info {
+    background: #101518;
+    padding: 45px 13px 20px;
+    margin-top: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .al-selected-info h2 {
+    font-size: 48px;
+  }
+  .al-selected-info p:last-child {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .al-selected-info .al-eyebrow {
+    font-size: 7px;
+    line-height: 1.6;
+  }
+  .al-selected-info .al-button {
+    font-size: 10px;
+    gap: 6px;
+    padding: 11px 10px;
+  }
+  .al-selected-info .al-button svg {
+    width: 14px;
+    flex-shrink: 0;
+  }
+  .al-side-label {
+    display: none;
+  }
+  .al-selected-top {
+    padding: 10px;
+    font-size: 6px;
+  }
+  .al-machine-bottom {
+    font-size: 6px;
+    letter-spacing: 0.7px;
+    padding: 8px 10px;
+  }
+  .al-machine-bottom > span:last-child {
+    gap: 6px;
+  }
+  .al-machine-bottom .al-tiny-cross {
+    font-size: 16px;
+  }
+  .al-section-heading {
+    margin-top: 35px;
+    gap: 15px;
+  }
+  .al-section-heading h2 {
+    font-size: 31px;
+  }
+  .al-section-heading > span {
+    max-width: 90px;
+    line-height: 1.5;
+    font-size: 7px;
+  }
+  .al-universe-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .al-universe-card {
+    min-height: 190px;
+  }
+  .al-universe-info {
+    padding: 20px;
+  }
+  .al-universe-info h3 {
+    font-size: 32px;
+    margin-bottom: 14px;
+  }
+  .al-stage {
+    background-size: auto 300%;
+  }
+  .al-universe-info > span {
+    font-size: 11px;
+  }
+  .al-universe-index {
+    top: 14px;
+    right: 15px;
+    left: auto;
+  }
+  .al-coins {
+    grid-template-columns: 1fr;
+    padding: 24px;
+    gap: 14px;
+    margin-top: 30px;
+  }
+  .al-coin-art {
+    min-height: 165px;
+  }
+  .al-coin {
+    width: 112px;
+    height: 112px;
+    font-size: 62px;
+  }
+  .al-coin--back {
+    top: 0;
+    left: 5px;
+  }
+  .al-coin--front {
+    top: 20px;
+    left: 72px;
+  }
+  .al-coin-art > span {
+    right: 0;
+    left: auto;
+    bottom: 45px;
+    font-size: 9px;
+  }
+  .al-coins h2 {
+    font-size: 42px;
+  }
+  .al-coins-copy > p:not(.al-eyebrow) {
+    font-size: 12px;
+  }
+  .al-coins .al-button {
+    width: 100%;
+    font-size: 11px;
+    padding-inline: 12px;
+  }
+  .al-journey {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding-bottom: 0;
+    margin-top: 16px;
+  }
+  .al-journey > div {
+    padding: 20px 7px;
+    border-bottom: 1px solid #30383e;
+    gap: 20px;
+  }
+  .al-journey > div:last-child {
+    border-bottom: 0;
+  }
+  .al-journey svg {
+    display: block;
+  }
+  .al-journey h3 {
+    font-size: 12px;
+  }
+  .al-journey p {
+    font-size: 11px;
+  }
+  .al-endline {
+    padding: 26px 0;
+    gap: 12px;
+  }
+  .al-endline > span {
+    font-size: 12px;
+  }
+  .al-endline a {
+    font-size: 8px;
+  }
+  .al-footer {
+    padding: 24px 20px;
+    gap: 17px;
+  }
+  .al-footer > div {
+    width: 100%;
+  }
+  .al-detail-dialog {
+    width: calc(100% - 28px);
+    padding: 20px;
+  }
+  .al-detail-body {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .al-detail-body > .al-fighter-art {
+    max-width: 220px;
+    margin: auto;
+  }
+  .al-detail-body h3 {
+    font-size: 25px;
+  }
+}
+@media (max-width: 380px) {
+  .al-header nav {
+    gap: 10px;
+  }
+  .al-header nav a:nth-child(2) {
+    display: none;
+  }
+  .al-select h1 {
+    font-size: 48px;
+  }
+  .al-section-top {
+    font-size: 6px;
+  }
+  .al-portrait-name {
+    font-size: 14px;
+  }
+  .al-selected-image {
+    height: 260px;
+  }
+  .al-selected-info h2 {
+    font-size: 40px;
+  }
+  .al-selected-info .al-button {
+    font-size: 9px;
+  }
+  .al-coin-art > span {
+    font-size: 7px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arcade-lab *,
+  .al-detail-dialog * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -229,3 +229,17 @@ Checkout de assinatura não deve ser ligado contra backend não observado.
 - Não revogar RPCs legados de pricing antes da fronteira substituta estar implantada/provada.
 - Não tratar Vercel READY como prova de todos os gates.
 - Não declarar lançamento pronto enquanto P0 permanecer aberto.
+
+## Checkpoint — Arcade Lab (2026-09-15)
+
+- HEAD de origem: `8e78a5c590e59edb6261f3e88be4e771ad8267c3`, confirmado antes das escritas. O commit que adiciona este checkpoint identifica a implementação.
+- concluído: nova rota lazy `/arcade-lab`, layout separado, seis personagens e três cenários gerados, seleção por clique/toque/setas/Home/End, filtros por universo, detalhes em Dialog, explicação de coins e toggle de efeitos com respeito a reduced-motion. Home existente preservada.
+- concluído: demonstração identificada e noindex; catálogo real opt-in usa o hook existente, sem dados ilustrativos como fallback, com loading/empty/error/retry/success. Nenhum preço, saldo, checkout ou publicação simulados. Flag de coleções permanece intacta.
+- provas: cinco testes focados em `src/pages/ArcadeLab.test.tsx` PASS; lint dos arquivos novos PASS; lint geral 0 erros / 218 warnings; build Vite PASS (4280 módulos, 4m12s); typecheck node PASS; format dos arquivos novos PASS; diff check PASS.
+- provas visuais: browser desktop 1254px e mobile 390px, sem overflow horizontal; um main e um h1; seleção por teclado; troca para Missão metal e Neo fighters; foco transferido ao primeiro personagem após filtro; modais e Escape; toggle de efeitos; entrada direta e refresh via `/arcade-lab` e `/arcade-lab/`. Screenshots fora do Git em `.codex/visualizations/2026/09/15/01a0a602-b402-7173-9163-1ddd81374db7/`.
+- bloqueios: typecheck app falha em 12 diagnósticos de serviços não alterados (delivery, notifications, payments, production, support). Auditor Supabase access falha em lista de roles de get-manual-payment-timeline; commercial authority falha em grants existentes; notification authority falha em upload-payment-proof. Profile e public-settings PASS. Nenhuma operação remota executada.
+- bloqueios: coverage geral revelou sete falhas em `src/lib/services/deliveryService.property.test.ts`; execução interrompida após confirmação desse bloqueio, sem relatório completo/percentual. Audit de produção acusa vulnerabilidades high existentes. Format geral falha em 1156 arquivos. Não reduzir gates nem corrigir essas áreas neste checkpoint visual.
+- toolchain: Node 24.19.0 do runtime local nos checks finais; instalação existente não foi substituída. `npm ci --dry-run --ignore-scripts` PASS, mas NÃO equivale a `npm ci` completo; instalação determinística permanece sem prova neste checkpoint.
+- next_action: revisar visualmente a proposta com o usuário; antes de qualquer release, executar npm ci completo e resolver gates da baseline num checkpoint próprio. Preview local em http://127.0.0.1:8082/arcade-lab, sem deploy.
+- rollback: reverter apenas o commit `feat: add isolated arcade lab experience`; nenhuma migration, schema, assinatura, autorização ou serviço remoto alterado.
+- do_not_repeat: não substituir a home sem nova decisão; não tratar demonstração como inventário comercial; não habilitar coleções/planos por causa do Lab; não confundir build ou testes focados com Quality Gate verde.

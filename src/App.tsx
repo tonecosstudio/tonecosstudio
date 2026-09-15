@@ -18,6 +18,7 @@ import {
 } from "@/config/routes";
 
 const LandingPage = lazy(() => import("./pages/LandingPage"));
+const ArcadeLab = lazy(() => import("./pages/ArcadeLab"));
 const CatalogArcade = lazy(() => import("./pages/CatalogArcade"));
 const CatalogModelsArcade = lazy(() => import("./pages/CatalogModelsArcade"));
 const CatalogCharacterArcade = lazy(() => import("./pages/CatalogCharacterArcade"));
@@ -97,6 +98,7 @@ function AppContent() {
             <Routes>
               <Route path={PUBLIC_ROUTES.home} element={<LandingPage />} />
               <Route path={PUBLIC_ROUTES.landing} element={<LandingPage />} />
+              <Route path={PUBLIC_ROUTES.arcadeLab} element={<ArcadeLab />} />
               <Route
                 path={PUBLIC_ROUTES.migrateOrder}
                 element={

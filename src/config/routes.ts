@@ -1,6 +1,7 @@
 export const PUBLIC_ROUTES = {
   home: "/",
   landing: "/landing",
+  arcadeLab: "/arcade-lab",
   migrateOrder: "/migrar-pedido",
   catalog: "/universo",
   catalogModels: "/modelos",
