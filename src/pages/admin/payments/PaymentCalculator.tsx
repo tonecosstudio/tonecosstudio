@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PLANS, PRICING } from "@/config/constants";
+import { PRICING } from "@/config/constants";
 import {
   calculateNetValues,
   formatCurrency,
@@ -84,21 +84,21 @@ export default function PaymentCalculator() {
           plan.plan_type &&
           typeof plan.price_full === "number" &&
           Number.isFinite(plan.price_full) &&
-          plan.price_full > 0,
+          plan.price_full > 0 &&
+          typeof plan.deliveries_total === "number" &&
+          Number.isInteger(plan.deliveries_total) &&
+          plan.deliveries_total > 0,
       )
       .map((plan) => ({
         label: PLAN_LABELS[plan.plan_type] ?? plan.name,
         value: Number(plan.price_full),
-        pieces:
-          plan.deliveries_total ??
-          PLANS.DEFAULT_DELIVERIES[plan.plan_type as keyof typeof PLANS.DEFAULT_DELIVERIES] ??
-          1,
+        pieces: plan.deliveries_total as number,
       }));
 
     const standalone: Preset = {
       label: PLAN_LABELS.avulso,
       value: defaultPriceFull,
-      pieces: PLANS.DEFAULT_DELIVERIES.avulso,
+      pieces: 1,
     };
 
     return [standalone, ...officialPlans].reduce<Preset[]>((acc, preset) => {
