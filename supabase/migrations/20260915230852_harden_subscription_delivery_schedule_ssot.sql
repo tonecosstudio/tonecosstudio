@@ -1,8 +1,5 @@
 BEGIN;
 
--- Delivery scheduling must use persisted subscription/plan configuration.
--- The legacy p_plan_type argument is retained only for API compatibility and
--- may not override the plan attached to the subscription.
 CREATE OR REPLACE FUNCTION public.admin_schedule_subscription_deliveries(
   p_subscription_id uuid,
   p_plan_type text,
@@ -173,8 +170,6 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- Preserve the existing Semestral bonus rule, but derive eligibility from
-  -- the persisted plan instead of the caller-provided plan type.
   IF v_plan_type = 'semestral' AND v_sixth_delivery_id IS NOT NULL THEN
     INSERT INTO public.bonus_pieces (
       subscription_id,
@@ -203,8 +198,13 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.admin_schedule_subscription_deliveries(uuid, text, uuid)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_schedule_subscription_deliveries(uuid, text, uuid)
+  TO service_role;
+
 COMMENT ON FUNCTION public.admin_schedule_subscription_deliveries(uuid, text, uuid) IS
-  'Admin-only subscription delivery scheduler. Delivery count and plan type are derived from persisted subscription/plan SSOT; missing cycle shipping dates fail closed.';
+  'Service-role-only subscription delivery scheduler. Delivery count and plan type are derived from persisted subscription/plan SSOT; missing cycle shipping dates fail closed.';
 
 NOTIFY pgrst, 'reload schema';
 
