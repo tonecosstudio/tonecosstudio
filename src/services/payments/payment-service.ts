@@ -13,21 +13,129 @@ import type {
   PaymentStatus,
   PaymentFilters,
   PaymentDetails,
+  PaymentTimelineAction,
+  PaymentTimelineEvent,
 } from "@/types/manual-payment";
 import { assertCurrentUserId, requireAuthenticatedUserId } from "@/services/auth/current-user";
 import { sanitizePostgrestSearchTerm } from "@/lib/postgrest-search";
-import { loadPaymentTimeline } from "@/services/payments/payment-timeline-service";
+import { parsePaymentTimelineResponse } from "./payment-timeline-response";
 
 type PaymentDetailsRow = Omit<
   PaymentDetails,
   "timeline" | "conversation" | "customer_name" | "customer_email"
 >;
 
+type TimelinePayment = Pick<
+  PaymentDetailsRow,
+  "id" | "status" | "rejection_reason" | "created_at" | "updated_at" | "files"
+>;
+
+function actionForTimelineStatus(status: string): PaymentTimelineAction {
+  if (status === "approved") return "approved";
+  if (status === "rejected") return "rejected";
+  return "status_changed";
+}
+
+async function loadPaymentTimelineFromRls(payment: TimelinePayment): Promise<PaymentTimelineEvent[]> {
+  const [historyResult, infoResult] = await Promise.all([
+    supabase
+      .from("order_status_history")
+      .select("id,old_status,new_status,notes,created_at")
+      .eq("order_id", payment.id)
+      .eq("order_type", "manual_payment")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("payment_info_requests")
+      .select("id,message,created_at")
+      .eq("payment_id", payment.id)
+      .order("created_at", { ascending: true }),
+  ]);
+
+  if (historyResult.error) {
+    throw new Error(`Failed to load payment status history: ${historyResult.error.message}`);
+  }
+  if (infoResult.error) {
+    throw new Error(`Failed to load payment information requests: ${infoResult.error.message}`);
+  }
+
+  const events: Array<Record<string, unknown>> = [
+    {
+      id: `created:${payment.id}`,
+      payment_id: payment.id,
+      action_type: "created",
+      old_status: null,
+      new_status: "pending",
+      notes: null,
+      created_at: payment.created_at,
+    },
+  ];
+
+  for (const row of historyResult.data ?? []) {
+    events.push({
+      id: row.id,
+      payment_id: payment.id,
+      action_type: actionForTimelineStatus(String(row.new_status ?? "")),
+      old_status: row.old_status,
+      new_status: row.new_status,
+      notes: row.notes,
+      created_at: row.created_at,
+    });
+  }
+
+  for (const row of infoResult.data ?? []) {
+    events.push({
+      id: row.id,
+      payment_id: payment.id,
+      action_type: "info_requested",
+      old_status: null,
+      new_status: "requires_info",
+      notes: row.message,
+      created_at: row.created_at,
+    });
+  }
+
+  for (const file of payment.files ?? []) {
+    events.push({
+      id: file.id,
+      payment_id: payment.id,
+      action_type: "file_uploaded",
+      old_status: null,
+      new_status: null,
+      notes: file.file_name,
+      created_at: file.created_at,
+    });
+  }
+
+  const currentStatus = payment.status;
+  const hasCurrentStatusEvent = events.some(
+    (event) => event.new_status === currentStatus && event.action_type !== "info_requested",
+  );
+
+  if (currentStatus && currentStatus !== "pending" && !hasCurrentStatusEvent) {
+    events.push({
+      id: `current:${payment.id}:${currentStatus}`,
+      payment_id: payment.id,
+      action_type: actionForTimelineStatus(currentStatus),
+      old_status: null,
+      new_status: currentStatus,
+      notes: currentStatus === "rejected" ? payment.rejection_reason ?? null : null,
+      created_at: payment.updated_at,
+    });
+  }
+
+  events.sort(
+    (a, b) =>
+      new Date(String(a.created_at)).getTime() - new Date(String(b.created_at)).getTime(),
+  );
+
+  return parsePaymentTimelineResponse(events, payment.id);
+}
+
 /**
  * Fetch a payment by ID under database RLS.
  * Customers can resolve only their own rows; admins may resolve rows allowed by
- * the admin RLS policy. Timeline events come from a separate authenticated
- * boundary so the browser never depends on internal audit tables directly.
+ * the admin RLS policy. Timeline sources are also read under database RLS and
+ * are sanitized before being exposed to the UI.
  */
 async function fetchPaymentById(id: string): Promise<PaymentDetails | null> {
   const { data, error } = await supabase
@@ -53,7 +161,7 @@ async function fetchPaymentById(id: string): Promise<PaymentDetails | null> {
   }
 
   const [timeline, profileResult] = await Promise.all([
-    loadPaymentTimeline(id),
+    loadPaymentTimelineFromRls(result),
     supabase
       .from("profiles")
       .select("full_name, email")
