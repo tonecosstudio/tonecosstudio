@@ -5,10 +5,7 @@ import {
   updatePurchaseModeSchema,
 } from "@/lib/validations/pricing-restructure";
 import { updatePurchaseModeRpc } from "@/services/admin/config/admin-config-mutations-service";
-import {
-  listActivePurchaseModes,
-  listPurchaseModes,
-} from "@/services/payments/purchase-modes-service";
+import { listAdminPurchaseModes } from "@/services/admin/pricing/purchase-modes-read-service";
 import type { UpdatePurchaseModeInput } from "@/types/pricing-restructure";
 
 export const purchaseModesKeys = {
@@ -21,15 +18,16 @@ export const purchaseModesKeys = {
 export function usePurchaseModes() {
   return useQuery({
     queryKey: purchaseModesKeys.lists(),
-    queryFn: listPurchaseModes,
+    queryFn: listAdminPurchaseModes,
     staleTime: 2 * 60 * 1000,
   });
 }
 
 export function useActivePurchaseModes() {
   return useQuery({
-    queryKey: purchaseModesKeys.active(),
-    queryFn: listActivePurchaseModes,
+    queryKey: purchaseModesKeys.lists(),
+    queryFn: listAdminPurchaseModes,
+    select: (modes) => modes.filter((mode) => mode.is_active),
     staleTime: 2 * 60 * 1000,
   });
 }
