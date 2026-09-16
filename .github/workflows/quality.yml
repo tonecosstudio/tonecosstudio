@@ -137,6 +137,10 @@ jobs:
         if: always()
         run: npm run security:supabase-access
 
+      - name: Audit generated Supabase types SSOT
+        if: always()
+        run: npm run security:supabase-types
+
       - name: Audit canonical pricing read authority
         if: always()
         run: npm run security:pricing-read-authority
