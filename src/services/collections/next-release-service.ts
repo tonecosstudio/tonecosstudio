@@ -1,5 +1,8 @@
-import { differenceInCalendarDays, startOfDay } from "date-fns";
+import { differenceInCalendarDays } from "date-fns";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { supabase } from "@/integrations/supabase/client";
+
+const RELEASE_TIME_ZONE = "America/Bahia";
 
 export interface NextRelease {
   collection_id: string | null;
@@ -25,15 +28,15 @@ type NextReleaseRow = {
 };
 
 function todayDateString(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return formatInTimeZone(new Date(), RELEASE_TIME_ZONE, "yyyy-MM-dd");
 }
 
 function parseReleaseDate(date: string): Date {
-  return new Date(`${date}T00:00:00`);
+  return fromZonedTime(`${date}T00:00:00`, RELEASE_TIME_ZONE);
+}
+
+function startOfTodayInBahia(): Date {
+  return fromZonedTime(`${todayDateString()}T00:00:00`, RELEASE_TIME_ZONE);
 }
 
 export async function getNextRelease(): Promise<NextRelease | null> {
@@ -84,7 +87,7 @@ export async function getNextRelease(): Promise<NextRelease | null> {
     release_date: row.release_date,
     days_until_release: Math.max(
       0,
-      differenceInCalendarDays(parseReleaseDate(row.release_date), startOfDay(new Date())),
+      differenceInCalendarDays(parseReleaseDate(row.release_date), startOfTodayInBahia()),
     ),
   };
 }
