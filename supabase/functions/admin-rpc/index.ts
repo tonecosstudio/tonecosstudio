@@ -7,6 +7,8 @@ type JsonObject = Record<string, unknown>;
 const ADMIN_RPC_ALLOWLIST = new Set([
   "create_admin_notification",
   "sync_all_automatic_groups",
+  "close_monthly_sales",
+  "reopen_monthly_sales",
   "admin_add_chat_group_member",
   "admin_add_chat_group_members",
   "admin_add_coins_to_user",
