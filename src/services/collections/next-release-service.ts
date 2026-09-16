@@ -1,6 +1,5 @@
+import { differenceInCalendarDays, startOfDay } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-
-type RpcError = { message?: string } | null;
 
 export interface NextRelease {
   collection_id: string | null;
@@ -12,36 +11,80 @@ export interface NextRelease {
   days_until_release: number;
 }
 
-interface NextReleaseRpcClient {
-  rpc(functionName: "get_next_release"): PromiseLike<{
-    data: NextRelease[] | null;
-    error: RpcError;
-  }>;
+type NextReleaseRow = {
+  collection_id: string | null;
+  name: string | null;
+  image_url: string | null;
+  release_date: string | null;
+  collections: {
+    name: string;
+    slug: string | null;
+    is_active: boolean;
+    status: string;
+  } | null;
+};
+
+function todayDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-const nextReleaseRpc = supabase as unknown as NextReleaseRpcClient;
+function parseReleaseDate(date: string): Date {
+  return new Date(`${date}T00:00:00`);
+}
 
 export async function getNextRelease(): Promise<NextRelease | null> {
-  const { data, error } = await nextReleaseRpc.rpc("get_next_release");
-
-  if (error) {
-    throw new Error(error.message ?? "Erro ao buscar proximo lancamento");
-  }
-
-  const nextRelease = data?.[0] ?? null;
-
-  if (!nextRelease?.collection_id) {
-    return nextRelease;
-  }
-
-  const { data: collectionData } = await supabase
-    .from("collections")
-    .select("slug")
-    .eq("id", nextRelease.collection_id)
+  const { data, error } = await supabase
+    .from("collection_characters")
+    .select(
+      `
+        collection_id,
+        name,
+        image_url,
+        release_date,
+        collections!inner (
+          name,
+          slug,
+          is_active,
+          status
+        )
+      `,
+    )
+    .not("release_date", "is", null)
+    .gte("release_date", todayDateString())
+    .eq("collections.is_active", true)
+    .eq("collections.status", "active")
+    .neq("status", "archived")
+    .order("release_date", { ascending: true })
+    .limit(1)
     .maybeSingle();
 
+  if (error) {
+    throw new Error(`Erro ao buscar proximo lancamento: ${error.message}`);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const row = data as unknown as NextReleaseRow;
+  if (!row.release_date || !row.name || !row.collections?.name) {
+    throw new Error("Proximo lancamento retornou dados incompletos");
+  }
+
   return {
-    ...nextRelease,
-    collection_slug: collectionData?.slug ?? null,
+    collection_id: row.collection_id,
+    collection_slug: row.collections.slug,
+    collection_name: row.collections.name,
+    character_name: row.name,
+    character_image: row.image_url,
+    release_date: row.release_date,
+    days_until_release: Math.max(
+      0,
+      differenceInCalendarDays(parseReleaseDate(row.release_date), startOfDay(new Date())),
+    ),
   };
 }
