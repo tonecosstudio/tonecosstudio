@@ -25,6 +25,14 @@ const ADMIN_PURCHASE_MODES_SERVICE = path.join(
   "pricing",
   "purchase-modes-read-service.ts",
 );
+const BULK_ASSIGN_SERVICE = path.join(
+  ROOT,
+  "src",
+  "services",
+  "admin",
+  "catalog",
+  "collections-for-bulk-assign-service.ts",
+);
 const LEGACY_PURCHASE_MODES_SERVICE = path.join(
   ROOT,
   "src",
@@ -44,6 +52,12 @@ const COMPLETE_SNAPSHOT_MIGRATION = path.join(
   "supabase",
   "migrations",
   "20260916121355_expand_admin_pricing_snapshot_configuration.sql",
+);
+const BULK_ASSIGN_MIGRATION = path.join(
+  ROOT,
+  "supabase",
+  "migrations",
+  "20260916122121_admin_bulk_assign_collections_snapshot.sql",
 );
 const SNAPSHOT_SERVICE_TEST = path.join(
   ROOT,
@@ -67,6 +81,14 @@ const PURCHASE_MODES_TEST = path.join(
   "admin",
   "pricing",
   "purchase-modes-read-service.test.ts",
+);
+const BULK_ASSIGN_TEST = path.join(
+  ROOT,
+  "src",
+  "services",
+  "admin",
+  "catalog",
+  "collections-for-bulk-assign-service.test.ts",
 );
 
 const failures = [];
@@ -94,10 +116,18 @@ const purchaseModesSource = requireFile(
   ADMIN_PURCHASE_MODES_SERVICE,
   "Admin purchase modes read service",
 );
+const bulkAssignSource = requireFile(
+  BULK_ASSIGN_SERVICE,
+  "Bulk collection assignment read service",
+);
 const edgeSource = requireFile(ADMIN_RPC_EDGE, "Admin RPC edge gateway");
 const migrationSource = requireFile(
   COMPLETE_SNAPSHOT_MIGRATION,
   "Complete pricing snapshot migration",
+);
+const bulkAssignMigrationSource = requireFile(
+  BULK_ASSIGN_MIGRATION,
+  "Bulk collection assignment snapshot migration",
 );
 const snapshotTestSource = requireFile(
   SNAPSHOT_SERVICE_TEST,
@@ -107,6 +137,10 @@ const pricingTestSource = requireFile(PRICING_SERVICE_TEST, "Pricing tier read c
 const purchaseModesTestSource = requireFile(
   PURCHASE_MODES_TEST,
   "Purchase modes snapshot contract test",
+);
+const bulkAssignTestSource = requireFile(
+  BULK_ASSIGN_TEST,
+  "Bulk collection assignment snapshot contract test",
 );
 
 if (existsSync(LEGACY_PURCHASE_MODES_SERVICE)) {
@@ -148,10 +182,27 @@ for (const [label, source] of [
 }
 
 requireMatch(
-  edgeSource,
-  /["']admin_get_pricing_tiers_snapshot["']/,
-  "admin-rpc allowlist must include admin_get_pricing_tiers_snapshot",
+  bulkAssignSource,
+  /callAdminRpc<[^>]+>\(\s*["']admin_get_collections_for_bulk_assign["']/,
+  "Bulk collection assignment reads must use admin_get_collections_for_bulk_assign through callAdminRpc",
 );
+forbidMatch(
+  bulkAssignSource,
+  /@\/integrations\/supabase\/client|\.from\s*\(/,
+  "Bulk collection assignment reads must not access Supabase tables directly from the browser client",
+);
+
+for (const rpcName of [
+  "admin_get_pricing_tiers_snapshot",
+  "admin_get_collections_for_bulk_assign",
+]) {
+  requireMatch(
+    edgeSource,
+    new RegExp(`["']${rpcName}["']`),
+    `admin-rpc allowlist must include ${rpcName}`,
+  );
+}
+
 requireMatch(
   migrationSource,
   /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.admin_get_pricing_tiers_snapshot\s*\(/i,
@@ -202,6 +253,44 @@ for (const requiredFragment of [
   }
 }
 
+for (const [pattern, message] of [
+  [
+    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.admin_get_collections_for_bulk_assign\s*\(\s*\)/i,
+    "Bulk collection assignment snapshot RPC migration is missing",
+  ],
+  [/SECURITY\s+DEFINER/i, "Bulk collection assignment snapshot RPC must be SECURITY DEFINER"],
+  [
+    /SET\s+search_path\s*=\s*public\s*,\s*pg_temp/i,
+    "Bulk collection assignment snapshot RPC must pin search_path",
+  ],
+  [
+    /PERFORM\s+public\.assert_admin_access\s*\(\s*\)\s*;/i,
+    "Bulk collection assignment snapshot RPC must assert admin access",
+  ],
+  [
+    /REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.admin_get_collections_for_bulk_assign\s*\(\s*\)\s+FROM\s+authenticated/i,
+    "Bulk collection assignment snapshot RPC must not be executable directly by authenticated browser role",
+  ],
+  [
+    /GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.admin_get_collections_for_bulk_assign\s*\(\s*\)\s+TO\s+service_role/i,
+    "Bulk collection assignment snapshot RPC must be executable through service_role only",
+  ],
+]) {
+  requireMatch(bulkAssignMigrationSource, pattern, message);
+}
+
+for (const requiredFragment of [
+  "default_price_full",
+  "FROM public.collections",
+  "public.collection_tier_assignments",
+  "public.pricing_tiers",
+  "c.is_active = true",
+]) {
+  if (!bulkAssignMigrationSource.includes(requiredFragment)) {
+    failures.push(`Bulk collection assignment snapshot migration is missing ${requiredFragment}`);
+  }
+}
+
 requireMatch(
   snapshotTestSource,
   /parseAdminPricingSnapshot/,
@@ -226,6 +315,16 @@ requireMatch(
   purchaseModesTestSource,
   /falha fechado|fail[- ]closed/i,
   "Purchase modes contract test must retain an invalid-payload fail-closed regression",
+);
+requireMatch(
+  bulkAssignTestSource,
+  /admin_get_collections_for_bulk_assign/,
+  "Bulk collection assignment snapshot test must verify the canonical RPC name",
+);
+requireMatch(
+  bulkAssignTestSource,
+  /falha fechado|fail[- ]closed/i,
+  "Bulk collection assignment snapshot test must retain an invalid-payload fail-closed regression",
 );
 
 if (failures.length > 0) {
