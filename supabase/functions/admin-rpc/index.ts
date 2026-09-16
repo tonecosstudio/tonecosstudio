@@ -55,6 +55,7 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_edit_chat_group_message",
   "admin_edit_internal_support_note",
   "admin_extend_character_choice_deadline",
+  "admin_get_collections_for_bulk_assign",
   "admin_get_or_create_delivery_cycle",
   "admin_get_or_create_notification_settings",
   "admin_get_pricing_tiers_snapshot",
