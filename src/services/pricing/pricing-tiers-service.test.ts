@@ -1,19 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { callAuthenticatedEdgeFunction } from "@/services/supabase/edge-function-client";
-import { createPricingTier, propagateTierPricing } from "./pricing-tiers-service";
+import { createPricingTier, deactivatePricingTier, propagateTierPricing, updatePricingTier } from "./pricing-tiers-service";
 
-const rpcMock = vi.hoisted(() => vi.fn());
-const requireAuthenticatedUserIdMock = vi.hoisted(() => vi.fn());
+const savePricingTierPlanRpcMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
-    rpc: rpcMock,
   },
 }));
 
-vi.mock("@/services/auth/current-user", () => ({
-  requireAuthenticatedUserId: requireAuthenticatedUserIdMock,
+vi.mock("@/services/admin/config/admin-config-mutations-service", () => ({
+  savePricingTierPlanRpc: savePricingTierPlanRpcMock,
 }));
 
 vi.mock("@/services/supabase/edge-function-client", () => ({
@@ -47,45 +45,74 @@ const validResponse = {
 describe("pricing-tiers-service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    savePricingTierPlanRpcMock.mockResolvedValue(undefined);
     callEdgeFunction.mockResolvedValue(validResponse);
-    requireAuthenticatedUserIdMock.mockResolvedValue(
-      "123e4567-e89b-42d3-a456-426614174001",
-    );
   });
 
-  describe("createPricingTier", () => {
-    const createInput = {
-      name: "Premium",
-      price_full: 500,
-      deposit_amount: 100,
-    };
+  describe("pricing tier mutations", () => {
+    it("routes tier creation through the canonical admin gateway", async () => {
+      await expect(
+        createPricingTier({
+          name: "Premium",
+          description: "Tier premium",
+          price_full: 500,
+          deposit_amount: 0,
+          pix_discount_percentage: 5,
+          is_default: true,
+        }),
+      ).resolves.toBeUndefined();
 
-    it("returns a valid UUID from the RPC", async () => {
-      rpcMock.mockResolvedValue({ data: validTierId, error: null });
-
-      await expect(createPricingTier(createInput)).resolves.toBe(validTierId);
+      expect(savePricingTierPlanRpcMock).toHaveBeenCalledWith({
+        data: {
+          name: "Premium",
+          description: "Tier premium",
+          price_full: 500,
+          deposit_amount: 0,
+          pix_discount_percentage: 5,
+          is_default: true,
+        },
+      });
     });
 
-    it.each([null, undefined, "", "not-a-uuid", {}, []])(
-      "rejects a malformed created tier id: %j",
-      async (data) => {
-        rpcMock.mockResolvedValue({ data, error: null });
+    it("routes updates and deactivation through the same gateway", async () => {
+      await expect(
+        updatePricingTier({
+          tierId: validTierId,
+          input: { price_full: 550, deposit_amount: 50 },
+        }),
+      ).resolves.toBe(validTierId);
 
-        await expect(createPricingTier(createInput)).rejects.toThrow(
-          "Resposta invalida ao criar nivel",
-        );
-      },
-    );
-
-    it("preserves RPC errors", async () => {
-      rpcMock.mockResolvedValue({
-        data: null,
-        error: { message: "permission denied" },
+      expect(savePricingTierPlanRpcMock).toHaveBeenCalledWith({
+        id: validTierId,
+        data: {
+          name: undefined,
+          description: undefined,
+          price_full: 550,
+          deposit_amount: 50,
+          pix_discount_percentage: undefined,
+          is_active: undefined,
+          is_default: undefined,
+          display_order: undefined,
+        },
       });
 
-      await expect(createPricingTier(createInput)).rejects.toThrow(
-        "Erro ao criar nivel: permission denied",
-      );
+      await expect(deactivatePricingTier(validTierId)).resolves.toBe(validTierId);
+      expect(savePricingTierPlanRpcMock).toHaveBeenLastCalledWith({
+        id: validTierId,
+        data: { is_active: false },
+      });
+    });
+
+    it("preserves gateway errors", async () => {
+      savePricingTierPlanRpcMock.mockRejectedValueOnce(new Error("Admin operation failed"));
+
+      await expect(
+        createPricingTier({
+          name: "Premium",
+          price_full: 500,
+          deposit_amount: 0,
+        }),
+      ).rejects.toThrow("Admin operation failed");
     });
   });
 

@@ -1,7 +1,6 @@
-import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { inferPixDiscountPercentage } from "@/lib/validations/pricing-tiers";
-import { requireAuthenticatedUserId } from "@/services/auth/current-user";
+import { savePricingTierPlanRpc } from "@/services/admin/config/admin-config-mutations-service";
 import { callAuthenticatedEdgeFunction } from "@/services/supabase/edge-function-client";
 import type {
   CreatePricingTierInput,
@@ -30,7 +29,6 @@ type PricingTierRow = {
 };
 
 const PROPAGATE_TIER_PRICING_ERROR = "Erro ao propagar precos";
-const createdPricingTierIdSchema = z.string().uuid();
 
 function isPropagationResult(value: unknown): value is PropagationResult {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -86,15 +84,6 @@ function parsePropagationResponse(value: unknown): PropagateTierPricingResponse 
   }
 
   return response as PropagateTierPricingResponse;
-}
-
-function parseCreatedPricingTierId(value: unknown): string {
-  const parsed = createdPricingTierIdSchema.safeParse(value);
-  if (!parsed.success) {
-    throw new Error("Resposta invalida ao criar nivel");
-  }
-
-  return parsed.data;
 }
 
 function toPricingTier(row: PricingTierRow): PricingTier {
@@ -225,71 +214,45 @@ export async function getDefaultPricingTier(): Promise<PricingTier | null> {
   return data ? toPricingTier(data as unknown as PricingTierRow) : null;
 }
 
-export async function createPricingTier(input: CreatePricingTierInput): Promise<string> {
-  const userId = await requireAuthenticatedUserId();
-
-  const { data, error } = await supabase.rpc("create_pricing_tier", {
-    p_name: input.name,
-    p_description: input.description || undefined,
-    p_price_full: input.price_full,
-    p_deposit_amount: input.deposit_amount,
-    p_pix_discount_percentage: input.pix_discount_percentage || 5,
-    p_is_default: input.is_default || false,
-    p_created_by: userId,
+export async function createPricingTier(input: CreatePricingTierInput): Promise<void> {
+  await savePricingTierPlanRpc({
+    data: {
+      name: input.name,
+      description: input.description ?? null,
+      price_full: input.price_full,
+      deposit_amount: input.deposit_amount,
+      pix_discount_percentage: input.pix_discount_percentage ?? 5,
+      is_default: input.is_default ?? false,
+    },
   });
-
-  if (error) {
-    throw new Error(`Erro ao criar nivel: ${error.message}`);
-  }
-
-  return parseCreatedPricingTierId(data);
 }
 
 export async function updatePricingTier(params: {
   tierId: string;
   input: UpdatePricingTierInput;
 }): Promise<string> {
-  const userId = await requireAuthenticatedUserId();
-
-  const { error } = await supabase.rpc("update_pricing_tier", {
-    p_tier_id: params.tierId,
-    p_name: params.input.name || undefined,
-    p_description: params.input.description || undefined,
-    p_price_full: params.input.price_full ?? undefined,
-    p_deposit_amount: params.input.deposit_amount ?? undefined,
-    p_pix_discount_percentage: params.input.pix_discount_percentage ?? undefined,
-    p_is_active: params.input.is_active ?? undefined,
-    p_is_default: params.input.is_default ?? undefined,
-    p_display_order: params.input.display_order ?? undefined,
-    p_updated_by: userId,
+  await savePricingTierPlanRpc({
+    id: params.tierId,
+    data: {
+      name: params.input.name,
+      description: params.input.description,
+      price_full: params.input.price_full,
+      deposit_amount: params.input.deposit_amount,
+      pix_discount_percentage: params.input.pix_discount_percentage,
+      is_active: params.input.is_active,
+      is_default: params.input.is_default,
+      display_order: params.input.display_order,
+    },
   });
-
-  if (error) {
-    throw new Error(`Erro ao atualizar nivel: ${error.message}`);
-  }
 
   return params.tierId;
 }
 
 export async function deactivatePricingTier(tierId: string): Promise<string> {
-  const userId = await requireAuthenticatedUserId();
-
-  const { error } = await supabase.rpc("update_pricing_tier", {
-    p_tier_id: tierId,
-    p_name: undefined,
-    p_description: undefined,
-    p_price_full: undefined,
-    p_deposit_amount: undefined,
-    p_pix_discount_percentage: undefined,
-    p_is_active: false,
-    p_is_default: undefined,
-    p_display_order: undefined,
-    p_updated_by: userId,
+  await savePricingTierPlanRpc({
+    id: tierId,
+    data: { is_active: false },
   });
-
-  if (error) {
-    throw new Error(`Erro ao desativar nivel: ${error.message}`);
-  }
 
   return tierId;
 }
