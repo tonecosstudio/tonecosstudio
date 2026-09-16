@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import type { PricingTierWithPlans, SubscriptionPlanWithTier } from "@/types/pricing-restructure";
 
 export interface AssignmentPricingTier {
@@ -79,10 +80,193 @@ type PurchaseModeRow = {
   includes_bonus: boolean;
 };
 
-type AssignmentCountRow = { tier_id: string };
-type ActiveSubscriptionRow = { plan_id: string };
+type TierCountRow = {
+  tier_id: string;
+  count: number;
+};
+
+type PlanCountRow = {
+  plan_id: string;
+  count: number;
+};
+
+type PricingSnapshot = {
+  tiers: PricingTierRow[];
+  plans: SubscriptionPlanQueryRow[];
+  purchase_modes: PurchaseModeRow[];
+  assignment_counts: TierCountRow[];
+  active_subscription_counts: PlanCountRow[];
+};
 
 type PlanMode = SubscriptionPlanWithTier["plan_mode"];
+
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${label} returned invalid data`);
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function requireArray(value: unknown, label: string): unknown[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} returned invalid data`);
+  }
+
+  return value;
+}
+
+function requireString(value: unknown, label: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${label} returned invalid data`);
+  }
+
+  return value;
+}
+
+function requireNullableString(value: unknown, label: string): string | null {
+  if (value === null) return null;
+  return requireString(value, label);
+}
+
+function requireNumber(value: unknown, label: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`${label} returned invalid data`);
+  }
+
+  return value;
+}
+
+function requireNullableNumber(value: unknown, label: string): number | null {
+  if (value === null) return null;
+  return requireNumber(value, label);
+}
+
+function requireBoolean(value: unknown, label: string): boolean {
+  if (typeof value !== "boolean") {
+    throw new Error(`${label} returned invalid data`);
+  }
+
+  return value;
+}
+
+function requireNullableBoolean(value: unknown, label: string): boolean | null {
+  if (value === null) return null;
+  return requireBoolean(value, label);
+}
+
+function requireInteger(value: unknown, label: string): number {
+  const parsed = requireNumber(value, label);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error(`${label} returned invalid data`);
+  }
+
+  return parsed;
+}
+
+function parsePricingTierRow(value: unknown): PricingTierRow {
+  const row = requireRecord(value, "Pricing tier snapshot");
+
+  return {
+    id: requireString(row.id, "Pricing tier id"),
+    name: requireString(row.name, "Pricing tier name"),
+    description: requireNullableString(row.description, "Pricing tier description"),
+    price_brl: requireNumber(row.price_brl, "Pricing tier price_brl"),
+    price_full: requireNullableNumber(row.price_full, "Pricing tier price_full"),
+    price_pix: requireNullableNumber(row.price_pix, "Pricing tier price_pix"),
+    deposit_amount: requireNullableNumber(row.deposit_amount, "Pricing tier deposit_amount"),
+    is_active: requireNullableBoolean(row.is_active, "Pricing tier is_active"),
+    is_default: requireBoolean(row.is_default, "Pricing tier is_default"),
+    display_order: requireNullableNumber(row.display_order, "Pricing tier display_order"),
+  };
+}
+
+function parseSubscriptionPlanRow(value: unknown): SubscriptionPlanQueryRow {
+  const row = requireRecord(value, "Subscription plan snapshot");
+
+  return {
+    id: requireString(row.id, "Subscription plan id"),
+    pricing_tier_id: requireNullableString(row.pricing_tier_id, "Subscription plan pricing_tier_id"),
+    name: requireString(row.name, "Subscription plan name"),
+    description: requireNullableString(row.description, "Subscription plan description"),
+    price: requireNumber(row.price, "Subscription plan price"),
+    price_full: requireNullableNumber(row.price_full, "Subscription plan price_full"),
+    price_pix: requireNullableNumber(row.price_pix, "Subscription plan price_pix"),
+    plan_type: requireNullableString(row.plan_type, "Subscription plan plan_type"),
+    billing_interval: requireNullableString(row.billing_interval, "Subscription plan billing_interval"),
+    collections_count: requireInteger(row.collections_count, "Subscription plan collections_count"),
+    deliveries_total: requireNullableNumber(row.deliveries_total, "Subscription plan deliveries_total"),
+    deliveries_per_cycle: requireNullableNumber(
+      row.deliveries_per_cycle,
+      "Subscription plan deliveries_per_cycle",
+    ),
+    is_active: requireBoolean(row.is_active, "Subscription plan is_active"),
+    display_order: requireNullableNumber(row.display_order, "Subscription plan display_order"),
+    created_at: requireString(row.created_at, "Subscription plan created_at"),
+    updated_at: requireString(row.updated_at, "Subscription plan updated_at"),
+  };
+}
+
+function parsePurchaseModeRow(value: unknown): PurchaseModeRow {
+  const row = requireRecord(value, "Purchase mode snapshot");
+  const modeKey = requireString(row.mode_key, "Purchase mode key");
+
+  if (!["standalone", "trimestral", "semestral", "anual"].includes(modeKey)) {
+    throw new Error("Purchase mode snapshot returned invalid data");
+  }
+
+  return {
+    mode_key: modeKey as PurchaseModeRow["mode_key"],
+    price_multiplier: requireNumber(row.price_multiplier, "Purchase mode price_multiplier"),
+    collections_count: requireInteger(row.collections_count, "Purchase mode collections_count"),
+    deliveries_total: requireInteger(row.deliveries_total, "Purchase mode deliveries_total"),
+    includes_bonus: requireBoolean(row.includes_bonus, "Purchase mode includes_bonus"),
+  };
+}
+
+function parseTierCountRow(value: unknown): TierCountRow {
+  const row = requireRecord(value, "Pricing tier assignment count");
+  return {
+    tier_id: requireString(row.tier_id, "Pricing tier assignment id"),
+    count: requireInteger(row.count, "Pricing tier assignment count"),
+  };
+}
+
+function parsePlanCountRow(value: unknown): PlanCountRow {
+  const row = requireRecord(value, "Pricing tier subscription count");
+  return {
+    plan_id: requireString(row.plan_id, "Pricing tier subscription plan id"),
+    count: requireInteger(row.count, "Pricing tier subscription count"),
+  };
+}
+
+function parsePricingSnapshot(value: unknown): PricingSnapshot {
+  const snapshot = requireRecord(value, "Pricing snapshot");
+
+  return {
+    tiers: requireArray(snapshot.tiers, "Pricing snapshot tiers").map(parsePricingTierRow),
+    plans: requireArray(snapshot.plans, "Pricing snapshot plans").map(parseSubscriptionPlanRow),
+    purchase_modes: requireArray(snapshot.purchase_modes, "Pricing snapshot purchase modes").map(
+      parsePurchaseModeRow,
+    ),
+    assignment_counts: requireArray(
+      snapshot.assignment_counts,
+      "Pricing snapshot assignment counts",
+    ).map(parseTierCountRow),
+    active_subscription_counts: requireArray(
+      snapshot.active_subscription_counts,
+      "Pricing snapshot active subscription counts",
+    ).map(parsePlanCountRow),
+  };
+}
+
+async function loadPricingSnapshot(tierId?: string | null): Promise<PricingSnapshot> {
+  const data = await callAdminRpc<unknown>("admin_get_pricing_tiers_snapshot", {
+    p_tier_id: tierId ?? null,
+  });
+
+  return parsePricingSnapshot(data);
+}
 
 function requireText(value: string | null | undefined, fieldName: string): string {
   if (!value) {
@@ -161,39 +345,6 @@ function toPricingTierWithPlans(
     assigned_collections_count: assignedCollectionsCount,
     total_active_subscriptions: activeSubscriptionsCount,
   };
-}
-
-async function fetchPurchaseModes(): Promise<Map<PlanMode, PurchaseModeRow>> {
-  const { data, error } = await supabase
-    .from("purchase_modes")
-    .select("mode_key, price_multiplier, collections_count, deliveries_total, includes_bonus");
-
-  if (error) {
-    throw new Error(`Erro ao buscar modalidades: ${error.message}`);
-  }
-
-  return buildPurchaseModeMap((data ?? []) as PurchaseModeRow[]);
-}
-
-async function countActiveSubscriptionsByPlanIds(planIds: string[]): Promise<Map<string, number>> {
-  const counts = new Map<string, number>();
-  if (planIds.length === 0) return counts;
-
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .select("plan_id")
-    .eq("status", "active")
-    .in("plan_id", planIds);
-
-  if (error) {
-    throw new Error(`Erro ao buscar assinaturas ativas: ${error.message}`);
-  }
-
-  for (const row of (data ?? []) as ActiveSubscriptionRow[]) {
-    counts.set(row.plan_id, (counts.get(row.plan_id) ?? 0) + 1);
-  }
-
-  return counts;
 }
 
 export async function getCollectionTierAssignment(
@@ -275,95 +426,42 @@ export async function getTierWithPlans(
 ): Promise<PricingTierWithPlans | null> {
   if (!tierId) return null;
 
-  const { data: tierData, error: tierError } = await supabase
-    .from("pricing_tiers")
-    .select("id, name, description, price_brl, price_full, price_pix, deposit_amount, is_active, is_default, display_order")
-    .eq("id", tierId)
-    .maybeSingle();
+  const snapshot = await loadPricingSnapshot(tierId);
+  const tier = snapshot.tiers[0];
+  if (!tier) return null;
 
-  if (tierError) {
-    throw new Error(`Erro ao buscar nivel: ${tierError.message}`);
-  }
-
-  if (!tierData) return null;
-
-  const [plansResponse, modes, assignmentsResponse] = await Promise.all([
-    supabase
-      .from("subscription_plans")
-      .select("id, pricing_tier_id, name, description, price, price_full, price_pix, plan_type, billing_interval, collections_count, deliveries_total, deliveries_per_cycle, is_active, display_order, created_at, updated_at")
-      .eq("pricing_tier_id", tierId)
-      .order("display_order", { ascending: true }),
-    fetchPurchaseModes(),
-    supabase
-      .from("collection_tier_assignments")
-      .select("tier_id")
-      .eq("tier_id", tierId),
-  ]);
-
-  if (plansResponse.error) {
-    throw new Error(`Erro ao buscar planos: ${plansResponse.error.message}`);
-  }
-  if (assignmentsResponse.error) {
-    throw new Error(`Erro ao contar colecoes do nivel: ${assignmentsResponse.error.message}`);
-  }
-
-  const planRows = (plansResponse.data ?? []) as SubscriptionPlanQueryRow[];
-  const plans = planRows.map((row) => toSubscriptionPlanWithTier(row, modes));
-  const activeSubscriptionsByPlan = await countActiveSubscriptionsByPlanIds(
-    planRows.map((row) => row.id),
+  const purchaseModes = buildPurchaseModeMap(snapshot.purchase_modes);
+  const plans = snapshot.plans.map((row) => toSubscriptionPlanWithTier(row, purchaseModes));
+  const assignedCollectionsCount = snapshot.assignment_counts[0]?.count ?? 0;
+  const activeSubscriptionsByPlan = new Map(
+    snapshot.active_subscription_counts.map((row) => [row.plan_id, row.count]),
   );
-  const activeSubscriptionsCount = planRows.reduce(
+  const activeSubscriptionsCount = snapshot.plans.reduce(
     (total, row) => total + (activeSubscriptionsByPlan.get(row.id) ?? 0),
     0,
   );
 
   return toPricingTierWithPlans(
-    tierData as PricingTierRow,
+    tier,
     plans,
-    assignmentsResponse.data?.length ?? 0,
+    assignedCollectionsCount,
     activeSubscriptionsCount,
   );
 }
 
 export async function listAllTiersWithPlans(): Promise<PricingTierWithPlans[]> {
-  const [tiersResponse, plansResponse, modes, assignmentsResponse] = await Promise.all([
-    supabase
-      .from("pricing_tiers")
-      .select("id, name, description, price_brl, price_full, price_pix, deposit_amount, is_active, is_default, display_order")
-      .order("display_order", { ascending: true }),
-    supabase
-      .from("subscription_plans")
-      .select("id, pricing_tier_id, name, description, price, price_full, price_pix, plan_type, billing_interval, collections_count, deliveries_total, deliveries_per_cycle, is_active, display_order, created_at, updated_at")
-      .not("pricing_tier_id", "is", null)
-      .order("pricing_tier_id", { ascending: true })
-      .order("display_order", { ascending: true }),
-    fetchPurchaseModes(),
-    supabase.from("collection_tier_assignments").select("tier_id"),
-  ]);
-
-  if (tiersResponse.error) {
-    throw new Error(`Erro ao buscar niveis: ${tiersResponse.error.message}`);
-  }
-  if (plansResponse.error) {
-    throw new Error(`Erro ao buscar planos: ${plansResponse.error.message}`);
-  }
-  if (assignmentsResponse.error) {
-    throw new Error(`Erro ao contar colecoes por nivel: ${assignmentsResponse.error.message}`);
-  }
-
-  const tiers = (tiersResponse.data ?? []) as PricingTierRow[];
-  const planRows = (plansResponse.data ?? []) as SubscriptionPlanQueryRow[];
-  const activeSubscriptionsByPlan = await countActiveSubscriptionsByPlanIds(
-    planRows.map((row) => row.id),
-  );
-
+  const snapshot = await loadPricingSnapshot();
+  const purchaseModes = buildPurchaseModeMap(snapshot.purchase_modes);
   const plansByTier = new Map<string, SubscriptionPlanWithTier[]>();
+  const activeSubscriptionsByPlan = new Map(
+    snapshot.active_subscription_counts.map((row) => [row.plan_id, row.count]),
+  );
   const activeSubscriptionsByTier = new Map<string, number>();
 
-  for (const row of planRows) {
+  for (const row of snapshot.plans) {
     if (!row.pricing_tier_id) continue;
 
-    const plan = toSubscriptionPlanWithTier(row, modes);
+    const plan = toSubscriptionPlanWithTier(row, purchaseModes);
     const tierPlans = plansByTier.get(row.pricing_tier_id) ?? [];
     tierPlans.push(plan);
     plansByTier.set(row.pricing_tier_id, tierPlans);
@@ -375,15 +473,11 @@ export async function listAllTiersWithPlans(): Promise<PricingTierWithPlans[]> {
     );
   }
 
-  const assignedCollectionsByTier = new Map<string, number>();
-  for (const row of (assignmentsResponse.data ?? []) as AssignmentCountRow[]) {
-    assignedCollectionsByTier.set(
-      row.tier_id,
-      (assignedCollectionsByTier.get(row.tier_id) ?? 0) + 1,
-    );
-  }
+  const assignedCollectionsByTier = new Map(
+    snapshot.assignment_counts.map((row) => [row.tier_id, row.count]),
+  );
 
-  return tiers.map((tier) =>
+  return snapshot.tiers.map((tier) =>
     toPricingTierWithPlans(
       tier,
       plansByTier.get(tier.id) ?? [],
