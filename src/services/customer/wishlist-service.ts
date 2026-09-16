@@ -33,44 +33,10 @@ export interface UpdateWishlistItemInput {
   notify: boolean;
 }
 
-interface WishlistRpcClient {
-  rpc(
-    fn: "delete_wishlist_item",
-    args: { p_item_id: string },
-  ): Promise<{ error: { message?: string } | null }>;
-  rpc(
-    fn: "update_wishlist_item",
-    args: {
-      p_item_id: string;
-      p_notes: string;
-      p_priority: number;
-      p_notify_when_available: boolean;
-    },
-  ): Promise<{ error: { message?: string } | null }>;
-}
-
-const wishlistRpc = supabase as unknown as WishlistRpcClient;
-
-interface WishlistQuery extends PromiseLike<{
-  data: WishlistItem[] | null;
-  error: { message: string } | null;
-}> {
-  eq(column: "user_id", value: string): WishlistQuery;
-  order(column: "priority" | "added_at", options: { ascending: boolean }): WishlistQuery;
-}
-
-interface WishlistTableClient {
-  from(table: "wishlist"): {
-    select(columns: string): WishlistQuery;
-  };
-}
-
-const wishlistTable = supabase as unknown as WishlistTableClient;
-
 export async function listWishlistItems(userId: string): Promise<WishlistItem[]> {
   await assertCurrentUserId(userId);
 
-  const { data, error } = await wishlistTable
+  const { data, error } = await supabase
     .from("wishlist")
     .select(
       "id, notes, priority, notify_when_available, added_at, models (id, name, image_path, image_bucket, franchise, category, subcategory, tags, character_name, variant_name, source_title, source_type)",
@@ -81,14 +47,40 @@ export async function listWishlistItems(userId: string): Promise<WishlistItem[]>
 
   if (error) throw error;
 
-  return data || [];
+  return (data ?? []).map((row): WishlistItem => ({
+    id: row.id,
+    notes: row.notes,
+    priority: row.priority ?? 0,
+    notify_when_available: row.notify_when_available ?? false,
+    added_at: row.added_at,
+    models: row.models
+      ? {
+          id: row.models.id,
+          name: row.models.name,
+          image_path: row.models.image_path,
+          image_bucket: row.models.image_bucket,
+          franchise: row.models.franchise,
+          category: row.models.category,
+          subcategory: row.models.subcategory,
+          tags: row.models.tags,
+          character_name: row.models.character_name,
+          variant_name: row.models.variant_name,
+          source_title: row.models.source_title,
+          source_type: row.models.source_type,
+        }
+      : null,
+  }));
 }
 
 export async function removeWishlistItem(id: string): Promise<void> {
-  const { error } = await wishlistRpc.rpc("delete_wishlist_item", {
+  const { data, error } = await supabase.rpc("delete_wishlist_item", {
     p_item_id: id,
   });
+
   if (error) throw error;
+  if (data !== id) {
+    throw new Error("Exclusao da wishlist retornou um item inesperado");
+  }
 }
 
 export async function updateWishlistItem({
@@ -97,7 +89,7 @@ export async function updateWishlistItem({
   priority,
   notify,
 }: UpdateWishlistItemInput): Promise<void> {
-  const { error } = await wishlistRpc.rpc("update_wishlist_item", {
+  const { data, error } = await supabase.rpc("update_wishlist_item", {
     p_item_id: id,
     p_notes: notes,
     p_priority: priority,
@@ -105,6 +97,9 @@ export async function updateWishlistItem({
   });
 
   if (error) throw error;
+  if (data !== id) {
+    throw new Error("Atualizacao da wishlist retornou um item inesperado");
+  }
 }
 
 export function getWishlistModelImageUrl(model: WishlistModel | null): string | null {
