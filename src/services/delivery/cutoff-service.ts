@@ -1,21 +1,18 @@
 /**
  * Cutoff Validation Middleware
- * 
+ *
  * Provides validation functions to enforce the cutoff deadline for collection changes.
- * The cutoff is day 15 at 23:59:59 in America/Bahia timezone.
- * 
+ * The authoritative decision always comes from the database RPC. Local date helpers
+ * exist only for display/countdown purposes and use the canonical Bahia timezone.
+ *
  * Requirements: 7.1, 7.2, 7.3
  */
 
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
 
-type RpcError = { message?: string } | null;
-type CutoffRpcClient = {
-  rpc(functionName: "is_before_cutoff"): PromiseLike<{ data: boolean | null; error: RpcError }>;
-};
-
-const cutoffRpc = supabase as unknown as CutoffRpcClient;
+const CUTOFF_TIME_ZONE = "America/Bahia";
 
 /**
  * Custom error class for cutoff violations
@@ -28,20 +25,19 @@ export class CutoffPassedError extends Error {
 }
 
 /**
- * Validate that current time is before the cutoff deadline
- * 
- * This function checks if the current time in Bahia timezone is before
- * day 15 at 23:59:59. If the cutoff has passed, it throws a CutoffPassedError.
- * 
+ * Validate that current time is before the cutoff deadline.
+ *
+ * The database is the SSOT for whether the cutoff has passed. This avoids
+ * trusting the browser clock or timezone for a business-critical decision.
+ *
  * @param deliveryId - The ID of the delivery to validate (optional, for logging)
  * @returns Promise<void>
  * @throws CutoffPassedError if cutoff has passed
- * 
+ *
  * Requirements: 7.1, 7.2, 7.3
  */
 export async function validateBeforeCutoff(deliveryId?: string): Promise<void> {
-  // Call the database function to check cutoff
-  const { data: beforeCutoff, error } = await cutoffRpc.rpc("is_before_cutoff");
+  const { data: beforeCutoff, error } = await supabase.rpc("is_before_cutoff");
 
   if (error) {
     throw new Error(`Failed to check cutoff: ${error.message}`);
@@ -56,24 +52,22 @@ export async function validateBeforeCutoff(deliveryId?: string): Promise<void> {
 }
 
 /**
- * Validate that a specific delivery can be modified
- * 
+ * Validate that a specific delivery can be modified.
+ *
  * This function checks both:
- * 1. The current time is before cutoff
+ * 1. The authoritative cutoff decision in the database
  * 2. The delivery status allows modifications
- * 
+ *
  * @param deliveryId - The ID of the delivery to validate
  * @returns Promise<void>
  * @throws CutoffPassedError if cutoff has passed
  * @throws Error if delivery not found or in invalid status
- * 
+ *
  * Requirements: 7.1, 7.2, 7.3
  */
 export async function validateDeliveryModification(deliveryId: string): Promise<void> {
-  // First check if before cutoff
   await validateBeforeCutoff(deliveryId);
 
-  // Then check delivery status
   const { data: delivery, error } = await supabase
     .from("subscription_deliveries")
     .select("status, cycle_id")
@@ -84,7 +78,6 @@ export async function validateDeliveryModification(deliveryId: string): Promise<
     throw new Error(`Failed to get delivery: ${error?.message || "Delivery not found"}`);
   }
 
-  // Check if delivery status allows modifications
   const modifiableStatuses = ["pending_choice", "confirmed"];
   if (!modifiableStatuses.includes(delivery.status)) {
     throw new Error(`Cannot modify delivery in status: ${delivery.status}`);
@@ -92,18 +85,17 @@ export async function validateDeliveryModification(deliveryId: string): Promise<
 }
 
 /**
- * Check if current time is before cutoff (non-throwing version)
- * 
- * This function returns a boolean instead of throwing an error,
- * useful for UI conditional rendering.
- * 
+ * Check if current time is before cutoff (non-throwing version).
+ *
+ * The database remains authoritative. A failed RPC therefore fails closed.
+ *
  * @returns Promise<boolean> - True if before cutoff, false otherwise
- * 
+ *
  * Requirements: 7.4
  */
 export async function isBeforeCutoff(): Promise<boolean> {
   try {
-    const { data: beforeCutoff, error } = await cutoffRpc.rpc("is_before_cutoff");
+    const { data: beforeCutoff, error } = await supabase.rpc("is_before_cutoff");
 
     if (error) {
       log.error("Failed to check cutoff", { error });
@@ -118,71 +110,62 @@ export async function isBeforeCutoff(): Promise<boolean> {
 }
 
 /**
- * Get the cutoff date for the current month
- * 
- * Returns the cutoff date (day 15 at 23:59:59) for the current month
- * in Bahia timezone.
- * 
- * @returns Date - The cutoff date
- * 
+ * Get the display cutoff instant for the current month in America/Bahia.
+ *
+ * This helper must not be used to authorize mutations; use validateBeforeCutoff
+ * or isBeforeCutoff for business decisions.
+ *
+ * @returns Date - Instant corresponding to day 15 at 23:59:59.999 in Bahia
+ *
  * Requirements: 7.4
  */
 export function getCurrentCutoffDate(): Date {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth(); // 0-indexed
-  
-  // Create date for day 15 at 23:59:59 in local time
-  // Note: This is a simplified version. For production, use date-fns-tz
-  // to properly handle Bahia timezone
-  const cutoffDate = new Date(year, month, 15, 23, 59, 59, 999);
-  
-  return cutoffDate;
+  const yearMonthInBahia = formatInTimeZone(new Date(), CUTOFF_TIME_ZONE, "yyyy-MM");
+  return fromZonedTime(`${yearMonthInBahia}-15T23:59:59.999`, CUTOFF_TIME_ZONE);
 }
 
 /**
- * Get time remaining until cutoff
- * 
- * Returns the number of milliseconds until the cutoff deadline.
+ * Get time remaining until cutoff.
+ *
+ * Returns the number of milliseconds until the display cutoff deadline.
  * Returns 0 if cutoff has passed.
- * 
+ *
  * @returns number - Milliseconds until cutoff (0 if passed)
- * 
+ *
  * Requirements: 7.4
  */
 export function getTimeUntilCutoff(): number {
-  const now = new Date();
-  const cutoff = getCurrentCutoffDate();
-  const diff = cutoff.getTime() - now.getTime();
-  
+  const diff = getCurrentCutoffDate().getTime() - Date.now();
   return Math.max(0, diff);
 }
 
 /**
- * Format time remaining until cutoff
- * 
+ * Format time remaining until cutoff.
+ *
  * Returns a human-readable string of time remaining.
- * 
+ *
  * @returns string - Formatted time remaining (e.g., "3 days, 5 hours")
- * 
+ *
  * Requirements: 7.4
  */
 export function formatTimeUntilCutoff(): string {
   const ms = getTimeUntilCutoff();
-  
+
   if (ms === 0) {
     return "Cutoff passed";
   }
-  
+
   const days = Math.floor(ms / (1000 * 60 * 60 * 24));
   const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-  
+
   if (days > 0) {
-    return `${days} day${days > 1 ? 's' : ''}, ${hours} hour${hours !== 1 ? 's' : ''}`;
-  } else if (hours > 0) {
-    return `${hours} hour${hours !== 1 ? 's' : ''}, ${minutes} minute${minutes !== 1 ? 's' : ''}`;
-  } else {
-    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    return `${days} day${days > 1 ? "s" : ""}, ${hours} hour${hours !== 1 ? "s" : ""}`;
   }
+
+  if (hours > 0) {
+    return `${hours} hour${hours !== 1 ? "s" : ""}, ${minutes} minute${minutes !== 1 ? "s" : ""}`;
+  }
+
+  return `${minutes} minute${minutes !== 1 ? "s" : ""}`;
 }
