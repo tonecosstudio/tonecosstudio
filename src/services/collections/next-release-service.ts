@@ -14,19 +14,6 @@ export interface NextRelease {
   days_until_release: number;
 }
 
-type NextReleaseRow = {
-  collection_id: string | null;
-  name: string | null;
-  image_url: string | null;
-  release_date: string | null;
-  collections: {
-    name: string;
-    slug: string | null;
-    is_active: boolean;
-    status: string;
-  } | null;
-};
-
 function todayDateString(): string {
   return formatInTimeZone(new Date(), RELEASE_TIME_ZONE, "yyyy-MM-dd");
 }
@@ -73,21 +60,20 @@ export async function getNextRelease(): Promise<NextRelease | null> {
     return null;
   }
 
-  const row = data as unknown as NextReleaseRow;
-  if (!row.release_date || !row.name || !row.collections?.name) {
+  if (!data.release_date || !data.name || !data.collections?.name) {
     throw new Error("Proximo lancamento retornou dados incompletos");
   }
 
   return {
-    collection_id: row.collection_id,
-    collection_slug: row.collections.slug,
-    collection_name: row.collections.name,
-    character_name: row.name,
-    character_image: row.image_url,
-    release_date: row.release_date,
+    collection_id: data.collection_id,
+    collection_slug: data.collections.slug,
+    collection_name: data.collections.name,
+    character_name: data.name,
+    character_image: data.image_url,
+    release_date: data.release_date,
     days_until_release: Math.max(
       0,
-      differenceInCalendarDays(parseReleaseDate(row.release_date), startOfTodayInBahia()),
+      differenceInCalendarDays(parseReleaseDate(data.release_date), startOfTodayInBahia()),
     ),
   };
 }
