@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 
 export interface ProductionLimit {
   prod_month: number;
@@ -87,17 +88,9 @@ export async function checkSalesOpen(): Promise<boolean> {
 }
 
 export async function closeMonthlySales(reason: string = "manual"): Promise<unknown> {
-  const { data, error } = await supabase.rpc("close_monthly_sales", {
-    reason,
-  });
-
-  if (error) throw error;
-  return data;
+  return callAdminRpc("close_monthly_sales", { reason });
 }
 
 export async function reopenMonthlySales(): Promise<unknown> {
-  const { data, error } = await supabase.rpc("reopen_monthly_sales");
-
-  if (error) throw error;
-  return data;
+  return callAdminRpc("reopen_monthly_sales");
 }
