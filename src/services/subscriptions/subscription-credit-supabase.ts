@@ -1,58 +1,30 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import type {
-  Character,
-  CreditTransaction,
-  Order,
-  OrderItem,
-  PlanType,
-  ProductionCycle,
-  Subscription,
-  SubscriptionPlan,
-  UserCredits,
-} from "@/types/subscription-credit-system";
+import type { Database } from "@/integrations/supabase/types";
 
-type SubscriptionCreditRow<Row extends object> = Row & Record<string, unknown>;
+type PublicTables = Database["public"]["Tables"];
 
-type SubscriptionCreditTable<Row extends object> = {
-  Row: SubscriptionCreditRow<Row>;
-  Insert: Partial<SubscriptionCreditRow<Row>>;
-  Update: Partial<SubscriptionCreditRow<Row>>;
-  Relationships: [];
-};
+export type SubscriptionCreditSubscriptionRow =
+  PublicTables["subscription_credit_subscriptions"]["Row"];
+export type SubscriptionCreditOrderRow =
+  PublicTables["subscription_credit_orders"]["Row"];
+export type SubscriptionCreditOrderItemRow =
+  PublicTables["subscription_credit_order_items"]["Row"];
+export type SubscriptionCreditTransactionRow =
+  PublicTables["subscription_credit_transactions"]["Row"];
+export type SubscriptionCreditCharacterRow =
+  PublicTables["subscription_credit_characters"]["Row"];
+export type SubscriptionCreditProductionCycleRow =
+  PublicTables["subscription_credit_production_cycles"]["Row"];
+export type SubscriptionCreditUserCreditsRow =
+  PublicTables["subscription_credit_user_credits"]["Row"];
+export type SubscriptionCreditPlanRow =
+  PublicTables["subscription_credit_plans"]["Row"];
 
-export type SubscriptionCreditSubscriptionRow = Subscription & {
-  plan_id: string | null;
-};
-
-export type SubscriptionCreditOrderRow = Order;
-export type SubscriptionCreditOrderItemRow = OrderItem;
-export type SubscriptionCreditTransactionRow = CreditTransaction;
-export type SubscriptionCreditCharacterRow = Character;
-export type SubscriptionCreditProductionCycleRow = ProductionCycle;
-export type SubscriptionCreditUserCreditsRow = UserCredits;
-export type SubscriptionCreditPlanRow = SubscriptionPlan & {
-  plan_type: PlanType;
-};
-
-type SubscriptionCreditDatabase = {
-  public: {
-    Tables: {
-      subscription_credit_plans: SubscriptionCreditTable<SubscriptionCreditPlanRow>;
-      subscription_credit_subscriptions: SubscriptionCreditTable<SubscriptionCreditSubscriptionRow>;
-      subscription_credit_user_credits: SubscriptionCreditTable<SubscriptionCreditUserCreditsRow>;
-      subscription_credit_transactions: SubscriptionCreditTable<SubscriptionCreditTransactionRow>;
-      subscription_credit_characters: SubscriptionCreditTable<SubscriptionCreditCharacterRow>;
-      subscription_credit_production_cycles: SubscriptionCreditTable<SubscriptionCreditProductionCycleRow>;
-      subscription_credit_orders: SubscriptionCreditTable<SubscriptionCreditOrderRow>;
-      subscription_credit_order_items: SubscriptionCreditTable<SubscriptionCreditOrderItemRow>;
-    };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
-  };
-};
-
-export const subscriptionCreditSupabase =
-  supabase as unknown as SupabaseClient<SubscriptionCreditDatabase>;
+/**
+ * Compatibility export for the subscription-credit modules.
+ *
+ * This is the canonical typed Supabase client, not a parallel hand-maintained
+ * database schema. New code should import `supabase` directly; this alias can
+ * disappear as the remaining subscription-credit modules are simplified.
+ */
+export const subscriptionCreditSupabase = supabase;
