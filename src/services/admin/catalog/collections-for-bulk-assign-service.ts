@@ -1,109 +1,66 @@
-import { supabase } from "@/integrations/supabase/client";
-import { parseSystemSettingNumber } from "@/lib/system-settings-values";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 
 export interface CollectionForBulkAssign {
   id: string;
   name: string;
-  slug: string;
+  slug: string | null;
   price_full: number;
-  tier_id?: string | null;
-  tier_name?: string | null;
-}
-
-interface CollectionTierAssignmentRow {
   tier_id: string | null;
-  pricing_tiers: {
-    name: string | null;
-    price_full: number | null;
-  } | null;
+  tier_name: string | null;
 }
 
-interface CollectionQueryRow {
-  id: string;
-  name: string;
-  slug: string;
-  collection_tier_assignments: CollectionTierAssignmentRow[] | null;
+type UnknownRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-interface BulkAssignCollectionsQuery extends PromiseLike<{
-  data: CollectionQueryRow[] | null;
-  error: { message: string } | null;
-}> {
-  eq(column: "is_active", value: boolean): BulkAssignCollectionsQuery;
-  order(column: "name"): BulkAssignCollectionsQuery;
+function requireString(row: UnknownRecord, field: string): string {
+  const value = row[field];
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new Error(`Invalid bulk assignment snapshot: ${field}`);
+  }
+  return value;
 }
 
-interface SystemSettingQuery {
-  eq(column: "key", value: "default_price_full"): {
-    maybeSingle(): Promise<{
-      data: { value: string | null } | null;
-      error: { message: string } | null;
-    }>;
-  };
+function nullableString(row: UnknownRecord, field: string): string | null {
+  const value = row[field];
+  if (value === null) return null;
+  if (typeof value !== "string") {
+    throw new Error(`Invalid bulk assignment snapshot: ${field}`);
+  }
+  return value;
 }
 
-interface CollectionsForBulkAssignGateway {
-  from(table: "collections"): {
-    select(columns: string): BulkAssignCollectionsQuery;
-  };
-  from(table: "system_settings"): {
-    select(columns: "value"): SystemSettingQuery;
-  };
+function requirePrice(row: UnknownRecord): number {
+  const value = row.price_full;
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw new Error("Invalid bulk assignment snapshot: price_full");
+  }
+  return value;
 }
 
-const collectionsForBulkAssignGateway = supabase as unknown as CollectionsForBulkAssignGateway;
-
-async function fetchDefaultCollectionPriceFull(): Promise<number> {
-  const { data, error } = await collectionsForBulkAssignGateway
-    .from("system_settings")
-    .select("value")
-    .eq("key", "default_price_full")
-    .maybeSingle();
-
-  if (error) throw error;
-  if (!data?.value) {
-    throw new Error("Default full price setting is not configured");
+function parseCollection(value: unknown): CollectionForBulkAssign {
+  if (!isRecord(value)) {
+    throw new Error("Invalid bulk assignment snapshot row");
   }
 
-  return parseSystemSettingNumber("default_price_full", data.value);
+  return {
+    id: requireString(value, "id"),
+    name: requireString(value, "name"),
+    slug: nullableString(value, "slug"),
+    price_full: requirePrice(value),
+    tier_id: nullableString(value, "tier_id"),
+    tier_name: nullableString(value, "tier_name"),
+  };
 }
 
 export async function fetchCollectionsForBulkAssign(): Promise<CollectionForBulkAssign[]> {
-  const [defaultPriceFull, collectionsResponse] = await Promise.all([
-    fetchDefaultCollectionPriceFull(),
-    collectionsForBulkAssignGateway
-      .from("collections")
-      .select(
-        `
-      id,
-      name,
-      slug,
-      collection_tier_assignments (
-        tier_id,
-        pricing_tiers (
-          name,
-          price_full
-        )
-      )
-    `
-      )
-      .eq("is_active", true)
-      .order("name"),
-  ]);
+  const snapshot = await callAdminRpc<unknown>("admin_get_collections_for_bulk_assign");
 
-  const { data, error } = collectionsResponse;
-  if (error) throw error;
+  if (!Array.isArray(snapshot)) {
+    throw new Error("Invalid bulk assignment snapshot");
+  }
 
-  return (data || []).map((col) => {
-    const assignment = col.collection_tier_assignments?.[0];
-
-    return {
-      id: col.id,
-      name: col.name,
-      slug: col.slug,
-      price_full: assignment?.pricing_tiers?.price_full ?? defaultPriceFull,
-      tier_id: assignment?.tier_id || null,
-      tier_name: assignment?.pricing_tiers?.name || null,
-    };
-  });
+  return snapshot.map(parseCollection);
 }
