@@ -2,8 +2,7 @@ import type { Json } from "@/integrations/supabase/types";
 
 /**
  * Types for Manual Payment System
- * Based on database schema: supabase/migrations/20260216000000_create_manual_payment_system.sql
- * Requirements: 1.1-1.10, 2.5-2.8
+ * Based on the current application contract over the Supabase schema.
  */
 
 // =====================================================
@@ -26,24 +25,19 @@ export type PaymentMethodType =
   | "other";
 
 /**
- * Payment status workflow states
- * - pending: awaiting payment proof upload
- * - under_review: payment proof uploaded, awaiting admin verification
- * - requires_info: admin requested more information
- * - approved: payment verified and approved
- * - rejected: payment rejected by admin
+ * Manual-payment workflow states. The database-wide payment_status enum is
+ * broader, but manual-payment mutation RPCs intentionally accept only these
+ * five states.
  */
 export type PaymentStatus = "pending" | "under_review" | "requires_info" | "approved" | "rejected";
 
 /**
- * Payment type classification
- * - one_time: single payment for a quote/order
- * - recurring: recurring payment for a subscription
+ * Payment type classification enforced by the manual_payments table.
  */
 export type PaymentType = "one_time" | "recurring";
 
 /**
- * Sanitized timeline actions returned by the authenticated payment timeline boundary.
+ * Sanitized timeline actions exposed to the payment UI.
  */
 export type PaymentTimelineAction =
   | "created"
@@ -54,37 +48,40 @@ export type PaymentTimelineAction =
   | "info_requested";
 
 // =====================================================
-// DATABASE TABLE TYPES
+// DATABASE / APPLICATION CONTRACT TYPES
 // =====================================================
 
 /**
- * Payment Method configured by admin
- * Table: admin_payment_methods
+ * Payment Method configured by admin.
+ * Nullable fields mirror the live table rather than treating defaults as
+ * NOT NULL guarantees.
  */
 export interface PaymentMethod {
   id: string;
   name: string;
   type: PaymentMethodType;
-  instructions: string;
+  instructions: string | null;
   payment_link?: string | null;
   pix_key?: string | null;
   account_details?: Record<string, Json> | null;
-  is_active: boolean;
-  is_default: boolean;
-  display_order: number;
+  is_active: boolean | null;
+  is_default: boolean | null;
+  display_order: number | null;
   created_at: string;
   updated_at: string;
 }
 
 /**
- * Manual Payment record
- * Table: manual_payments
+ * Manual Payment record.
+ * reference_number, currency and payment_type are database-enforced invariants.
+ * payment_method_id remains nullable by design because subscription checkout
+ * records the textual payment method and may not reference an admin method row.
  */
 export interface ManualPayment {
   id: string;
   reference_number: string;
   user_id: string;
-  payment_method_id: string;
+  payment_method_id: string | null;
   quote_id?: string | null;
   subscription_id?: string | null;
   amount: number;
@@ -99,8 +96,7 @@ export interface ManualPayment {
 }
 
 /**
- * Payment proof file
- * Table: payment_files
+ * Payment proof file. file_size and file_type are database-enforced invariants.
  */
 export interface PaymentFile {
   id: string;
@@ -115,8 +111,8 @@ export interface PaymentFile {
 }
 
 /**
- * Sanitized payment timeline event assembled server-side from canonical sources.
- * This is not a direct table row.
+ * Sanitized payment timeline event assembled from canonical RLS-protected
+ * sources. This is not a direct table row and never exposes internal actor IDs.
  */
 export interface PaymentTimelineEvent {
   id: string;
@@ -130,7 +126,6 @@ export interface PaymentTimelineEvent {
 
 /**
  * Support Conversation extension with payment_id
- * Table: support_conversations (modified)
  */
 export interface SupportConversation {
   id: string;
@@ -149,9 +144,6 @@ export interface SupportConversation {
 // FORM INPUT TYPES
 // =====================================================
 
-/**
- * Input data for creating a payment method
- */
 export interface PaymentMethodInput {
   name: string;
   type: PaymentMethodType;
@@ -164,9 +156,6 @@ export interface PaymentMethodInput {
   display_order?: number;
 }
 
-/**
- * Input data for creating a manual payment
- */
 export interface ManualPaymentInput {
   payment_method_id: string;
   quote_id?: string;
@@ -176,9 +165,6 @@ export interface ManualPaymentInput {
   payment_type: PaymentType;
 }
 
-/**
- * Input data for uploading a payment file
- */
 export interface PaymentFileUpload {
   payment_id: string;
   file: File;
@@ -189,7 +175,7 @@ export interface PaymentFileUpload {
 // =====================================================
 
 /**
- * Payment list item for admin dashboard
+ * Normalized list item returned by the admin payment service.
  */
 export interface PaymentListItem {
   id: string;
@@ -206,10 +192,11 @@ export interface PaymentListItem {
 }
 
 /**
- * Payment details with related data
+ * Payment details with related data. The relation is nullable because
+ * payment_method_id is nullable by design for subscription checkout records.
  */
 export interface PaymentDetails extends ManualPayment {
-  payment_method: PaymentMethod;
+  payment_method: PaymentMethod | null;
   files: PaymentFile[];
   timeline: PaymentTimelineEvent[];
   conversation?: SupportConversation;
@@ -217,9 +204,6 @@ export interface PaymentDetails extends ManualPayment {
   customer_email?: string;
 }
 
-/**
- * Payment statistics for admin dashboard
- */
 export interface PaymentStats {
   pending_count: number;
   under_review_count: number;
@@ -232,9 +216,6 @@ export interface PaymentStats {
 // FILTER TYPES
 // =====================================================
 
-/**
- * Filters for payment list queries
- */
 export interface PaymentFilters {
   status?: PaymentStatus[];
   payment_method_id?: string;
@@ -247,9 +228,6 @@ export interface PaymentFilters {
 // OPERATION RESULT TYPES
 // =====================================================
 
-/**
- * Result of bulk operations
- */
 export interface BulkOperationResult {
   success_count: number;
   failure_count: number;
@@ -259,9 +237,6 @@ export interface BulkOperationResult {
   }>;
 }
 
-/**
- * File validation result
- */
 export interface FileValidationResult {
   valid: boolean;
   errors: string[];
