@@ -81,7 +81,7 @@ requireMatch(
 );
 requireMatch(
   migrationSource,
-  /REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.admin_get_pricing_tiers_snapshot\s*\([^)]*\)\s+FROM\s+authenticated/i,
+  /REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.admin_get_pricing_tiers_snapshot\s*\([^)]*\)\s+FROM\s+[^;]*\bauthenticated\b/i,
   "Canonical admin pricing snapshot RPC must not be executable directly by authenticated browser role",
 );
 requireMatch(
