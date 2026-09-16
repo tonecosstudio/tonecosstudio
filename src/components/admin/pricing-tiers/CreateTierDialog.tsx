@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -23,11 +23,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useCreateTierWithPlans } from "@/hooks/useCreateTierWithPlans";
-import { createTierWithPlansSchema } from "@/lib/validations/pricing-restructure";
+import { useCreatePricingTier } from "@/hooks/usePricingTiers";
+import { createPricingTierSchema } from "@/lib/validations/pricing-tiers";
 import { PriceCalculatorPreview } from "../pricing-restructure/PriceCalculatorPreview";
-import type { CreateTierWithPlansInput } from "@/types/pricing-restructure";
-import { toast } from "sonner";
+import type { CreatePricingTierInput } from "@/types/pricing-tiers";
 import { formatCurrency } from "@/lib/utils";
 
 interface CreateTierDialogProps {
@@ -35,18 +34,12 @@ interface CreateTierDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-/**
- * Dialog para criar novo nível de preço com planos automáticos
- * Atualizado para usar create_tier_with_plans
- * Requisitos: 1.1, 1.2, 1.3, 1.4, 8.1
- * Tarefa: 8.2
- */
 export function CreateTierDialog({ open, onOpenChange }: CreateTierDialogProps) {
-  const createTier = useCreateTierWithPlans();
+  const createTier = useCreatePricingTier();
   const [calculatedPricePix, setCalculatedPricePix] = useState<number>(0);
 
-  const form = useForm<CreateTierWithPlansInput>({
-    resolver: zodResolver(createTierWithPlansSchema),
+  const form = useForm<CreatePricingTierInput>({
+    resolver: zodResolver(createPricingTierSchema),
     defaultValues: {
       name: "",
       description: "",
@@ -54,39 +47,35 @@ export function CreateTierDialog({ open, onOpenChange }: CreateTierDialogProps) 
       deposit_amount: 0,
       pix_discount_percentage: 5,
       is_default: false,
-      display_order: 0,
     },
   });
 
-  // Calcular price_pix em tempo real
   const priceFull = form.watch("price_full");
   const pixDiscount = form.watch("pix_discount_percentage");
 
   useEffect(() => {
-    if (priceFull && pixDiscount !== undefined) {
+    if (priceFull > 0 && pixDiscount !== undefined) {
       const calculated = priceFull * (1 - pixDiscount / 100);
       setCalculatedPricePix(Math.round(calculated * 100) / 100);
+      return;
     }
+
+    setCalculatedPricePix(0);
   }, [priceFull, pixDiscount]);
 
-  const onSubmit = async (data: CreateTierWithPlansInput) => {
-    try {
-      const result = await createTier.mutateAsync(data);
-      toast.success(`Nível criado com ${result.plans_created} planos automáticos`);
-      form.reset();
-      onOpenChange(false);
-    } catch (_error) {
-      toast.error("Erro ao criar nível");
-    }
+  const onSubmit = async (data: CreatePricingTierInput) => {
+    await createTier.mutateAsync(data);
+    form.reset();
+    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Criar Nível de Preço com Planos</DialogTitle>
+          <DialogTitle>Criar Nível de Preço</DialogTitle>
           <DialogDescription>
-            Crie um nível e gere automaticamente planos para todas as modalidades ativas
+            Crie o nível base usado na precificação e na atribuição de coleções.
           </DialogDescription>
         </DialogHeader>
 
@@ -130,7 +119,7 @@ export function CreateTierDialog({ open, onOpenChange }: CreateTierDialogProps) 
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="price_full"
@@ -141,12 +130,10 @@ export function CreateTierDialog({ open, onOpenChange }: CreateTierDialogProps) 
                           <Input
                             type="number"
                             step="0.01"
-                            min="0"
+                            min="0.01"
                             placeholder="0.00"
                             {...field}
-                            onChange={(e) =>
-                              field.onChange(parseFloat(e.target.value) || 0)
-                            }
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                           />
                         </FormControl>
                         <FormMessage />
@@ -167,11 +154,10 @@ export function CreateTierDialog({ open, onOpenChange }: CreateTierDialogProps) 
                             min="0"
                             placeholder="0.00"
                             {...field}
-                            onChange={(e) =>
-                              field.onChange(parseFloat(e.target.value) || 0)
-                            }
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                           />
                         </FormControl>
+                        <FormDescription>Use 0 quando o nível não exigir entrada.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -189,12 +175,10 @@ export function CreateTierDialog({ open, onOpenChange }: CreateTierDialogProps) 
                           type="number"
                           step="0.01"
                           min="0"
-                          max="100"
+                          max="99.99"
                           placeholder="5.00"
                           {...field}
-                          onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value) || 0)
-                          }
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                         />
                       </FormControl>
                       <FormDescription>
@@ -213,14 +197,11 @@ export function CreateTierDialog({ open, onOpenChange }: CreateTierDialogProps) 
                       <div className="space-y-0.5">
                         <FormLabel className="text-base">Nível Padrão</FormLabel>
                         <FormDescription>
-                          Novas coleções receberão automaticamente este nível
+                          Use este nível como fallback quando uma coleção não tiver outro nível atribuído.
                         </FormDescription>
                       </div>
                       <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
                     </FormItem>
                   )}
@@ -235,7 +216,7 @@ export function CreateTierDialog({ open, onOpenChange }: CreateTierDialogProps) 
                     Cancelar
                   </Button>
                   <Button type="submit" disabled={createTier.isPending}>
-                    {createTier.isPending ? "Criando..." : "Criar Nível com Planos"}
+                    {createTier.isPending ? "Criando..." : "Criar Nível"}
                   </Button>
                 </DialogFooter>
               </form>
