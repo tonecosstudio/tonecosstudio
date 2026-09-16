@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { requireAuthenticatedUserId } from "@/services/auth/current-user";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 
 export interface CollectionBasePrice {
   collection_type_id: string;
@@ -16,11 +16,11 @@ export interface CollectionBasePrice {
 export interface UpdateBasePriceInput {
   collection_type_id: string;
   new_base_price_coins: number;
-  reason?: string;
 }
 
 export interface UpdateBasePriceResponse {
   success: boolean;
+  collection_type_id: string;
   old_price: number;
   new_price: number;
   message: string;
@@ -41,34 +41,32 @@ interface CollectionBasePricingRow {
   collection_types: CollectionTypeJoin;
 }
 
-interface BasePricingRpcClient {
-  rpc(
-    fn: "update_base_price_with_history",
-    args: {
-      p_collection_type_id: string;
-      p_new_base_price_coins: number;
-      p_changed_by: string;
-      p_reason: string | null;
-    },
-  ): Promise<{ data: unknown; error: { message: string } | null }>;
-}
-
-const basePricingRpc = supabase as unknown as BasePricingRpcClient;
-
 const updateBasePriceResponseSchema = z.object({
-  success: z.boolean(),
+  success: z.literal(true),
+  collection_type_id: z.string().uuid(),
   old_price: z.number().int().positive(),
   new_price: z.number().int().positive(),
-  message: z.string(),
+  message: z.string().min(1),
 });
 
-function parseUpdateBasePriceResult(value: unknown): UpdateBasePriceResponse {
-  const parsed = z.array(updateBasePriceResponseSchema).length(1).safeParse(value);
+function parseUpdateBasePriceResult(
+  value: unknown,
+  expectedCollectionTypeId: string,
+  expectedPrice: number,
+): UpdateBasePriceResponse {
+  const parsed = updateBasePriceResponseSchema.safeParse(value);
   if (!parsed.success) {
     throw new Error("Resposta invalida ao atualizar preco base");
   }
 
-  return parsed.data[0];
+  if (
+    parsed.data.collection_type_id !== expectedCollectionTypeId ||
+    parsed.data.new_price !== expectedPrice
+  ) {
+    throw new Error("Resposta inconsistente ao atualizar preco base");
+  }
+
+  return parsed.data;
 }
 
 function toCollectionBasePrice(item: CollectionBasePricingRow): CollectionBasePrice {
@@ -124,7 +122,8 @@ export async function getBasePriceByType(
       updated_at,
       collection_types!inner (
         name,
-        display_name
+        display_name,
+        sort_order
       )
     `)
     .eq("collection_type_id", collectionTypeId)
@@ -138,27 +137,17 @@ export async function getBasePriceByType(
   return toCollectionBasePrice(data as unknown as CollectionBasePricingRow);
 }
 
-export async function updateBasePriceWithHistory(
+export async function updateBasePrice(
   input: UpdateBasePriceInput,
 ): Promise<UpdateBasePriceResponse> {
-  const userId = await requireAuthenticatedUserId();
-
-  const { data, error } = await basePricingRpc.rpc("update_base_price_with_history", {
+  const data = await callAdminRpc<unknown>("admin_update_collection_base_price", {
     p_collection_type_id: input.collection_type_id,
     p_new_base_price_coins: input.new_base_price_coins,
-    p_changed_by: userId,
-    p_reason: input.reason || null,
   });
 
-  if (error) {
-    throw new Error(`Erro ao atualizar preco base: ${error.message}`);
-  }
-
-  const result = parseUpdateBasePriceResult(data);
-
-  if (!result.success) {
-    throw new Error(result.message);
-  }
-
-  return result;
+  return parseUpdateBasePriceResult(
+    data,
+    input.collection_type_id,
+    input.new_base_price_coins,
+  );
 }
