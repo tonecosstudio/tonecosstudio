@@ -137,6 +137,10 @@ jobs:
         if: always()
         run: npm run security:supabase-access
 
+      - name: Audit canonical pricing read authority
+        if: always()
+        run: npm run security:pricing-read-authority
+
       - name: Audit profile authority
         if: always()
         run: node scripts/security/audit-profile-authority.mjs
