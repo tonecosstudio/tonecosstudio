@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm ci",
+  "installCommand": "npm ci && npm audit --omit=dev --audit-level=high",
   "ignoreCommand": "node scripts/vercel/should-ignore-build.mjs",
   "rewrites": [
     {
