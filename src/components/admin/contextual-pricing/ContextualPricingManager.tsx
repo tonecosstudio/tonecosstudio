@@ -1,12 +1,11 @@
 /**
- * Componente principal para gerenciar preços contextuais
- * 
+ * Componente principal para gerenciar preços contextuais.
+ *
  * Permite configurar:
  * - Preços base por tipo de coleção
  * - Multiplicadores de contexto
- * - Desconto para coleções escolhidas
  * - Preview de preços calculados
- * 
+ *
  * Spec: contextual-pricing-system
  * Task: 6.2
  */
@@ -15,42 +14,32 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Info, DollarSign, Percent, Eye, History } from "lucide-react";
+import { Info, DollarSign, Percent, Eye } from "lucide-react";
 import { BasePricingTable } from "./BasePricingTable";
 import { MultipliersTable } from "./MultipliersTable";
 import { PricingPreviewTable } from "./PricingPreviewTable";
-import { PricingHistoryModal } from "./PricingHistoryModal";
 
 export function ContextualPricingManager() {
   const [activeTab, setActiveTab] = useState("base-prices");
-  const [showHistory, setShowHistory] = useState(false);
 
   return (
     <Card className="w-full">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Preços Contextuais
-            </CardTitle>
-            <CardDescription>
-              Configure preços base, multiplicadores e descontos para diferentes contextos de usuário
-            </CardDescription>
-          </div>
-          <Button variant="outline" onClick={() => setShowHistory(true)}>
-            <History className="h-4 w-4 mr-2" />
-            Ver Histórico
-          </Button>
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <DollarSign className="h-5 w-5" />
+          Preços Contextuais
+        </CardTitle>
+        <CardDescription>
+          Configure preços base e multiplicadores para diferentes contextos de usuário
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Alert className="mb-6">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Os preços contextuais ajustam automaticamente o valor das coleções baseado no status de assinatura
-            e se o usuário escolheu aquela coleção. Mudanças são registradas no histórico para auditoria.
+            Os preços contextuais ajustam automaticamente o valor das coleções de acordo com o
+            contexto comercial configurado. Alterações administrativas passam pela fronteira
+            autenticada do backend.
           </AlertDescription>
         </Alert>
 
@@ -83,8 +72,6 @@ export function ContextualPricingManager() {
           </TabsContent>
         </Tabs>
       </CardContent>
-
-      <PricingHistoryModal open={showHistory} onOpenChange={setShowHistory} />
     </Card>
   );
 }
