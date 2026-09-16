@@ -157,7 +157,7 @@ export function exportPaymentListItemToCsv(payment: PaymentListItem): void {
 }
 
 export function exportPaymentDetailsToCsv(payment: PaymentDetails): void {
-  const rows = [
+  const rows: string[][] = [
     ["Campo", "Valor"],
     ["ID", payment.id],
     ["Referencia", payment.reference_number],
@@ -165,7 +165,7 @@ export function exportPaymentDetailsToCsv(payment: PaymentDetails): void {
     ["Email", payment.customer_email || ""],
     ["Valor", formatPaymentCurrency(payment.amount, payment.currency)],
     ["Moeda", payment.currency],
-    ["Metodo", payment.payment_method?.name || payment.payment_method_id],
+    ["Metodo", payment.payment_method?.name || payment.payment_method_id || "Não informado"],
     ["Tipo", payment.payment_type],
     ["Status", getPaymentStatusConfig(payment.status).label],
     ["Criado em", formatPaymentDate(payment.created_at)],
