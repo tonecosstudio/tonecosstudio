@@ -4,6 +4,8 @@ import { assertAdmin, errorToStatus, getServiceClient } from "../_shared/supabas
 
 type JsonObject = Record<string, unknown>;
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const ADMIN_RPC_ALLOWLIST = new Set([
   "create_admin_notification",
   "sync_all_automatic_groups",
@@ -96,6 +98,7 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_update_bonus_piece_status",
   "admin_update_character_price_multiplier",
   "admin_update_collection",
+  "admin_update_collection_base_price",
   "admin_update_collection_base_prices",
   "admin_update_collection_character",
   "admin_update_delivery_status_legacy",
@@ -190,6 +193,54 @@ function mapRpcError(message: string): { status: number; error: string } {
   return { status: 500, error: "Internal server error" };
 }
 
+async function updateCollectionBasePrice(
+  service: ReturnType<typeof getServiceClient>,
+  args: JsonObject,
+): Promise<JsonObject> {
+  const collectionTypeId = typeof args.p_collection_type_id === "string"
+    ? args.p_collection_type_id.trim()
+    : "";
+  const newBasePrice = args.p_new_base_price_coins;
+
+  if (!UUID_PATTERN.test(collectionTypeId)) {
+    throw new Error("Invalid collection type id");
+  }
+
+  if (!Number.isInteger(newBasePrice) || (newBasePrice as number) <= 0) {
+    throw new Error("Invalid collection base price");
+  }
+
+  const { data: current, error: readError } = await service
+    .from("collection_base_pricing")
+    .select("collection_type_id, base_price_coins")
+    .eq("collection_type_id", collectionTypeId)
+    .maybeSingle();
+
+  if (readError) throw readError;
+  if (!current) throw new Error("Collection base price not found");
+
+  const oldPrice = current.base_price_coins;
+  const { data: updated, error: updateError } = await service
+    .from("collection_base_pricing")
+    .update({ base_price_coins: newBasePrice as number, updated_at: new Date().toISOString() })
+    .eq("collection_type_id", collectionTypeId)
+    .select("collection_type_id, base_price_coins")
+    .single();
+
+  if (updateError) throw updateError;
+  if (!updated || updated.base_price_coins !== newBasePrice) {
+    throw new Error("Collection base price update returned invalid data");
+  }
+
+  return {
+    success: true,
+    collection_type_id: collectionTypeId,
+    old_price: oldPrice,
+    new_price: updated.base_price_coins,
+    message: "Preco base atualizado com sucesso",
+  };
+}
+
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
@@ -214,6 +265,12 @@ Deno.serve(async (req) => {
     if (rateLimited) return rateLimited;
 
     const service = getServiceClient();
+
+    if (functionName === "admin_update_collection_base_price") {
+      const data = await updateCollectionBasePrice(service, args);
+      return json(req, { ok: true, data });
+    }
+
     const { data, error } = await service.rpc(functionName, args);
 
     if (error) {
