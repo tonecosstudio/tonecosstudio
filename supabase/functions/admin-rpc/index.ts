@@ -1,5 +1,6 @@
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
+import { logAdminAction } from "../_shared/security-logger.ts";
 import { assertAdmin, errorToStatus, getServiceClient } from "../_shared/supabase.ts";
 
 type JsonObject = Record<string, unknown>;
@@ -268,6 +269,17 @@ Deno.serve(async (req) => {
 
     if (functionName === "admin_update_collection_base_price") {
       const data = await updateCollectionBasePrice(service, args);
+      logAdminAction(
+        req,
+        new URL(req.url).pathname,
+        admin.userId,
+        "update_collection_base_price",
+        {
+          collection_type_id: data.collection_type_id,
+          old_price: data.old_price,
+          new_price: data.new_price,
+        },
+      );
       return json(req, { ok: true, data });
     }
 
