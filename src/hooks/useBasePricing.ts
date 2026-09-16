@@ -3,7 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   getBasePriceByType,
   listActiveBasePricing,
-  updateBasePriceWithHistory,
+  updateBasePrice,
   type CollectionBasePrice,
   type UpdateBasePriceInput,
   type UpdateBasePriceResponse,
@@ -49,7 +49,7 @@ export function useUpdateBasePrice() {
         throw new Error("Preco deve ser um numero inteiro maior que 0");
       }
 
-      return updateBasePriceWithHistory(input);
+      return updateBasePrice(input);
     },
     onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: basePricingKeys.all });
