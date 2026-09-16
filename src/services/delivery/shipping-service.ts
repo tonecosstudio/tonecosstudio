@@ -1,4 +1,5 @@
 import { logDebug } from "@/lib/logger";
+import { callAuthenticatedEdgeFunctionData } from "@/services/supabase/edge-function-client";
 
 function secureNumericCode(length: number): string {
   const bytes = new Uint8Array(length);
@@ -25,6 +26,12 @@ export interface LabelResult {
 }
 
 type ShippingCarrier = "correios" | "private";
+
+type ShippingLabelRequest = {
+  referenceId: string;
+  address: Address;
+  weightKg: number;
+};
 
 class ShippingServiceError extends Error {
   constructor(
@@ -67,15 +74,28 @@ const BRAZIL_STATE_CODES = new Set([
   "TO",
 ]);
 
+function isLabelResult(value: unknown): value is LabelResult {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.trackingCode === "string" &&
+    record.trackingCode.trim().length > 0 &&
+    typeof record.labelUrl === "string" &&
+    record.labelUrl.trim().length > 0 &&
+    typeof record.cost === "number" &&
+    Number.isFinite(record.cost) &&
+    record.cost >= 0
+  );
+}
+
 /**
  * Adapter de geração de etiqueta.
  *
- * O browser não possui autoridade de banco nem de tracking. A referência do
- * pedido e o endereço já são validados pelo serviço administrativo chamador.
+ * O browser não possui autoridade de banco nem credenciais da transportadora.
+ * A referência do pedido e o endereço já são validados pelo serviço
+ * administrativo chamador. Em produção, a geração ocorre na Edge Function
+ * generate-shipping-label; fora de produção há somente um simulador local.
  * Tracking periódico pertence à Edge Function cron-update-tracking.
- *
- * Até existir um adapter server-side real para a transportadora, produção
- * falha fechado e jamais emite etiqueta/código simulado.
  */
 export class ShippingService {
   private readonly carrier: ShippingCarrier;
@@ -90,16 +110,6 @@ export class ShippingService {
 
   private isProductionBuild(): boolean {
     return import.meta.env.PROD === true || String(import.meta.env.PROD) === "true";
-  }
-
-  private assertSimulatorAllowed(): void {
-    if (this.isProductionBuild()) {
-      throw new ShippingServiceError(
-        "Shipping label generation requires a configured server-side carrier integration.",
-        "SHIPPING_INTEGRATION_REQUIRED",
-        false,
-      );
-    }
   }
 
   private validateReference(referenceId: string): void {
@@ -164,12 +174,41 @@ export class ShippingService {
     return basePrice + weightPrice + regionalSurcharge;
   }
 
+  private async generateProductionLabel(
+    referenceId: string,
+    address: Address,
+    weightKg: number,
+  ): Promise<LabelResult> {
+    const result = await callAuthenticatedEdgeFunctionData<
+      unknown,
+      ShippingLabelRequest
+    >(
+      "generate-shipping-label",
+      { referenceId, address, weightKg },
+      "Shipping label generation failed",
+    );
+
+    if (!isLabelResult(result)) {
+      throw new ShippingServiceError(
+        "Shipping provider returned an invalid label",
+        "INVALID_SHIPPING_LABEL_RESPONSE",
+        false,
+      );
+    }
+
+    return result;
+  }
+
   async generateLabel(referenceId: string, address: Address): Promise<LabelResult> {
     this.validateReference(referenceId);
     this.validateAddress(address);
-    this.assertSimulatorAllowed();
 
-    const cost = this.calculateDevelopmentShippingCost(address, 0.5);
+    const weightKg = 0.5;
+    if (this.isProductionBuild()) {
+      return this.generateProductionLabel(referenceId, address, weightKg);
+    }
+
+    const cost = this.calculateDevelopmentShippingCost(address, weightKg);
     const trackingCode =
       this.carrier === "correios"
         ? `BR${secureNumericCode(9)}BR`
