@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm ci",
-  "buildCommand": "npm run typecheck && npm run lint && npm run security:supabase-access && node scripts/security/audit-profile-authority.mjs && node scripts/security/audit-notification-authority.mjs && node scripts/security/audit-public-settings-authority.mjs && node scripts/security/audit-secure-upload-scanner.mjs && node scripts/security/audit-commercial-authority.mjs && npm run test:coverage && npm run build && npm audit --omit=dev --audit-level=high",
+  "buildCommand": "npm run release:verify",
   "ignoreCommand": "node scripts/vercel/should-ignore-build.mjs",
   "rewrites": [
     {
