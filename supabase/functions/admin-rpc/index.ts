@@ -180,6 +180,7 @@ function mapRpcError(message: string): { status: number; error: string } {
 
   if (
     message.includes("invalid") ||
+    message.includes("Invalid") ||
     message.includes("INVALID") ||
     message.includes("required") ||
     message.includes("must be")
@@ -187,11 +188,27 @@ function mapRpcError(message: string): { status: number; error: string } {
     return { status: 400, error: message };
   }
 
-  if (message.includes("not found") || message.includes("NOT_FOUND")) {
+  if (
+    message.includes("not found") ||
+    message.includes("Not found") ||
+    message.includes("NOT_FOUND")
+  ) {
     return { status: 404, error: message };
   }
 
   return { status: 500, error: "Internal server error" };
+}
+
+function mapHandlerError(message: string): { status: number; error: string } {
+  const authStatus = errorToStatus(message);
+  if (authStatus !== 500) {
+    return {
+      status: authStatus,
+      error: authStatus >= 500 ? "Internal server error" : message,
+    };
+  }
+
+  return mapRpcError(message);
 }
 
 async function updateCollectionBasePrice(
@@ -293,9 +310,7 @@ Deno.serve(async (req) => {
     return json(req, { ok: true, data });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    const status = errorToStatus(message);
-    const safeMessage = status >= 500 ? "Internal server error" : message;
-
-    return json(req, { ok: false, error: safeMessage }, status);
+    const mapped = mapHandlerError(message);
+    return json(req, { ok: false, error: mapped.error }, mapped.status);
   }
 });
