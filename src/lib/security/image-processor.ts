@@ -1,447 +1,237 @@
-/**
- * Image Processing and Security Service
- *
- * Handles image uploads with security features:
- * - EXIF metadata removal
- * - Image validation
- * - Compression and optimization
- * - Malware detection (basic)
- *
- * Uses sharp library for image processing
- */
+import {
+  ErrorSeverity,
+  ValidationError,
+  errorTracking,
+} from "@/lib/error-tracking";
+import {
+  ALLOWED_IMAGE_TYPES,
+  MAX_IMAGE_SIZE,
+  validateFileUpload,
+} from "./input-sanitizer";
 
-import { ErrorSeverity, ValidationError, errorTracking } from '@/lib/error-tracking';
-import { validateFileUpload, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from './input-sanitizer';
-
-/**
- * Image processing options
- */
 export interface ImageProcessingOptions {
   maxWidth?: number;
   maxHeight?: number;
   quality?: number;
-  format?: 'jpeg' | 'png' | 'webp';
+  format?: "jpeg" | "png" | "webp";
   removeMetadata?: boolean;
 }
 
-/**
- * Default image processing options
- */
 const DEFAULT_OPTIONS: Required<ImageProcessingOptions> = {
   maxWidth: 2048,
   maxHeight: 2048,
   quality: 85,
-  format: 'webp',
-  removeMetadata: true
+  format: "webp",
+  removeMetadata: true,
 };
 
-const SHARP_MODULE = 'sharp';
+const IMAGE_MAGIC_HEADERS = [
+  [0xff, 0xd8, 0xff], // JPEG
+  [0x89, 0x50, 0x4e, 0x47], // PNG
+  [0x47, 0x49, 0x46], // GIF
+] as const;
 
-interface SharpPipeline {
-  rotate(): SharpPipeline;
-  resize(options: {
-    width: number;
-    height: number;
-    fit: 'inside';
-    withoutEnlargement: boolean;
-  }): SharpPipeline;
-  jpeg(options: { quality: number }): SharpPipeline;
-  png(options: { quality: number }): SharpPipeline;
-  webp(options: { quality: number }): SharpPipeline;
-  toBuffer(): Promise<Uint8Array>;
+function hasValidWebpHeader(bytes: Uint8Array): boolean {
+  if (bytes.length < 12) return false;
+  const riff = [0x52, 0x49, 0x46, 0x46];
+  const webp = [0x57, 0x45, 0x42, 0x50];
+  return (
+    riff.every((byte, index) => bytes[index] === byte) &&
+    webp.every((byte, index) => bytes[index + 8] === byte)
+  );
 }
 
-type SharpFactory = (input: Uint8Array) => SharpPipeline;
-
-function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+function hasKnownImageHeader(bytes: Uint8Array): boolean {
+  return (
+    IMAGE_MAGIC_HEADERS.some((header) =>
+      header.every((byte, index) => bytes[index] === byte),
+    ) || hasValidWebpHeader(bytes)
+  );
 }
 
-/**
- * Validate image file before processing
- *
- * @param file - Image file to validate
- * @returns Validation result
- */
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
   return validateFileUpload(file, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE);
 }
 
 /**
- * Check if file might contain malware (basic checks)
- *
- * This is a basic check. For production, integrate with a proper
- * malware scanning service like ClamAV.
- *
- * @param file - File to check
- * @returns true if file appears suspicious
+ * Client-side prefilter only. The canonical upload path still performs the
+ * server-side secure-upload scanner; browser checks are defense in depth.
  */
 export async function detectPotentialMalware(file: File): Promise<boolean> {
   try {
-    // Check 1: File size anomalies
     if (file.size === 0) {
-      errorTracking.log('Empty file detected', ErrorSeverity.WARNING, { filename: file.name });
+      errorTracking.log("Empty file detected", ErrorSeverity.WARNING, {
+        filename: file.name,
+      });
       return true;
     }
 
-    // Check 2: Read file header (magic bytes)
-    const buffer = await file.slice(0, 12).arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-
-    // Valid image magic bytes
-    const validHeaders = {
-      jpeg: [0xFF, 0xD8, 0xFF],
-      png: [0x89, 0x50, 0x4E, 0x47],
-      gif: [0x47, 0x49, 0x46],
-      webp: [0x52, 0x49, 0x46, 0x46] // RIFF
-    };
-
-    // Check if file starts with valid image header
-    const hasValidHeader = Object.values(validHeaders).some(header => {
-      return header.every((byte, index) => bytes[index] === byte);
-    });
-
-    if (!hasValidHeader) {
-      errorTracking.log(
-        'Invalid image header detected',
-        ErrorSeverity.WARNING,
-        { filename: file.name, header: Array.from(bytes.slice(0, 4)) }
-      );
+    const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+    if (!hasKnownImageHeader(bytes)) {
+      errorTracking.log("Invalid image header detected", ErrorSeverity.WARNING, {
+        filename: file.name,
+        header: Array.from(bytes.slice(0, 12)),
+      });
       return true;
     }
 
-    // Check 3: Look for suspicious patterns in filename
-    const suspiciousPatterns = [
-      /\.exe$/i,
-      /\.bat$/i,
-      /\.cmd$/i,
-      /\.sh$/i,
-      /\.php$/i,
-      /\.asp$/i,
-      /\.jsp$/i,
-      /\.js$/i,
-      /\.vbs$/i,
-      /\.scr$/i
-    ];
-
-    if (suspiciousPatterns.some(pattern => pattern.test(file.name))) {
-      errorTracking.log(
-        'Suspicious filename pattern detected',
-        ErrorSeverity.WARNING,
-        { filename: file.name }
-      );
+    if (/\.(?:exe|bat|cmd|sh|php|asp|jsp|js|vbs|scr)$/i.test(file.name)) {
+      errorTracking.log("Suspicious filename pattern detected", ErrorSeverity.WARNING, {
+        filename: file.name,
+      });
       return true;
     }
 
     return false;
   } catch (error) {
     errorTracking.trackError(
-      new ValidationError(
-        'Error during malware detection',
-        { error, filename: file.name }
-      )
+      new ValidationError("Error during malware detection", {
+        error,
+        filename: file.name,
+      }),
     );
-    // Fail safe: reject file if we can't scan it
     return true;
   }
 }
 
 /**
- * Process image: remove EXIF, resize, compress
- *
- * Note: This function requires sharp library to be installed.
- * For browser-side processing, use browser-image-compression instead.
- *
- * @param file - Image file to process
- * @param options - Processing options
- * @returns Processed image as Blob
+ * Reencodes the image in the browser. Reencoding with preserveExif=false
+ * strips EXIF metadata and avoids shipping Node-native `sharp` to the SPA.
  */
 export async function processImage(
   file: File,
-  options: ImageProcessingOptions = {}
+  options: ImageProcessingOptions = {},
 ): Promise<Blob> {
-  // Merge with defaults
   const opts = { ...DEFAULT_OPTIONS, ...options };
-
-  // Validate file
   const validation = validateImageFile(file);
   if (!validation.valid) {
     throw new ValidationError(
-      validation.error || 'Invalid image file',
+      validation.error || "Invalid image file",
       { filename: file.name },
-      validation.error
+      validation.error,
     );
   }
 
-  // Check for malware
-  const isSuspicious = await detectPotentialMalware(file);
-  if (isSuspicious) {
+  if (await detectPotentialMalware(file)) {
     throw new ValidationError(
-      'Potentially malicious file detected',
+      "Potentially malicious file detected",
       { filename: file.name },
-      'Arquivo suspeito detectado. Por favor, use uma imagem válida.'
+      "Arquivo suspeito detectado. Por favor, use uma imagem válida.",
     );
   }
 
   try {
-    if (typeof window !== 'undefined') {
-      return await procesImageInBrowser(file, opts);
-    }
+    const imageCompression = (await import("browser-image-compression")).default;
+    const maxDimension = Math.max(opts.maxWidth, opts.maxHeight);
 
-    return await processImageInNode(file, opts);
+    return await imageCompression(file, {
+      maxSizeMB: Math.min(1, MAX_IMAGE_SIZE / (1024 * 1024)),
+      maxWidthOrHeight: maxDimension,
+      useWebWorker: true,
+      fileType: `image/${opts.format}`,
+      initialQuality: Math.min(1, Math.max(0.01, opts.quality / 100)),
+      preserveExif: !opts.removeMetadata,
+    });
   } catch (error) {
     errorTracking.trackError(
-      new ValidationError(
-        'Failed to process image',
-        { error, filename: file.name }
-      )
+      new ValidationError("Failed to process image", {
+        error,
+        filename: file.name,
+      }),
     );
     throw new ValidationError(
-      'Failed to process image',
+      "Failed to process image",
       { error },
-      'Erro ao processar imagem. Tente novamente.'
+      "Erro ao processar imagem. Tente novamente.",
     );
   }
 }
 
-/**
- * Process image in browser using browser-image-compression
- *
- * @param file - Image file
- * @param options - Processing options
- * @returns Processed image blob
- */
-async function procesImageInBrowser(
-  file: File,
-  options: Required<ImageProcessingOptions>
-): Promise<Blob> {
-  // Dynamic import to avoid bundling if not used
-  const imageCompression = (await import('browser-image-compression')).default;
-
-  const compressionOptions = {
-    maxSizeMB: 1,
-    maxWidthOrHeight: Math.max(options.maxWidth, options.maxHeight),
-    useWebWorker: true,
-    fileType: `image/${options.format}`,
-    initialQuality: options.quality / 100,
-    // Remove EXIF data
-    exifOrientation: undefined
-  };
-
-  const compressed = await imageCompression(file, compressionOptions);
-
-  // Additional EXIF removal (browser-image-compression should handle this)
-  // but we double-check
-  if (options.removeMetadata) {
-    return await removeEXIFData(compressed);
-  }
-
-  return compressed;
-}
-
-/**
- * Process image in Node.js using sharp
- *
- * @param file - Image file
- * @param options - Processing options
- * @returns Processed image blob
- */
-async function processImageInNode(
-  file: File,
-  options: Required<ImageProcessingOptions>
-): Promise<Blob> {
-  // This would be used in Supabase Edge Functions
-  // Dynamic import sharp
-  const sharp = (await import(/* @vite-ignore */ SHARP_MODULE) as { default: SharpFactory }).default;
-
-  const buffer = await file.arrayBuffer();
-
-  let pipeline = sharp(new Uint8Array(buffer));
-
-  // Sharp strips metadata by default. rotate() applies EXIF orientation before it is dropped.
-  if (options.removeMetadata) {
-    pipeline = pipeline.rotate();
-  }
-
-  // Resize if needed
-  pipeline = pipeline.resize({
-    width: options.maxWidth,
-    height: options.maxHeight,
-    fit: 'inside',
-    withoutEnlargement: true
-  });
-
-  // Convert format and compress
-  switch (options.format) {
-    case 'jpeg':
-      pipeline = pipeline.jpeg({ quality: options.quality });
-      break;
-    case 'png':
-      pipeline = pipeline.png({ quality: options.quality });
-      break;
-    case 'webp':
-      pipeline = pipeline.webp({ quality: options.quality });
-      break;
-  }
-
-  const processed = await pipeline.toBuffer();
-  return new Blob([toArrayBuffer(processed)], { type: `image/${options.format}` });
-}
-
-/**
- * Remove EXIF data from image blob
- *
- * @param blob - Image blob
- * @returns Blob without EXIF data
- */
-async function removeEXIFData(blob: Blob): Promise<Blob> {
-  // For JPEG images, EXIF data is in APP1 marker
-  // This is a simplified implementation
-
-  const arrayBuffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(arrayBuffer);
-
-  // Check if JPEG
-  if (bytes[0] === 0xFF && bytes[1] === 0xD8) {
-    // Find and remove EXIF marker (0xFFE1)
-    let i = 2;
-    const newBytes: number[] = [0xFF, 0xD8]; // Start with SOI marker
-
-    while (i < bytes.length - 1) {
-      if (bytes[i] === 0xFF) {
-        const marker = bytes[i + 1];
-
-        // Skip EXIF marker (APP1)
-        if (marker === 0xE1) {
-          const length = (bytes[i + 2] << 8) | bytes[i + 3];
-          i += length + 2;
-          continue;
-        }
-
-        // Copy other markers
-        newBytes.push(bytes[i], bytes[i + 1]);
-
-        // If marker has length, copy it
-        if (marker >= 0xC0 && marker <= 0xFE && marker !== 0xD8 && marker !== 0xD9) {
-          const length = (bytes[i + 2] << 8) | bytes[i + 3];
-          for (let j = 0; j < length; j++) {
-            newBytes.push(bytes[i + 2 + j]);
-          }
-          i += length + 2;
-        } else {
-          i += 2;
-        }
-      } else {
-        newBytes.push(bytes[i]);
-        i++;
-      }
-    }
-
-    return new Blob([new Uint8Array(newBytes)], { type: blob.type });
-  }
-
-  // For non-JPEG, return as-is (PNG, WebP handle metadata differently)
-  return blob;
-}
-
-/**
- * Generate thumbnail from image
- *
- * @param file - Original image file
- * @param size - Thumbnail size (width and height)
- * @returns Thumbnail blob
- */
 export async function generateThumbnail(
   file: File,
-  size: number = 200
+  size: number = 200,
 ): Promise<Blob> {
+  if (!Number.isFinite(size) || size <= 0 || size > 4096) {
+    throw new ValidationError("Invalid thumbnail size", { size });
+  }
+
   return processImage(file, {
     maxWidth: size,
     maxHeight: size,
     quality: 80,
-    format: 'webp',
-    removeMetadata: true
+    format: "webp",
+    removeMetadata: true,
   });
 }
 
-/**
- * Validate image dimensions
- *
- * @param file - Image file
- * @param minWidth - Minimum width
- * @param minHeight - Minimum height
- * @param maxWidth - Maximum width
- * @param maxHeight - Maximum height
- * @returns Validation result with dimensions
- */
 export async function validateImageDimensions(
   file: File,
   minWidth?: number,
   minHeight?: number,
   maxWidth?: number,
-  maxHeight?: number
+  maxHeight?: number,
 ): Promise<{ valid: boolean; width: number; height: number; error?: string }> {
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
 
-    img.onload = () => {
+    const finish = (
+      result: { valid: boolean; width: number; height: number; error?: string },
+    ) => {
       URL.revokeObjectURL(url);
+      resolve(result);
+    };
 
+    img.onload = () => {
       const { width, height } = img;
 
       if (minWidth && width < minWidth) {
-        resolve({
+        finish({
           valid: false,
           width,
           height,
-          error: `Largura mínima: ${minWidth}px (atual: ${width}px)`
+          error: `Largura mínima: ${minWidth}px (atual: ${width}px)`,
         });
         return;
       }
-
       if (minHeight && height < minHeight) {
-        resolve({
+        finish({
           valid: false,
           width,
           height,
-          error: `Altura mínima: ${minHeight}px (atual: ${height}px)`
+          error: `Altura mínima: ${minHeight}px (atual: ${height}px)`,
         });
         return;
       }
-
       if (maxWidth && width > maxWidth) {
-        resolve({
+        finish({
           valid: false,
           width,
           height,
-          error: `Largura máxima: ${maxWidth}px (atual: ${width}px)`
+          error: `Largura máxima: ${maxWidth}px (atual: ${width}px)`,
         });
         return;
       }
-
       if (maxHeight && height > maxHeight) {
-        resolve({
+        finish({
           valid: false,
           width,
           height,
-          error: `Altura máxima: ${maxHeight}px (atual: ${height}px)`
+          error: `Altura máxima: ${maxHeight}px (atual: ${height}px)`,
         });
         return;
       }
 
-      resolve({ valid: true, width, height });
+      finish({ valid: true, width, height });
     };
 
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve({
+    img.onerror = () =>
+      finish({
         valid: false,
         width: 0,
         height: 0,
-        error: 'Não foi possível carregar a imagem'
+        error: "Não foi possível carregar a imagem",
       });
-    };
 
     img.src = url;
   });
