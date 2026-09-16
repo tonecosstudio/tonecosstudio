@@ -31,6 +31,8 @@ function snapshot() {
         updated_at: "2026-09-16T00:00:00.000Z",
       },
     ],
+    collections: [],
+    collection_assignments: [],
     assignment_counts: [],
     active_subscription_counts: [],
   };
@@ -70,10 +72,11 @@ describe("admin purchase mode snapshot reads", () => {
   it.each([
     null,
     {},
-    { purchase_modes: null },
-    { purchase_modes: [{ ...snapshot().purchase_modes[0], mode_key: "invalido" }] },
-    { purchase_modes: [{ ...snapshot().purchase_modes[0], collections_count: 0 }] },
-    { purchase_modes: [{ ...snapshot().purchase_modes[0], is_active: "true" }] },
+    { ...snapshot(), purchase_modes: null },
+    { ...snapshot(), purchase_modes: [{ ...snapshot().purchase_modes[0], mode_key: "invalido" }] },
+    { ...snapshot(), purchase_modes: [{ ...snapshot().purchase_modes[0], collections_count: 0 }] },
+    { ...snapshot(), purchase_modes: [{ ...snapshot().purchase_modes[0], is_active: "true" }] },
+    { ...snapshot(), collections: null },
   ])("falha fechado para payload de modalidade invalido %#", async (value) => {
     mocks.callAdminRpc.mockResolvedValue(value);
 
