@@ -84,8 +84,3 @@ export interface MigrationResult {
   errors: string[];
   warnings: string[];
 }
-
-export interface UpdatePurchaseModeMultiplierResult {
-  plans_updated: number;
-  tiers_affected: number;
-}

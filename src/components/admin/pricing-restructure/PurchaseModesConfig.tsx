@@ -1,9 +1,8 @@
 /**
- * Componente para configurar modalidades de compra
- * 
- * Permite editar multiplicadores e visualizar impacto em todos os níveis.
- * Requisitos: 3.3, 3.4, 3.5
- * Tarefa: 8.1
+ * Componente para configurar modalidades de compra.
+ *
+ * O multiplicador e uma referencia de calculo. Alterar a configuracao da
+ * modalidade nao reescreve precos ja persistidos em subscription_plans.
  */
 
 import { useState } from "react";
@@ -47,8 +46,10 @@ import {
 } from "@/components/ui/form";
 import { usePurchaseModes, useUpdatePurchaseModeMultiplier } from "@/hooks/usePurchaseModes";
 import { useAllTiersWithPlans } from "@/hooks/useTierWithPlans";
-import { updateMultiplierSchema } from "@/lib/validations/pricing-restructure";
-import { calculatePlanPrice } from "@/lib/validations/pricing-restructure";
+import {
+  calculatePlanPrice,
+  updateMultiplierSchema,
+} from "@/lib/validations/pricing-restructure";
 import { formatCurrency } from "@/lib/utils";
 import { Edit, AlertCircle, TrendingUp, TrendingDown } from "lucide-react";
 import type { PurchaseMode } from "@/types/pricing-restructure";
@@ -56,9 +57,6 @@ import { z } from "zod";
 
 type UpdateMultiplierFormData = z.infer<typeof updateMultiplierSchema>;
 
-/**
- * Componente principal de configuração de modalidades
- */
 export function PurchaseModesConfig() {
   const { data: modes, isLoading: modesLoading } = usePurchaseModes();
   const { data: tiersWithPlans, isLoading: tiersLoading } = useAllTiersWithPlans();
@@ -78,7 +76,7 @@ export function PurchaseModesConfig() {
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Nenhuma modalidade de compra encontrada. Execute as migrations do banco de dados.
+          Nenhuma modalidade de compra configurada.
         </AlertDescription>
       </Alert>
     );
@@ -92,7 +90,7 @@ export function PurchaseModesConfig() {
         <CardHeader>
           <CardTitle>Modalidades de Compra</CardTitle>
           <CardDescription>
-            Configure os multiplicadores de preço para cada modalidade. Mudanças afetarão todos os níveis.
+            Configure a referência de multiplicador usada para comparar e calcular preços das modalidades.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -150,8 +148,8 @@ export function PurchaseModesConfig() {
             <Alert className="mt-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Alterações nos multiplicadores recalcularão automaticamente os preços de{" "}
-                <strong>{totalTiers} níveis</strong> e todos os seus planos.
+                A prévia abaixo considera <strong>{totalTiers} níveis</strong>. Alterar o multiplicador
+                atualiza a referência da modalidade; preços já gravados nos planos permanecem inalterados.
               </AlertDescription>
             </Alert>
           )}
@@ -170,9 +168,6 @@ export function PurchaseModesConfig() {
   );
 }
 
-/**
- * Dialog para editar multiplicador de uma modalidade
- */
 interface EditMultiplierDialogProps {
   mode: PurchaseMode;
   open: boolean;
@@ -196,14 +191,11 @@ function EditMultiplierDialog({
   });
 
   const newMultiplier = form.watch("new_multiplier");
-
-  // Calcular impacto da mudança
   const multiplierChange = newMultiplier - mode.price_multiplier;
   const multiplierChangePercent = (multiplierChange / mode.price_multiplier) * 100;
   const isIncrease = multiplierChange > 0;
   const isDecrease = multiplierChange < 0;
 
-  // Calcular exemplos de impacto
   const impactExamples = tiersWithPlans.slice(0, 3).map((tier) => {
     const oldPrice = calculatePlanPrice(tier.tier_price_base, mode.price_multiplier);
     const newPrice = calculatePlanPrice(tier.tier_price_base, newMultiplier);
@@ -223,7 +215,7 @@ function EditMultiplierDialog({
       });
       onOpenChange(false);
     } catch (_error) {
-      // Erro já tratado pelo hook
+      // Erro ja tratado pelo hook.
     }
   };
 
@@ -233,7 +225,7 @@ function EditMultiplierDialog({
         <DialogHeader>
           <DialogTitle>Editar Multiplicador - {mode.name}</DialogTitle>
           <DialogDescription>
-            Altere o multiplicador de preço para esta modalidade
+            Altere a referência de cálculo desta modalidade. A operação não reescreve preços de planos existentes.
           </DialogDescription>
         </DialogHeader>
 
@@ -270,16 +262,16 @@ function EditMultiplierDialog({
                   {isDecrease && <TrendingDown className="h-4 w-4 text-green-500" />}
                   <AlertDescription>
                     {isIncrease && (
-                      <span className="text-red-600 font-medium">
+                      <span className="font-medium text-red-600">
                         Aumento de {multiplierChangePercent.toFixed(1)}%
                       </span>
                     )}
                     {isDecrease && (
-                      <span className="text-green-600 font-medium">
+                      <span className="font-medium text-green-600">
                         Redução de {Math.abs(multiplierChangePercent).toFixed(1)}%
                       </span>
                     )}
-                    {" "}nos preços desta modalidade
+                    {" "}na referência de cálculo desta modalidade
                   </AlertDescription>
                 </div>
               </Alert>
@@ -287,22 +279,20 @@ function EditMultiplierDialog({
 
             {impactExamples.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-sm font-medium">Prévia de Impacto</h4>
+                <h4 className="text-sm font-medium">Prévia de Referência</h4>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nível</TableHead>
-                      <TableHead>Preço Atual</TableHead>
-                      <TableHead>Novo Preço</TableHead>
+                      <TableHead>Referência Atual</TableHead>
+                      <TableHead>Nova Referência</TableHead>
                       <TableHead>Diferença</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {impactExamples.map((example) => (
                       <TableRow key={example.tierName}>
-                        <TableCell className="font-medium">
-                          {example.tierName}
-                        </TableCell>
+                        <TableCell className="font-medium">{example.tierName}</TableCell>
                         <TableCell>{formatCurrency(example.oldPrice)}</TableCell>
                         <TableCell className="font-medium">
                           {formatCurrency(example.newPrice)}
@@ -313,8 +303,8 @@ function EditMultiplierDialog({
                               example.difference > 0
                                 ? "text-red-600"
                                 : example.difference < 0
-                                ? "text-green-600"
-                                : ""
+                                  ? "text-green-600"
+                                  : ""
                             }
                           >
                             {example.difference > 0 ? "+" : ""}
@@ -327,18 +317,14 @@ function EditMultiplierDialog({
                 </Table>
                 {tiersWithPlans.length > 3 && (
                   <p className="text-sm text-muted-foreground">
-                    ... e mais {tiersWithPlans.length - 3} níveis serão afetados
+                    ... e mais {tiersWithPlans.length - 3} níveis na prévia de referência
                   </p>
                 )}
               </div>
             )}
 
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={updateMultiplier.isPending}>
@@ -351,4 +337,3 @@ function EditMultiplierDialog({
     </Dialog>
   );
 }
-

@@ -8,7 +8,6 @@ import { updatePurchaseModeRpc } from "@/services/admin/config/admin-config-muta
 import {
   listActivePurchaseModes,
   listPurchaseModes,
-  updatePurchaseModeMultiplier,
 } from "@/services/payments/purchase-modes-service";
 import type { UpdatePurchaseModeInput } from "@/types/pricing-restructure";
 
@@ -89,20 +88,22 @@ export function useUpdatePurchaseModeMultiplier() {
         new_multiplier: newMultiplier,
       });
 
-      return updatePurchaseModeMultiplier({
-        modeKey: validated.mode_key,
-        newMultiplier: validated.new_multiplier,
+      await updatePurchaseModeRpc(validated.mode_key, {
+        price_multiplier: validated.new_multiplier,
       });
+
+      return validated.mode_key;
     },
-    onSuccess: (result, variables) => {
+    onSuccess: (modeKey) => {
       queryClient.invalidateQueries({ queryKey: purchaseModesKeys.all });
-      queryClient.invalidateQueries({ queryKey: purchaseModesKeys.detail(variables.modeKey) });
+      queryClient.invalidateQueries({ queryKey: purchaseModesKeys.detail(modeKey) });
       queryClient.invalidateQueries({ queryKey: ["pricing-tiers"] });
       queryClient.invalidateQueries({ queryKey: ["tier-with-plans"] });
 
       toast({
         title: "Multiplicador atualizado",
-        description: `${result.plans_updated} planos recalculados em ${result.tiers_affected} niveis.`,
+        description:
+          "A referência da modalidade foi atualizada. Preços já persistidos nos planos não são recalculados automaticamente.",
       });
     },
     onError: (error: Error) => {

@@ -1,52 +1,26 @@
-import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { requireAuthenticatedUserId } from "@/services/auth/current-user";
-import type {
-  PurchaseMode,
-  UpdatePurchaseModeMultiplierResult,
-} from "@/types/pricing-restructure";
+import type { PurchaseMode } from "@/types/pricing-restructure";
 
-type RpcError = { message: string } | null;
+type QueryError = { message: string } | null;
 
 interface PurchaseModesSupabaseClient {
   from(table: "purchase_modes"): {
     select(columns: string): {
       order(column: "display_order", options: { ascending: boolean }): PromiseLike<{
         data: PurchaseMode[] | null;
-        error: RpcError;
+        error: QueryError;
       }>;
       eq(column: "is_active", value: boolean): {
         order(column: "display_order", options: { ascending: boolean }): PromiseLike<{
           data: PurchaseMode[] | null;
-          error: RpcError;
+          error: QueryError;
         }>;
       };
     };
   };
-  rpc(functionName: "update_purchase_mode_multiplier", args: {
-    p_mode_key: string;
-    p_new_multiplier: number;
-    p_changed_by: string;
-  }): PromiseLike<{ data: unknown; error: RpcError }>;
 }
 
 const purchaseModesSupabase = supabase as unknown as PurchaseModesSupabaseClient;
-
-const updatePurchaseModeMultiplierResultSchema = z.object({
-  plans_updated: z.number().int().nonnegative(),
-  tiers_affected: z.number().int().nonnegative(),
-});
-
-function parseUpdatePurchaseModeMultiplierResult(
-  value: unknown,
-): UpdatePurchaseModeMultiplierResult {
-  const parsed = updatePurchaseModeMultiplierResultSchema.safeParse(value);
-  if (!parsed.success) {
-    throw new Error("Resposta invalida ao atualizar multiplicador");
-  }
-
-  return parsed.data;
-}
 
 export async function listPurchaseModes(): Promise<PurchaseMode[]> {
   const { data, error } = await purchaseModesSupabase
@@ -73,23 +47,4 @@ export async function listActivePurchaseModes(): Promise<PurchaseMode[]> {
   }
 
   return data ?? [];
-}
-
-export async function updatePurchaseModeMultiplier(params: {
-  modeKey: string;
-  newMultiplier: number;
-}): Promise<UpdatePurchaseModeMultiplierResult> {
-  const userId = await requireAuthenticatedUserId();
-
-  const { data, error } = await purchaseModesSupabase.rpc("update_purchase_mode_multiplier", {
-    p_mode_key: params.modeKey,
-    p_new_multiplier: params.newMultiplier,
-    p_changed_by: userId,
-  });
-
-  if (error) {
-    throw new Error(`Erro ao atualizar multiplicador: ${error.message}`);
-  }
-
-  return parseUpdatePurchaseModeMultiplierResult(data);
 }
