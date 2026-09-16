@@ -19,7 +19,7 @@ export interface Group {
   name: string;
   type: GroupType;
   membership_criteria: MembershipCriteria;
-  created_by: string;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
