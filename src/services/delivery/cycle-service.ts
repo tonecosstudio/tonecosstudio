@@ -1,5 +1,6 @@
-import { supabase } from "@/integrations/supabase/client";
 import { BATCH } from "@/config/constants";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { resolveCycleCapacity } from "@/lib/cycle-capacity";
 import {
   getOrCreateDeliveryCycleRpc,
@@ -13,7 +14,10 @@ export type CycleStatus =
   | "sales"
   | "production"
   | "shipping"
-  | "completed";
+  | "completed"
+  | "cancelled";
+
+type CycleRow = Database["public"]["Tables"]["cycles"]["Row"];
 
 const CYCLE_STATUS_SET = new Set<CycleStatus>([
   "open",
@@ -22,6 +26,7 @@ const CYCLE_STATUS_SET = new Set<CycleStatus>([
   "production",
   "shipping",
   "completed",
+  "cancelled",
 ]);
 
 export interface Cycle {
@@ -50,43 +55,8 @@ export interface CycleCapacity {
   available: number;
 }
 
-interface CycleCapacityRpcClient {
-  rpc(
-    name: "reserve_capacity" | "release_capacity",
-    args: { p_cycle_id: string; p_quantity: number },
-  ): Promise<{ error: { message: string } | null }>;
-}
-
-const cycleCapacityRpc = supabase as unknown as CycleCapacityRpcClient;
-
-function requireString(row: Record<string, unknown>, field: string): string {
-  const value = row[field];
-  if (typeof value !== "string" || value.trim().length === 0) {
-    throw new Error(`Cycle ${field} is missing or invalid`);
-  }
-  return value;
-}
-
-function requireInteger(
-  row: Record<string, unknown>,
-  field: string,
-  min: number,
-  max: number,
-): number {
-  const value = Number(row[field]);
-  if (!Number.isInteger(value) || value < min || value > max) {
-    throw new Error(`Cycle ${field} is missing or invalid`);
-  }
-  return value;
-}
-
-function requireDateValue(
-  row: Record<string, unknown>,
-  fields: string[],
-  label: string,
-): string {
-  for (const field of fields) {
-    const value = row[field];
+function requireDateValue(values: Array<string | null | undefined>, label: string): string {
+  for (const value of values) {
     if (typeof value === "string" && value.trim().length > 0 && !Number.isNaN(Date.parse(value))) {
       return value;
     }
@@ -95,38 +65,59 @@ function requireDateValue(
   throw new Error(`Cycle ${label} is missing or invalid`);
 }
 
+function requireCycleNumber(value: number): 1 | 2 {
+  if (value !== 1 && value !== 2) {
+    throw new Error("Cycle cycle_number is missing or invalid");
+  }
+  return value;
+}
+
+function requireMonth(value: number): number {
+  if (!Number.isInteger(value) || value < 1 || value > 12) {
+    throw new Error("Cycle month is missing or invalid");
+  }
+  return value;
+}
+
+function requireYear(value: number): number {
+  if (!Number.isInteger(value) || value < 2020 || value > 2100) {
+    throw new Error("Cycle year is missing or invalid");
+  }
+  return value;
+}
+
+function requireCycleStatus(value: string): CycleStatus {
+  if (!CYCLE_STATUS_SET.has(value as CycleStatus)) {
+    throw new Error(`Cycle status is invalid: ${value}`);
+  }
+  return value as CycleStatus;
+}
+
 class CycleService {
-  private normalizeCycle(row: Record<string, unknown>): Cycle {
-    const id = requireString(row, "id");
-    const cycleNumber = requireInteger(row, "cycle_number", 1, 2) as 1 | 2;
-    const month = requireInteger(row, "month", 1, 12);
-    const year = requireInteger(row, "year", 2020, 2100);
-    const statusValue = requireString(row, "status");
-
-    if (!CYCLE_STATUS_SET.has(statusValue as CycleStatus)) {
-      throw new Error(`Cycle status is invalid: ${statusValue}`);
-    }
-
-    const capacity = resolveCycleCapacity(row, `Cycle ${id}`);
-    const openStart = requireDateValue(row, ["open_start", "sales_start_date"], "open_start");
+  private normalizeCycle(row: CycleRow): Cycle {
+    const cycleNumber = requireCycleNumber(row.cycle_number);
+    const month = requireMonth(row.month);
+    const year = requireYear(row.year);
+    const status = requireCycleStatus(row.status);
+    const capacity = resolveCycleCapacity(row, `Cycle ${row.id}`);
+    const openStart = requireDateValue(
+      [row.open_start, row.sales_start_date],
+      "open_start",
+    );
     const openEnd = requireDateValue(
-      row,
-      ["open_end", "sales_end_date", "cutoff_date"],
+      [row.open_end, row.sales_end_date, row.cutoff_date],
       "open_end",
     );
     const productionStart = requireDateValue(
-      row,
-      ["production_start", "production_start_date"],
+      [row.production_start, row.production_start_date],
       "production_start",
     );
     const productionEnd = requireDateValue(
-      row,
-      ["production_end", "production_end_date"],
+      [row.production_end, row.production_end_date],
       "production_end",
     );
     const shippingDate = requireDateValue(
-      row,
-      ["shipping_date", "shipping_start_date"],
+      [row.shipping_date, row.shipping_start_date],
       "shipping_date",
     );
 
@@ -140,12 +131,13 @@ class CycleService {
       productionStartMs < openStartMs ||
       productionEndMs < productionStartMs
     ) {
-      throw new Error(`Cycle ${id} has inconsistent operational dates`);
+      throw new Error(`Cycle ${row.id} has inconsistent operational dates`);
     }
 
     return {
-      ...(row as unknown as Cycle),
-      id,
+      id: row.id,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
       capacity: capacity.capacity,
       used_capacity: capacity.usedCapacity,
       cycle_number: cycleNumber,
@@ -156,7 +148,8 @@ class CycleService {
       production_start: productionStart,
       production_end: productionEnd,
       shipping_date: shippingDate,
-      status: statusValue as CycleStatus,
+      status,
+      status_changed_at: row.status_changed_at,
       capacity_max: capacity.capacity,
       capacity_current: capacity.usedCapacity,
     };
@@ -188,8 +181,7 @@ class CycleService {
       throw new Error(`Erro ao buscar ciclo atual: ${error.message}`);
     }
 
-    if (!data) return null;
-    return this.normalizeCycle(data);
+    return data ? this.normalizeCycle(data) : null;
   }
 
   async createCycleIfNotExists(
@@ -197,7 +189,7 @@ class CycleService {
     month: number,
     year: number,
   ): Promise<Cycle> {
-    const cycle = await getOrCreateDeliveryCycleRpc<Record<string, unknown>>(
+    const cycle = await getOrCreateDeliveryCycleRpc<CycleRow>(
       cycleNumber,
       month,
       year,
@@ -220,11 +212,8 @@ class CycleService {
     return this.createCycleIfNotExists(cycleNumber, month, year);
   }
 
-  async transitionCycleStatus(
-    cycleId: string,
-    newStatus: CycleStatus,
-  ): Promise<void> {
-    await transitionDeliveryCycleStatusRpc<Cycle>(cycleId, newStatus);
+  async transitionCycleStatus(cycleId: string, newStatus: CycleStatus): Promise<void> {
+    await transitionDeliveryCycleStatusRpc<CycleRow>(cycleId, newStatus);
   }
 
   async checkAndTransitionCycles(): Promise<void> {
@@ -233,13 +222,14 @@ class CycleService {
     const { data: cycles, error } = await supabase
       .from("cycles")
       .select("*")
-      .neq("status", "completed");
+      .neq("status", "completed")
+      .neq("status", "cancelled");
 
     if (error) {
       throw new Error(`Erro ao buscar ciclos: ${error.message}`);
     }
 
-    if (!cycles || cycles.length === 0) return;
+    if (!cycles?.length) return;
 
     for (const cycle of cycles) {
       const normalized = this.normalizeCycle(cycle);
@@ -247,7 +237,7 @@ class CycleService {
       const productionEnd = new Date(normalized.production_end);
       const shippingDate = new Date(normalized.shipping_date);
 
-      if (normalized.status === "open" && now > openEnd) {
+      if ((normalized.status === "open" || normalized.status === "sales") && now > openEnd) {
         await this.transitionCycleStatus(normalized.id, "production");
       } else if (normalized.status === "production" && now > productionEnd) {
         await this.transitionCycleStatus(normalized.id, "shipping");
@@ -260,7 +250,7 @@ class CycleService {
   async checkCapacity(cycleId: string): Promise<CycleCapacity> {
     const { data, error } = await supabase
       .from("cycles")
-      .select("capacity, used_capacity")
+      .select("capacity, used_capacity, capacity_max, capacity_current, capacity_limit, reserved_capacity")
       .eq("id", cycleId)
       .single();
 
@@ -269,7 +259,7 @@ class CycleService {
     }
 
     if (!data) {
-      throw new Error(`Ciclo não encontrado: ${cycleId}`);
+      throw new Error(`Ciclo nao encontrado: ${cycleId}`);
     }
 
     const capacity = resolveCycleCapacity(data, `Cycle ${cycleId}`);
@@ -279,28 +269,6 @@ class CycleService {
       max: capacity.capacity,
       available: capacity.available,
     };
-  }
-
-  async incrementCapacity(cycleId: string): Promise<void> {
-    const { error } = await cycleCapacityRpc.rpc("reserve_capacity", {
-      p_cycle_id: cycleId,
-      p_quantity: 1,
-    });
-
-    if (error) {
-      throw new Error(`Erro ao incrementar capacidade: ${error.message}`);
-    }
-  }
-
-  async decrementCapacity(cycleId: string): Promise<void> {
-    const { error } = await cycleCapacityRpc.rpc("release_capacity", {
-      p_cycle_id: cycleId,
-      p_quantity: 1,
-    });
-
-    if (error) {
-      throw new Error(`Erro ao decrementar capacidade: ${error.message}`);
-    }
   }
 
   async getCycleById(cycleId: string): Promise<Cycle> {
@@ -315,7 +283,7 @@ class CycleService {
     }
 
     if (!data) {
-      throw new Error(`Ciclo não encontrado: ${cycleId}`);
+      throw new Error(`Ciclo nao encontrado: ${cycleId}`);
     }
 
     return this.normalizeCycle(data);
@@ -333,14 +301,12 @@ class CycleService {
       throw new Error(`Erro ao buscar ciclos: ${error.message}`);
     }
 
-    return ((data || []) as Array<Record<string, unknown>>).map((cycle) =>
-      this.normalizeCycle(cycle),
-    );
+    return (data ?? []).map((cycle) => this.normalizeCycle(cycle));
   }
 
   async getNextCycles(count: number, startDate?: Date): Promise<Cycle[]> {
     if (!Number.isInteger(count) || count < 1 || count > 24) {
-      throw new Error("Quantidade de ciclos inválida");
+      throw new Error("Quantidade de ciclos invalida");
     }
 
     const referenceDate = startDate || timezoneService.getCurrentTime();
