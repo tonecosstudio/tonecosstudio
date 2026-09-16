@@ -1,245 +1,112 @@
-# URGENTE — OrdaX MVP / Launch Readiness
+# URGENTE — OrdaX Launch Readiness
 
-> **SSOT operacional exclusivo de `washingtonmsdj/ordax`.**
-> Código, migrations, testes e evidência operacional atual prevalecem sobre documentação arquivada.
-> Não misturar com `novo-ordax-os`, forks ou repositórios antigos.
+> SSOT operacional de `washingtonmsdj/ordax`.
+> Atualizado em 2026-09-16 a partir de evidência real de GitHub, Supabase e Vercel.
+> Não declarar GO com base apenas em build/deploy isolado.
 
-## 0. Estado atual
+## Estado
 
 **Lançamento público: NO-GO.**
 
-HEAD atual da `main`:
+Último commit técnico de hardening auditado antes deste checkpoint:
 
-- `69ecf33feb9f10d00fcb4ca4444392fdc8288218`
-- `fix: validate collection mutation RPC results`
+- `f6ab85390da131ecc3e763d8a586b54aa8464528` — bloqueia deploy quando `npm audit --omit=dev --audit-level=high` falha.
 
-O source avançou bastante em autoridade comercial e contratos fail-closed, mas ainda faltam provas externas obrigatórias no mesmo release candidate.
+O produto está mais próximo de release e o backend canônico voltou a ser observável, mas ainda existem bloqueadores P0 externos e de dependências.
 
-## 0.1 Evidência operacional
-
-### GitHub Actions
-
-O Quality Gate continua bloqueado externamente antes dos steps:
-
-- os runs recentes apresentam 4 jobs;
-- jobs permanecem sem steps executados e sem runner (`runner_id=0`/`steps=[]` ou equivalente);
-- portanto não há prova canônica de `typecheck`, lint, testes, coverage, build, audit ou format.
-
-**Não tratar esse bloqueio como falha de código enquanto o runner não executar os comandos.** O trabalho deste ciclo não depende de GitHub Actions: a verificação é feita por revisão dos contratos source/SQL e por validações locais/estruturais disponíveis, sem transformar ausência de runner em PASS.
-
-### Vercel
-
-Projeto canônico:
-
-- `ordax`
-- project id `prj_yfe9KqNRdWfYNnY6HSXBfT0D2Vsu`
-- team id `team_VPZxAK2VXdTWXI8blJaKQEl0`
-- framework Vite
-
-O último deployment observado como **READY em produção** corresponde ao commit `efec11fb68863d81b5e07a474f3f5890d9c65e6d`.
-
-Isso não prova os commits posteriores. Não considerar o Vercel como prova do HEAD atual sem novo deployment observado.
+## Evidência confirmada em produção
 
 ### Supabase
 
-Projeto canônico:
+Projeto canônico: `pdytjhtjlxvbbeuxgnms`.
 
-- project id `pdytjhtjlxvbbeuxgnms`
-- referência anterior `Ordax-2026-1`
+- estado remoto: `ACTIVE_HEALTHY`;
+- migrations recentes estão aplicadas e observáveis;
+- tabelas públicas/Storage auditadas estão com RLS habilitado;
+- Advisor de segurança ficou com 1 warning: **Leaked Password Protection Disabled**;
+- não foi encontrado `SUPABASE_SERVICE_ROLE_KEY` hardcoded no frontend;
+- Edge Functions estão observáveis; `admin-rpc` está ativo com `verify_jwt=true`;
+- funções com `verify_jwt=false` precisam manter autenticação/segredo interno explícito; `bootstrap-admin` foi conferida e valida Bearer, rate limit e `BOOTSTRAP_ADMIN_SECRET` antes do RPC.
 
-Continua inativo/inobservável. Enquanto isso:
+Hardening aplicado neste ciclo:
 
-- migrations locais são source-only;
-- grants/RLS/policies efetivos não estão reconciliados;
-- Edge Functions alteradas localmente não são declaradas live;
-- tipos gerados não devem ser editados manualmente para esconder drift.
+- migration `20260916082005_close_remaining_admin_table_dml.sql` aplicada em produção e versionada;
+- `authenticated` perdeu `INSERT/UPDATE/DELETE` direto em `public.chat_groups`;
+- `authenticated` perdeu `INSERT/UPDATE/DELETE` direto em `public.monthly_production`;
+- ambas permanecem `SELECT` para o browser; mutações administrativas seguem pelo gateway server-authoritative.
 
-## 0.2 Hardening concluído no source
+### Vercel
 
-### Pagamentos / autoridade financeira
+Projeto canônico: `ordax` (`prj_yfe9KqNRdWfYNnY6HSXBfT0D2Vsu`).
 
-- Edge Functions autenticadas falham fechado em envelopes inválidos;
-- cancelamento de assinatura exige confirmação real do backend;
-- mutações financeiras administrativas críticas exigem confirmação explícita;
-- delivery status valida ID/status retornados;
-- upload de comprovante valida payment/user/path/nome/tamanho/MIME e limpa storage órfão quando a resposta é inválida;
-- DML direto de `authenticated` foi removido das principais tabelas comerciais e o auditor acompanha regressões;
-- `manual_payments`, `payment_files`, `quotes`, `standalone_purchases`, `subscriptions`, `payment_links` e `quote_payments` têm fronteiras de escrita server-authoritative no source;
-- `order_status_history`, `payment_info_requests` e `admin_payment_methods` tiveram escrita direta removida/limitada conforme o contrato atual;
-- timeline de pagamento manual é autenticado e sanitizado;
-- `PaymentService`/UI não dependem de `payment_audit_log`;
-- `PaymentAuditLog`/`audit_logs` foram removidos do contrato do produto.
+- domínio de produção inclui `ordax.com.br` e `www.ordax.com.br`;
+- deploy do commit de hardening de banco `d797c52e...` foi observado como `READY`;
+- observabilidade consultada não mostrou runtime errors nas últimas 24h do checkpoint;
+- `vercel.json` agora força `npm ci` para instalação determinística;
+- `vercel.json` agora executa `npm audit --omit=dev --audit-level=high` antes de permitir o build/deploy.
 
-### Decisão definitiva: `payment_audit_log`
+O primeiro `npm ci` real no Vercel concluiu a instalação, mas confirmou **27 vulnerabilidades** no grafo: **3 low, 9 moderate, 12 high e 3 critical**. Isso é P0 e não pode ser ignorado para release.
 
-Não existe migration versionada atual criando essa tabela; a referência veio de tipos/legado. **Não ressuscitar.**
+### GitHub Actions
 
-Fontes reais de pagamento manual:
+O Quality Gate continua falhando **antes dos steps**.
 
-- `manual_payments`;
-- `payment_files`;
-- `payment_info_requests`;
-- `order_status_history`;
-- timeline autenticado.
+Evidência no run do commit `d797c52e...`:
 
-Mudanças de status de `manual_payments` passaram a gerar histórico transacional no source SQL.
+- 4 jobs criados;
+- todos com `steps=[]`;
+- `runner_id=0` e sem `runner_name`;
+- falha em poucos segundos.
 
-### Pricing / configuração comercial
+Portanto ainda não existe execução canônica do CI para provar typecheck, lint, testes, coverage, authority audits, build e dependency audit no mesmo SHA. Não classificar isso como falha do código: o runner nem chegou a executar comandos.
 
-Os serviços admin de pricing/configuração foram endurecidos contra falso sucesso. Entre os contratos cobertos:
+### Proteção da main
 
-- propagação de preços;
-- criação/edição de tier e planos;
-- limites de coleções;
-- pricing avulso;
-- preços base;
-- multiplicadores contextuais;
-- purchase modes;
-- collection types;
-- assign/unassign/bulk assignment de tiers;
-- multiplicadores individuais/em lote;
-- atualização de preço base/contextual;
-- configurações de assinatura.
+A branch `main` está sem branch protection/required checks. Isso é bloqueador de processo de release até ser habilitado no GitHub.
 
-Respostas são tratadas como `unknown` e precisam comprovar ID, contagem, objeto ou invariantes esperados antes de chegar ao sucesso da UI.
+## P0 — obrigatório antes do GO
 
-**Dívida:** existem RPCs históricos de pricing chamados pelo browser cuja definição atual não está totalmente representada nas migrations versionadas. Não revogar/remover enquanto o Supabase estiver inobservável e antes de uma fronteira substituta estar implantada/provada.
+- [x] Supabase canônico observável e saudável.
+- [x] Reconciliar migrations recentes aplicadas.
+- [x] Confirmar RLS habilitado nas tabelas auditadas.
+- [x] Fechar DML direto restante de `chat_groups` e `monthly_production`.
+- [x] Tornar instalação do Vercel determinística com `npm ci`.
+- [x] Fazer deploy falhar em vulnerabilidade `high/critical` de produção.
+- [ ] Remediar o grafo até `npm audit --omit=dev --audit-level=high` retornar PASS.
+- [ ] Corrigir a indisponibilidade do runner do GitHub Actions e obter Quality Gate com steps realmente executados.
+- [ ] Obter PASS no mesmo SHA para typecheck, lint, security/authority audits, unit/integration tests, coverage, build e format check.
+- [ ] Habilitar Leaked Password Protection no Supabase Auth.
+- [ ] Proteger `main` com required checks/regras compatíveis com o fluxo de release.
+- [ ] Executar smoke autenticado no backend canônico para auth, catálogo, checkout, pagamentos/comprovantes, assinatura/créditos, produção/fotos, entregas/tracking, suporte/notificações e admin.
+- [ ] Provar rollback do mesmo release candidate.
 
-### Assinatura / créditos
+## P1 — performance / dívida controlada
 
-Seis mutações administrativas de subscription-credit validam forma, IDs e invariantes, incluindo criação/edição/desativação de personagem, ajuste de créditos e criação/fechamento de ciclo.
+Advisor de performance observou:
 
-### Produção / quotes / fotos
+- 43 foreign keys sem índice de cobertura;
+- 89 policies com `auth.*`/`current_setting()` reavaliado por linha;
+- 55 casos de múltiplas policies permissivas para o mesmo papel/ação;
+- grande quantidade de índices ainda sem uso observado.
 
-- mutações de produção de quote validam quote/update/photo retornados;
-- produção administrativa valida IDs e estados retornados;
-- metadados de fotos validam UUIDs, URL, stage, visibility, caption e cardinalidade;
-- `production_photo_metadata` teve DML direto de `authenticated` revogado no source;
-- fotos/estágios não aceitam payload vazio ou entidade divergente como sucesso.
+Não aplicar correção em massa sem medir queries e preservar a semântica de RLS. Priorizar tabelas de alto tráfego e adicionar migrations pequenas, reversíveis e verificadas.
 
-### Ciclos / entregas / bônus
+## Regras de segurança do release
 
-Contratos de ciclo, delivery, tracking, personagem e bônus validam identidade e estado retornados, cardinalidade esperada e relações entre subscription/delivery/cycle.
+- Não remover o novo gate de `npm audit` para “fazer o deploy passar”.
+- Não tratar Vercel `READY` como substituto do Quality Gate.
+- Não declarar testes PASS enquanto GitHub Actions continuar com `steps=[]`.
+- Não voltar a conceder DML direto de browser para tabelas admin-authoritative.
+- Não guardar segredo em `system_settings`, frontend, migration ou arquivo versionado.
+- Não editar tipos Supabase gerados para esconder drift.
+- Não otimizar RLS/indexes em massa sem evidência e rollback.
+- Não declarar lançamento pronto enquanto qualquer item P0 permanecer aberto.
 
-### Grupos / suporte / catálogo
+## Próxima execução
 
-- quick replies usam validação runtime de UUID/ID/contagem;
-- mensagens de grupo agora validam retorno de agendamento, incluindo `group_id`, mensagem, status `pending` e timestamp;
-- templates de grupo validam objeto retornado e ID/dados persistidos;
-- exclusões exigem o ID exato retornado;
-- RPCs de grupo são admin-authoritative e tabelas possuem SELECT/RLS sem DML direto de browser;
-- mutações administrativas de catálogo/coleções agora validam IDs retornados para criação/edição/exclusão de coleção e personagem;
-- inserção em lote de personagens exige retorno `inserted` inteiro exatamente igual à quantidade solicitada;
-- criação individual de personagem exige UUID válido;
-- criação de coleção exige UUID válido em vez de aceitar qualquer objeto parcialmente formado.
-
-## 1. Critério de GO
-
-O mesmo release candidate precisa provar:
-
-- `npm ci` determinístico;
-- TypeScript strict PASS;
-- lint PASS;
-- security/auditors PASS;
-- testes unitários/integrados PASS;
-- coverage PASS;
-- build de produção PASS;
-- `npm audit --audit-level=high` sem bloqueio;
-- `format:check` PASS;
-- Supabase reconciliado e migrations aplicadas;
-- grants/RLS/functions reais verificados;
-- Edge Functions do release implantadas;
-- smoke autenticado dos fluxos críticos;
-- deployment observável do mesmo HEAD;
-- rollback reproduzível.
-
-Vercel READY isolado não equivale a GO.
-
-## 2. P0 — bloqueadores
-
-### P0.1 Quality Gate executável
-
-- [ ] obter run com runner real e steps executados;
-- [ ] fechar typecheck/lint/auditors/tests/coverage/build/audit/format no mesmo HEAD.
-
-### P0.2 Autoridade comercial
-
-- [x] auditor de DML direto para tabelas críticas;
-- [x] auditor multi-schema de RPCs perigosos;
-- [x] pagamentos, comprovantes, métodos de pagamento, pricing, produção, logística, grupos e catálogo com contratos fail-closed no source;
-- [ ] reconciliar grants/RLS reais no Supabase;
-- [ ] consolidar RPCs legados de pricing após backend canônico observável;
-- [ ] continuar pente-fino de `callAdminRpc<T>` de alto risco restantes.
-
-### P0.3 Supabase / migrations / Edge Functions
-
-- [ ] tornar observável o projeto canônico;
-- [ ] comparar migrations locais x aplicadas;
-- [ ] verificar grants `anon`/`authenticated`/`service_role`/`private_api`;
-- [ ] verificar RLS/policies de commerce, payments, subscriptions, support, notifications, produção e Storage;
-- [ ] implantar/provar migrations e Edge Functions source-only deste ciclo;
-- [ ] regenerar tipos somente após reconciliação real do schema.
-
-### P0.4 Fluxos MVP
-
-Validar no ambiente canônico, com usuários/roles controlados:
-
-- [ ] auth/restauração de sessão;
-- [ ] catálogo/coleções/modelos;
-- [ ] checkout/criação com autoridade comercial;
-- [ ] área do cliente/progresso;
-- [ ] pagamentos/comprovantes/timeline;
-- [ ] assinatura/coins/crédito/cancelamento;
-- [ ] produção/fotos;
-- [ ] entregas/ciclos/tracking/bônus;
-- [ ] suporte/anexos;
-- [ ] notificações;
-- [ ] admin completo;
-- [ ] refresh/navegação direta;
-- [ ] loading/empty/error/success sem falso sucesso.
-
-Checkout de assinatura não deve ser ligado contra backend não observado.
-
-### P0.5 Deploy / smoke / rollback
-
-- [x] Vercel operacional no último checkpoint observado;
-- [x] deployment READY de `efec11fb...` comprovado;
-- [ ] smoke autenticado;
-- [ ] provar rollback;
-- [ ] registrar receipt final.
-
-## 3. Próxima sequência
-
-1. Continuar source-first nos `callAdminRpc<T>` restantes de alto impacto, priorizando grupos, suporte, notificações e operações comerciais.
-2. Para cada mutação, confrontar retorno do cliente com a migration SQL correspondente antes de alterar o contrato.
-3. Executar validações locais/estruturais e testes focados disponíveis sem depender de minutos do GitHub Actions.
-4. Procurar authority bypass real antes de criar migration; não revogar privilégios sem provar que o produto não depende do DML direto.
-5. Não corrigir GitHub Actions enquanto jobs não executarem steps reais.
-6. Quando Supabase voltar, reconciliar schema/grants/RLS/functions, aplicar mudanças pendentes, regenerar tipos e executar smoke P0.
-7. Só então reavaliar GO/NO-GO.
-
-## 4. Do not repeat
-
-- Não trabalhar em outro OrdaX sem instrução explícita.
-- Não declarar teste/auditor PASS sem execução real.
-- Não tratar `steps=[]`/`runner_id=0` como falha de código.
-- Não declarar migration/Edge Function local como live sem prova remota.
-- Não ressuscitar `payment_audit_log`.
-- Não editar tipos Supabase gerados manualmente para esconder drift.
-- Não revogar RPCs legados de pricing antes da fronteira substituta estar implantada/provada.
-- Não tratar Vercel READY como prova de todos os gates.
-- Não declarar lançamento pronto enquanto P0 permanecer aberto.
-
-## Checkpoint — Arcade Lab (2026-09-15)
-
-- HEAD de origem: `8e78a5c590e59edb6261f3e88be4e771ad8267c3`, confirmado antes das escritas. O commit que adiciona este checkpoint identifica a implementação.
-- concluído: nova rota lazy `/arcade-lab`, layout separado, seis personagens e três cenários gerados, seleção por clique/toque/setas/Home/End, filtros por universo, detalhes em Dialog, explicação de coins e toggle de efeitos com respeito a reduced-motion. Home existente preservada.
-- concluído: demonstração identificada e noindex; catálogo real opt-in usa o hook existente, sem dados ilustrativos como fallback, com loading/empty/error/retry/success. Nenhum preço, saldo, checkout ou publicação simulados. Flag de coleções permanece intacta.
-- provas: cinco testes focados em `src/pages/ArcadeLab.test.tsx` PASS; lint dos arquivos novos PASS; lint geral 0 erros / 218 warnings; build Vite PASS (4280 módulos, 4m12s); typecheck node PASS; format dos arquivos novos PASS; diff check PASS.
-- provas visuais: browser desktop 1254px e mobile 390px, sem overflow horizontal; um main e um h1; seleção por teclado; troca para Missão metal e Neo fighters; foco transferido ao primeiro personagem após filtro; modais e Escape; toggle de efeitos; entrada direta e refresh via `/arcade-lab` e `/arcade-lab/`. Screenshots fora do Git em `.codex/visualizations/2026/09/15/01a0a602-b402-7173-9163-1ddd81374db7/`.
-- bloqueios: typecheck app falha em 12 diagnósticos de serviços não alterados (delivery, notifications, payments, production, support). Auditor Supabase access falha em lista de roles de get-manual-payment-timeline; commercial authority falha em grants existentes; notification authority falha em upload-payment-proof. Profile e public-settings PASS. Nenhuma operação remota executada.
-- bloqueios: coverage geral revelou sete falhas em `src/lib/services/deliveryService.property.test.ts`; execução interrompida após confirmação desse bloqueio, sem relatório completo/percentual. Audit de produção acusa vulnerabilidades high existentes. Format geral falha em 1156 arquivos. Não reduzir gates nem corrigir essas áreas neste checkpoint visual.
-- toolchain: Node 24.19.0 do runtime local nos checks finais; instalação existente não foi substituída. `npm ci --dry-run --ignore-scripts` PASS, mas NÃO equivale a `npm ci` completo; instalação determinística permanece sem prova neste checkpoint.
-- next_action: revisar visualmente a proposta com o usuário; antes de qualquer release, executar npm ci completo e resolver gates da baseline num checkpoint próprio. Preview local em http://127.0.0.1:8082/arcade-lab, sem deploy.
-- rollback: reverter apenas o commit `feat: add isolated arcade lab experience`; nenhuma migration, schema, assinatura, autorização ou serviço remoto alterado.
-- do_not_repeat: não substituir a home sem nova decisão; não tratar demonstração como inventário comercial; não habilitar coleções/planos por causa do Lab; não confundir build ou testes focados com Quality Gate verde.
+1. usar o gate de Vercel para obter a lista efetiva do `npm audit` e remediar dependências/lockfile;
+2. repetir `npm ci` + audit até zerar high/critical;
+3. resolver o bloqueio externo de runner do GitHub Actions e executar o Quality Gate completo;
+4. habilitar leaked-password protection e proteção da `main` nas configurações administrativas;
+5. executar smoke autenticado e rollback;
+6. somente então mudar o estado para GO.
