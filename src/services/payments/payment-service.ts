@@ -64,8 +64,8 @@ async function fetchPaymentById(id: string): Promise<PaymentDetails | null> {
   return {
     ...result,
     timeline,
-    customer_name: profileResult.data?.full_name,
-    customer_email: profileResult.data?.email,
+    customer_name: profileResult.data?.full_name ?? undefined,
+    customer_email: profileResult.data?.email ?? undefined,
   };
 }
 
