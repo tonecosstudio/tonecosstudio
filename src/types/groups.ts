@@ -87,7 +87,6 @@ export interface MemberGroupView {
   unread_count: number;
   last_message: {
     message: string;
-    sender_name: string;
     created_at: string;
   } | null;
   last_viewed_at: string | null;
