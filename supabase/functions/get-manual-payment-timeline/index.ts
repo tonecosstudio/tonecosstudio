@@ -3,6 +3,7 @@ import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
 import { createEdgeLogger } from "../_shared/edge-logger.ts";
 import { checkContentLength } from "../_shared/payload-guard.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { hasAdminAccessRole } from "../_shared/roles.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
 
 const log = createEdgeLogger("get-manual-payment-timeline");
@@ -97,7 +98,7 @@ serve(async (req) => {
         .maybeSingle();
 
       if (profileError) throw profileError;
-      if (!profile || !["admin", "super_admin"].includes(String(profile.role))) {
+      if (!profile || !hasAdminAccessRole(profile.role)) {
         return json(req, { error: "Forbidden", code: "FORBIDDEN" }, 403);
       }
     }
