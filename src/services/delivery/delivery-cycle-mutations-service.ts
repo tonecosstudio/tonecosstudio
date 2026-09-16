@@ -10,27 +10,6 @@ interface RpcError {
   message: string;
 }
 
-type RpcResult<T> = Promise<{ data: T | null; error: RpcError | null }>;
-
-interface DeliveryChoiceRpcClient {
-  rpc(
-    name: "change_delivery_character_for_current_user",
-    args: { p_delivery_id: string; p_character_id: string },
-  ): RpcResult<unknown>;
-  rpc(
-    name: "change_delivery_collection_choice_for_current_user",
-    args: {
-      p_delivery_id: string;
-      p_new_collection_id: string;
-      p_user_id: string;
-      p_ip_address?: string | null;
-      p_user_agent?: string | null;
-    },
-  ): RpcResult<unknown>;
-}
-
-const deliveryChoiceRpc = supabase as unknown as DeliveryChoiceRpcClient;
-
 function unwrapRpc(
   errorPrefix: string,
   data: unknown,
@@ -285,7 +264,7 @@ export async function changeDeliveryCharacterRpc<TDelivery>(
   deliveryId: string,
   characterId: string,
 ): Promise<TDelivery> {
-  const { data, error } = await deliveryChoiceRpc.rpc(
+  const { data, error } = await supabase.rpc(
     "change_delivery_character_for_current_user",
     {
       p_delivery_id: deliveryId,
@@ -382,7 +361,7 @@ export async function changeCollectionChoiceForCurrentUserRpc<TResult>(
   ipAddress?: string | null,
   userAgent?: string | null,
 ): Promise<TResult> {
-  const { data, error } = await deliveryChoiceRpc.rpc(
+  const { data, error } = await supabase.rpc(
     "change_delivery_collection_choice_for_current_user",
     {
       p_delivery_id: deliveryId,
