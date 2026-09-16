@@ -1,10 +1,10 @@
 import type { Json } from "@/integrations/supabase/types";
 
 /**
- * Tipos TypeScript para o Sistema de Níveis de Preço
- * 
+ * Tipos TypeScript para o Sistema de Níveis de Preço.
+ *
  * Define interfaces e tipos para níveis de preço, atribuições,
- * histórico e relatórios.
+ * histórico e relatórios do modelo canônico atual.
  */
 
 // =====================================================
@@ -13,7 +13,7 @@ import type { Json } from "@/integrations/supabase/types";
 
 /**
  * Nível de Preço
- * Representa um nível de preço reutilizável que pode ser atribuído a múltiplas coleções
+ * Representa um nível de preço reutilizável que pode ser atribuído a múltiplas coleções.
  */
 export interface PricingTier {
   id: string;
@@ -22,7 +22,7 @@ export interface PricingTier {
   price_full: number;
   deposit_amount: number;
   pix_discount_percentage: number;
-  price_pix: number; // Calculado automaticamente
+  price_pix: number;
   is_active: boolean;
   is_default: boolean;
   display_order: number;
@@ -33,8 +33,7 @@ export interface PricingTier {
 }
 
 /**
- * Nível de Preço com Estatísticas
- * Inclui contadores de coleções atribuídas
+ * Nível de Preço com Estatísticas.
  */
 export interface PricingTierWithStats extends PricingTier {
   collections_count: number;
@@ -42,8 +41,7 @@ export interface PricingTierWithStats extends PricingTier {
 }
 
 /**
- * Atribuição de Coleção a Nível
- * Registra qual nível está atribuído a cada coleção
+ * Atribuição de Coleção a Nível.
  */
 export interface CollectionTierAssignment {
   id: string;
@@ -55,14 +53,19 @@ export interface CollectionTierAssignment {
 }
 
 /**
- * Histórico de Preços
- * Registra todas as mudanças de preço para auditoria
+ * Histórico de Preços.
  */
 export interface PricingHistory {
   id: string;
   tier_id: string | null;
   collection_id: string | null;
-  change_type: 'tier_created' | 'tier_updated' | 'tier_assigned' | 'tier_unassigned' | 'price_propagated' | 'custom_price_set';
+  change_type:
+    | "tier_created"
+    | "tier_updated"
+    | "tier_assigned"
+    | "tier_unassigned"
+    | "price_propagated"
+    | "custom_price_set";
   old_price_full: number | null;
   new_price_full: number | null;
   old_price_pix: number | null;
@@ -75,25 +78,7 @@ export interface PricingHistory {
 }
 
 /**
- * Auditoria de Migração
- * Registra execuções de migração para o sistema de níveis
- */
-export interface MigrationAudit {
-  id: string;
-  migration_type: 'initial_migration' | 'bulk_reassignment' | 'rollback';
-  collections_affected: number;
-  tiers_created: number;
-  started_at: string;
-  completed_at: string | null;
-  status: 'in_progress' | 'completed' | 'completed_with_errors' | 'failed';
-  executed_by: string;
-  error_message: string | null;
-  migration_data: Record<string, Json> | null;
-}
-
-/**
- * Coleção com Informações de Preço
- * Inclui informações sobre o nível atribuído e preços efetivos
+ * Coleção com Informações de Preço.
  */
 export interface CollectionWithPricing {
   id: string;
@@ -106,28 +91,22 @@ export interface CollectionWithPricing {
   uses_tier_pricing: boolean;
   tier_id: string | null;
   tier_name: string | null;
-  pricing_source: 'custom' | 'tier' | 'default';
+  pricing_source: "custom" | "tier" | "default";
 }
 
 // =====================================================
 // TIPOS DE INPUT PARA OPERAÇÕES
 // =====================================================
 
-/**
- * Input para Criar Nível de Preço
- */
 export interface CreatePricingTierInput {
   name: string;
   description?: string;
   price_full: number;
   deposit_amount: number;
-  pix_discount_percentage?: number; // Default: 5
-  is_default?: boolean; // Default: false
+  pix_discount_percentage?: number;
+  is_default?: boolean;
 }
 
-/**
- * Input para Atualizar Nível de Preço
- */
 export interface UpdatePricingTierInput {
   name?: string;
   description?: string;
@@ -139,35 +118,18 @@ export interface UpdatePricingTierInput {
   display_order?: number;
 }
 
-/**
- * Input para Atribuir Coleção a Nível
- */
 export interface AssignTierInput {
   collection_id: string;
   tier_id: string;
 }
 
-/**
- * Input para Atribuição em Massa
- */
 export interface BulkAssignTierInput {
   collection_ids: string[];
   tier_id: string;
 }
 
-/**
- * Input para Migração
- */
-export interface MigrateToTiersInput {
-  dryRun: boolean;
-  autoCreateTiers: boolean;
-}
-
-/**
- * Input para Relatórios
- */
 export interface GetPricingReportsInput {
-  reportType: 'collections_by_tier' | 'revenue_by_tier' | 'conversion_by_tier';
+  reportType: "collections_by_tier" | "revenue_by_tier" | "conversion_by_tier";
   dateRange?: {
     start: string;
     end: string;
@@ -178,22 +140,6 @@ export interface GetPricingReportsInput {
 // TIPOS AUXILIARES E RESULTADOS
 // =====================================================
 
-/**
- * Sugestão de Migração
- * Resultado da análise de preços existentes
- */
-export interface MigrationSuggestion {
-  price_full: number;
-  price_pix: number;
-  deposit_amount: number;
-  collection_count: number;
-  collection_ids: string[];
-  suggested_tier_name: string;
-}
-
-/**
- * Resultado de Propagação de Preços
- */
 export interface PropagationResult {
   collection_id: string;
   old_price: number;
@@ -202,9 +148,6 @@ export interface PropagationResult {
   error_message?: string;
 }
 
-/**
- * Resultado de Atribuição em Massa
- */
 export interface BulkAssignResult {
   success: string[];
   failed: Array<{
@@ -213,36 +156,10 @@ export interface BulkAssignResult {
   }>;
 }
 
-/**
- * Resultado de Migração (Dry Run)
- */
-export interface MigrationDryRunResult {
-  dryRun: true;
-  suggestions: MigrationSuggestion[];
-}
-
-/**
- * Resultado de Migração (Real)
- */
-export interface MigrationRealResult {
-  dryRun: false;
-  tiersCreated: number;
-  collectionsAssigned: number;
-  errors: string[];
-}
-
-/**
- * Resultado de Migração (Union)
- */
-export type MigrationResult = MigrationDryRunResult | MigrationRealResult;
-
 // =====================================================
 // TIPOS DE RELATÓRIOS
 // =====================================================
 
-/**
- * Relatório de Coleções por Nível
- */
 export interface CollectionsByTierReport {
   tier_id: string;
   tier_name: string;
@@ -250,9 +167,6 @@ export interface CollectionsByTierReport {
   active_collection_count: number;
 }
 
-/**
- * Relatório de Receita por Nível
- */
 export interface RevenueByTierReport {
   tier_id: string;
   tier_name: string;
@@ -261,9 +175,6 @@ export interface RevenueByTierReport {
   standalone_revenue: number;
 }
 
-/**
- * Relatório de Conversão por Nível
- */
 export interface ConversionByTierReport {
   tier_id: string;
   tier_name: string;
@@ -272,51 +183,33 @@ export interface ConversionByTierReport {
   conversion_rate: number | null;
 }
 
-/**
- * Resultado de Relatório (Union)
- */
 export type PricingReportResult =
-  | { reportType: 'collections_by_tier'; data: CollectionsByTierReport[] }
-  | { reportType: 'revenue_by_tier'; data: RevenueByTierReport[] }
-  | { reportType: 'conversion_by_tier'; data: ConversionByTierReport[] };
+  | { reportType: "collections_by_tier"; data: CollectionsByTierReport[] }
+  | { reportType: "revenue_by_tier"; data: RevenueByTierReport[] }
+  | { reportType: "conversion_by_tier"; data: ConversionByTierReport[] };
 
 // =====================================================
 // TIPOS DE RESPOSTA DE API
 // =====================================================
 
-/**
- * Resposta de Sucesso Genérica
- */
 export interface ApiSuccessResponse<T = unknown> {
   ok: true;
   data?: T;
 }
 
-/**
- * Resposta de Erro Genérica
- */
 export interface ApiErrorResponse {
   ok: false;
   error: string;
 }
 
-/**
- * Resposta de API (Union)
- */
 export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
 
-/**
- * Resposta de Propagação de Preços
- */
 export interface PropagateTierPricingResponse extends ApiSuccessResponse {
   updated_count: number;
   failed_count: number;
   results: PropagationResult[];
 }
 
-/**
- * Resposta de Atribuição em Massa
- */
 export interface BulkAssignTierResponse extends ApiSuccessResponse {
   success: string[];
   failed: Array<{
@@ -325,12 +218,4 @@ export interface BulkAssignTierResponse extends ApiSuccessResponse {
   }>;
 }
 
-/**
- * Resposta de Migração
- */
-export type MigrateToTiersResponse = ApiSuccessResponse<MigrationResult>;
-
-/**
- * Resposta de Relatórios
- */
 export type GetPricingReportsResponse = ApiSuccessResponse<PricingReportResult>;
