@@ -114,7 +114,7 @@ export const pixDiscountPercentageSchema = z
     message: `Percentual de desconto deve ser no mínimo ${MIN_DISCOUNT_PERCENTAGE}%`,
   })
   .max(MAX_DISCOUNT_PERCENTAGE, {
-    message: `Percentual de desconto deve ser menor que 100%`,
+    message: "Percentual de desconto deve ser menor que 100%",
   })
   .default(DEFAULT_PIX_DISCOUNT);
 
@@ -153,7 +153,7 @@ export const updatePricingTierSchema = z
     {
       message: "Valor de entrada deve ser menor que o preço cheio",
       path: ["deposit_amount"],
-    }
+    },
   );
 
 export const assignTierSchema = z.object({
@@ -171,11 +171,6 @@ export const bulkAssignTierSchema = z.object({
       message: "Não é possível atribuir mais de 100 coleções de uma vez",
     }),
   tier_id: uuidSchema,
-});
-
-export const migrateToTiersSchema = z.object({
-  dryRun: z.boolean().default(true),
-  autoCreateTiers: z.boolean().default(true),
 });
 
 export const getPricingReportsSchema = z.object({
@@ -201,7 +196,7 @@ export const getPricingReportsSchema = z.object({
       {
         message: "Data de início deve ser anterior ou igual à data de fim",
         path: ["start"],
-      }
+      },
     ),
 });
 
@@ -209,12 +204,11 @@ export type CreatePricingTierInput = z.infer<typeof createPricingTierSchema>;
 export type UpdatePricingTierInput = z.infer<typeof updatePricingTierSchema>;
 export type AssignTierInput = z.infer<typeof assignTierSchema>;
 export type BulkAssignTierInput = z.infer<typeof bulkAssignTierSchema>;
-export type MigrateToTiersInput = z.infer<typeof migrateToTiersSchema>;
 export type GetPricingReportsInput = z.infer<typeof getPricingReportsSchema>;
 
 export async function validateTierExists(
   tierId: string,
-  supabaseClient: PricingValidationClient
+  supabaseClient: PricingValidationClient,
 ): Promise<ValidationResult & { tier?: PricingTierRecord }> {
   try {
     const { data, error } = await supabaseClient
@@ -241,7 +235,7 @@ export async function validateTierExists(
 }
 
 export function validateTierActive(
-  tier: Pick<PricingTierRecord, "is_active" | "name">
+  tier: Pick<PricingTierRecord, "is_active" | "name">,
 ): ValidationResult {
   if (!tier.is_active) {
     return {
@@ -255,7 +249,7 @@ export function validateTierActive(
 
 export async function validateCollectionExists(
   collectionId: string,
-  supabaseClient: PricingValidationClient
+  supabaseClient: PricingValidationClient,
 ): Promise<ValidationResult & { collection?: CollectionRecord }> {
   try {
     const { data, error } = await supabaseClient
@@ -284,7 +278,7 @@ export async function validateCollectionExists(
 export async function validateTierNameUnique(
   name: string,
   supabaseClient: PricingValidationClient,
-  excludeTierId?: string
+  excludeTierId?: string,
 ): Promise<ValidationResult> {
   try {
     let query = supabaseClient.from("pricing_tiers").select("id").eq("name", name);
