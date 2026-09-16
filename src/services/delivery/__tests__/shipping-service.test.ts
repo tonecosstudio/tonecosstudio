@@ -1,11 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ShippingService, type Address } from "../shipping-service";
+import { callAuthenticatedEdgeFunctionData } from "@/services/supabase/edge-function-client";
+
+vi.mock("@/services/supabase/edge-function-client", () => ({
+  callAuthenticatedEdgeFunctionData: vi.fn(),
+}));
 
 describe("ShippingService", () => {
   let service: ShippingService;
   let validAddress: Address;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.unstubAllEnvs();
     vi.stubEnv("VITE_SHIPPING_CARRIER", "correios");
     vi.stubEnv("PROD", false);
@@ -23,7 +29,7 @@ describe("ShippingService", () => {
     };
   });
 
-  it("generates only development simulator labels", async () => {
+  it("generates only development simulator labels outside production", async () => {
     const result = await service.generateLabel("order-123", validAddress);
 
     expect(result.trackingCode).toMatch(/^BR\d{9}BR$/);
@@ -31,6 +37,7 @@ describe("ShippingService", () => {
       `https://simulator.local/correios/labels/${result.trackingCode}.pdf`,
     );
     expect(result.cost).toBeGreaterThan(0);
+    expect(callAuthenticatedEdgeFunctionData).not.toHaveBeenCalled();
   });
 
   it("supports standalone purchase references without querying subscription deliveries", async () => {
@@ -91,14 +98,47 @@ describe("ShippingService", () => {
     expect(saoPaulo.cost).toBeGreaterThan(bahia.cost);
   });
 
-  it("fails closed in production until a real server-side carrier adapter exists", async () => {
+  it("delegates production label generation to the authenticated server-side adapter", async () => {
     vi.stubEnv("PROD", true);
+    vi.mocked(callAuthenticatedEdgeFunctionData).mockResolvedValueOnce({
+      trackingCode: "BR123456789BR",
+      labelUrl: "https://carrier.example/labels/BR123456789BR.pdf",
+      cost: 27.5,
+    });
+    const productionService = new ShippingService();
+
+    await expect(
+      productionService.generateLabel("standalone-purchase-123", validAddress),
+    ).resolves.toEqual({
+      trackingCode: "BR123456789BR",
+      labelUrl: "https://carrier.example/labels/BR123456789BR.pdf",
+      cost: 27.5,
+    });
+
+    expect(callAuthenticatedEdgeFunctionData).toHaveBeenCalledWith(
+      "generate-shipping-label",
+      {
+        referenceId: "standalone-purchase-123",
+        address: validAddress,
+        weightKg: 0.5,
+      },
+      "Shipping label generation failed",
+    );
+  });
+
+  it("fails closed when the production adapter returns an invalid label", async () => {
+    vi.stubEnv("PROD", true);
+    vi.mocked(callAuthenticatedEdgeFunctionData).mockResolvedValueOnce({
+      trackingCode: "",
+      labelUrl: "javascript:alert(1)",
+      cost: -1,
+    });
     const productionService = new ShippingService();
 
     await expect(
       productionService.generateLabel("order-123", validAddress),
     ).rejects.toMatchObject({
-      code: "SHIPPING_INTEGRATION_REQUIRED",
+      code: "INVALID_SHIPPING_LABEL_RESPONSE",
       retryable: false,
     });
   });
