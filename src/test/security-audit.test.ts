@@ -123,6 +123,9 @@ describe("manual payment security invariants", () => {
     const infoTimelineMigration = source(
       "supabase/migrations/20260916131805_consolidate_manual_payment_info_timeline.sql",
     );
+    const singleTimelineMigration = source(
+      "supabase/migrations/20260916143602_stop_dual_writing_manual_payment_info_requests.sql",
+    );
     const paymentService = source("src/services/payments/payment-service.ts");
 
     it("records status transitions transactionally in the database", () => {
@@ -145,13 +148,14 @@ describe("manual payment security invariants", () => {
       expect(timelineReadMigration).not.toMatch(/FOR\s+ALL/i);
     });
 
-    it("stores information-request messages in the canonical status history", () => {
+    it("migrates information requests into history and then removes the active dual write", () => {
       expect(infoTimelineMigration).toMatch(/NEW\.status::text\s*=\s*'requires_info'/);
-      expect(infoTimelineMigration).toMatch(/FROM\s+public\.payment_info_requests/i);
-      expect(infoTimelineMigration).toMatch(/INTO\s+v_notes/i);
-      expect(infoTimelineMigration).toMatch(/IF\s+v_payment\.status::text\s*=\s*'requires_info'/i);
-      expect(infoTimelineMigration).toMatch(/INSERT\s+INTO\s+public\.order_status_history/i);
-      expect(infoTimelineMigration).toContain("v_message");
+      expect(singleTimelineMigration).toContain("ordax.payment_info_request_message");
+      expect(singleTimelineMigration).toMatch(/set_config\('ordax\.payment_info_request_message'/i);
+      expect(singleTimelineMigration).toMatch(/current_setting\('ordax\.payment_info_request_message'/i);
+      expect(singleTimelineMigration).toMatch(/INSERT\s+INTO\s+public\.order_status_history/i);
+      expect(singleTimelineMigration).not.toMatch(/INSERT\s+INTO\s+public\.payment_info_requests/i);
+      expect(singleTimelineMigration).toContain("Deprecated compatibility table");
     });
 
     it("assembles the sanitized timeline from the single RLS-protected history SSOT", () => {
