@@ -170,4 +170,28 @@ describe("manual payment security invariants", () => {
       expect(paymentService).not.toContain("get-manual-payment-timeline");
     });
   });
+
+  describe("chat group membership boundary", () => {
+    const groupReadHardening = source(
+      "supabase/migrations/20260916151500_restrict_chat_group_metadata_to_members_or_admins.sql",
+    );
+    const groupService = source("src/services/groups/group-service.ts");
+
+    it("does not expose chat group metadata to every authenticated user", () => {
+      expect(groupReadHardening).toContain("DROP POLICY IF EXISTS chat_groups_select_all");
+      expect(groupReadHardening).toContain("chat_groups_select_member_or_admin");
+      expect(groupReadHardening).toContain("member.user_id = (SELECT auth.uid())");
+      expect(groupReadHardening).not.toMatch(/USING\s*\(\s*true\s*\)/i);
+    });
+
+    it("builds member group summaries from RLS-protected tables instead of a phantom RPC", () => {
+      expect(groupService).toContain('.from("chat_group_members")');
+      expect(groupService).toContain('.from("chat_groups")');
+      expect(groupService).toContain('.from("chat_group_messages")');
+      expect(groupService).toContain('count: "exact", head: true');
+      expect(groupService).not.toContain("get_member_groups_optimized");
+      expect(groupService).not.toContain("GroupAdminRpcClient");
+      expect(groupService).not.toMatch(/supabase\s+as\s+unknown\s+as/i);
+    });
+  });
 });
