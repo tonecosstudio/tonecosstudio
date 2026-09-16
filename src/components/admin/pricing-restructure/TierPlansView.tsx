@@ -1,9 +1,5 @@
 /**
- * Componente para visualizar nível com todos os planos
- * 
- * Exibe nível com planos em formato de tabela, mostrando fórmulas de cálculo.
- * Requisitos: 4.5, 6.1, 6.2
- * Tarefa: 8.3
+ * Visualizacao de um nivel com os planos atualmente vinculados a ele.
  */
 
 import {
@@ -38,9 +34,6 @@ interface TierPlansViewProps {
   tierId: string;
 }
 
-/**
- * Visualização de nível com todos os planos
- */
 export function TierPlansView({ tierId }: TierPlansViewProps) {
   const { data: tierWithPlans, isLoading } = useTierWithPlans(tierId);
 
@@ -62,11 +55,16 @@ export function TierPlansView({ tierId }: TierPlansViewProps) {
     );
   }
 
-  const hasPlans = tierWithPlans.plans && tierWithPlans.plans.length > 0;
+  const hasPlans = tierWithPlans.plans.length > 0;
+  const tierDiscountPercentage =
+    tierWithPlans.tier_price_base > 0
+      ? ((tierWithPlans.tier_price_base - tierWithPlans.tier_price_pix_base) /
+          tierWithPlans.tier_price_base) *
+        100
+      : 0;
 
   return (
     <div className="space-y-6">
-      {/* Informações do Nível */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -74,7 +72,7 @@ export function TierPlansView({ tierId }: TierPlansViewProps) {
               <CardTitle className="flex items-center gap-2">
                 {tierWithPlans.tier_name}
                 {tierWithPlans.tier_is_default && (
-                  <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                  <Star className="h-5 w-5 fill-yellow-500 text-yellow-500" />
                 )}
               </CardTitle>
               {tierWithPlans.tier_description && (
@@ -89,7 +87,7 @@ export function TierPlansView({ tierId }: TierPlansViewProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div>
               <p className="text-sm text-muted-foreground">Preço Base</p>
               <p className="text-2xl font-bold">
@@ -110,18 +108,11 @@ export function TierPlansView({ tierId }: TierPlansViewProps) {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Desconto PIX</p>
-              <p className="text-2xl font-bold">
-                {(
-                  ((tierWithPlans.tier_price_base - tierWithPlans.tier_price_pix_base) /
-                    tierWithPlans.tier_price_base) *
-                  100
-                ).toFixed(1)}
-                %
-              </p>
+              <p className="text-2xl font-bold">{tierDiscountPercentage.toFixed(1)}%</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t">
+          <div className="mt-6 grid grid-cols-2 gap-4 border-t pt-6">
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 text-muted-foreground" />
               <div>
@@ -144,12 +135,11 @@ export function TierPlansView({ tierId }: TierPlansViewProps) {
         </CardContent>
       </Card>
 
-      {/* Planos do Nível */}
       <Card>
         <CardHeader>
           <CardTitle>Planos (Modalidades)</CardTitle>
           <CardDescription>
-            Preços calculados automaticamente para cada modalidade de compra
+            Planos atualmente vinculados a este nível e seus valores configurados.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -157,8 +147,7 @@ export function TierPlansView({ tierId }: TierPlansViewProps) {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Este nível ainda não possui planos. Execute a função create_tier_with_plans
-                para gerar planos automaticamente.
+                Este nível ainda não possui planos de assinatura vinculados.
               </AlertDescription>
             </Alert>
           ) : (
@@ -178,8 +167,7 @@ export function TierPlansView({ tierId }: TierPlansViewProps) {
                 {tierWithPlans.plans.map((plan) => {
                   const expectedPrice =
                     tierWithPlans.tier_price_base * plan.price_multiplier;
-                  const priceMatches =
-                    Math.abs(plan.price_full - expectedPrice) < 0.01;
+                  const priceMatches = Math.abs(plan.price_full - expectedPrice) < 0.01;
 
                   return (
                     <TableRow key={plan.id}>
@@ -205,7 +193,8 @@ export function TierPlansView({ tierId }: TierPlansViewProps) {
                               <div className="flex items-center gap-2">
                                 <Calculator className="h-4 w-4" />
                                 <span>
-                                  {formatCurrency(tierWithPlans.tier_price_base)} × {plan.price_multiplier.toFixed(2)} ={" "}
+                                  {formatCurrency(tierWithPlans.tier_price_base)} ×{" "}
+                                  {plan.price_multiplier.toFixed(2)} ={" "}
                                   {formatCurrency(expectedPrice)}
                                 </span>
                               </div>
@@ -225,9 +214,9 @@ export function TierPlansView({ tierId }: TierPlansViewProps) {
                                   <AlertCircle className="h-4 w-4 text-yellow-500" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Preço não corresponde à fórmula esperada</p>
+                                  <p>Preço não corresponde à referência da modalidade</p>
                                   <p className="text-xs">
-                                    Esperado: {formatCurrency(expectedPrice)}
+                                    Referência: {formatCurrency(expectedPrice)}
                                   </p>
                                 </TooltipContent>
                               </Tooltip>
@@ -255,16 +244,16 @@ export function TierPlansView({ tierId }: TierPlansViewProps) {
           )}
 
           {hasPlans && (
-            <div className="mt-4 p-4 bg-muted rounded-lg">
+            <div className="mt-4 rounded-lg bg-muted p-4">
               <div className="flex items-start gap-2">
-                <Calculator className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <Calculator className="mt-0.5 h-5 w-5 text-muted-foreground" />
                 <div className="space-y-1 text-sm">
-                  <p className="font-medium">Fórmula de Cálculo</p>
+                  <p className="font-medium">Referência de cálculo</p>
                   <p className="text-muted-foreground">
-                    <strong>Preço Cheio:</strong> Preço Base × Multiplicador
+                    <strong>Preço Cheio:</strong> Preço Base × Multiplicador configurado da modalidade
                   </p>
                   <p className="text-muted-foreground">
-                    <strong>Preço PIX:</strong> Preço Cheio × (1 - Desconto PIX %)
+                    <strong>Preço PIX:</strong> valor persistido no plano
                   </p>
                 </div>
               </div>
