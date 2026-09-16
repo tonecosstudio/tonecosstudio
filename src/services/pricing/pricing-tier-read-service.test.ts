@@ -12,12 +12,11 @@ vi.mock("@/services/admin/rpc/admin-rpc-gateway", () => ({
   callAdminRpc: mocks.callAdminRpc,
 }));
 
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {},
-}));
-
 const tierId = "11111111-1111-4111-8111-111111111111";
 const planId = "22222222-2222-4222-8222-222222222222";
+const modeId = "33333333-3333-4333-8333-333333333333";
+const collectionId = "44444444-4444-4444-8444-444444444444";
+const assignmentId = "55555555-5555-4555-8555-555555555555";
 
 function pricingSnapshot() {
   return {
@@ -33,6 +32,8 @@ function pricingSnapshot() {
         is_active: true,
         is_default: false,
         display_order: 2,
+        created_at: "2026-09-16T00:00:00.000Z",
+        updated_at: "2026-09-16T00:00:00.000Z",
       },
     ],
     plans: [
@@ -49,6 +50,9 @@ function pricingSnapshot() {
         collections_count: 6,
         deliveries_total: 6,
         deliveries_per_cycle: null,
+        coins_included: 6,
+        total_credits: 6,
+        slug: "premium-semestral",
         is_active: true,
         display_order: 1,
         created_at: "2026-09-16T00:00:00.000Z",
@@ -57,11 +61,35 @@ function pricingSnapshot() {
     ],
     purchase_modes: [
       {
+        id: modeId,
         mode_key: "semestral",
+        name: "Semestral",
+        description: "Assinatura semestral",
         price_multiplier: 0.95,
         collections_count: 6,
         deliveries_total: 6,
         includes_bonus: true,
+        is_active: true,
+        display_order: 3,
+        created_at: "2026-09-16T00:00:00.000Z",
+        updated_at: "2026-09-16T00:00:00.000Z",
+      },
+    ],
+    collections: [
+      {
+        id: collectionId,
+        name: "Colecao Premium",
+        slug: "colecao-premium",
+        is_active: true,
+        is_price_custom: false,
+      },
+    ],
+    collection_assignments: [
+      {
+        id: assignmentId,
+        collection_id: collectionId,
+        tier_id: tierId,
+        created_at: "2026-09-16T00:00:00.000Z",
       },
     ],
     assignment_counts: [{ tier_id: tierId, count: 4 }],
@@ -136,6 +164,7 @@ describe("pricing-tier-read-service canonical admin snapshot", () => {
     const snapshot = pricingSnapshot();
     snapshot.tiers = [];
     snapshot.plans = [];
+    snapshot.collection_assignments = [];
     snapshot.assignment_counts = [];
     snapshot.active_subscription_counts = [];
     mocks.callAdminRpc.mockResolvedValue(snapshot);
@@ -147,11 +176,15 @@ describe("pricing-tier-read-service canonical admin snapshot", () => {
     null,
     {},
     { ...pricingSnapshot(), tiers: null },
-    { ...pricingSnapshot(), purchase_modes: [{ mode_key: "invalido" }] },
+    {
+      ...pricingSnapshot(),
+      purchase_modes: [{ ...pricingSnapshot().purchase_modes[0], mode_key: "invalido" }],
+    },
     {
       ...pricingSnapshot(),
       active_subscription_counts: [{ plan_id: planId, count: -1 }],
     },
+    { ...pricingSnapshot(), collections: null },
   ])("falha fechado para snapshot administrativo invalido %#", async (value) => {
     mocks.callAdminRpc.mockResolvedValue(value);
 
