@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const MAX_PRICE = 999999.99;
 const MIN_PRICE = 0.01;
-const MAX_DISCOUNT_PERCENTAGE = 100;
+const MAX_DISCOUNT_PERCENTAGE = 99.99;
 const MIN_DISCOUNT_PERCENTAGE = 0;
 const DEFAULT_PIX_DISCOUNT = 5;
 
@@ -96,11 +96,8 @@ export const depositAmountSchema = z
     required_error: "Valor de entrada é obrigatório",
     invalid_type_error: "Valor de entrada deve ser um número",
   })
-  .positive({
-    message: "Valor de entrada deve ser maior que zero",
-  })
-  .min(MIN_PRICE, {
-    message: `Valor de entrada deve ser no mínimo R$ ${MIN_PRICE.toFixed(2)}`,
+  .min(0, {
+    message: "Valor de entrada não pode ser negativo",
   })
   .max(MAX_PRICE, {
     message: `Valor de entrada deve ser no máximo R$ ${MAX_PRICE.toFixed(2)}`,
@@ -117,7 +114,7 @@ export const pixDiscountPercentageSchema = z
     message: `Percentual de desconto deve ser no mínimo ${MIN_DISCOUNT_PERCENTAGE}%`,
   })
   .max(MAX_DISCOUNT_PERCENTAGE, {
-    message: `Percentual de desconto deve ser no máximo ${MAX_DISCOUNT_PERCENTAGE}%`,
+    message: `Percentual de desconto deve ser menor que 100%`,
   })
   .default(DEFAULT_PIX_DISCOUNT);
 
