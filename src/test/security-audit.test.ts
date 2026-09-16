@@ -117,7 +117,10 @@ describe("manual payment security invariants", () => {
     const historyMigration = source(
       "supabase/migrations/20260913171000_manual_payment_status_history_trigger.sql",
     );
-    const timelineEdge = source("supabase/functions/get-manual-payment-timeline/index.ts");
+    const timelineReadMigration = source(
+      "supabase/migrations/20260916123710_allow_manual_payment_owner_timeline_read.sql",
+    );
+    const paymentService = source("src/services/payments/payment-service.ts");
 
     it("records status transitions transactionally in the database", () => {
       expect(historyMigration).toContain("audit_manual_payment_status_transition");
@@ -131,15 +134,22 @@ describe("manual payment security invariants", () => {
       expect(historyMigration).toMatch(/SELECT\s+id[\s\S]*order_status_history/i);
     });
 
-    it("serves a sanitized owner/admin timeline without exposing actor identity", () => {
-      expect(timelineEdge).toMatch(/payment\.user_id\s*!==\s*userId/);
-      expect(timelineEdge).toContain('"admin"');
-      expect(timelineEdge).toContain('"super_admin"');
-      expect(timelineEdge).not.toContain("changed_by_name");
-      expect(timelineEdge).not.toContain("changed_by,");
-      expect(timelineEdge).toContain("payment_info_requests");
-      expect(timelineEdge).toContain("payment_files");
-      expect(timelineEdge).toContain("order_status_history");
+    it("limits customer history reads to their own manual payment while preserving admin reads", () => {
+      expect(timelineReadMigration).toMatch(/TO\s+authenticated/i);
+      expect(timelineReadMigration).toContain("public.has_role((SELECT auth.uid()), 'admin')");
+      expect(timelineReadMigration).toMatch(/order_type\s*=\s*'manual_payment'/i);
+      expect(timelineReadMigration).toMatch(/mp\.user_id\s*=\s*\(SELECT auth\.uid\(\)\)/i);
+      expect(timelineReadMigration).not.toMatch(/FOR\s+ALL/i);
+    });
+
+    it("assembles the sanitized timeline only from RLS-protected canonical sources", () => {
+      expect(paymentService).toContain('.from("order_status_history")');
+      expect(paymentService).toContain('.from("payment_info_requests")');
+      expect(paymentService).toContain('action_type: "file_uploaded"');
+      expect(paymentService).toContain("parsePaymentTimelineResponse");
+      expect(paymentService).not.toContain("changed_by_name");
+      expect(paymentService).not.toContain("changed_by,");
+      expect(paymentService).not.toContain("get-manual-payment-timeline");
     });
   });
 });
