@@ -16,7 +16,10 @@ import type {
   PaymentTimelineAction,
   PaymentTimelineEvent,
 } from "@/types/manual-payment";
-import { assertCurrentUserId, requireAuthenticatedUserId } from "@/services/auth/current-user";
+import {
+  assertCurrentUserId,
+  requireAuthenticatedUserId,
+} from "@/services/auth/current-user";
 import { sanitizePostgrestSearchTerm } from "@/lib/postgrest-search";
 import { parsePaymentTimelineResponse } from "./payment-timeline-response";
 
@@ -30,32 +33,30 @@ type TimelinePayment = Pick<
   "id" | "status" | "rejection_reason" | "created_at" | "updated_at" | "files"
 >;
 
-function actionForTimelineStatus(status: string): PaymentTimelineAction {
+function actionForTimelineStatus(
+  status: string,
+  notes: string | null,
+): PaymentTimelineAction {
   if (status === "approved") return "approved";
   if (status === "rejected") return "rejected";
+  if (status === "requires_info" && notes?.trim()) return "info_requested";
   return "status_changed";
 }
 
-async function loadPaymentTimelineFromRls(payment: TimelinePayment): Promise<PaymentTimelineEvent[]> {
-  const [historyResult, infoResult] = await Promise.all([
-    supabase
-      .from("order_status_history")
-      .select("id,old_status,new_status,notes,created_at")
-      .eq("order_id", payment.id)
-      .eq("order_type", "manual_payment")
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("payment_info_requests")
-      .select("id,message,created_at")
-      .eq("payment_id", payment.id)
-      .order("created_at", { ascending: true }),
-  ]);
+async function loadPaymentTimelineFromRls(
+  payment: TimelinePayment,
+): Promise<PaymentTimelineEvent[]> {
+  const historyResult = await supabase
+    .from("order_status_history")
+    .select("id,old_status,new_status,notes,created_at")
+    .eq("order_id", payment.id)
+    .eq("order_type", "manual_payment")
+    .order("created_at", { ascending: true });
 
   if (historyResult.error) {
-    throw new Error(`Failed to load payment status history: ${historyResult.error.message}`);
-  }
-  if (infoResult.error) {
-    throw new Error(`Failed to load payment information requests: ${infoResult.error.message}`);
+    throw new Error(
+      `Failed to load payment status history: ${historyResult.error.message}`,
+    );
   }
 
   const events: Array<Record<string, unknown>> = [
@@ -74,22 +75,10 @@ async function loadPaymentTimelineFromRls(payment: TimelinePayment): Promise<Pay
     events.push({
       id: row.id,
       payment_id: payment.id,
-      action_type: actionForTimelineStatus(String(row.new_status ?? "")),
+      action_type: actionForTimelineStatus(row.new_status, row.notes),
       old_status: row.old_status,
       new_status: row.new_status,
       notes: row.notes,
-      created_at: row.created_at,
-    });
-  }
-
-  for (const row of infoResult.data ?? []) {
-    events.push({
-      id: row.id,
-      payment_id: payment.id,
-      action_type: "info_requested",
-      old_status: null,
-      new_status: "requires_info",
-      notes: row.message,
       created_at: row.created_at,
     });
   }
@@ -108,14 +97,17 @@ async function loadPaymentTimelineFromRls(payment: TimelinePayment): Promise<Pay
 
   const currentStatus = payment.status;
   const hasCurrentStatusEvent = events.some(
-    (event) => event.new_status === currentStatus && event.action_type !== "info_requested",
+    (event) => event.new_status === currentStatus,
   );
 
-  if (currentStatus && currentStatus !== "pending" && !hasCurrentStatusEvent) {
+  if (currentStatus !== "pending" && !hasCurrentStatusEvent) {
     events.push({
       id: `current:${payment.id}:${currentStatus}`,
       payment_id: payment.id,
-      action_type: actionForTimelineStatus(currentStatus),
+      action_type: actionForTimelineStatus(
+        currentStatus,
+        currentStatus === "rejected" ? payment.rejection_reason ?? null : null,
+      ),
       old_status: null,
       new_status: currentStatus,
       notes: currentStatus === "rejected" ? payment.rejection_reason ?? null : null,
@@ -125,7 +117,8 @@ async function loadPaymentTimelineFromRls(payment: TimelinePayment): Promise<Pay
 
   events.sort(
     (a, b) =>
-      new Date(String(a.created_at)).getTime() - new Date(String(b.created_at)).getTime(),
+      new Date(String(a.created_at)).getTime() -
+      new Date(String(b.created_at)).getTime(),
   );
 
   return parsePaymentTimelineResponse(events, payment.id);
@@ -145,7 +138,7 @@ async function fetchPaymentById(id: string): Promise<PaymentDetails | null> {
       *,
       payment_method:admin_payment_methods(*),
       files:payment_files(*)
-    `
+    `,
     )
     .eq("id", id)
     .maybeSingle();
@@ -177,11 +170,15 @@ async function fetchPaymentById(id: string): Promise<PaymentDetails | null> {
   };
 }
 
-export async function getPaymentById(id: string): Promise<PaymentDetails | null> {
+export async function getPaymentById(
+  id: string,
+): Promise<PaymentDetails | null> {
   return fetchPaymentById(id);
 }
 
-export async function getMyPaymentById(id: string): Promise<PaymentDetails | null> {
+export async function getMyPaymentById(
+  id: string,
+): Promise<PaymentDetails | null> {
   const userId = await requireAuthenticatedUserId();
   const payment = await fetchPaymentById(id);
 
@@ -201,11 +198,14 @@ export async function getMyPaymentById(id: string): Promise<PaymentDetails | nul
  */
 export async function listPaymentsByUser(
   userId: string,
-  filters?: PaymentFilters
+  filters?: PaymentFilters,
 ): Promise<ManualPayment[]> {
   await assertCurrentUserId(userId);
 
-  let query = supabase.from("manual_payments").select("*").eq("user_id", userId);
+  let query = supabase
+    .from("manual_payments")
+    .select("*")
+    .eq("user_id", userId);
 
   if (filters?.status && filters.status.length > 0) {
     query = query.in("status", filters.status);
@@ -248,7 +248,7 @@ export async function updatePaymentStatus(
   id: string,
   newStatus: PaymentStatus,
   notes?: string,
-  adminId?: string
+  adminId?: string,
 ): Promise<void> {
   const { data: currentPayment, error: fetchError } = await supabase
     .from("manual_payments")
@@ -262,24 +262,36 @@ export async function updatePaymentStatus(
 
   const currentStatus = currentPayment.status as PaymentStatus;
 
-  const [{ validateStatusTransition }, { updateManualPaymentStatus }] = await Promise.all([
-    import("@/services/admin/orders/orders-validator"),
-    import("@/services/admin/orders/admin-order-status-service"),
-  ]);
+  const [{ validateStatusTransition }, { updateManualPaymentStatus }] =
+    await Promise.all([
+      import("@/services/admin/orders/orders-validator"),
+      import("@/services/admin/orders/admin-order-status-service"),
+    ]);
 
-  const validationError = validateStatusTransition(currentStatus, newStatus, "manual_payment");
+  const validationError = validateStatusTransition(
+    currentStatus,
+    newStatus,
+    "manual_payment",
+  );
   if (validationError) {
     throw new Error(validationError.message);
   }
 
   void adminId;
-  await updateManualPaymentStatus(id, newStatus, newStatus === "rejected" ? notes?.trim() || null : null);
+  await updateManualPaymentStatus(
+    id,
+    newStatus,
+    newStatus === "rejected" ? notes?.trim() || null : null,
+  );
 }
 
 /**
  * Approve a payment through the canonical admin notification boundary.
  */
-export async function approvePayment(id: string, adminId: string): Promise<void> {
+export async function approvePayment(
+  id: string,
+  adminId: string,
+): Promise<void> {
   void adminId;
   const { approveManualPaymentWithNotification } = await import(
     "@/services/admin/orders/admin-order-status-service"
@@ -290,7 +302,11 @@ export async function approvePayment(id: string, adminId: string): Promise<void>
 /**
  * Reject a payment through the canonical admin notification boundary.
  */
-export async function rejectPayment(id: string, adminId: string, reason: string): Promise<void> {
+export async function rejectPayment(
+  id: string,
+  adminId: string,
+  reason: string,
+): Promise<void> {
   if (!reason || reason.trim().length === 0) {
     throw new Error("Rejection reason is required");
   }
@@ -308,7 +324,7 @@ export async function rejectPayment(id: string, adminId: string, reason: string)
 export async function requestPaymentInfo(
   id: string,
   adminId: string,
-  message: string
+  message: string,
 ): Promise<void> {
   if (!message || message.trim().length === 0) {
     throw new Error("Message is required when requesting more information");
