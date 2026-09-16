@@ -1,9 +1,9 @@
 /**
- * Tabela para editar preços base por tipo de coleção
- * 
+ * Tabela para editar preços base por tipo de coleção.
+ *
  * Permite atualizar preços base que servem como referência
  * para cálculo de preços contextuais.
- * 
+ *
  * Spec: contextual-pricing-system
  * Task: 6.3
  */
@@ -30,24 +30,23 @@ export function BasePricingTable() {
   const updateMutation = useUpdateBasePrice();
   const { toast } = useToast();
 
-  // Estado local para edição
   const [editingPrices, setEditingPrices] = useState<Record<string, number>>({});
 
   const handlePriceChange = (typeId: string, value: string) => {
-    const numValue = parseInt(value) || 0;
-    setEditingPrices(prev => ({
+    const numValue = Number.parseInt(value, 10) || 0;
+    setEditingPrices((prev) => ({
       ...prev,
       [typeId]: numValue,
     }));
   };
 
-  const handleSave = async (typeId: string, typeName: string) => {
+  const handleSave = async (typeId: string) => {
     const newPrice = editingPrices[typeId];
-    
-    if (!newPrice || newPrice <= 0) {
+
+    if (!Number.isInteger(newPrice) || newPrice <= 0) {
       toast({
         title: "Preço inválido",
-        description: "O preço deve ser maior que 0",
+        description: "O preço deve ser um número inteiro maior que 0",
         variant: "destructive",
       });
       return;
@@ -56,20 +55,17 @@ export function BasePricingTable() {
     await updateMutation.mutateAsync({
       collection_type_id: typeId,
       new_base_price_coins: newPrice,
-      reason: `Atualização manual via admin - ${typeName}`,
     });
 
-    // Limpar estado de edição após salvar
-    setEditingPrices(prev => {
+    setEditingPrices((prev) => {
       const newState = { ...prev };
       delete newState[typeId];
       return newState;
     });
   };
 
-  const getDisplayPrice = (typeId: string, currentPrice: number) => {
-    return editingPrices[typeId] !== undefined ? editingPrices[typeId] : currentPrice;
-  };
+  const getDisplayPrice = (typeId: string, currentPrice: number) =>
+    editingPrices[typeId] !== undefined ? editingPrices[typeId] : currentPrice;
 
   if (isLoading) {
     return (
@@ -85,7 +81,8 @@ export function BasePricingTable() {
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
           Os preços base afetam todos os contextos. Mudanças aqui impactam o cálculo de preços
-          para assinantes e não assinantes. Todas as alterações são registradas no histórico.
+          para assinantes e não assinantes e são aplicadas somente pela fronteira administrativa
+          autenticada do backend.
         </AlertDescription>
       </Alert>
 
@@ -108,7 +105,10 @@ export function BasePricingTable() {
             <TableBody>
               {basePrices?.map((price) => {
                 const isEditing = editingPrices[price.collection_type_id] !== undefined;
-                const displayPrice = getDisplayPrice(price.collection_type_id, price.base_price_coins);
+                const displayPrice = getDisplayPrice(
+                  price.collection_type_id,
+                  price.base_price_coins,
+                );
 
                 return (
                   <TableRow key={price.collection_type_id}>
@@ -125,7 +125,9 @@ export function BasePricingTable() {
                           min="1"
                           step="1"
                           value={displayPrice}
-                          onChange={(e) => handlePriceChange(price.collection_type_id, e.target.value)}
+                          onChange={(event) =>
+                            handlePriceChange(price.collection_type_id, event.target.value)
+                          }
                           className="w-32"
                         />
                         <Coins className="h-4 w-4 text-muted-foreground" />
@@ -134,14 +136,14 @@ export function BasePricingTable() {
                     <TableCell className="text-right">
                       <Button
                         size="sm"
-                        onClick={() => handleSave(price.collection_type_id, price.collection_type_display_name)}
+                        onClick={() => handleSave(price.collection_type_id)}
                         disabled={!isEditing || updateMutation.isPending}
                       >
                         {updateMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <>
-                            <Save className="h-4 w-4 mr-2" />
+                            <Save className="mr-2 h-4 w-4" />
                             Salvar
                           </>
                         )}
