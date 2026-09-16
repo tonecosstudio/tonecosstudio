@@ -120,6 +120,9 @@ describe("manual payment security invariants", () => {
     const timelineReadMigration = source(
       "supabase/migrations/20260916123710_allow_manual_payment_owner_timeline_read.sql",
     );
+    const infoTimelineMigration = source(
+      "supabase/migrations/20260916131805_consolidate_manual_payment_info_timeline.sql",
+    );
     const paymentService = source("src/services/payments/payment-service.ts");
 
     it("records status transitions transactionally in the database", () => {
@@ -142,9 +145,20 @@ describe("manual payment security invariants", () => {
       expect(timelineReadMigration).not.toMatch(/FOR\s+ALL/i);
     });
 
-    it("assembles the sanitized timeline only from RLS-protected canonical sources", () => {
+    it("stores information-request messages in the canonical status history", () => {
+      expect(infoTimelineMigration).toMatch(/NEW\.status::text\s*=\s*'requires_info'/);
+      expect(infoTimelineMigration).toMatch(/FROM\s+public\.payment_info_requests/i);
+      expect(infoTimelineMigration).toMatch(/INTO\s+v_notes/i);
+      expect(infoTimelineMigration).toMatch(/IF\s+v_payment\.status::text\s*=\s*'requires_info'/i);
+      expect(infoTimelineMigration).toMatch(/INSERT\s+INTO\s+public\.order_status_history/i);
+      expect(infoTimelineMigration).toContain("v_message");
+    });
+
+    it("assembles the sanitized timeline from the single RLS-protected history SSOT", () => {
       expect(paymentService).toContain('.from("order_status_history")');
-      expect(paymentService).toContain('.from("payment_info_requests")');
+      expect(paymentService).not.toContain('.from("payment_info_requests")');
+      expect(paymentService).toContain('status === "requires_info"');
+      expect(paymentService).toContain('return "info_requested"');
       expect(paymentService).toContain('action_type: "file_uploaded"');
       expect(paymentService).toContain("parsePaymentTimelineResponse");
       expect(paymentService).not.toContain("changed_by_name");
