@@ -57,6 +57,7 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_extend_character_choice_deadline",
   "admin_get_or_create_delivery_cycle",
   "admin_get_or_create_notification_settings",
+  "admin_get_pricing_tiers_snapshot",
   "admin_insert_collection_character",
   "admin_insert_collection_characters",
   "add_quote_production_photo",
