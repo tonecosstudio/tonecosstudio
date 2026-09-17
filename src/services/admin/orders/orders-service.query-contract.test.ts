@@ -23,9 +23,9 @@ const supabaseMock = vi.hoisted(() => {
     builder.gte = vi.fn(chain);
     builder.lte = vi.fn(chain);
     builder.order = vi.fn(chain);
-    builder.single = vi.fn().mockResolvedValue({ data: null, error: null });
+    builder.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
     builder.then = vi.fn((resolve: (value: SupabaseResult) => unknown) =>
-      Promise.resolve(resolve(results.get(table) || defaultResult))
+      Promise.resolve(resolve(results.get(table) || defaultResult)),
     );
 
     return builder;
@@ -41,7 +41,6 @@ const supabaseMock = vi.hoisted(() => {
     builders,
     from,
     results,
-    rpc: vi.fn(),
   };
 });
 
@@ -56,29 +55,15 @@ vi.mock("@/integrations/supabase/client", () => ({
       getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
     },
     from: supabaseMock.from,
-    rpc: supabaseMock.rpc,
   },
 }));
 
-vi.mock("@/lib/logger", () => ({
-  default: loggerMock,
-}));
+vi.mock("@/lib/logger", () => ({ default: loggerMock }));
 
-vi.mock("@/services/payments/standalone-purchase-service", () => ({
-  transitionStandalonePurchaseStatus: vi.fn(),
-}));
-
-vi.mock("./admin-order-status-service", () => ({
+vi.mock("@/services/admin/orders/admin-order-status-service", () => ({
   approveManualPaymentWithNotification: vi.fn(),
-  recordOrderStatusHistory: vi.fn(),
   rejectManualPaymentWithNotification: vi.fn(),
   requestManualPaymentInfoRpc: vi.fn(),
-  updateManualPaymentStatus: vi.fn(),
-  updateQuoteStatusRpc: vi.fn(),
-}));
-
-vi.mock("./delivery-detail-service", () => ({
-  updateDeliveryStatus: vi.fn(),
 }));
 
 const baseFilters: OrderFilters = {
@@ -97,7 +82,6 @@ describe("orders-service query contract", () => {
     supabaseMock.builders.clear();
     supabaseMock.results.clear();
     supabaseMock.from.mockClear();
-    supabaseMock.rpc.mockReset();
     loggerMock.error.mockClear();
     loggerMock.warn.mockClear();
   });
@@ -113,13 +97,15 @@ describe("orders-service query contract", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           updated_at: "2026-01-01T00:00:00.000Z",
           tracking_code: null,
+          expected_delivery_date: null,
           actual_delivery_date: null,
           delivered_date: null,
           subscription_id: "subscription-a",
           delivery_number: 1,
           delivery_order: null,
-          cycle_id: null,
+          cycle_id: "cycle-a",
           character_id: null,
+          collection_id: "collection-a",
           reveal_date: null,
           subscriptions: {
             id: "subscription-a",
@@ -138,13 +124,15 @@ describe("orders-service query contract", () => {
           created_at: "2026-01-02T00:00:00.000Z",
           updated_at: "2026-01-02T00:00:00.000Z",
           tracking_code: null,
+          expected_delivery_date: null,
           actual_delivery_date: null,
           delivered_date: null,
           subscription_id: "subscription-b",
           delivery_number: 1,
           delivery_order: null,
-          cycle_id: null,
+          cycle_id: "cycle-b",
           character_id: null,
+          collection_id: "collection-b",
           reveal_date: null,
           subscriptions: {
             id: "subscription-b",
@@ -177,7 +165,6 @@ describe("orders-service query contract", () => {
     });
 
     const { fetchUnifiedOrders } = await import("./orders-service");
-
     const result = await fetchUnifiedOrders(baseFilters, pagination);
 
     expect(supabaseMock.from.mock.calls.map(([table]) => table)).toEqual([
@@ -189,25 +176,23 @@ describe("orders-service query contract", () => {
       "user-a",
       "user-b",
     ]);
-    expect(supabaseMock.builders.get("profiles")?.eq).not.toHaveBeenCalled();
     expect(supabaseMock.builders.get("collections")?.in).toHaveBeenCalledWith("id", [
       "collection-a",
       "collection-b",
     ]);
-
     expect(
       result.data.map((order) => ({
         collection: order.collection?.name,
         customer: order.customer.name,
         id: order.id,
-      }))
+      })),
     ).toEqual([
       { collection: "Collection Beta", customer: "Bruno Costa", id: "delivery-b" },
       { collection: "Collection Alpha", customer: "Alice Silva", id: "delivery-a" },
     ]);
   });
 
-  it("hydrates standalone purchase customers without relying on embedded profile joins", async () => {
+  it("hydrates standalone purchase customers without embedded profile joins", async () => {
     supabaseMock.results.set("standalone_purchases", {
       count: 1,
       error: null,
@@ -218,11 +203,23 @@ describe("orders-service query contract", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           updated_at: "2026-01-01T00:00:00.000Z",
           user_id: "user-a",
-          character_id: null,
+          collection_id: "collection-a",
+          cycle_id: "cycle-a",
+          character_id: "character-a",
           amount: 120,
           paid_amount: 0,
           balance_amount: 120,
+          price_deposit: 20,
+          price_balance: 100,
+          price_full: 120,
+          deposit_paid_at: null,
+          balance_paid_at: null,
+          balance_due_date: null,
+          payment_voucher_deposit_url: null,
+          payment_voucher_balance_url: null,
           tracking_code: null,
+          expected_delivery_date: null,
+          actual_delivery_date: null,
           collections: { id: "collection-a", name: "Collection Alpha", slug: "alpha" },
           collection_characters: null,
         },
@@ -235,10 +232,9 @@ describe("orders-service query contract", () => {
     });
 
     const { fetchUnifiedOrders } = await import("./orders-service");
-
     const result = await fetchUnifiedOrders(
       { ...baseFilters, type: "standalone_purchase" },
-      pagination
+      pagination,
     );
 
     expect(supabaseMock.from.mock.calls.map(([table]) => table)).toEqual([
@@ -252,7 +248,7 @@ describe("orders-service query contract", () => {
     });
   });
 
-  it("falls back to local filtering when full-text search RPC is unavailable", async () => {
+  it("filters search locally without calling the retired full-text RPC", async () => {
     supabaseMock.results.set("subscription_deliveries", {
       count: 1,
       error: null,
@@ -263,13 +259,15 @@ describe("orders-service query contract", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           updated_at: "2026-01-01T00:00:00.000Z",
           tracking_code: "ORD-001",
+          expected_delivery_date: null,
           actual_delivery_date: null,
           delivered_date: null,
           subscription_id: "subscription-a",
           delivery_number: 1,
           delivery_order: null,
-          cycle_id: null,
+          cycle_id: "cycle-a",
           character_id: null,
+          collection_id: "collection-a",
           reveal_date: null,
           subscriptions: {
             id: "subscription-a",
@@ -294,27 +292,18 @@ describe("orders-service query contract", () => {
       error: null,
       data: [{ id: "collection-a", name: "Collection Alpha", slug: "alpha" }],
     });
-    supabaseMock.rpc.mockResolvedValue({
-      data: null,
-      error: { message: "function search_unified_orders does not exist" },
-    });
 
     const { fetchUnifiedOrders } = await import("./orders-service");
-
     const result = await fetchUnifiedOrders(
       { ...baseFilters, searchQuery: "alice" },
-      pagination
+      pagination,
     );
 
-    expect(supabaseMock.rpc).toHaveBeenCalledWith("search_unified_orders", {
-      order_type_filter: "subscription_delivery",
-      search_query: "alice",
-    });
-    expect(loggerMock.warn).toHaveBeenCalledWith(
-      "Full-text search failed, falling back to client-side search",
-      expect.objectContaining({ error: expect.anything() })
-    );
     expect(result.data).toHaveLength(1);
     expect(result.data[0]?.id).toBe("delivery-a");
+    expect(loggerMock.warn).not.toHaveBeenCalledWith(
+      "Full-text search failed, falling back to client-side search",
+      expect.anything(),
+    );
   });
 });
