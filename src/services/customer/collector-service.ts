@@ -2,8 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { assertCurrentUserId } from "@/services/auth/current-user";
 import { updateCollectorProfileRpc } from "@/services/customer/collector-mutations-service";
 
-type CollectorBadgeRarity = "common" | "rare" | "epic" | "legendary";
-
 export type CollectorProfile = {
   id: string;
   username: string | null;
@@ -16,35 +14,6 @@ export type CollectorProfile = {
   pieces_owned: number;
   total_spent: number;
 };
-
-export type CollectorBadge = {
-  id: string;
-  name: string;
-  description: string | null;
-  icon: string | null;
-  rarity: CollectorBadgeRarity;
-};
-
-export type UserBadge = CollectorBadge & {
-  earned_at: string;
-};
-
-type UserBadgeQueryRow = {
-  earned_at: string;
-  collector_badges: {
-    id: string;
-    name: string;
-    description: string | null;
-    icon: string | null;
-    rarity: string;
-  } | null;
-};
-
-function normalizeBadgeRarity(rarity: string): CollectorBadgeRarity {
-  return ["common", "rare", "epic", "legendary"].includes(rarity)
-    ? (rarity as CollectorBadgeRarity)
-    : "common";
-}
 
 export async function getMyCollectorProfile(userId: string) {
   await assertCurrentUserId(userId);
@@ -74,54 +43,6 @@ export async function updateCollectorProfile(
   await assertCurrentUserId(userId);
   const data = await updateCollectorProfileRpc(updates);
   return data as CollectorProfile;
-}
-
-export async function getAllBadges() {
-  const { data, error } = await supabase
-    .from("collector_badges")
-    .select("*")
-    .order("requirement_value", { ascending: true });
-
-  if (error) throw error;
-  return (data ?? []).map((badge) => ({
-    id: badge.id,
-    name: badge.name,
-    description: badge.description,
-    icon: badge.icon,
-    rarity: normalizeBadgeRarity(badge.rarity),
-  }));
-}
-
-export async function getUserBadges(userId: string) {
-  const { data, error } = await supabase
-    .from("user_badges")
-    .select(
-      `
-      earned_at,
-      collector_badges (
-        id,
-        name,
-        description,
-        icon,
-        rarity
-      )
-    `
-    )
-    .eq("user_id", userId)
-    .order("earned_at", { ascending: false });
-
-  if (error) throw error;
-
-  return ((data ?? []) as UserBadgeQueryRow[])
-    .filter((item) => item.collector_badges)
-    .map((item) => ({
-      id: item.collector_badges!.id,
-      name: item.collector_badges!.name,
-      description: item.collector_badges!.description,
-      icon: item.collector_badges!.icon,
-      rarity: normalizeBadgeRarity(item.collector_badges!.rarity),
-      earned_at: item.earned_at,
-    }));
 }
 
 export async function checkUsernameAvailability(username: string, currentUserId?: string) {
