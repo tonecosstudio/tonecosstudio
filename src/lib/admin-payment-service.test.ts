@@ -14,7 +14,6 @@ import {
 } from "./admin-payment-service";
 import { supabase } from "@/integrations/supabase/client";
 
-// Mock Supabase client
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(() => ({
@@ -35,13 +34,11 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-// Mock payment service
-vi.mock("./payment-service", () => ({
+vi.mock("@/services/payments/payment-service", () => ({
   approvePayment: vi.fn(() => Promise.resolve()),
 }));
 
-// Mock message service
-vi.mock("./services/messageService", () => ({
+vi.mock("@/services/support/message-service", () => ({
   messageService: {
     sendMessage: vi.fn(() => Promise.resolve()),
   },
@@ -162,7 +159,6 @@ describe("AdminPaymentService", () => {
       const paymentIds = ["payment-1", "payment-2", "payment-3"];
       const adminId = "admin-1";
 
-      // Mock payment status checks
       supabaseFromMock
         .mockReturnValueOnce({
           select: vi.fn().mockReturnValue({
@@ -208,7 +204,6 @@ describe("AdminPaymentService", () => {
       const adminId = "admin-1";
       const progressCallback = vi.fn();
 
-      // Mock payment status checks
       supabaseFromMock
         .mockReturnValueOnce({
           select: vi.fn().mockReturnValue({
@@ -293,13 +288,13 @@ describe("AdminPaymentService", () => {
       }
     });
   });
+
   describe("bulkSendMessage", () => {
     test("should send message to all selected payment conversations", async () => {
       const paymentIds = ["payment-1", "payment-2"];
       const message = "Test message";
       const adminId = "admin-1";
 
-      // Mock conversation lookup
       supabaseFromMock
         .mockReturnValueOnce({
           select: vi.fn().mockReturnValue({
@@ -334,7 +329,6 @@ describe("AdminPaymentService", () => {
       const adminId = "admin-1";
       const progressCallback = vi.fn();
 
-      // Mock conversation lookup
       supabaseFromMock.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
