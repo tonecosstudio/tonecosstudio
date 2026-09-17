@@ -11,7 +11,9 @@ export function createRealtimeChannel(
   topic: string,
   options?: SupabaseRealtimeChannelOptions,
 ) {
-  return supabase.channel(topic, options);
+  return options === undefined
+    ? supabase.channel(topic)
+    : supabase.channel(topic, options);
 }
 
 export function removeRealtimeChannel(channel: SupabaseRealtimeChannel) {
