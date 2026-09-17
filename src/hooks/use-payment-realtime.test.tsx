@@ -94,9 +94,9 @@ describe("usePaymentRealtime", () => {
         expect.any(Function)
       );
       expect(mockChannel.subscribe).toHaveBeenCalled();
+      expect(result.current.isConnected).toBe(true);
     });
 
-    expect(result.current.isConnected).toBe(true);
     expect(result.current.error).toBeNull();
   });
 
