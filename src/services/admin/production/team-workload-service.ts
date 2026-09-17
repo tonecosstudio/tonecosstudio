@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchProductionQueue } from "@/services/admin/production/production-service";
 
 type ProfileRow = {
   id: string;
@@ -104,33 +105,41 @@ export function buildTeamWorkload(
 }
 
 export async function fetchTeamWorkload(): Promise<TeamMemberWorkload[]> {
-  const { data: profiles, error: profilesError } = await supabase
-    .from("profiles")
-    .select("id, full_name, email")
-    .order("full_name");
+  const [{ data: profiles, error: profilesError }, queue] = await Promise.all([
+    supabase.from("profiles").select("id, full_name, email").order("full_name"),
+    fetchProductionQueue({}, { page: 1, pageSize: Number.MAX_SAFE_INTEGER }),
+  ]);
 
   if (profilesError) throw profilesError;
 
-  const { data: activeItems, error: itemsError } = await supabase
-    .from("production_queue")
-    .select("id, customer_name, collection_name, current_stage, priority, assigned_to")
-    .not("assigned_to", "is", null)
-    .in("production_status", ["ready_for_production", "in_production"]);
+  const activeItems: TeamWorkloadItem[] = queue.data
+    .filter(
+      (item) =>
+        item.assignedTo !== null &&
+        (item.productionStatus === "ready_for_production" || item.productionStatus === "in_production"),
+    )
+    .map((item) => ({
+      id: item.id,
+      customer_name: item.customerName,
+      collection_name: item.collectionName,
+      current_stage: item.currentStage,
+      priority: item.priority,
+      assigned_to: item.assignedTo,
+    }));
 
-  if (itemsError) throw itemsError;
+  const completedItems: CompletedWorkloadItem[] = queue.data
+    .filter(
+      (item) =>
+        item.productionStatus === "completed" &&
+        item.assignedTo !== null &&
+        item.productionStartedAt !== null &&
+        item.productionCompletedAt !== null,
+    )
+    .map((item) => ({
+      assigned_to: item.assignedTo,
+      production_started_at: item.productionStartedAt,
+      production_completed_at: item.productionCompletedAt,
+    }));
 
-  const { data: completedItems, error: completedError } = await supabase
-    .from("production_queue")
-    .select("assigned_to, production_started_at, production_completed_at")
-    .not("assigned_to", "is", null)
-    .not("production_started_at", "is", null)
-    .not("production_completed_at", "is", null);
-
-  if (completedError) throw completedError;
-
-  return buildTeamWorkload(
-    profiles ?? [],
-    (activeItems ?? []) as TeamWorkloadItem[],
-    completedItems ?? []
-  );
+  return buildTeamWorkload(profiles ?? [], activeItems, completedItems);
 }
