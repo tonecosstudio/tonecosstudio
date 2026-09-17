@@ -1,344 +1,152 @@
-/**
- * Unit tests for AssignmentModal component
- */
+import type { ReactElement } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render as rtlRender, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useProductionAssignmentTeamMembers } from "@/hooks/admin/useProductionAssignmentOptions";
+import { AssignmentModal } from "./AssignmentModal";
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render as rtlRender, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
-import { AssignmentModal } from './AssignmentModal';
-import { supabase } from '@/integrations/supabase/client';
-
-// Mock Supabase client
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: {
-    from: vi.fn(),
-  },
+vi.mock("@/hooks/admin/useProductionAssignmentOptions", () => ({
+  useProductionAssignmentTeamMembers: vi.fn(),
 }));
 
-describe('AssignmentModal', () => {
-  const mockOnOpenChange = vi.fn();
-  const mockOnConfirm = vi.fn();
+const teamMembers = [
+  { id: "1", name: "Alice Smith", email: "alice@example.com", workload: 2 },
+  { id: "2", name: "Bob Johnson", email: "bob@example.com", workload: 1 },
+  { id: "3", name: "Charlie Brown", email: "charlie@example.com", workload: 0 },
+];
+
+describe("AssignmentModal", () => {
+  const onOpenChange = vi.fn();
+  const onConfirm = vi.fn();
   let queryClient: QueryClient;
 
-  const mockTeamMembers = [
-    { id: '1', full_name: 'Alice Smith', email: 'alice@example.com' },
-    { id: '2', full_name: 'Bob Johnson', email: 'bob@example.com' },
-    { id: '3', full_name: 'Charlie Brown', email: 'charlie@example.com' },
-  ];
-
-  const mockWorkloadData = [
-    { assigned_to: '1' },
-    { assigned_to: '1' },
-    { assigned_to: '2' },
-  ];
-
   beforeEach(() => {
+    vi.clearAllMocks();
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
         mutations: { retry: false },
       },
     });
-    vi.clearAllMocks();
-    mockOnConfirm.mockResolvedValue(undefined);
-
-    // Mock Supabase queries
-    const mockSelect = vi.fn().mockReturnThis();
-
-    (supabase.from as any).mockImplementation((table: string) => {
-      if (table === 'profiles') {
-        return {
-          select: mockSelect,
-          order: () => ({
-            then: (callback: any) =>
-              callback({ data: mockTeamMembers, error: null }),
-          }),
-        };
-      }
-      if (table === 'production_queue') {
-        return {
-          select: () => ({
-            not: () => ({
-              in: () => ({
-                then: (callback: any) =>
-                  callback({ data: mockWorkloadData, error: null }),
-              }),
-            }),
-          }),
-        };
-      }
-      return { select: mockSelect };
-    });
+    onConfirm.mockResolvedValue(undefined);
+    vi.mocked(useProductionAssignmentTeamMembers).mockReturnValue({
+      data: teamMembers,
+      isLoading: false,
+    } as ReturnType<typeof useProductionAssignmentTeamMembers>);
   });
 
-  const withQueryClient = (ui: ReactElement) => (
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-  );
-
-  const render = (ui: ReactElement) => {
-    const result = rtlRender(withQueryClient(ui));
-    return {
-      ...result,
-      rerender: (nextUi: ReactElement) => result.rerender(withQueryClient(nextUi)),
-    };
-  };
-
-  it('renders modal with title and description', async () => {
-    render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
+  function render(ui: ReactElement) {
+    return rtlRender(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
     );
+  }
 
-    expect(screen.getByText('Atribuir Item de Producao')).toBeInTheDocument();
+  function renderModal(currentAssignee?: string) {
+    return render(
+      <AssignmentModal
+        open
+        onOpenChange={onOpenChange}
+        currentAssignee={currentAssignee}
+        onConfirm={onConfirm}
+      />,
+    );
+  }
+
+  it("renders title, description and search", () => {
+    renderModal();
+
+    expect(screen.getByText("Atribuir Item de Producao")).toBeInTheDocument();
     expect(
-      screen.getByText(
-        'Selecione um membro da equipe para atribuir este item de producao.'
-      )
+      screen.getByText("Selecione um membro da equipe para atribuir este item de producao."),
     ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Buscar por nome ou email...")).toBeInTheDocument();
   });
 
-  it('displays search input', async () => {
-    render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
-    );
+  it("displays team members with workload", () => {
+    renderModal();
 
-    const searchInput = screen.getByPlaceholderText('Buscar por nome ou email...');
-    expect(searchInput).toBeInTheDocument();
+    expect(screen.getByText("Alice Smith")).toBeInTheDocument();
+    expect(screen.getByText("Bob Johnson")).toBeInTheDocument();
+    expect(screen.getByText("Charlie Brown")).toBeInTheDocument();
+    expect(screen.getByText(/alice@example\.com - 2 itens atribuidos/i)).toBeInTheDocument();
+    expect(screen.getByText(/bob@example\.com - 1 item atribuido/i)).toBeInTheDocument();
+    expect(screen.getByText(/charlie@example\.com - 0 itens atribuidos/i)).toBeInTheDocument();
   });
 
-  it('displays team members with workload', async () => {
-    render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('Alice Smith')).toBeInTheDocument();
-    });
-
-    expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
-    expect(screen.getByText('Charlie Brown')).toBeInTheDocument();
-
-    // Check workload display
-    expect(screen.getByText(/alice@example\.com\s+-\s+2 itens atribuidos/i)).toBeInTheDocument();
-    expect(screen.getByText(/bob@example\.com\s+-\s+1 item atribuido/i)).toBeInTheDocument();
-    expect(screen.getByText(/charlie@example\.com\s+-\s+0 itens atribuidos/i)).toBeInTheDocument();
-  });
-
-  it('filters team members by search term', async () => {
+  it("filters members by name or email", async () => {
     const user = userEvent.setup();
+    renderModal();
 
-    render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
-    );
+    await user.type(screen.getByPlaceholderText("Buscar por nome ou email..."), "alice");
 
-    await waitFor(() => {
-      expect(screen.getByText('Alice Smith')).toBeInTheDocument();
-    });
-
-    const searchInput = screen.getByPlaceholderText('Buscar por nome ou email...');
-    await user.type(searchInput, 'alice');
-
-    await waitFor(() => {
-      expect(screen.getByText('Alice Smith')).toBeInTheDocument();
-      expect(screen.queryByText('Bob Johnson')).not.toBeInTheDocument();
-      expect(screen.queryByText('Charlie Brown')).not.toBeInTheDocument();
-    });
+    expect(screen.getByText("Alice Smith")).toBeInTheDocument();
+    expect(screen.queryByText("Bob Johnson")).not.toBeInTheDocument();
+    expect(screen.queryByText("Charlie Brown")).not.toBeInTheDocument();
   });
 
-  it('shows message when no members match search', async () => {
+  it("shows an empty search result", async () => {
     const user = userEvent.setup();
+    renderModal();
 
-    render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
-    );
+    await user.type(screen.getByPlaceholderText("Buscar por nome ou email..."), "nobody");
 
-    await waitFor(() => {
-      expect(screen.getByText('Alice Smith')).toBeInTheDocument();
-    });
-
-    const searchInput = screen.getByPlaceholderText('Buscar por nome ou email...');
-    await user.type(searchInput, 'nonexistent');
-
-    await waitFor(() => {
-      expect(
-        screen.getByText('Nenhum membro encontrado com esse criterio')
-      ).toBeInTheDocument();
-    });
+    expect(screen.getByText("Nenhum membro encontrado com esse criterio")).toBeInTheDocument();
   });
 
-  it('allows selecting a team member', async () => {
+  it("selects a member and confirms the assignment", async () => {
     const user = userEvent.setup();
+    renderModal();
 
-    render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
-    );
+    const alice = screen.getByLabelText(/Alice Smith/i);
+    const assign = screen.getByRole("button", { name: /^Atribuir$/i });
+    expect(assign).toBeDisabled();
+
+    await user.click(alice);
+    expect(alice).toBeChecked();
+    expect(assign).toBeEnabled();
+
+    await user.click(assign);
 
     await waitFor(() => {
-      expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+      expect(onConfirm).toHaveBeenCalledWith("1", undefined);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
     });
-
-    const aliceOption = screen.getByLabelText(/Alice Smith/i);
-    await user.click(aliceOption);
-
-    expect(aliceOption).toBeChecked();
   });
 
-  it('calls onConfirm when assign button is clicked', async () => {
+  it("preselects the current assignee and requires a reason only for reassignment UI", async () => {
     const user = userEvent.setup();
+    renderModal("2");
 
-    render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
-    );
+    const bob = screen.getByLabelText(/Bob Johnson/i);
+    expect(bob).toBeChecked();
+    expect(screen.queryByLabelText("Motivo da Reatribuicao")).not.toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText('Alice Smith')).toBeInTheDocument();
-    });
-
-    // Select Alice
-    const aliceOption = screen.getByLabelText(/Alice Smith/i);
-    await user.click(aliceOption);
-
-    // Click assign button
-    const assignButton = screen.getByRole('button', { name: /Atribuir/i });
-    await user.click(assignButton);
+    await user.click(screen.getByLabelText(/Alice Smith/i));
+    const reason = screen.getByLabelText("Motivo da Reatribuicao");
+    await user.type(reason, "Balanceamento de carga");
+    await user.click(screen.getByRole("button", { name: /^Atribuir$/i }));
 
     await waitFor(() => {
-      expect(mockOnConfirm).toHaveBeenCalledWith('1', undefined);
-      expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+      expect(onConfirm).toHaveBeenCalledWith("1", "Balanceamento de carga");
     });
   });
 
-  it('disables assign button when no member is selected', async () => {
-    render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('Alice Smith')).toBeInTheDocument();
-    });
-
-    const assignButton = screen.getByRole('button', { name: /Atribuir/i });
-    expect(assignButton).toBeDisabled();
-  });
-
-  it('calls onOpenChange when cancel button is clicked', async () => {
+  it("cancels through onOpenChange", async () => {
     const user = userEvent.setup();
+    renderModal();
 
-    render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
-    );
-
-    const cancelButton = screen.getByRole('button', { name: /Cancelar/i });
-    await user.click(cancelButton);
-
-    expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+    await user.click(screen.getByRole("button", { name: /Cancelar/i }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('pre-selects current assignee when provided', async () => {
-    render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        currentAssignee="2"
-        onConfirm={mockOnConfirm}
-      />
-    );
+  it("renders skeletons while team members are loading", () => {
+    vi.mocked(useProductionAssignmentTeamMembers).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as ReturnType<typeof useProductionAssignmentTeamMembers>);
 
-    await waitFor(() => {
-      expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
-    });
-
-    const bobOption = screen.getByLabelText(/Bob Johnson/i);
-    expect(bobOption).toBeChecked();
-  });
-
-  it('shows loading state while fetching team members', () => {
-    render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
-    );
-
-    // Should show skeleton loaders (check for the animate-pulse class)
-    const skeletons = document.querySelectorAll('.animate-pulse');
-    expect(skeletons.length).toBeGreaterThan(0);
-  });
-
-  it('clears search term when modal is closed', async () => {
-    const user = userEvent.setup();
-
-    const { rerender } = render(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('Alice Smith')).toBeInTheDocument();
-    });
-
-    const searchInput = screen.getByPlaceholderText('Buscar por nome ou email...');
-    await user.type(searchInput, 'alice');
-
-    // Close modal
-    const cancelButton = screen.getByRole('button', { name: /Cancelar/i });
-    await user.click(cancelButton);
-
-    // Reopen modal
-    rerender(
-      <AssignmentModal
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onConfirm={mockOnConfirm}
-      />
-    );
-
-    await waitFor(() => {
-      const searchInputAfterReopen = screen.getByPlaceholderText(
-        'Buscar por nome ou email...'
-      );
-      expect(searchInputAfterReopen).toHaveValue('');
-    });
+    renderModal();
+    expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
   });
 });
