@@ -18,7 +18,6 @@ export interface CatalogCharacterInput {
 export interface PriceCategoryInput {
   name: string;
   display_name: string;
-  description?: string;
   price_coins: number;
   coin_value_in_cents: number;
   price_standalone: number;
@@ -97,11 +96,6 @@ function sanitizeCatalogCharacterInput(input: CatalogCharacterInput) {
 }
 
 function sanitizePriceCategoryInput(input: PriceCategoryInput) {
-  const description = input.description?.trim();
-  if (description) {
-    throw new Error("Descricao de categoria ainda nao possui armazenamento canonico");
-  }
-
   return {
     name: requiredText(input.name, "Identificador", 80),
     display_name: requiredText(input.display_name, "Nome exibido", 120),
