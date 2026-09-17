@@ -14,8 +14,8 @@ export interface SubscriptionPlanSummary {
   id: string;
   name: string;
   price: number;
-  billing_interval: string;
-  deliveries_per_cycle: number;
+  billing_interval: string | null;
+  deliveries_per_cycle: number | null;
 }
 
 export interface ActiveSubscriptionDetails extends ActiveSubscriptionSummary {
@@ -28,7 +28,7 @@ interface SubscriptionCollectionJoin {
 }
 
 export async function fetchActiveSubscriptionDetails(
-  userId: string
+  userId: string,
 ): Promise<ActiveSubscriptionDetails | null> {
   const subscription = await fetchActiveSubscriptionSummary(userId);
 
