@@ -44,7 +44,7 @@ describe("ReminderScheduler", () => {
     );
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByText("Configure um lembrete automático para esta conversa.")).toBeInTheDocument();
+    expect(screen.getByText("Configure um lembrete automatico para esta conversa.")).toBeInTheDocument();
   });
 
   it("não deve renderizar o modal quando open=false", () => {
@@ -56,7 +56,7 @@ describe("ReminderScheduler", () => {
       />,
     );
 
-    expect(screen.queryByText("Agendar Lembrete")).not.toBeInTheDocument();
+    expect(screen.queryByText("Agendar lembrete")).not.toBeInTheDocument();
   });
 
   it("deve exibir todos os campos ativos do formulário", () => {
@@ -68,9 +68,9 @@ describe("ReminderScheduler", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Tipo de Lembrete")).toBeInTheDocument();
-    expect(screen.getByText("Data do Lembrete")).toBeInTheDocument();
-    expect(screen.getByLabelText("Hora do Lembrete")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Tipo de lembrete/i)).toBeInTheDocument();
+    expect(screen.getByText("Data do lembrete")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Hora do lembrete/i)).toBeInTheDocument();
     expect(screen.queryByLabelText("Mensagem Personalizada (Opcional)")).not.toBeInTheDocument();
   });
 
@@ -128,7 +128,7 @@ describe("ReminderScheduler", () => {
       />,
     );
 
-    const timeInput = screen.getByLabelText("Hora do Lembrete") as HTMLInputElement;
+    const timeInput = screen.getByLabelText(/Hora do lembrete/i) as HTMLInputElement;
     expect(timeInput.value).toBe("09:00");
   });
 
@@ -143,7 +143,7 @@ describe("ReminderScheduler", () => {
       />,
     );
 
-    const timeInput = screen.getByLabelText("Hora do Lembrete") as HTMLInputElement;
+    const timeInput = screen.getByLabelText(/Hora do lembrete/i) as HTMLInputElement;
     await user.clear(timeInput);
     await user.type(timeInput, "14:30");
 
@@ -198,8 +198,8 @@ describe("ReminderScheduler", () => {
     );
 
     expect(screen.getByRole("combobox")).toBeInTheDocument();
-    expect(screen.getByText("Follow-up de Orçamento")).toBeInTheDocument();
-    expect(screen.getByText("Lembrar cliente sobre orçamento sem resposta")).toBeInTheDocument();
+    expect(screen.getByText("Follow-up de orcamento")).toBeInTheDocument();
+    expect(screen.getByText("Lembrar o cliente sobre orcamento sem resposta")).toBeInTheDocument();
   });
 
   it("deve exibir o tipo de lembrete padrão selecionado", () => {
@@ -211,6 +211,6 @@ describe("ReminderScheduler", () => {
       />,
     );
 
-    expect(screen.getByText("Follow-up de Orçamento")).toBeInTheDocument();
+    expect(screen.getByText("Follow-up de orcamento")).toBeInTheDocument();
   });
 });
