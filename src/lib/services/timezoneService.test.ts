@@ -23,7 +23,6 @@ describe('TimezoneService', () => {
       const utcDate = new Date('2026-03-16T02:59:59Z'); // UTC
       const bahiaDate = timezoneService.toSystemTimezone(utcDate);
       
-      // Em America/Bahia (UTC-3), deve ser 23:59:59 do dia anterior
       expect(bahiaDate.getDate()).toBe(15);
       expect(bahiaDate.getHours()).toBe(23);
       expect(bahiaDate.getMinutes()).toBe(59);
@@ -42,7 +41,6 @@ describe('TimezoneService', () => {
       const date = new Date('2026-03-15T12:00:00Z');
       const formatted = timezoneService.formatDate(date);
       
-      // Formato: DD/MM/YYYY
       expect(formatted).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
     });
 
@@ -59,13 +57,12 @@ describe('TimezoneService', () => {
       const date = new Date('2026-03-15T12:00:00Z');
       const formatted = timezoneService.formatDateTime(date);
       
-      // Formato: DD/MM/YYYY HH:mm
       expect(formatted).toMatch(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/);
     });
   });
 
   describe('getCurrentTime', () => {
-    it('deve retornar data atual no timezone do sistema', () => {
+    it('deve retornar o instante atual', () => {
       const now = timezoneService.getCurrentTime();
       
       expect(now).toBeInstanceOf(Date);
@@ -74,33 +71,40 @@ describe('TimezoneService', () => {
   });
 
   describe('startOfDay', () => {
-    it('deve retornar início do dia (00:00:00)', () => {
+    it('deve retornar o instante de 00:00:00 em Bahia', () => {
       const date = new Date('2026-03-15T14:30:45Z');
       const start = timezoneService.startOfDay(date);
+      const startInBahia = timezoneService.toSystemTimezone(start);
       
-      expect(start.getHours()).toBe(0);
-      expect(start.getMinutes()).toBe(0);
-      expect(start.getSeconds()).toBe(0);
+      expect(start.toISOString()).toBe('2026-03-15T03:00:00.000Z');
+      expect(startInBahia.getHours()).toBe(0);
+      expect(startInBahia.getMinutes()).toBe(0);
+      expect(startInBahia.getSeconds()).toBe(0);
     });
 
-    it('deve manter o mesmo dia', () => {
+    it('deve manter o mesmo dia civil de Bahia', () => {
       const date = new Date('2026-03-15T14:30:45Z');
       const start = timezoneService.startOfDay(date);
+      const startInBahia = timezoneService.toSystemTimezone(start);
       const zonedDate = timezoneService.toSystemTimezone(date);
       
-      expect(start.getDate()).toBe(zonedDate.getDate());
+      expect(startInBahia.getFullYear()).toBe(zonedDate.getFullYear());
+      expect(startInBahia.getMonth()).toBe(zonedDate.getMonth());
+      expect(startInBahia.getDate()).toBe(zonedDate.getDate());
     });
   });
 
   describe('endOfDay', () => {
-    it('deve retornar fim do dia (23:59:59.999)', () => {
+    it('deve retornar o instante de 23:59:59.999 em Bahia', () => {
       const date = new Date('2026-03-15T14:30:45Z');
       const end = timezoneService.endOfDay(date);
+      const endInBahia = timezoneService.toSystemTimezone(end);
       
-      expect(end.getHours()).toBe(23);
-      expect(end.getMinutes()).toBe(59);
-      expect(end.getSeconds()).toBe(59);
-      expect(end.getMilliseconds()).toBe(999);
+      expect(end.toISOString()).toBe('2026-03-16T02:59:59.999Z');
+      expect(endInBahia.getHours()).toBe(23);
+      expect(endInBahia.getMinutes()).toBe(59);
+      expect(endInBahia.getSeconds()).toBe(59);
+      expect(endInBahia.getMilliseconds()).toBe(999);
     });
   });
 
@@ -109,18 +113,14 @@ describe('TimezoneService', () => {
       const date1 = new Date('2026-03-15T10:00:00Z');
       const date2 = new Date('2026-03-15T20:00:00Z');
       
-      const isSame = timezoneService.isSameDay(date1, date2);
-      expect(isSame).toBe(true);
+      expect(timezoneService.isSameDay(date1, date2)).toBe(true);
     });
 
-    it('deve retornar false para datas de dias diferentes', () => {
-      // 2026-03-16T02:59:59Z = 2026-03-15T23:59:59 em America/Bahia (dia 15)
-      // 2026-03-16T03:00:00Z = 2026-03-16T00:00:00 em America/Bahia (dia 16)
+    it('deve retornar false para datas de dias diferentes em Bahia', () => {
       const date1 = new Date('2026-03-16T02:59:59Z');
       const date2 = new Date('2026-03-16T03:00:00Z');
       
-      const isSame = timezoneService.isSameDay(date1, date2);
-      expect(isSame).toBe(false);
+      expect(timezoneService.isSameDay(date1, date2)).toBe(false);
     });
   });
 
@@ -214,7 +214,7 @@ describe('TimezoneService', () => {
       const day = timezoneService.getDayOfMonth(date);
       
       expect(day).toBe(15);
-      expect(day).toBeLessThanOrEqual(15); // Ciclo 1
+      expect(day).toBeLessThanOrEqual(15);
     });
 
     it('deve identificar corretamente dia 16 às 00:00:00 como Ciclo 2', () => {
@@ -222,7 +222,7 @@ describe('TimezoneService', () => {
       const day = timezoneService.getDayOfMonth(date);
       
       expect(day).toBe(16);
-      expect(day).toBeGreaterThanOrEqual(16); // Ciclo 2
+      expect(day).toBeGreaterThanOrEqual(16);
     });
   });
 
