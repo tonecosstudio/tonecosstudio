@@ -162,11 +162,10 @@ class CycleService {
 
   async getCurrentCycle(date?: Date): Promise<Cycle | null> {
     const referenceDate = date || timezoneService.getCurrentTime();
-    const systemDate = timezoneService.toSystemTimezone(referenceDate);
 
-    const cycleNumber = this.identifyCycleNumber(systemDate);
-    const month = timezoneService.getMonth(systemDate);
-    const year = timezoneService.getYear(systemDate);
+    const cycleNumber = this.identifyCycleNumber(referenceDate);
+    const month = timezoneService.getMonth(referenceDate);
+    const year = timezoneService.getYear(referenceDate);
 
     const { data, error } = await supabase
       .from("cycles")
@@ -200,11 +199,10 @@ class CycleService {
 
   async getOrCreateCurrentCycle(): Promise<Cycle> {
     const now = timezoneService.getCurrentTime();
-    const systemDate = timezoneService.toSystemTimezone(now);
 
-    const cycleNumber = this.identifyCycleNumber(systemDate);
-    const month = timezoneService.getMonth(systemDate);
-    const year = timezoneService.getYear(systemDate);
+    const cycleNumber = this.identifyCycleNumber(now);
+    const month = timezoneService.getMonth(now);
+    const year = timezoneService.getYear(now);
 
     const existing = await this.getCurrentCycle(now);
     if (existing) return existing;
@@ -310,11 +308,10 @@ class CycleService {
     }
 
     const referenceDate = startDate || timezoneService.getCurrentTime();
-    const systemDate = timezoneService.toSystemTimezone(referenceDate);
 
-    let currentMonth = timezoneService.getMonth(systemDate);
-    let currentYear = timezoneService.getYear(systemDate);
-    let currentCycleNumber = this.identifyCycleNumber(systemDate);
+    let currentMonth = timezoneService.getMonth(referenceDate);
+    let currentYear = timezoneService.getYear(referenceDate);
+    let currentCycleNumber = this.identifyCycleNumber(referenceDate);
 
     const cycles: Cycle[] = [];
 
