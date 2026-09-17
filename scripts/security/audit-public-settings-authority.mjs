@@ -11,6 +11,8 @@ let publicSelectPolicyPresent = false;
 let policyEvidence = null;
 let latestGenericUpsertBody = null;
 let latestGenericUpsertEvidence = null;
+let latestSensitiveValidatorBody = null;
+let latestSensitiveValidatorEvidence = null;
 
 for (const file of migrations) {
   const source = readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
@@ -32,6 +34,14 @@ for (const file of migrations) {
     policyEvidence = file;
   }
 
+  const validatorDefinition = source.match(
+    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+private_api\.validate_critical_system_setting\s*\([^)]*\)[\s\S]*?AS\s+\$\$([\s\S]*?)\$\$\s*;/i,
+  );
+  if (validatorDefinition) {
+    latestSensitiveValidatorBody = validatorDefinition[1];
+    latestSensitiveValidatorEvidence = file;
+  }
+
   const upsertDefinition = source.match(
     /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.admin_upsert_system_settings\s*\([^)]*\)[\s\S]*?AS\s+\$\$([\s\S]*?)\$\$\s*;/i,
   );
@@ -39,6 +49,17 @@ for (const file of migrations) {
     latestGenericUpsertBody = upsertDefinition[1];
     latestGenericUpsertEvidence = file;
   }
+}
+
+function bodyRejectsSensitiveSettingNames(body) {
+  if (!body) return false;
+  const referencesSensitiveNames =
+    /secret|token|password|private[_ ]?key|service[_ ]?role|credential|api[_ ]?key/i.test(body);
+  return (
+    referencesSensitiveNames &&
+    /RAISE\s+EXCEPTION/i.test(body) &&
+    /v_key|p_key|key/i.test(body)
+  );
 }
 
 const failures = [];
@@ -49,18 +70,21 @@ if (publicSelectPolicyPresent) {
       "public.system_settings is publicly readable but no canonical admin_upsert_system_settings implementation was found",
     );
   } else {
-    const referencesSensitiveNames =
-      /secret|token|password|private[_ ]?key|service[_ ]?role|credential|api[_ ]?key/i.test(
+    const rejectsDirectly = bodyRejectsSensitiveSettingNames(latestGenericUpsertBody);
+    const delegatesToCanonicalValidator =
+      /private_api\.validate_critical_system_setting\s*\(\s*v_key\s*,\s*v_value\s*\)/i.test(
         latestGenericUpsertBody,
       );
-    const rejectsSensitiveNames =
-      referencesSensitiveNames &&
-      /RAISE\s+EXCEPTION/i.test(latestGenericUpsertBody) &&
-      /v_key|p_key|key/i.test(latestGenericUpsertBody);
+    const delegatedValidatorRejects =
+      delegatesToCanonicalValidator &&
+      bodyRejectsSensitiveSettingNames(latestSensitiveValidatorBody);
 
-    if (!rejectsSensitiveNames) {
+    if (!rejectsDirectly && !delegatedValidatorRejects) {
+      const validatorEvidence = delegatesToCanonicalValidator
+        ? latestSensitiveValidatorEvidence ?? "not found"
+        : "not delegated";
       failures.push(
-        `public.system_settings remains publicly readable (last policy evidence: ${policyEvidence}) while the latest generic admin upsert (${latestGenericUpsertEvidence}) does not reject secret-like setting names`,
+        `public.system_settings remains publicly readable (last policy evidence: ${policyEvidence}) while the latest generic admin upsert (${latestGenericUpsertEvidence}) does not reject secret-like setting names directly or through the canonical validator (${validatorEvidence})`,
       );
     }
   }
@@ -70,7 +94,7 @@ if (failures.length > 0) {
   console.error("Public system settings authority audit: FAIL");
   for (const failure of failures) console.error(`- ${failure}`);
   console.error(
-    "\nExpected remediation: either split public/private settings or make public reads key-scoped. While public.system_settings remains readable, the generic admin upsert must reject secret/token/password/private-key/service-role/credential/API-key style names server-side.",
+    "\nExpected remediation: either split public/private settings or make public reads key-scoped. While public.system_settings remains readable, the generic admin upsert must reject secret/token/password/private-key/service-role/credential/API-key style names server-side, either directly or through its canonical private validator.",
   );
   process.exit(1);
 }
