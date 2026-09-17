@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { coverageConfigDefaults, defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
@@ -14,8 +14,10 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html", "lcov"],
+      include: ["src/**/*.{ts,tsx}"],
+      all: false,
       exclude: [
-        "node_modules/",
+        ...coverageConfigDefaults.exclude,
         "src/test/",
         "**/*.d.ts",
         "**/*.config.*",
