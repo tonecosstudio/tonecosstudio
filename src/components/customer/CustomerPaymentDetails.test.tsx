@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getMyPaymentById } from "@/lib/payment-service";
 import type { PaymentDetails } from "@/types/manual-payment";
@@ -158,14 +159,13 @@ describe("CustomerPaymentDetails", () => {
   });
 
   it("keeps proof upload reachable for actionable statuses", async () => {
+    const user = userEvent.setup();
     renderDetails(createPayment());
 
     await screen.findByText("Pagamento PAY-2026-001");
-    fireEvent.click(screen.getByRole("tab", { name: "Comprovantes" }));
+    await user.click(screen.getByRole("button", { name: "Ir para comprovantes" }));
 
-    await waitFor(() => {
-      expect(screen.getByTestId("file-upload")).toHaveTextContent("upload:payment-123");
-      expect(screen.getByTestId("uploaded-files")).toHaveTextContent("files:payment-123");
-    });
+    expect(await screen.findByTestId("file-upload")).toHaveTextContent("upload:payment-123");
+    expect(screen.getByTestId("uploaded-files")).toHaveTextContent("files:payment-123");
   });
 });
