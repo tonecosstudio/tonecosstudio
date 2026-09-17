@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getPaymentById } from "@/lib/payment-service";
 import type { PaymentDetails } from "@/types/manual-payment";
@@ -128,10 +129,11 @@ describe("PaymentDetailsView", () => {
   });
 
   it("renders sanitized backend timeline events", async () => {
+    const user = userEvent.setup();
     renderView(createPayment());
 
     await screen.findByText("Detalhes do Pagamento");
-    fireEvent.click(screen.getByRole("tab", { name: /Linha do tempo/ }));
+    await user.click(screen.getByRole("tab", { name: /Linha do tempo/ }));
 
     await waitFor(() => {
       expect(screen.getByText("Comprovante enviado")).toBeInTheDocument();
@@ -143,10 +145,11 @@ describe("PaymentDetailsView", () => {
   });
 
   it("shows an empty proof state without fabricating audit content", async () => {
+    const user = userEvent.setup();
     renderView(createPayment({ files: [], timeline: [] }));
 
     expect(await screen.findByText("Nenhum comprovante enviado")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: /Linha do tempo/ }));
-    expect(await screen.findByText(/Nenhum evento registrado/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /Linha do tempo/ }));
+    expect(await screen.findByText(/Nenhum evento disponível/i)).toBeInTheDocument();
   });
 });
