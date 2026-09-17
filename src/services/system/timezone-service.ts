@@ -62,28 +62,36 @@ class TimezoneService {
     return new Date();
   }
 
+  /** Retorna o instante correspondente a 00:00:00.000 do dia civil em Bahia. */
   startOfDay(date: Date | string): Date {
     const dateObj = typeof date === 'string' ? parseISO(date) : date;
     const zonedDate = this.toSystemTimezone(dateObj);
 
-    const year = zonedDate.getFullYear();
-    const month = zonedDate.getMonth();
-    const day = zonedDate.getDate();
-
-    const startDate = new Date(year, month, day, 0, 0, 0, 0);
-    return this.toSystemTimezone(startDate);
+    return this.createDate(
+      zonedDate.getFullYear(),
+      zonedDate.getMonth() + 1,
+      zonedDate.getDate(),
+      0,
+      0,
+      0,
+    );
   }
 
+  /** Retorna o instante correspondente a 23:59:59.999 do dia civil em Bahia. */
   endOfDay(date: Date | string): Date {
     const dateObj = typeof date === 'string' ? parseISO(date) : date;
     const zonedDate = this.toSystemTimezone(dateObj);
+    const wallClock = new Date(
+      zonedDate.getFullYear(),
+      zonedDate.getMonth(),
+      zonedDate.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
 
-    const year = zonedDate.getFullYear();
-    const month = zonedDate.getMonth();
-    const day = zonedDate.getDate();
-
-    const endDate = new Date(year, month, day, 23, 59, 59, 999);
-    return this.toSystemTimezone(endDate);
+    return fromZonedTime(wallClock, this.TIMEZONE);
   }
 
   isSameDay(date1: Date | string, date2: Date | string): boolean {
