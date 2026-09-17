@@ -561,9 +561,10 @@ describe('Timezone Utilities', () => {
     it('should handle complete workflow: get cutoff, check if before, format', () => {
       const cutoff = getCutoffDate(3, 2024);
       const isBefore = isBeforeCutoff(cutoff);
-      const formatted = formatInBahiaTime(cutoff, 'dd/MM/yyyy HH:mm:ss');
+      const cutoffInstant = toUTC(cutoff);
+      const formatted = formatInBahiaTime(cutoffInstant, 'dd/MM/yyyy HH:mm:ss');
       
-      expect(isBefore).toBe(true); // Cutoff moment itself is before cutoff
+      expect(isBefore).toBe(true); // Cutoff wall-clock itself is before cutoff
       expect(formatted).toContain('15/03/2024');
       expect(formatted).toContain('23:59:59');
     });
