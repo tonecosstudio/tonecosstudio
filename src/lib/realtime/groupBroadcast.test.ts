@@ -110,10 +110,7 @@ describe("groupBroadcast", () => {
 
       await broadcastGroupMessage(groupId, message);
 
-      expect(supabase.channel).toHaveBeenCalledWith(
-        `group:${groupId}`,
-        undefined,
-      );
+      expect(supabase.channel).toHaveBeenCalledWith(`group:${groupId}`);
       expect(send).toHaveBeenCalledWith({
         type: "broadcast",
         event: "new_message",
