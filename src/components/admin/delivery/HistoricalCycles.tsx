@@ -48,8 +48,8 @@ function getCapacityMetrics(cycle: Cycle) {
 
 export function HistoricalCycles() {
   const navigate = useNavigate();
-  const currentBahiaTime = timezoneService.toSystemTimezone(timezoneService.getCurrentTime());
-  const currentYear = timezoneService.getYear(currentBahiaTime);
+  const currentTime = timezoneService.getCurrentTime();
+  const currentYear = timezoneService.getYear(currentTime);
 
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -60,7 +60,7 @@ export function HistoricalCycles() {
     selectedYear,
     selectedStatus,
     currentYear,
-    currentMonth: timezoneService.getMonth(currentBahiaTime),
+    currentMonth: timezoneService.getMonth(currentTime),
   });
 
   const sortedCycles = cycles ? [...cycles].sort((a, b) => {
