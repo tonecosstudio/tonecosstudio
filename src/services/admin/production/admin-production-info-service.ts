@@ -41,6 +41,51 @@ function parseOptionalChoiceStatus(
   return parseChoiceStatus(value, context);
 }
 
+async function fetchCurrentProductionStage(
+  productionQueueId: string,
+): Promise<ProductionStage> {
+  const { data: currentStage, error: currentStageError } = await supabase
+    .from("production_stages")
+    .select("stage_name")
+    .eq("production_queue_id", productionQueueId)
+    .neq("status", "completed")
+    .order("stage_order", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (currentStageError) {
+    throw new Error(`Erro ao buscar estágio atual: ${currentStageError.message}`);
+  }
+
+  if (currentStage) {
+    return parseProductionStage(
+      currentStage.stage_name,
+      "Informações de produção inválidas",
+    );
+  }
+
+  const { data: finalStage, error: finalStageError } = await supabase
+    .from("production_stages")
+    .select("stage_name")
+    .eq("production_queue_id", productionQueueId)
+    .order("stage_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (finalStageError) {
+    throw new Error(`Erro ao buscar estágio final: ${finalStageError.message}`);
+  }
+
+  if (!finalStage) {
+    throw new Error("Informações de produção inválidas: nenhum estágio associado à fila");
+  }
+
+  return parseProductionStage(
+    finalStage.stage_name,
+    "Informações de produção inválidas",
+  );
+}
+
 export interface ProductionInfo {
   id: string;
   orderId: string;
@@ -70,7 +115,7 @@ export async function fetchProductionInfo(
   const { data, error } = await supabase
     .from("production_queue")
     .select(
-      "id, order_id, current_stage, choice_status, choice_deadline, character_name, estimated_completion_date",
+      "id, order_id, choice_status, choice_deadline, character_name, estimated_completion_date",
     )
     .eq("order_id", orderId)
     .eq("order_type", orderType)
@@ -86,10 +131,12 @@ export async function fetchProductionInfo(
     throw new Error("Informações de produção inválidas: identificadores ausentes");
   }
 
+  const currentStage = await fetchCurrentProductionStage(data.id);
+
   return {
     id: data.id,
     orderId: data.order_id,
-    currentStage: parseProductionStage(data.current_stage, "Informações de produção inválidas"),
+    currentStage,
     choiceStatus: parseOptionalChoiceStatus(
       data.choice_status,
       "Informações de produção inválidas",
