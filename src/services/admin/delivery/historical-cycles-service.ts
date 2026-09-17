@@ -20,11 +20,11 @@ export interface HistoricalCycle {
   cycle_number: 1 | 2;
   month: number;
   year: number;
-  open_start: string;
-  open_end: string;
-  production_start: string;
-  production_end: string;
-  shipping_date: string;
+  open_start: string | null;
+  open_end: string | null;
+  production_start: string | null;
+  production_end: string | null;
+  shipping_date: string | null;
   status: CycleStatus;
   status_changed_at: string | null;
   capacity: number;
