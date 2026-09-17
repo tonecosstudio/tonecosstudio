@@ -18,7 +18,6 @@ export interface CatalogCharacterInput {
 export interface PriceCategoryInput {
   name: string;
   display_name: string;
-  description: string;
   price_coins: number;
   coin_value_in_cents: number;
   price_standalone: number;
@@ -30,7 +29,6 @@ export interface AdminPriceCategory {
   id: string;
   name: string;
   display_name: string;
-  description: string | null;
   price_coins: number;
   coin_value_in_cents?: number;
   price_standalone: number;
@@ -101,7 +99,6 @@ function sanitizePriceCategoryInput(input: PriceCategoryInput) {
   return {
     name: requiredText(input.name, "Identificador", 80),
     display_name: requiredText(input.display_name, "Nome exibido", 120),
-    description: optionalText(input.description, "Descricao", 500),
     price_coins: nonNegativeInteger(input.price_coins, "Preco em coins", 1_000_000),
     coin_value_in_cents: nonNegativeInteger(input.coin_value_in_cents, "Valor do coin", 1_000_000),
     price_standalone: nonNegativeInteger(input.price_standalone, "Preco avulso", 100_000_000),
@@ -153,7 +150,6 @@ export async function fetchPriceCategories(): Promise<AdminPriceCategory[]> {
     id: category.id,
     name: category.name,
     display_name: category.display_name,
-    description: null,
     price_coins: category.price_coins,
     coin_value_in_cents: category.coin_value_in_cents ?? undefined,
     price_standalone: category.price_standalone,
@@ -243,7 +239,6 @@ export async function savePriceCategory(categoryId: string | null, input: PriceC
     p_category_id: categoryId,
     p_name: payload.name,
     p_display_name: payload.display_name,
-    p_description: payload.description,
     p_price_coins: payload.price_coins,
     p_coin_value_in_cents: payload.coin_value_in_cents,
     p_price_standalone: payload.price_standalone,
