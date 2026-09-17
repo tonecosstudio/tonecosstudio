@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { PRODUCTION_STAGE_ORDER } from "@/config/production-stages";
 import {
   fetchProductionQueue,
   type Priority,
@@ -33,15 +34,26 @@ export interface UnblockBlockedProductionItemInput {
   resolutionNotes?: string;
 }
 
+function parseProductionStage(value: unknown, queueId: string): ProductionStage {
+  if (
+    typeof value === "string" &&
+    PRODUCTION_STAGE_ORDER.includes(value as ProductionStage)
+  ) {
+    return value as ProductionStage;
+  }
+
+  throw new Error(`Fila de producao ${queueId} possui estagio bloqueado invalido`);
+}
+
 export async function fetchBlockedProductionItems(): Promise<BlockedProductionItem[]> {
   const queueResponse = await fetchProductionQueue(
     { statuses: ["on_hold"] },
-    { page: 1, pageSize: 1000 }
+    { page: 1, pageSize: Number.MAX_SAFE_INTEGER },
   );
 
   const blockedItems = await Promise.all(
     queueResponse.data.map(async (item): Promise<BlockedProductionItem> => {
-      const { data: stageData } = await supabase
+      const { data: stageData, error: stageError } = await supabase
         .from("production_stages")
         .select("block_reason, blocked_at")
         .eq("production_queue_id", item.id)
@@ -49,9 +61,13 @@ export async function fetchBlockedProductionItems(): Promise<BlockedProductionIt
         .eq("is_blocked", true)
         .maybeSingle();
 
-      const blockedAt = stageData?.blocked_at || new Date().toISOString();
+      if (stageError) {
+        throw new Error(`Erro ao buscar bloqueio da fila ${item.id}: ${stageError.message}`);
+      }
+
+      const blockedAt = stageData?.blocked_at ?? item.updatedAt;
       const blockedDurationMs = Date.now() - new Date(blockedAt).getTime();
-      const blockedDurationHours = blockedDurationMs / (1000 * 60 * 60);
+      const blockedDurationHours = Math.max(0, blockedDurationMs / (1000 * 60 * 60));
 
       return {
         id: item.id,
@@ -66,18 +82,18 @@ export async function fetchBlockedProductionItems(): Promise<BlockedProductionIt
         assignedToName: item.assignedToName,
         priority: item.priority,
       };
-    })
+    }),
   );
 
   return blockedItems.sort((a, b) => b.blockedDurationHours - a.blockedDurationHours);
 }
 
 export async function fetchProductionBlockInfo(
-  productionQueueId: string
+  productionQueueId: string,
 ): Promise<ProductionBlockInfo> {
   const { data: queueItem, error: queueError } = await supabase
     .from("production_queue")
-    .select("current_stage, production_notes")
+    .select("id, admin_notes")
     .eq("id", productionQueueId)
     .single();
 
@@ -85,18 +101,27 @@ export async function fetchProductionBlockInfo(
     throw new Error("Erro ao buscar informacoes do item");
   }
 
-  const currentStage = queueItem.current_stage as ProductionStage;
-  const { data: stageData } = await supabase
+  const { data: stageData, error: stageError } = await supabase
     .from("production_stages")
-    .select("block_reason, blocked_at")
+    .select("stage_name, block_reason, blocked_at")
     .eq("production_queue_id", productionQueueId)
-    .eq("stage_name", currentStage)
     .eq("is_blocked", true)
+    .order("stage_order", { ascending: true })
+    .limit(1)
     .maybeSingle();
 
+  if (stageError) {
+    throw new Error(`Erro ao buscar estagio bloqueado: ${stageError.message}`);
+  }
+  if (!stageData) {
+    throw new Error("Item de producao nao possui estagio bloqueado");
+  }
+
+  const currentStage = parseProductionStage(stageData.stage_name, productionQueueId);
+
   return {
-    blockReason: stageData?.block_reason || queueItem.production_notes || "Motivo nao especificado",
-    blockedAt: stageData?.blocked_at || new Date().toISOString(),
+    blockReason: stageData.block_reason || queueItem.admin_notes || "Motivo nao especificado",
+    blockedAt: stageData.blocked_at || queueItem.updated_at,
     currentStage,
   };
 }
