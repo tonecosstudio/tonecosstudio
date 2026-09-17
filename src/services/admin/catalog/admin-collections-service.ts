@@ -179,6 +179,17 @@ function toStringValue(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
 
+function requireAdminCharacterText(
+  value: string | null,
+  field: string,
+  characterId: string,
+): string {
+  if (!value) {
+    throw new Error(`Personagem ${characterId} possui ${field} ausente`);
+  }
+  return value;
+}
+
 function normalizeCollectionImage<T extends CollectionRowWithImageAlias>(
   collection: T,
 ) {
@@ -263,8 +274,12 @@ export async function fetchCharactersByCollection(
   if (error) throw error;
   return (data || []).map((character) => ({
     id: character.id,
-    collection_id: character.collection_id,
-    name: character.name,
+    collection_id: requireAdminCharacterText(
+      character.collection_id,
+      "collection_id",
+      character.id,
+    ),
+    name: requireAdminCharacterText(character.name, "nome", character.id),
     description: character.description,
     franchise: character.franchise ?? null,
     product_line: character.product_line ?? null,
@@ -278,7 +293,7 @@ export async function fetchCharactersByCollection(
     release_month: character.release_month,
     release_date: character.release_date ?? null,
     unlock_override: character.unlock_override === true,
-    status: character.status,
+    status: requireAdminCharacterText(character.status, "status", character.id),
     image_url: character.image_url,
     image_urls: Array.isArray(character.image_urls)
       ? character.image_urls
