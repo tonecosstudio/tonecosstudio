@@ -9,6 +9,12 @@ function source(path: string): string {
   return readFileSync(join(ROOT, path), "utf8");
 }
 
+function stripSqlComments(sql: string): string {
+  return sql
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/--.*$/gm, "");
+}
+
 describe("manual payment security invariants", () => {
   describe("payment proof validation", () => {
     it("rejects unsupported MIME types and extensions", async () => {
@@ -175,13 +181,14 @@ describe("manual payment security invariants", () => {
     const groupReadHardening = source(
       "supabase/migrations/20260916152937_restrict_chat_group_metadata_to_members_or_admins.sql",
     );
+    const executableGroupReadHardening = stripSqlComments(groupReadHardening);
     const groupService = source("src/services/groups/group-service.ts");
 
     it("does not expose chat group metadata to every authenticated user", () => {
       expect(groupReadHardening).toContain("DROP POLICY IF EXISTS chat_groups_select_all");
       expect(groupReadHardening).toContain("chat_groups_select_member_or_admin");
       expect(groupReadHardening).toContain("member.user_id = (SELECT auth.uid())");
-      expect(groupReadHardening).not.toMatch(/USING\s*\(\s*true\s*\)/i);
+      expect(executableGroupReadHardening).not.toMatch(/USING\s*\(\s*true\s*\)/i);
     });
 
     it("builds member group summaries from RLS-protected tables instead of a phantom RPC", () => {
