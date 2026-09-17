@@ -2,8 +2,16 @@
  * Testes para GroupAnalyticsService
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GroupAnalyticsService } from "./groupAnalyticsService";
+
+const authMocks = vi.hoisted(() => ({
+  requireCurrentUserAdminAccess: vi.fn(),
+}));
+
+vi.mock("@/services/auth/current-user", () => ({
+  requireCurrentUserAdminAccess: authMocks.requireCurrentUserAdminAccess,
+}));
 
 // Mock do Supabase
 vi.mock("@/integrations/supabase/client", () => {
@@ -31,8 +39,9 @@ describe("GroupAnalyticsService", () => {
   let service: GroupAnalyticsService;
 
   beforeEach(() => {
-    service = new GroupAnalyticsService();
     vi.clearAllMocks();
+    authMocks.requireCurrentUserAdminAccess.mockResolvedValue("admin-123");
+    service = new GroupAnalyticsService();
   });
 
   describe("calculateOpenRate", () => {
@@ -40,10 +49,10 @@ describe("GroupAnalyticsService", () => {
       const result = await service.calculateOpenRate("test-group-id");
       expect(result.rate).toBe(0);
       expect(result.trend).toBe(0);
+      expect(authMocks.requireCurrentUserAdminAccess).toHaveBeenCalledTimes(1);
     });
 
     it("deve calcular taxa de abertura corretamente", async () => {
-      // Este teste seria mais completo com mocks específicos
       const result = await service.calculateOpenRate("test-group-id", 7);
       expect(result).toHaveProperty("rate");
       expect(result).toHaveProperty("trend");
@@ -112,7 +121,6 @@ describe("GroupAnalyticsService", () => {
     it("deve retornar dados ordenados por data", async () => {
       const result = await service.getMemberGrowth("test-group-id", 6);
 
-      // Verificar que está ordenado
       for (let i = 1; i < result.length; i++) {
         expect(result[i].date >= result[i - 1].date).toBe(true);
       }
@@ -146,6 +154,7 @@ describe("GroupAnalyticsService", () => {
       expect(result).toHaveProperty("totalMessages");
       expect(result).toHaveProperty("totalMembers");
       expect(result).toHaveProperty("avgResponseTime");
+      expect(authMocks.requireCurrentUserAdminAccess).toHaveBeenCalledTimes(1);
     });
 
     it("deve retornar tipos corretos para cada métrica", async () => {
