@@ -136,6 +136,7 @@ export async function fetchCatalogCharacters() {
     return {
       ...character,
       name: character.name,
+      is_catalog: character.is_catalog === true,
     };
   });
 }
