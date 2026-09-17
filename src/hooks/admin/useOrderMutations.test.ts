@@ -1,38 +1,26 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
 import { useOrderMutations } from "./useOrderMutations";
-import { supabase } from "@/integrations/supabase/client";
 
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    from: vi.fn(),
-    rpc: vi.fn(),
-    auth: {
-      getSession: vi.fn(),
-      getUser: vi.fn(),
-    },
-  },
+const serviceMocks = vi.hoisted(() => ({
+  updateDeliveryStatus: vi.fn(),
+  transitionStandalonePurchaseStatus: vi.fn(),
+  updateStandaloneTrackingCode: vi.fn(),
 }));
 
-type SupabaseRpcResult = ReturnType<typeof supabase.rpc>;
-type SupabaseSessionResult = Awaited<ReturnType<typeof supabase.auth.getSession>>;
+vi.mock("@/services/admin/delivery/delivery-detail-service", () => ({
+  updateDeliveryStatus: serviceMocks.updateDeliveryStatus,
+}));
 
-function mockRpcResult(value: unknown): SupabaseRpcResult {
-  return value as SupabaseRpcResult;
-}
-
-function mockFetchResponse(ok: boolean, payload: unknown): Response {
-  return {
-    ok,
-    json: vi.fn().mockResolvedValue(payload),
-  } as unknown as Response;
-}
+vi.mock("@/services/payments/standalone-purchase-service", () => ({
+  transitionStandalonePurchaseStatus: serviceMocks.transitionStandalonePurchaseStatus,
+  updateStandaloneTrackingCode: serviceMocks.updateStandaloneTrackingCode,
+}));
 
 describe("useOrderMutations", () => {
   let queryClient: QueryClient;
-  let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -43,38 +31,26 @@ describe("useOrderMutations", () => {
     });
 
     vi.clearAllMocks();
-    fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: {
-        session: {
-          access_token: "test-access-token",
-        },
+    serviceMocks.updateDeliveryStatus.mockResolvedValue({
+      delivery: {
+        id: "test-id",
+        status: "confirmed",
+        updated_at: "2026-09-17T12:00:00.000Z",
       },
-      error: null,
-    } as SupabaseSessionResult);
-    vi.mocked(supabase.rpc).mockResolvedValue(mockRpcResult({ data: null, error: null }));
+    });
+    serviceMocks.transitionStandalonePurchaseStatus.mockResolvedValue(undefined);
+    serviceMocks.updateStandaloneTrackingCode.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    queryClient.clear();
   });
 
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: queryClient }, children);
 
   describe("updateStatus", () => {
-    it("updates a subscription delivery through the authenticated Edge Function", async () => {
-      fetchMock.mockResolvedValue(
-        mockFetchResponse(true, {
-          delivery: {
-            id: "test-id",
-            status: "confirmed",
-            updated_at: new Date().toISOString(),
-          },
-        }),
-      );
-
+    it("updates a subscription delivery through the delivery service boundary", async () => {
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 
       result.current.updateStatus.mutate({
@@ -87,24 +63,13 @@ describe("useOrderMutations", () => {
         expect(result.current.updateStatus.isSuccess).toBe(true);
       });
 
-      expect(supabase.auth.getSession).toHaveBeenCalled();
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining("/functions/v1/update-delivery-status"),
-        expect.objectContaining({
-          method: "POST",
-          headers: expect.objectContaining({
-            Authorization: "Bearer test-access-token",
-          }),
-          body: JSON.stringify({
-            deliveryId: "test-id",
-            newStatus: "confirmed",
-          }),
-        }),
-      );
-      expect(supabase.from).not.toHaveBeenCalledWith("subscription_deliveries");
+      expect(serviceMocks.updateDeliveryStatus).toHaveBeenCalledWith({
+        deliveryId: "test-id",
+        newStatus: "confirmed",
+      });
     });
 
-    it("updates a standalone purchase through the server-side payment voucher RPC", async () => {
+    it("updates a standalone purchase through the standalone service boundary", async () => {
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 
       result.current.updateStatus.mutate({
@@ -117,14 +82,14 @@ describe("useOrderMutations", () => {
         expect(result.current.updateStatus.isSuccess).toBe(true);
       });
 
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_approve_standalone_payment_voucher", {
-        p_purchase_id: "test-id",
-        p_voucher_type: "deposit",
-      });
+      expect(serviceMocks.transitionStandalonePurchaseStatus).toHaveBeenCalledWith(
+        "test-id",
+        "deposit_paid",
+      );
     });
 
-    it("surfaces Edge Function errors", async () => {
-      fetchMock.mockResolvedValue(mockFetchResponse(false, { error: "Database error" }));
+    it("surfaces delivery service errors", async () => {
+      serviceMocks.updateDeliveryStatus.mockRejectedValueOnce(new Error("Database error"));
 
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 
@@ -146,14 +111,6 @@ describe("useOrderMutations", () => {
 
   describe("bulkUpdateStatus", () => {
     it("updates multiple valid subscription deliveries", async () => {
-      fetchMock.mockResolvedValue(
-        mockFetchResponse(true, {
-          delivery: {
-            status: "confirmed",
-          },
-        }),
-      );
-
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 
       result.current.bulkUpdateStatus.mutate({
@@ -172,28 +129,14 @@ describe("useOrderMutations", () => {
       const resultData = result.current.bulkUpdateStatus.data;
       expect(resultData?.successful).toEqual(["id-1", "id-2", "id-3"]);
       expect(resultData?.failed).toHaveLength(0);
-      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(serviceMocks.updateDeliveryStatus).toHaveBeenCalledTimes(3);
     });
 
     it("tracks partial failures without stopping the batch", async () => {
-      fetchMock
-        .mockResolvedValueOnce(
-          mockFetchResponse(true, {
-            delivery: {
-              id: "id-1",
-              status: "confirmed",
-            },
-          }),
-        )
-        .mockResolvedValueOnce(mockFetchResponse(false, { error: "Update failed" }))
-        .mockResolvedValueOnce(
-          mockFetchResponse(true, {
-            delivery: {
-              id: "id-3",
-              status: "confirmed",
-            },
-          }),
-        );
+      serviceMocks.updateDeliveryStatus
+        .mockResolvedValueOnce({ delivery: { id: "id-1", status: "confirmed" } })
+        .mockRejectedValueOnce(new Error("Update failed"))
+        .mockResolvedValueOnce({ delivery: { id: "id-3", status: "confirmed" } });
 
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 
@@ -219,15 +162,6 @@ describe("useOrderMutations", () => {
   describe("cache invalidation", () => {
     it("invalidates admin orders after a successful status update", async () => {
       const invalidateQueriesSpy = vi.spyOn(queryClient, "invalidateQueries");
-      fetchMock.mockResolvedValue(
-        mockFetchResponse(true, {
-          delivery: {
-            id: "test-id",
-            status: "confirmed",
-          },
-        }),
-      );
-
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 
       result.current.updateStatus.mutate({
