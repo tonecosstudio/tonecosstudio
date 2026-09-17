@@ -1,47 +1,22 @@
-/**
- * Tests for TeamWorkloadView Component
- */
-
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
 import { TeamWorkloadView } from "./TeamWorkloadView";
 
-type TeamMemberWorkloadFixture = {
-  id: string;
-  name: string;
-  email: string;
-  workload: number;
-  averageCompletionTime: number;
-  isOverloaded: boolean;
-  items: Array<{
-    id: string;
-    customer_name: string | null;
-    collection_name: string | null;
-    current_stage: string | null;
-    priority: string | number | null;
-    assigned_to: string | null;
-  }>;
-};
-
-const serviceMocks = vi.hoisted(() => ({
-  fetchTeamWorkload: vi.fn(),
-  assignProduction: vi.fn().mockResolvedValue({}),
+const hookMocks = vi.hoisted(() => ({
+  useTeamWorkload: vi.fn(),
+  useReassignProductionItem: vi.fn(),
+  mutateAsync: vi.fn(),
 }));
 
-vi.mock("@/services/admin/production/team-workload-service", () => ({
-  fetchTeamWorkload: serviceMocks.fetchTeamWorkload,
-}));
-
-vi.mock("@/services/admin/production/production-service", () => ({
-  assignProduction: serviceMocks.assignProduction,
+vi.mock("@/hooks/admin/useTeamWorkload", () => ({
+  useTeamWorkload: hookMocks.useTeamWorkload,
+  useReassignProductionItem: hookMocks.useReassignProductionItem,
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({
-    toast: vi.fn(),
-  }),
+  useToast: () => ({ toast: vi.fn() }),
 }));
 
 vi.mock("./AssignmentModal", () => ({
@@ -59,223 +34,149 @@ vi.mock("./AssignmentModal", () => ({
     ) : null,
 }));
 
-function renderWithQueryClient() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
-
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <TeamWorkloadView />
-    </QueryClientProvider>
-  );
-}
+const mockTeamWorkload = [
+  {
+    id: "user-1",
+    name: "Joao Silva",
+    email: "joao@example.com",
+    workload: 2,
+    averageCompletionTime: 10,
+    isOverloaded: false,
+    items: [
+      {
+        id: "item-1",
+        customer_name: "Cliente A",
+        collection_name: "Colecao 1",
+        current_stage: "production",
+        priority: "high",
+        assigned_to: "user-1",
+      },
+      {
+        id: "item-2",
+        customer_name: "Cliente B",
+        collection_name: "Colecao 2",
+        current_stage: "design",
+        priority: "normal",
+        assigned_to: "user-1",
+      },
+    ],
+  },
+  {
+    id: "user-2",
+    name: "Maria Santos",
+    email: "maria@example.com",
+    workload: 1,
+    averageCompletionTime: 10,
+    isOverloaded: false,
+    items: [
+      {
+        id: "item-3",
+        customer_name: "Cliente C",
+        collection_name: "Colecao 1",
+        current_stage: "design",
+        priority: "high",
+        assigned_to: "user-2",
+      },
+    ],
+  },
+];
 
 describe("TeamWorkloadView", () => {
-  const mockTeamWorkload: TeamMemberWorkloadFixture[] = [
-    {
-      id: "user-1",
-      name: "Joao Silva",
-      email: "joao@example.com",
-      workload: 2,
-      averageCompletionTime: 10,
-      isOverloaded: false,
-      items: [
-        {
-          id: "item-1",
-          customer_name: "Cliente A",
-          collection_name: "Colecao 1",
-          current_stage: "production",
-          priority: "high",
-          assigned_to: "user-1",
-        },
-        {
-          id: "item-2",
-          customer_name: "Cliente B",
-          collection_name: "Colecao 2",
-          current_stage: "design",
-          priority: "normal",
-          assigned_to: "user-1",
-        },
-      ],
-    },
-    {
-      id: "user-2",
-      name: "Maria Santos",
-      email: "maria@example.com",
-      workload: 1,
-      averageCompletionTime: 10,
-      isOverloaded: false,
-      items: [
-        {
-          id: "item-3",
-          customer_name: "Cliente C",
-          collection_name: "Colecao 1",
-          current_stage: "design",
-          priority: "high",
-          assigned_to: "user-2",
-        },
-      ],
-    },
-  ];
-
   beforeEach(() => {
     vi.clearAllMocks();
-    serviceMocks.fetchTeamWorkload.mockResolvedValue(mockTeamWorkload);
+    hookMocks.useTeamWorkload.mockReturnValue({
+      data: mockTeamWorkload,
+      isLoading: false,
+      isError: false,
+    });
+    hookMocks.useReassignProductionItem.mockReturnValue({
+      mutateAsync: hookMocks.mutateAsync.mockResolvedValue(undefined),
+      isPending: false,
+    });
   });
 
-  it("renders loading state initially", () => {
-    serviceMocks.fetchTeamWorkload.mockImplementation(() => new Promise(() => {}));
+  it("renders loading state from the workload hook", () => {
+    hookMocks.useTeamWorkload.mockReturnValue({ data: undefined, isLoading: true, isError: false });
 
-    renderWithQueryClient();
+    render(<TeamWorkloadView />);
 
     expect(
-      screen.getAllByRole("generic").some((element) => element.className.includes("animate-pulse"))
+      screen.getAllByRole("generic").some((element) => element.className.includes("animate-pulse")),
     ).toBe(true);
   });
 
-  it("displays overall statistics", async () => {
-    renderWithQueryClient();
+  it("renders overall team statistics", () => {
+    render(<TeamWorkloadView />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Visao Geral da Equipe")).toBeInTheDocument();
-    });
-
+    expect(screen.getByText("Visao Geral da Equipe")).toBeInTheDocument();
     expect(screen.getByText("Total de Itens")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("Media por Membro")).toBeInTheDocument();
     expect(screen.getByText("Tempo Medio de Conclusao")).toBeInTheDocument();
   });
 
-  it("displays team members with assigned item count", async () => {
-    renderWithQueryClient();
+  it("renders team members and workloads", () => {
+    render(<TeamWorkloadView />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Joao Silva")).toBeInTheDocument();
-    });
-
-    expect(screen.getByText("2 itens")).toBeInTheDocument();
-
+    expect(screen.getByText("Joao Silva")).toBeInTheDocument();
     expect(screen.getByText("Maria Santos")).toBeInTheDocument();
+    expect(screen.getByText("2 itens")).toBeInTheDocument();
     expect(screen.getByText("1 itens")).toBeInTheDocument();
-  });
-
-  it("displays average completion time per team member", async () => {
-    renderWithQueryClient();
-
-    await waitFor(() => {
-      expect(screen.getByText("Joao Silva")).toBeInTheDocument();
-    });
-
     expect(screen.getAllByText(/Media: 10\.0h/)).toHaveLength(2);
   });
 
-  it("expands member card to show assigned items", async () => {
+  it("expands a member to display assigned items", async () => {
     const user = userEvent.setup();
-    renderWithQueryClient();
+    render(<TeamWorkloadView />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Joao Silva")).toBeInTheDocument();
-    });
+    await user.click(screen.getByText("Joao Silva"));
 
-    expect(screen.queryByText("Cliente A")).not.toBeInTheDocument();
-
-    const joaoCard = screen.getByText("Joao Silva").closest("div")?.parentElement;
-    await user.click(joaoCard!);
-
-    await waitFor(() => {
-      expect(screen.getByText("Cliente A")).toBeInTheDocument();
-      expect(screen.getByText("Cliente B")).toBeInTheDocument();
-    });
-
+    expect(screen.getByText("Cliente A")).toBeInTheDocument();
+    expect(screen.getByText("Cliente B")).toBeInTheDocument();
     expect(screen.getByText("Distribuicao por Estagio")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Reatribuir/i }).length).toBeGreaterThan(0);
   });
 
-  it("shows reassign button for each item", async () => {
+  it("reassigns an item through the hook mutation", async () => {
     const user = userEvent.setup();
-    renderWithQueryClient();
+    render(<TeamWorkloadView />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Joao Silva")).toBeInTheDocument();
-    });
-
-    const joaoCard = screen.getByText("Joao Silva").closest("div")?.parentElement;
-    await user.click(joaoCard!);
-
-    await waitFor(() => {
-      expect(screen.getByText("Cliente A")).toBeInTheDocument();
-    });
-
-    const reassignButtons = screen.getAllByRole("button", { name: /Reatribuir/i });
-    expect(reassignButtons.length).toBeGreaterThan(0);
-  });
-
-  it("opens assignment modal when reassign is clicked", async () => {
-    const user = userEvent.setup();
-    renderWithQueryClient();
-
-    await waitFor(() => {
-      expect(screen.getByText("Joao Silva")).toBeInTheDocument();
-    });
-
-    const joaoCard = screen.getByText("Joao Silva").closest("div")?.parentElement;
-    await user.click(joaoCard!);
-
-    await waitFor(() => {
-      expect(screen.getByText("Cliente A")).toBeInTheDocument();
-    });
-
-    const reassignButtons = screen.getAllByRole("button", { name: /Reatribuir/i });
-    await user.click(reassignButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("assignment-modal")).toBeInTheDocument();
-    });
-  });
-
-  it("confirms reassignment through the assignment modal", async () => {
-    const user = userEvent.setup();
-    renderWithQueryClient();
-
-    await waitFor(() => {
-      expect(screen.getByText("Joao Silva")).toBeInTheDocument();
-    });
-
-    const joaoCard = screen.getByText("Joao Silva").closest("div")?.parentElement;
-    await user.click(joaoCard!);
+    await user.click(screen.getByText("Joao Silva"));
     await user.click(screen.getAllByRole("button", { name: /Reatribuir/i })[0]);
     await user.click(screen.getByRole("button", { name: "Confirm Assignment" }));
 
-    await waitFor(() => {
-      expect(serviceMocks.assignProduction).toHaveBeenCalledWith("item-1", "user-2", "Test reason");
+    expect(hookMocks.mutateAsync).toHaveBeenCalledWith({
+      itemId: "item-1",
+      userId: "user-2",
+      reason: "Test reason",
     });
   });
 
-  it("identifies overloaded team members", async () => {
-    serviceMocks.fetchTeamWorkload.mockResolvedValue([
-      {
-        ...mockTeamWorkload[0],
-        isOverloaded: true,
-      },
-    ]);
-
-    renderWithQueryClient();
-
-    await waitFor(() => {
-      expect(screen.getByText("Sobrecarregado")).toBeInTheDocument();
+  it("renders overloaded state", () => {
+    hookMocks.useTeamWorkload.mockReturnValue({
+      data: [{ ...mockTeamWorkload[0], isOverloaded: true }],
+      isLoading: false,
+      isError: false,
     });
+
+    render(<TeamWorkloadView />);
+
+    expect(screen.getByText("Sobrecarregado")).toBeInTheDocument();
   });
 
-  it("shows empty state when no team members have assignments", async () => {
-    serviceMocks.fetchTeamWorkload.mockResolvedValue([]);
+  it("renders the error state", () => {
+    hookMocks.useTeamWorkload.mockReturnValue({ data: undefined, isLoading: false, isError: true });
 
-    renderWithQueryClient();
+    render(<TeamWorkloadView />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Nenhum membro da equipe com itens atribuidos")).toBeInTheDocument();
-    });
+    expect(screen.getByText("Erro ao carregar carga da equipe")).toBeInTheDocument();
+  });
+
+  it("renders the empty state", () => {
+    hookMocks.useTeamWorkload.mockReturnValue({ data: [], isLoading: false, isError: false });
+
+    render(<TeamWorkloadView />);
+
+    expect(screen.getByText("Nenhum membro da equipe com itens atribuidos")).toBeInTheDocument();
   });
 });
