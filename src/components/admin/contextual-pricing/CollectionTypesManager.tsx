@@ -319,8 +319,8 @@ export function CollectionTypesManager() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Switch
-                        checked={type.is_active}
-                        onCheckedChange={() => handleToggleActive(type.id, type.is_active)}
+                        checked={type.is_active ?? false}
+                        onCheckedChange={() => handleToggleActive(type.id, type.is_active ?? false)}
                         disabled={toggleMutation.isPending}
                       />
                       <Badge variant={type.is_active ? "default" : "secondary"}>
