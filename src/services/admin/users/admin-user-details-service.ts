@@ -121,7 +121,7 @@ export async function listAdminUserMonthlySelections(userId?: string): Promise<C
       character_name, submitted_at, deadline,
       approved_at, rejected_at, rejection_reason,
       created_at,
-      collection_characters:collection_characters!character_choices_character_id_fkey(id, name, image_url),
+      collection_characters:characters!character_choices_character_id_fkey(id, name, image_url),
       collections:collections!character_choices_collection_id_fkey(id, name)
     `,
     )
