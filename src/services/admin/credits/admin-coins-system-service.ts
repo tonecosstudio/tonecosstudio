@@ -47,7 +47,9 @@ export interface AdminCoinsBasePrice {
 
 export interface AdminCoinsPricingMultiplier {
   id: string;
-  user_context: string;
+  name: string;
+  display_name: string;
+  context_type: string;
   multiplier: number;
   description: string | null;
   is_active: boolean;
@@ -89,7 +91,7 @@ export async function fetchAdminCoinsStats(): Promise<AdminCoinsStats> {
     .from("coin_packages")
     .select("*")
     .eq("is_active", true)
-    .order("amount", { ascending: true });
+    .order("coins_amount", { ascending: true });
 
   if (packagesError) throw packagesError;
 
@@ -106,8 +108,22 @@ export async function fetchAdminCoinsStats(): Promise<AdminCoinsStats> {
     totalEarned: ledgerSummary.totalEarned,
     totalSpent: ledgerSummary.totalSpent,
     totalUsers: balanceRows.length,
-    transactions: (transactions ?? []) as AdminCoinTransactionRow[],
-    packages: (packages ?? []) as AdminCoinPackageRow[],
+    transactions: (transactions ?? []).map((transaction) => ({
+      id: transaction.id,
+      amount: transaction.amount,
+      transaction_type: transaction.transaction_type,
+      description: transaction.description ?? "",
+      user_id: transaction.user_id,
+      created_at: transaction.created_at,
+    })),
+    packages: (packages ?? []).map((pkg) => ({
+      id: pkg.id,
+      name: pkg.display_name || pkg.name,
+      amount: pkg.coins_amount,
+      bonus: pkg.bonus_coins ?? 0,
+      price_brl: pkg.price_brl,
+      is_active: pkg.is_active === true,
+    })),
     totalPurchases: purchaseCount ?? 0,
   };
 }
@@ -131,7 +147,20 @@ export async function fetchAdminCoinsPricingConfig(): Promise<AdminCoinsPricingC
   if (multipliersError) throw multipliersError;
 
   return {
-    basePrices: (basePrices ?? []) as AdminCoinsBasePrice[],
-    multipliers: (multipliers ?? []) as AdminCoinsPricingMultiplier[],
+    basePrices: (basePrices ?? []).map((row) => ({
+      base_price_coins: row.base_price_coins,
+      collection_types: Array.isArray(row.collection_types)
+        ? row.collection_types[0] ?? null
+        : row.collection_types,
+    })),
+    multipliers: (multipliers ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      display_name: row.display_name,
+      context_type: row.context_type,
+      multiplier: row.multiplier,
+      description: row.description,
+      is_active: row.is_active === true,
+    })),
   };
 }
