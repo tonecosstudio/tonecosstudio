@@ -10,54 +10,57 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import {
   requireAdminRpcMatchingId,
   requireAdminRpcRecord,
   requireAdminRpcUuid,
 } from "@/services/admin/rpc/admin-rpc-results";
+import type { ReminderType } from "@/types/support";
 
 export interface ConversationReminder {
   id: string;
   conversation_id: string;
-  reminder_type: "quote_followup" | "payment_pending" | "promised_date";
+  reminder_type: ReminderType;
   scheduled_for: string;
   sent_at: string | null;
   is_active: boolean;
   created_at: string;
 }
 
-type ReminderQueryError = {
-  message: string;
-};
+type ConversationReminderRow =
+  Database["public"]["Tables"]["conversation_reminders"]["Row"];
 
-type ConversationReminderQueryResult = {
-  data: ConversationReminder[] | null;
-  error: ReminderQueryError | null;
-};
-
-interface ConversationReminderQuery extends PromiseLike<ConversationReminderQueryResult> {
-  eq(column: string, value: boolean | string | null): ConversationReminderQuery;
-  is(column: string, value: null): ConversationReminderQuery;
-  lte(column: string, value: string): ConversationReminderQuery;
-  order(column: string, options: { ascending: boolean }): ConversationReminderQuery;
+function isReminderType(value: string): value is ReminderType {
+  return (
+    value === "quote_followup" ||
+    value === "payment_pending" ||
+    value === "promised_date"
+  );
 }
 
-interface ConversationReminderSelect {
-  select(columns: string): ConversationReminderQuery;
-}
+function mapReminderRow(row: ConversationReminderRow): ConversationReminder {
+  if (!isReminderType(row.reminder_type)) {
+    throw new Error(`Reminder ${row.id} has an invalid reminder_type`);
+  }
 
-interface ConversationReminderTableClient {
-  from(table: "conversation_reminders"): ConversationReminderSelect;
+  return {
+    id: row.id,
+    conversation_id: row.conversation_id,
+    reminder_type: row.reminder_type,
+    scheduled_for: row.scheduled_for,
+    sent_at: row.sent_at,
+    is_active: row.is_active,
+    created_at: row.created_at,
+  };
 }
-
-const conversationReminderTable = supabase as unknown as ConversationReminderTableClient;
 
 function requireReminder(
   value: unknown,
   expected: {
     conversationId: string;
-    reminderType: ConversationReminder["reminder_type"];
+    reminderType: ReminderType;
     scheduledFor: string;
   },
 ): ConversationReminder {
@@ -87,7 +90,7 @@ function requireReminder(
   return {
     id,
     conversation_id: record.conversation_id as string,
-    reminder_type: record.reminder_type as ConversationReminder["reminder_type"],
+    reminder_type: expected.reminderType,
     scheduled_for: record.scheduled_for as string,
     sent_at: null,
     is_active: true,
@@ -97,7 +100,7 @@ function requireReminder(
 
 export async function createReminder(
   conversationId: string,
-  reminderType: ConversationReminder["reminder_type"],
+  reminderType: ReminderType,
   scheduledFor: Date
 ): Promise<ConversationReminder> {
   const scheduledForIso = scheduledFor.toISOString();
@@ -126,7 +129,7 @@ export async function getReminders(
   conversationId: string,
   includeInactive: boolean = false
 ): Promise<ConversationReminder[]> {
-  let query = conversationReminderTable
+  let query = supabase
     .from("conversation_reminders")
     .select("*")
     .eq("conversation_id", conversationId);
@@ -135,13 +138,11 @@ export async function getReminders(
     query = query.eq("is_active", true);
   }
 
-  query = query.order("scheduled_for", { ascending: true });
-
-  const { data, error } = await query;
+  const { data, error } = await query.order("scheduled_for", { ascending: true });
 
   if (error) {
     throw new Error(`Failed to get reminders: ${error.message}`);
   }
 
-  return data ?? [];
+  return (data ?? []).map(mapReminderRow);
 }
