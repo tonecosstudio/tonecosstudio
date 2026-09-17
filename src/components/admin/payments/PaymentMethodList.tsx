@@ -112,7 +112,7 @@ function SortableRow({ method, onToggleActive, onSetDefault, onEdit, onDelete }:
       <TableCell>
         <div className="flex items-center gap-2">
           <Switch
-            checked={method.is_active}
+            checked={method.is_active ?? false}
             onCheckedChange={(checked) => onToggleActive(method.id, checked)}
             aria-label={`Toggle ${method.name} active status`}
           />
