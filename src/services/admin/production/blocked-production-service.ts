@@ -93,7 +93,7 @@ export async function fetchProductionBlockInfo(
 ): Promise<ProductionBlockInfo> {
   const { data: queueItem, error: queueError } = await supabase
     .from("production_queue")
-    .select("id, admin_notes")
+    .select("id, admin_notes, updated_at")
     .eq("id", productionQueueId)
     .single();
 
