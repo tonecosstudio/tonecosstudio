@@ -26,7 +26,9 @@ export function useSubscriberDashboardData(userId?: string) {
   const upcoming = deliveries.filter((delivery) => delivery.status !== "delivered");
   const nextDelivery = upcoming[0];
   const progress = subscription
-    ? Math.round((subscription.deliveries_completed / (subscription.deliveries_total || 1)) * 100)
+    ? Math.round(
+        ((subscription.deliveries_completed ?? 0) / (subscription.deliveries_total || 1)) * 100,
+      )
     : 0;
 
   return {
