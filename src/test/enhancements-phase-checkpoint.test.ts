@@ -1,365 +1,260 @@
 /**
  * Task 29.6 - Checkpoint: Verify Enhancements Phase Completion
- * 
- * This test file verifies that Phase 7 (Enhancements) features are working:
- * - Bonus piece assignment for Semestral 6th delivery
- * - Subscription pause functionality
- * - Enhanced subscriber dashboard displays all info
- * - Improved collection selection interface
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { supabase } from '@/integrations/supabase/client';
-import { bonusPieceService } from '@/lib/services/bonusPieceService';
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { supabase } from "@/integrations/supabase/client";
+import { bonusPieceService } from "@/lib/services/bonusPieceService";
 
-// Mock Supabase
-vi.mock('@/integrations/supabase/client', () => ({
+const bonusMutationMocks = vi.hoisted(() => ({
+  createBonusPieceRpc: vi.fn(),
+  linkBonusPieceToDeliveryRpc: vi.fn(),
+  updateBonusPieceStatusRpc: vi.fn(),
+}));
+
+vi.mock("@/services/delivery/delivery-cycle-mutations-service", () => ({
+  createBonusPieceRpc: bonusMutationMocks.createBonusPieceRpc,
+  linkBonusPieceToDeliveryRpc: bonusMutationMocks.linkBonusPieceToDeliveryRpc,
+  updateBonusPieceStatusRpc: bonusMutationMocks.updateBonusPieceStatusRpc,
+}));
+
+vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
-    rpc: vi.fn(),
-    auth: {
-      getUser: vi.fn(),
-    },
   },
 }));
 
-describe('Task 29.6 - Enhancements Phase Checkpoint', () => {
+const NOW = "2026-09-17T12:00:00Z";
+
+function bonusRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "bonus-1",
+    subscription_id: "test-semestral-sub-1",
+    delivery_id: null,
+    description: "Exclusive bonus piece for 6th delivery",
+    status: "pending",
+    created_at: NOW,
+    updated_at: NOW,
+    prepared_at: null,
+    shipped_at: null,
+    ...overrides,
+  };
+}
+
+describe("Task 29.6 - Enhancements Phase Checkpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Bonus Piece Assignment for Semestral 6th Delivery', () => {
-    it('should create bonus piece for Semestral subscription', async () => {
-      // Setup
-      const subscriptionId = 'test-semestral-sub-1';
-      const description = 'Exclusive bonus piece for 6th delivery';
+  describe("Bonus Piece Assignment for Semestral 6th Delivery", () => {
+    it("should create bonus piece for Semestral subscription", async () => {
+      const subscriptionId = "test-semestral-sub-1";
+      const description = "Exclusive bonus piece for 6th delivery";
+      const row = bonusRow({ subscription_id: subscriptionId, description });
+      bonusMutationMocks.createBonusPieceRpc.mockResolvedValue(row);
 
-      vi.mocked(supabase.rpc).mockResolvedValueOnce({
-        data: {
-          id: 'bonus-1',
-          subscription_id: subscriptionId,
-          delivery_id: null,
-          description,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          prepared_at: null,
-          shipped_at: null,
-        },
-        error: null,
-      });
-
-      // Execute
       const bonus = await bonusPieceService.createBonusPiece(subscriptionId, description);
 
-      // Verify
-      expect(bonus).toBeDefined();
       expect(bonus.subscription_id).toBe(subscriptionId);
       expect(bonus.description).toBe(description);
-      expect(bonus.status).toBe('pending');
-      expect(supabase.rpc).toHaveBeenCalledWith('admin_create_bonus_piece', {
-        p_subscription_id: subscriptionId,
-        p_description: description,
-      });
+      expect(bonus.status).toBe("pending");
+      expect(bonusMutationMocks.createBonusPieceRpc).toHaveBeenCalledWith(
+        subscriptionId,
+        description,
+      );
     });
 
-    it('should link bonus piece to 6th delivery', async () => {
-      // Setup
-      const bonusId = 'bonus-1';
-      const deliveryId = 'delivery-6';
+    it("should link bonus piece to 6th delivery", async () => {
+      const bonusId = "bonus-1";
+      const deliveryId = "delivery-6";
+      bonusMutationMocks.linkBonusPieceToDeliveryRpc.mockResolvedValue(
+        bonusRow({ id: bonusId, delivery_id: deliveryId }),
+      );
 
-      vi.mocked(supabase.rpc).mockResolvedValueOnce({
-        data: {
-          id: bonusId,
-          delivery_id: deliveryId,
-        },
-        error: null,
-      });
-
-      // Execute
       await bonusPieceService.linkBonusToDelivery(bonusId, deliveryId);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('admin_link_bonus_piece_to_delivery', {
-        p_bonus_id: bonusId,
-        p_delivery_id: deliveryId,
-      });
+      expect(bonusMutationMocks.linkBonusPieceToDeliveryRpc).toHaveBeenCalledWith(
+        bonusId,
+        deliveryId,
+      );
     });
 
-    it('should update bonus piece status to prepared', async () => {
-      // Setup
-      const bonusId = 'bonus-1';
-      const status = 'prepared';
+    it("should update bonus piece status to prepared", async () => {
+      const bonusId = "bonus-1";
+      bonusMutationMocks.updateBonusPieceStatusRpc.mockResolvedValue(
+        bonusRow({ id: bonusId, status: "prepared", prepared_at: NOW }),
+      );
 
-      vi.mocked(supabase.rpc).mockResolvedValueOnce({
-        data: {
-          id: bonusId,
-          status,
-          prepared_at: new Date().toISOString(),
-        },
-        error: null,
-      });
+      await bonusPieceService.updateBonusStatus(bonusId, "prepared");
 
-      // Execute
-      await bonusPieceService.updateBonusStatus(bonusId, status);
-
-      expect(supabase.rpc).toHaveBeenCalledWith('admin_update_bonus_piece_status', {
-        p_bonus_id: bonusId,
-        p_status: 'prepared',
-      });
+      expect(bonusMutationMocks.updateBonusPieceStatusRpc).toHaveBeenCalledWith(
+        bonusId,
+        "prepared",
+      );
     });
 
-    it('should retrieve bonus piece by subscription', async () => {
-      // Setup
-      const subscriptionId = 'test-sub-1';
-      const mockBonus = {
-        id: 'bonus-1',
+    it("should retrieve bonus piece by subscription", async () => {
+      const subscriptionId = "test-sub-1";
+      const row = bonusRow({
         subscription_id: subscriptionId,
-        description: 'Test bonus',
-        status: 'pending',
-      };
-
-      const singleMock = vi.fn().mockResolvedValue({
-        data: mockBonus,
-        error: null,
+        description: "Test bonus",
       });
+      const maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null });
+      const eq = vi.fn().mockReturnValue({ maybeSingle });
+      const select = vi.fn().mockReturnValue({ eq });
+      vi.mocked(supabase.from).mockReturnValue({ select } as never);
 
-      const eqMock = vi.fn().mockReturnValue({
-        single: singleMock,
-      });
-
-      const selectMock = vi.fn().mockReturnValue({
-        eq: eqMock,
-      });
-
-      (supabase.from as any).mockReturnValue({
-        select: selectMock,
-      });
-
-      // Execute
       const bonus = await bonusPieceService.getBonusBySubscription(subscriptionId);
 
-      // Verify
-      expect(bonus).toBeDefined();
       expect(bonus?.subscription_id).toBe(subscriptionId);
+      expect(eq).toHaveBeenCalledWith("subscription_id", subscriptionId);
+      expect(maybeSingle).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('Subscription Pause Functionality', () => {
-    it('should have pause_count field in subscriptions table', () => {
-      // This test verifies the database schema has the pause_count field
-      // The field was added in migration 1.5
-      expect(true).toBe(true); // Schema verification passed
+  describe("Subscription Pause Functionality", () => {
+    it("should have pause_count field in subscriptions table", () => {
+      expect(true).toBe(true);
     });
 
-    it('should allow pause before cutoff', () => {
-      // Verify pause logic exists
-      // The pause functionality should check cutoff before allowing pause
-      const isBeforeCutoff = true; // Mock cutoff check
-      const pauseCount = 0;
-      const maxPauses = 2;
-
-      const canPause = isBeforeCutoff && pauseCount < maxPauses;
-      expect(canPause).toBe(true);
-    });
-
-    it('should reject pause after cutoff', () => {
-      // Verify pause is rejected after cutoff
-      const isBeforeCutoff = false; // After cutoff
-      const pauseCount = 0;
-      const maxPauses = 2;
-
-      const canPause = isBeforeCutoff && pauseCount < maxPauses;
-      expect(canPause).toBe(false);
-    });
-
-    it('should enforce maximum 2 pauses per subscription', () => {
-      // Verify pause count limit
+    it("should allow pause before cutoff", () => {
       const isBeforeCutoff = true;
-      const pauseCount = 2; // Already used 2 pauses
+      const pauseCount = 0;
       const maxPauses = 2;
+      expect(isBeforeCutoff && pauseCount < maxPauses).toBe(true);
+    });
 
-      const canPause = isBeforeCutoff && pauseCount < maxPauses;
-      expect(canPause).toBe(false);
+    it("should reject pause after cutoff", () => {
+      const isBeforeCutoff = false;
+      const pauseCount = 0;
+      const maxPauses = 2;
+      expect(isBeforeCutoff && pauseCount < maxPauses).toBe(false);
+    });
+
+    it("should enforce maximum 2 pauses per subscription", () => {
+      const isBeforeCutoff = true;
+      const pauseCount = 2;
+      const maxPauses = 2;
+      expect(isBeforeCutoff && pauseCount < maxPauses).toBe(false);
     });
   });
 
-  describe('Enhanced Subscriber Dashboard', () => {
-    it('should display subscription status', () => {
-      // Verify dashboard shows subscription status
-      const statuses = ['active', 'paused', 'cancelled', 'completed'];
-      statuses.forEach(status => {
-        expect(['active', 'paused', 'cancelled', 'completed']).toContain(status);
+  describe("Enhanced Subscriber Dashboard", () => {
+    it("should display subscription status", () => {
+      const statuses = ["active", "paused", "cancelled", "completed"];
+      statuses.forEach((status) => {
+        expect(["active", "paused", "cancelled", "completed"]).toContain(status);
       });
     });
 
-    it('should display delivery progress', () => {
-      // Verify progress calculation
+    it("should display delivery progress", () => {
       const deliveriesCompleted = 3;
       const totalDeliveries = 6;
-      const progress = (deliveriesCompleted / totalDeliveries) * 100;
-      
-      expect(progress).toBe(50);
+      expect((deliveriesCompleted / totalDeliveries) * 100).toBe(50);
     });
 
-    it('should display cutoff countdown', () => {
-      // Verify cutoff countdown is shown
-      // The CutoffCountdown component should be present
-      expect(true).toBe(true); // Component exists in MySubscriptions.tsx
+    it("should display cutoff countdown", () => {
+      expect(true).toBe(true);
     });
 
-    it('should display auto-maintained indicator', () => {
-      // Verify auto-maintained badge is shown
-      const delivery = {
-        auto_maintained: true,
-      };
-      
-      expect(delivery.auto_maintained).toBe(true);
+    it("should display auto-maintained indicator", () => {
+      expect({ auto_maintained: true }.auto_maintained).toBe(true);
     });
 
-    it('should display collection change history', () => {
-      // Verify change history is queryable
+    it("should display collection change history", () => {
       const mockHistory = [
         {
-          id: 'history-1',
-          delivery_id: 'delivery-1',
-          previous_collection_id: 'col-1',
-          new_collection_id: 'col-2',
-          change_reason: 'manual',
-          created_at: new Date().toISOString(),
+          id: "history-1",
+          delivery_id: "delivery-1",
+          previous_collection_id: "col-1",
+          new_collection_id: "col-2",
+          change_reason: "manual",
+          created_at: NOW,
         },
       ];
-
       expect(mockHistory).toHaveLength(1);
-      expect(mockHistory[0].change_reason).toBe('manual');
+      expect(mockHistory[0].change_reason).toBe("manual");
     });
 
-    it('should display tracking information', () => {
-      // Verify tracking code display
-      const delivery = {
-        tracking_code: 'BR123456789',
-        status: 'shipped',
-      };
-
+    it("should display tracking information", () => {
+      const delivery = { tracking_code: "BR123456789", status: "shipped" };
       expect(delivery.tracking_code).toBeDefined();
-      expect(delivery.status).toBe('shipped');
+      expect(delivery.status).toBe("shipped");
     });
   });
 
-  describe('Improved Collection Selection Interface', () => {
-    it('should display active collections only', () => {
-      // Verify only active collections are shown
+  describe("Improved Collection Selection Interface", () => {
+    it("should display active collections only", () => {
       const collections = [
-        { id: 'col-1', name: 'Collection 1', is_active: true },
-        { id: 'col-2', name: 'Collection 2', is_active: false },
+        { id: "col-1", name: "Collection 1", is_active: true },
+        { id: "col-2", name: "Collection 2", is_active: false },
       ];
-
-      const activeCollections = collections.filter(c => c.is_active);
+      const activeCollections = collections.filter((collection) => collection.is_active);
       expect(activeCollections).toHaveLength(1);
-      expect(activeCollections[0].id).toBe('col-1');
+      expect(activeCollections[0].id).toBe("col-1");
     });
 
-    it('should enforce cutoff for collection changes', () => {
-      // Verify cutoff enforcement
-      const isBeforeCutoff = false;
-      const canChangeCollection = isBeforeCutoff;
-
-      expect(canChangeCollection).toBe(false);
+    it("should enforce cutoff for collection changes", () => {
+      expect(false).toBe(false);
     });
 
-    it('should show rotation schedule for rotating collections', () => {
-      // Verify rotation info is available
+    it("should show rotation schedule for rotating collections", () => {
+      const collection = { rotation_type: "odd_months" };
+      expect(collection.rotation_type !== "fixed").toBe(true);
+    });
+
+    it("should display collection details", () => {
       const collection = {
-        rotation_type: 'odd_months',
+        id: "col-1",
+        name: "Test Collection",
+        description: "Test description",
+        rotation_type: "fixed",
       };
-
-      const isRotating = collection.rotation_type !== 'fixed';
-      expect(isRotating).toBe(true);
-    });
-
-    it('should display collection details', () => {
-      // Verify collection details are shown
-      const collection = {
-        id: 'col-1',
-        name: 'Test Collection',
-        description: 'Test description',
-        rotation_type: 'fixed',
-      };
-
       expect(collection.name).toBeDefined();
       expect(collection.description).toBeDefined();
       expect(collection.rotation_type).toBeDefined();
     });
   });
 
-  describe('Integration Tests', () => {
-    it('should complete full Semestral subscription flow with bonus piece', () => {
-      // Verify complete flow
-      const _subscriptionFixture = {
-        plan_type: 'semestral',
-        total_deliveries: 6,
-        deliveries_completed: 0,
-      };
-
-      const deliveries = Array.from({ length: 6 }, (_, i) => ({
-        delivery_number: i + 1,
-        bonus_piece_id: i === 5 ? 'bonus-1' : null, // 6th delivery has bonus
+  describe("Integration Tests", () => {
+    it("should complete full Semestral subscription flow with bonus piece", () => {
+      const deliveries = Array.from({ length: 6 }, (_, index) => ({
+        delivery_number: index + 1,
+        bonus_piece_id: index === 5 ? "bonus-1" : null,
       }));
-
       expect(deliveries).toHaveLength(6);
-      expect(deliveries[5].bonus_piece_id).toBe('bonus-1');
+      expect(deliveries[5].bonus_piece_id).toBe("bonus-1");
     });
 
-    it('should handle pause and resume correctly', () => {
-      // Verify pause/resume flow
-      let subscription = {
-        status: 'active',
-        pause_count: 0,
-      };
-
-      // Pause
-      subscription = {
-        ...subscription,
-        status: 'paused',
-        pause_count: 1,
-      };
-
-      expect(subscription.status).toBe('paused');
+    it("should handle pause and resume correctly", () => {
+      let subscription = { status: "active", pause_count: 0 };
+      subscription = { ...subscription, status: "paused", pause_count: 1 };
+      expect(subscription.status).toBe("paused");
       expect(subscription.pause_count).toBe(1);
-
-      // Resume
-      subscription = {
-        ...subscription,
-        status: 'active',
-      };
-
-      expect(subscription.status).toBe('active');
-      expect(subscription.pause_count).toBe(1); // Count persists
+      subscription = { ...subscription, status: "active" };
+      expect(subscription.status).toBe("active");
+      expect(subscription.pause_count).toBe(1);
     });
 
-    it('should display all dashboard information correctly', () => {
-      // Verify all dashboard elements
+    it("should display all dashboard information correctly", () => {
       const dashboardData = {
         subscription: {
-          id: 'sub-1',
-          status: 'active',
-          plan_type: 'semestral',
+          id: "sub-1",
+          status: "active",
+          plan_type: "semestral",
           total_deliveries: 6,
           deliveries_completed: 3,
           pause_count: 1,
         },
         deliveries: [
-          { delivery_number: 1, status: 'delivered', auto_maintained: false },
-          { delivery_number: 2, status: 'delivered', auto_maintained: true },
-          { delivery_number: 3, status: 'shipped', auto_maintained: false },
-          { delivery_number: 4, status: 'scheduled', auto_maintained: false },
+          { delivery_number: 1, status: "delivered", auto_maintained: false },
+          { delivery_number: 2, status: "delivered", auto_maintained: true },
+          { delivery_number: 3, status: "shipped", auto_maintained: false },
+          { delivery_number: 4, status: "scheduled", auto_maintained: false },
         ],
-        nextDelivery: {
-          delivery_number: 4,
-          expected_date: new Date(),
-        },
+        nextDelivery: { delivery_number: 4, expected_date: new Date() },
       };
-
-      expect(dashboardData.subscription.status).toBe('active');
+      expect(dashboardData.subscription.status).toBe("active");
       expect(dashboardData.deliveries).toHaveLength(4);
       expect(dashboardData.deliveries[1].auto_maintained).toBe(true);
       expect(dashboardData.nextDelivery).toBeDefined();
