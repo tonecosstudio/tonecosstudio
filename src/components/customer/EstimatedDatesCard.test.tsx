@@ -49,7 +49,7 @@ describe("EstimatedDatesCard", () => {
         />
       );
 
-      expect(screen.getByText(/As datas estimadas serão calculadas em breve/i)).toBeInTheDocument();
+      expect(screen.getByText("As datas estimadas ainda não foram definidas.")).toBeInTheDocument();
     });
 
     it("displays relative time for future dates", () => {
@@ -116,7 +116,7 @@ describe("EstimatedDatesCard", () => {
         />
       );
 
-      expect(screen.getByText(/Tudo está correndo conforme o planejado/i)).toBeInTheDocument();
+      expect(screen.getByText("Tudo está correndo conforme o planejamento registrado.")).toBeInTheDocument();
     });
   });
 
@@ -225,7 +225,7 @@ describe("EstimatedDatesCard", () => {
         />
       );
 
-      expect(screen.queryByText(/Tudo está correndo conforme o planejado/i)).not.toBeInTheDocument();
+      expect(screen.queryByText("Tudo está correndo conforme o planejamento registrado.")).not.toBeInTheDocument();
     });
   });
 
