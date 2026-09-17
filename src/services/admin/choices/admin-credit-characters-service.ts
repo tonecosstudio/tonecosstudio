@@ -127,7 +127,17 @@ export async function fetchCatalogCharacters() {
     .order("name");
 
   if (error) throw error;
-  return data || [];
+
+  return (data || []).map((character) => {
+    if (!character.name) {
+      throw new Error(`Personagem ${character.id} possui nome ausente`);
+    }
+
+    return {
+      ...character,
+      name: character.name,
+    };
+  });
 }
 
 export async function fetchPriceCategories(): Promise<AdminPriceCategory[]> {
@@ -142,7 +152,7 @@ export async function fetchPriceCategories(): Promise<AdminPriceCategory[]> {
     id: category.id,
     name: category.name,
     display_name: category.display_name,
-    description: category.description,
+    description: null,
     price_coins: category.price_coins,
     coin_value_in_cents: category.coin_value_in_cents ?? undefined,
     price_standalone: category.price_standalone,
