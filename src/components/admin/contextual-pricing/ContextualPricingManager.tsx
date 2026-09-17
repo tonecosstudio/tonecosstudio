@@ -1,76 +1,40 @@
 /**
- * Componente principal para gerenciar preços contextuais.
+ * Componente principal para gerenciar a precificacao por tipo de colecao.
  *
- * Permite configurar:
- * - Preços base por tipo de coleção
- * - Multiplicadores de contexto
- * - Preview de preços calculados
- *
- * Spec: contextual-pricing-system
- * Task: 6.2
+ * Os antigos multiplicadores por contexto de assinante e o preview derivado
+ * foram aposentados: a tabela pricing_context_multipliers hoje pertence ao
+ * dominio de tamanho/complexidade/acabamento/urgencia e nao deve ser editada
+ * por esta tela de colecoes.
  */
 
-import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, DollarSign, Percent, Eye } from "lucide-react";
+import { Info, DollarSign } from "lucide-react";
 import { BasePricingTable } from "./BasePricingTable";
-import { MultipliersTable } from "./MultipliersTable";
-import { PricingPreviewTable } from "./PricingPreviewTable";
 
 export function ContextualPricingManager() {
-  const [activeTab, setActiveTab] = useState("base-prices");
-
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
-          Preços Contextuais
+          Precos por Tipo de Colecao
         </CardTitle>
         <CardDescription>
-          Configure preços base e multiplicadores para diferentes contextos de usuário
+          Configure os precos base das colecoes usando a fonte comercial vigente.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Alert className="mb-6">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Os preços contextuais ajustam automaticamente o valor das coleções de acordo com o
-            contexto comercial configurado. Alterações administrativas passam pela fronteira
-            autenticada do backend.
+            O editor legado de contexto de assinante foi removido porque seu contrato nao existe
+            mais no schema atual. Multiplicadores de tamanho, complexidade, acabamento e urgencia
+            pertencem a outro dominio e nao sao alterados por esta tela.
           </AlertDescription>
         </Alert>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="base-prices" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Preços Base
-            </TabsTrigger>
-            <TabsTrigger value="multipliers" className="flex items-center gap-2">
-              <Percent className="h-4 w-4" />
-              Multiplicadores
-            </TabsTrigger>
-            <TabsTrigger value="preview" className="flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              Preview
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="base-prices" className="mt-6">
-            <BasePricingTable />
-          </TabsContent>
-
-          <TabsContent value="multipliers" className="mt-6">
-            <MultipliersTable />
-          </TabsContent>
-
-          <TabsContent value="preview" className="mt-6">
-            <PricingPreviewTable />
-          </TabsContent>
-        </Tabs>
+        <BasePricingTable />
       </CardContent>
     </Card>
   );
