@@ -3,48 +3,6 @@ import type { Json } from '@/integrations/supabase/types';
 import { normalizeAddressBR, type AddressBR, type DeliveryAddress } from '@/lib/profile';
 import { callAuthenticatedEdgeFunction } from '@/services/supabase/edge-function-client';
 
-export interface DeliveryDetail {
-  id: string;
-  subscription_id: string;
-  cycle_id: string | null;
-  collection_id: string | null;
-  delivery_number: number;
-  status: string;
-  expected_delivery_date: string | null;
-  actual_delivery_date: string | null;
-  tracking_code: string | null;
-  shipping_carrier: string | null;
-  auto_maintained: boolean;
-  bonus_piece_id: string | null;
-  created_at: string;
-  updated_at: string;
-  subscriptions: {
-    user_id: string;
-    collection_id: string;
-    plan_type: string;
-    status: string;
-    total_paid: number;
-    payment_method: string;
-    collections: {
-      name: string;
-    };
-  } | null;
-  cycles: {
-    cycle_number: number;
-    month: number;
-    year: number;
-  } | null;
-  collections: {
-    name: string;
-  } | null;
-  bonus_pieces: {
-    id: string;
-    description: string;
-    image_url: string | null;
-    status: string;
-  } | null;
-}
-
 export interface CollectionChangeHistory {
   id: string;
   previous_collection_id: string | null;
@@ -113,12 +71,28 @@ function parseUpdateDeliveryStatusResult(
     delivery.id !== input.deliveryId ||
     typeof delivery.status !== 'string' ||
     delivery.status !== input.newStatus ||
-    (value.message !== undefined && typeof value.message !== 'string')
+    (value.message !== undefined && typeof value.message !== 'string') ||
+    (delivery.tracking_code !== undefined &&
+      delivery.tracking_code !== null &&
+      typeof delivery.tracking_code !== 'string') ||
+    (delivery.updated_at !== undefined && typeof delivery.updated_at !== 'string')
   ) {
     throw new Error('Erro ao atualizar status');
   }
 
-  return value as unknown as UpdateDeliveryStatusResult;
+  return {
+    success: true,
+    message: typeof value.message === 'string' ? value.message : undefined,
+    delivery: {
+      id: delivery.id,
+      status: delivery.status,
+      tracking_code:
+        typeof delivery.tracking_code === 'string' || delivery.tracking_code === null
+          ? delivery.tracking_code
+          : undefined,
+      updated_at: typeof delivery.updated_at === 'string' ? delivery.updated_at : undefined,
+    },
+  };
 }
 
 function formatAddress(address: AddressBR | null): string | null {
@@ -134,7 +108,7 @@ function formatAddress(address: AddressBR | null): string | null {
     .join('\n') || null;
 }
 
-export async function fetchDeliveryDetail(deliveryId: string): Promise<DeliveryDetail | null> {
+export async function fetchDeliveryDetail(deliveryId: string) {
   const { data, error } = await supabase
     .from('subscription_deliveries')
     .select(`
@@ -147,7 +121,6 @@ export async function fetchDeliveryDetail(deliveryId: string): Promise<DeliveryD
       expected_delivery_date,
       actual_delivery_date,
       tracking_code,
-      shipping_carrier,
       auto_maintained,
       bonus_piece_id,
       created_at,
@@ -182,8 +155,14 @@ export async function fetchDeliveryDetail(deliveryId: string): Promise<DeliveryD
     .single();
 
   if (error) throw error;
+  if (!data) return null;
 
-  return data as unknown as DeliveryDetail;
+  return {
+    ...data,
+    // subscription_deliveries no longer persists a carrier. The tracking helper
+    // treats a null carrier as the canonical default rather than fabricating data.
+    shipping_carrier: null,
+  };
 }
 
 export async function fetchSubscriberAddress(userId: string): Promise<{ address: string | null } | null> {
