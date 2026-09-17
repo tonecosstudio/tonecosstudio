@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { deliveryService, type Delivery } from "./deliveryService";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { cycleService } from "@/services/delivery/cycle-service";
 import {
   assignDeliveryToCycleRpc,
@@ -32,17 +33,43 @@ const SUBSCRIPTION_ID = "10000000-0000-4000-8000-000000000001";
 const DELIVERY_ID = "20000000-0000-4000-8000-000000000001";
 const CYCLE_ID = "30000000-0000-4000-8000-000000000001";
 const CHARACTER_ID = "40000000-0000-4000-8000-000000000001";
+const UPDATED_AT = "2026-03-01T00:00:00-03:00";
+
+type DeliveryRow = Database["public"]["Tables"]["subscription_deliveries"]["Row"];
+
+const mockDeliveryRow: DeliveryRow = {
+  id: DELIVERY_ID,
+  subscription_id: SUBSCRIPTION_ID,
+  cycle_id: CYCLE_ID,
+  character_id: null,
+  status: "scheduled",
+  delivery_date: "2026-04-07",
+  tracking_code: null,
+  created_at: UPDATED_AT,
+  updated_at: UPDATED_AT,
+  delivery_number: 1,
+  delivery_order: 1,
+  actual_delivery_date: null,
+  delivered_date: null,
+  shipping_date: null,
+  reveal_date: null,
+  collection_id: null,
+  collection_character_id: null,
+  expected_delivery_date: null,
+  auto_maintained: false,
+  bonus_piece_id: null,
+};
 
 const mockDelivery: Delivery = {
   id: DELIVERY_ID,
-  created_at: "2026-03-01T00:00:00-03:00",
-  updated_at: "2026-03-01T00:00:00-03:00",
+  created_at: UPDATED_AT,
+  updated_at: UPDATED_AT,
   subscription_id: SUBSCRIPTION_ID,
   cycle_id: CYCLE_ID,
   character_id: null,
   delivery_number: 1,
   status: "scheduled",
-  status_changed_at: null,
+  status_changed_at: UPDATED_AT,
   scheduled_date: "2026-04-07",
   shipped_at: null,
   delivered_at: null,
@@ -98,7 +125,14 @@ describe("DeliveryService", () => {
   });
 
   it("delegates consecutive scheduling to the canonical mutation service", async () => {
-    const deliveries = [mockDelivery, { ...mockDelivery, id: "20000000-0000-4000-8000-000000000002", delivery_number: 2 }];
+    const deliveries = [
+      mockDelivery,
+      {
+        ...mockDelivery,
+        id: "20000000-0000-4000-8000-000000000002",
+        delivery_number: 2,
+      },
+    ];
     mockedSchedule.mockResolvedValue(deliveries);
 
     await expect(
@@ -134,8 +168,13 @@ describe("DeliveryService", () => {
 
   it("reads subscription deliveries and preserves their order", async () => {
     const rows = [
-      { ...mockDelivery, delivery_number: 1 },
-      { ...mockDelivery, id: "20000000-0000-4000-8000-000000000002", delivery_number: 2 },
+      { ...mockDeliveryRow, delivery_number: 1 },
+      {
+        ...mockDeliveryRow,
+        id: "20000000-0000-4000-8000-000000000002",
+        delivery_number: 2,
+        delivery_order: 2,
+      },
     ];
     mockedSupabase.from.mockReturnValue(orderedQueryResult(rows) as never);
 
@@ -161,13 +200,13 @@ describe("DeliveryService", () => {
   });
 
   it("reads deliveries for a cycle", async () => {
-    mockedSupabase.from.mockReturnValue(orderedQueryResult([mockDelivery]) as never);
+    mockedSupabase.from.mockReturnValue(orderedQueryResult([mockDeliveryRow]) as never);
 
     await expect(deliveryService.getDeliveriesByCycle(CYCLE_ID)).resolves.toEqual([mockDelivery]);
   });
 
   it("returns the current active delivery", async () => {
-    mockedSupabase.from.mockReturnValue(currentDeliveryQueryResult(mockDelivery) as never);
+    mockedSupabase.from.mockReturnValue(currentDeliveryQueryResult(mockDeliveryRow) as never);
 
     await expect(deliveryService.getCurrentDelivery(SUBSCRIPTION_ID)).resolves.toEqual(mockDelivery);
   });
