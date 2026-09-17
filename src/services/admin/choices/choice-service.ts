@@ -6,12 +6,9 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import type { ChoiceStatus } from "@/services/admin/production/production-service";
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export interface CharacterChoice {
   id: string;
@@ -55,53 +52,7 @@ export interface ChoiceCollectionFilterOption {
   name: string;
 }
 
-interface RawCharacterChoiceRow {
-  id: string;
-  order_id: string | null;
-  order_type: string | null;
-  user_id: string;
-  customer_name: string | null;
-  customer_email: string | null;
-  collection_id: string | null;
-  collection_name: string | null;
-  character_id: string | null;
-  character_name: string | null;
-  character_image_url: string | null;
-  status: string;
-  submitted_at: string | null;
-  approved_at: string | null;
-  approved_by: string | null;
-  approved_by_name: string | null;
-  rejected_at: string | null;
-  rejection_reason: string | null;
-  deadline: string | null;
-  reminders_sent: number | null;
-  last_reminder_at: string | null;
-  previous_choice_id: string | null;
-  change_reason: string | null;
-  change_count: number | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface CharacterChoicesQuery extends PromiseLike<{
-  data: RawCharacterChoiceRow[] | null;
-  error: { message: string } | null;
-}> {
-  eq(column: "order_id", value: string): CharacterChoicesQuery;
-  gte(column: "deadline", value: string): CharacterChoicesQuery;
-  in(column: "status" | "collection_id", values: readonly string[]): CharacterChoicesQuery;
-  lte(column: "deadline", value: string): CharacterChoicesQuery;
-  order(column: "deadline" | "created_at", options?: { ascending?: boolean }): CharacterChoicesQuery;
-}
-
-interface CharacterChoicesGateway {
-  from(table: "character_choices"): {
-    select(columns: "*"): CharacterChoicesQuery;
-  };
-}
-
-const characterChoicesGateway = supabase as unknown as CharacterChoicesGateway;
+type RawCharacterChoiceRow = Database["public"]["Tables"]["character_choices"]["Row"];
 
 function isChoiceOrderType(value: string | null): value is CharacterChoice["orderType"] {
   return value === "subscription_delivery" || value === "standalone_purchase";
@@ -181,35 +132,22 @@ function mapCharacterChoice(item: RawCharacterChoiceRow): CharacterChoice {
   };
 }
 
-// ============================================================================
-// Main Functions
-// ============================================================================
-
-/**
- * Fetch pending character choices with filters
- *
- * @param filters - Filters to apply
- * @returns Array of character choices
- */
 export async function fetchPendingChoices(
   filters: ChoiceFilters = {}
 ): Promise<CharacterChoice[]> {
-  let query = characterChoicesGateway
+  let query = supabase
     .from("character_choices")
     .select("*")
     .order("deadline", { ascending: true });
 
-  // Apply status filter
   if (filters.statuses && filters.statuses.length > 0) {
     query = query.in("status", filters.statuses);
   }
 
-  // Apply collection filter
   if (filters.collections && filters.collections.length > 0) {
     query = query.in("collection_id", filters.collections);
   }
 
-  // Apply date range filter (deadline)
   if (filters.dateFrom) {
     query = query.gte("deadline", filters.dateFrom);
   }
@@ -225,7 +163,6 @@ export async function fetchPendingChoices(
 
   const choices = (data || []).map(mapCharacterChoice);
 
-  // Apply search filter (client-side for now)
   if (filters.searchQuery && filters.searchQuery.trim()) {
     const searchTerm = filters.searchQuery.trim().toLowerCase();
     return choices.filter(
@@ -249,21 +186,14 @@ export async function fetchActiveChoiceCollections(): Promise<ChoiceCollectionFi
     throw new Error(`Error fetching choice collections: ${error.message}`);
   }
 
-  return (data || []) as ChoiceCollectionFilterOption[];
+  return data || [];
 }
 
-/**
- * Approve a character choice
- *
- * @param choiceId - ID of the choice to approve
- * @returns Updated character choice
- */
 export async function approveChoice(choiceId: string): Promise<CharacterChoice> {
   await callAdminRpc("admin_approve_character_choice", {
     p_choice_id: choiceId,
   });
 
-  // Fetch full choice data
   const choices = await fetchPendingChoices({});
   const updatedChoice = choices.find((c) => c.id === choiceId);
 
@@ -274,13 +204,6 @@ export async function approveChoice(choiceId: string): Promise<CharacterChoice> 
   return updatedChoice;
 }
 
-/**
- * Reject a character choice
- *
- * @param choiceId - ID of the choice to reject
- * @param reason - Reason for rejection
- * @returns Updated character choice
- */
 export async function rejectChoice(
   choiceId: string,
   reason: string
@@ -290,7 +213,6 @@ export async function rejectChoice(
     p_reason: reason,
   });
 
-  // Fetch full choice data
   const choices = await fetchPendingChoices({});
   const updatedChoice = choices.find((c) => c.id === choiceId);
 
@@ -301,13 +223,6 @@ export async function rejectChoice(
   return updatedChoice;
 }
 
-/**
- * Extend the deadline for a character choice
- *
- * @param choiceId - ID of the choice
- * @param newDeadline - New deadline date (ISO string)
- * @returns Updated character choice
- */
 export async function extendDeadline(
   choiceId: string,
   newDeadline: string
@@ -317,7 +232,6 @@ export async function extendDeadline(
     p_new_deadline: newDeadline,
   });
 
-  // Fetch full choice data
   const choices = await fetchPendingChoices({});
   const updatedChoice = choices.find((c) => c.id === choiceId);
 
@@ -328,14 +242,8 @@ export async function extendDeadline(
   return updatedChoice;
 }
 
-/**
- * Get choice history for an order
- *
- * @param orderId - ID of the order
- * @returns Array of character choices (history)
- */
 export async function getChoiceHistory(orderId: string): Promise<CharacterChoice[]> {
-  const { data, error } = await characterChoicesGateway
+  const { data, error } = await supabase
     .from("character_choices")
     .select("*")
     .eq("order_id", orderId)
