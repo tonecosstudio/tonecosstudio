@@ -1,267 +1,173 @@
 /**
- * Integration tests for MessageService email notification boundary
- *
- * Tests that messageService invokes the email Edge Function directly.
- * Requirements: 16.2, 16.5 - Task 18.3
+ * Integration tests for the MessageService email notification boundary.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MessageService } from "./messageService";
 
-// Mock Supabase
-const mockConversationData = {
-  "conv-123": {
-    id: "conv-123",
-    user_id: "customer-456",
-    subject: "Test Conversation",
-  },
-};
+const mocks = vi.hoisted(() => ({
+  edgeFunction: vi.fn(),
+  requireCurrentUserAdminAccess: vi.fn(),
+  requireAuthenticatedUserId: vi.fn(),
+  assertCurrentUserId: vi.fn(),
+  getCurrentUserId: vi.fn(),
+  conversationUserId: "customer-456",
+}));
 
-const mockInsertedMessage = {
-  id: "msg-789",
-  conversation_id: "conv-123",
-  sender_id: "admin-001",
-  sender_type: "admin",
-  message: "Test message from admin",
-  is_internal: false,
-  read_by_admin: false,
-  read_by_customer: false,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
+vi.mock("@/services/auth/current-user", () => ({
+  requireCurrentUserAdminAccess: mocks.requireCurrentUserAdminAccess,
+  requireAuthenticatedUserId: mocks.requireAuthenticatedUserId,
+  assertCurrentUserId: mocks.assertCurrentUserId,
+  getCurrentUserId: mocks.getCurrentUserId,
+}));
+
+vi.mock("@/services/supabase/edge-function-client", () => ({
+  callAuthenticatedEdgeFunction: mocks.edgeFunction,
+}));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
+    auth: {
+      onAuthStateChange: vi.fn(() => ({
+        data: { subscription: { unsubscribe: vi.fn() } },
+      })),
+    },
     rpc: vi.fn((name: string, args: Record<string, unknown>) => {
-      if (name === "send_support_message") {
-        return Promise.resolve({
-          data: {
-            ...mockInsertedMessage,
-            conversation_id: args.p_conversation_id,
-            sender_type: args.p_sender_type,
-            message: args.p_message,
-            is_internal: args.p_is_internal,
-          },
-          error: null,
-        });
+      if (name !== "send_support_message") {
+        return Promise.resolve({ data: null, error: null });
       }
 
-      return Promise.resolve({ data: null, error: null });
+      return Promise.resolve({
+        data: {
+          id: "msg-789",
+          conversation_id: args.p_conversation_id,
+          sender_id: "admin-001",
+          sender_type: args.p_sender_type,
+          message: args.p_message,
+          is_internal: args.p_is_internal,
+          read_by_admin: false,
+          read_by_customer: false,
+          created_at: "2026-09-17T12:00:00.000Z",
+          updated_at: "2026-09-17T12:00:00.000Z",
+        },
+        error: null,
+      });
     }),
-    functions: {
-      invoke: vi.fn(() => Promise.resolve({ data: { success: true }, error: null })),
-    },
     from: vi.fn((table: string) => ({
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn(() => ({
-            data: mockInsertedMessage,
-            error: null,
-          })),
-        })),
-      })),
       select: vi.fn(() => ({
-        eq: vi.fn((field: string, value: string) => ({
-          single: vi.fn(() => {
+        eq: vi.fn(() => ({
+          single: vi.fn(async () => {
             if (table === "support_conversations") {
               return {
-                data: mockConversationData[value as keyof typeof mockConversationData] || null,
+                data: { id: "conv-123", user_id: mocks.conversationUserId },
                 error: null,
               };
             }
+
             return { data: null, error: null };
           }),
-          gte: vi.fn(() => ({
-            limit: vi.fn(() => ({
-              data: [],
-              error: null,
-            })),
-          })),
         })),
       })),
     })),
   },
 }));
 
-describe("MessageService email Edge Function integration - Task 18.3", () => {
+async function flushAsyncNotification(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+describe("MessageService email Edge Function integration", () => {
   let messageService: MessageService;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.conversationUserId = "customer-456";
+    mocks.requireCurrentUserAdminAccess.mockResolvedValue("admin-001");
+    mocks.requireAuthenticatedUserId.mockResolvedValue("customer-456");
+    mocks.assertCurrentUserId.mockResolvedValue(undefined);
+    mocks.getCurrentUserId.mockResolvedValue("admin-001");
+    mocks.edgeFunction.mockResolvedValue({ success: true });
     messageService = new MessageService();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  it("enqueues an email notification when an admin sends a customer-visible message", async () => {
+    const result = await messageService.sendMessage({
+      conversation_id: "conv-123",
+      sender_id: "admin-001",
+      sender_type: "admin",
+      message: "Hello, how can I help you?",
+      is_internal: false,
+    });
+    await flushAsyncNotification();
+
+    expect(result.id).toBe("msg-789");
+    expect(mocks.edgeFunction).toHaveBeenCalledWith(
+      "send-email",
+      {
+        conversationId: "conv-123",
+        messageId: "msg-789",
+        recipientUserId: "customer-456",
+        messageContent: "Hello, how can I help you?",
+      },
+      "Failed to invoke support email Edge Function",
+    );
   });
 
-  describe("Requirement 16.2: Send email when recipient is offline", () => {
-    it("should invoke send-email Edge Function when admin sends message to customer", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-
-      // Feature: advanced-chat-support-system, Requirement 16.2, Task 18.3
-      const messageData = {
-        conversation_id: "conv-123",
-        sender_id: "admin-001",
-        sender_type: "admin" as const,
-        message: "Hello, how can I help you?",
-        is_internal: false,
-      };
-
-      await messageService.sendMessage(messageData);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(supabase.functions.invoke).toHaveBeenCalledTimes(1);
-      expect(supabase.functions.invoke).toHaveBeenCalledWith("send-email", {
-        body: {
-          conversationId: "conv-123",
-          messageId: "msg-789",
-          recipientUserId: "customer-456",
-          messageContent: "Hello, how can I help you?",
-        },
-      });
+  it("does not enqueue email for internal notes", async () => {
+    await messageService.sendMessage({
+      conversation_id: "conv-123",
+      sender_id: "admin-001",
+      sender_type: "admin",
+      message: "Internal note",
+      is_internal: true,
     });
+    await flushAsyncNotification();
 
-    it("should not invoke send-email Edge Function for internal notes", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-
-      // Feature: advanced-chat-support-system, Requirement 16.2, Task 18.3
-      const messageData = {
-        conversation_id: "conv-123",
-        sender_id: "admin-001",
-        sender_type: "admin" as const,
-        message: "Internal note: customer seems frustrated",
-        is_internal: true,
-      };
-
-      await messageService.sendMessage(messageData);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(supabase.functions.invoke).not.toHaveBeenCalled();
-    });
-
-    it("should not invoke send-email Edge Function when sender is the recipient", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-
-      // Feature: advanced-chat-support-system, Requirement 16.2, Task 18.3
-      // This prevents sending notification to the same user who sent the message
-      const messageData = {
-        conversation_id: "conv-123",
-        sender_id: "customer-456", // Same as conversation user_id
-        sender_type: "admin" as const,
-        message: "Test message",
-        is_internal: false,
-      };
-
-      await messageService.sendMessage(messageData);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(supabase.functions.invoke).not.toHaveBeenCalled();
-    });
-
-    it("should handle notification errors gracefully without failing message send", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-
-      // Feature: advanced-chat-support-system, Requirement 16.2, Task 18.3
-      // If notification fails, message should still be sent successfully
-
-      vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({
-        data: null,
-        error: { message: "Email service unavailable" },
-      } as never);
-
-      const messageData = {
-        conversation_id: "conv-123",
-        sender_id: "admin-001",
-        sender_type: "admin" as const,
-        message: "Test message",
-        is_internal: false,
-      };
-
-      const result = await messageService.sendMessage(messageData);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      // Message should still be sent successfully
-      expect(result).toBeDefined();
-      expect(result.id).toBe("msg-789");
-
-      // Verify notification was attempted
-      expect(supabase.functions.invoke).toHaveBeenCalled();
-    });
+    expect(mocks.edgeFunction).not.toHaveBeenCalled();
   });
 
-  describe("Requirement 16.5: Do NOT send email if user is online", () => {
-    it("should delegate online checks to the send-email Edge Function", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
+  it("does not notify when the conversation recipient is the sender", async () => {
+    mocks.conversationUserId = "admin-001";
 
-      // Feature: advanced-chat-support-system, Requirement 16.5, Task 18.3
-      // The Edge Function owns the online-user check before sending email.
-
-      const messageData = {
-        conversation_id: "conv-123",
-        sender_id: "admin-001",
-        sender_type: "admin" as const,
-        message: "Test message",
-        is_internal: false,
-      };
-
-      await messageService.sendMessage(messageData);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(supabase.functions.invoke).toHaveBeenCalledWith("send-email", {
-        body: expect.objectContaining({
-          recipientUserId: "customer-456",
-          conversationId: "conv-123",
-          messageContent: "Test message",
-        }),
-      });
+    await messageService.sendMessage({
+      conversation_id: "conv-123",
+      sender_id: "admin-001",
+      sender_type: "admin",
+      message: "Test message",
+      is_internal: false,
     });
+    await flushAsyncNotification();
+
+    expect(mocks.edgeFunction).not.toHaveBeenCalled();
   });
 
-  describe("Integration behavior", () => {
-    it("should send message and trigger notification in correct order", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
+  it("keeps the message successful when the email boundary fails", async () => {
+    mocks.edgeFunction.mockRejectedValueOnce(new Error("Email service unavailable"));
 
-      // Feature: advanced-chat-support-system, Task 18.3
-      const messageData = {
-        conversation_id: "conv-123",
-        sender_id: "admin-001",
-        sender_type: "admin" as const,
-        message: "Test message",
-        is_internal: false,
-      };
-
-      const result = await messageService.sendMessage(messageData);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      // Message should be inserted first
-      expect(result).toBeDefined();
-      expect(result.id).toBe("msg-789");
-
-      // Then notification should be triggered
-      expect(supabase.functions.invoke).toHaveBeenCalled();
+    const result = await messageService.sendMessage({
+      conversation_id: "conv-123",
+      sender_id: "admin-001",
+      sender_type: "admin",
+      message: "Test message",
+      is_internal: false,
     });
+    await flushAsyncNotification();
 
-    it("should work with customer messages (future enhancement)", async () => {
-      // Feature: advanced-chat-support-system, Task 18.3
-      // Currently, customer messages don't trigger admin notifications
-      // Customer-to-admin notifications are outside this service boundary.
+    expect(result.id).toBe("msg-789");
+    expect(mocks.edgeFunction).toHaveBeenCalledTimes(1);
+  });
 
-      const messageData = {
-        conversation_id: "conv-123",
-        sender_id: "customer-456",
-        sender_type: "customer" as const,
-        message: "I need help",
-        is_internal: false,
-      };
-
-      await messageService.sendMessage(messageData);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      // Currently, no notification is sent for customer messages
-      // This is expected behavior for MVP
-      const { supabase } = await import("@/integrations/supabase/client");
-      expect(supabase.functions.invoke).not.toHaveBeenCalled();
+  it("does not enqueue customer-to-admin email from this service boundary", async () => {
+    await messageService.sendMessage({
+      conversation_id: "conv-123",
+      sender_id: "customer-456",
+      sender_type: "customer",
+      message: "I need help",
+      is_internal: false,
     });
+    await flushAsyncNotification();
+
+    expect(mocks.assertCurrentUserId).toHaveBeenCalledWith("customer-456");
+    expect(mocks.edgeFunction).not.toHaveBeenCalled();
   });
 });
