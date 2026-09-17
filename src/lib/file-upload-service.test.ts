@@ -57,12 +57,10 @@ function paymentFile(overrides: Partial<PaymentFile> = {}): PaymentFile {
   };
 }
 
-function validJpeg(name = "proof.jpg") {
-  const file = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xdb])], name, {
-    type: "image/jpeg",
-  });
-  Object.defineProperty(file, "size", { value: 1024 });
-  return file;
+function validJpeg(name = "proof.jpg", size = 1024) {
+  const bytes = new Uint8Array(size);
+  bytes.set([0xff, 0xd8, 0xff, 0xdb]);
+  return new File([bytes], name, { type: "image/jpeg" });
 }
 
 describe("FileUploadService", () => {
@@ -103,8 +101,7 @@ describe("FileUploadService", () => {
     });
 
     it("rejects files larger than 5 MB", async () => {
-      const file = validJpeg();
-      Object.defineProperty(file, "size", { value: 5 * 1024 * 1024 + 1 });
+      const file = validJpeg("proof.jpg", 5 * 1024 * 1024 + 1);
 
       const result = await service.validateFile(file);
 
