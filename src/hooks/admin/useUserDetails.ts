@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   fetchAdminUserProfile,
-  listAdminUserBadges,
   listAdminUserPaymentHistory,
   type AdminUserProfile,
   type AdminUserRole,
@@ -22,12 +21,6 @@ export function useUserDetails({ userId }: UseUserDetailsProps) {
     },
   });
 
-  const badgesQuery = useQuery({
-    queryKey: ["admin-user-badges", userId],
-    enabled: Boolean(userId),
-    queryFn: () => listAdminUserBadges(userId),
-  });
-
   const paymentHistoryQuery = useQuery<UserPaymentHistory[]>({
     queryKey: ["admin-user-payment-history", userId],
     enabled: Boolean(userId),
@@ -39,7 +32,6 @@ export function useUserDetails({ userId }: UseUserDetailsProps) {
   return {
     profile: profileQuery.data,
     roles,
-    badges: badgesQuery.data || [],
     paymentHistory: paymentHistoryQuery.data || [],
     isLoading: profileQuery.isLoading,
     isError: profileQuery.isError,
