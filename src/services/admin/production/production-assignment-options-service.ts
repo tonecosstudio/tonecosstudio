@@ -1,5 +1,7 @@
-import { supabase } from "@/integrations/supabase/client";
 import { hasAnyAdminAccessRole } from "@/lib/permissions/adminRoles";
+import {
+  fetchProductionQueue,
+} from "@/services/admin/production/production-service";
 import { fetchAdminUsers } from "@/services/admin/users/admin-users-service";
 
 export interface ProductionAssignmentTeamMember {
@@ -12,26 +14,19 @@ export interface ProductionAssignmentTeamMember {
 export async function fetchProductionAssignmentTeamMembers(): Promise<
   ProductionAssignmentTeamMember[]
 > {
-  const users = await fetchAdminUsers();
-
-  const { data: workloadData, error: workloadError } = await supabase
-    .from("production_queue")
-    .select("assigned_to")
-    .not("assigned_to", "is", null)
-    .in("production_status", ["ready_for_production", "in_production"]);
-
-  if (workloadError) {
-    throw new Error(`Erro ao buscar carga de trabalho: ${workloadError.message}`);
-  }
+  const [users, queue] = await Promise.all([
+    fetchAdminUsers(),
+    fetchProductionQueue(
+      { statuses: ["ready_for_production", "in_production"] },
+      { page: 1, pageSize: Number.MAX_SAFE_INTEGER },
+    ),
+  ]);
 
   const workloadByMember = new Map<string, number>();
-  workloadData?.forEach((item) => {
-    if (!item.assigned_to) {
-      return;
-    }
-
-    workloadByMember.set(item.assigned_to, (workloadByMember.get(item.assigned_to) ?? 0) + 1);
-  });
+  for (const item of queue.data) {
+    if (!item.assignedTo) continue;
+    workloadByMember.set(item.assignedTo, (workloadByMember.get(item.assignedTo) ?? 0) + 1);
+  }
 
   return users
     .filter((user) => hasAnyAdminAccessRole(user.roles))
