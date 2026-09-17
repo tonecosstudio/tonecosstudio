@@ -6,11 +6,18 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { businessDayService } from './businessDayService';
 import { timezoneService } from './timezoneService';
 
-const { mockRpc } = vi.hoisted(() => ({
-  mockRpc: vi.fn(),
+const mutationMocks = vi.hoisted(() => ({
+  addHolidayRpc: vi.fn(),
+  updateHolidayRpc: vi.fn(),
+  deleteHolidayRpc: vi.fn(),
 }));
 
-// Mock do Supabase
+vi.mock('@/services/calendar/holiday-mutations-service', () => ({
+  addHolidayRpc: mutationMocks.addHolidayRpc,
+  updateHolidayRpc: mutationMocks.updateHolidayRpc,
+  deleteHolidayRpc: mutationMocks.deleteHolidayRpc,
+}));
+
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     from: vi.fn(() => ({
@@ -51,88 +58,40 @@ vi.mock('@/integrations/supabase/client', () => ({
           })),
         })),
       })),
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({
-            data: {
-              id: '3',
-              holiday_date: '2026-12-31',
-              name: 'Teste',
-              type: 'national',
-              is_recurring: false,
-            },
-            error: null,
-          })),
-        })),
-      })),
-      update: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          select: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve({
-              data: {
-                id: '1',
-                holiday_date: '2026-01-01',
-                name: 'Ano Novo Atualizado',
-                type: 'national',
-                is_recurring: true,
-              },
-              error: null,
-            })),
-          })),
-        })),
-      })),
-      delete: vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({ error: null })),
-      })),
     })),
-    rpc: mockRpc,
   },
 }));
 
 describe('BusinessDayService', () => {
   beforeEach(() => {
-    mockRpc.mockReset();
-    mockRpc.mockImplementation((functionName: string) => {
-      if (functionName === 'admin_add_holiday') {
-        return Promise.resolve({
-          data: {
-            id: '3',
-            holiday_date: '2026-12-31',
-            name: 'Teste',
-            type: 'national',
-            is_recurring: false,
-          },
-          error: null,
-        });
-      }
-
-      if (functionName === 'admin_update_holiday') {
-        return Promise.resolve({
-          data: {
-            id: '1',
-            holiday_date: '2026-01-01',
-            name: 'Ano Novo Atualizado',
-            type: 'national',
-            is_recurring: true,
-          },
-          error: null,
-        });
-      }
-
-      if (functionName === 'admin_delete_holiday') {
-        return Promise.resolve({ data: null, error: null });
-      }
-
-      return Promise.resolve({ data: null, error: null });
+    vi.clearAllMocks();
+    mutationMocks.addHolidayRpc.mockResolvedValue({
+      id: '3',
+      holiday_date: '2026-12-31',
+      name: 'Teste',
+      type: 'national',
+      is_recurring: false,
+    });
+    mutationMocks.updateHolidayRpc.mockResolvedValue({
+      id: '1',
+      holiday_date: '2026-01-01',
+      name: 'Ano Novo Atualizado',
+      type: 'national',
+      is_recurring: true,
+    });
+    mutationMocks.deleteHolidayRpc.mockResolvedValue({
+      id: '1',
+      holiday_date: '2026-01-01',
+      name: 'Ano Novo',
+      type: 'national',
+      is_recurring: true,
     });
 
-    // Limpar cache antes de cada teste
     businessDayService.clearHolidayCache();
   });
 
   describe('calculateNthBusinessDay', () => {
     it('deve calcular o 5º dia útil de um mês', async () => {
-      // Janeiro 2026: 1 (qui), 2 (sex), 5 (seg), 6 (ter), 7 (qua) = 5º dia útil
       const fifthDay = await businessDayService.calculateNthBusinessDay(1, 2026, 5);
       
       expect(fifthDay).toBeInstanceOf(Date);
@@ -153,13 +112,10 @@ describe('BusinessDayService', () => {
       ).rejects.toThrow('N deve ser maior que 0');
     });
 
-    it('deve excluir fins de semana', async () => {
-      // Março 2026 começa em domingo (1º)
-      // Primeiro dia útil deve ser segunda (2)
+    it('deve excluir fins de semana no calendário de Bahia', async () => {
       const firstDay = await businessDayService.calculateNthBusinessDay(3, 2026, 1);
-      const dayOfWeek = firstDay.getDay();
+      const dayOfWeek = timezoneService.toSystemTimezone(firstDay).getDay();
       
-      // Não deve ser sábado (6) ou domingo (0)
       expect(dayOfWeek).not.toBe(0);
       expect(dayOfWeek).not.toBe(6);
     });
@@ -186,12 +142,10 @@ describe('BusinessDayService', () => {
     });
 
     it('deve retornar 1 para o mesmo dia se for dia útil', async () => {
-      // Segunda-feira, 2 de março de 2026
       const date = timezoneService.createDate(2026, 3, 2);
       
       const count = await businessDayService.countBusinessDays(date, date);
       
-      // Deve ser 0 ou 1 dependendo se é dia útil
       expect(count).toBeGreaterThanOrEqual(0);
       expect(count).toBeLessThanOrEqual(1);
     });
@@ -199,92 +153,60 @@ describe('BusinessDayService', () => {
 
   describe('isBusinessDay', () => {
     it('deve retornar false para sábado', async () => {
-      // 7 de março de 2026 é sábado
       const saturday = timezoneService.createDate(2026, 3, 7);
-      
-      const isBusinessDay = await businessDayService.isBusinessDay(saturday);
-      
-      expect(isBusinessDay).toBe(false);
+      expect(await businessDayService.isBusinessDay(saturday)).toBe(false);
     });
 
     it('deve retornar false para domingo', async () => {
-      // 1 de março de 2026 é domingo
       const sunday = timezoneService.createDate(2026, 3, 1);
-      
-      const isBusinessDay = await businessDayService.isBusinessDay(sunday);
-      
-      expect(isBusinessDay).toBe(false);
+      expect(await businessDayService.isBusinessDay(sunday)).toBe(false);
     });
 
     it('deve retornar true para dia útil normal', async () => {
-      // 2 de março de 2026 é segunda-feira
       const monday = timezoneService.createDate(2026, 3, 2);
-      
-      const isBusinessDay = await businessDayService.isBusinessDay(monday);
-      
-      // Deve ser true se não for feriado
-      expect(typeof isBusinessDay).toBe('boolean');
+      expect(typeof (await businessDayService.isBusinessDay(monday))).toBe('boolean');
     });
 
     it('deve retornar false para feriado', async () => {
-      // 1 de janeiro de 2026 é feriado (Ano Novo)
       const newYear = timezoneService.createDate(2026, 1, 1);
-      
-      const isBusinessDay = await businessDayService.isBusinessDay(newYear);
-      
-      expect(isBusinessDay).toBe(false);
+      expect(await businessDayService.isBusinessDay(newYear)).toBe(false);
     });
   });
 
   describe('getHolidays', () => {
     it('deve retornar lista de feriados', async () => {
       const holidays = await businessDayService.getHolidays(2026);
-      
       expect(Array.isArray(holidays)).toBe(true);
       expect(holidays.length).toBeGreaterThan(0);
     });
 
     it('deve usar cache na segunda chamada', async () => {
-      // Primeira chamada
       const holidays1 = await businessDayService.getHolidays(2026);
-      
-      // Segunda chamada (deve usar cache)
       const holidays2 = await businessDayService.getHolidays(2026);
-      
       expect(holidays1).toBeDefined();
       expect(holidays2).toBeDefined();
     });
 
-    it('deve retornar array vazio se não houver feriados', async () => {
-      // Ano muito distante sem feriados cadastrados
+    it('deve retornar array válido para ano sem cadastro específico no mock', async () => {
       const holidays = await businessDayService.getHolidays(2050);
-      
       expect(Array.isArray(holidays)).toBe(true);
     });
   });
 
   describe('isHoliday', () => {
     it('deve retornar true para feriado nacional', async () => {
-      // 1 de janeiro é Ano Novo
       const newYear = timezoneService.createDate(2026, 1, 1);
-      
-      const isHoliday = await businessDayService.isHoliday(newYear);
-      
-      expect(isHoliday).toBe(true);
+      expect(await businessDayService.isHoliday(newYear)).toBe(true);
     });
 
     it('deve retornar false para dia normal', async () => {
-      // 10 de março não é feriado
       const normalDay = timezoneService.createDate(2026, 3, 10);
-      
-      const isHoliday = await businessDayService.isHoliday(normalDay);
-      
-      expect(isHoliday).toBe(false);
+      expect(await businessDayService.isHoliday(normalDay)).toBe(false);
     });
   });
 
   describe('addHoliday', () => {
-    it('deve adicionar novo feriado', async () => {
+    it('deve adicionar novo feriado pela fronteira de mutação', async () => {
       const holiday = await businessDayService.addHoliday({
         holiday_date: '2026-12-31',
         name: 'Véspera de Ano Novo',
@@ -292,76 +214,60 @@ describe('BusinessDayService', () => {
       });
       
       expect(holiday).toBeDefined();
-      expect(holiday.name).toBe('Teste'); // Mock retorna 'Teste'
-      expect(mockRpc).toHaveBeenCalledWith('admin_add_holiday', {
-        p_holiday_date: '2026-12-31',
-        p_name: 'Véspera de Ano Novo',
-        p_description: null,
-        p_type: 'national',
-        p_state_code: null,
-        p_is_recurring: false,
+      expect(holiday.name).toBe('Teste');
+      expect(mutationMocks.addHolidayRpc).toHaveBeenCalledWith({
+        holiday_date: '2026-12-31',
+        name: 'Véspera de Ano Novo',
+        description: null,
+        type: 'national',
+        state_code: null,
+        is_recurring: false,
       });
     });
 
     it('deve limpar cache ao adicionar feriado', async () => {
-      // Carregar cache
       await businessDayService.getHolidays(2026);
-      
-      // Adicionar feriado (deve limpar cache)
       await businessDayService.addHoliday({
         holiday_date: '2026-12-31',
         name: 'Teste',
         type: 'national',
       });
-      
-      // Cache deve ter sido limpo
-      // Próxima chamada deve buscar do banco novamente
       const holidays = await businessDayService.getHolidays(2026);
       expect(holidays).toBeDefined();
     });
   });
 
   describe('updateHoliday', () => {
-    it('deve atualizar feriado existente', async () => {
+    it('deve atualizar feriado existente pela fronteira de mutação', async () => {
       const updated = await businessDayService.updateHoliday('1', {
         name: 'Ano Novo Atualizado',
       });
       
       expect(updated).toBeDefined();
       expect(updated.name).toBe('Ano Novo Atualizado');
-      expect(mockRpc).toHaveBeenCalledWith('admin_update_holiday', {
-        p_holiday_id: '1',
-        p_holiday_date: null,
-        p_name: 'Ano Novo Atualizado',
-        p_description: null,
-        p_type: null,
-        p_state_code: null,
-        p_is_recurring: null,
+      expect(mutationMocks.updateHolidayRpc).toHaveBeenCalledWith('1', {
+        holiday_date: undefined,
+        name: 'Ano Novo Atualizado',
+        description: null,
+        type: undefined,
+        state_code: null,
+        is_recurring: undefined,
       });
     });
   });
 
   describe('deleteHoliday', () => {
-    it('deve deletar feriado', async () => {
-      await expect(
-        businessDayService.deleteHoliday('1')
-      ).resolves.not.toThrow();
-      expect(mockRpc).toHaveBeenCalledWith('admin_delete_holiday', {
-        p_holiday_id: '1',
-      });
+    it('deve deletar feriado pela fronteira de mutação', async () => {
+      await expect(businessDayService.deleteHoliday('1')).resolves.not.toThrow();
+      expect(mutationMocks.deleteHolidayRpc).toHaveBeenCalledWith('1');
     });
   });
 
   describe('clearHolidayCache', () => {
     it('deve limpar todo o cache', async () => {
-      // Carregar cache
       await businessDayService.getHolidays(2026);
       await businessDayService.getHolidays(2027);
-      
-      // Limpar cache
       businessDayService.clearHolidayCache();
-      
-      // Próximas chamadas devem buscar do banco
       const holidays = await businessDayService.getHolidays(2026);
       expect(holidays).toBeDefined();
     });
@@ -370,29 +276,24 @@ describe('BusinessDayService', () => {
   describe('Casos de borda', () => {
     it('deve lidar com mês de fevereiro (28 dias)', async () => {
       const firstDay = await businessDayService.calculateNthBusinessDay(2, 2026, 1);
-      
       expect(firstDay).toBeInstanceOf(Date);
       expect(timezoneService.getMonth(firstDay)).toBe(2);
     });
 
     it('deve lidar com mês de fevereiro em ano bissexto (29 dias)', async () => {
       const firstDay = await businessDayService.calculateNthBusinessDay(2, 2028, 1);
-      
       expect(firstDay).toBeInstanceOf(Date);
       expect(timezoneService.getMonth(firstDay)).toBe(2);
     });
 
     it('deve lidar com mês com 31 dias', async () => {
       const firstDay = await businessDayService.calculateNthBusinessDay(1, 2026, 1);
-      
       expect(firstDay).toBeInstanceOf(Date);
       expect(timezoneService.getMonth(firstDay)).toBe(1);
     });
 
     it('deve lidar com múltiplos feriados consecutivos', async () => {
-      // Carnaval geralmente tem 2 dias consecutivos
       const holidays = await businessDayService.getHolidays(2026);
-      
       expect(holidays).toBeDefined();
       expect(Array.isArray(holidays)).toBe(true);
     });
@@ -401,25 +302,18 @@ describe('BusinessDayService', () => {
   describe('Performance', () => {
     it('deve calcular 5º dia útil em menos de 100ms', async () => {
       const start = Date.now();
-      
       await businessDayService.calculateNthBusinessDay(3, 2026, 5);
-      
       const duration = Date.now() - start;
       expect(duration).toBeLessThan(100);
     });
 
     it('deve usar cache eficientemente', async () => {
-      // Primeira chamada (sem cache)
       const start1 = Date.now();
       await businessDayService.getHolidays(2026);
       const duration1 = Date.now() - start1;
-      
-      // Segunda chamada (com cache)
       const start2 = Date.now();
       await businessDayService.getHolidays(2026);
       const duration2 = Date.now() - start2;
-      
-      // Cache deve ser mais rápido
       expect(duration2).toBeLessThanOrEqual(duration1);
     });
   });
