@@ -54,8 +54,8 @@ export function getInitialPaymentMethodFormState(
     paymentLink: method.payment_link || "",
     pixKey: method.pix_key || "",
     accountDetails: method.account_details ? JSON.stringify(method.account_details, null, 2) : "",
-    isActive: method.is_active,
-    isDefault: method.is_default,
+    isActive: method.is_active ?? false,
+    isDefault: method.is_default ?? false,
   };
 }
 
