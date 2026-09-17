@@ -8,11 +8,11 @@
 
 **Lançamento público: NO-GO.**
 
-HEAD de código deste checkpoint:
+HEAD de código antes deste checkpoint documental:
 
-- `44e11ed52e370c8b848faa7def20d4689a7e4f9a` — `fix: validate historical cycle status filters`.
+- `4aba68e07bbfbb29a21eefcdb2246a2820aa77f1` — `build: add typed support for Array.at`.
 
-O bloqueador técnico primário continua sendo a reconciliação **aplicação ↔ schema Supabase canônico**. A Vercel executa `npm run release:verify` e os últimos deployments validados ainda param no TypeScript. O HEAD acima ainda não possui deployment concluído; portanto não há prova de typecheck PASS.
+O P0 deixou de ser um drift difuso e está concentrado em poucos blocos: `orders-service`, notificações/e-mail legados, filtro tipado de standalone purchase e dois ajustes backend que estão **versionados mas ainda não aplicados/deployados**.
 
 Regra P0: corrigir o código para a realidade do banco. **Não recriar APIs aposentadas só para fazer o frontend compilar e não mascarar drift com casts.**
 
@@ -20,43 +20,28 @@ Regra P0: corrigir o código para a realidade do banco. **Não recriar APIs apos
 
 ### Legado removido/aposentado
 
-- compras por coins ligadas aos RPCs inexistentes `purchase_character_with_coins` e `purchase_collection_with_coins`;
+- RPCs inexistentes `purchase_character_with_coins` e `purchase_collection_with_coins`;
 - `validate_collection_limit` + hook sem consumidor ativo;
 - leituras antigas de `collector_badges` / `user_badges`;
 - `user_notification_settings` aposentado;
 - editor legado de pricing por `subscribed_chosen | subscribed_not_chosen | no_subscription`;
-- `pricing_history` e RPCs antigos `update_multiplier_with_history` / `update_chosen_discount_with_history`;
-- preview e hooks do antigo contextual pricing que já não correspondem ao banco atual.
+- `pricing_history` e RPCs antigos do contextual pricing;
+- chamadas do frontend ao RPC inexistente `get_collection_pricing`.
 
 ### Contratos ativos já alinhados
 
 - `choice-service`: nullability de `collection_characters` fail-closed;
 - ledger de coins: filtro preso ao enum real do PostgreSQL;
-- payment methods: `is_active` / `is_default` nulos normalizados explicitamente;
-- subscription dashboard: progresso com nullability real;
-- collection types: `is_active` nulo normalizado;
-- subscription plans / subscription-credit / support / notifications: diversos DTOs já alinhados ao schema em commits intermediários desta sequência;
-- dashboard do assinante: `subscription_deliveries.shipping_carrier` removido; tracking usa `tracking_code`, com Correios como fallback canônico do helper existente;
-- status de assinatura validado contra o enum gerado;
-- categorias de preço do admin normalizadas no boundary do serviço;
-- ciclos históricos: filtro de status validado contra enum real e cast duplo removido.
-
-## Descoberta crítica — pricing contextual
-
-Consulta direta ao PostgreSQL mostrou que `pricing_context_multipliers` hoje representa outro domínio:
-
-- `size`: pequeno, médio, grande, extra grande;
-- `complexity`: simples, média, alta, extrema;
-- `finish`: padrão, premium, deluxe;
-- `urgency`: normal, expressa, urgente.
-
-As colunas vigentes são `name`, `display_name`, `context_type`, `multiplier`, `is_active`, `description` e metadados. Não existem `user_context` nem `chosen_collection_discount_percentage`.
-
-Consequência aplicada:
-
-- a UI antiga de “assinante escolheu/não escolheu coleção” foi retirada, em vez de ser artificialmente adaptada a uma tabela de outro domínio;
-- `src/types/contextual-pricing.ts` agora referencia somente tabelas/campos gerados que realmente existem;
-- nenhuma migration foi criada para ressuscitar o modelo antigo.
+- payment methods, subscription plans, subscription-credit, support e DTOs correlatos alinhados à nullability real;
+- `character_choices.character_id` usa a relação canônica com `characters`;
+- ciclos históricos tratam status `cancelled` e datas nulas explicitamente;
+- catálogo admin normaliza `name`, `collection_id` e `is_catalog` sem deixar `null` escapar para contratos estritos;
+- coin packages usam `coins_amount` / `bonus_coins`; contextual pricing usa `name/context_type`, não `user_context` fictício;
+- `subscription_plans` usa `pricing_tier_id`;
+- `production_queue` foi reconciliado com `production_stages + profiles`; estágio/atribuição não são mais lidos de colunas aposentadas da fila;
+- workload, bulk operations, bloqueio/desbloqueio e snapshots de RPC de produção usam o estado canônico;
+- `subscription_deliveries.shipping_carrier` foi retirado dos fluxos de dashboard e detalhe administrativo;
+- TypeScript recebeu somente a lib de tipos `ES2022.Array`; o alvo de emissão continua `ES2020`.
 
 ## Supabase canônico
 
@@ -78,9 +63,21 @@ Regras permanentes:
 - UI não é fronteira de autorização;
 - DML admin permanece server-authoritative.
 
-## Shipping / tracking
+## Produção — estado atual
 
-Verificação direta do schema:
+O banco vivo confirma a arquitetura:
+
+- `production_queue`: pedido/usuário/coleção/personagem/status técnico/datas;
+- `production_stages`: estágio, atribuição, bloqueio, duração e responsável;
+- `profiles`: identidade do cliente/equipe.
+
+A aplicação agora hidrata o DTO operacional a partir dessas fontes em vez de esperar `current_stage`, `assigned_to`, `customer_name`, `production_status` e outros campos denormalizados antigos na fila.
+
+Pendente dentro do domínio de produção:
+
+- `src/services/notifications/production-notification-service.ts` ainda contém queries antigas e é um dos últimos bloqueios de TypeScript.
+
+## Shipping / tracking
 
 `subscription_deliveries` possui `tracking_code`, mas **não possui `shipping_carrier`**.
 
@@ -88,67 +85,97 @@ Verificação direta do schema:
 
 Já corrigido:
 
-- dashboard do assinante não seleciona nem tipa `shipping_carrier` para entregas de assinatura;
-- link de rastreio de assinatura usa apenas `tracking_code`; o helper existente assume Correios quando transportadora não é informada.
+- dashboard do assinante usa `tracking_code` sem inventar carrier;
+- detalhe administrativo da entrega não seleciona `shipping_carrier`; expõe `null` apenas como compatibilidade de apresentação para o helper de tracking;
+- código versionado da Edge Function `get-my-subscriptions` não consulta mais `production_start_date`, `shipping_carrier` ou `progress_photos` inexistentes.
 
-Pendente:
+Bloqueio operacional:
 
-- `email-service.ts` ainda contém referência antiga a `subscription_deliveries.shipping_carrier` e deve ser alinhado da mesma forma, preservando `shipping_carrier` apenas onde ele realmente existe (standalone purchase).
+- a Edge Function **viva** `get-my-subscriptions` continua na versão 5 e ainda possui as queries antigas;
+- commit de correção: `d44893e3784fa6e57aacaf0c3c27da3e3acb95c4`;
+- **não deployado remotamente nesta rodada**.
 
-## Catálogo
+## Pricing público / compra avulsa
 
-Snapshot operacional auditado:
+Frontend:
 
-- `models`: 478 rows;
-- `public_catalog_models`: 367 rows;
-- `collections`: 1 coleção ativa;
-- `collection_characters`: 8 rows.
+- `collection-pricing-service.ts` não chama mais `get_collection_pricing` inexistente;
+- para coleção com `is_price_custom=false`, a tela usa somente os `system_settings` públicos oficiais;
+- snapshot auditado: `default_price_full=150.00`, `default_price_pix=142.50`, `default_deposit_amount=30`;
+- coleção com preço customizado falha fechado enquanto não houver fronteira pública canônica para esse caso.
 
-A view `public_catalog_models` usa `security_invoker = true` e continua sendo a superfície pública canônica.
+Backend — bloqueio crítico:
 
-## Pricing público da compra avulsa
+- a função viva `create_standalone_purchase_atomic(...)` **ainda chama `public.get_collection_pricing(p_collection_id)`**;
+- essa função de pricing não existe no banco vivo;
+- portanto o backend de criação de compra avulsa continua **não operacional**.
 
-O caminho `get_collection_pricing` continua ativo através de `BuyCharacter.tsx` / `useCollectionPricing`, mas o RPC não existe.
+Correção preparada, mas não aplicada:
 
-Investigação já feita:
+- migration `supabase/migrations/20260917115000_restore_public_collection_pricing.sql`;
+- commit `ac84309835e2fad49c394bc60330a5026d9f313f`;
+- cria fronteira pública estreita `get_collection_pricing(uuid)` com fallback validado em `system_settings`, tier ativo quando houver assignment e fail-closed para custom pricing;
+- revoga `PUBLIC`, concede apenas `anon/authenticated/service_role` e contém rollback explícito;
+- **migration remota não executada**.
 
-- `pricing_tiers` é legível publicamente;
-- `collection_tier_assignments` não concede SELECT a `anon`;
-- a coleção ativa auditada não possuía tier assignment;
-- não existe view/RPC público canônico equivalente encontrado até agora.
+## Pricing contextual
 
-Consequência: não improvisar exposição de tabela privada nem inventar preço. Definir uma fronteira pública canônica antes de corrigir esse fluxo.
+`pricing_context_multipliers` hoje representa tamanho/complexidade/acabamento/urgência e possui `name`, `display_name`, `context_type`, `multiplier`, `is_active`, `description` e metadados.
+
+Não existem `user_context` nem `chosen_collection_discount_percentage`.
+
+Consequência: não restaurar a antiga semântica de “assinante escolheu/não escolheu coleção” sobre essa tabela.
+
+Também foi descoberto que `price_categories` não possui coluna `description`, embora o RPC vivo `admin_upsert_price_category` ainda tente gravá-la. Esse drift backend deve ser tratado em migration própria, não com cast no frontend.
 
 ## Vercel / prova de build
 
 Projeto: `ordax` (`prj_yfe9KqNRdWfYNnY6HSXBfT0D2Vsu`).
 
-- produção continua associada ao último deployment `READY` conhecido do commit `838224ae1599173f0c000ba7a5609afbe4f0f128` no snapshot auditado;
-- deployment `dpl_CeNJmnM9wDxy3LGV1TAkrjzTZuN9` do commit `8fcb670...` falhou no TypeScript e forneceu a lista usada nesta rodada;
-- deployment `dpl_FYPkXiXS5xdHBKC2S7wpkxWbJn3m` do commit `c790ac31...` também terminou em `ERROR`, como esperado por ser um checkpoint parcial;
-- commits posteriores ainda não apareceram com deployment concluído no último poll;
-- não declarar typecheck PASS até um deployment do HEAD atual ou posterior concluir essa etapa.
+Última prova concluída usada neste checkpoint:
+
+- `dpl_9uDRYSG3zkwYoUooFvEgokhD11Vo` — commit `d44893e...` — `ERROR` em `npm run release:verify` por TypeScript;
+- o erro de catálogo `is_catalog` foi corrigido depois, em `d83b468...`;
+- o erro de `Array.at` foi tratado depois, em `4aba68e...`;
+- portanto a lista do deployment acima contém dois erros já corrigidos mas ainda sem nova prova concluída.
+
+Famílias ainda comprovadamente pendentes no último typecheck:
+
+1. `src/services/admin/orders/orders-service.ts`
+   - filtros de status amplos demais para enums específicos;
+   - RPC inexistente `search_unified_orders`;
+   - tabela inexistente `quote_items`.
+2. `src/services/notifications/email-service.ts`
+   - referências antigas a `subscription_deliveries.shipping_carrier`.
+3. `src/services/notifications/production-notification-service.ts`
+   - referências a `customer_id/customer_name/current_stage/priority/...` no modelo antigo da fila.
+4. `src/services/payments/standalone-purchase-service.ts`
+   - filtro `status?: string` passado diretamente ao enum gerado.
 
 ## P0 — restante prioritário
 
 ### P0.1 — zerar TypeScript contra o schema real
 
-- [x] retirar coin purchase RPCs inexistentes;
-- [x] retirar collection limit aposentado;
-- [x] retirar badges e notification settings aposentados;
-- [x] retirar contextual pricing de assinante incompatível com o schema atual;
-- [x] corrigir nullability de payment methods, subscriptions, support e categorias admin tratadas nesta sequência;
-- [x] remover `shipping_carrier` do dashboard de assinatura;
-- [x] validar filtros de ciclo contra enum real;
-- [ ] alinhar `email-service.ts` a `subscription_deliveries` real;
-- [ ] alinhar `admin-collections-service` a nullability real de `collection_characters`;
-- [ ] alinhar `admin-coins-system-service` aos nomes atuais de coin packages e ao pricing vigente;
-- [ ] reconciliar `production_queue` e serviços admin de produção sem recriar campos antigos;
-- [ ] reconciliar orders (`search_unified_orders`, `quote_items`, enums/status) contra tabelas/RPCs reais;
-- [ ] alinhar `standalone-purchase-service` e demais filtros string aos enums gerados;
-- [ ] definir autoridade pública canônica para pricing de `BuyCharacter`.
+- [x] coin purchase RPCs inexistentes;
+- [x] collection limit aposentado;
+- [x] badges / notification settings aposentados;
+- [x] contextual pricing antigo aposentado;
+- [x] production queue principal reconciliada com stages/profiles;
+- [x] catálogo/ciclos/coins/pricing plan nullability alinhados nesta sequência;
+- [x] frontend de pricing público sem RPC fantasma;
+- [x] código de `get-my-subscriptions` alinhado no Git;
+- [ ] simplificar/alinha `email-service.ts` ao papel real de cliente de envio;
+- [ ] migrar `production-notification-service.ts` para dados canônicos;
+- [ ] reconciliar `orders-service.ts` (`search_unified_orders`, `quote_items`, enums/status);
+- [ ] tipar/validar filtro de status de `standalone-purchase-service.ts`.
 
-### P0.2 — gate completo no mesmo SHA
+### P0.2 — mudanças backend preparadas, ainda não ativadas
+
+- [ ] revisar e aplicar de forma controlada a migration `20260917115000_restore_public_collection_pricing.sql`, com rollback testado;
+- [ ] deploy controlado da Edge Function `get-my-subscriptions` corrigida;
+- [ ] corrigir o RPC `admin_upsert_price_category` que referencia coluna `description` inexistente.
+
+### P0.3 — gate completo no mesmo SHA
 
 Depois de `npm run typecheck` PASS:
 
@@ -160,23 +187,12 @@ Depois de `npm run typecheck` PASS:
 6. `format:check`;
 7. repetir `release:verify` completo no SHA candidato.
 
-### P0.3 — release operacional
+### P0.4 — release operacional
 
 - [ ] restaurar execução útil do GitHub Actions e required checks;
 - [ ] habilitar Leaked Password Protection no Supabase Auth;
 - [ ] smoke autenticado completo;
 - [ ] rollback provado no mesmo release candidate.
-
-## Próximo bloco estrutural — produção
-
-Antes de editar serviços de produção, consultar schema vivo de `production_queue` e tabelas relacionadas. Os erros atuais mostram código esperando campos antigos como `current_stage`, `assigned_to`, `production_status`, `production_notes`, `customer_name` e outros denormalizados.
-
-Regra para esse bloco:
-
-- campos removidos não serão recriados apenas para compilar;
-- dados de cliente/coleção/personagem devem ser hidratados pela relação canônica quando necessários;
-- status/estágio devem usar a fonte atualmente persistida;
-- qualquer mudança de schema exige evidência de necessidade de produto, migration e rollback.
 
 ## Regras de segurança do release
 
@@ -187,27 +203,27 @@ Regra para esse bloco:
 - não tratar Vercel `READY` isoladamente como GO;
 - não expor tabela privada como atalho;
 - não executar migration remota sem escopo explícito e rollback;
+- não deployar Edge Function apenas para silenciar TypeScript;
 - não declarar GO enquanto qualquer P0 permanecer aberto.
 
-## Checkpoint desta rodada
+## Checkpoint desta continuação
 
-**HEAD de entrada desta continuação:** `8fcb67041436674063bc04c1343ac5fa2e5311c1`.
+**HEAD de entrada:** `ac84309835e2fad49c394bc60330a5026d9f313f`.
 
-**HEAD de código antes deste checkpoint documental:** `44e11ed52e370c8b848faa7def20d4689a7e4f9a`.
+**HEAD de código antes deste checkpoint documental:** `4aba68e07bbfbb29a21eefcdb2246a2820aa77f1`.
 
 **Concluído nesta continuação:**
 
-- normalização de payment methods e progresso de assinatura;
-- normalização de collection types e categorias admin;
-- aposentadoria completa do contextual pricing de assinante incompatível com o banco;
-- remoção de `shipping_carrier` do fluxo de assinatura no dashboard;
-- validação do enum de assinatura e ciclos históricos;
-- live audit confirmou o significado real de `pricing_context_multipliers` e a ausência de carrier em `subscription_deliveries`.
+- delivery detail alinhado ao schema real (`884b681...`);
+- Edge `get-my-subscriptions` corrigida no Git (`d44893e...`), sem deploy remoto;
+- `is_catalog` normalizado no catálogo (`d83b468...`);
+- suporte de tipos de `Array.at` adicionado sem mudar target (`4aba68e...`);
+- migration de fronteira pública de pricing permanece apenas versionada (`ac843098...`).
 
-**Prova:** consultas diretas ao Supabase + commits pequenos/reversíveis na `main` + deployments Vercel parciais usados como executor de typecheck.
+**Prova:** schema vivo do Supabase + código vivo da Edge Function + deployments Vercel parciais executando `release:verify`.
 
-**Bloqueios:** HEAD atual ainda sem deployment concluído; `production_queue`, orders, email tracking e pricing público ainda têm drift.
+**Bloqueios:** typecheck ainda não verde; migration de pricing e Edge corrigida ainda não estão ativas no Supabase; orders/email/production-notification/standalone ainda têm drift comprovado.
 
-**next_action:** auditar schema vivo de produção, corrigir `email-service` e DTOs restantes, depois medir novamente o typecheck no deployment do SHA mais novo.
+**next_action:** simplificar `email-service` e `production-notification-service` para contratos canônicos, depois reconciliar `orders-service` e medir novamente no deployment mais novo.
 
-**do_not_repeat:** não restaurar contextual pricing de assinante sobre `pricing_context_multipliers`; não adicionar `shipping_carrier` a `subscription_deliveries`; não declarar gate verde sem execução completa no mesmo SHA.
+**do_not_repeat:** não adicionar `shipping_carrier` a `subscription_deliveries`; não restaurar colunas denormalizadas em `production_queue`; não aplicar a migration de pricing nem deployar `get-my-subscriptions` sem checkpoint operacional/rollback; não declarar gate verde sem execução completa no mesmo SHA.
