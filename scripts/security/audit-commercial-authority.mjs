@@ -80,7 +80,11 @@ function escaped(value) {
 }
 
 function normalizeSql(statement) {
-  return statement.replace(/\s+/g, " ").trim();
+  return statement
+    .replace(/--.*$/gm, " ")
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function policyState(policyName) {
