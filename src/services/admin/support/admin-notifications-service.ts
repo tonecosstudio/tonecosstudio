@@ -8,7 +8,7 @@ import {
 
 type AdminNotificationRow = Database["public"]["Tables"]["admin_notifications"]["Row"];
 
-export type NotificationType = AdminNotificationRow["type"];
+export type NotificationType = NonNullable<AdminNotificationRow["type"]>;
 export type NotificationPriority = "low" | "medium" | "high" | "urgent";
 export type NotificationFilter = "all" | "unread" | "read";
 
@@ -97,7 +97,7 @@ function toNotificationPriority(priority: string): NotificationPriority {
 function toAdminNotification(notification: AdminNotificationRow): AdminNotification {
   return {
     id: notification.id,
-    type: notification.type,
+    type: notification.type ?? "system_error",
     title: notification.title,
     message: notification.message,
     priority: toNotificationPriority(notification.priority),
@@ -105,7 +105,7 @@ function toAdminNotification(notification: AdminNotificationRow): AdminNotificat
     related_id: notification.related_id,
     related_type: notification.related_type,
     action_url: notification.action_url,
-    read: notification.is_read,
+    read: notification.is_read ?? false,
     read_at: notification.read_at,
     recipient_user_id: notification.recipient_user_id,
     created_at: notification.created_at,
