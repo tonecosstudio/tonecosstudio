@@ -48,29 +48,52 @@ export interface LegacyCoinTransaction {
   created_at: string;
 }
 
+type CoinTransactionDbType = "purchase" | "spend" | "refund" | "bonus" | "adjustment";
+
 type CoinTransactionRow = {
   id: string;
   user_id: string;
   amount: number;
-  transaction_type: string;
+  transaction_type: CoinTransactionDbType;
   description: string | null;
   reference_id: string | null;
   reference_type: string | null;
   created_at: string;
 };
 
-const COINS_TRANSACTION_TYPES = new Set<string>(Object.values(CoinsTransactionType));
+const DB_TYPE_TO_DOMAIN: Record<CoinTransactionDbType, CoinsTransactionType> = {
+  purchase: CoinsTransactionType.PURCHASE,
+  spend: CoinsTransactionType.SPEND,
+  refund: CoinsTransactionType.REFUND,
+  bonus: CoinsTransactionType.BONUS,
+  adjustment: CoinsTransactionType.ADMIN_ADJUSTMENT,
+};
+
+function toCoinTransactionDbType(type: CoinsTransactionType): CoinTransactionDbType {
+  switch (type) {
+    case CoinsTransactionType.PURCHASE:
+      return "purchase";
+    case CoinsTransactionType.SPEND:
+      return "spend";
+    case CoinsTransactionType.REFUND:
+      return "refund";
+    case CoinsTransactionType.BONUS:
+      return "bonus";
+    case CoinsTransactionType.ADMIN_ADJUSTMENT:
+      return "adjustment";
+    case CoinsTransactionType.SUBSCRIPTION_CREDIT:
+      throw new Error(
+        "Creditos de assinatura usam o ledger de subscription credits, nao coin_transactions",
+      );
+  }
+}
 
 function toCoinsTransaction(row: CoinTransactionRow): CoinsTransaction {
-  if (!COINS_TRANSACTION_TYPES.has(row.transaction_type)) {
-    throw new Error(`Tipo de transacao de coins invalido: ${row.transaction_type}`);
-  }
-
   return {
     id: row.id,
     user_id: row.user_id,
     amount: row.amount,
-    type: row.transaction_type as CoinsTransactionType,
+    type: DB_TYPE_TO_DOMAIN[row.transaction_type],
     description: row.description ?? "",
     reference_id: row.reference_id,
     reference_type: row.reference_type,
@@ -105,7 +128,7 @@ export async function listCoinsTransactions(
     .eq("user_id", targetUserId);
 
   if (filters.type) {
-    query = query.eq("transaction_type", filters.type as string);
+    query = query.eq("transaction_type", toCoinTransactionDbType(filters.type));
   }
 
   if (filters.startDate) {
