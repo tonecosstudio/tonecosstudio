@@ -7,18 +7,20 @@ import {
   subscriptionCreditSupabase,
   type SubscriptionCreditSubscriptionRow,
   type SubscriptionCreditTransactionRow,
-  type SubscriptionCreditUserCreditsRow,
 } from '@/services/subscriptions/subscription-credit-supabase';
 import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 import {
-  Subscription,
-  Character,
-  ProductionCycle,
-  OrderWithItems,
-  CreditsBalanceResponse,
-  TransactionsResponse,
-  UserCycleCountResponse,
-  PlanType,
+  type Subscription,
+  type Character,
+  type CreditTransaction,
+  type ProductionCycle,
+  type OrderWithItems,
+  type CreditsBalanceResponse,
+  type TransactionsResponse,
+  type UserCycleCountResponse,
+  type PlanType,
+  isSubscriptionCreditPlanType,
+  isSubscriptionCreditSubscriptionStatus,
   isSubscriptionCreditTransactionType,
 } from '@/types/subscription-credit-system';
 
@@ -29,7 +31,65 @@ interface PaginationMeta {
   total_pages: number;
 }
 
-type SubscriptionStatusRow = Pick<SubscriptionCreditSubscriptionRow, 'id' | 'status'>;
+function toSubscription(row: SubscriptionCreditSubscriptionRow): Subscription {
+  if (!isSubscriptionCreditPlanType(row.plan_type)) {
+    throw new Error(`Invalid subscription credit plan type: ${row.plan_type}`);
+  }
+
+  if (!isSubscriptionCreditSubscriptionStatus(row.status)) {
+    throw new Error(`Invalid subscription credit status: ${row.status}`);
+  }
+
+  if (
+    row.pending_plan_change !== null &&
+    !isSubscriptionCreditPlanType(row.pending_plan_change)
+  ) {
+    throw new Error(`Invalid pending subscription credit plan: ${row.pending_plan_change}`);
+  }
+
+  if (
+    row.cancellation_type !== null &&
+    row.cancellation_type !== 'with_refund' &&
+    row.cancellation_type !== 'no_renewal'
+  ) {
+    throw new Error(`Invalid subscription credit cancellation type: ${row.cancellation_type}`);
+  }
+
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    plan_type: row.plan_type,
+    status: row.status,
+    start_date: row.start_date,
+    end_date: row.end_date,
+    next_billing_date: row.next_billing_date,
+    auto_renew: row.auto_renew,
+    pending_plan_change: row.pending_plan_change,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    cancelled_at: row.cancelled_at,
+    cancellation_type: row.cancellation_type,
+  };
+}
+
+function toCreditTransaction(row: SubscriptionCreditTransactionRow): CreditTransaction {
+  if (!isSubscriptionCreditTransactionType(row.transaction_type)) {
+    throw new Error(`Invalid subscription credit transaction type: ${row.transaction_type}`);
+  }
+
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    subscription_id: row.subscription_id,
+    transaction_type: row.transaction_type,
+    credits_amount: row.credits_amount,
+    character_id: row.character_id,
+    order_id: row.order_id,
+    production_cycle_id: row.production_cycle_id,
+    description: row.description,
+    created_at: row.created_at,
+  };
+}
 
 class SubscriptionCreditAPI {
   private async getCurrentUserId(): Promise<string> {
@@ -43,17 +103,13 @@ class SubscriptionCreditAPI {
 
     const { data, error } = await subscriptionCreditSupabase
       .from('subscription_credit_subscriptions')
-      .select('*, plan:subscription_credit_plans(*)')
+      .select('*')
       .eq('user_id', userId)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw error;
-    }
-
-    return data as unknown as Subscription;
+    if (error) throw error;
+    return data ? toSubscription(data) : null;
   }
 
   // ============ Credits ============
@@ -63,15 +119,14 @@ class SubscriptionCreditAPI {
 
     const { data: subscription, error: subscriptionError } = await subscriptionCreditSupabase
       .from('subscription_credit_subscriptions')
-      .select('id,status')
+      .select('id')
       .eq('user_id', userId)
       .eq('status', 'active')
       .maybeSingle();
 
     if (subscriptionError) throw subscriptionError;
 
-    const activeSubscription = subscription as unknown as SubscriptionStatusRow | null;
-    if (!activeSubscription) {
+    if (!subscription) {
       return {
         total_credits: 0,
         used_credits: 0,
@@ -83,9 +138,9 @@ class SubscriptionCreditAPI {
 
     const { data, error } = await subscriptionCreditSupabase
       .from('subscription_credit_user_credits')
-      .select('*')
+      .select('total_credits, used_credits, available_credits, expired_credits')
       .eq('user_id', userId)
-      .eq('subscription_id', activeSubscription.id)
+      .eq('subscription_id', subscription.id)
       .maybeSingle();
 
     if (error) throw error;
@@ -96,18 +151,16 @@ class SubscriptionCreditAPI {
         used_credits: 0,
         available_credits: 0,
         expired_credits: 0,
-        subscription_status: activeSubscription.status,
+        subscription_status: 'active',
       };
     }
 
-    const credits = data as unknown as SubscriptionCreditUserCreditsRow;
-
     return {
-      total_credits: credits.total_credits,
-      used_credits: credits.used_credits,
-      available_credits: credits.available_credits,
-      expired_credits: credits.expired_credits,
-      subscription_status: activeSubscription.status,
+      total_credits: data.total_credits,
+      used_credits: data.used_credits,
+      available_credits: data.available_credits,
+      expired_credits: data.expired_credits,
+      subscription_status: 'active',
     };
   }
 
@@ -121,7 +174,10 @@ class SubscriptionCreditAPI {
 
     let query = subscriptionCreditSupabase
       .from('subscription_credit_transactions')
-      .select('*, character:subscription_credit_characters(*)', { count: 'exact' })
+      .select(
+        'id,user_id,subscription_id,transaction_type,credits_amount,character_id,order_id,production_cycle_id,description,created_at',
+        { count: 'exact' },
+      )
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -137,10 +193,8 @@ class SubscriptionCreditAPI {
 
     if (error) throw error;
 
-    const transactions = (data ?? []) as unknown as SubscriptionCreditTransactionRow[];
-
     return {
-      transactions,
+      transactions: (data ?? []).map(toCreditTransaction),
       pagination: {
         current_page: page,
         per_page: limit,
