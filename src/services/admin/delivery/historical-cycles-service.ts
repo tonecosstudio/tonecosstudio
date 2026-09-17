@@ -1,5 +1,19 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { resolveCycleCapacity } from "@/lib/cycle-capacity";
+
+type CycleRow = Tables<"cycles">;
+type CycleStatus = NonNullable<CycleRow["status"]>;
+
+const CYCLE_STATUSES = new Set<CycleStatus>([
+  "open",
+  "active",
+  "sales",
+  "production",
+  "shipping",
+  "completed",
+  "cancelled",
+]);
 
 export interface HistoricalCycle {
   id: string;
@@ -11,7 +25,7 @@ export interface HistoricalCycle {
   production_start: string;
   production_end: string;
   shipping_date: string;
-  status: "open" | "active" | "sales" | "production" | "shipping" | "completed";
+  status: CycleStatus;
   status_changed_at: string | null;
   capacity: number;
   used_capacity: number;
@@ -27,6 +41,10 @@ export interface HistoricalCyclesFilters {
   currentMonth: number;
 }
 
+function parseCycleStatus(value: string): CycleStatus | null {
+  return CYCLE_STATUSES.has(value as CycleStatus) ? (value as CycleStatus) : null;
+}
+
 export async function fetchHistoricalCycles(
   filters: HistoricalCyclesFilters,
 ): Promise<HistoricalCycle[]> {
@@ -39,7 +57,11 @@ export async function fetchHistoricalCycles(
   }
 
   if (selectedStatus !== "all") {
-    query = query.eq("status", selectedStatus);
+    const status = parseCycleStatus(selectedStatus);
+    if (!status) {
+      throw new Error("Status de ciclo invalido");
+    }
+    query = query.eq("status", status);
   }
 
   query = query.or(
@@ -49,15 +71,33 @@ export async function fetchHistoricalCycles(
   const { data, error } = await query;
   if (error) throw error;
 
-  return ((data || []) as Array<Record<string, unknown>>).map((cycle) => {
+  return (data || []).map((cycle) => {
     const capacity = resolveCycleCapacity(cycle, "Historical cycle");
 
+    if (cycle.cycle_number !== 1 && cycle.cycle_number !== 2) {
+      throw new Error(`Historical cycle ${cycle.id} has invalid cycle_number`);
+    }
+    if (!cycle.status) {
+      throw new Error(`Historical cycle ${cycle.id} has no status`);
+    }
+
     return {
-      ...(cycle as unknown as HistoricalCycle),
+      id: cycle.id,
+      cycle_number: cycle.cycle_number,
+      month: cycle.month,
+      year: cycle.year,
+      open_start: cycle.open_start,
+      open_end: cycle.open_end,
+      production_start: cycle.production_start,
+      production_end: cycle.production_end,
+      shipping_date: cycle.shipping_date,
+      status: cycle.status,
+      status_changed_at: cycle.status_changed_at,
       capacity: capacity.capacity,
       used_capacity: capacity.usedCapacity,
       capacity_max: capacity.capacity,
       capacity_current: capacity.usedCapacity,
+      created_at: cycle.created_at,
     };
   });
 }
