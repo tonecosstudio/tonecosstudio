@@ -1,349 +1,243 @@
 # URGENTE — OrdaX Launch Readiness
 
 > SSOT operacional de `washingtonmsdj/ordax`.
-> Atualizado em 2026-09-17 com evidência real do GitHub, Supabase e Vercel.
-> Não declarar GO com base apenas em deploy `READY`, status de CI sem steps ou correção não validada no mesmo release candidate.
+> Atualizado em 2026-09-17 com evidência real de GitHub, Supabase e Vercel.
+> Não declarar GO com base apenas em deploy `READY`, CI sem steps ou correção não validada no mesmo SHA.
 
 ## Estado
 
 **Lançamento público: NO-GO.**
 
-HEAD observado antes desta atualização documental:
+HEAD de código deste checkpoint:
 
-- `8b552360882aff72ca362dcdc177a1d2fbf3106c` — `refactor: bind bonus pieces to generated Supabase schema`.
+- `d9301b56b0fe0b9833f0b08adea42ab2619924af` — `fix: bind coin transaction filters to database enum`.
 
-### Mudança material do diagnóstico em 2026-09-17
+O bloqueador técnico primário é a reconciliação **aplicação ↔ schema Supabase canônico**. O deployment Vercel do antigo HEAD `8b552360...` executou `npm run release:verify` e falhou no TypeScript. Consultas diretas ao PostgreSQL confirmaram que vários contratos referenciados pelo código já não existem.
 
-O bloqueador técnico primário deixou de ser apenas “obter um executor”. O deployment Vercel do HEAD `8b552360...` executou `npm run release:verify` e falhou no **TypeScript** antes das demais etapas.
-
-A falha não é um falso positivo dos tipos gerados: consultas diretas ao projeto Supabase canônico confirmaram que vários contratos ainda referenciados pelo frontend/serviços **não existem no banco atual**.
-
-Confirmados como ausentes no PostgreSQL canônico:
+Confirmados como ausentes no banco atual:
 
 - RPCs `purchase_character_with_coins`, `purchase_collection_with_coins`, `validate_collection_limit` e `get_collection_pricing`;
 - tabelas `collector_badges`, `user_badges`, `user_notification_settings` e `pricing_history`;
 - colunas `subscription_deliveries.shipping_carrier`, `production_queue.customer_name` e `pricing_context_multipliers.chosen_collection_discount_percentage`.
 
-Consequência: **P0 imediato = terminar a reconciliação aplicação ↔ schema canônico até `npm run typecheck` zerar sem casts/clientes falsos e sem recriar APIs aposentadas apenas para satisfazer o frontend.**
+Regra P0: corrigir o código para a realidade do banco. **Não recriar APIs aposentadas só para fazer o frontend compilar e não mascarar drift com casts.**
 
-## Next action canônica
+## Implementação iniciada nesta rodada
 
-1. remover ou reescrever referências comprovadamente legadas/fantasmas, começando por código morto e fronteiras sem consumidor ativo;
-2. corrigir contratos ativos para os tipos/tabelas/RPCs reais do Supabase;
-3. repetir o typecheck no HEAD resultante;
-4. somente depois avançar para lint, auditorias de autoridade, coverage, build e `npm audit` do mesmo SHA;
-5. não iniciar feature nova nem refactor cosmético enquanto o gate estiver bloqueado por drift aplicação ↔ banco.
+### `b3e23b5fc04833e8202cac787a9fdf1986b49022`
+
+`refactor: remove dead coin purchase rpc paths`
+
+- removidas chamadas browser a `purchase_character_with_coins` e `purchase_collection_with_coins`, RPCs inexistentes no schema atual;
+- removidos hooks/exportações de compra por coins sem consumidor ativo;
+- preservados saldo e reembolso que ainda usam fronteiras canônicas existentes.
+
+### `c21c62e55d3b218f8e90a70e0f4fce2f7852d704`
+
+`refactor: remove dead collection limit path`
+
+- removidos `src/hooks/useCollectionLimit.ts` e `src/services/collections/collection-limit-service.ts`;
+- `validate_collection_limit` não existe no banco e a busca de consumidores não encontrou uso ativo fora desse caminho legado.
+
+### `91896d29f74a23512c278cf9c8ac6df16ff5b820`
+
+`fix: fail closed on incomplete collection characters`
+
+- `choice-service` deixou de assumir que `collection_characters.name` e `collection_id` nunca são `null`;
+- dados incompletos agora interrompem o fluxo explicitamente, sem string vazia ou cast que esconda inconsistência.
+
+### `d9301b56b0fe0b9833f0b08adea42ab2619924af`
+
+`fix: bind coin transaction filters to database enum`
+
+- `coin_transactions.transaction_type` foi alinhado ao enum real do PostgreSQL: `purchase | spend | refund | bonus | adjustment`;
+- filtro deixou de enviar `string` arbitrária ao Supabase;
+- `subscription_credit` fica fail-closed nesse ledger, pois créditos de assinatura pertencem ao subsistema/ledger próprio.
+
+## Prova disponível do efeito da rodada
+
+- os novos commits dispararam deployments Vercel automaticamente;
+- no último snapshot desta rodada, `91896d29...` estava `BUILDING` e `d9301b56...` estava `QUEUED`;
+- portanto **ainda não existe prova de typecheck PASS no HEAD atual**;
+- não marcar P0 de compilação como concluído enquanto `release:verify` não executar no mesmo SHA e avançar além do TypeScript.
+
+O log parcial de `91896d29...` mostrou instalação em andamento e um erro do classificador de diff do `ignoreCommand` (`fatal: bad object 838224...`), seguido de `Unable to classify the diff; continuing the Vercel build.` Isso não é PASS nem a causa comprovada de falha do código.
 
 ## Supabase canônico
 
 Projeto: `pdytjhtjlxvbbeuxgnms` (`Ordax-2026-1`).
 
-Estado observado em 2026-09-17:
+Snapshot verificado em 2026-09-17:
 
-- projeto `ACTIVE_HEALTHY`;
+- estado `ACTIVE_HEALTHY`;
 - PostgreSQL 17;
-- **97 tabelas em `public`; 0 sem RLS habilitado**;
-- Advisor de segurança: **1 warning — Leaked Password Protection Disabled**;
-- `SECURITY DEFINER` auditado: 184 funções; **0 executáveis diretamente por `anon` e 0 por `authenticated`** no snapshot consultado;
-- não foi encontrado `SUPABASE_SERVICE_ROLE_KEY` hardcoded no frontend nem variante `VITE_SUPABASE_SERVICE_ROLE*`;
-- `system_settings` não contém chaves com padrão de secret/token/password/private key/service role/API key;
-- operações administrativas sensíveis permanecem atrás de `assert_admin_access()` ou da Edge autenticada equivalente.
+- 97 tabelas em `public` e **0 sem RLS habilitado**;
+- Advisor de segurança: 1 warning — **Leaked Password Protection Disabled**;
+- 184 funções `SECURITY DEFINER` auditadas; 0 executáveis diretamente por `anon` e 0 por `authenticated` no snapshot consultado;
+- `src/integrations/supabase/types.ts` permanece o SSOT gerado do projeto canônico.
 
-### Tipos Supabase
+### Regras permanentes de tipos/autoridade
 
-`src/integrations/supabase/types.ts` é o SSOT gerado do projeto canônico e informa PostgREST 14.5.
-
-Regra permanente:
-
-- não editar parcialmente `types.ts` para esconder drift;
-- não criar `SupabaseClient<DatabaseFalso>` / `supabase as unknown as ...Client` para contornar o schema;
-- não adicionar `as unknown as` apenas para fazer o typecheck passar;
-- remover clientes/tipos paralelos caso a caso, validando primeiro schema e autorização reais.
-
-Já reconciliados em rodadas anteriores/recentes:
-
-- `cutoff-service.ts`;
-- `base-pricing-service.ts`;
-- `next-release-service.ts`;
-- `group-service.ts`;
-- `cycle-service.ts`;
-- `delivery-cycle-mutations-service.ts`;
-- `wishlist-service.ts`;
-- schema paralelo de `subscription-credit-supabase.ts`;
-- gateway falso de `holiday-service.ts`;
-- `model_likes`;
-- `bonus_pieces` no commit `8b552360...`.
-
-### Drift ainda comprovado pelo typecheck
-
-Famílias P0 abertas no HEAD `8b552360...`:
-
-- **coins:** chamadas a RPCs de compra inexistentes;
-- **collection limits:** `validate_collection_limit` inexistente;
-- **pricing legado:** `get_collection_pricing`, `pricing_history` e campos antigos de contexto;
-- **collector/gamification:** `collector_badges` e `user_badges` inexistentes;
-- **notifications:** `user_notification_settings` inexistente e queries com colunas antigas;
-- **delivery/dashboard/email:** referência a `shipping_carrier` inexistente em `subscription_deliveries`;
-- **production notifications:** campos denormalizados antigos (`customer_id`, `customer_name` etc.) fora do row atual;
-- **subscriptions/credits:** nullability/enums ainda divergentes do schema gerado;
-- **support/groups:** tipos locais mais estritos que a nullability real de anexos/dados hidratados.
-
-A correção deve distinguir:
-
-- **código morto/legado sem consumidor** → remover;
-- **feature ativa com contrato antigo** → reescrever contra o modelo real;
-- **capacidade de produto realmente necessária mas ausente no banco** → documentar como decisão de produto/schema antes de qualquer migration; não inventar automaticamente.
-
-## RLS / autoridade
-
-Hardening já consolidado:
-
-- `auth_rls_initplan`: 0 no ciclo tratado;
-- `multiple_permissive_policies`: 0 no ciclo tratado;
-- `20260916082005_close_remaining_admin_table_dml.sql` fecha DML direto de `chat_groups` e `monthly_production` para `authenticated`;
-- DML administrativo permanece atrás de RPC/Edge server-authoritative;
-- `reserve_capacity` e `release_capacity` são service-role-only e não são mais chamados pelo browser;
-- `chat_groups` não possui leitura autenticada indiscriminada `USING (true)`.
-
-## Grupos
-
-Migration consolidada:
-
-- `20260916152937_restrict_chat_group_metadata_to_members_or_admins.sql`.
-
-`chat_groups` é legível somente por membro real ou administrador. O RPC inexistente `get_member_groups_optimized` foi removido do frontend e a leitura atual deriva dados das tabelas reais protegidas por RLS.
-
-## Pagamentos manuais
-
-Migration consolidada:
-
-- `20260916143602_stop_dual_writing_manual_payment_info_requests.sql`.
-
-Estado:
-
-- `order_status_history` é o SSOT ativo da timeline;
-- `payment_info_requests` permanece somente como compatibilidade inerte;
-- regressão impede retorno da dupla escrita.
-
-## Pricing
-
-Arquitetura canônica:
-
-- snapshot administrativo server-authoritative;
-- `admin-rpc` ativo, versão 11, `verify_jwt=true`;
-- atualização administrativa registra evento em `security_events`;
-- `pricing_history` não existe no banco atual.
-
-**Correção pendente:** ainda há referências de tipos/serviços a `pricing_history`, `get_collection_pricing` e campos antigos de `pricing_context_multipliers`. Esses caminhos devem ser removidos ou substituídos pela leitura canônica vigente; não recriar o modelo histórico fictício.
-
-## Delivery / ciclos
-
-Migration consolidada:
-
-- `20260916154052_reconcile_delivery_choice_integrity.sql`.
-
-Ela mantém validações server-side de ownership, ciclo, coleção ativa e vínculo personagem↔coleção, atualiza referências de forma coerente e deixa manutenção automática fail-closed.
-
-`cycle-service.ts` já não chama `reserve_capacity` / `release_capacity` pelo browser e usa tipos gerados.
-
-**Correção pendente:** serviços de dashboard/email ainda esperam `subscription_deliveries.shipping_carrier`, coluna ausente no schema atual. A origem real do transportador/tracking deve ser usada; não adicionar cast ou coluna fantasma no frontend.
+- não editar `types.ts` gerado manualmente;
+- não criar `SupabaseClient<DatabaseFalso>` ou `supabase as unknown as ...Client`;
+- não adicionar `as unknown as` para silenciar contrato inválido;
+- UI nunca é fronteira de autorização;
+- DML administrativo continua server-authoritative;
+- RPCs service-role-only não voltam a ser expostos ao browser.
 
 ## Catálogo
 
-A documentação anterior dizia que o catálogo publicado estava vazio. Isso ficou **obsoleto**.
+A afirmação antiga de catálogo vazio está obsoleta.
 
-Snapshot real consultado em 2026-09-17:
+Snapshot de 2026-09-17:
 
 - `models`: 478 rows;
-- `public_catalog_models`: **367 rows visíveis pela view pública canônica**;
-- `collections`: 1 coleção total e ativa;
+- `public_catalog_models`: 367 rows;
+- `collections`: 1 coleção ativa;
 - `collection_characters`: 8 rows;
-- distribuição de `models.catalog_visibility`: 458 `general`, 12 `hidden`, 8 `both`.
+- `models.catalog_visibility`: 458 `general`, 12 `hidden`, 8 `both`.
 
-A view `public_catalog_models` usa `security_invoker = true` e é a superfície pública usada pelo frontend.
+`public_catalog_models` usa `security_invoker = true` e continua sendo a superfície pública canônica do catálogo. Esses números são snapshot operacional, não regra de produto.
 
-Não hardcodar esses totais como regra de produto: são snapshot operacional e podem mudar.
+## Pricing
 
-## Storage
+O caminho `get_collection_pricing` continua **ativo no frontend** através de `BuyCharacter.tsx` / `useCollectionPricing`, mas o RPC não existe.
 
-Último estado auditado:
+Investigação já feita:
 
-- `group-attachments`, `payment-proofs`, `payment-vouchers` e `support-attachments`: privados, limite de 5 MB e MIME restrito;
-- `models`: público para leitura; sem policy comum de escrita de browser encontrada no ciclo auditado.
+- `pricing_tiers` é legível publicamente;
+- `collection_tier_assignments` não concede SELECT a `anon`;
+- a coleção ativa atual não possui tier assignment no snapshot consultado;
+- não existe view pública de pricing nem RPC público equivalente;
+- funções de pricing encontradas no banco são administrativas.
 
-## Performance / índices
+Consequência: **não apagar nem improvisar esse fluxo**. A leitura pública canônica de preço precisa ser definida com autoridade explícita antes da correção. Não expor `collection_tier_assignments` apenas para fazer a página funcionar.
 
-Advisor de performance em 2026-09-17:
+## Drift P0 ainda aberto
 
-- 27 FKs sem índice de cobertura;
-- 303 índices classificados como `unused` no snapshot de estatísticas.
+### P0.1 — legado comprovadamente morto
 
-Regra: não criar/remover índices em massa só para zerar Advisor. Exigir carga representativa, plano de execução e rollback.
+- [x] remover compras por coins ligadas a RPCs inexistentes e sem consumidor ativo;
+- [x] remover `validate_collection_limit` + hook sem consumidor ativo;
+- [ ] continuar varredura por código morto que dependa exclusivamente de contratos inexistentes.
 
-## Vercel / produção web
+### P0.2 — contratos ativos divergentes
+
+- [x] `choice-service`: tratar nullability real de `collection_characters` fail-closed;
+- [x] ledger de coins: alinhar filtro ao enum real do banco;
+- [ ] `collector-service`: remover/reprojetar uso de `collector_badges` e `user_badges` inexistentes;
+- [ ] `subscriber-dashboard-service` / `email-service`: eliminar `shipping_carrier` inexistente e usar origem real de tracking/transporte;
+- [ ] `live-notifications-service`: eliminar `user_notification_settings` inexistente ou migrar para SSOT real;
+- [ ] `production-notification-service`: remover dependência de campos denormalizados antigos (`customer_id`, `customer_name` etc.);
+- [ ] `subscription-credit-api`: alinhar enums/nullability;
+- [ ] `subscription-details-service` e `subscription-service`: alinhar plano ao schema gerado;
+- [ ] `support/message-service` e hydration: alinhar nullability real;
+- [ ] `context-pricing-service` / `src/types/contextual-pricing.ts`: remover `pricing_history` e campos antigos;
+- [ ] definir e implementar autoridade pública canônica de pricing usada por `BuyCharacter`.
+
+### P0.3 — gate completo
+
+Depois de `npm run typecheck` PASS no mesmo SHA:
+
+1. lint;
+2. auditorias de autoridade;
+3. `test:coverage`;
+4. build;
+5. `npm audit --omit=dev --audit-level=high`;
+6. `format:check`;
+7. repetir o gate completo no SHA candidato.
+
+## Vercel / produção
 
 Projeto: `ordax` (`prj_yfe9KqNRdWfYNnY6HSXBfT0D2Vsu`).
 
-Estado confirmado em 2026-09-17:
+- domínio de produção permanecia no último deployment `READY` do commit `838224ae1599173f0c000ba7a5609afbe4f0f128` no snapshot auditado;
+- isso não certifica o HEAD atual;
+- `vercel.json` executa `npm ci` e `npm run release:verify`;
+- o antigo HEAD `8b552360...` falhou realmente no TypeScript;
+- novos SHAs desta rodada ainda não forneceram prova de gate completo.
 
-- domínio de produção continua apontando para deployment `READY` do commit `838224ae1599173f0c000ba7a5609afbe4f0f128`;
-- HEAD `8b552360...` gerou deployment `dpl_FWXyo8aPCgxrjv5wrdy91ZSuUWgp` em `ERROR`;
-- esse deployment **executou** `npm run release:verify`;
-- falhou no typecheck (`lint_or_type_error`, exit 2), antes de lint/auditorias/coverage/build/audit;
-- `vercel.json` usa `npm ci` e `npm run release:verify`;
-- headers configurados incluem HSTS, CSP, `nosniff`, `DENY`, Referrer-Policy, Permissions-Policy, COOP/CORP.
+## GitHub Actions / proteção de main
 
-Não declarar o HEAD atual como build PASS.
-
-## GitHub Actions
-
-O workflow `.github/workflows/quality.yml` continua configurado para Node 24 e separa:
-
-- typecheck/lint/format de arquivos alterados;
-- unit coverage;
-- production build + dependency audit;
-- auditorias de autoridade.
-
-Run do HEAD `8b552360...`:
-
-- `35120933556` — `Quality Gate`;
-- conclusão `failure`;
-- quatro jobs (`Build, test and security`, `Unit coverage`, `Production build and dependency audit`, `Authority audits`) encerraram sem prova de steps executados no runner consultado.
-
-Portanto GitHub Actions ainda não é evidência positiva do SHA atual. A Vercel, porém, forneceu evidência independente de falha real de TypeScript no mesmo HEAD.
-
-## Proteção da main
-
-Estado observado no HEAD `8b552360...`:
-
-- `protected: false`;
-- sem required status checks ativos.
-
-Enquanto a decisão do usuário registrada em `AGENTS.md` vigorar, mudanças autorizadas são feitas diretamente na `main` em commits pequenos/reversíveis. Antes de cada escrita deve-se confirmar que o HEAD não avançou inesperadamente.
+- Quality Gate existe e separa typecheck/lint, coverage, build/audit e authority audits;
+- execuções recentes do Actions continuaram sem prova útil de steps/runner;
+- `main` permanece `protected: false`, sem required status checks observados;
+- enquanto `AGENTS.md` mantiver a decisão atual, mudanças autorizadas seguem diretamente na `main`, pequenas e reversíveis, sempre confirmando o HEAD antes da escrita.
 
 ## Dependências npm
 
-Último audit completo de produção registrado antes deste checkpoint:
+Último audit completo registrado antes deste checkpoint:
 
 - 15 vulnerabilidades de produção: 1 low, 6 moderate, 7 high, 1 critical;
 - árvore completa: 27 vulnerabilidades.
 
-O número **atual** não foi revalidado porque o `release:verify` do HEAD para no typecheck antes de chegar ao `npm audit`.
+O número atual continua não certificado porque o gate ainda não avançou até `npm audit` no HEAD mais recente.
 
-`package.json` ainda mantém tooling/Node no grafo de `dependencies`, incluindo `@imgly/background-removal-node`, `sharp`, `pg`, `stripe` e `winston`. Classificar uso real antes de mover/remover.
-
-Regra: regenerar `package-lock.json` com npm real; nunca editar o lockfile manualmente nem reduzir o audit para fazê-lo passar.
+Não editar `package-lock.json` manualmente, não reduzir o nível do audit e não classificar tooling como runtime sem verificar uso real.
 
 ## P0 — obrigatório antes do GO
 
 - [x] Supabase canônico observável e saudável.
-- [x] Confirmar RLS nas tabelas `public` auditadas.
-- [x] Fechar DML direto restante das superfícies admin-authoritative tratadas.
-- [x] Regenerar integralmente `src/integrations/supabase/types.ts`.
-- [x] Adicionar auditoria de SSOT dos tipos gerados.
-- [x] Consolidar pricing administrativo server-authoritative.
-- [x] Consolidar timeline de pagamento manual.
-- [x] Fechar metadados de grupos a membro/admin.
-- [x] Reconciliar integridade server-side da escolha de entrega.
-- [x] Remover chamadas browser para RPCs de capacidade service-role-only.
-- [x] Começar remoção sistemática de clientes/tipos Supabase paralelos.
-- [x] Confirmar que a Vercel executa o gate no HEAD e obter erro real reproduzível.
-- [ ] **Zerar o typecheck reconciliando código ativo com o schema canônico.**
-- [ ] Remover caminhos mortos que dependem de RPCs/tabelas/colunas comprovadamente inexistentes.
-- [ ] Reescrever caminhos ativos ainda baseados em contratos antigos.
-- [ ] Concluir a remoção de casts/clientes Supabase paralelos restantes.
-- [ ] Obter `typecheck + lint + auditorias + tests + coverage + build` PASS no mesmo SHA.
-- [ ] Remediar o grafo npm e obter `npm audit --omit=dev --audit-level=high` PASS no mesmo SHA.
-- [ ] Restaurar execução útil do GitHub Actions e required checks compatíveis.
+- [x] RLS habilitado nas tabelas `public` auditadas.
+- [x] Tipos Supabase canônicos regenerados e auditados como SSOT.
+- [x] Hardening administrativo, grupos, pagamentos manuais e integridade de delivery já consolidados nas rodadas anteriores.
+- [x] Confirmar falha TypeScript real da aplicação contra o schema atual.
+- [x] Iniciar remoção de contratos mortos comprovados.
+- [ ] **Zerar `npm run typecheck` no schema canônico.**
+- [ ] Obter lint + auditorias + tests + coverage + build PASS no mesmo SHA.
+- [ ] Remediar dependências até audit high/critical PASS no mesmo SHA.
+- [ ] Restaurar execução útil do GitHub Actions e required checks.
 - [ ] Habilitar Leaked Password Protection no Supabase Auth.
-- [ ] Executar smoke autenticado de auth, catálogo, checkout, pagamentos/comprovantes, assinatura/créditos, produção/fotos, entregas/tracking, suporte/notificações e admin.
+- [ ] Executar smoke autenticado completo.
 - [ ] Provar rollback do mesmo release candidate.
-
-## Ordem de implementação P0
-
-### P0.1 — drift comprovadamente morto/legado
-
-Prioridade inicial:
-
-- remover chamadas de compra por coins que não têm RPC no schema atual quando não houver consumidor ativo;
-- remover/aposentar hooks ligados exclusivamente a esses caminhos mortos;
-- remover `validate_collection_limit` se o hook correspondente não tiver consumidor ativo ou substituí-lo pela regra canônica real se houver consumidor;
-- remover `get_collection_pricing` legado se a UI ativa já tiver fonte canônica equivalente.
-
-Critério: toda remoção deve ser precedida por busca de consumidores e feita em commit reversível.
-
-### P0.2 — contratos ativos divergentes
-
-Corrigir em seguida:
-
-- `choice-service` nullability de personagem;
-- `collector-service` baseado em tabelas inexistentes;
-- `subscriber-dashboard-service` / `email-service` e origem real de shipping/tracking;
-- notification services com tabelas/colunas aposentadas;
-- subscription/credit enums e nullability;
-- support attachment nullability;
-- contextual pricing residual.
-
-### P0.3 — gate completo
-
-Depois de `npm run typecheck` PASS:
-
-1. lint;
-2. auditorias de autoridade;
-3. test:coverage;
-4. build;
-5. npm audit high/critical;
-6. format:check;
-7. repetir tudo no mesmo SHA candidato.
 
 ## Regras de segurança do release
 
-- Não remover/reduzir `npm audit` para “fazer passar”.
-- Não desligar TypeScript strict nem relaxar `noImplicitAny` para esconder drift.
-- Não editar tipos Supabase gerados manualmente.
-- Não recriar tabelas/RPCs/colunas aposentadas apenas porque código legado ainda as chama.
-- Não introduzir `as unknown as` como correção de contrato.
-- Não tratar Vercel `READY` como substituto do gate.
-- Não declarar testes PASS enquanto o SHA atual não tiver executor real.
-- Não reabrir DML direto de browser para tabelas admin-authoritative.
-- Não conceder a `authenticated` RPCs service-role-only só para fazer o frontend funcionar.
-- Não guardar segredo em `system_settings`, frontend, migration ou arquivo versionado.
-- Não executar migration remota, deploy ou reativação de serviço pago sem escopo explícito e prova de rollback.
-- Não mass-indexar ou apagar índices sem evidência operacional.
-- Não declarar GO enquanto qualquer P0 permanecer aberto.
+- não desligar TypeScript strict;
+- não reintroduzir RPC/tabela/coluna aposentada apenas para satisfazer código legado;
+- não usar casts para esconder drift;
+- não reduzir/remover `npm audit`;
+- não tratar Vercel `READY` isoladamente como GO;
+- não expor tabela privada para resolver rapidamente uma leitura pública;
+- não executar migration remota ou deploy manual sem escopo explícito e rollback;
+- não declarar GO enquanto qualquer P0 permanecer aberto.
 
 ## Histórico consolidado útil
 
-Checkpoints anteriores continuam válidos como histórico, não como fotografia do HEAD:
-
-- `838224ae1599173f0c000ba7a5609afbe4f0f128` — último deployment `READY` ainda associado ao domínio de produção no snapshot atual;
-- `20260916082005_close_remaining_admin_table_dml.sql` — fechamento de DML admin restante tratado;
-- `20260916143602_stop_dual_writing_manual_payment_info_requests.sql` — consolidação da timeline manual;
-- `20260916152937_restrict_chat_group_metadata_to_members_or_admins.sql` — restrição de metadados de grupos;
+- `838224ae1599173f0c000ba7a5609afbe4f0f128` — último deployment `READY` associado ao domínio no snapshot auditado;
+- `20260916082005_close_remaining_admin_table_dml.sql` — fechamento de DML admin tratado;
+- `20260916143602_stop_dual_writing_manual_payment_info_requests.sql` — timeline manual consolidada;
+- `20260916152937_restrict_chat_group_metadata_to_members_or_admins.sql` — metadados de grupos restritos;
 - `20260916154052_reconcile_delivery_choice_integrity.sql` — integridade de escolha de entrega;
-- `admin-rpc` permanece ativo em produção na versão 11 com `verify_jwt=true`;
-- `generate-shipping-label` está ativo na versão 1 com `verify_jwt=true`.
+- `admin-rpc` ativo na versão 11 com `verify_jwt=true`;
+- `generate-shipping-label` ativo na versão 1 com `verify_jwt=true`.
 
 ## Checkpoint desta rodada
 
 **HEAD de entrada:** `8b552360882aff72ca362dcdc177a1d2fbf3106c`.
 
+**HEAD de código após implementação:** `d9301b56b0fe0b9833f0b08adea42ab2619924af`.
+
 **Concluído:**
 
-- diagnóstico reconciliado com o deployment real da Vercel;
-- ausência de RPCs/tabelas/colunas legadas confirmada diretamente no PostgreSQL;
-- catálogo real reconciliado com a documentação;
-- ordem P0 alterada para tratar primeiro o drift aplicação ↔ schema.
+- plano repriorizado para drift aplicação ↔ schema;
+- duas famílias de código morto removidas (`coin purchase RPCs`, `collection limit`);
+- `choice-service` alinhado à nullability real de forma fail-closed;
+- ledger de coins alinhado ao enum real do PostgreSQL.
 
 **Provas:**
 
-- Vercel deployment do HEAD: `ERROR`, `release:verify` executado, falha TypeScript;
-- Supabase: `ACTIVE_HEALTHY`, 97 tabelas `public`, 0 sem RLS no snapshot;
-- catálogo: 367 rows na `public_catalog_models` no snapshot;
-- branch `main`: não protegida no estado observado.
+- ausência dos contratos legados confirmada diretamente no PostgreSQL;
+- enum real de `coin_transactions.transaction_type` confirmado no banco;
+- buscas de consumidores realizadas antes das remoções;
+- commits pequenos e reversíveis aplicados diretamente na `main` conforme `AGENTS.md`.
 
-**Bloqueio principal:** typecheck do HEAD falha por múltiplos contratos legados comprovados.
+**Bloqueios:**
 
-**next_action:** executar P0.1 em commits pequenos e reversíveis, reconsultando o HEAD antes de cada escrita.
+- gate do HEAD atual ainda não terminou; não existe typecheck PASS comprovado;
+- pricing público usado por `BuyCharacter` ainda não possui uma fronteira canônica equivalente ao RPC aposentado;
+- outras famílias de drift ativo ainda permanecem.
 
-**do_not_repeat:** não voltar a atribuir o bloqueio atual apenas a rate limit/runner; há falha real de TypeScript comprovada na Vercel do HEAD `8b552360...`.
+**next_action:** continuar P0.2 pelos contratos ativos mais inequívocos (`collector-service`, notifications, shipping/tracking, subscriptions/support/contextual pricing), medindo novamente o typecheck no próximo executor real.
+
+**do_not_repeat:** não restaurar `purchase_*_with_coins` nem `validate_collection_limit`; não declarar o HEAD verde enquanto o deployment correspondente estiver `QUEUED/BUILDING` ou não concluir o gate.
