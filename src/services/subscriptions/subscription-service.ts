@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import {
   assertCurrentUserId,
   requireAuthenticatedUserId,
@@ -10,21 +11,7 @@ import {
 } from "@/services/subscriptions/subscription-summary-service";
 
 export type DbSubscription = ActiveSubscriptionSummary;
-
-export interface DbSubscriptionPlan {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  billing_interval: string;
-  deliveries_per_cycle: number;
-  is_active: boolean;
-  slug: string | null;
-  tier_id: string | null;
-  features: unknown;
-  created_at: string;
-  updated_at: string;
-}
+export type DbSubscriptionPlan = Database["public"]["Tables"]["subscription_plans"]["Row"];
 
 interface CancelSubscriptionResponse {
   success?: boolean;
@@ -65,9 +52,7 @@ export async function fetchSubscriptionPlan(
   return plan;
 }
 
-export async function listAvailableSubscriptionPlans(): Promise<
-  DbSubscriptionPlan[]
-> {
+export async function listAvailableSubscriptionPlans(): Promise<DbSubscriptionPlan[]> {
   const { data, error } = await supabase
     .from("subscription_plans")
     .select("*")
@@ -85,9 +70,11 @@ export async function cancelSubscriptionById(
   subscriptionId: string,
 ): Promise<{ success: true }> {
   const fallbackError = "Erro ao cancelar assinatura";
-  const result = await callAuthenticatedEdgeFunction<
-    CancelSubscriptionResponse | null
-  >("cancel-subscription", { subscriptionId }, fallbackError);
+  const result = await callAuthenticatedEdgeFunction<CancelSubscriptionResponse | null>(
+    "cancel-subscription",
+    { subscriptionId },
+    fallbackError,
+  );
 
   if (!result?.success) {
     throw new Error(result?.error ?? fallbackError);
