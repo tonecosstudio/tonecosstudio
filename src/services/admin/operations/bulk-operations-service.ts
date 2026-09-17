@@ -1,17 +1,20 @@
 /**
  * Bulk Operations Service
- * 
+ *
  * Handles bulk operations on production queue items.
  * Provides functions for bulk assignment, stage updates, and validation.
  */
 
-import { supabase } from '@/integrations/supabase/client';
-import { getProductionStageLabel, isForwardProductionStageTransition } from '@/config/production-stages';
+import { supabase } from "@/integrations/supabase/client";
+import { getProductionStageLabel, isForwardProductionStageTransition } from "@/config/production-stages";
 import {
   assignProductionRpc,
   updateProductionStageRpc,
 } from "@/services/admin/production/admin-production-mutations-service";
-import type { ProductionStage } from "@/services/admin/production/production-service";
+import {
+  fetchProductionQueue,
+  type ProductionStage,
+} from "@/services/admin/production/production-service";
 
 export interface BulkOperationResult {
   successful: number;
@@ -21,7 +24,7 @@ export interface BulkOperationResult {
 
 /**
  * Bulk assign production items to a team member
- * 
+ *
  * @param itemIds - Array of production queue item IDs
  * @param userId - ID of the user to assign to
  * @returns Result with success/failure counts
@@ -36,16 +39,14 @@ export async function bulkAssignProduction(
     errors: [],
   };
 
-  // Fetch user name
   const { data: user } = await supabase
-    .from('profiles')
-    .select('full_name, email')
-    .eq('id', userId)
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", userId)
     .single();
 
-  const userName = user?.full_name || user?.email || 'Usuário';
+  const userName = user?.full_name || user?.email || "Usuário";
 
-  // Process each item
   for (const itemId of itemIds) {
     try {
       await assignProductionRpc({
@@ -56,7 +57,7 @@ export async function bulkAssignProduction(
       result.successful++;
     } catch (error) {
       result.failed++;
-      result.errors.push(`Item ${itemId}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      result.errors.push(`Item ${itemId}: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
     }
   }
 
@@ -64,13 +65,7 @@ export async function bulkAssignProduction(
 }
 
 /**
- * Bulk update production stage with validation
- * 
- * Validates stage transitions and only updates items that can progress.
- * 
- * @param itemIds - Array of production queue item IDs
- * @param newStage - New stage to set
- * @returns Result with success/failure counts
+ * Bulk update production stage with validation.
  */
 export async function bulkUpdateStage(
   itemIds: string[],
@@ -82,28 +77,29 @@ export async function bulkUpdateStage(
     errors: [],
   };
 
-  // Fetch all items to validate transitions
-  const { data: items, error: fetchError } = await supabase
-    .from('production_queue')
-    .select('id, current_stage, customer_name')
-    .in('id', itemIds);
+  const requestedIds = new Set(itemIds);
+  const queue = await fetchProductionQueue({}, { page: 1, pageSize: Number.MAX_SAFE_INTEGER });
+  const itemsById = new Map(
+    queue.data
+      .filter((item) => requestedIds.has(item.id))
+      .map((item) => [item.id, item] as const),
+  );
 
-  if (fetchError) {
-    result.failed = itemIds.length;
-    result.errors.push(`Erro ao buscar itens: ${fetchError.message}`);
-    return result;
-  }
+  for (const itemId of itemIds) {
+    const item = itemsById.get(itemId);
+    if (!item) {
+      result.failed++;
+      result.errors.push(`Item ${itemId}: item de producao nao encontrado`);
+      continue;
+    }
 
-  // Process each item
-  for (const item of items || []) {
     try {
-      // Validate stage transition
-      const canTransition = validateStageTransition(item.current_stage, newStage);
+      const canTransition = validateStageTransition(item.currentStage, newStage);
 
       if (!canTransition) {
         result.failed++;
         result.errors.push(
-          `${item.customer_name}: Não é possível avançar de "${translateStage(item.current_stage)}" para "${translateStage(newStage)}"`
+          `${item.customerName}: Não é possível avançar de "${translateStage(item.currentStage)}" para "${translateStage(newStage)}"`,
         );
         continue;
       }
@@ -113,7 +109,7 @@ export async function bulkUpdateStage(
     } catch (error) {
       result.failed++;
       result.errors.push(
-        `${item.customer_name}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+        `${item.customerName}: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
       );
     }
   }
@@ -121,19 +117,10 @@ export async function bulkUpdateStage(
   return result;
 }
 
-/**
- * Validates if a stage transition is allowed
- * 
- * Stages must be completed in order:
- * awaiting_choice → design → production → quality_check → packaging → shipped
- */
 function validateStageTransition(currentStage: string | null, newStage: string): boolean {
   return isForwardProductionStageTransition(currentStage, newStage);
 }
 
-/**
- * Translates stage to Portuguese for error messages
- */
 function translateStage(stage: string | null): string {
   if (!stage) return "Sem etapa";
   return getProductionStageLabel(stage);
