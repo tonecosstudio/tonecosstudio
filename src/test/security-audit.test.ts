@@ -173,7 +173,7 @@ describe("manual payment security invariants", () => {
 
   describe("chat group membership boundary", () => {
     const groupReadHardening = source(
-      "supabase/migrations/20260916151500_restrict_chat_group_metadata_to_members_or_admins.sql",
+      "supabase/migrations/20260916152937_restrict_chat_group_metadata_to_members_or_admins.sql",
     );
     const groupService = source("src/services/groups/group-service.ts");
 
