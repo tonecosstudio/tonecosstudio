@@ -50,6 +50,11 @@ export interface AdminCoinsPricingMultiplier {
   name: string;
   display_name: string;
   context_type: string;
+  /**
+   * Compatibility display key for the legacy pricing screen. This is the row name,
+   * not a subscriber-context column. Missing subscribed_* rows keep that editor fail-closed.
+   */
+  user_context: string;
   multiplier: number;
   description: string | null;
   is_active: boolean;
@@ -158,6 +163,7 @@ export async function fetchAdminCoinsPricingConfig(): Promise<AdminCoinsPricingC
       name: row.name,
       display_name: row.display_name,
       context_type: row.context_type,
+      user_context: row.name,
       multiplier: row.multiplier,
       description: row.description,
       is_active: row.is_active === true,
