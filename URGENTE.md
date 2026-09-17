@@ -10,9 +10,11 @@
 
 HEAD de Git antes deste checkpoint documental:
 
-- `390ce523c38fc735dacce1a98e504468c1964ebe` — `docs: checkpoint edge v6 and staged backend fixes`.
+- `96669eb9dfbe561f091d40979d32eeef4c0b14dd` — `docs: checkpoint public pricing activation`.
 
-O drift de aplicação contra o schema vivo foi reduzido drasticamente. O último build que realmente chegou ao TypeScript mostrou apenas o antigo `orders-service` como bloqueador; esse serviço foi refeito depois. Ainda não existe prova de typecheck do HEAD atual porque a Vercel está rate-limited e o GitHub Actions cria jobs sem alocar runner.
+O drift conhecido entre aplicação e schema vivo foi reduzido aos últimos checkpoints e os três bloqueios backend identificados nesta sequência já foram corrigidos/ativados: pricing público, Edge `get-my-subscriptions` e `admin_upsert_price_category`.
+
+Ainda **não existe prova de typecheck/gate do HEAD atual**. A Vercel está rate-limited e o GitHub Actions cria jobs sem alocar runner. Portanto o projeto permanece NO-GO mesmo com os contratos backend corrigidos.
 
 Regra P0: **não recriar tabela/RPC aposentado, não mascarar drift com cast e não declarar PASS sem execução real.**
 
@@ -23,12 +25,10 @@ Vercel deployment:
 - `dpl_H4tHgw7H3yNxdaJf5K4zmYS2Locd`;
 - SHA `9bd5e703d8ad8ef2a778e41c24526b84a75ff017`;
 - `npm run release:verify` chegou ao TypeScript;
-- os únicos erros restantes nesse SHA eram do antigo `src/services/admin/orders/orders-service.ts`:
+- os únicos erros restantes naquele SHA eram do antigo `src/services/admin/orders/orders-service.ts`:
   - `OrderStatus[]` amplo demais para enums específicos;
   - RPC inexistente `search_unified_orders`;
   - tabela inexistente `quote_items`.
-
-Nesse build não apareceram mais erros de email, production-notification, catálogo `is_catalog`, `Array.at` ou standalone status.
 
 Depois dessa prova:
 
@@ -36,18 +36,20 @@ Depois dessa prova:
 - `ed97107336ffcbc969eaaef547b7c7bff223597c` — teste contratual atualizado;
 - `1cb59146f14bb77744c18f54aac15bdcb746df2f` — suporte `PromiseLike` nas contagens PostgREST.
 
+Nenhum executor útil rodou o typecheck depois dessa reescrita.
+
 ## Aplicação ↔ schema — concluído no Git
 
 ### E-mail e produção
 
 - `98cb15c843aacd98ef40417feae818b75b88053b` — browser `email-service` reduzido ao papel real de cliente de envio;
 - `8d112d33c9a23e123d5a8af64abd70009dfc0d49` — notificações de produção passaram a usar contratos canônicos;
-- não restaurar campos denormalizados antigos em `production_queue`.
+- `production_queue` não depende mais de campos denormalizados antigos.
 
 ### Compra avulsa administrativa
 
 - `9bd5e703d8ad8ef2a778e41c24526b84a75ff017` — `standalone-purchase-service` reduzido aos RPCs administrativos vivos;
-- removidos fluxos sem consumidor e o filtro broad `status?: string`.
+- removidos fluxos sem consumidor e o filtro amplo `status?: string`.
 
 ### Pedidos unificados
 
@@ -57,7 +59,7 @@ Depois dessa prova:
 - status filtrados por domínio/tabela;
 - profiles/collections hidratados em lote;
 - `order_status_history.old_status` nullable tratado explicitamente;
-- FKs relacionais do novo service confirmadas no banco vivo.
+- FKs relacionais usadas pelo service confirmadas no banco vivo.
 
 ## Supabase canônico
 
@@ -65,7 +67,7 @@ Projeto: `pdytjhtjlxvbbeuxgnms` (`Ordax-2026-1`).
 
 Snapshot desta sequência:
 
-- `ACTIVE_HEALTHY`;
+- estado `ACTIVE_HEALTHY`;
 - PostgreSQL 17;
 - tipos gerados em `src/integrations/supabase/types.ts` são o SSOT;
 - Advisor de segurança ainda aponta **Leaked Password Protection Disabled**.
@@ -78,7 +80,7 @@ Regras permanentes:
 - UI não é fronteira de autorização;
 - DML admin permanece server-authoritative.
 
-## Edge Function `get-my-subscriptions`
+## Edge Function `get-my-subscriptions` — ATIVA
 
 A versão viva v5 consultava campos inexistentes em `subscription_deliveries`: `production_start_date`, `shipping_carrier` e `progress_photos`.
 
@@ -90,75 +92,78 @@ Correção / rollback:
 
 Deploy remoto concluído e verificado:
 
-- status: `ACTIVE`;
-- versão: **6**;
+- status `ACTIVE`;
+- versão **6**;
 - `verify_jwt=true` preservado;
-- `ezbr_sha256`: `6c62d8c681a759c32790b2ef2c42e42245e0ca3674eac0396ef1b496cb2ed451`;
+- `ezbr_sha256 = 6c62d8c681a759c32790b2ef2c42e42245e0ca3674eac0396ef1b496cb2ed451`;
 - entrypoint ativo corresponde ao Git corrigido;
 - colunas e FK usadas pela v6 confirmadas no schema vivo.
 
-Pendente:
-
-- smoke autenticado com sessão real de usuário; as ferramentas atuais não fornecem sessão/token de cliente para invocar a função como usuário final.
+Pendente: smoke autenticado com sessão real de usuário.
 
 ## Pricing público da compra avulsa — ATIVADO
 
-O backend vivo `create_standalone_purchase_atomic(...)` dependia de `public.get_collection_pricing(p_collection_id)`, função que não existia.
+O backend vivo `create_standalone_purchase_atomic(...)` dependia de `public.get_collection_pricing(p_collection_id)`, que não existia.
 
 Migration versionada:
 
 - `supabase/migrations/20260917115000_restore_public_collection_pricing.sql`;
 - commit `ac84309835e2fad49c394bc60330a5026d9f313f`;
-- rollback documentado no próprio arquivo.
+- rollback documentado no arquivo.
 
-Pré-change validado:
+Change remoto aplicado isoladamente e verificado:
 
-- coleção ativa: `ThunderCats` (`5f4b4fcf-4f96-425f-b535-d656d6e4ba5b`);
-- `is_price_custom=false`;
-- sem `collection_tier_assignments` ativo;
-- defaults vivos:
-  - `default_price_full = 150.00`;
-  - `default_price_pix = 142.50`;
-  - `default_deposit_amount = 30`.
-
-Change remoto executado isoladamente em 2026-09-17.
-
-Pós-change provado:
-
-- `public.get_collection_pricing(uuid)` existe como `STABLE SECURITY DEFINER`;
+- função `public.get_collection_pricing(uuid)` criada como `STABLE SECURITY DEFINER`;
 - `search_path=public, pg_temp` fixo;
 - `anon` e `authenticated` possuem somente `EXECUTE` na função;
-- `anon` continua **sem SELECT** em `collection_tier_assignments`;
-- execução sob `SET LOCAL ROLE anon` funciona;
-- ThunderCats retorna:
-  - `price_full = 150.00`;
-  - `price_pix = 142.50`;
-  - `deposit_amount = 30`;
-  - `remaining_full = 120.00`;
-  - `remaining_pix = 112.50`;
-  - `pricing_source = default`.
+- `anon` continua sem `SELECT` em `collection_tier_assignments`;
+- execução sob `SET LOCAL ROLE anon` funciona.
 
-Consequência: o bloqueio de resolução pública de preço usado pelo backend de compra avulsa foi removido. Não declarar o fluxo de compra inteiro verde sem smoke/transação real do fluxo autenticado.
+ThunderCats (`5f4b4fcf-4f96-425f-b535-d656d6e4ba5b`) retorna:
 
-## Price category RPC — ainda pendente no banco
+- `price_full = 150.00`;
+- `price_pix = 142.50`;
+- `deposit_amount = 30`;
+- `remaining_full = 120.00`;
+- `remaining_pix = 112.50`;
+- `pricing_source = default`.
 
-O banco vivo confirmou que `price_categories` não tem coluna `description`, enquanto `admin_upsert_price_category` ainda tenta INSERT/UPDATE dessa coluna.
+Não declarar o fluxo inteiro de compra verde sem smoke autenticado/transação real.
 
-Frontend/service:
+## Price category RPC — ATIVADO E ALINHADO
+
+Problema original:
+
+- `price_categories` não possui coluna `description`;
+- o RPC vivo `admin_upsert_price_category` tentava INSERT/UPDATE dessa coluna.
+
+Frontend/service preparado antes da migration:
 
 - `6361fca93715073b60f3cec504424be03260e442` — payload não envia mais `p_description`;
-- `191180a4fbce725c8f250c599272d04ab805fb6f` — descrição não vazia falha explicitamente, evitando perda silenciosa.
+- `191180a4fbce725c8f250c599272d04ab805fb6f` — cliente legado com descrição não vazia falha explicitamente, evitando perda silenciosa.
 
-Migration preparada:
+Migration versionada:
 
 - `supabase/migrations/20260917134500_fix_admin_price_category_description_drift.sql`;
 - commit `d681b676bb33e2119451311c8cff30162f4c0b31`;
-- preserva assinatura;
-- rejeita descrição não vazia;
-- grava somente colunas existentes;
-- preserva `service_role` e revoga `PUBLIC/anon/authenticated`;
-- contém rollback exato da função viva anterior;
-- **ainda não aplicada remotamente**.
+- rollback exato da função anterior incluído no próprio arquivo.
+
+Change remoto aplicado isoladamente em 2026-09-17.
+
+Pós-change verificado no banco:
+
+- assinatura existente preservada;
+- `SECURITY DEFINER` preservado;
+- `search_path=public, pg_temp` fixo;
+- `PERFORM public.assert_admin_catalog_access()` preservado;
+- função não referencia mais `description` no INSERT/UPDATE;
+- `p_description` não vazio é rejeitado explicitamente;
+- `service_role` possui `EXECUTE`;
+- `anon` e `authenticated` não possuem `EXECUTE` direto.
+
+Pendente de limpeza de UX:
+
+- remover o campo visual de descrição de categoria de `CreditCharactersContent.tsx`, pois o schema canônico não possui essa propriedade.
 
 ## Shipping / tracking
 
@@ -172,11 +177,11 @@ Migration preparada:
 
 Após o build de `9bd5e70...`, o projeto Hobby atingiu o limite de deployments.
 
-Status posterior:
+Status dos SHAs posteriores:
 
 - `Deployment rate limited — retry in 24 hours.`
 
-Isso é bloqueio de executor, não nova evidência de erro de código.
+Isso é bloqueio de executor, não evidência nova de erro de aplicação.
 
 ### GitHub Actions
 
@@ -189,7 +194,7 @@ Run auditado:
 - `steps: []`;
 - `runner_id: 0`.
 
-Esse run não executou checkout, `npm ci`, typecheck, testes, build nem audits. Tratar como falha de infraestrutura/alocação de runner; não usar como prova de código vermelho ou verde.
+Esse run não executou checkout, `npm ci`, typecheck, testes, build nem audits. Tratar como falha de infraestrutura/alocação de runner.
 
 ## P0 — estado atual
 
@@ -206,13 +211,16 @@ Esse run não executou checkout, `npm ci`, typecheck, testes, build nem audits. 
 - [x] `orders-service` refeito sem contratos inexistentes;
 - [x] `get-my-subscriptions` deployada em v6 contra schema vivo;
 - [x] `get_collection_pricing` ativada e verificada como anon;
+- [x] `admin_upsert_price_category` alinhada e ativada;
+- [ ] remover UX de `price_categories.description` que não possui persistência canônica;
+- [ ] continuar varredura por contratos aposentados que ainda estejam no default branch;
 - [ ] executar typecheck do HEAD atual assim que houver executor útil.
 
-### P0.2 — backend restante
+### P0.2 — smokes autenticados
 
-- [ ] aplicar isoladamente `20260917134500_fix_admin_price_category_description_drift.sql` e verificar função/privilégios;
-- [ ] smoke autenticado da Edge v6;
-- [ ] smoke autenticado do fluxo de compra avulsa após a ativação do pricing.
+- [ ] Edge `get-my-subscriptions` v6;
+- [ ] fluxo de compra avulsa com pricing público restaurado;
+- [ ] operação administrativa de criação/edição de price category através de `admin-rpc`.
 
 ### P0.3 — gate completo no mesmo SHA
 
@@ -246,21 +254,18 @@ Depois de `npm run typecheck` PASS:
 - não executar migration remota sem escopo e rollback;
 - não declarar GO enquanto qualquer P0 permanecer aberto.
 
-## Checkpoint desta rodada
+## Checkpoint desta continuação
 
-**HEAD de entrada desta continuação:** `8d112d33c9a23e123d5a8af64abd70009dfc0d49`.
+**HEAD de entrada:** `96669eb9dfbe561f091d40979d32eeef4c0b14dd`.
 
-**HEAD de Git antes deste checkpoint documental:** `390ce523c38fc735dacce1a98e504468c1964ebe`.
+**Concluído:**
 
-**Concluído nesta etapa:**
+- migration `20260917134500_fix_admin_price_category_description_drift.sql` aplicada isoladamente;
+- definição e privilégios do RPC verificados após aplicação;
+- os três bloqueios backend desta sequência agora estão ativos/alinhados: Edge v6, pricing público e price-category RPC.
 
-- Edge `get-my-subscriptions` v6 ativa e verificada;
-- migration pública de pricing aplicada isoladamente;
-- função pública testada como `anon` sem abrir tabela privada;
-- retorno real de ThunderCats validado contra settings vivos.
+**Bloqueios:** nenhum typecheck executado após a reescrita de `orders-service`; smokes autenticados pendentes; campo visual de descrição da categoria ainda precisa ser removido; Leaked Password Protection continua desligada.
 
-**Bloqueios:** nenhum typecheck executado após a reescrita de `orders-service`; migration do RPC de categoria ainda não aplicada; smokes autenticados pendentes; proteção de senha vazada continua desligada.
+**next_action:** remover a falsa UX de descrição de categoria, continuar a varredura por contratos mortos no default branch e aproveitar qualquer executor que voltar a ficar disponível para rodar o typecheck do SHA corrente antes de avançar ao gate completo.
 
-**next_action:** aplicar isoladamente a migration de `admin_upsert_price_category`, verificar definição/privilégios e depois continuar auditoria estática enquanto os executores estão indisponíveis. Na primeira janela com executor útil, rodar typecheck e gate do HEAD corrente.
-
-**do_not_repeat:** não restaurar `search_unified_orders`; não restaurar `quote_items`; não passar a união `OrderStatus` diretamente para enums específicos do PostgREST; não adicionar `shipping_carrier` a `subscription_deliveries`; não restaurar colunas denormalizadas em `production_queue`; não expor `collection_tier_assignments`; não declarar typecheck PASS sem execução real.
+**do_not_repeat:** não restaurar `search_unified_orders`; não restaurar `quote_items`; não passar a união `OrderStatus` diretamente para enums específicos do PostgREST; não adicionar `shipping_carrier` a `subscription_deliveries`; não restaurar colunas denormalizadas em `production_queue`; não expor `collection_tier_assignments`; não voltar a gravar `price_categories.description`; não declarar typecheck PASS sem execução real.
