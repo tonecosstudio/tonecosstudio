@@ -61,7 +61,8 @@ describe("UploadedFilesList", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Mock successful signed URL generation
+    // Keep the default mock inside the real service contract: listByPayment always returns an array.
+    (fileUploadService.listByPayment as any).mockResolvedValue([]);
     (fileUploadService.getSignedUrl as any).mockResolvedValue(mockSignedUrl);
   });
 
@@ -260,12 +261,14 @@ describe("UploadedFilesList", () => {
   it("should format file sizes correctly", async () => {
     const smallFile: PaymentFile = {
       ...mockFiles[0],
+      id: "file-small",
       file_size: 500, // 500 bytes
       file_name: "small.jpg",
     };
 
     const largeFile: PaymentFile = {
       ...mockFiles[0],
+      id: "file-large",
       file_size: 1500 * 1024 * 1024, // 1.5GB
       file_name: "large.jpg",
     };
