@@ -21,17 +21,6 @@ export type UserPaymentHistory = {
   created_at: string;
 };
 
-export type UserBadgeEntry = {
-  id: string;
-  earned_at: string;
-  badge: {
-    icon: string | null;
-    name: string;
-    description: string | null;
-    rarity: string;
-  };
-};
-
 export interface CharacterChoice {
   id: string;
   order_id: string;
@@ -74,18 +63,6 @@ export async function fetchAdminUserProfile(userId: string): Promise<AdminUserPr
   };
 }
 
-export async function listAdminUserBadges(userId?: string): Promise<UserBadgeEntry[]> {
-  if (!userId) return [];
-
-  const { data, error } = await supabase
-    .from("user_badges")
-    .select("id, earned_at, badge:collector_badges(*)")
-    .eq("user_id", userId);
-
-  if (error) throw error;
-  return (data || []) as UserBadgeEntry[];
-}
-
 export async function listAdminUserPaymentHistory(
   userId?: string,
 ): Promise<UserPaymentHistory[]> {
@@ -93,7 +70,7 @@ export async function listAdminUserPaymentHistory(
 
   const { data, error } = await supabase
     .from("manual_payments")
-    .select("id, amount, status, payment_method, payment_date, created_at")
+    .select("id, amount, status, payment_method, approved_at, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(10);
@@ -103,7 +80,14 @@ export async function listAdminUserPaymentHistory(
     return [];
   }
 
-  return data || [];
+  return (data ?? []).map((payment) => ({
+    id: payment.id,
+    amount: payment.amount,
+    status: payment.status,
+    payment_method: payment.payment_method,
+    payment_date: payment.approved_at,
+    created_at: payment.created_at,
+  }));
 }
 
 export async function fetchAdminUserCoinsBalance(
@@ -134,7 +118,7 @@ export async function listAdminUserMonthlySelections(userId?: string): Promise<C
     .select(
       `
       id, order_id, order_type, status,
-      character_name, chosen_at, deadline,
+      character_name, submitted_at, deadline,
       approved_at, rejected_at, rejection_reason,
       created_at,
       collection_characters:collection_characters!character_choices_character_id_fkey(id, name, image_url),
@@ -149,5 +133,19 @@ export async function listAdminUserMonthlySelections(userId?: string): Promise<C
     return [];
   }
 
-  return (choices || []) as CharacterChoice[];
+  return (choices ?? []).map((choice) => ({
+    id: choice.id,
+    order_id: choice.order_id ?? choice.id,
+    order_type: choice.order_type,
+    status: choice.status,
+    character_name: choice.character_name,
+    chosen_at: choice.submitted_at,
+    deadline: choice.deadline,
+    approved_at: choice.approved_at,
+    rejected_at: choice.rejected_at,
+    rejection_reason: choice.rejection_reason,
+    created_at: choice.created_at,
+    collection_characters: choice.collection_characters,
+    collections: choice.collections,
+  }));
 }
