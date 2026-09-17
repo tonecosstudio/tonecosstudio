@@ -9,12 +9,11 @@ export interface PreorderQuote {
   id: string;
   user_id: string;
   payment_status: string | null;
-  ready_for_final_payment?: boolean | null;
-  deposit_amount?: number | null;
-  remaining_amount?: number | null;
-  total_amount?: number | null;
+  ready_for_final_payment: boolean;
+  deposit_amount: number | null;
+  remaining_amount: number | null;
+  total_amount: number | null;
   created_at: string;
-  quote_items?: Array<{ id: string; name?: string | null }> | null;
   profiles?: { full_name?: string | null; email?: string | null };
 }
 
@@ -37,13 +36,7 @@ export async function fetchAdminPreorders(): Promise<PreorderQuote[]> {
   const { data, error } = await adminPaymentsGateway
     .from("quotes")
     .select(
-      `
-      *,
-      quote_items (
-        id,
-        name
-      )
-    `,
+      "id,user_id,payment_status,ready_for_final_payment,deposit_amount,remaining_amount,total_amount,created_at",
     )
     .eq("is_preorder", true)
     .order("created_at", { ascending: false });
@@ -51,7 +44,7 @@ export async function fetchAdminPreorders(): Promise<PreorderQuote[]> {
   if (error) throw error;
 
   return Promise.all(
-    ((data ?? []) as unknown as PreorderQuote[]).map(async (quote) => {
+    (data ?? []).map(async (quote) => {
       const { data: profileData, error: profileError } = await adminPaymentsGateway
         .from("profiles")
         .select("full_name, email")
@@ -73,19 +66,18 @@ export async function fetchAdminPreorders(): Promise<PreorderQuote[]> {
 }
 
 export async function fetchAdminPreordersStats(): Promise<AdminPreordersStats> {
-  // `ready_for_final_payment` is present in the migration history but the generated
-  // Supabase types are stale while the canonical project is inactive. Select the
-  // row shape and narrow it locally rather than editing generated types by hand.
   const { data, error } = await adminPaymentsGateway
     .from("quotes")
-    .select("*")
+    .select(
+      "payment_status,ready_for_final_payment,deposit_amount,remaining_amount,total_amount",
+    )
     .eq("is_preorder", true);
 
   if (error) {
     throw new Error(`Falha ao carregar métricas de pré-vendas: ${error.message}`);
   }
 
-  const quotes = (data ?? []) as unknown as PreorderQuote[];
+  const quotes = data ?? [];
 
   const totalDepositsReceived = quotes.reduce((total, quote) => {
     if (quote.payment_status !== "deposit_paid" && quote.payment_status !== "fully_paid") {
