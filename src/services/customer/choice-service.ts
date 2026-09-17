@@ -72,7 +72,7 @@ type CharacterChoiceRow = {
 
 async function checkCharacterAvailability(
   characterId: string,
-  collectionId: string
+  collectionId: string,
 ): Promise<boolean> {
   const { data: character, error: charError } = await supabase
     .from("collection_characters")
@@ -100,20 +100,26 @@ export async function getAvailableCharacters(collectionId: string): Promise<Char
   }
 
   return Promise.all(
-    (data || []).map(async (char) => ({
-      id: char.id,
-      name: char.name,
-      description: char.description,
-      imageUrl: char.image_url,
-      collectionId: char.collection_id,
-      isAvailable: await checkCharacterAvailability(char.id, char.collection_id),
-    }))
+    (data ?? []).map(async (char) => {
+      if (!char.name || !char.collection_id) {
+        throw new Error(`Personagem ${char.id} possui dados de catalogo incompletos`);
+      }
+
+      return {
+        id: char.id,
+        name: char.name,
+        description: char.description,
+        imageUrl: char.image_url,
+        collectionId: char.collection_id,
+        isAvailable: await checkCharacterAvailability(char.id, char.collection_id),
+      };
+    }),
   );
 }
 
 export async function submitCharacterChoice(
   orderId: string,
-  characterId: string
+  characterId: string,
 ): Promise<CharacterChoice> {
   if (!orderId || !characterId) {
     throw new Error("Order ID e Character ID sao obrigatorios");
@@ -126,7 +132,7 @@ export async function submitCharacterChoice(
 export async function changeCharacterChoice(
   choiceId: string,
   newCharacterId: string,
-  reason: string
+  reason: string,
 ): Promise<CharacterChoice> {
   if (!choiceId || !newCharacterId) {
     throw new Error("Choice ID e Character ID sao obrigatorios");
@@ -139,7 +145,7 @@ export async function changeCharacterChoice(
   const choice = await changeCharacterChoiceRpc<CharacterChoiceRow>(
     choiceId,
     newCharacterId,
-    reason
+    reason,
   );
   return transformCharacterChoice(choice);
 }
