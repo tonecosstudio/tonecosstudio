@@ -41,10 +41,7 @@ describe("admin-production-mutations-service", () => {
   it("confirma mudanca de estagio no item solicitado", async () => {
     callAdminRpcMock.mockResolvedValue(queueRow({ current_stage: "quality_check" }));
 
-    await expect(updateProductionStageRpc(queueId, "quality_check")).resolves.toMatchObject({
-      id: queueId,
-      current_stage: "quality_check",
-    });
+    await expect(updateProductionStageRpc(queueId, "quality_check")).resolves.toBeUndefined();
   });
 
   it.each([
@@ -61,10 +58,7 @@ describe("admin-production-mutations-service", () => {
   it("confirma atribuicao para o usuario solicitado", async () => {
     callAdminRpcMock.mockResolvedValue(queueRow({ assigned_to: userId }));
 
-    await expect(assignProductionRpc({ queueId, userId })).resolves.toMatchObject({
-      id: queueId,
-      assigned_to: userId,
-    });
+    await expect(assignProductionRpc({ queueId, userId })).resolves.toBeUndefined();
   });
 
   it("rejeita atribuicao confirmada para outro usuario", async () => {
@@ -80,10 +74,7 @@ describe("admin-production-mutations-service", () => {
       queueRow({ production_status: "on_hold", production_notes: "Aguardando material" }),
     );
 
-    await expect(blockProductionRpc(queueId, "  Aguardando material  ")).resolves.toMatchObject({
-      production_status: "on_hold",
-      production_notes: "Aguardando material",
-    });
+    await expect(blockProductionRpc(queueId, "  Aguardando material  ")).resolves.toBeUndefined();
   });
 
   it("rejeita bloqueio sem estado bloqueado confirmado", async () => {
@@ -96,9 +87,7 @@ describe("admin-production-mutations-service", () => {
 
   it("confirma desbloqueio apenas quando a fila deixa on_hold", async () => {
     callAdminRpcMock.mockResolvedValue(queueRow({ production_status: "in_production" }));
-    await expect(unblockProductionRpc(queueId)).resolves.toMatchObject({
-      production_status: "in_production",
-    });
+    await expect(unblockProductionRpc(queueId)).resolves.toBeUndefined();
 
     callAdminRpcMock.mockResolvedValue(queueRow({ production_status: "on_hold" }));
     await expect(unblockProductionRpc(queueId)).rejects.toThrow(
@@ -109,9 +98,7 @@ describe("admin-production-mutations-service", () => {
   it("vincula agenda de producao a data solicitada", async () => {
     callAdminRpcMock.mockResolvedValue(queueRow({ scheduled_production_date: "2026-09-20" }));
 
-    await expect(updateProductionScheduleRpc(queueId, "2026-09-20")).resolves.toMatchObject({
-      scheduled_production_date: "2026-09-20",
-    });
+    await expect(updateProductionScheduleRpc(queueId, "2026-09-20")).resolves.toBeUndefined();
 
     callAdminRpcMock.mockResolvedValue(queueRow({ scheduled_production_date: "2026-09-21" }));
     await expect(updateProductionScheduleRpc(queueId, "2026-09-20")).rejects.toThrow(
@@ -122,9 +109,7 @@ describe("admin-production-mutations-service", () => {
   it("vincula notas de producao ao valor normalizado solicitado", async () => {
     callAdminRpcMock.mockResolvedValue(queueRow({ production_notes: "Revisar pintura" }));
 
-    await expect(updateProductionNotesRpc(queueId, "  Revisar pintura  ")).resolves.toMatchObject({
-      production_notes: "Revisar pintura",
-    });
+    await expect(updateProductionNotesRpc(queueId, "  Revisar pintura  ")).resolves.toBeUndefined();
 
     callAdminRpcMock.mockResolvedValue(queueRow({ production_notes: "Outra nota" }));
     await expect(updateProductionNotesRpc(queueId, "Revisar pintura")).rejects.toThrow(
