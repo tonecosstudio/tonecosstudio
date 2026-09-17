@@ -44,6 +44,11 @@ export interface NotificationSoundSettings {
   sound_volume?: number | null;
 }
 
+const DEFAULT_USER_NOTIFICATION_SOUND_SETTINGS: NotificationSoundSettings = {
+  sound_enabled: true,
+  sound_volume: 0.5,
+};
+
 export async function listUnreadUserNotificationsForCurrentUser(): Promise<UserNotification[]> {
   const session = await getCurrentAuthSession();
   const user = session?.user;
@@ -62,17 +67,9 @@ export async function listUnreadUserNotificationsForCurrentUser(): Promise<UserN
 
 export async function getUserNotificationSettingsForCurrentUser(): Promise<NotificationSoundSettings | null> {
   const session = await getCurrentAuthSession();
-  const user = session?.user;
-  if (!user) return null;
+  if (!session?.user) return null;
 
-  const { data, error } = await supabase
-    .from("user_notification_settings")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
-
-  if (error && error.code !== "PGRST116") throw error;
-  return data as NotificationSoundSettings | null;
+  return DEFAULT_USER_NOTIFICATION_SOUND_SETTINGS;
 }
 
 export async function listUnreadAdminNotifications(): Promise<AdminNotification[]> {
@@ -93,12 +90,12 @@ export async function getAdminNotificationSettingsForCurrentUser(): Promise<Noti
 
   const { data, error } = await supabase
     .from("admin_notification_settings")
-    .select("*")
+    .select("sound_enabled, sound_volume")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== "PGRST116") throw error;
-  return data as NotificationSoundSettings | null;
+  if (error) throw error;
+  return data;
 }
 
 export async function subscribeToUserNotificationInserts(
