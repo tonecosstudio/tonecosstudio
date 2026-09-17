@@ -3,10 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { ProductionKanbanBoard } from "./ProductionKanbanBoard";
 import type { ProductionQueueItem } from "@/types/production";
-import {
-  PRODUCTION_STAGE_LABELS,
-  PRODUCTION_STAGE_ORDER,
-} from "@/config/production-stages";
+import { PRODUCTION_STAGE_ORDER } from "@/config/production-stages";
 
 const hookMocks = vi.hoisted(() => ({
   useProductionPipelineQueue: vi.fn(),
@@ -14,12 +11,15 @@ const hookMocks = vi.hoisted(() => ({
   mutate: vi.fn(),
 }));
 
-vi.mock("@/hooks/admin/useProductionPipeline", () => ({
-  STAGE_LABELS: PRODUCTION_STAGE_LABELS,
-  STAGE_ORDER: PRODUCTION_STAGE_ORDER,
-  useProductionPipelineQueue: hookMocks.useProductionPipelineQueue,
-  useMoveProductionKanbanItem: hookMocks.useMoveProductionKanbanItem,
-}));
+vi.mock("@/hooks/admin/useProductionPipeline", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/hooks/admin/useProductionPipeline")>();
+
+  return {
+    ...actual,
+    useProductionPipelineQueue: hookMocks.useProductionPipelineQueue,
+    useMoveProductionKanbanItem: hookMocks.useMoveProductionKanbanItem,
+  };
+});
 
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
