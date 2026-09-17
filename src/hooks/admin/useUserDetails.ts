@@ -32,6 +32,7 @@ export function useUserDetails({ userId }: UseUserDetailsProps) {
   return {
     profile: profileQuery.data,
     roles,
+    badges: [],
     paymentHistory: paymentHistoryQuery.data || [],
     isLoading: profileQuery.isLoading,
     isError: profileQuery.isError,
