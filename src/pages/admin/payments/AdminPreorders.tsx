@@ -268,12 +268,8 @@ export default function AdminPreorders() {
                           )}
                         </div>
 
-                        <p className="mb-2 text-sm text-muted-foreground">
-                          Cliente: {quote.profiles?.full_name || quote.profiles?.email || "Sem nome"}
-                        </p>
                         <p className="mb-3 text-sm text-muted-foreground">
-                          {quote.quote_items?.length} item(ns):{" "}
-                          {quote.quote_items?.map((item) => item.name).filter(Boolean).join(", ")}
+                          Cliente: {quote.profiles?.full_name || quote.profiles?.email || "Sem nome"}
                         </p>
 
                         <div className="grid grid-cols-3 gap-4 text-sm">
