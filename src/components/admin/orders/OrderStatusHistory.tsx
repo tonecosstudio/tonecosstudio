@@ -6,7 +6,7 @@
 
 import { Clock, User, ArrowRight } from 'lucide-react';
 import { OrderStatusBadge } from './OrderStatusBadge';
-import type { StatusHistoryEntry } from '@/types/admin/orders';
+import type { OrderStatusHistoryEntry } from '@/services/admin/orders/orders-service';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useOrderStatusHistory } from '@/hooks/admin/useOrderStatusHistory';
@@ -105,7 +105,7 @@ export function OrderStatusHistory({ orderId, orderType }: OrderStatusHistoryPro
 }
 
 interface StatusHistoryItemProps {
-  entry: StatusHistoryEntry;
+  entry: OrderStatusHistoryEntry;
   isFirst: boolean;
 }
 
