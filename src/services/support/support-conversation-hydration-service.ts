@@ -61,7 +61,7 @@ function mapSupportConversationBase(
   return {
     id: row.id,
     user_id: row.user_id,
-    subject: row.subject,
+    subject: row.subject ?? "Sem assunto",
     status: row.status as ConversationStatus,
     priority: (row.priority ?? "normal") as ConversationPriority,
     tags: toStringArray(row.tags) as ConversationTag[],
