@@ -56,7 +56,6 @@ export function HistoricalCycles() {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-  // Fetch historical cycles (past cycles only)
   const { data: cycles, isLoading } = useHistoricalCycles({
     selectedYear,
     selectedStatus,
@@ -64,36 +63,43 @@ export function HistoricalCycles() {
     currentMonth: timezoneService.getMonth(currentBahiaTime),
   });
 
-  // Sort cycles
   const sortedCycles = cycles ? [...cycles].sort((a, b) => {
     let comparison = 0;
 
     switch (sortField) {
       case 'date':
-        // Sort by year, then month, then cycle_number
         comparison = a.year - b.year || a.month - b.month || a.cycle_number - b.cycle_number;
         break;
       case 'capacity':
         comparison = getCapacityMetrics(a).percentage - getCapacityMetrics(b).percentage;
         break;
-      case 'status':
-        const statusOrder = { sales: 0, open: 0, active: 0, production: 1, shipping: 2, completed: 3 };
+      case 'status': {
+        const statusOrder: Record<Cycle['status'], number> = {
+          sales: 0,
+          open: 0,
+          active: 0,
+          production: 1,
+          shipping: 2,
+          completed: 3,
+          cancelled: 4,
+        };
         comparison = statusOrder[a.status] - statusOrder[b.status];
         break;
+      }
     }
 
     return sortOrder === 'asc' ? comparison : -comparison;
   }) : [];
 
-  // Status badge styling
   const getStatusBadge = (status: Cycle['status']) => {
-    const variants = {
+    const variants: Record<Cycle['status'], { className: string; label: string }> = {
       sales: { className: 'bg-green-100 text-green-800 border-green-300', label: 'Aberto' },
       active: { className: 'bg-green-100 text-green-800 border-green-300', label: 'Aberto' },
       open: { className: 'bg-green-100 text-green-800 border-green-300', label: 'Aberto' },
       production: { className: 'bg-blue-100 text-blue-800 border-blue-300', label: 'Produção' },
       shipping: { className: 'bg-yellow-100 text-yellow-800 border-yellow-300', label: 'Envio' },
       completed: { className: 'bg-gray-100 text-gray-800 border-gray-300', label: 'Concluído' },
+      cancelled: { className: 'bg-red-100 text-red-800 border-red-300', label: 'Cancelado' },
     };
 
     const config = variants[status];
@@ -104,14 +110,12 @@ export function HistoricalCycles() {
     );
   };
 
-  // Capacity color
   const getCapacityColor = (percentage: number) => {
     if (percentage >= 90) return 'text-red-600';
     if (percentage >= 70) return 'text-yellow-600';
     return 'text-green-600';
   };
 
-  // Toggle sort
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -121,7 +125,6 @@ export function HistoricalCycles() {
     }
   };
 
-  // Calculate statistics
   const stats = sortedCycles.reduce(
     (acc, cycle) => {
       const { capacity, usedCapacity } = getCapacityMetrics(cycle);
@@ -140,7 +143,6 @@ export function HistoricalCycles() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Calendar className="h-6 w-6" />
@@ -151,7 +153,6 @@ export function HistoricalCycles() {
         </p>
       </div>
 
-      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -192,7 +193,6 @@ export function HistoricalCycles() {
         </Card>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle>Filtros</CardTitle>
@@ -234,6 +234,7 @@ export function HistoricalCycles() {
                   <SelectItem value="production">Produção</SelectItem>
                   <SelectItem value="shipping">Envio</SelectItem>
                   <SelectItem value="completed">Concluído</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -241,7 +242,6 @@ export function HistoricalCycles() {
         </CardContent>
       </Card>
 
-      {/* Historical Cycles Table */}
       <Card>
         <CardHeader>
           <CardTitle>Ciclos Passados</CardTitle>
@@ -337,7 +337,9 @@ export function HistoricalCycles() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            {format(new Date(cycle.shipping_date), 'dd/MM/yyyy', { locale: ptBR })}
+                            {cycle.shipping_date
+                              ? format(new Date(cycle.shipping_date), 'dd/MM/yyyy', { locale: ptBR })
+                              : 'Não agendada'}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
