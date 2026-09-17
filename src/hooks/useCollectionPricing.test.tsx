@@ -2,79 +2,69 @@
  * Testes para useCollectionPricing hook
  */
 
-import { describe, it, expect, vi } from "vitest";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useCollectionPricing, useGlobalPricingSettings } from "./useCollectionPricing";
-import React from "react";
 
-// Mock do Supabase
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    rpc: vi.fn(() =>
-      Promise.resolve({
-        data: [
-          {
-            price_full: 100,
-            price_pix: 90,
-            deposit_amount: 30,
-            remaining_full: 70,
-            remaining_pix: 60,
-            is_custom: false,
-          },
-        ],
-        error: null,
-      })
-    ),
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        in: vi.fn(() =>
-          Promise.resolve({
-            data: [
-              { key: "default_price_full", value: "100" },
-              { key: "default_price_pix", value: "90" },
-              { key: "default_deposit_amount", value: "30" },
-              { key: "pix_discount_percentage", value: "10" },
-            ],
-            error: null,
-          })
-        ),
-      })),
-    })),
-  },
+const pricingMocks = vi.hoisted(() => ({
+  getCollectionPricing: vi.fn(),
+  getGlobalPricingSettings: vi.fn(),
 }));
 
-// Helper para criar wrapper com QueryClient
-const createWrapper = () => {
+vi.mock("@/services/pricing/collection-pricing-service", () => ({
+  getCollectionPricing: pricingMocks.getCollectionPricing,
+  getGlobalPricingSettings: pricingMocks.getGlobalPricingSettings,
+}));
+
+const collectionPricing = {
+  price_full: 100,
+  price_pix: 90,
+  deposit_amount: 30,
+  remaining_full: 70,
+  remaining_pix: 60,
+  is_custom: false,
+  tier_id: null,
+  tier_name: null,
+  pricing_source: "default" as const,
+};
+
+const globalPricingSettings = {
+  default_price_full: 100,
+  default_price_pix: 90,
+  default_deposit_amount: 30,
+  pix_discount_percentage: 10,
+};
+
+function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
     },
   });
 
-  const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-
-  return Wrapper;
-};
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  };
+}
 
 describe("useCollectionPricing", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    pricingMocks.getCollectionPricing.mockResolvedValue(collectionPricing);
+    pricingMocks.getGlobalPricingSettings.mockResolvedValue(globalPricingSettings);
+  });
+
   it("deve retornar pricing de coleção", async () => {
     const { result } = renderHook(() => useCollectionPricing("test-collection-id"), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toHaveProperty("price_full");
-    expect(result.current.data).toHaveProperty("price_pix");
-    expect(result.current.data).toHaveProperty("deposit_amount");
-    expect(result.current.data).toHaveProperty("remaining_full");
-    expect(result.current.data).toHaveProperty("remaining_pix");
-    expect(result.current.data).toHaveProperty("is_custom");
+    expect(result.current.data).toEqual(collectionPricing);
+    expect(pricingMocks.getCollectionPricing).toHaveBeenCalledWith("test-collection-id");
   });
 
   it("deve ter valores numéricos corretos", async () => {
@@ -82,9 +72,7 @@ describe("useCollectionPricing", () => {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
+    await waitFor(() => expect(result.current.data).toBeDefined());
 
     const data = result.current.data!;
     expect(typeof data.price_full).toBe("number");
@@ -95,24 +83,16 @@ describe("useCollectionPricing", () => {
     expect(typeof data.is_custom).toBe("boolean");
   });
 
-  it("deve validar lógica de preços", async () => {
+  it("deve validar lógica de preços exposta pelo serviço", async () => {
     const { result } = renderHook(() => useCollectionPricing("test-collection-id"), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
+    await waitFor(() => expect(result.current.data).toBeDefined());
 
     const data = result.current.data!;
-
-    // Preço PIX deve ser menor ou igual ao preço cheio
     expect(data.price_pix).toBeLessThanOrEqual(data.price_full);
-
-    // Entrada deve ser menor que preço total
     expect(data.deposit_amount).toBeLessThan(data.price_full);
-
-    // Restante deve ser preço total menos entrada
     expect(data.remaining_full).toBe(data.price_full - data.deposit_amount);
   });
 
@@ -122,41 +102,40 @@ describe("useCollectionPricing", () => {
     });
 
     expect(result.current.data).toBeUndefined();
-    expect(result.current.isLoading).toBe(false);
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(pricingMocks.getCollectionPricing).not.toHaveBeenCalled();
   });
 
-  it("deve cachear resultados", async () => {
+  it("deve manter resultado em cache no rerender", async () => {
     const { result, rerender } = renderHook(() => useCollectionPricing("test-collection-id"), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
-
+    await waitFor(() => expect(result.current.data).toBeDefined());
     const firstData = result.current.data;
 
     rerender();
 
-    // Dados devem ser os mesmos (cache)
     expect(result.current.data).toBe(firstData);
+    expect(pricingMocks.getCollectionPricing).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("useGlobalPricingSettings", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    pricingMocks.getCollectionPricing.mockResolvedValue(collectionPricing);
+    pricingMocks.getGlobalPricingSettings.mockResolvedValue(globalPricingSettings);
+  });
+
   it("deve retornar configurações globais de preços", async () => {
     const { result } = renderHook(() => useGlobalPricingSettings(), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toHaveProperty("default_price_full");
-    expect(result.current.data).toHaveProperty("default_price_pix");
-    expect(result.current.data).toHaveProperty("default_deposit_amount");
-    expect(result.current.data).toHaveProperty("pix_discount_percentage");
+    expect(result.current.data).toEqual(globalPricingSettings);
   });
 
   it("deve converter valores para números", async () => {
@@ -164,14 +143,11 @@ describe("useGlobalPricingSettings", () => {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
+    await waitFor(() => expect(result.current.data).toBeDefined());
 
-    const data = result.current.data!;
-    Object.values(data).forEach((value) => {
+    Object.values(result.current.data!).forEach((value) => {
       expect(typeof value).toBe("number");
-      expect(isNaN(value)).toBe(false);
+      expect(Number.isNaN(value)).toBe(false);
     });
   });
 
@@ -180,9 +156,7 @@ describe("useGlobalPricingSettings", () => {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
+    await waitFor(() => expect(result.current.data).toBeDefined());
 
     const data = result.current.data!;
     expect(data.default_price_full).toBeGreaterThan(0);
@@ -196,31 +170,24 @@ describe("useGlobalPricingSettings", () => {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
+    await waitFor(() => expect(result.current.data).toBeDefined());
 
     const data = result.current.data!;
-
-    // Desconto deve estar entre 0 e 100
     expect(data.pix_discount_percentage).toBeGreaterThanOrEqual(0);
     expect(data.pix_discount_percentage).toBeLessThanOrEqual(100);
   });
 
-  it("deve cachear resultados", async () => {
+  it("deve manter resultado em cache no rerender", async () => {
     const { result, rerender } = renderHook(() => useGlobalPricingSettings(), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
-
+    await waitFor(() => expect(result.current.data).toBeDefined());
     const firstData = result.current.data;
 
     rerender();
 
-    // Dados devem ser os mesmos (cache)
     expect(result.current.data).toBe(firstData);
+    expect(pricingMocks.getGlobalPricingSettings).toHaveBeenCalledTimes(1);
   });
 });
