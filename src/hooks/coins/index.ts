@@ -29,10 +29,5 @@ export {
   coinsTransactionsKeys,
 } from "./useCoinsTransactions";
 
-// Compras com coins
-export {
-  usePurchaseCharacter,
-  usePurchaseCollection,
-  useRefundPurchase,
-  usePurchaseItem,
-} from "./usePurchaseWithCoins";
+// Reembolso de compras registradas no ledger canônico de coins.
+export { useRefundPurchase } from "./usePurchaseWithCoins";
