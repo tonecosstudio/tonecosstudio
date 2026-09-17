@@ -30,6 +30,10 @@ function uuidFromIndex(index: number): string {
   return `00000000-0000-4000-8000-${tail}`;
 }
 
+const rpcCompatibleUuid = fc
+  .integer({ min: 1, max: 999_999_999 })
+  .map(uuidFromIndex);
+
 function createScheduledDeliveries(subscriptionId: string, count: number) {
   return Array.from({ length: count }, (_, index) => ({
     id: uuidFromIndex(index + 1),
@@ -74,7 +78,7 @@ describe('DeliveryService - Property-Based Tests', () => {
 
   it('trimestral always returns exactly three sequential scheduled deliveries', async () => {
     await fc.assert(
-      fc.asyncProperty(fc.uuid(), fc.uuid(), async (subscriptionId, entryCycleId) => {
+      fc.asyncProperty(rpcCompatibleUuid, rpcCompatibleUuid, async (subscriptionId, entryCycleId) => {
         mockCallAdminRpc.mockResolvedValueOnce(
           createSchedulingEnvelope(subscriptionId, 'trimestral'),
         );
@@ -95,7 +99,7 @@ describe('DeliveryService - Property-Based Tests', () => {
 
   it('semestral always returns exactly six sequential scheduled deliveries', async () => {
     await fc.assert(
-      fc.asyncProperty(fc.uuid(), fc.uuid(), async (subscriptionId, entryCycleId) => {
+      fc.asyncProperty(rpcCompatibleUuid, rpcCompatibleUuid, async (subscriptionId, entryCycleId) => {
         mockCallAdminRpc.mockResolvedValueOnce(
           createSchedulingEnvelope(subscriptionId, 'semestral'),
         );
@@ -118,9 +122,9 @@ describe('DeliveryService - Property-Based Tests', () => {
   it('forwards the exact scheduling authority inputs to the admin RPC gateway', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.uuid(),
+        rpcCompatibleUuid,
         fc.constantFrom<PlanType>('trimestral', 'semestral'),
-        fc.uuid(),
+        rpcCompatibleUuid,
         async (subscriptionId, planType, entryCycleId) => {
           mockCallAdminRpc.mockResolvedValueOnce(
             createSchedulingEnvelope(subscriptionId, planType),
@@ -149,9 +153,9 @@ describe('DeliveryService - Property-Based Tests', () => {
   it('fails closed when the RPC returns the wrong number of deliveries', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.uuid(),
+        rpcCompatibleUuid,
         fc.constantFrom<PlanType>('trimestral', 'semestral'),
-        fc.uuid(),
+        rpcCompatibleUuid,
         async (subscriptionId, planType, entryCycleId) => {
           const envelope = createSchedulingEnvelope(subscriptionId, planType);
           envelope.deliveries.pop();
@@ -172,7 +176,7 @@ describe('DeliveryService - Property-Based Tests', () => {
 
   it('fails closed when a delivery belongs to another subscription', async () => {
     await fc.assert(
-      fc.asyncProperty(fc.uuid(), fc.uuid(), async (subscriptionId, entryCycleId) => {
+      fc.asyncProperty(rpcCompatibleUuid, rpcCompatibleUuid, async (subscriptionId, entryCycleId) => {
         const envelope = createSchedulingEnvelope(subscriptionId, 'trimestral');
         envelope.deliveries[1] = {
           ...envelope.deliveries[1],
@@ -194,7 +198,7 @@ describe('DeliveryService - Property-Based Tests', () => {
 
   it('fails closed when a trimestral response unexpectedly contains a bonus', async () => {
     await fc.assert(
-      fc.asyncProperty(fc.uuid(), fc.uuid(), async (subscriptionId, entryCycleId) => {
+      fc.asyncProperty(rpcCompatibleUuid, rpcCompatibleUuid, async (subscriptionId, entryCycleId) => {
         const envelope = createSchedulingEnvelope(subscriptionId, 'trimestral');
         envelope.bonusPiece = {
           id: uuidFromIndex(901),
@@ -220,8 +224,8 @@ describe('DeliveryService - Property-Based Tests', () => {
   it('fails closed when the semestral bonus is missing or detached from delivery six', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.uuid(),
-        fc.uuid(),
+        rpcCompatibleUuid,
+        rpcCompatibleUuid,
         fc.boolean(),
         async (subscriptionId, entryCycleId, removeBonus) => {
           const envelope = createSchedulingEnvelope(subscriptionId, 'semestral');
