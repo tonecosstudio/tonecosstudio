@@ -1,399 +1,231 @@
-/**
- * Testes para o hook useNotificationCount
- *
- * Requirements: 10.1-10.10
- * Design: .kiro/specs/manual-payment-system/design.md
- */
-
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useCurrentUserIsAdmin } from "@/lib/roles";
 import {
-  useNotificationCount,
+  getCurrentAuthSession,
+  subscribeToAuthSessionChanges,
+} from "@/services/auth/auth-session-service";
+import {
+  fetchNotificationCount,
+  subscribeToNotificationCountChanges,
+} from "@/services/notifications/notification-count-service";
+import {
   useFormattedNotificationCount,
+  useNotificationCount,
 } from "./use-notification-count";
 
-// Mock do Supabase
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    auth: {
-      getUser: vi.fn(),
-      onAuthStateChange: vi.fn(() => ({
-        data: { subscription: { unsubscribe: vi.fn() } },
-      })),
-    },
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          in: vi.fn(() => ({
-            single: vi.fn(),
-            maybeSingle: vi.fn(),
-          })),
-        })),
-        in: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(),
-          })),
-        })),
-      })),
-    })),
-    channel: vi.fn(() => ({
-      on: vi.fn(() => ({
-        subscribe: vi.fn(() => ({
-          unsubscribe: vi.fn(),
-        })),
-      })),
-    })),
-    removeChannel: vi.fn(),
-    rpc: vi.fn(),
-  },
-}));
-
-// Mock do hook useCurrentUserIsAdmin
 vi.mock("@/lib/roles", () => ({
-  useCurrentUserIsAdmin: vi.fn(() => ({
-    data: false,
-    isLoading: false,
-  })),
+  useCurrentUserIsAdmin: vi.fn(),
 }));
 
-type SupabaseFromResult = ReturnType<typeof supabase.from>;
+vi.mock("@/services/auth/auth-session-service", () => ({
+  getCurrentAuthSession: vi.fn(),
+  subscribeToAuthSessionChanges: vi.fn(),
+}));
 
-type SupabaseQueryResult = {
-  data: unknown;
-  error: unknown;
-};
+vi.mock("@/services/notifications/notification-count-service", () => ({
+  EMPTY_CUSTOMER_NOTIFICATION_COUNT: {
+    total: 0,
+    pendingPayments: 0,
+    underReviewPayments: 0,
+    requiresInfoPayments: 0,
+    unreadMessages: 0,
+    isAdmin: false,
+  },
+  fetchNotificationCount: vi.fn(),
+  subscribeToNotificationCountChanges: vi.fn(),
+}));
 
-function createSupabaseQuery(result: SupabaseQueryResult): SupabaseFromResult {
-  const query: Record<string, unknown> = {};
-  const resolve = () => Promise.resolve(result);
-
-  query.select = vi.fn(() => query);
-  query.eq = vi.fn(() => query);
-  query.in = vi.fn(() => query);
-  query.single = vi.fn(resolve);
-  query.maybeSingle = vi.fn(resolve);
-  query.then = (onFulfilled: unknown, onRejected: unknown) =>
-    resolve().then(
-      onFulfilled as Parameters<Promise<SupabaseQueryResult>["then"]>[0],
-      onRejected as Parameters<Promise<SupabaseQueryResult>["then"]>[1],
-    );
-
-  return query as SupabaseFromResult;
-}
-
-function mockSupabaseTables(
-  resultsByTable: Record<string, SupabaseQueryResult>,
-) {
-  vi.mocked(supabase.from).mockImplementation((table: string) =>
-    createSupabaseQuery(resultsByTable[table] ?? { data: [], error: null }),
-  );
-}
-
-// Criar QueryClient para testes
-const createTestQueryClient = () =>
-  new QueryClient({
+function wrapper({ children }: { children: ReactNode }) {
+  const queryClient = new QueryClient({
     defaultOptions: {
-      queries: {
-        retry: false,
-      },
+      queries: { retry: false },
     },
   });
 
-// Wrapper para testes
-const wrapper = ({ children }: { children: React.ReactNode }) => {
-  const queryClient = createTestQueryClient();
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-};
+}
+
+function sessionFor(userId: string) {
+  return {
+    user: { id: userId },
+  } as Awaited<ReturnType<typeof getCurrentAuthSession>>;
+}
+
+function notificationCount(overrides: Partial<Awaited<ReturnType<typeof fetchNotificationCount>>> = {}) {
+  return {
+    total: 0,
+    pendingPayments: 0,
+    underReviewPayments: 0,
+    requiresInfoPayments: 0,
+    unreadMessages: 0,
+    isAdmin: false,
+    ...overrides,
+  };
+}
 
 describe("useNotificationCount", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getCurrentAuthSession).mockResolvedValue(null);
+    vi.mocked(subscribeToAuthSessionChanges).mockReturnValue(vi.fn());
+    vi.mocked(subscribeToNotificationCountChanges).mockReturnValue(vi.fn());
     vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
       data: false,
       isLoading: false,
     });
-    mockSupabaseTables({});
+    vi.mocked(fetchNotificationCount).mockResolvedValue(notificationCount());
+  });
 
-    // Mock padrão para usuário não autenticado
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: null },
+  it("returns zero after auth resolves without a user", async () => {
+    const { result } = renderHook(() => useNotificationCount(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current).toMatchObject({
+      total: 0,
+      pendingPayments: 0,
+      underReviewPayments: 0,
+      requiresInfoPayments: 0,
+      unreadMessages: 0,
+      isAdmin: false,
       error: null,
     });
+    expect(fetchNotificationCount).not.toHaveBeenCalled();
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
+  it("loads the customer count through the notification service", async () => {
+    vi.mocked(getCurrentAuthSession).mockResolvedValue(sessionFor("customer-123"));
+    vi.mocked(fetchNotificationCount).mockResolvedValue(
+      notificationCount({
+        total: 3,
+        requiresInfoPayments: 1,
+        unreadMessages: 2,
+      }),
+    );
+
+    const { result } = renderHook(() => useNotificationCount(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(fetchNotificationCount).toHaveBeenCalledWith({
+      userId: "customer-123",
+      isAdmin: false,
+    });
+    expect(result.current.total).toBe(3);
+    expect(result.current.requiresInfoPayments).toBe(1);
+    expect(result.current.unreadMessages).toBe(2);
   });
 
-  describe("usuário não autenticado", () => {
-    it("deve retornar contagem zero quando não há usuário", async () => {
-      const { result } = renderHook(() => useNotificationCount(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      expect(result.current.total).toBe(0);
-      expect(result.current.pendingPayments).toBe(0);
-      expect(result.current.underReviewPayments).toBe(0);
-      expect(result.current.requiresInfoPayments).toBe(0);
-      expect(result.current.unreadMessages).toBe(0);
-      expect(result.current.isAdmin).toBe(false);
+  it("loads the admin count after role resolution", async () => {
+    vi.mocked(getCurrentAuthSession).mockResolvedValue(sessionFor("admin-123"));
+    vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
+      data: true,
+      isLoading: false,
     });
+    vi.mocked(fetchNotificationCount).mockResolvedValue(
+      notificationCount({
+        total: 4,
+        pendingPayments: 2,
+        underReviewPayments: 1,
+        unreadMessages: 1,
+        isAdmin: true,
+      }),
+    );
+
+    const { result } = renderHook(() => useNotificationCount(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(fetchNotificationCount).toHaveBeenCalledWith({
+      userId: "admin-123",
+      isAdmin: true,
+    });
+    expect(result.current).toMatchObject({ total: 4, isAdmin: true });
   });
 
-  describe("usuário cliente autenticado", () => {
-    beforeEach(() => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: "customer-123" } },
-        error: null,
-      });
+  it("surfaces notification-count query failures", async () => {
+    vi.mocked(getCurrentAuthSession).mockResolvedValue(sessionFor("admin-123"));
+    vi.mocked(fetchNotificationCount).mockRejectedValue(new Error("database unavailable"));
 
-      mockSupabaseTables({
-        manual_payments: {
-          data: [{ id: "payment-1", status: "requires_info" }],
-          error: null,
-        },
-        support_messages: { data: [], error: null },
-        support_conversations: { data: [], error: null },
-      });
-    });
+    const { result } = renderHook(() => useNotificationCount(), { wrapper });
 
-    it("deve calcular contagem para cliente com pagamentos requires_info", async () => {
-      const { result } = renderHook(() => useNotificationCount(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      // Como o mock está configurado, não podemos verificar valores específicos
-      // mas podemos verificar que a função foi chamada
-      expect(supabase.from).toHaveBeenCalledWith("manual_payments");
-    });
-
-    it("deve calcular contagem para cliente com mensagens não lidas", async () => {
-      mockSupabaseTables({
-        manual_payments: { data: [], error: null },
-        support_messages: {
-          data: [
-            { id: "msg-1", read_by_customer: false, conversation_id: "conv-1" },
-            { id: "msg-2", read_by_customer: false, conversation_id: "conv-2" },
-          ],
-          error: null,
-        },
-        support_conversations: {
-          data: [{ id: "conv-1" }],
-          error: null,
-        },
-      });
-
-      const { result } = renderHook(() => useNotificationCount(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      expect(supabase.from).toHaveBeenCalledWith("support_messages");
-    });
+    expect(result.current.error).toBeInstanceOf(Error);
+    expect(result.current.error?.message).toBe("database unavailable");
   });
 
-  describe("usuário admin autenticado", () => {
-    beforeEach(() => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: "admin-123" } },
-        error: null,
-      });
+  it("subscribes to auth and notification changes through service boundaries", async () => {
+    vi.mocked(getCurrentAuthSession).mockResolvedValue(sessionFor("customer-123"));
 
-      // Mock para useCurrentUserIsAdmin retornar true
-      vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
-        data: true,
-        isLoading: false,
-      });
+    renderHook(() => useNotificationCount(), { wrapper });
 
-      mockSupabaseTables({
-        manual_payments: {
-          data: [
-            { id: "payment-1", status: "pending" },
-            { id: "payment-2", status: "pending" },
-            { id: "payment-3", status: "under_review" },
-          ],
-          error: null,
-        },
-        support_messages: { data: [], error: null },
-      });
-    });
-
-    it("deve calcular contagem para admin com pagamentos pendentes", async () => {
-      const { result } = renderHook(() => useNotificationCount(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      expect(supabase.from).toHaveBeenCalledWith("manual_payments");
-      expect(result.current.isAdmin).toBe(true);
-    });
-
-    it("deve calcular contagem para admin com mensagens não lidas", async () => {
-      mockSupabaseTables({
-        manual_payments: { data: [], error: null },
-        support_messages: {
-          data: [
-            { id: "msg-1", read_by_admin: false },
-            { id: "msg-2", read_by_admin: false },
-            { id: "msg-3", read_by_admin: false },
-          ],
-          error: null,
-        },
-      });
-
-      const { result } = renderHook(() => useNotificationCount(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      expect(supabase.from).toHaveBeenCalledWith("support_messages");
-    });
-  });
-
-  describe("erros", () => {
-    it("deve lidar com erro ao buscar pagamentos", async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: "user-123" } },
-        error: null,
-      });
-
-      vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
-        data: true,
-        isLoading: false,
-      });
-      mockSupabaseTables({
-        manual_payments: { data: [], error: null },
-        support_messages: {
-          data: null,
-          error: new Error("Erro de banco de dados"),
-        },
-      });
-
-      const { result } = renderHook(() => useNotificationCount(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      expect(result.current.error).not.toBeNull();
+    await waitFor(() => {
+      expect(subscribeToAuthSessionChanges).toHaveBeenCalledTimes(1);
+      expect(subscribeToNotificationCountChanges).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: "customer-123",
+          isAdmin: false,
+          onChange: expect.any(Function),
+        }),
+      );
     });
   });
 });
 
 describe("useFormattedNotificationCount", () => {
-  it("deve formatar contagem maior que 99 como '99+'", async () => {
-    // Mock para retornar contagem alta
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: { id: "user-123" } },
-      error: null,
-    });
-
-    // Mock para useCurrentUserIsAdmin
-    vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
-      data: true,
-      isLoading: false,
-    });
-
-    mockSupabaseTables({
-      manual_payments: {
-        data: Array.from({ length: 150 }, (_, i) => ({
-          id: `payment-${i}`,
-          status: i < 100 ? "pending" : "under_review",
-        })),
-        error: null,
-      },
-      support_messages: { data: [], error: null },
-    });
-
-    const { result } = renderHook(() => useFormattedNotificationCount(), {
-      wrapper,
-    });
-
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
-
-    // Como o mock não está retornando mensagens, a contagem será 150
-    // Mas o formato deve ser "99+"
-    expect(result.current.formattedTotal).toBe("99+");
-    expect(result.current.hasNotifications).toBe(true);
-  });
-
-  it("deve retornar contagem normal para valores menores que 100", async () => {
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: { id: "user-123" } },
-      error: null,
-    });
-
-    // Mock para useCurrentUserIsAdmin
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(subscribeToAuthSessionChanges).mockReturnValue(vi.fn());
+    vi.mocked(subscribeToNotificationCountChanges).mockReturnValue(vi.fn());
     vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
       data: false,
       isLoading: false,
     });
+  });
 
-    mockSupabaseTables({
-      manual_payments: {
-        data: [
-          { id: "payment-1", status: "requires_info" },
-          { id: "payment-2", status: "requires_info" },
-        ],
-        error: null,
-      },
-      support_messages: { data: [], error: null },
-      support_conversations: { data: [], error: null },
-    });
+  it("formats totals above 99 as 99+", async () => {
+    vi.mocked(getCurrentAuthSession).mockResolvedValue(sessionFor("user-123"));
+    vi.mocked(fetchNotificationCount).mockResolvedValue(
+      notificationCount({ total: 150, requiresInfoPayments: 150 }),
+    );
 
-    const { result } = renderHook(() => useFormattedNotificationCount(), {
-      wrapper,
-    });
+    const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.formattedTotal).toBe("99+");
+    expect(result.current.hasNotifications).toBe(true);
+  });
+
+  it("keeps normal totals below 100", async () => {
+    vi.mocked(getCurrentAuthSession).mockResolvedValue(sessionFor("user-123"));
+    vi.mocked(fetchNotificationCount).mockResolvedValue(
+      notificationCount({ total: 2, requiresInfoPayments: 2 }),
+    );
+
+    const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(result.current.formattedTotal).toBe("2");
     expect(result.current.hasNotifications).toBe(true);
   });
 
-  it("deve retornar hasNotifications false quando total for 0", async () => {
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: { id: "user-123" } },
-      error: null,
-    });
+  it("reports no notifications at zero", async () => {
+    vi.mocked(getCurrentAuthSession).mockResolvedValue(sessionFor("user-123"));
+    vi.mocked(fetchNotificationCount).mockResolvedValue(notificationCount());
 
-    // Mock para useCurrentUserIsAdmin
-    vi.mocked(useCurrentUserIsAdmin).mockReturnValue({
-      data: false,
-      isLoading: false,
-    });
+    const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
 
-    mockSupabaseTables({
-      manual_payments: { data: [], error: null },
-      support_messages: { data: [], error: null },
-      support_conversations: { data: [], error: null },
-    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const { result } = renderHook(() => useFormattedNotificationCount(), {
-      wrapper,
-    });
-
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
-
-    expect(result.current.hasNotifications).toBe(false);
     expect(result.current.formattedTotal).toBe("0");
+    expect(result.current.hasNotifications).toBe(false);
   });
 });
