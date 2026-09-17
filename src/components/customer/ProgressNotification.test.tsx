@@ -1,15 +1,8 @@
-/**
- * Tests for ProgressNotification Component
- * 
- * Tests the notification system for production progress updates.
- */
-
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import { useProgressNotification } from "./ProgressNotification";
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as toastHook from "@/hooks/use-toast";
+import { useProgressNotification } from "./ProgressNotification";
 
-// Mock the toast hook
 vi.mock("@/hooks/use-toast", () => ({
   useToast: vi.fn(),
 }));
@@ -25,7 +18,6 @@ describe("ProgressNotification", () => {
       dismiss: vi.fn(),
     });
 
-    // Mock AudioContext
     global.AudioContext = vi.fn().mockImplementation(() => ({
       createOscillator: vi.fn().mockReturnValue({
         connect: vi.fn(),
@@ -43,532 +35,158 @@ describe("ProgressNotification", () => {
       }),
       destination: {},
       currentTime: 0,
-    })) as any;
+    })) as typeof AudioContext;
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("useProgressNotification hook", () => {
-    it("should return showNotification function", () => {
-      const { result } = renderHook(() => useProgressNotification());
-      
-      expect(result.current).toHaveProperty("showNotification");
-      expect(typeof result.current.showNotification).toBe("function");
+  function notify(options: Parameters<ReturnType<typeof useProgressNotification>["showNotification"]>[0]) {
+    const { result } = renderHook(() => useProgressNotification());
+    act(() => result.current.showNotification(options));
+  }
+
+  it("returns the notification action", () => {
+    const { result } = renderHook(() => useProgressNotification());
+    expect(result.current.showNotification).toBeTypeOf("function");
+  });
+
+  it.each([
+    ["design", "Design"],
+    ["production", "Produção"],
+    ["quality_check", "Controle de Qualidade"],
+    ["packaging", "Embalagem"],
+    ["shipped", "Enviado"],
+  ])("shows the current stage-change copy for %s", (stage, label) => {
+    notify({ type: "stage_change", stage });
+
+    expect(mockToast).toHaveBeenCalledWith({
+      title: "Pedido atualizado",
+      description: `Seu pedido avancou para: ${label}.`,
+      duration: 5000,
     });
   });
 
-  describe("Stage Change Notifications", () => {
-    it("should show notification when stage changes to design", () => {
-      const { result } = renderHook(() => useProgressNotification());
+  it("does not toast a stage change without a stage", () => {
+    notify({ type: "stage_change" });
+    expect(mockToast).not.toHaveBeenCalled();
+  });
 
-      act(() => {
-        result.current.showNotification({
-          type: "stage_change",
-          stage: "design",
-        });
-      });
+  it("shows the approved-choice copy only when a character is present", () => {
+    notify({ type: "choice_approved", characterName: "Naruto" });
 
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "Pedido Atualizado",
-        description: "Seu pedido avançou para: Design",
-        duration: 5000,
-      });
+    expect(mockToast).toHaveBeenCalledWith({
+      title: "Escolha aprovada",
+      description: 'Sua escolha do personagem "Naruto" foi aprovada e registrada para a proxima etapa.',
+      duration: 8000,
     });
 
-    it("should show notification when stage changes to production", () => {
-      const { result } = renderHook(() => useProgressNotification());
+    mockToast.mockClear();
+    notify({ type: "choice_approved" });
+    expect(mockToast).not.toHaveBeenCalled();
+  });
 
-      act(() => {
-        result.current.showNotification({
-          type: "stage_change",
-          stage: "production",
-        });
-      });
+  it.each([
+    ["Personagem fora de estoque", "Personagem fora de estoque"],
+    [undefined, "Motivo nao especificado"],
+  ])("shows a destructive rejected-choice notification", (reason, expectedReason) => {
+    notify({ type: "choice_rejected", rejectionReason: reason });
 
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "Pedido Atualizado",
-        description: "Seu pedido avançou para: Produção",
-        duration: 5000,
-      });
-    });
-
-    it("should show notification when stage changes to quality_check", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      act(() => {
-        result.current.showNotification({
-          type: "stage_change",
-          stage: "quality_check",
-        });
-      });
-
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "Pedido Atualizado",
-        description: "Seu pedido avançou para: Controle de Qualidade",
-        duration: 5000,
-      });
-    });
-
-    it("should show notification when stage changes to packaging", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      act(() => {
-        result.current.showNotification({
-          type: "stage_change",
-          stage: "packaging",
-        });
-      });
-
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "Pedido Atualizado",
-        description: "Seu pedido avançou para: Embalagem",
-        duration: 5000,
-      });
-    });
-
-    it("should show notification when stage changes to shipped", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      act(() => {
-        result.current.showNotification({
-          type: "stage_change",
-          stage: "shipped",
-        });
-      });
-
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "Pedido Atualizado",
-        description: "Seu pedido avançou para: Enviado",
-        duration: 5000,
-      });
-    });
-
-    it("should handle stage change without stage parameter", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      act(() => {
-        result.current.showNotification({
-          type: "stage_change",
-        });
-      });
-
-      // Should not call toast if stage is missing
-      expect(mockToast).not.toHaveBeenCalled();
+    expect(mockToast).toHaveBeenCalledWith({
+      title: "Escolha rejeitada",
+      description: `Sua escolha foi rejeitada. Motivo: ${expectedReason}. Escolha outro personagem para continuar.`,
+      variant: "destructive",
+      duration: 10000,
     });
   });
 
-  describe("Choice Approved Notifications", () => {
-    it("should show notification when choice is approved", () => {
-      const { result } = renderHook(() => useProgressNotification());
+  it.each([
+    ["BR123456789", "Seu pedido foi enviado. Codigo de rastreamento: BR123456789."],
+    [undefined, "Seu pedido foi enviado. O codigo de rastreamento ainda nao esta disponivel."],
+  ])("shows shipped state with the available tracking context", (trackingCode, description) => {
+    notify({ type: "shipped", trackingCode });
 
-      act(() => {
-        result.current.showNotification({
-          type: "choice_approved",
-          characterName: "Naruto",
-        });
-      });
-
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "✅ Escolha Aprovada!",
-        description: 'Sua escolha do personagem "Naruto" foi aprovada. A produção começará em breve!',
-        duration: 8000,
-      });
-    });
-
-    it("should handle choice approved without character name", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      act(() => {
-        result.current.showNotification({
-          type: "choice_approved",
-        });
-      });
-
-      // Should not call toast if character name is missing
-      expect(mockToast).not.toHaveBeenCalled();
+    expect(mockToast).toHaveBeenCalledWith({
+      title: "Pedido enviado",
+      description,
+      duration: 8000,
     });
   });
 
-  describe("Choice Rejected Notifications", () => {
-    it("should show notification when choice is rejected with reason", () => {
-      const { result } = renderHook(() => useProgressNotification());
+  it("shows the locked-choice state", () => {
+    notify({ type: "choice_locked" });
 
-      act(() => {
-        result.current.showNotification({
-          type: "choice_rejected",
-          rejectionReason: "Personagem fora de estoque",
-        });
-      });
-
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "Escolha Rejeitada",
-        description: "Sua escolha foi rejeitada. Motivo: Personagem fora de estoque. Por favor, escolha outro personagem.",
-        variant: "destructive",
-        duration: 10000,
-      });
-    });
-
-    it("should show notification when choice is rejected without reason", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      act(() => {
-        result.current.showNotification({
-          type: "choice_rejected",
-        });
-      });
-
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "Escolha Rejeitada",
-        description: "Sua escolha foi rejeitada. Motivo: Motivo não especificado. Por favor, escolha outro personagem.",
-        variant: "destructive",
-        duration: 10000,
-      });
+    expect(mockToast).toHaveBeenCalledWith({
+      title: "Escolha confirmada",
+      description: "Sua escolha foi confirmada e nao pode mais ser alterada.",
+      duration: 5000,
     });
   });
 
-  describe("Shipped Notifications", () => {
-    it("should show notification when item is shipped with tracking code", () => {
-      const { result } = renderHook(() => useProgressNotification());
+  it.each([
+    ["Falta de material", "Falta de material"],
+    [undefined, "Motivo nao especificado"],
+  ])("shows the current production-blocked copy", (blockReason, expectedReason) => {
+    notify({ type: "production_blocked", blockReason });
 
-      act(() => {
-        result.current.showNotification({
-          type: "shipped",
-          trackingCode: "BR123456789",
-        });
-      });
-
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "🎉 Pedido Enviado!",
-        description: "Seu pedido foi enviado. Código de rastreamento: BR123456789",
-        duration: 8000,
-      });
-    });
-
-    it("should show notification when item is shipped without tracking code", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      act(() => {
-        result.current.showNotification({
-          type: "shipped",
-        });
-      });
-
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "🎉 Pedido Enviado!",
-        description: "Seu pedido foi enviado. O código de rastreamento será disponibilizado em breve.",
-        duration: 8000,
-      });
+    expect(mockToast).toHaveBeenCalledWith({
+      title: "Producao pausada",
+      description: `A producao do seu pedido foi pausada temporariamente. Motivo: ${expectedReason}. Novas atualizacoes aparecerao no acompanhamento do pedido quando forem registradas.`,
+      variant: "destructive",
+      duration: 10000,
     });
   });
 
-  describe("Choice Locked Notifications", () => {
-    it("should show notification when choice is locked", () => {
-      const { result } = renderHook(() => useProgressNotification());
+  it("shows the production-resumed state", () => {
+    notify({ type: "production_unblocked" });
 
-      act(() => {
-        result.current.showNotification({
-          type: "choice_locked",
-        });
-      });
-
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "Escolha Confirmada",
-        description: "Sua escolha foi confirmada e a produção foi iniciada!",
-        duration: 5000,
-      });
+    expect(mockToast).toHaveBeenCalledWith({
+      title: "Producao retomada",
+      description: "A producao do seu pedido foi retomada.",
+      duration: 5000,
     });
   });
 
-  describe("Production Blocked Notifications", () => {
-    it("should show notification when production is blocked with reason", () => {
-      const { result } = renderHook(() => useProgressNotification());
+  it("plays sound only when requested", () => {
+    notify({ type: "stage_change", stage: "printing", playSound: true });
+    expect(global.AudioContext).toHaveBeenCalledTimes(1);
 
-      act(() => {
-        result.current.showNotification({
-          type: "production_blocked",
-          blockReason: "Falta de material",
-        });
-      });
-
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "⚠️ Produção Pausada",
-        description: "A produção do seu pedido foi temporariamente pausada. Motivo: Falta de material. Entraremos em contato em breve.",
-        variant: "destructive",
-        duration: 10000,
-      });
-    });
-
-    it("should show notification when production is blocked without reason", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      act(() => {
-        result.current.showNotification({
-          type: "production_blocked",
-        });
-      });
-
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "⚠️ Produção Pausada",
-        description: "A produção do seu pedido foi temporariamente pausada. Motivo: Motivo não especificado. Entraremos em contato em breve.",
-        variant: "destructive",
-        duration: 10000,
-      });
-    });
+    vi.mocked(global.AudioContext).mockClear();
+    notify({ type: "stage_change", stage: "printing", playSound: false });
+    notify({ type: "stage_change", stage: "printing" });
+    expect(global.AudioContext).not.toHaveBeenCalled();
   });
 
-  describe("Production Unblocked Notifications", () => {
-    it("should show notification when production is unblocked", () => {
-      const { result } = renderHook(() => useProgressNotification());
+  it("contains audio failures without breaking the notification", () => {
+    global.AudioContext = vi.fn().mockImplementation(() => {
+      throw new Error("AudioContext not supported");
+    }) as typeof AudioContext;
 
-      act(() => {
-        result.current.showNotification({
-          type: "production_unblocked",
-        });
-      });
+    expect(() => {
+      notify({ type: "stage_change", stage: "printing", playSound: true });
+    }).not.toThrow();
 
-      expect(mockToast).toHaveBeenCalledWith({
-        title: "✅ Produção Retomada",
-        description: "A produção do seu pedido foi retomada. Obrigado pela paciência!",
-        duration: 5000,
-      });
-    });
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Pedido atualizado" }),
+    );
   });
 
-  describe("Sound Notifications", () => {
-    it("should play sound when playSound is true", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      act(() => {
-        result.current.showNotification({
-          type: "stage_change",
-          stage: "production",
-          playSound: true,
-        });
-      });
-
-      expect(global.AudioContext).toHaveBeenCalled();
-    });
-
-    it("should not play sound when playSound is false", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      act(() => {
-        result.current.showNotification({
-          type: "stage_change",
-          stage: "production",
-          playSound: false,
-        });
-      });
-
-      // AudioContext should not be called
-      expect(global.AudioContext).not.toHaveBeenCalled();
-    });
-
-    it("should not play sound by default", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      act(() => {
-        result.current.showNotification({
-          type: "stage_change",
-          stage: "production",
-        });
-      });
-
-      // AudioContext should not be called
-      expect(global.AudioContext).not.toHaveBeenCalled();
-    });
-
-    it("should handle audio context errors gracefully", () => {
-      // Mock AudioContext to throw error
-      global.AudioContext = vi.fn().mockImplementation(() => {
-        throw new Error("AudioContext not supported");
-      }) as any;
-
-      const { result } = renderHook(() => useProgressNotification());
-
-      // Should not throw error
-      expect(() => {
-        act(() => {
-          result.current.showNotification({
-            type: "stage_change",
-            stage: "production",
-            playSound: true,
-          });
-        });
-      }).not.toThrow();
-    });
+  it("ignores an unknown notification type", () => {
+    notify({ type: "unknown_type" as never });
+    expect(mockToast).not.toHaveBeenCalled();
   });
 
-  describe("Unknown Notification Types", () => {
-    it("should handle unknown notification type gracefully", () => {
-      const { result } = renderHook(() => useProgressNotification());
-      const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("keeps the configured durations and destructive variants", () => {
+    notify({ type: "choice_approved", characterName: "Teste" });
+    expect(mockToast).toHaveBeenLastCalledWith(expect.objectContaining({ duration: 8000 }));
 
-      act(() => {
-        result.current.showNotification({
-          type: "unknown_type" as any,
-        });
-      });
+    notify({ type: "choice_rejected" });
+    expect(mockToast).toHaveBeenLastCalledWith(
+      expect.objectContaining({ duration: 10000, variant: "destructive" }),
+    );
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "[warn] Unknown progress notification type",
-        { type: "unknown_type" }
-      );
-      expect(mockToast).not.toHaveBeenCalled();
-
-      consoleWarnSpy.mockRestore();
-    });
-  });
-
-  describe("Portuguese Localization", () => {
-    it("should display all stage names in Portuguese", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      const stages = [
-        { stage: "awaiting_choice" as const, expected: "Aguardando Escolha" },
-        { stage: "design" as const, expected: "Design" },
-        { stage: "production" as const, expected: "Produção" },
-        { stage: "quality_check" as const, expected: "Controle de Qualidade" },
-        { stage: "packaging" as const, expected: "Embalagem" },
-        { stage: "shipped" as const, expected: "Enviado" },
-      ];
-
-      stages.forEach(({ stage, expected }) => {
-        act(() => {
-          result.current.showNotification({
-            type: "stage_change",
-            stage,
-          });
-        });
-
-        expect(mockToast).toHaveBeenCalledWith(
-          expect.objectContaining({
-            description: `Seu pedido avançou para: ${expected}`,
-          })
-        );
-
-        mockToast.mockClear();
-      });
-    });
-
-    it("should display all notification titles in Portuguese", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      const notifications = [
-        { type: "stage_change" as const, stage: "production" as const, expectedTitle: "Pedido Atualizado" },
-        { type: "choice_approved" as const, characterName: "Test", expectedTitle: "✅ Escolha Aprovada!" },
-        { type: "choice_rejected" as const, expectedTitle: "Escolha Rejeitada" },
-        { type: "shipped" as const, expectedTitle: "🎉 Pedido Enviado!" },
-        { type: "choice_locked" as const, expectedTitle: "Escolha Confirmada" },
-        { type: "production_blocked" as const, expectedTitle: "⚠️ Produção Pausada" },
-        { type: "production_unblocked" as const, expectedTitle: "✅ Produção Retomada" },
-      ];
-
-      notifications.forEach(({ type, expectedTitle, ...rest }) => {
-        act(() => {
-          result.current.showNotification({
-            type,
-            ...rest,
-          });
-        });
-
-        expect(mockToast).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: expectedTitle,
-          })
-        );
-
-        mockToast.mockClear();
-      });
-    });
-  });
-
-  describe("Notification Durations", () => {
-    it("should use correct duration for each notification type", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      const notifications = [
-        { type: "stage_change" as const, stage: "production" as const, expectedDuration: 5000 },
-        { type: "choice_approved" as const, characterName: "Test", expectedDuration: 8000 },
-        { type: "choice_rejected" as const, expectedDuration: 10000 },
-        { type: "shipped" as const, expectedDuration: 8000 },
-        { type: "choice_locked" as const, expectedDuration: 5000 },
-        { type: "production_blocked" as const, expectedDuration: 10000 },
-        { type: "production_unblocked" as const, expectedDuration: 5000 },
-      ];
-
-      notifications.forEach(({ type, expectedDuration, ...rest }) => {
-        act(() => {
-          result.current.showNotification({
-            type,
-            ...rest,
-          });
-        });
-
-        expect(mockToast).toHaveBeenCalledWith(
-          expect.objectContaining({
-            duration: expectedDuration,
-          })
-        );
-
-        mockToast.mockClear();
-      });
-    });
-  });
-
-  describe("Notification Variants", () => {
-    it("should use destructive variant for negative notifications", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      const negativeNotifications = [
-        { type: "choice_rejected" as const },
-        { type: "production_blocked" as const },
-      ];
-
-      negativeNotifications.forEach(({ type }) => {
-        act(() => {
-          result.current.showNotification({ type });
-        });
-
-        expect(mockToast).toHaveBeenCalledWith(
-          expect.objectContaining({
-            variant: "destructive",
-          })
-        );
-
-        mockToast.mockClear();
-      });
-    });
-
-    it("should not use variant for positive notifications", () => {
-      const { result } = renderHook(() => useProgressNotification());
-
-      const positiveNotifications = [
-        { type: "stage_change" as const, stage: "production" as const },
-        { type: "choice_approved" as const, characterName: "Test" },
-        { type: "shipped" as const },
-        { type: "choice_locked" as const },
-        { type: "production_unblocked" as const },
-      ];
-
-      positiveNotifications.forEach(({ type, ...rest }) => {
-        act(() => {
-          result.current.showNotification({
-            type,
-            ...rest,
-          });
-        });
-
-        expect(mockToast).toHaveBeenCalledWith(
-          expect.not.objectContaining({
-            variant: expect.anything(),
-          })
-        );
-
-        mockToast.mockClear();
-      });
-    });
+    notify({ type: "choice_locked" });
+    expect(mockToast).toHaveBeenLastCalledWith(expect.objectContaining({ duration: 5000 }));
   });
 });
