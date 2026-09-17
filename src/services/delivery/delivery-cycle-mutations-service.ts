@@ -367,8 +367,8 @@ export async function changeCollectionChoiceForCurrentUserRpc<TResult>(
       p_delivery_id: deliveryId,
       p_new_collection_id: newCollectionId,
       p_user_id: userId,
-      p_ip_address: ipAddress ?? null,
-      p_user_agent: userAgent ?? null,
+      p_ip_address: ipAddress ?? undefined,
+      p_user_agent: userAgent ?? undefined,
     },
   );
   const value = unwrapRpc("Failed to change collection choice", data, error);
