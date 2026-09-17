@@ -116,7 +116,7 @@ export interface UserCredits {
 export interface CreditTransaction {
   id: string;
   user_id: string;
-  subscription_id: string;
+  subscription_id: string | null;
   transaction_type: TransactionType;
   credits_amount: number;
   character_id: string | null;
