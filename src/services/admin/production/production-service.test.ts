@@ -1,21 +1,25 @@
-/**
- * Testes para o Servico de Gestao de Producao
- *
- * Valida as funcoes principais do production-service.ts
- */
-
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  fetchProductionQueue,
-  fetchProductionMetrics,
-  updateProductionStage,
   assignProduction,
   blockProduction,
+  fetchProductionMetrics,
+  fetchProductionQueue,
   unblockProduction,
-  type ProductionFilters,
+  updateProductionStage,
   type PaginationParams,
+  type ProductionFilters,
 } from "./production-service";
+
+const mutationMocks = vi.hoisted(() => ({
+  assignProductionRpc: vi.fn(),
+  blockProductionRpc: vi.fn(),
+  unblockProductionRpc: vi.fn(),
+  updateProductionEstimatedCompletionRpc: vi.fn(),
+  updateProductionNotesRpc: vi.fn(),
+  updateProductionScheduleRpc: vi.fn(),
+  updateProductionStageRpc: vi.fn(),
+}));
 
 const productionNotificationMocks = vi.hoisted(() => ({
   sendAssignmentNotification: vi.fn().mockResolvedValue(undefined),
@@ -23,12 +27,20 @@ const productionNotificationMocks = vi.hoisted(() => ({
   sendStageUpdate: vi.fn().mockResolvedValue(undefined),
 }));
 
-// Mock do Supabase client
+const stageServiceMocks = vi.hoisted(() => ({
+  calculateEstimatedCompletion: vi.fn(),
+}));
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
-    rpc: vi.fn(),
   },
+}));
+
+vi.mock("./admin-production-mutations-service", () => mutationMocks);
+
+vi.mock("./stage-service", () => ({
+  calculateEstimatedCompletion: stageServiceMocks.calculateEstimatedCompletion,
 }));
 
 vi.mock("@/services/notifications/production-notification-service", () => ({
@@ -39,451 +51,271 @@ vi.mock("@/services/notifications/production-notification-service", () => ({
   },
 }));
 
+let queueRows: Array<Record<string, unknown>> = [];
+let stageRows: Array<Record<string, unknown>> = [];
+let profileRows: Array<Record<string, unknown>> = [];
+
+function makeQueueRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "1",
+    order_id: "order-1",
+    order_type: "subscription_delivery",
+    user_id: "user-1",
+    collection_id: "col-1",
+    collection_name: "Colecao",
+    character_id: null,
+    character_name: null,
+    status: "in_progress",
+    choice_status: "approved",
+    choice_deadline: null,
+    choice_made_at: null,
+    priority_score: 50,
+    estimated_start_date: null,
+    estimated_completion_date: null,
+    actual_start_date: null,
+    actual_completion_date: null,
+    admin_notes: null,
+    notes: null,
+    created_at: "2026-03-01T09:00:00Z",
+    updated_at: "2026-03-01T10:00:00Z",
+    ...overrides,
+  };
+}
+
+function makeStageRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "stage-1",
+    production_queue_id: "1",
+    stage_name: "model_preparation",
+    stage_order: 1,
+    status: "in_progress",
+    assigned_to: null,
+    assigned_to_name: null,
+    assigned_at: null,
+    created_at: "2026-03-01T09:00:00Z",
+    ...overrides,
+  };
+}
+
+function makeProfile(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "user-1",
+    full_name: "Joao Silva",
+    email: "joao@example.com",
+    ...overrides,
+  };
+}
+
+function installReadMocks() {
+  vi.mocked(supabase.from).mockImplementation(((table: string) => {
+    if (table === "production_queue") {
+      let selectedId: string | null = null;
+      const query: Record<string, unknown> = {};
+      const chain = () => query;
+
+      query.in = vi.fn(chain);
+      query.or = vi.fn(chain);
+      query.gte = vi.fn(chain);
+      query.lte = vi.fn(chain);
+      query.order = vi.fn(chain);
+      query.eq = vi.fn((field: string, value: string) => {
+        if (field === "id") selectedId = value;
+        return query;
+      });
+      query.single = vi.fn().mockImplementation(async () => ({
+        data: queueRows.find((row) => row.id === selectedId) ?? null,
+        error: null,
+      }));
+      query.then = (
+        onFulfilled: (value: { data: Array<Record<string, unknown>>; error: null }) => unknown,
+        onRejected?: (reason: unknown) => unknown,
+      ) => Promise.resolve({ data: queueRows, error: null }).then(onFulfilled, onRejected);
+
+      return {
+        select: vi.fn().mockReturnValue(query),
+      } as never;
+    }
+
+    if (table === "profiles") {
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({ data: profileRows, error: null }),
+        }),
+      } as never;
+    }
+
+    if (table === "production_stages") {
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: stageRows, error: null }),
+          }),
+        }),
+      } as never;
+    }
+
+    throw new Error(`Unexpected table in test: ${table}`);
+  }) as never);
+}
+
 describe("Production Service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
+    queueRows = [makeQueueRow()];
+    stageRows = [makeStageRow()];
+    profileRows = [makeProfile()];
+    installReadMocks();
+
+    stageServiceMocks.calculateEstimatedCompletion.mockResolvedValue(
+      new Date("2026-03-10T12:00:00Z"),
+    );
+
+    mutationMocks.updateProductionStageRpc.mockImplementation(
+      async (_queueId: string, stage: string) => {
+        stageRows[0] = { ...stageRows[0], stage_name: stage };
+      },
+    );
+    mutationMocks.assignProductionRpc.mockImplementation(
+      async ({ userId }: { userId: string }) => {
+        stageRows[0] = {
+          ...stageRows[0],
+          assigned_to: userId,
+          assigned_to_name: "Maria Santos",
+          assigned_at: "2026-03-02T10:00:00Z",
+        };
+      },
+    );
+    mutationMocks.blockProductionRpc.mockImplementation(async (_queueId: string, reason: string) => {
+      queueRows[0] = { ...queueRows[0], status: "on_hold", admin_notes: reason };
+    });
+    mutationMocks.unblockProductionRpc.mockImplementation(async () => {
+      queueRows[0] = { ...queueRows[0], status: "in_progress", admin_notes: null };
+    });
+    mutationMocks.updateProductionEstimatedCompletionRpc.mockResolvedValue(undefined);
   });
 
   describe("fetchProductionQueue", () => {
-    it("deve buscar fila de producao com filtros e paginacao", async () => {
-      const mockData = [
-        {
-          id: "1",
-          order_id: "order-1",
-          order_type: "subscription_delivery",
-          customer_id: "user-1",
-          customer_name: "Joao Silva",
-          customer_email: "joao@example.com",
-          collection_id: "col-1",
-          collection_name: "Colecao",
-          character_id: null,
-          character_name: null,
-          production_status: "awaiting_choice",
-          current_stage: "awaiting_choice",
-          choice_status: "pending",
-          choice_deadline: "2024-12-31T23:59:59Z",
-          choice_made_at: null,
-          priority: "high",
-          priority_score: 80,
-          scheduled_production_date: null,
-          estimated_completion_date: null,
-          assigned_to: null,
-          assigned_to_name: null,
-          assigned_at: null,
-          production_started_at: null,
-          production_completed_at: null,
-          production_notes: null,
-          customer_notes: null,
-          internal_flags: [],
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-        },
-      ];
-
-      const mockQuery = {
-        select: vi.fn().mockReturnThis(),
-        in: vi.fn().mockReturnThis(),
-        gte: vi.fn().mockReturnThis(),
-        lte: vi.fn().mockReturnThis(),
-        or: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue({
-          data: mockData,
-          error: null,
-          count: 1,
-        }),
-      };
-
-      vi.mocked(supabase.from).mockReturnValue(mockQuery as never);
-
+    it("hydrates canonical queue rows and paginates the result", async () => {
       const filters: ProductionFilters = {
         collections: ["col-1"],
-        priorities: ["high"],
+        priorities: ["normal"],
       };
-
-      const pagination: PaginationParams = {
-        page: 1,
-        pageSize: 10,
-      };
+      const pagination: PaginationParams = { page: 1, pageSize: 10 };
 
       const result = await fetchProductionQueue(filters, pagination);
 
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(1);
-      expect(result.page).toBe(1);
-      expect(result.pageSize).toBe(10);
-      expect(result.data[0].customerName).toBe("Joao Silva");
+      expect(result.data[0]).toMatchObject({
+        id: "1",
+        customerName: "Joao Silva",
+        currentStage: "model_preparation",
+        productionStatus: "ready_for_production",
+      });
     });
 
-    it("deve aplicar busca por texto", async () => {
-      const mockQuery = {
-        select: vi.fn().mockReturnThis(),
-        or: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-          count: 0,
-        }),
-      };
+    it("applies text search after canonical customer hydration", async () => {
+      queueRows = [
+        makeQueueRow({ id: "1", user_id: "user-1" }),
+        makeQueueRow({ id: "2", order_id: "order-2", user_id: "user-2" }),
+      ];
+      stageRows = [
+        makeStageRow({ production_queue_id: "1" }),
+        makeStageRow({ id: "stage-2", production_queue_id: "2" }),
+      ];
+      profileRows = [
+        makeProfile(),
+        makeProfile({ id: "user-2", full_name: "Maria Santos", email: "maria@example.com" }),
+      ];
 
-      vi.mocked(supabase.from).mockReturnValue(mockQuery as never);
-
-      const filters: ProductionFilters = {
-        searchQuery: "Joao",
-      };
-
-      const pagination: PaginationParams = {
-        page: 1,
-        pageSize: 10,
-      };
-
-      await fetchProductionQueue(filters, pagination);
-
-      expect(mockQuery.or).toHaveBeenCalledWith(
-        expect.stringContaining("customer_name.ilike.%Joao%")
+      const result = await fetchProductionQueue(
+        { searchQuery: "joao" },
+        { page: 1, pageSize: 10 },
       );
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].customerName).toBe("Joao Silva");
     });
   });
 
   describe("fetchProductionMetrics", () => {
-    it("deve buscar metricas de producao", async () => {
+    it("calculates metrics from hydrated production items", async () => {
       const criticalDeadline = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-      const mockQueueData = [
-        ...Array.from({ length: 5 }, () => ({
-          current_stage: "awaiting_choice",
-          production_status: "awaiting_choice",
-          priority: "normal",
-          choice_status: "pending",
-        })),
-        ...Array.from({ length: 35 }, () => ({
-          current_stage: "delivered",
-          production_status: "completed",
-          priority: "normal",
-          choice_status: "approved",
-        })),
-        {
-          current_stage: "printing",
-          production_status: "in_production",
-          priority: "critical",
+      queueRows = [
+        makeQueueRow({ id: "1", choice_status: "pending", choice_deadline: null }),
+        makeQueueRow({ id: "2", order_id: "order-2", status: "completed" }),
+        makeQueueRow({
+          id: "3",
+          order_id: "order-3",
+          priority_score: 95,
           choice_status: "pending",
           choice_deadline: criticalDeadline,
-        },
-      ];
-
-      const mockQuery = {
-        select: vi.fn().mockResolvedValue({
-          data: mockQueueData,
-          error: null,
         }),
-      };
-
-      vi.mocked(supabase.from).mockReturnValue(mockQuery as never);
+      ];
+      stageRows = [
+        makeStageRow({ production_queue_id: "1", stage_name: "awaiting_choice" }),
+        makeStageRow({ id: "stage-2", production_queue_id: "2", stage_name: "delivered" }),
+        makeStageRow({ id: "stage-3", production_queue_id: "3", stage_name: "printing" }),
+      ];
 
       const result = await fetchProductionMetrics();
 
-      expect(result.stages.awaiting_choice).toBe(5);
-      expect(result.overall.totalItems).toBe(41);
+      expect(result.overall.totalItems).toBe(3);
+      expect(result.stages.awaiting_choice).toBe(1);
+      expect(result.statuses.completed).toBe(1);
+      expect(result.priorities.critical).toBe(1);
       expect(result.urgent.deadlineCritical).toBe(1);
     });
   });
 
-  describe("updateProductionStage", () => {
-    it("deve atualizar estagio de producao", async () => {
-      const mockCurrentItem = {
-        id: "1",
-        production_status: "awaiting_choice",
-        current_stage: "awaiting_choice",
-      };
+  describe("mutations", () => {
+    it("updates the stage through the mutation authority and rehydrates", async () => {
+      const result = await updateProductionStage("1", "printing");
 
-      const mockUpdatedItem = {
-        ...mockCurrentItem,
-        order_id: "order-1",
-        order_type: "subscription_delivery",
-        customer_id: "user-1",
-        customer_name: "Cliente",
-        customer_email: "cliente@example.com",
-        collection_id: "col-1",
-        collection_name: "Colecao",
-        character_id: null,
-        character_name: null,
-        choice_status: "approved",
-        choice_deadline: null,
-        choice_made_at: null,
-        priority: "normal",
-        priority_score: 0,
-        scheduled_production_date: null,
-        estimated_completion_date: null,
-        assigned_to: null,
-        assigned_to_name: null,
-        assigned_at: null,
-        production_started_at: null,
-        production_completed_at: null,
-        production_notes: null,
-        customer_notes: null,
-        internal_flags: [],
-        created_at: "2024-01-01T00:00:00Z",
-        current_stage: "design",
-        production_status: "ready_for_production",
-        updated_at: "2024-01-02T00:00:00Z",
-      };
-
-      const mockSelectQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: mockCurrentItem,
-          error: null,
-        }),
-      };
-
-      vi.mocked(supabase.from).mockReturnValueOnce(mockSelectQuery as never);
-      vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: mockUpdatedItem, error: null });
-
-      const result = await updateProductionStage("1", "design");
-
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_update_production_stage", {
-        p_queue_id: "1",
-        p_stage: "design",
-      });
-      expect(result.currentStage).toBe("design");
-      expect(result.productionStatus).toBe("ready_for_production");
+      expect(mutationMocks.updateProductionStageRpc).toHaveBeenCalledWith("1", "printing");
+      expect(result.currentStage).toBe("printing");
+      expect(result.productionStatus).toBe("in_production");
     });
-  });
 
-  describe("assignProduction", () => {
-    it("deve atribuir producao a um usuario", async () => {
-      const mockCurrentAssignment = {
-        assigned_to: null,
-        assigned_to_name: null,
-      };
-
-      const mockUpdatedItem = {
-        id: "1",
-        order_id: "order-1",
-        order_type: "subscription_delivery",
-        customer_id: "user-1",
-        customer_name: "Cliente",
-        customer_email: "cliente@example.com",
-        collection_id: "col-1",
-        collection_name: "Colecao",
-        character_id: null,
-        character_name: null,
-        production_status: "ready_for_production",
-        current_stage: "model_preparation",
-        choice_status: "approved",
-        choice_deadline: null,
-        choice_made_at: null,
-        priority: "normal",
-        priority_score: 0,
-        scheduled_production_date: null,
-        estimated_completion_date: null,
-        assigned_to: "user-2",
-        assigned_to_name: "Maria Santos",
-        assigned_at: "2024-01-02T00:00:00Z",
-        production_started_at: null,
-        production_completed_at: null,
-        production_notes: null,
-        customer_notes: null,
-        internal_flags: [],
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-02T00:00:00Z",
-        user_id: "user-1",
-      };
-
-      const mockCurrentAssignmentQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: mockCurrentAssignment,
-          error: null,
-        }),
-      };
-
-      vi.mocked(supabase.from).mockReturnValueOnce(mockCurrentAssignmentQuery as never);
-      vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: mockUpdatedItem, error: null });
-
+    it("assigns production and sends the assignment notification", async () => {
       const result = await assignProduction("1", "user-2");
 
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_assign_production", {
-        p_queue_id: "1",
-        p_user_id: "user-2",
-        p_reason: null,
+      expect(mutationMocks.assignProductionRpc).toHaveBeenCalledWith({
+        queueId: "1",
+        userId: "user-2",
+        reason: undefined,
       });
       expect(productionNotificationMocks.sendAssignmentNotification).toHaveBeenCalledWith(
         "1",
         "user-2",
-        false
+        false,
       );
       expect(result.assignedTo).toBe("user-2");
-      expect(result.assignedToName).toBe("Maria Santos");
     });
-  });
 
-  describe("blockProduction", () => {
-    it("deve bloquear producao com motivo", async () => {
-      const mockQueueItem = {
-        id: "1",
-        current_stage: "production",
-        customer_id: "user-1",
-        customer_email: "user@example.com",
-        collection_name: "Colecao",
-        order_id: "order-1",
-        order_type: "subscription_delivery",
-      };
-
-      const mockUpdatedItem = {
-        id: "1",
-        production_status: "on_hold",
-        production_notes: "Falta de material",
-        updated_at: "2024-01-02T00:00:00Z",
-        order_id: "order-1",
-        order_type: "subscription_delivery",
-        customer_id: "user-1",
-        customer_name: "Test User",
-        customer_email: "user@example.com",
-        collection_id: "col-1",
-        collection_name: "Colecao",
-        character_id: null,
-        character_name: null,
-        current_stage: "production",
-        choice_status: "approved",
-        choice_deadline: null,
-        priority: "normal",
-        priority_score: 50,
-        scheduled_production_date: null,
-        estimated_completion_date: null,
-        assigned_to: null,
-        assigned_to_name: null,
-        assigned_at: null,
-        production_started_at: null,
-        production_completed_at: null,
-        production_notes: "Falta de material",
-        customer_notes: null,
-        internal_flags: [],
-        created_at: "2024-01-01T00:00:00Z",
-      };
-
-      // Mock the initial fetch query
-      const mockFetchQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: mockQueueItem,
-          error: null,
-        }),
-      };
-
-      const mockStageHistoryQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
-      };
-
-      vi.mocked(supabase.from)
-        .mockReturnValueOnce(mockFetchQuery as never)
-        .mockReturnValueOnce(mockStageHistoryQuery as never);
-
-      vi.mocked(supabase.rpc).mockImplementation((fn: string) => {
-        if (fn === "admin_block_production") {
-          return Promise.resolve({ data: mockUpdatedItem, error: null });
-        }
-
-        if (fn === "admin_update_production_estimated_completion") {
-          return Promise.resolve({ data: "ok", error: null });
-        }
-
-        return Promise.resolve({ data: null, error: null });
-      });
-
+    it("blocks production, recalculates the estimate, and notifies", async () => {
       const result = await blockProduction("1", "Falta de material");
 
-      expect(result.productionStatus).toBe("on_hold");
-      expect(result.productionNotes).toBe("Falta de material");
-      expect(supabase.from).toHaveBeenCalledWith("production_queue");
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_block_production", {
-        p_queue_id: "1",
-        p_reason: "Falta de material",
-      });
+      expect(mutationMocks.blockProductionRpc).toHaveBeenCalledWith("1", "Falta de material");
+      expect(mutationMocks.updateProductionEstimatedCompletionRpc).toHaveBeenCalledWith(
+        "1",
+        "2026-03-10T12:00:00.000Z",
+      );
       expect(productionNotificationMocks.sendDelayNotification).toHaveBeenCalledWith(
         "1",
-        "Falta de material"
+        "Falta de material",
       );
+      expect(result.productionStatus).toBe("on_hold");
+      expect(result.productionNotes).toBe("Falta de material");
     });
-  });
 
-  describe("unblockProduction", () => {
-    it("deve desbloquear producao", async () => {
-      const mockCurrentItem = {
-        id: "1",
-        current_stage: "printing",
-      };
-
-      const mockUpdatedItem = {
-        id: "1",
-        order_id: "order-1",
-        order_type: "subscription_delivery",
-        customer_id: "user-1",
-        user_id: "user-1",
-        customer_name: "Cliente",
-        customer_email: "cliente@example.com",
-        collection_id: "col-1",
-        collection_name: "Colecao",
-        character_id: null,
-        character_name: null,
-        production_status: "in_production",
-        current_stage: "printing",
-        choice_status: "approved",
-        choice_deadline: null,
-        choice_made_at: null,
-        priority: "normal",
-        priority_score: 0,
-        scheduled_production_date: null,
-        estimated_completion_date: null,
-        assigned_to: null,
-        assigned_to_name: null,
-        assigned_at: null,
-        production_started_at: null,
-        production_completed_at: null,
-        production_notes: null,
-        customer_notes: null,
-        internal_flags: [],
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-02T00:00:00Z",
-      };
-
-      const mockSelectQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: mockCurrentItem,
-          error: null,
-        }),
-      };
-
-      const mockStageSelectQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({
-          data: { started_at: "2024-01-01T00:00:00Z" },
-          error: null,
-        }),
-      };
-
-      vi.mocked(supabase.from)
-        .mockReturnValueOnce(mockSelectQuery as never)
-        .mockReturnValueOnce(mockStageSelectQuery as never);
-      vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: mockUpdatedItem, error: null });
+    it("unblocks production and reports the current stage", async () => {
+      queueRows[0] = { ...queueRows[0], status: "on_hold" };
+      stageRows[0] = { ...stageRows[0], stage_name: "printing" };
 
       const result = await unblockProduction("1");
 
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_unblock_production", {
-        p_queue_id: "1",
-      });
+      expect(mutationMocks.unblockProductionRpc).toHaveBeenCalledWith("1");
       expect(productionNotificationMocks.sendStageUpdate).toHaveBeenCalledWith("1", "printing");
       expect(result.productionStatus).toBe("in_production");
     });
