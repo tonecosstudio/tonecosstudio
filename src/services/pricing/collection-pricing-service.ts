@@ -13,31 +13,7 @@ export interface CollectionPricing {
   pricing_source: "custom" | "tier" | "default";
 }
 
-export async function getCollectionPricing(
-  collectionId: string,
-): Promise<CollectionPricing> {
-  const { data, error } = await supabase.rpc("get_collection_pricing", {
-    p_collection_id: collectionId,
-  });
-
-  if (error) throw error;
-
-  const row = data?.[0] as Partial<CollectionPricing> | undefined;
-  if (!row) {
-    throw new Error("Preço da coleção não configurado.");
-  }
-
-  const pricing: CollectionPricing = {
-    ...row,
-    price_full: Number(row.price_full),
-    price_pix: Number(row.price_pix),
-    deposit_amount: Number(row.deposit_amount),
-    remaining_full: Number(row.remaining_full),
-    remaining_pix: Number(row.remaining_pix),
-    is_custom: Boolean(row.is_custom),
-    pricing_source: row.pricing_source ?? "default",
-  };
-
+function validatePricing(pricing: CollectionPricing): CollectionPricing {
   const moneyValues = [
     pricing.price_full,
     pricing.price_pix,
@@ -61,24 +37,81 @@ export async function getCollectionPricing(
   return pricing;
 }
 
+export async function getCollectionPricing(
+  collectionId: string,
+): Promise<CollectionPricing> {
+  const { data: collection, error: collectionError } = await supabase
+    .from("collections")
+    .select("id, is_price_custom")
+    .eq("id", collectionId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (collectionError) throw collectionError;
+  if (!collection) {
+    throw new Error("Coleção indisponível.");
+  }
+
+  if (collection.is_price_custom) {
+    throw new Error(
+      "Preço customizado da coleção não possui uma fronteira pública canônica configurada.",
+    );
+  }
+
+  const settings = await getGlobalPricingSettings();
+  const priceFull = settings.default_price_full;
+  const pricePix = settings.default_price_pix;
+  const depositAmount = settings.default_deposit_amount;
+
+  if (
+    priceFull === undefined ||
+    pricePix === undefined ||
+    depositAmount === undefined
+  ) {
+    throw new Error("Preço padrão da coleção não configurado.");
+  }
+
+  return validatePricing({
+    price_full: priceFull,
+    price_pix: pricePix,
+    deposit_amount: depositAmount,
+    remaining_full: priceFull - depositAmount,
+    remaining_pix: pricePix - depositAmount,
+    is_custom: false,
+    tier_id: null,
+    tier_name: null,
+    pricing_source: "default",
+  });
+}
+
 export async function getGlobalPricingSettings(): Promise<Record<string, number>> {
+  const requiredKeys = [
+    "default_price_full",
+    "default_price_pix",
+    "default_deposit_amount",
+    "pix_discount_percentage",
+  ] as const;
+
   const { data, error } = await supabase
     .from("system_settings")
     .select("key, value")
-    .in("key", [
-      "default_price_full",
-      "default_price_pix",
-      "default_deposit_amount",
-      "pix_discount_percentage",
-    ]);
+    .in("key", [...requiredKeys]);
 
   if (error) throw error;
 
-  return data.reduce(
+  const settings = data.reduce(
     (acc, setting) => {
       acc[setting.key] = parseSystemSettingNumber(setting.key, setting.value);
       return acc;
     },
     {} as Record<string, number>,
   );
+
+  for (const key of requiredKeys) {
+    if (settings[key] === undefined) {
+      throw new Error(`Configuração obrigatória de preço ausente: ${key}`);
+    }
+  }
+
+  return settings;
 }
