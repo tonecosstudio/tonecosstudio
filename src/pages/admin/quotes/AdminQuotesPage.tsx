@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,6 @@ import { AdminProductionTimelineEditor } from "@/pages/admin/quotes/AdminProduct
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import SEOHead from "@/components/SEOHead";
 import { useAdminQuotesData } from "@/hooks/admin/useAdminQuotesData";
-import type { QuoteItemRow } from "@/hooks/admin/useAdminQuotesData";
 
 function fmtDate(iso: string) {
   try {
@@ -26,17 +24,7 @@ function fmtDate(iso: string) {
 
 export default function AdminQuotesPage() {
   const { toast } = useToast();
-  const { quotesQuery, itemsQuery, updateStatusMutation } = useAdminQuotesData();
-
-  const itemsByQuote = useMemo(() => {
-    const map = new Map<string, QuoteItemRow[]>();
-    for (const it of itemsQuery.data ?? []) {
-      const arr = map.get(it.quote_id) ?? [];
-      arr.push(it);
-      map.set(it.quote_id, arr);
-    }
-    return map;
-  }, [itemsQuery.data]);
+  const { quotesQuery, updateStatusMutation } = useAdminQuotesData();
 
   const setStatus = async (id: string, status: string) => {
     try {
@@ -95,7 +83,6 @@ export default function AdminQuotesPage() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-2">
             {rows.map((q) => {
-              const items = itemsByQuote.get(q.id) ?? [];
               const canStartProduction = q.status === "answered";
               return (
                 <Card
@@ -119,27 +106,6 @@ export default function AdminQuotesPage() {
                   </CardHeader>
 
                   <CardContent className="space-y-5 pt-6">
-                    <div className="rounded-sm border border-border bg-muted/30 p-4">
-                      <p className="text-sm font-semibold mb-3">Itens do Pedido</p>
-                      <div className="space-y-2">
-                        {items.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">(sem itens)</p>
-                        ) : (
-                          items.map((it) => (
-                            <div
-                              key={it.id}
-                              className="flex flex-wrap items-center justify-between gap-2 text-sm"
-                            >
-                              <span className="font-medium">{it.name}</span>
-                              <span className="text-muted-foreground">
-                                {it.quantity}x{it.description ? ` - ${it.description}` : ""}
-                              </span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
                     {q.deadline ? (
                       <div className="text-sm">
                         <span className="text-muted-foreground">Prazo desejado:</span>{" "}
