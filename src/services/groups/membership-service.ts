@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { log } from "@/lib/logger";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import { requireCurrentUserAdminAccess } from "@/services/auth/current-user";
@@ -16,6 +17,21 @@ interface UserIdRow {
 interface ProfileIdRow {
   id: string;
 }
+
+type ManualPaymentStatus = Database["public"]["Enums"]["payment_status"];
+
+const MANUAL_PAYMENT_STATUSES = new Set<ManualPaymentStatus>([
+  "pending",
+  "paid",
+  "failed",
+  "refunded",
+  "under_review",
+  "requires_info",
+  "approved",
+  "rejected",
+  "deposit_paid",
+  "fully_paid",
+]);
 
 function mapMembershipError(
   message: string | undefined,
@@ -268,7 +284,17 @@ export class MembershipService {
       .select("user_id, status, created_at");
 
     if (criteria.status && criteria.status.length > 0) {
-      query = query.in("status", criteria.status);
+      const statuses = criteria.status.filter(
+        (status): status is ManualPaymentStatus =>
+          MANUAL_PAYMENT_STATUSES.has(status as ManualPaymentStatus),
+      );
+
+      if (statuses.length !== criteria.status.length) {
+        log.warn("Criterio de grupo contem status de pagamento invalido", { criteria });
+        return [];
+      }
+
+      query = query.in("status", statuses);
     }
 
     if (criteria.dateFrom) {
