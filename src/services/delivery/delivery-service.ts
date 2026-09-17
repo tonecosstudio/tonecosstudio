@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { cycleService } from "@/services/delivery/cycle-service";
 import {
   assignDeliveryToCycleRpc,
@@ -27,33 +28,14 @@ export interface Delivery {
   character_id: string | null;
   delivery_number: number;
   status: DeliveryStatus;
-  status_changed_at: string | null;
+  status_changed_at: string;
   scheduled_date: string | null;
   shipped_at: string | null;
   delivered_at: string | null;
   tracking_code: string | null;
 }
 
-type DeliveryRow = {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  subscription_id: string;
-  cycle_id: string | null;
-  character_id: string | null;
-  delivery_number: number | null;
-  delivery_order?: number | null;
-  status: string;
-  updated_at_status?: string | null;
-  scheduled_date?: string | null;
-  reveal_date?: string | null;
-  shipping_date?: string | null;
-  shipped_at?: string | null;
-  delivered_date?: string | null;
-  actual_delivery_date?: string | null;
-  delivered_at?: string | null;
-  tracking_code: string | null;
-};
+type DeliveryRow = Database['public']['Tables']['subscription_deliveries']['Row'];
 
 function toDeliveryStatus(status: string): DeliveryStatus {
   return [
@@ -75,14 +57,14 @@ function toDelivery(row: DeliveryRow): Delivery {
     created_at: row.created_at,
     updated_at: row.updated_at,
     subscription_id: row.subscription_id,
-    cycle_id: row.cycle_id ?? '',
+    cycle_id: row.cycle_id,
     character_id: row.character_id,
     delivery_number: row.delivery_number ?? row.delivery_order ?? 0,
     status: toDeliveryStatus(row.status),
-    status_changed_at: row.updated_at_status ?? row.updated_at,
-    scheduled_date: row.scheduled_date ?? row.reveal_date ?? null,
-    shipped_at: row.shipped_at ?? row.shipping_date ?? null,
-    delivered_at: row.delivered_at ?? row.actual_delivery_date ?? row.delivered_date ?? null,
+    status_changed_at: row.updated_at,
+    scheduled_date: row.delivery_date ?? row.reveal_date ?? row.expected_delivery_date ?? null,
+    shipped_at: row.shipping_date,
+    delivered_at: row.actual_delivery_date ?? row.delivered_date ?? null,
     tracking_code: row.tracking_code,
   };
 }
@@ -115,7 +97,7 @@ class DeliveryService {
       throw new Error(`Erro ao buscar entregas: ${error.message}`);
     }
 
-    return ((data || []) as unknown as DeliveryRow[]).map(toDelivery);
+    return (data ?? []).map(toDelivery);
   }
 
   async getDeliveriesByCycle(cycleId: string): Promise<Delivery[]> {
@@ -129,7 +111,7 @@ class DeliveryService {
       throw new Error(`Erro ao buscar entregas do ciclo: ${error.message}`);
     }
 
-    return ((data || []) as unknown as DeliveryRow[]).map(toDelivery);
+    return (data ?? []).map(toDelivery);
   }
 
   async getCurrentDelivery(subscriptionId: string): Promise<Delivery | null> {
@@ -149,7 +131,7 @@ class DeliveryService {
       throw new Error(`Erro ao buscar entrega atual: ${error.message}`);
     }
 
-    return toDelivery(data as unknown as DeliveryRow);
+    return toDelivery(data);
   }
 
   async canChangeCharacter(deliveryId: string): Promise<boolean> {
