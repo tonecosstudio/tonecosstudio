@@ -560,7 +560,7 @@ export async function countOrdersByStatus(
     ALL_ORDER_STATUS_OPTIONS.map((option) => [option.value, 0]),
   ) as Record<OrderStatus, number>;
 
-  const sources: Array<Promise<Array<{ status: unknown }>>> = [];
+  const sources: Array<PromiseLike<Array<{ status: unknown }>>> = [];
 
   if (type === "all" || type === "subscription_delivery") {
     sources.push(
