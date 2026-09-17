@@ -6,6 +6,10 @@ const mutationMocks = vi.hoisted(() => ({
   deleteHolidayRpc: vi.fn(),
 }));
 
+const supabaseMocks = vi.hoisted(() => ({
+  from: vi.fn(),
+}));
+
 vi.mock("./holiday-mutations-service", () => ({
   addHolidayRpc: mutationMocks.addHolidayRpc,
   deleteHolidayRpc: mutationMocks.deleteHolidayRpc,
@@ -13,41 +17,12 @@ vi.mock("./holiday-mutations-service", () => ({
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        gte: vi.fn(() => ({
-          lte: vi.fn(() => ({
-            order: vi.fn(() =>
-              Promise.resolve({
-                data: [
-                  {
-                    id: "test-holiday-1",
-                    holiday_date: "2026-12-25",
-                    name: "Natal",
-                    description: "Christmas Day",
-                    type: "national",
-                    state_code: null,
-                    is_recurring: true,
-                    created_at: "2026-01-01T00:00:00Z",
-                    updated_at: "2026-01-01T00:00:00Z",
-                  },
-                ],
-                error: null,
-              }),
-          })),
-        })),
-        eq: vi.fn(() => ({
-          maybeSingle: vi.fn(() =>
-            Promise.resolve({ data: { id: "test-holiday-1" }, error: null }),
-          ),
-        })),
-      })),
-    })),
+    from: supabaseMocks.from,
   },
 }));
 
 const holidayRow = {
-  id: "test-holiday-new",
+  id: "test-holiday-1",
   holiday_date: "2026-12-25",
   name: "Natal",
   description: "Christmas Day",
@@ -58,13 +33,28 @@ const holidayRow = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
+function createHolidayQuery() {
+  const order = vi.fn().mockResolvedValue({ data: [holidayRow], error: null });
+  const lte = vi.fn(() => ({ order }));
+  const gte = vi.fn(() => ({ lte }));
+  const maybeSingle = vi.fn().mockResolvedValue({ data: { id: holidayRow.id }, error: null });
+  const eq = vi.fn(() => ({ maybeSingle }));
+  const select = vi.fn(() => ({ gte, eq }));
+
+  return { select };
+}
+
 describe("HolidayService", () => {
   let service: HolidayService;
 
   beforeEach(() => {
     vi.clearAllMocks();
     service = new HolidayService();
-    mutationMocks.addHolidayRpc.mockResolvedValue(holidayRow);
+    supabaseMocks.from.mockReturnValue(createHolidayQuery());
+    mutationMocks.addHolidayRpc.mockResolvedValue({
+      ...holidayRow,
+      id: "test-holiday-new",
+    });
     mutationMocks.deleteHolidayRpc.mockResolvedValue(undefined);
   });
 
