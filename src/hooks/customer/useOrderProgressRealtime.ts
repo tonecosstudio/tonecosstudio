@@ -153,7 +153,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
 
           if (enableToast) {
             toast({
-              title: "Erro de Conexao",
+              title: "Erro de Conexão",
               description: "Nao foi possivel conectar as atualizacoes em tempo real. Tentando reconectar...",
               variant: "destructive",
               duration: 5000,
