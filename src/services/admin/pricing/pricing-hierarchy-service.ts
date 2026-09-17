@@ -12,28 +12,6 @@ export interface SubscriptionPlanRow {
   name: string | null;
 }
 
-interface PricingTierRow {
-  id: string;
-  name: string;
-  description: string | null;
-  price_full: number;
-  deposit_amount: number;
-  price_pix: number;
-  is_active: boolean;
-  is_default: boolean;
-  display_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-interface SubscriptionPlanQueryRow {
-  id: string;
-  tier_id: string | null;
-  billing_interval: string;
-  price: number;
-  name: string | null;
-}
-
 export interface CollectionByTierRow {
   collection_id: string;
   tier_id: string;
@@ -50,6 +28,17 @@ export interface PricingHierarchyData {
   collections: CollectionByTierRow[];
 }
 
+function requireTierAmount(
+  value: number | null,
+  field: string,
+  tierId: string,
+): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw new Error(`Pricing tier ${tierId} has invalid ${field}`);
+  }
+  return value;
+}
+
 export async function fetchPricingHierarchyData(): Promise<PricingHierarchyData> {
   const [tiersResponse, plansResponse, collectionsResponse] = await Promise.all([
     supabase.from("pricing_tiers").select("*").order("price_full", { ascending: true }),
@@ -58,14 +47,14 @@ export async function fetchPricingHierarchyData(): Promise<PricingHierarchyData>
       .select(
         `
           id,
-          tier_id,
+          pricing_tier_id,
           billing_interval,
           price,
           name
         `
       )
-      .not("tier_id", "is", null)
-      .order("price_full"),
+      .not("pricing_tier_id", "is", null)
+      .order("price", { ascending: true }),
     supabase.from("collection_tier_assignments").select(
       `
         collection_id,
@@ -83,8 +72,15 @@ export async function fetchPricingHierarchyData(): Promise<PricingHierarchyData>
   if (plansResponse.error) throw plansResponse.error;
   if (collectionsResponse.error) throw collectionsResponse.error;
 
-  const tierRows = (tiersResponse.data || []) as PricingTierRow[];
-  const collectionRows = (collectionsResponse.data || []) as CollectionByTierRow[];
+  const collectionRows: CollectionByTierRow[] = (collectionsResponse.data || []).map(
+    (assignment) => ({
+      collection_id: assignment.collection_id,
+      tier_id: assignment.tier_id,
+      collections: Array.isArray(assignment.collections)
+        ? assignment.collections[0] ?? null
+        : assignment.collections,
+    }),
+  );
   const collectionCounts = new Map<string, { total: number; active: number }>();
 
   collectionRows.forEach((assignment) => {
@@ -95,12 +91,25 @@ export async function fetchPricingHierarchyData(): Promise<PricingHierarchyData>
     });
   });
 
-  const tiers = tierRows.map((tier): PricingTierWithStats => {
+  const tiers = (tiersResponse.data || []).map((tier): PricingTierWithStats => {
+    const priceFull = requireTierAmount(tier.price_full, "price_full", tier.id);
+    const pricePix = requireTierAmount(tier.price_pix, "price_pix", tier.id);
+    const depositAmount = requireTierAmount(tier.deposit_amount, "deposit_amount", tier.id);
     const counts = collectionCounts.get(tier.id) || { total: 0, active: 0 };
 
     return {
-      ...tier,
-      pix_discount_percentage: inferPixDiscountPercentage(tier.price_full, tier.price_pix),
+      id: tier.id,
+      name: tier.name,
+      description: tier.description,
+      price_full: priceFull,
+      deposit_amount: depositAmount,
+      pix_discount_percentage: inferPixDiscountPercentage(priceFull, pricePix),
+      price_pix: pricePix,
+      is_active: tier.is_active === true,
+      is_default: tier.is_default,
+      display_order: tier.display_order ?? 0,
+      created_at: tier.created_at,
+      updated_at: tier.updated_at,
       created_by: null,
       updated_by: null,
       collections_count: counts.total,
@@ -108,14 +117,15 @@ export async function fetchPricingHierarchyData(): Promise<PricingHierarchyData>
     };
   });
 
-  const tiersById = new Map(tierRows.map((tier) => [tier.id, tier]));
-  const plans = ((plansResponse.data || []) as SubscriptionPlanQueryRow[]).map((plan) => {
-    const tier = plan.tier_id ? tiersById.get(plan.tier_id) : null;
+  const tiersById = new Map(tiers.map((tier) => [tier.id, tier]));
+  const plans: SubscriptionPlanRow[] = (plansResponse.data || []).map((plan) => {
+    const tierId = plan.pricing_tier_id;
+    const tier = tierId ? tiersById.get(tierId) : null;
     const priceMultiplier = tier && tier.price_full > 0 ? plan.price / tier.price_full : 1;
 
     return {
       id: plan.id,
-      tier_id: plan.tier_id,
+      tier_id: tierId,
       plan_mode: plan.billing_interval,
       price_multiplier: priceMultiplier,
       price_full: plan.price,
