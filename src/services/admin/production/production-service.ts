@@ -5,10 +5,9 @@
  * for the backoffice production flow.
  */
 import { supabase } from "@/integrations/supabase/client";
-import type { Json, Tables } from "@/integrations/supabase/types";
+import type { Tables } from "@/integrations/supabase/types";
 import { PRODUCTION_STAGE_LABELS, PRODUCTION_STAGE_ORDER } from "@/config/production-stages";
 import log from "@/lib/logger";
-import { sanitizePostgrestSearchTerm } from "@/lib/postgrest-search";
 import {
   createRealtimeChannel,
   removeRealtimeChannel,
@@ -103,6 +102,17 @@ export function isValidStageTransition(from: ProductionStage, to: ProductionStag
 }
 
 type ProductionQueueRow = Tables<"production_queue">;
+type ProductionStageRow = Tables<"production_stages">;
+type ProfileRow = Pick<Tables<"profiles">, "id" | "full_name" | "email">;
+
+const CHOICE_STATUS_SET = new Set<ChoiceStatus>([
+  "pending",
+  "submitted",
+  "approved",
+  "rejected",
+  "locked",
+  "expired",
+]);
 
 function priorityFilterClause(priority: Priority): string {
   switch (priority) {
@@ -115,6 +125,239 @@ function priorityFilterClause(priority: Priority): string {
     case "low":
       return "priority_score.lte.30";
   }
+}
+
+function parseProductionStage(value: unknown, queueId: string): ProductionStage {
+  if (
+    typeof value === "string" &&
+    PRODUCTION_STAGE_ORDER.includes(value as ProductionStage)
+  ) {
+    return value as ProductionStage;
+  }
+
+  throw new Error(`Fila de producao ${queueId} possui estagio invalido`);
+}
+
+function parseChoiceStatus(value: unknown, queueId: string): ChoiceStatus {
+  if (value === null || value === undefined || value === "") return "pending";
+  if (typeof value === "string" && CHOICE_STATUS_SET.has(value as ChoiceStatus)) {
+    return value as ChoiceStatus;
+  }
+
+  throw new Error(`Fila de producao ${queueId} possui status de escolha invalido`);
+}
+
+function parseOrderType(
+  value: string | null,
+  queueId: string,
+): ProductionQueueItem["orderType"] {
+  if (value === "subscription_delivery" || value === "standalone_purchase") {
+    return value;
+  }
+
+  throw new Error(`Fila de producao ${queueId} possui tipo de pedido invalido`);
+}
+
+function deriveProductionStatus(
+  queueStatus: ProductionQueueRow["status"],
+  currentStage: ProductionStage,
+): ProductionStatus {
+  if (queueStatus === "cancelled") return "cancelled";
+  if (queueStatus === "on_hold") return "on_hold";
+  if (queueStatus === "completed") return "completed";
+  if (currentStage === "awaiting_payment" || currentStage === "awaiting_choice") {
+    return "awaiting_choice";
+  }
+  if (currentStage === "payment_confirmed" || currentStage === "model_preparation") {
+    return "ready_for_production";
+  }
+  return "in_production";
+}
+
+function compareStageOrder(a: ProductionStageRow, b: ProductionStageRow): number {
+  const orderA = a.stage_order ?? Number.MAX_SAFE_INTEGER;
+  const orderB = b.stage_order ?? Number.MAX_SAFE_INTEGER;
+  if (orderA !== orderB) return orderA - orderB;
+  return a.created_at.localeCompare(b.created_at);
+}
+
+function currentStageRowForQueue(
+  stages: ProductionStageRow[],
+  queueId: string,
+): ProductionStageRow {
+  const ordered = [...stages].sort(compareStageOrder);
+  const current = ordered.find((stage) => stage.status !== "completed") ?? ordered.at(-1);
+
+  if (!current) {
+    throw new Error(`Fila de producao ${queueId} nao possui estagios associados`);
+  }
+
+  return current;
+}
+
+function toDateOnly(value: string | null): string | null {
+  return value ? value.slice(0, 10) : null;
+}
+
+async function hydrateProductionRows(
+  rows: ProductionQueueRow[],
+): Promise<ProductionQueueItem[]> {
+  if (rows.length === 0) return [];
+
+  const queueIds = rows.map((row) => row.id);
+  const userIds = [...new Set(rows.map((row) => row.user_id).filter((id): id is string => Boolean(id)))];
+
+  const profilesById = new Map<string, ProfileRow>();
+  if (userIds.length > 0) {
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
+
+    if (profilesError) {
+      throw new Error(`Erro ao buscar clientes da fila: ${profilesError.message}`);
+    }
+
+    for (const profile of profiles ?? []) {
+      profilesById.set(profile.id, profile);
+    }
+  }
+
+  const { data: stageRows, error: stagesError } = await supabase
+    .from("production_stages")
+    .select("*")
+    .in("production_queue_id", queueIds)
+    .order("stage_order", { ascending: true });
+
+  if (stagesError) {
+    throw new Error(`Erro ao buscar estagios da fila: ${stagesError.message}`);
+  }
+
+  const stagesByQueue = new Map<string, ProductionStageRow[]>();
+  for (const stage of stageRows ?? []) {
+    const existing = stagesByQueue.get(stage.production_queue_id) ?? [];
+    existing.push(stage);
+    stagesByQueue.set(stage.production_queue_id, existing);
+  }
+
+  return rows.map((row) => {
+    const stageRow = currentStageRowForQueue(stagesByQueue.get(row.id) ?? [], row.id);
+    const currentStage = parseProductionStage(stageRow.stage_name, row.id);
+    const profile = row.user_id ? profilesById.get(row.user_id) : undefined;
+
+    if (!row.order_id) {
+      throw new Error(`Fila de producao ${row.id} nao possui order_id`);
+    }
+
+    return {
+      id: row.id,
+      orderId: row.order_id,
+      orderType: parseOrderType(row.order_type, row.id),
+      customerId: row.user_id ?? "",
+      customerName: profile?.full_name || profile?.email || "Cliente desconhecido",
+      customerEmail: profile?.email || "",
+      collectionId: row.collection_id ?? "",
+      collectionName: row.collection_name || "Colecao desconhecida",
+      characterId: row.character_id,
+      characterName: row.character_name,
+      productionStatus: deriveProductionStatus(row.status, currentStage),
+      currentStage,
+      choiceStatus: parseChoiceStatus(row.choice_status, row.id),
+      choiceDeadline: row.choice_deadline,
+      choiceMadeAt: row.choice_made_at,
+      priority: getProductionPriorityFromScore(undefined, row.priority_score),
+      priorityScore: row.priority_score ?? 0,
+      scheduledProductionDate: toDateOnly(row.estimated_start_date),
+      estimatedCompletionDate: row.estimated_completion_date,
+      assignedTo: stageRow.assigned_to,
+      assignedToName: stageRow.assigned_to_name,
+      assignedAt: stageRow.assigned_at,
+      productionStartedAt: row.actual_start_date,
+      productionCompletedAt: row.actual_completion_date,
+      productionNotes: row.admin_notes,
+      customerNotes: row.notes,
+      internalFlags: [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    } satisfies ProductionQueueItem;
+  });
+}
+
+async function fetchHydratedProductionItemById(id: string): Promise<ProductionQueueItem> {
+  const { data, error } = await supabase
+    .from("production_queue")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Item nao encontrado: ${error?.message || "ID invalido"}`);
+  }
+
+  const [item] = await hydrateProductionRows([data]);
+  if (!item) {
+    throw new Error(`Item nao encontrado: ${id}`);
+  }
+
+  return item;
+}
+
+async function fetchHydratedProductionItems(
+  filters: ProductionFilters,
+): Promise<ProductionQueueItem[]> {
+  let query = supabase.from("production_queue").select("*");
+
+  if (filters.collections && filters.collections.length > 0) {
+    query = query.in("collection_id", filters.collections);
+  }
+
+  if (filters.priorities && filters.priorities.length > 0) {
+    query = query.or(filters.priorities.map(priorityFilterClause).join(","));
+  }
+
+  if (filters.dateFrom) {
+    query = query.gte("created_at", filters.dateFrom);
+  }
+  if (filters.dateTo) {
+    query = query.lte("created_at", filters.dateTo);
+  }
+
+  query = query.order("priority_score", { ascending: false });
+  query = query.order("created_at", { ascending: false });
+
+  const { data, error } = await query;
+  if (error) {
+    log.error("Erro ao buscar fila de producao", { error: error.message });
+    throw new Error(`Erro ao buscar fila de producao: ${error.message}`);
+  }
+
+  let items = await hydrateProductionRows(data ?? []);
+
+  if (filters.stages && filters.stages.length > 0) {
+    const allowed = new Set(filters.stages);
+    items = items.filter((item) => allowed.has(item.currentStage));
+  }
+
+  if (filters.statuses && filters.statuses.length > 0) {
+    const allowed = new Set(filters.statuses);
+    items = items.filter((item) => allowed.has(item.productionStatus));
+  }
+
+  if (filters.assignedTo && filters.assignedTo.length > 0) {
+    const allowed = new Set(filters.assignedTo);
+    items = items.filter((item) => item.assignedTo !== null && allowed.has(item.assignedTo));
+  }
+
+  const searchTerm = filters.searchQuery?.trim().toLocaleLowerCase("pt-BR");
+  if (searchTerm) {
+    items = items.filter(
+      (item) =>
+        item.customerName.toLocaleLowerCase("pt-BR").includes(searchTerm) ||
+        item.customerEmail.toLocaleLowerCase("pt-BR").includes(searchTerm),
+    );
+  }
+
+  return items;
 }
 
 export interface PaginationParams {
@@ -164,63 +407,16 @@ export async function fetchProductionQueue(
   pagination: PaginationParams
 ): Promise<PaginatedResponse<ProductionQueueItem>> {
   const { page, pageSize } = pagination;
+  const items = await fetchHydratedProductionItems(filters);
   const offset = (page - 1) * pageSize;
-
-  let query = supabase.from("production_queue").select("*", { count: "exact" });
-
-  if (filters.collections && filters.collections.length > 0) {
-    query = query.in("collection_id", filters.collections);
-  }
-
-  if (filters.priorities && filters.priorities.length > 0) {
-    query = query.or(filters.priorities.map(priorityFilterClause).join(","));
-  }
-
-  if (filters.stages && filters.stages.length > 0) {
-    query = query.in("current_stage", filters.stages);
-  }
-
-  if (filters.statuses && filters.statuses.length > 0) {
-    query = query.in("production_status", filters.statuses);
-  }
-
-  if (filters.assignedTo && filters.assignedTo.length > 0) {
-    query = query.in("assigned_to", filters.assignedTo);
-  }
-
-  if (filters.dateFrom) {
-    query = query.gte("created_at", filters.dateFrom);
-  }
-  if (filters.dateTo) {
-    query = query.lte("created_at", filters.dateTo);
-  }
-
-  if (filters.searchQuery && filters.searchQuery.trim()) {
-    const searchTerm = sanitizePostgrestSearchTerm(filters.searchQuery);
-    if (searchTerm) {
-      query = query.or(`customer_name.ilike.%${searchTerm}%,customer_email.ilike.%${searchTerm}%`);
-    }
-  }
-
-  query = query.order("priority_score", { ascending: false });
-  query = query.order("created_at", { ascending: false });
-  query = query.range(offset, offset + pageSize - 1);
-
-  const { data, error, count } = await query;
-
-  if (error) {
-    log.error("Erro ao buscar fila de producao", { error: error.message });
-    throw new Error(`Erro ao buscar fila de producao: ${error.message}`);
-  }
-
-  const items: ProductionQueueItem[] = (data || []).map((item) => transformProductionQueueItem(item));
+  const data = items.slice(offset, offset + pageSize);
 
   return {
-    data: items,
-    total: count || 0,
+    data,
+    total: items.length,
     page,
     pageSize,
-    totalPages: Math.ceil((count || 0) / pageSize),
+    totalPages: Math.ceil(items.length / pageSize),
   };
 }
 
@@ -229,15 +425,7 @@ export async function fetchProductionQueue(
  */
 export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
   try {
-    const { data: queueData, error: queueError } = await supabase
-      .from("production_queue")
-      .select("*");
-
-    if (queueError) {
-      throw new Error(`Erro ao buscar dados da fila: ${queueError.message}`);
-    }
-
-    const items = queueData || [];
+    const items = await fetchHydratedProductionItems({});
 
     const stages: Record<ProductionStage, number> = STAGE_ORDER.reduce(
       (acc, stage) => ({ ...acc, [stage]: 0 }),
@@ -284,50 +472,43 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
     let scheduledToday = 0;
     let scheduledThisWeek = 0;
     let scheduledThisMonth = 0;
+    let priorityScoreTotal = 0;
 
     items.forEach((item) => {
-      if (item.current_stage && stages[item.current_stage as ProductionStage] !== undefined) {
-        stages[item.current_stage as ProductionStage] += 1;
-      }
+      stages[item.currentStage] += 1;
+      statuses[item.productionStatus] += 1;
+      priorities[item.priority] += 1;
+      choices[item.choiceStatus] += 1;
+      priorityScoreTotal += item.priorityScore;
 
-      if (item.production_status && Object.prototype.hasOwnProperty.call(statuses, item.production_status)) {
-        statuses[item.production_status as ProductionStatus] += 1;
-      }
-
-      priorities[getProductionPriorityFromScore(item.priority, item.priority_score)] += 1;
-
-      if (item.choice_status && Object.prototype.hasOwnProperty.call(choices, item.choice_status)) {
-        choices[item.choice_status as ChoiceStatus] += 1;
-      }
-
-      if (item.choice_deadline) {
-        const deadline = new Date(item.choice_deadline);
+      if (item.choiceDeadline) {
+        const deadline = new Date(item.choiceDeadline);
         const hoursUntilDeadline = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
 
         if (hoursUntilDeadline < 24 && hoursUntilDeadline > 0) {
           deadlineCritical += 1;
-        } else if (item.choice_status === "pending" && hoursUntilDeadline < 72) {
+        } else if (item.choiceStatus === "pending" && hoursUntilDeadline < 72) {
           deadlineUrgent += 1;
         }
       }
 
-      if (item.production_status === "on_hold") {
+      if (item.productionStatus === "on_hold") {
         blocked += 1;
       }
 
-      if (item.estimated_completion_date) {
-        const estimatedDate = new Date(item.estimated_completion_date);
+      if (item.estimatedCompletionDate) {
+        const estimatedDate = new Date(item.estimatedCompletionDate);
         if (
           estimatedDate < now &&
-          item.production_status !== "completed" &&
-          item.production_status !== "cancelled"
+          item.productionStatus !== "completed" &&
+          item.productionStatus !== "cancelled"
         ) {
           overdue += 1;
         }
       }
 
-      if (item.scheduled_production_date) {
-        const scheduledDate = new Date(item.scheduled_production_date);
+      if (item.scheduledProductionDate) {
+        const scheduledDate = new Date(item.scheduledProductionDate);
         if (scheduledDate >= today && scheduledDate < new Date(today.getTime() + 24 * 60 * 60 * 1000)) {
           scheduledToday += 1;
         }
@@ -361,7 +542,7 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
         totalItems: items.length,
         avgProductionTimeHours: 0,
         completionRate: items.length > 0 ? (statuses.completed / items.length) * 100 : 0,
-        avgPriorityScore: 0,
+        avgPriorityScore: items.length > 0 ? priorityScoreTotal / items.length : 0,
       },
       generatedAt: new Date().toISOString(),
     };
@@ -407,19 +588,8 @@ export async function updateProductionStage(
   id: string,
   newStage: ProductionStage
 ): Promise<ProductionQueueItem> {
-  const { data: currentItem, error: fetchError } = await supabase
-    .from("production_queue")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (fetchError || !currentItem) {
-    throw new Error(`Item nao encontrado: ${fetchError?.message || "ID invalido"}`);
-  }
-
-  const updatedItem = await updateProductionStageRpc(id, newStage);
-
-  return transformProductionQueueItem(updatedItem);
+  await updateProductionStageRpc(id, newStage);
+  return fetchHydratedProductionItemById(id);
 }
 
 /**
@@ -430,44 +600,29 @@ export async function assignProduction(
   userId: string,
   reason?: string
 ): Promise<ProductionQueueItem> {
-  const { data: currentItem } = await supabase
-    .from("production_queue")
-    .select("assigned_to, assigned_to_name")
-    .eq("id", id)
-    .single();
+  const currentItem = await fetchHydratedProductionItemById(id);
+  const isReassignment = Boolean(currentItem.assignedTo && currentItem.assignedTo !== userId);
 
-  const isReassignment = currentItem?.assigned_to && currentItem.assigned_to !== userId;
-
-  const updatedItem = await assignProductionRpc({ queueId: id, userId, reason });
+  await assignProductionRpc({ queueId: id, userId, reason });
 
   try {
     const { productionNotificationService } = await import(
       "@/services/notifications/production-notification-service"
     );
-    await productionNotificationService.sendAssignmentNotification(id, userId, Boolean(isReassignment));
+    await productionNotificationService.sendAssignmentNotification(id, userId, isReassignment);
   } catch (notifError) {
     log.error("Erro ao enviar notificacao de atribuicao", { notifError });
   }
 
-  return transformProductionQueueItem(updatedItem);
+  return fetchHydratedProductionItemById(id);
 }
 
 /**
  * Blocks a production item.
  */
 export async function blockProduction(id: string, reason: string): Promise<ProductionQueueItem> {
-  const { data: queueItem, error: fetchError } = await supabase
-    .from("production_queue")
-    .select("id, current_stage, customer_id, customer_email, collection_name, order_id, order_type")
-    .eq("id", id)
-    .single();
-
-  if (fetchError || !queueItem) {
-    throw new Error(`Erro ao buscar item de producao: ${fetchError?.message || "Item nao encontrado"}`);
-  }
-
-  void queueItem;
-  const updatedItem = await blockProductionRpc(id, reason);
+  await fetchHydratedProductionItemById(id);
+  await blockProductionRpc(id, reason);
 
   try {
     const newEstimatedDate = await calculateEstimatedCompletion(id);
@@ -485,42 +640,17 @@ export async function blockProduction(id: string, reason: string): Promise<Produ
     log.error("Erro ao enviar notificacao de atraso", { notifError });
   }
 
-  return transformProductionQueueItem(updatedItem);
+  return fetchHydratedProductionItemById(id);
 }
 
 /**
  * Unblocks a production item.
  */
 export async function unblockProduction(id: string): Promise<ProductionQueueItem> {
-  const { data: currentItem, error: fetchError } = await supabase
-    .from("production_queue")
-    .select("current_stage")
-    .eq("id", id)
-    .single();
+  const currentItem = await fetchHydratedProductionItemById(id);
+  const currentStageName = currentItem.currentStage;
 
-  if (fetchError || !currentItem) {
-    throw new Error(`Item nao encontrado: ${fetchError?.message || "ID invalido"}`);
-  }
-
-  if (!currentItem.current_stage) {
-    throw new Error(`Item sem estagio atual: ${id}`);
-  }
-
-  const currentStageName = currentItem.current_stage;
-
-  const { data: currentStage, error: stageFetchError } = await supabase
-    .from("production_stages")
-    .select("started_at")
-    .eq("production_queue_id", id)
-    .eq("stage_name", currentStageName)
-    .maybeSingle();
-
-  if (stageFetchError) {
-    throw new Error(`Erro ao buscar estagio bloqueado: ${stageFetchError.message}`);
-  }
-
-  void currentStage;
-  const updatedItem = await unblockProductionRpc(id);
+  await unblockProductionRpc(id);
 
   try {
     const { productionNotificationService } = await import(
@@ -531,7 +661,7 @@ export async function unblockProduction(id: string): Promise<ProductionQueueItem
     log.error("Erro ao enviar notificacao de desbloqueio", { notifError });
   }
 
-  return transformProductionQueueItem(updatedItem);
+  return fetchHydratedProductionItemById(id);
 }
 
 /**
@@ -546,9 +676,8 @@ export async function updateProductionSchedule(
     throw new Error("Formato de data invalido. Use YYYY-MM-DD");
   }
 
-  const updatedItem = await updateProductionScheduleRpc(id, newDate);
-
-  return transformProductionQueueItem(updatedItem);
+  await updateProductionScheduleRpc(id, newDate);
+  return fetchHydratedProductionItemById(id);
 }
 
 /**
@@ -560,45 +689,6 @@ export async function updateProductionNotes(
 ): Promise<ProductionQueueItem> {
   const normalizedNotes = notes?.trim() || null;
 
-  const updatedItem = await updateProductionNotesRpc(id, normalizedNotes);
-
-  return transformProductionQueueItem(updatedItem);
-}
-
-function transformProductionQueueItem(data: ProductionQueueRow): ProductionQueueItem {
-  return {
-    id: data.id,
-    orderId: data.order_id,
-    orderType: data.order_type as ProductionQueueItem["orderType"],
-    customerId: data.customer_id ?? data.user_id,
-    customerName: data.customer_name || "Cliente desconhecido",
-    customerEmail: data.customer_email || "",
-    collectionId: data.collection_id ?? "",
-    collectionName: data.collection_name || "Colecao desconhecida",
-    characterId: data.character_id,
-    characterName: data.character_name,
-    productionStatus: (data.production_status ?? "awaiting_choice") as ProductionStatus,
-    currentStage: (data.current_stage ?? "awaiting_payment") as ProductionStage,
-    choiceStatus: (data.choice_status ?? "pending") as ChoiceStatus,
-    choiceDeadline: data.choice_deadline,
-    choiceMadeAt: data.choice_made_at,
-    priority: getProductionPriorityFromScore(data.priority, data.priority_score),
-    priorityScore: data.priority_score ?? 0,
-    scheduledProductionDate: data.scheduled_production_date,
-    estimatedCompletionDate: data.estimated_completion_date,
-    assignedTo: data.assigned_to,
-    assignedToName: data.assigned_to_name,
-    assignedAt: data.assigned_at,
-    productionStartedAt: data.production_started_at,
-    productionCompletedAt: data.production_completed_at,
-    productionNotes: data.production_notes,
-    customerNotes: data.customer_notes,
-    internalFlags: toStringArray(data.internal_flags),
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-  };
-}
-
-function toStringArray(value: Json | null): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+  await updateProductionNotesRpc(id, normalizedNotes);
+  return fetchHydratedProductionItemById(id);
 }
