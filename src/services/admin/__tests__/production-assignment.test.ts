@@ -7,8 +7,21 @@ import log from "@/lib/logger";
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
-    rpc: vi.fn(),
   },
+}));
+
+const mutationMocks = vi.hoisted(() => ({
+  assignProductionRpc: vi.fn(),
+}));
+
+vi.mock("../production/admin-production-mutations-service", () => ({
+  assignProductionRpc: mutationMocks.assignProductionRpc,
+  blockProductionRpc: vi.fn(),
+  unblockProductionRpc: vi.fn(),
+  updateProductionEstimatedCompletionRpc: vi.fn(),
+  updateProductionNotesRpc: vi.fn(),
+  updateProductionScheduleRpc: vi.fn(),
+  updateProductionStageRpc: vi.fn(),
 }));
 
 const notificationMocks = vi.hoisted(() => ({
@@ -27,57 +40,97 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
-function productionRow(overrides: Record<string, unknown> = {}) {
+let currentAssignee: string | null;
+let currentAssigneeName: string | null;
+
+function queueRow() {
   return {
     id: "prod-123",
     order_id: "order-1",
-    order_type: "standalone",
-    customer_id: "customer-1",
+    order_type: "standalone_purchase",
     user_id: "customer-1",
-    customer_name: "Cliente Teste",
-    customer_email: "cliente@example.com",
     collection_id: "collection-1",
     collection_name: "Colecao Teste",
     character_id: null,
     character_name: null,
-    production_status: "in_production",
-    current_stage: "modeling",
-    choice_status: "completed",
+    status: "in_progress",
+    choice_status: "approved",
     choice_deadline: null,
     choice_made_at: null,
-    priority: "normal",
-    priority_score: 0,
-    scheduled_production_date: null,
+    priority_score: 50,
+    estimated_start_date: null,
     estimated_completion_date: null,
-    assigned_to: "user-456",
-    assigned_to_name: "Joao Silva",
-    assigned_at: "2026-03-01T10:00:00Z",
-    production_started_at: null,
-    production_completed_at: null,
-    production_notes: null,
-    customer_notes: null,
-    internal_flags: [],
+    actual_start_date: null,
+    actual_completion_date: null,
+    admin_notes: null,
+    notes: null,
     created_at: "2026-03-01T09:00:00Z",
     updated_at: "2026-03-01T10:00:00Z",
-    ...overrides,
   };
 }
 
-function mockCurrentAssignment(current: Record<string, unknown> | null) {
-  vi.mocked(supabase.from).mockReturnValue({
-    select: vi.fn().mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({ data: current, error: null }),
-      }),
-    }),
-  } as never);
+function stageRow() {
+  return {
+    id: "stage-1",
+    production_queue_id: "prod-123",
+    stage_name: "printing",
+    stage_order: 1,
+    status: "in_progress",
+    assigned_to: currentAssignee,
+    assigned_to_name: currentAssigneeName,
+    assigned_at: currentAssignee ? "2026-03-01T10:00:00Z" : null,
+    created_at: "2026-03-01T09:00:00Z",
+  };
+}
+
+function installHydrationMocks() {
+  vi.mocked(supabase.from).mockImplementation(((table: string) => {
+    if (table === "production_queue") {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: queueRow(), error: null }),
+          }),
+        }),
+      } as never;
+    }
+
+    if (table === "profiles") {
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({
+            data: [{ id: "customer-1", full_name: "Cliente Teste", email: "cliente@example.com" }],
+            error: null,
+          }),
+        }),
+      } as never;
+    }
+
+    if (table === "production_stages") {
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: [stageRow()], error: null }),
+          }),
+        }),
+      } as never;
+    }
+
+    throw new Error(`Unexpected table in test: ${table}`);
+  }) as never);
 }
 
 describe("Production Assignment Logic", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCurrentAssignment({ assigned_to: null, assigned_to_name: null });
-    vi.mocked(supabase.rpc).mockResolvedValue({ data: productionRow(), error: null } as never);
+    currentAssignee = null;
+    currentAssigneeName = null;
+    installHydrationMocks();
+
+    mutationMocks.assignProductionRpc.mockImplementation(async ({ userId }: { userId: string }) => {
+      currentAssignee = userId;
+      currentAssigneeName = "Joao Silva";
+    });
   });
 
   it("assigns production through the centralized admin RPC", async () => {
@@ -85,44 +138,40 @@ describe("Production Assignment Logic", () => {
 
     expect(result.assignedTo).toBe("user-456");
     expect(result.assignedToName).toBe("Joao Silva");
-    expect(supabase.rpc).toHaveBeenCalledWith("admin_assign_production", {
-      p_queue_id: "prod-123",
-      p_user_id: "user-456",
-      p_reason: null,
+    expect(mutationMocks.assignProductionRpc).toHaveBeenCalledWith({
+      queueId: "prod-123",
+      userId: "user-456",
+      reason: undefined,
     });
   });
 
   it("passes reassignment reason to the admin RPC", async () => {
-    mockCurrentAssignment({ assigned_to: "user-old", assigned_to_name: "Maria Santos" });
+    currentAssignee = "user-old";
+    currentAssigneeName = "Maria Santos";
 
     await assignProduction("prod-123", "user-456", "Balanceamento de carga");
 
-    expect(supabase.rpc).toHaveBeenCalledWith("admin_assign_production", {
-      p_queue_id: "prod-123",
-      p_user_id: "user-456",
-      p_reason: "Balanceamento de carga",
+    expect(mutationMocks.assignProductionRpc).toHaveBeenCalledWith({
+      queueId: "prod-123",
+      userId: "user-456",
+      reason: "Balanceamento de carga",
     });
   });
 
   it("throws when assignment RPC fails", async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({
-      data: null,
-      error: { message: "Update failed" },
-    } as never);
+    mutationMocks.assignProductionRpc.mockRejectedValueOnce(new Error("Update failed"));
 
     await expect(assignProduction("prod-123", "user-456")).rejects.toThrow("Update failed");
   });
 
   it("continues when assignment notification fails", async () => {
-    notificationMocks.sendAssignmentNotification.mockRejectedValueOnce(
-      new Error("Notification failed")
-    );
+    notificationMocks.sendAssignmentNotification.mockRejectedValueOnce(new Error("Notification failed"));
 
     await expect(assignProduction("prod-123", "user-456")).resolves.toBeDefined();
     expect(productionNotificationService.sendAssignmentNotification).toHaveBeenCalledWith(
       "prod-123",
       "user-456",
-      false
+      false,
     );
     expect(log.error).toHaveBeenCalled();
   });
