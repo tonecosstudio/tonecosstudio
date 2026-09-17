@@ -1,13 +1,12 @@
 /**
  * Componente de Detalhes de Orçamento
- * 
- * Exibe informações detalhadas de um orçamento no painel lateral
- * Alinhado com a estrutura real da tabela quotes + quote_items
+ *
+ * Exibe somente dados canônicos da tabela quotes no painel lateral.
  */
 
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Package, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { OrderStatus, UnifiedOrder } from '@/types/admin/orders';
 import { useUpdateOrderStatus } from '@/hooks/admin/useOrderMutations';
@@ -57,9 +56,8 @@ export function QuoteDetails({ order }: QuoteDetailsProps) {
         <h3 className="text-sm font-medium text-muted-foreground mb-3">
           Detalhes do Orçamento
         </h3>
-        
+
         <div className="space-y-3">
-          {/* Valor Total */}
           {quoteData.totalAmount != null && quoteData.totalAmount > 0 && (
             <div className="flex items-center justify-between pt-1 pb-1 border-b">
               <span className="text-sm font-medium">Valor Total</span>
@@ -69,7 +67,6 @@ export function QuoteDetails({ order }: QuoteDetailsProps) {
             </div>
           )}
 
-          {/* Observações */}
           {quoteData.notes && (
             <div className="p-3 bg-muted rounded-md">
               <div className="flex items-start gap-2">
@@ -88,69 +85,12 @@ export function QuoteDetails({ order }: QuoteDetailsProps) {
 
       <Separator />
 
-      {/* Itens do Orçamento */}
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <Package className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Itens Solicitados ({quoteData.items.length})
-          </h3>
-        </div>
-
-        {quoteData.items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nenhum item no orçamento
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {quoteData.items.map((item) => (
-              <div
-                key={item.id}
-                className="p-3 bg-muted rounded-md"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    {item.imageUrl && (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.name}
-                        className="w-10 h-10 rounded object-cover flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.name}</p>
-                      {item.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-medium">{item.quantity}x</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatCurrency(item.unitPrice)}
-                    </p>
-                    {item.quantity > 1 && (
-                      <p className="text-xs font-medium mt-0.5">
-                        {formatCurrency(item.totalPrice)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <Separator />
-
-      {/* Ações de Admin */}
       {order.status !== 'answered' && order.status !== 'archived' && (
         <section>
           <h3 className="text-sm font-medium text-muted-foreground mb-3">
             Ações
           </h3>
-          
+
           <div className="space-y-2">
             {order.status === 'pending' && (
               <Button
