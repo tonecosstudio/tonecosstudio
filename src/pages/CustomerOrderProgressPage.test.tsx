@@ -129,7 +129,9 @@ describe("CustomerOrderProgressPage", () => {
 
     renderComponent();
 
-    expect(screen.getByText(/pedido nao encontrado/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /pedido nao encontrado/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Pedido nao encontrado na fila de producao")).toBeInTheDocument();
   });
 
