@@ -44,7 +44,6 @@ type PriceCategory = {
   id: string;
   name?: string;
   display_name: string;
-  description?: string | null;
   price_coins?: number;
   coin_value_in_cents?: number;
   price_standalone?: number;
@@ -793,9 +792,6 @@ function CategoryCard({ category, onEdit, onDelete }: CategoryCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg">{category.display_name}</CardTitle>
-            <CardDescription className="line-clamp-2">
-              {category.description || "Sem descrição"}
-            </CardDescription>
           </div>
           <div className="flex gap-1">
             <Button size="sm" variant="ghost" onClick={onEdit}>
@@ -862,7 +858,6 @@ function CategoryCard({ category, onEdit, onDelete }: CategoryCardProps) {
 type PriceCategoryFormData = {
   name: string;
   display_name: string;
-  description: string;
   price_coins: number;
   coin_value_in_cents: number;
   price_standalone: number;
@@ -875,7 +870,6 @@ function PriceCategoryDialog({ category, isOpen, onOpenChange, onSuccess }: Pric
   const [formData, setFormData] = useState<PriceCategoryFormData>({
     name: category?.name || "",
     display_name: category?.display_name || "",
-    description: category?.description || "",
     price_coins: category?.price_coins || 0,
     coin_value_in_cents: category?.coin_value_in_cents || 200,
     price_standalone: category?.price_standalone ? category.price_standalone / 100 : 0,
@@ -954,17 +948,6 @@ function PriceCategoryDialog({ category, isOpen, onOpenChange, onSuccess }: Pric
                 required
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={2}
-              placeholder="Descrição da categoria..."
-            />
           </div>
 
           <div className="grid gap-4 md:grid-cols-4">
