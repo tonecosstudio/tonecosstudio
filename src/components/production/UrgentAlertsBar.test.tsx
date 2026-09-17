@@ -4,23 +4,15 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { UrgentAlertsBar } from "./UrgentAlertsBar";
 
-const productionService = vi.hoisted(() => ({
+const productionMetricsService = vi.hoisted(() => ({
   fetchProductionMetrics: vi.fn(),
+  subscribeToProductionMetricsChanges: vi.fn(() => vi.fn()),
 }));
 
-vi.mock("@/services/admin/production/production-service", () => ({
-  fetchProductionMetrics: productionService.fetchProductionMetrics,
-}));
-
-// Mock Supabase client
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    channel: vi.fn(() => ({
-      on: vi.fn().mockReturnThis(),
-      subscribe: vi.fn(),
-    })),
-    removeChannel: vi.fn(),
-  },
+vi.mock("@/services/admin/production/production-metrics-service", () => ({
+  fetchProductionMetrics: productionMetricsService.fetchProductionMetrics,
+  subscribeToProductionMetricsChanges:
+    productionMetricsService.subscribeToProductionMetricsChanges,
 }));
 
 describe("UrgentAlertsBar", () => {
@@ -72,7 +64,7 @@ describe("UrgentAlertsBar", () => {
   };
 
   it("renders loading state initially", () => {
-    vi.mocked(productionService.fetchProductionMetrics).mockImplementation(
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockImplementation(
       () => new Promise(() => {})
     );
 
@@ -81,7 +73,7 @@ describe("UrgentAlertsBar", () => {
   });
 
   it("renders error state when fetch fails", async () => {
-    vi.mocked(productionService.fetchProductionMetrics).mockRejectedValue(
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockRejectedValue(
       new Error("Failed to fetch")
     );
 
@@ -93,7 +85,7 @@ describe("UrgentAlertsBar", () => {
   });
 
   it("renders no alerts message when all urgent counts are zero", async () => {
-    vi.mocked(productionService.fetchProductionMetrics).mockResolvedValue(mockMetrics);
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockResolvedValue(mockMetrics);
 
     renderComponent();
 
@@ -111,7 +103,7 @@ describe("UrgentAlertsBar", () => {
       },
     };
 
-    vi.mocked(productionService.fetchProductionMetrics).mockResolvedValue(metricsWithCritical);
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockResolvedValue(metricsWithCritical);
 
     renderComponent();
 
@@ -130,7 +122,7 @@ describe("UrgentAlertsBar", () => {
       },
     };
 
-    vi.mocked(productionService.fetchProductionMetrics).mockResolvedValue(metricsWithUrgent);
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockResolvedValue(metricsWithUrgent);
 
     renderComponent();
 
@@ -149,7 +141,7 @@ describe("UrgentAlertsBar", () => {
       },
     };
 
-    vi.mocked(productionService.fetchProductionMetrics).mockResolvedValue(metricsWithBlocked);
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockResolvedValue(metricsWithBlocked);
 
     renderComponent();
 
@@ -168,7 +160,7 @@ describe("UrgentAlertsBar", () => {
       },
     };
 
-    vi.mocked(productionService.fetchProductionMetrics).mockResolvedValue(metricsWithOverdue);
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockResolvedValue(metricsWithOverdue);
 
     renderComponent();
 
@@ -189,7 +181,7 @@ describe("UrgentAlertsBar", () => {
       },
     };
 
-    vi.mocked(productionService.fetchProductionMetrics).mockResolvedValue(metricsWithAllAlerts);
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockResolvedValue(metricsWithAllAlerts);
 
     renderComponent();
 
@@ -211,7 +203,7 @@ describe("UrgentAlertsBar", () => {
       },
     };
 
-    vi.mocked(productionService.fetchProductionMetrics).mockResolvedValue(metricsWithCritical);
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockResolvedValue(metricsWithCritical);
 
     renderComponent({ onAlertClick });
 
@@ -237,7 +229,7 @@ describe("UrgentAlertsBar", () => {
       },
     };
 
-    vi.mocked(productionService.fetchProductionMetrics).mockResolvedValue(metricsWithUrgent);
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockResolvedValue(metricsWithUrgent);
 
     renderComponent({ onAlertClick });
 
@@ -263,7 +255,7 @@ describe("UrgentAlertsBar", () => {
       },
     };
 
-    vi.mocked(productionService.fetchProductionMetrics).mockResolvedValue(metricsWithBlocked);
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockResolvedValue(metricsWithBlocked);
 
     renderComponent({ onAlertClick });
 
@@ -289,7 +281,7 @@ describe("UrgentAlertsBar", () => {
       },
     };
 
-    vi.mocked(productionService.fetchProductionMetrics).mockResolvedValue(metricsWithOverdue);
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockResolvedValue(metricsWithOverdue);
 
     renderComponent({ onAlertClick });
 
@@ -314,7 +306,7 @@ describe("UrgentAlertsBar", () => {
       },
     };
 
-    vi.mocked(productionService.fetchProductionMetrics).mockResolvedValue(metricsWithCritical);
+    vi.mocked(productionMetricsService.fetchProductionMetrics).mockResolvedValue(metricsWithCritical);
 
     renderComponent();
 
@@ -326,7 +318,5 @@ describe("UrgentAlertsBar", () => {
     if (alertButton) {
       await userEvent.click(alertButton);
     }
-
-    // Should not throw error
   });
 });
