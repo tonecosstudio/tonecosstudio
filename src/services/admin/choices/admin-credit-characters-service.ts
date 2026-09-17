@@ -26,6 +26,18 @@ export interface PriceCategoryInput {
   is_active: boolean;
 }
 
+export interface AdminPriceCategory {
+  id: string;
+  name: string;
+  display_name: string;
+  description: string | null;
+  price_coins: number;
+  coin_value_in_cents?: number;
+  price_standalone: number;
+  display_order?: number;
+  is_active?: boolean;
+}
+
 function requiredText(value: string, field: string, maxLength: number): string {
   const trimmed = value.trim();
   if (!trimmed) throw new Error(`${field} e obrigatorio`);
@@ -118,14 +130,25 @@ export async function fetchCatalogCharacters() {
   return data || [];
 }
 
-export async function fetchPriceCategories() {
+export async function fetchPriceCategories(): Promise<AdminPriceCategory[]> {
   const { data, error } = await supabase
     .from("price_categories")
     .select("*")
     .order("display_order");
 
   if (error) throw error;
-  return data || [];
+
+  return (data || []).map((category) => ({
+    id: category.id,
+    name: category.name,
+    display_name: category.display_name,
+    description: category.description,
+    price_coins: category.price_coins,
+    coin_value_in_cents: category.coin_value_in_cents ?? undefined,
+    price_standalone: category.price_standalone,
+    display_order: category.display_order ?? undefined,
+    is_active: category.is_active ?? undefined,
+  }));
 }
 
 export async function deleteCatalogCharacterById(id: string) {
