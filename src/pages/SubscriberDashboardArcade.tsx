@@ -46,7 +46,7 @@ export default function SubscriberDashboardArcade() {
   const { user } = useAuth();
   const isBeforeCutoff = useIsBeforeCutoff();
   const { subscription: sub, completed, nextDelivery: next, progress } = useSubscriberDashboardData(user?.id);
-  const nextTrackingUrl = buildTrackingUrl(next?.tracking_code, next?.shipping_carrier);
+  const nextTrackingUrl = buildTrackingUrl(next?.tracking_code);
 
   return (
     <Page title="Painel do Assinante | ORDAX" description="Acompanhe entregas, progresso e pagamentos da assinatura.">
