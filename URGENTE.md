@@ -2,7 +2,7 @@
 
 > SSOT operacional de `washingtonmsdj/ordax`.
 > Atualizado em 2026-09-17.
-> Não declarar GO sem `release:verify` completo no mesmo SHA candidato.
+> Não declarar GO sem `release:verify` completo no mesmo SHA candidato e smokes críticos do runtime.
 
 ## Estado
 
@@ -10,50 +10,81 @@
 
 HEAD de código antes deste checkpoint documental:
 
-- `157ee11df5ccf9e2f8cef742db38d2ba16a5ab79` — `fix: omit undefined realtime channel options`.
+- `1cdb04c7614a03900d3b15b0f6f972e1a6cc8898` — `test: await payment realtime connection state`.
 
-O drift principal entre aplicação e schema vivo já foi reconciliado. TypeScript, lint e todas as auditorias de autoridade/segurança chegaram a PASS em execução real da Vercel. O bloqueio atual está em `test:coverage`: a maior parte das falhas remanescentes era de testes/mocks presos a contratos antigos e vem sendo removida sem relaxar o gate.
+O drift principal entre aplicação e schema vivo foi reconciliado. TypeScript, lint e todas as auditorias de autoridade/segurança estão passando em execução real da Vercel. O `test:coverage` foi reduzido de dezenas de falhas para **um único teste conhecido** no último SHA executado; esse teste já possui correção no HEAD, mas o HEAD ainda não recebeu execução completa por rate limit da Vercel.
 
 Regra P0: **não recriar contrato aposentado, não esconder drift com cast, não reduzir cobertura/audits e não declarar PASS sem execução real no mesmo SHA.**
 
-## Melhor prova executada até agora
+## Melhor prova executada
 
-### Vercel — SHA `0cb93e2b554449f5f1d7fe1bac320396bba1641e`
+### Vercel — SHA `4a6f64fcf39ba04b935d2da31a57b9c777f8df0a`
 
 Deployment:
 
-- `dpl_3boxoza9hsqidZkrdjqV25aNkJko`;
+- `dpl_4gQJxy4R3enhDQCjVH8mb4ZAcJ2w`;
 - alvo `production`;
 - `release:verify` executou de fato;
 - TypeScript PASS;
-- lint PASS;
-- audits Supabase/access/types PASS;
-- pricing/profile/notification/public-settings/secure-upload/commercial authority PASS;
-- falha concentrada em `test:coverage`;
-- resumo conhecido desse run: 28 falhas individuais no conjunto final de testes.
+- lint: **0 errors / 182 warnings**;
+- Supabase access/types PASS;
+- pricing read authority PASS;
+- profile authority PASS;
+- notification authority PASS;
+- public system settings authority PASS;
+- secure upload scanner source audit PASS;
+- commercial authority PASS;
+- `ProductionKanbanBoard.test.tsx`: **8/8 PASS**;
+- `enhancements-phase-checkpoint.test.ts`: **21/21 PASS**;
+- `file-upload-service.test.ts`: **11/11 PASS**;
+- `business-days.test.ts`: PASS;
+- `deliveryService.test.ts`: PASS;
+- resumo final do Vitest: **1 failed | 223 passed | 3 skipped test files**;
+- testes: **1 failed | 2621 passed | 32 skipped**;
+- única falha: `src/hooks/use-payment-realtime.test.tsx` — primeiro teste verificava `isConnected` antes do callback assíncrono `SUBSCRIBED` do mock concluir;
+- `release:verify` parou em coverage por essa única falha, portanto build e `npm audit --omit=dev --audit-level=high` não foram alcançados neste SHA.
 
-Não usar esse SHA como GO: ele é apenas a melhor prova concluída e já foi superado por vários fixes de teste.
+A falha acima foi corrigida depois desse gate em:
 
-### Evidência anterior de progresso
+- `1cdb04c7614a03900d3b15b0f6f972e1a6cc8898` — `test: await payment realtime connection state`; a asserção de conexão agora aguarda dentro de `waitFor`, sem alterar runtime.
 
-No SHA `4882d85cdbacdaf18747ba32e35bf5848d615d3d`, a cobertura havia caído para 18 arquivos / 49 testes falhos. Os commits posteriores eliminaram vários desses blocos.
+O status Vercel desse HEAD foi rate-limited. Isso **não é falha de código**, mas também **não é prova de PASS**.
 
-## Correções posteriores ao último gate concluído
+## Evolução recente comprovada
 
-Ainda sem prova completa no mesmo SHA, foram corrigidos/alinhados:
+### SHA `abc93266106e4900365b9897b2540fe2175fe8b6`
 
-- `ef20b105dc6c82a491b2e828fdaa60e51e19e882` — `TeamWorkloadView` passou a testar os hooks reais;
-- `75cf8923aecc5126c7852eda8793973bd9084426` — `BlockProductionModal` passou a testar `useBlockProduction`;
-- `409bdb66a81024e809a2977fcc5444979a607700` — mensagem realtime restaurada para `Erro de Conexão`;
-- `b1632f4c60b57749979430759deefc800b6df235` — estados da página de progresso do cliente alinhados;
-- `f567baefe7d187e169bfae5236ce80b09e669bce` — cópias atuais do `EstimatedDatesCard` alinhadas;
-- `03fecba7bbacc243744a50ac61ad56e1e427e0bf` — `ProductionFilters` passou a mockar os hooks de opções reais;
-- `e1cb950544e6c1ba593f5d0925cbc0776bbd7179` — `holiday-service` passou a testar `holiday-mutations-service` em vez de RPC direto obsoleto;
-- `a37743d8efd8f30c1d68e75b9fc8e5d28083a2fe` — property tests de delivery passaram a gerar somente UUIDs compatíveis com o contrato administrativo, sem afrouxar o validador;
-- `1e0b1f154f4391fdc8196aec5b46a00e06a42f3f` — `deliveryService.test` passou a mockar `cycle-service` e `delivery-cycle-mutations-service` canônicos;
-- `157ee11df5ccf9e2f8cef742db38d2ba16a5ab79` — wrapper realtime não passa mais `undefined` explicitamente como segundo argumento de `supabase.channel`.
+Deployment `dpl_5t5HiyQiXgNtF8F4XFCTvDrTgSzp`:
 
-Também já estavam corrigidos antes desse bloco: timezone/calendário, business days, ciclo, tracking em Bahia, mocks de produção, notification count, AssignmentModal, ProgressNotification, realtime integration, admin timeline e Kanban.
+- TypeScript/lint/audits PASS;
+- `enhancements-phase-checkpoint`: **21/21 PASS**;
+- `file-upload-service`: **11/11 PASS**;
+- final: **222 test files PASS / 2613 tests PASS**;
+- restavam somente a suíte Kanban antiga e a corrida do primeiro teste realtime.
+
+### SHA `93418edef38852c94e03e7fa7a2ecca77eb5d6c6`
+
+Deployment `dpl_2JtoQtqGTw48uW13ojaVvHpXw8P8`:
+
+- TypeScript/lint/audits PASS;
+- cobertura já havia reduzido os bloqueios para 6 ocorrências conhecidas: 4 testes de peça bônus, 1 fixture de `File.size` e a suíte Kanban com mock hoisted inválido.
+
+Esses blocos foram corrigidos sem relaxar thresholds nem restaurar contratos antigos.
+
+## Correções recentes no `main`
+
+- `2164a10547639b3ba240a047145074917bef4e2a` — testes de peça bônus agora mockam a fronteira canônica de mutações e `.maybeSingle()`;
+- `abc93266106e4900365b9897b2540fe2175fe8b6` — teste de comprovante cria arquivo realmente maior que 5 MB, sem redefinir `File.size`;
+- `4a6f64fcf39ba04b935d2da31a57b9c777f8df0a` — Kanban deixa de referenciar imports hoisted inválidos e passou 8/8 no gate real;
+- `1cdb04c7614a03900d3b15b0f6f972e1a6cc8898` — teste realtime aguarda o estado `SUBSCRIBED` de forma determinística.
+
+Também nesta continuação:
+
+- `quote_items` foi removido dos fluxos vivos de quote/preorder; a tabela continua aposentada/ausente;
+- `choice-service` e `reminder-service` deixaram de re-tipar artificialmente o cliente Supabase;
+- delivery passou a usar `Database["public"]["Tables"]["subscription_deliveries"]["Row"]` em vez de campos/casts fantasmas;
+- `CustomerPaymentDetails`, `groupBroadcast`, produção e mocks históricos foram alinhados aos contratos reais;
+- timezone/business days permanecem verdes no executor UTC.
 
 ## Backend/Supabase já ativado
 
@@ -64,7 +95,7 @@ Projeto Supabase: `pdytjhtjlxvbbeuxgnms` (`Ordax-2026-1`).
 - v6 `ACTIVE`;
 - `verify_jwt=true`;
 - schema atual de `subscription_deliveries` respeitado;
-- rollback da v5 versionado em `supabase/functions/get-my-subscriptions/ROLLBACK.md`.
+- rollback da v5 versionado.
 
 Pendente: smoke autenticado real.
 
@@ -72,10 +103,14 @@ Pendente: smoke autenticado real.
 
 - v1 `ACTIVE`;
 - `verify_jwt=true`;
-- bucket privado, rate limit, ownership, upload recording e admin notification previamente verificados;
-- rollback de função ausente documentado.
+- bucket privado, rate limit, ownership, gravação de upload e notificação administrativa previamente validados;
+- rollback de função anteriormente ausente documentado;
+- source audit do scanner passa de forma fail-closed.
 
-Pendente: smoke autenticado real e prova operacional do scanner configurado no ambiente.
+Pendente:
+
+- smoke autenticado real;
+- confirmar operacionalmente a existência/configuração de `MALWARE_SCANNER_URL` no ambiente. O conector Supabase disponível nesta sessão não expõe secrets/env vars, portanto essa existência **não está provada**.
 
 ### `get_collection_pricing(uuid)`
 
@@ -96,7 +131,7 @@ Função pública estreita restaurada e verificada:
 - `anon/authenticated` não executam diretamente;
 - rollback versionado na migration correspondente.
 
-Pendente: remover completamente a falsa UX visual de descrição de categoria, se ainda existir no default branch.
+Pendente: remover a falsa UX de descrição de categoria ainda existente em `CreditCharactersContent.tsx`. **Não remover a descrição de personagem**, que é um campo real.
 
 ## Aplicação ↔ schema — concluído
 
@@ -110,8 +145,8 @@ Pendente: remover completamente a falsa UX visual de descrição de categoria, s
 - standalone admin service reduzido aos RPCs vivos;
 - `orders-service` sem `search_unified_orders`/`quote_items` inexistentes;
 - status filtrados por domínio/tabela;
-- pricing público não depende mais de RPC fantasma no frontend;
-- Edge functions principais alinhadas ao schema vivo.
+- pricing público não depende de RPC fantasma no frontend;
+- principais Edge Functions alinhadas ao schema vivo.
 
 ## Regras permanentes
 
@@ -129,17 +164,20 @@ Pendente: remover completamente a falsa UX visual de descrição de categoria, s
 
 ### Vercel
 
-É a única prova que vem executando o `release:verify` completo. A integração sofre serialização/rate limit e nem todo push gera deployment imediatamente.
+É a prova que está executando `release:verify` de fato. A integração sofre serialização/rate limit e nem todo push gera deployment.
 
-Último deployment concluído útil no momento deste checkpoint: `dpl_3boxoza9hsqidZkrdjqV25aNkJko`, SHA `0cb93e2...`.
+Melhor deployment concluído:
 
-Os commits posteriores ainda precisam ser medidos juntos em um novo SHA.
+- `dpl_4gQJxy4R3enhDQCjVH8mb4ZAcJ2w`;
+- SHA `4a6f64fc...`;
+- somente 1 teste falho em 2654 testes coletados;
+- essa falha já está corrigida no HEAD `1cdb04c7...`, ainda sem run completo no mesmo SHA.
 
 ### GitHub Actions
 
 Continua não confiável como gate:
 
-- jobs são criados;
+- jobs historicamente são criados;
 - `steps: []`;
 - `runner_id: 0`;
 - falha antes de checkout/comandos.
@@ -148,15 +186,16 @@ Não interpretar isso como falha da aplicação.
 
 ## P0 atual
 
-### P0.1 — fechar `test:coverage`
+### P0.1 — fechar `test:coverage` no HEAD
 
-- [x] timezone/business days estabilizados para runner UTC;
+- [x] timezone/business days estabilizados;
 - [x] ciclo sem dupla conversão de Bahia;
 - [x] principais testes de produção migrados para hooks/services canônicos;
-- [x] realtime integration desacoplado de campos de produção aposentados;
-- [x] `EstimatedDatesCard`, `ProductionFilters`, holiday e delivery tests alinhados aos contratos atuais;
-- [ ] obter novo run Vercel contendo os commits após `0cb93e2...`;
-- [ ] corrigir somente falhas reais que sobreviverem nesse novo run;
+- [x] bonus piece suite verde 21/21;
+- [x] oversized upload fixture verde 11/11;
+- [x] Kanban verde 8/8 em gate real;
+- [x] única corrida realtime do SHA `4a6f64fc...` corrigida no HEAD;
+- [ ] obter execução Vercel útil de `1cdb04c7...` ou descendente contendo essa correção;
 - [ ] atingir `test:coverage` PASS sem reduzir thresholds.
 
 ### P0.2 — gate completo no mesmo SHA
@@ -169,7 +208,7 @@ Depois de coverage PASS, exigir no mesmo SHA:
 4. `test:coverage`;
 5. build;
 6. `npm audit --omit=dev --audit-level=high`;
-7. `format:check`/Prettier aplicável;
+7. checks de formato aplicáveis;
 8. `release:verify` completo.
 
 ### P0.3 — smokes autenticados
@@ -182,17 +221,24 @@ Depois de coverage PASS, exigir no mesmo SHA:
 ### P0.4 — segurança/operacional
 
 - [ ] habilitar Leaked Password Protection no Supabase Auth;
+- [ ] confirmar scanner de malware configurado no ambiente;
 - [ ] provar rollback do release candidate;
 - [ ] definir required checks/proteção de `main` quando o CI voltar a ser confiável.
 
+### P0.5 — remover UX de schema inexistente
+
+- [ ] remover `price_categories.description` da UI/form de categorias em `CreditCharactersContent.tsx`;
+- [ ] preservar `collection_characters.description` no formulário de personagem;
+- [ ] alinhar o DTO `PriceCategoryInput` para não anunciar campo sem armazenamento canônico.
+
 ## Checkpoint desta continuação
 
-**HEAD de código antes deste commit documental:** `157ee11df5ccf9e2f8cef742db38d2ba16a5ab79`.
+**HEAD de código antes deste commit documental:** `1cdb04c7614a03900d3b15b0f6f972e1a6cc8898`.
 
-**Melhor gate concluído:** SHA `0cb93e2b554449f5f1d7fe1bac320396bba1641e`, falhando somente em `test:coverage` após TypeScript/lint/audits passarem.
+**Melhor gate concluído:** SHA `4a6f64fcf39ba04b935d2da31a57b9c777f8df0a` — TypeScript/lint/audits PASS, Kanban 8/8 PASS e apenas 1 teste realtime falho no coverage; resumo `223 passed files / 2621 passed tests / 1 failed test`.
 
-**Diagnóstico:** os logs do `0cb93e2...` mostraram que grande parte do stderr era de cenários de erro intencionais e warnings, não falhas. As falhas explícitas identificadas no trecho conhecido foram corrigidas depois desse SHA, incluindo página de progresso, EstimatedDatesCard, ProductionFilters, realtime, holiday e delivery.
+**Correção do único teste:** já presente no HEAD `1cdb04c7...`, aguardando apenas prova de executor no mesmo SHA ou descendente.
 
-**next_action:** aguardar apenas a próxima execução útil da Vercel e usar esse novo run como fonte da verdade; não continuar corrigindo warnings históricos. Se ainda houver falhas, corrigir a primeira causa-raiz comprovada. Quando coverage passar, avançar para build/audit no mesmo SHA e só então executar smokes autenticados.
+**next_action:** primeiro obter uma execução útil contendo `1cdb04c7...`. Se coverage passar, deixar o mesmo SHA atravessar build e `npm audit`. Em paralelo apenas em commits pequenos e reversíveis, remover a falsa UX de `price_categories.description`. Depois executar smokes autenticados e fechar segurança operacional. Continuar em NO-GO até tudo isso estar provado.
 
-**do_not_repeat:** não tratar stderr esperado como teste falho; não afrouxar UUID validation para acomodar gerador de teste; não mockar wrappers legados quando o runtime usa service canônico; não restaurar schema aposentado; não reduzir coverage/audit; não declarar GO sem gate completo e smokes no candidato.
+**do_not_repeat:** não tratar stderr esperado como teste falho; não corrigir warnings cosméticos antes do gate; não restaurar schema aposentado; não reintroduzir clientes Supabase re-tipados; não reduzir coverage/audits; não confundir rate limit da Vercel com falha de código; não declarar GO sem gate completo same-SHA e smokes críticos.
