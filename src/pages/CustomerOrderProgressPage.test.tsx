@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
+
 import CustomerOrderProgressPage from "./CustomerOrderProgressPage";
 import type { CustomerOrderProgress } from "@/services/customer/order-progress-service";
 
@@ -40,23 +40,18 @@ vi.mock("@/components/customer/ProgressTimeline", () => ({
 vi.mock("@/components/customer/EstimatedDatesCard", () => ({
   EstimatedDatesCard: ({ productionStatus }: { productionStatus: string }) => (
     <div data-testid="estimated-dates-card">
-      {productionStatus === "on_hold" && <div>Producao Pausada</div>}
+      {productionStatus === "on_hold" ? <div>Producao Pausada</div> : null}
       Estimated Dates Card
     </div>
   ),
 }));
 
 vi.mock("@/components/customer/TrackingCard", () => ({
-  TrackingCard: () => (
-    <div data-testid="tracking-card">
-      <div>Rastreamento</div>
-      Tracking Card
-    </div>
-  ),
+  TrackingCard: () => <div data-testid="tracking-card">Rastreamento</div>,
 }));
 
 vi.mock("@/hooks/customer/useOrderProgressRealtime", () => ({
-  useOrderProgressRealtime: () => ({}),
+  useOrderProgressRealtime: () => undefined,
 }));
 
 const baseOrderProgress: CustomerOrderProgress = {
@@ -100,28 +95,20 @@ const baseOrderProgress: CustomerOrderProgress = {
   ],
 };
 
-describe("CustomerOrderProgressPage", () => {
-  let queryClient: QueryClient;
+function renderComponent() {
+  return render(
+    <BrowserRouter>
+      <CustomerOrderProgressPage />
+    </BrowserRouter>,
+  );
+}
 
+describe("CustomerOrderProgressPage", () => {
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-      },
-    });
     vi.clearAllMocks();
   });
 
-  const renderComponent = () =>
-    render(
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <CustomerOrderProgressPage />
-        </BrowserRouter>
-      </QueryClientProvider>
-    );
-
-  it("should render loading state initially", () => {
+  it("renders loading state", () => {
     hookMocks.useCustomerOrderProgress.mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -129,10 +116,11 @@ describe("CustomerOrderProgressPage", () => {
     });
 
     renderComponent();
+
     expect(document.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
-  it("should render error state when order is not found", () => {
+  it("renders the not-found state without depending on text casing", () => {
     hookMocks.useCustomerOrderProgress.mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -140,10 +128,12 @@ describe("CustomerOrderProgressPage", () => {
     });
 
     renderComponent();
-    expect(screen.getByText("Pedido Nao Encontrado")).toBeInTheDocument();
+
+    expect(screen.getByText(/pedido nao encontrado/i)).toBeInTheDocument();
+    expect(screen.getByText("Pedido nao encontrado na fila de producao")).toBeInTheDocument();
   });
 
-  it("should render order progress when data is loaded", () => {
+  it("renders loaded order progress", () => {
     hookMocks.useCustomerOrderProgress.mockReturnValue({
       data: baseOrderProgress,
       isLoading: false,
@@ -151,24 +141,34 @@ describe("CustomerOrderProgressPage", () => {
     });
 
     renderComponent();
-    expect(screen.getByText("Pedido #test-ord")).toBeInTheDocument();
+
+    expect(screen.getByText("PEDIDO #test-ord")).toBeInTheDocument();
     expect(screen.getByTestId("progress-timeline")).toBeInTheDocument();
     expect(screen.getByTestId("estimated-dates-card")).toBeInTheDocument();
     expect(screen.getByTestId("character-choice-card")).toBeInTheDocument();
   });
 
-  it("should render tracking card only when order is shipped", () => {
+  it("renders tracking only for a shipped order", () => {
     hookMocks.useCustomerOrderProgress.mockReturnValue({
       data: { ...baseOrderProgress, currentStage: "shipped", trackingCode: "BR123" },
       isLoading: false,
       error: null,
     });
 
-    renderComponent();
+    const view = renderComponent();
     expect(screen.getByTestId("tracking-card")).toBeInTheDocument();
+
+    view.unmount();
+    hookMocks.useCustomerOrderProgress.mockReturnValue({
+      data: baseOrderProgress,
+      isLoading: false,
+      error: null,
+    });
+    renderComponent();
+    expect(screen.queryByTestId("tracking-card")).not.toBeInTheDocument();
   });
 
-  it("should show on hold state in estimated dates card", () => {
+  it("propagates the on-hold status to estimated dates", () => {
     hookMocks.useCustomerOrderProgress.mockReturnValue({
       data: { ...baseOrderProgress, productionStatus: "on_hold" },
       isLoading: false,
@@ -176,6 +176,7 @@ describe("CustomerOrderProgressPage", () => {
     });
 
     renderComponent();
+
     expect(screen.getByText("Producao Pausada")).toBeInTheDocument();
   });
 });
