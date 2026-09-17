@@ -25,7 +25,12 @@ describe("admin-collections-service uploadModelImage", () => {
     await uploadModelImage("collections/heroes-123.png", imageFile);
     await uploadModelImage("characters/char-123.webp", { type: "image/webp", size: 1024 } as File);
 
-    expect(upload).toHaveBeenCalledWith("collections/heroes-123.png", imageFile);
+    expect(upload).toHaveBeenNthCalledWith(
+      1,
+      "collections/heroes-123.png",
+      imageFile,
+      undefined,
+    );
     expect(upload).toHaveBeenCalledTimes(2);
   });
 
