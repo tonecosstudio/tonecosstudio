@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatInTimeZone } from "date-fns-tz";
 import { Calendar, Copy, ExternalLink, Package, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "@/components/ui/use-toast";
 import { buildTrackingUrl } from "@/lib/tracking-links";
 import { openSafeExternalUrl } from "@/lib/security/safe-open";
+import { BAHIA_TIMEZONE } from "@/lib/timezone";
 import { cn } from "@/lib/utils";
 
 export interface TrackingCardProps {
@@ -186,9 +187,12 @@ export function TrackingCard({
         {estimatedDeliveryDate ? (
           <InfoBlock
             label="Previsão de entrega"
-            value={format(new Date(estimatedDeliveryDate), "dd 'de' MMMM 'de' yyyy", {
-              locale: ptBR,
-            })}
+            value={formatInTimeZone(
+              new Date(estimatedDeliveryDate),
+              BAHIA_TIMEZONE,
+              "dd 'de' MMMM 'de' yyyy",
+              { locale: ptBR },
+            )}
             icon={<Calendar className="h-5 w-5" />}
           />
         ) : null}
