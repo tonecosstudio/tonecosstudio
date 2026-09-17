@@ -241,7 +241,7 @@ if (adminCreationPolicy.allowsCustomerPaymentNotification) {
 }
 
 const edgeOwnsFirstProofNotification =
-  /uploadResult\.firstFile\s*===\s*true/.test(paymentProofEdgeSource) &&
+  /if\s*\(\s*uploadResult\.firstFile(?:\s*===\s*true)?\s*\)/.test(paymentProofEdgeSource) &&
   /notifyAdminsPaymentUnderReview\s*\(/.test(paymentProofEdgeSource) &&
   /service\.rpc\(\s*["']create_admin_notification["']/.test(paymentProofEdgeSource) &&
   /p_type:\s*["']payment_under_review["']/.test(paymentProofEdgeSource);
