@@ -59,8 +59,8 @@ export interface GroupAttachment {
   file_name: string;
   file_path: string;
   access_url?: string | null;
-  file_size: number;
-  file_type: string;
+  file_size: number | null;
+  file_type: string | null;
   thumbnail_path: string | null;
   uploaded_by: string;
   created_at: string;
@@ -178,17 +178,11 @@ export function validateMembershipCriteria(
 ): ValidationResult {
   // Manual groups should not have criteria
   if (type === "manual" && criteria !== null) {
-    return { valid: false, error: "Grupos manuais não devem ter critérios de associação" };
+    return { valid: false, error: "Grupos manuais não devem ter critérios automáticos" };
   }
 
-  // Non-manual groups should have criteria
   if (type !== "manual" && !criteria) {
-    return { valid: false, error: "Grupos automáticos devem ter critérios de associação" };
-  }
-
-  // Validate collection groups have collectionId
-  if (type === "colecao" && criteria?.type === "colecao" && !criteria.collectionId) {
-    return { valid: false, error: "Grupos de coleção devem especificar um ID de coleção" };
+    return { valid: false, error: "Critérios de associação são obrigatórios" };
   }
 
   return { valid: true };
