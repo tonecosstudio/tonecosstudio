@@ -4,126 +4,109 @@ import {
   requireAdminRpcRecordMatchingId,
   requireAdminRpcUuid,
 } from "@/services/admin/rpc/admin-rpc-results";
-import type { Tables } from "@/integrations/supabase/types";
 import type { ProductionStage } from "@/types/production";
 
-type ProductionQueueRow = Tables<"production_queue">;
-
-function requireProductionRow(
-  value: unknown,
-  queueId: string,
+function requireSnapshotField(
+  record: Record<string, unknown>,
+  field: string,
   operation: string,
-): ProductionQueueRow {
-  const record = requireAdminRpcRecordMatchingId(value, queueId, operation);
-
-  if (
-    typeof record.current_stage !== "string" ||
-    !record.current_stage ||
-    typeof record.production_status !== "string" ||
-    !record.production_status
-  ) {
-    throw new Error(`${operation} returned invalid production data`);
+): unknown {
+  if (!(field in record)) {
+    throw new Error(`${operation} returned incomplete production data`);
   }
 
-  return record as unknown as ProductionQueueRow;
+  return record[field];
 }
 
 export async function updateProductionStageRpc(
   queueId: string,
   stage: ProductionStage
-): Promise<ProductionQueueRow> {
+): Promise<void> {
   const data = await callAdminRpc<unknown>("admin_update_production_stage", {
     p_queue_id: queueId,
     p_stage: stage,
   });
-  const row = requireProductionRow(data, queueId, "Production stage update");
+  const record = requireAdminRpcRecordMatchingId(data, queueId, "Production stage update");
 
-  if (row.current_stage !== stage) {
+  if (requireSnapshotField(record, "current_stage", "Production stage update") !== stage) {
     throw new Error("Production stage update returned an unexpected stage");
   }
-
-  return row;
 }
 
 export async function assignProductionRpc(input: {
   queueId: string;
   userId: string;
   reason?: string;
-}): Promise<ProductionQueueRow> {
+}): Promise<void> {
   const data = await callAdminRpc<unknown>("admin_assign_production", {
     p_queue_id: input.queueId,
     p_user_id: input.userId,
     p_reason: input.reason ?? null,
   });
-  const row = requireProductionRow(data, input.queueId, "Production assignment");
+  const record = requireAdminRpcRecordMatchingId(data, input.queueId, "Production assignment");
 
-  if (row.assigned_to !== input.userId) {
+  if (requireSnapshotField(record, "assigned_to", "Production assignment") !== input.userId) {
     throw new Error("Production assignment returned an unexpected assignee");
   }
-
-  return row;
 }
 
-export async function blockProductionRpc(queueId: string, reason: string): Promise<ProductionQueueRow> {
+export async function blockProductionRpc(queueId: string, reason: string): Promise<void> {
   const data = await callAdminRpc<unknown>("admin_block_production", {
     p_queue_id: queueId,
     p_reason: reason,
   });
-  const row = requireProductionRow(data, queueId, "Production block");
+  const record = requireAdminRpcRecordMatchingId(data, queueId, "Production block");
 
-  if (row.production_status !== "on_hold" || row.production_notes !== reason.trim()) {
+  if (
+    requireSnapshotField(record, "production_status", "Production block") !== "on_hold" ||
+    requireSnapshotField(record, "production_notes", "Production block") !== reason.trim()
+  ) {
     throw new Error("Production block returned an unexpected state");
   }
-
-  return row;
 }
 
-export async function unblockProductionRpc(queueId: string): Promise<ProductionQueueRow> {
+export async function unblockProductionRpc(queueId: string): Promise<void> {
   const data = await callAdminRpc<unknown>("admin_unblock_production", {
     p_queue_id: queueId,
   });
-  const row = requireProductionRow(data, queueId, "Production unblock");
+  const record = requireAdminRpcRecordMatchingId(data, queueId, "Production unblock");
 
-  if (row.production_status === "on_hold") {
+  if (requireSnapshotField(record, "production_status", "Production unblock") === "on_hold") {
     throw new Error("Production unblock returned a blocked state");
   }
-
-  return row;
 }
 
 export async function updateProductionScheduleRpc(
   queueId: string,
   scheduledDate: string
-): Promise<ProductionQueueRow> {
+): Promise<void> {
   const data = await callAdminRpc<unknown>("admin_update_production_schedule", {
     p_queue_id: queueId,
     p_scheduled_date: scheduledDate,
   });
-  const row = requireProductionRow(data, queueId, "Production schedule update");
+  const record = requireAdminRpcRecordMatchingId(data, queueId, "Production schedule update");
 
-  if (row.scheduled_production_date !== scheduledDate) {
+  if (
+    requireSnapshotField(record, "scheduled_production_date", "Production schedule update") !== scheduledDate
+  ) {
     throw new Error("Production schedule update returned an unexpected date");
   }
-
-  return row;
 }
 
 export async function updateProductionNotesRpc(
   queueId: string,
   notes: string | null
-): Promise<ProductionQueueRow> {
+): Promise<void> {
   const data = await callAdminRpc<unknown>("admin_update_production_notes", {
     p_queue_id: queueId,
     p_notes: notes,
   });
-  const row = requireProductionRow(data, queueId, "Production notes update");
+  const record = requireAdminRpcRecordMatchingId(data, queueId, "Production notes update");
   const expectedNotes = notes?.trim() || null;
 
-  if (row.production_notes !== expectedNotes) {
+  if (requireSnapshotField(record, "production_notes", "Production notes update") !== expectedNotes) {
     throw new Error("Production notes update returned unexpected notes");
   }
-
-  return row;
 }
 
 export async function updateProductionEstimatedCompletionRpc(
