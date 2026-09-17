@@ -17,11 +17,14 @@ serve(async (req) => {
       });
     }
 
-    // Rate limit: standard read operations
-    const rateLimited = await checkRateLimit(req, "get-my-subscriptions", RATE_LIMITS.STANDARD, userId);
+    const rateLimited = await checkRateLimit(
+      req,
+      "get-my-subscriptions",
+      RATE_LIMITS.STANDARD,
+      userId,
+    );
     if (rateLimited) return rateLimited;
 
-    // Busca assinaturas do usuário com dados da coleção
     const { data: subscriptions, error: subscriptionsError } = await client
       .from("subscriptions")
       .select(`
@@ -50,23 +53,22 @@ serve(async (req) => {
 
     if (subscriptionsError) throw subscriptionsError;
 
-    // Para cada assinatura, busca as entregas
     const subscriptionsWithDeliveries = await Promise.all(
       (subscriptions || []).map(async (sub) => {
         const { data: deliveries, error: deliveriesError } = await client
           .from("subscription_deliveries")
           .select(`
             id,
+            delivery_number,
             delivery_order,
             status,
             reveal_date,
-            production_start_date,
+            expected_delivery_date,
+            actual_delivery_date,
             shipping_date,
             delivered_date,
             tracking_code,
-            shipping_carrier,
-            progress_photos,
-            collection_characters (
+            collection_characters:collection_characters!subscription_deliveries_collection_character_id_fkey (
               id,
               name,
               description,
@@ -74,16 +76,25 @@ serve(async (req) => {
             )
           `)
           .eq("subscription_id", sub.id)
-          .order("delivery_order", { ascending: true });
+          .order("delivery_order", { ascending: true, nullsFirst: false });
 
         if (deliveriesError) {
-          console.error("Error fetching deliveries:", deliveriesError);
+          console.error("Error fetching deliveries:", deliveriesError.message);
           return { ...sub, deliveries: [] };
         }
 
+        const normalizedDeliveries = (deliveries || []).map((delivery) => ({
+          ...delivery,
+          // These retired fields no longer have a canonical source. Keep them explicit
+          // rather than querying columns that do not exist or fabricating values.
+          production_start_date: null,
+          shipping_carrier: null,
+          progress_photos: null,
+        }));
+
         return {
           ...sub,
-          deliveries: deliveries || [],
+          deliveries: normalizedDeliveries,
         };
       }),
     );
@@ -100,9 +111,12 @@ serve(async (req) => {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error fetching subscriptions:", msg);
     const status = msg === "Unauthorized" ? 401 : 500;
-    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }),
+      {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
