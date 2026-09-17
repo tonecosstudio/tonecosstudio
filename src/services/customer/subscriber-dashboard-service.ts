@@ -5,6 +5,7 @@ import { fetchActiveSubscriptionDetails } from "@/services/subscriptions/subscri
 
 type SubscriptionRow = Tables<"subscriptions">;
 type DeliveryRow = Tables<"subscription_deliveries">;
+type SubscriptionStatus = SubscriptionRow["status"];
 
 export interface SubscriberCollectionSummary {
   id: string;
@@ -28,7 +29,7 @@ export type SubscriberSubscription = Pick<
 
 export type SubscriberDelivery = Pick<
   DeliveryRow,
-  "id" | "status" | "delivery_number" | "delivery_order" | "tracking_code" | "shipping_carrier"
+  "id" | "status" | "delivery_number" | "delivery_order" | "tracking_code"
 > & {
   collections: Pick<SubscriberCollectionSummary, "id" | "name"> | null;
   collection_characters: {
@@ -48,6 +49,22 @@ type DeliveryQueryRow = Omit<SubscriberDelivery, "collections" | "collection_cha
     | null;
 };
 
+const SUBSCRIPTION_STATUSES = new Set<SubscriptionStatus>([
+  "expired",
+  "active",
+  "cancelled",
+  "suspended",
+  "pending_payment",
+]);
+
+function requireSubscriptionStatus(value: string): SubscriptionStatus {
+  if (SUBSCRIPTION_STATUSES.has(value as SubscriptionStatus)) {
+    return value as SubscriptionStatus;
+  }
+
+  throw new Error(`Subscription returned invalid status: ${value}`);
+}
+
 function firstRelation<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? value[0] ?? null : value;
 }
@@ -65,7 +82,7 @@ export async function listActiveSubscriberSubscriptions(userId: string): Promise
       id: subscription.id,
       user_id: subscription.user_id,
       plan_type: subscription.plan_type,
-      status: subscription.status,
+      status: requireSubscriptionStatus(subscription.status),
       deliveries_completed: subscription.deliveries_completed,
       deliveries_total: subscription.deliveries_total,
       total_paid: subscription.total_paid,
@@ -105,7 +122,6 @@ export async function listSubscriberDeliveries(subscriptionIds: string[]): Promi
       delivery_number,
       delivery_order,
       tracking_code,
-      shipping_carrier,
       collection_characters (
         name,
         description
@@ -122,7 +138,7 @@ export async function listSubscriberDeliveries(subscriptionIds: string[]): Promi
     throw error;
   }
 
-  return ((data ?? []) as unknown as DeliveryQueryRow[]).map((delivery) => ({
+  return ((data ?? []) as DeliveryQueryRow[]).map((delivery) => ({
     ...delivery,
     collections: firstRelation(delivery.collections),
     collection_characters: firstRelation(delivery.collection_characters),
