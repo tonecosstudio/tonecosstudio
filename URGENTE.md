@@ -242,3 +242,25 @@ Depois de coverage PASS, exigir no mesmo SHA:
 **next_action:** primeiro obter uma execução útil contendo `1cdb04c7...`. Se coverage passar, deixar o mesmo SHA atravessar build e `npm audit`. Em paralelo apenas em commits pequenos e reversíveis, remover a falsa UX de `price_categories.description`. Depois executar smokes autenticados e fechar segurança operacional. Continuar em NO-GO até tudo isso estar provado.
 
 **do_not_repeat:** não tratar stderr esperado como teste falho; não corrigir warnings cosméticos antes do gate; não restaurar schema aposentado; não reintroduzir clientes Supabase re-tipados; não reduzir coverage/audits; não confundir rate limit da Vercel com falha de código; não declarar GO sem gate completo same-SHA e smokes críticos.
+
+
+## Checkpoint documental — 2026-09-30 — plataforma de apps próprios
+
+**HEAD confirmado antes da mudança:** `ab359e0d5c4dba21be7edd41f094f49a068b7624`.
+
+**Concluído:**
+
+- criado `ORDAX_APP_PLATFORM.md` na raiz da `main`;
+- commit da arquitetura: `47337e1f8d4a1e282cff5f6e6f623dc64d493899`;
+- definida direção first-party: apps OrdaX próprios, sem usar produtos de terceiros como base do produto;
+- definido contrato futuro de App Runtime, App SDK, Registry, permissões, Store, versionamento, atualização, rollback e compatibilidade;
+- definido que a Loja começa ativando apps oficiais empacotados com a release, sem executar JavaScript remoto arbitrário;
+- proposta ordem incremental: plataforma mínima -> Store/Notes/Tasks -> atualização -> demais apps -> somente depois pacotes baixáveis.
+
+**Testes/provas:** mudança exclusivamente documental; nenhum runtime, schema, migration, dependência ou configuração foi alterado neste checkpoint. Não foi executado novo `release:verify` como prova de release e o estado de lançamento permanece **NO-GO**.
+
+**Bloqueios:** a arquitetura descrita ainda não está implementada. Download real de apps exige, antes, assinatura, checksum, sandbox, revogação, rollback e modelo de permissões comprovados.
+
+**next_action:** manter os P0 de lançamento acima como prioridade operacional. Quando o usuário autorizar a implementação da plataforma de apps, iniciar em commits pequenos por tipos/schema do manifesto, App Registry estático, App SDK mínimo, Capability/Event/Permission registries e Store 0.1, sem migration remota no primeiro passo.
+
+**do_not_repeat:** não transformar referências externas em forks renomeados; não criar segunda autenticação/SSOT; não permitir código remoto da Loja antes da fronteira de segurança; não construir todos os apps simultaneamente; não declarar a plataforma implementada apenas porque o documento existe.
