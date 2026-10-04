@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { businessDayService } from './businessDayService';
 import { timezoneService } from './timezoneService';
+import { supabase } from '@/integrations/supabase/client';
 
 const mutationMocks = vi.hoisted(() => ({
   addHolidayRpc: vi.fn(),
@@ -307,14 +308,14 @@ describe('BusinessDayService', () => {
       expect(duration).toBeLessThan(100);
     });
 
-    it('deve usar cache eficientemente', async () => {
-      const start1 = Date.now();
+    it('deve usar cache eficientemente sem depender de relógio de parede', async () => {
+      const fromMock = vi.mocked(supabase.from);
+
       await businessDayService.getHolidays(2026);
-      const duration1 = Date.now() - start1;
-      const start2 = Date.now();
+      expect(fromMock).toHaveBeenCalledTimes(1);
+
       await businessDayService.getHolidays(2026);
-      const duration2 = Date.now() - start2;
-      expect(duration2).toBeLessThanOrEqual(duration1);
+      expect(fromMock).toHaveBeenCalledTimes(1);
     });
   });
 });
