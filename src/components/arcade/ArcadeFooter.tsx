@@ -5,6 +5,7 @@
  */
 
 import { Link } from "react-router-dom";
+import { BRAND_NAME, BRAND_SHORT_NAME, BRAND_STUDIO_LABEL } from "@/config/brand";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { Mail, Phone, MessageCircle, ExternalLink } from "lucide-react";
 import {
@@ -76,13 +77,13 @@ export function ArcadeFooter() {
                   textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)",
                 }}
               >
-                ORDAX
+                {BRAND_SHORT_NAME}
               </h3>
               <p
                 className="text-[7px] tracking-[0.3em] uppercase text-[hsl(0,0%,35%)] mt-0.5"
                 style={{ fontFamily: "'Press Start 2P', monospace" }}
               >
-                by Tonecos Studios
+                {BRAND_STUDIO_LABEL}
               </p>
             </Link>
 
@@ -197,7 +198,7 @@ export function ArcadeFooter() {
         {/* Bottom bar */}
         <div className="mt-12 pt-6 border-t border-[hsl(var(--gold-accent)/0.08)] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[10px] font-mono text-[hsl(0,0%,30%)] tracking-wider">
-            &copy; {new Date().getFullYear()} ORDAX • TONECOS STUDIOS — TODOS OS DIREITOS RESERVADOS
+            &copy; {new Date().getFullYear()} {BRAND_NAME} — TODOS OS DIREITOS RESERVADOS
           </p>
 
           <div className="flex items-center gap-4">
