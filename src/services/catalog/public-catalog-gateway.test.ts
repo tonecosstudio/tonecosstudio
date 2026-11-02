@@ -354,6 +354,92 @@ describe("read-only catalog discovery and detail", () => {
   });
 });
 
+describe("canonical folder discovery is scoped and fail-closed", () => {
+  it("reads a single indexed root, with no catalog-wide scan", async () => {
+    const io = vi.fn(async () => Response.json({
+      current: null,
+      trail: [],
+      items: [{ id: "personagens", label: "Personagens", count: 3, hasChildren: true }],
+    }));
+    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
+    const page = await gateway.listFolders({ category: "games", franchise: "resident-evil" });
+    expect(page.items).toEqual([{ id: "personagens", label: "Personagens", count: 3, hasChildren: true }]);
+    expect(io).toHaveBeenCalledExactlyOnceWith(
+      "https://example.test/catalogo-api/api/folders?category=games&franchise=resident-evil",
+      expect.objectContaining({ method: "GET", credentials: "omit" }),
+    );
+  });
+
+  it("reads nested paths and the canonical breadcrumb without walking parent indexes", async () => {
+    const io = vi.fn(async () => Response.json({
+      current: { id: "personagens", label: "Personagens", count: 2 },
+      trail: [{ id: "personagens", label: "Personagens" }],
+      items: [{ id: "personagens/herois", label: "Heróis", count: 2, hasChildren: false }],
+    }));
+    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
+    const data = await gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "personagens" });
+    expect(data.trail).toEqual([{ id: "personagens", label: "Personagens" }]);
+    expect(data.items[0].id).toBe("personagens/herois");
+    const [url] = io.mock.calls[0] as unknown as [string, RequestInit];
+    expect(new URL(url).searchParams.get("parent")).toBe("personagens");
+    expect(io).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects invalid scopes, traversal and oversized parent paths before I/O", async () => {
+    const io = vi.fn(async () => Response.json({ current: null, trail: [], items: [] }));
+    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
+    await expect(gateway.listFolders({ category: "../admin", franchise: "resident-evil" })).rejects.toThrow("catalog_folder_scope_invalid");
+    await expect(gateway.listFolders({ category: "games", franchise: "../admin" })).rejects.toThrow("catalog_folder_scope_invalid");
+    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "a/../admin" })).rejects.toThrow("catalog_folder_path_invalid");
+    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "x".repeat(241) })).rejects.toThrow("catalog_folder_path_invalid");
+    expect(io).not.toHaveBeenCalled();
+  });
+
+  it("rejects untrusted parent identity and inconsistent breadcrumbs", async () => {
+    const io = vi.fn(async () => Response.json({ current: null, trail: [], items: [] }));
+    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
+    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "personagens" })).rejects.toThrow("catalog_folder_parent_mismatch");
+    io.mockImplementationOnce(async () => Response.json({
+      current: { id: "personagens", label: "Personagens", count: 1 },
+      trail: [],
+      items: [],
+    }));
+    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "personagens" })).rejects.toThrow("catalog_folder_trail_mismatch");
+  });
+
+  it("rejects duplicate paths and children outside the requested parent", async () => {
+    const io = vi.fn(async () => Response.json({
+      current: null, trail: [],
+      items: [
+        { id: "a", label: "A", count: 1, hasChildren: false },
+        { id: "a", label: "B", count: 1, hasChildren: false },
+      ],
+    }));
+    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
+    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil" })).rejects.toThrow("duplicate_catalog_folder");
+    io.mockImplementationOnce(async () => Response.json({
+      current: { id: "personagens", label: "Personagens", count: 1 },
+      trail: [{ id: "personagens", label: "Personagens" }],
+      items: [{ id: "other", label: "Outro", count: 1, hasChildren: false }],
+    }));
+    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "personagens" })).rejects.toThrow("catalog_folder_child_outside_parent");
+  });
+
+  it("rejects malformed child counts and hasChildren without silent coercion", async () => {
+    const io = vi.fn(async () => Response.json({
+      current: null, trail: [],
+      items: [{ id: "personagens", label: "Personagens", count: -1, hasChildren: "true" }],
+    }));
+    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
+    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil" })).rejects.toThrow("invalid_catalog_folder_count");
+    io.mockImplementationOnce(async () => Response.json({
+      current: null, trail: [],
+      items: [{ id: "personagens", label: "Personagens", count: 1, hasChildren: "true" }],
+    }));
+    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil" })).rejects.toThrow("invalid_catalog_folder_has_children");
+  });
+});
+
 describe("franchise discovery stays bounded and uses Worker authority", () => {
   it("fetches only a small indexed franchise page, scoped by category and explicit search", async () => {
     const io = vi.fn(async () =>
