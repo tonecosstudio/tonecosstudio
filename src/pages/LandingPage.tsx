@@ -17,9 +17,7 @@ import {
   ArcadeSectionTitle,
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
-import {
-  FloatingParticles,
-} from "@/components/arcade/ArcadeEffects";
+import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import { useAuth } from "@/lib/auth";
 import { useLandingCatalogModels } from "@/hooks/catalog/useLandingCatalogModels";
 import { useLandingCatalogSummary } from "@/hooks/catalog/useLandingCatalogSummary";
@@ -343,7 +341,11 @@ export default function LandingPage() {
               label="Personagens"
               icon={Trophy}
             />
-            <StatCounter value={modelCountLabel} label="Modelos" icon={Shield} />
+            <StatCounter
+              value={modelCountLabel}
+              label="Modelos"
+              icon={Shield}
+            />
             <StatCounter value="100%" label="Artesanal" icon={Zap} />
             <StatCounter value="Sob Encomenda" label="Atendimento" icon={Eye} />
           </div>
@@ -392,7 +394,10 @@ export default function LandingPage() {
                 const imgUrl = m.thumbnailUrl ?? m.imageUrl;
                 const characterName = m.character_name;
                 const sourceName = m.source_title;
-                const detailPath = catalogCharacterPath(characterName, sourceName);
+                const detailPath = catalogCharacterPath(
+                  characterName,
+                  sourceName,
+                );
                 return (
                   <Link
                     key={m.id}
@@ -421,7 +426,8 @@ export default function LandingPage() {
                           {characterName}
                         </p>
                         <p className="mt-0.5 font-mono text-[8px] text-[hsl(var(--gold-accent)/0.75)] uppercase tracking-widest">
-                          {m.model_count} {m.model_count === 1 ? "modelo" : "modelos"}
+                          {m.model_count}{" "}
+                          {m.model_count === 1 ? "modelo" : "modelos"}
                         </p>
                         {sourceName && (
                           <p className="font-mono text-[7px] text-[hsl(0,0%,30%)] mt-0.5 line-clamp-1">
@@ -446,7 +452,6 @@ export default function LandingPage() {
           </div>
         </section>
       )}
-
 
       {/* ═══ CTA ═══ */}
       <ArcadeCTA

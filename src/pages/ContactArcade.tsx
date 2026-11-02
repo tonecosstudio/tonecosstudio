@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Loader2, Mail, MessageSquare, Send, User } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Send,
+  User,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
@@ -15,7 +22,11 @@ import { Page } from "@/components/layouts/Page";
 import { useContactFormSubmission } from "@/hooks/customer/useContactFormSubmission";
 import { useSanitizedForm } from "@/hooks/useSanitizedInput";
 import { contactFormSchema } from "@/lib/validations/support";
-import { PUBLIC_ROUTES, loginReturnToPath, profileSectionPath } from "@/config/routes";
+import {
+  PUBLIC_ROUTES,
+  loginReturnToPath,
+  profileSectionPath,
+} from "@/config/routes";
 import { CONTACT } from "@/config/constants";
 
 type ContactFormData = z.infer<typeof contactFormSchema>;
@@ -24,15 +35,19 @@ export default function ContactArcade() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
-  const { formData, setValue, getSanitizedData } = useSanitizedForm<ContactFormData>(
-    { name: "", email: "", message: "" },
-    { name: "text", email: "email", message: "html" },
-  );
+  const { formData, setValue, getSanitizedData } =
+    useSanitizedForm<ContactFormData>(
+      { name: "", email: "", message: "" },
+      { name: "text", email: "email", message: "html" },
+    );
 
   const { submitContactForm, isSubmitting } = useContactFormSubmission({
     onRequiresAuth: () => {
       setError("Faca login para enviar mensagem.");
-      setTimeout(() => navigate(loginReturnToPath(PUBLIC_ROUTES.contact)), 2000);
+      setTimeout(
+        () => navigate(loginReturnToPath(PUBLIC_ROUTES.contact)),
+        2000,
+      );
     },
     onSuccess: () => {
       navigate(profileSectionPath("support"));
@@ -63,7 +78,11 @@ export default function ContactArcade() {
       title="Contato"
       description="Entre em contato conosco. Canal direto para duvidas e solicitacoes."
     >
-      <ArcadeHero badge="Canal Aberto" title="CONTATO" subtitle=">> TRANSMITA SUA MENSAGEM." />
+      <ArcadeHero
+        badge="Canal Aberto"
+        title="CONTATO"
+        subtitle=">> TRANSMITA SUA MENSAGEM."
+      />
 
       <section className="max-w-2xl mx-auto px-4 md:px-6 pb-16 relative z-10">
         <ArcadeSectionTitle>Transmissao</ArcadeSectionTitle>
@@ -72,7 +91,10 @@ export default function ContactArcade() {
           <div className="p-6 md:p-8 relative overflow-hidden">
             <FloatingParticles />
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 relative z-10">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="space-y-5 relative z-10"
+            >
               {error && (
                 <div className="flex items-center gap-3 p-3 border border-[hsl(0,70%,50%)/0.4] bg-[hsl(0,70%,50%)/0.08]">
                   <AlertCircle className="w-4 h-4 text-[hsl(0,70%,60%)] shrink-0" />

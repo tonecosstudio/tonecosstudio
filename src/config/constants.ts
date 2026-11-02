@@ -62,10 +62,11 @@ export const ASSETS = {
 export const CONTACT = {
   SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL || "",
   CONTACT_EMAIL: import.meta.env.VITE_CONTACT_EMAIL || "",
-  PRIVACY_EMAIL:
-    import.meta.env.VITE_PRIVACY_EMAIL || "",
+  PRIVACY_EMAIL: import.meta.env.VITE_PRIVACY_EMAIL || "",
   DPO_EMAIL: import.meta.env.VITE_DPO_EMAIL || "",
-  WEBSITE_URL: import.meta.env.VITE_WEBSITE_URL || (typeof window !== "undefined" ? window.location.origin : ""),
+  WEBSITE_URL:
+    import.meta.env.VITE_WEBSITE_URL ||
+    (typeof window !== "undefined" ? window.location.origin : ""),
   COMPANY_LOGO_URL:
     import.meta.env.VITE_COMPANY_LOGO_URL || ASSETS.DEFAULT_ICON_URL,
   BUSINESS_HOURS:

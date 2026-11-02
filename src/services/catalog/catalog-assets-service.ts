@@ -28,7 +28,10 @@ function isAbsoluteUrl(value: string) {
 function getCatalogAssetBaseUrl() {
   // Legacy R2 assets must not silently reuse the OS domain or the current
   // site's origin. A future verified first-party media proxy is required.
-  const value = import.meta.env.VITE_CATALOG_ASSET_BASE_URL?.trim().replace(/\/+$/, "");
+  const value = import.meta.env.VITE_CATALOG_ASSET_BASE_URL?.trim().replace(
+    /\/+$/,
+    "",
+  );
   if (!value) return null;
   try {
     const url = new URL(value);
@@ -81,7 +84,9 @@ export function getCatalogStoragePublicUrl(
   const normalizedPath = normalizeStoragePath(path);
   const assetBaseUrl = getCatalogAssetBaseUrl();
   if (shouldUseCatalogAssetBase(bucket, normalizedPath)) {
-    return assetBaseUrl ? `${assetBaseUrl}/${encodeAssetPath(normalizedPath)}` : null;
+    return assetBaseUrl
+      ? `${assetBaseUrl}/${encodeAssetPath(normalizedPath)}`
+      : null;
   }
 
   return getPublicStorageUrl(bucket, normalizedPath);

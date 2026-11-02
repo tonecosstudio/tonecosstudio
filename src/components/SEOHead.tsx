@@ -16,7 +16,14 @@ interface SEOHeadProps {
 export default function SEOHead({
   title,
   description = "Tonecos Studio — modelos para referência, esculturas sob encomenda e acompanhamento de pedidos.",
-  keywords = ["estatuetas", "colecionáveis", "premium", "artesanal", "tonecos", "collectibles"],
+  keywords = [
+    "estatuetas",
+    "colecionáveis",
+    "premium",
+    "artesanal",
+    "tonecos",
+    "collectibles",
+  ],
   image = ASSETS.FALLBACK_IMAGE_URL,
   url,
   type = "website",
@@ -26,9 +33,16 @@ export default function SEOHead({
   const siteTitle = BRAND_NAME;
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
   const siteUrl = CONTACT.WEBSITE_URL.replace(/\/$/, "");
-  const currentOrigin = typeof window !== "undefined" ? window.location.origin : siteUrl;
-  const canonicalUrl = url || (typeof window !== "undefined" ? window.location.href.split("?")[0] : siteUrl);
-  const fullImageUrl = image.startsWith("http") ? image : `${currentOrigin}${image}`;
+  const currentOrigin =
+    typeof window !== "undefined" ? window.location.origin : siteUrl;
+  const canonicalUrl =
+    url ||
+    (typeof window !== "undefined"
+      ? window.location.href.split("?")[0]
+      : siteUrl);
+  const fullImageUrl = image.startsWith("http")
+    ? image
+    : `${currentOrigin}${image}`;
 
   return (
     <Helmet>
@@ -57,9 +71,7 @@ export default function SEOHead({
       <meta name="theme-color" content="#0a0a0a" />
 
       {jsonLd && (
-        <script type="application/ld+json">
-          {JSON.stringify(jsonLd)}
-        </script>
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       )}
     </Helmet>
   );

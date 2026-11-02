@@ -115,9 +115,11 @@ describe("catalog models service", () => {
     Object.keys(CATALOG_CHARACTER_PRESENTATION_OVERRIDES).forEach((key) => {
       delete CATALOG_CHARACTER_PRESENTATION_OVERRIDES[key];
     });
-    Object.keys(CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES).forEach((key) => {
-      delete CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES[key];
-    });
+    Object.keys(CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES).forEach(
+      (key) => {
+        delete CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES[key];
+      },
+    );
     mocks.from.mockReturnValue({ select: mocks.select });
     mocks.storageFrom.mockReturnValue({ getPublicUrl: mocks.getPublicUrl });
     mocks.getPublicUrl.mockImplementation((filePath: string) => ({
@@ -603,11 +605,16 @@ describe("catalog models service", () => {
     });
 
     expect(models).toHaveLength(2);
-    expect(models.map((row) => row.id)).toEqual(["model-freeza", "model-versus"]);
+    expect(models.map((row) => row.id)).toEqual([
+      "model-freeza",
+      "model-versus",
+    ]);
   });
 
   it("allows manual alias overrides for composite character rows", async () => {
-    CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES["dragon ball::painel goku e vegeta"] = [
+    CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES[
+      "dragon ball::painel goku e vegeta"
+    ] = [
       { key: "goku", label: "Goku" },
       { key: "vegeta", label: "Vegeta" },
     ];
@@ -622,7 +629,8 @@ describe("catalog models service", () => {
           tags: ["painel"],
           image_path:
             "catalog-webp-final/display/anime/sayajins/goku/painel-goku-e-vegeta-1.webp",
-          canonical_identity_key: "dragon-ball:goku-vegeta:painel-goku-e-vegeta",
+          canonical_identity_key:
+            "dragon-ball:goku-vegeta:painel-goku-e-vegeta",
         },
       ],
       error: null,
@@ -653,7 +661,9 @@ describe("catalog models service", () => {
   });
 
   it("allows manual alias overrides for paired character rows", async () => {
-    CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES["dragon ball::goku e chi chi"] = [
+    CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES[
+      "dragon ball::goku e chi chi"
+    ] = [
       { key: "goku", label: "Goku" },
       { key: "chi chi", label: "Chi Chi" },
     ];
@@ -815,7 +825,8 @@ describe("catalog models service", () => {
     });
     mocks.select.mockReturnValue(query);
 
-    const context = await getCatalogCharacterContextBySlug("freeza-dragon-ball");
+    const context =
+      await getCatalogCharacterContextBySlug("freeza-dragon-ball");
 
     expect(context).toEqual({
       slug: "freeza-dragon-ball",
@@ -956,7 +967,8 @@ describe("catalog models service", () => {
           id: "model-1",
           source_title: "Dragon Ball",
           character_name: "Freeza",
-          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
           canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
         },
       ],
@@ -969,7 +981,8 @@ describe("catalog models service", () => {
           id: "model-1",
           source_title: "Dragon Ball",
           character_name: "Freeza",
-          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
           canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
         },
         {
@@ -977,7 +990,8 @@ describe("catalog models service", () => {
           id: "model-2",
           source_title: "Dragon Ball",
           character_name: "Freeza",
-          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
           canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
         },
         {
@@ -985,7 +999,8 @@ describe("catalog models service", () => {
           id: "model-3",
           source_title: "Dragon Ball",
           character_name: "Freeza",
-          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-1-173487.webp",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-1-173487.webp",
           canonical_identity_key: "display|anime|raca-do-freeza|freeza-3",
         },
       ],
@@ -1014,7 +1029,8 @@ describe("catalog models service", () => {
           source_title: "Dragon Ball",
           character_name: "Freeza",
           variant_name: "Versao 1",
-          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
           canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
         },
       ],
@@ -1028,7 +1044,8 @@ describe("catalog models service", () => {
           source_title: "Dragon Ball",
           character_name: "Freeza",
           variant_name: "Versao 1",
-          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
           canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
         },
         {
@@ -1037,7 +1054,8 @@ describe("catalog models service", () => {
           source_title: "Dragon Ball",
           character_name: "Freeza",
           variant_name: "Versao 1",
-          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
           canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
         },
       ],
@@ -1128,7 +1146,8 @@ describe("catalog models service", () => {
           variant_name: "Android 21 Majin Candy",
           image_path:
             "catalog-webp-final/display/anime/android/androide-21/android-21-majin-candy-1-179791.webp",
-          canonical_identity_key: "display|anime|android|android-21-majin-candy",
+          canonical_identity_key:
+            "display|anime|android|android-21-majin-candy",
         },
       ],
       error: null,
@@ -1214,7 +1233,8 @@ describe("catalog models service", () => {
         {
           ...modelRow,
           id: "published-final",
-          image_path: "catalog-webp-final/display/anime/sayajins/goku/goku-1.webp",
+          image_path:
+            "catalog-webp-final/display/anime/sayajins/goku/goku-1.webp",
           duplicate_status: "unique",
           duplicate_of_model_id: null,
         },
@@ -1228,7 +1248,8 @@ describe("catalog models service", () => {
         {
           ...modelRow,
           id: "import-row",
-          image_path: "catalog-import/catalogo-raiz-genericos/optimized/goku.webp",
+          image_path:
+            "catalog-import/catalogo-raiz-genericos/optimized/goku.webp",
           duplicate_status: "unique",
           duplicate_of_model_id: null,
         },

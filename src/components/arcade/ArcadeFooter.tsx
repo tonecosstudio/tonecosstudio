@@ -1,11 +1,15 @@
 /**
  * Arcade Footer - Metal Slug Style
- * 
+ *
  * Consistent with the arcade aesthetic used across all public pages.
  */
 
 import { Link } from "react-router-dom";
-import { BRAND_NAME, BRAND_SHORT_NAME, BRAND_STUDIO_LABEL } from "@/config/brand";
+import {
+  BRAND_NAME,
+  BRAND_SHORT_NAME,
+  BRAND_STUDIO_LABEL,
+} from "@/config/brand";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { Mail, Phone, MessageCircle, ExternalLink } from "lucide-react";
 import {
@@ -14,7 +18,10 @@ import {
   PUBLIC_ROUTES,
 } from "@/config/routes";
 import { CONTACT } from "@/config/constants";
-import { buildSafeMailtoHref, buildSafeWhatsAppHref } from "@/lib/security/safe-open";
+import {
+  buildSafeMailtoHref,
+  buildSafeWhatsAppHref,
+} from "@/lib/security/safe-open";
 
 const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.home, label: "Início" },
@@ -88,8 +95,8 @@ export function ArcadeFooter() {
             </Link>
 
             <p className="text-xs text-[hsl(0,0%,40%)] leading-relaxed max-w-sm font-mono">
-              Colecionáveis premium produzidos sob encomenda. Cada peça é artesanalmente criada
-              com acabamento e pintura de alta qualidade.
+              Colecionáveis premium produzidos sob encomenda. Cada peça é
+              artesanalmente criada com acabamento e pintura de alta qualidade.
             </p>
 
             {/* Decorative line */}
@@ -173,7 +180,9 @@ export function ArcadeFooter() {
                     className="flex items-center gap-2 text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors group"
                   >
                     <Phone className="w-3.5 h-3.5 text-[hsl(0,0%,30%)] group-hover:text-[hsl(var(--gold-accent))] transition-colors" />
-                    <span className="tracking-wider">{settings.phone_primary}</span>
+                    <span className="tracking-wider">
+                      {settings.phone_primary}
+                    </span>
                   </a>
                 </li>
               )}
@@ -186,7 +195,9 @@ export function ArcadeFooter() {
                     className="flex items-center gap-2 text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors group"
                   >
                     <MessageCircle className="w-3.5 h-3.5 text-[hsl(0,0%,30%)] group-hover:text-[hsl(var(--gold-accent))] transition-colors" />
-                    <span className="tracking-wider">{settings.phone_whatsapp}</span>
+                    <span className="tracking-wider">
+                      {settings.phone_whatsapp}
+                    </span>
                     <ExternalLink className="w-2.5 h-2.5 text-[hsl(0,0%,25%)]" />
                   </a>
                 </li>
@@ -198,7 +209,8 @@ export function ArcadeFooter() {
         {/* Bottom bar */}
         <div className="mt-12 pt-6 border-t border-[hsl(var(--gold-accent)/0.08)] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[10px] font-mono text-[hsl(0,0%,30%)] tracking-wider">
-            &copy; {new Date().getFullYear()} {BRAND_NAME} — TODOS OS DIREITOS RESERVADOS
+            &copy; {new Date().getFullYear()} {BRAND_NAME} — TODOS OS DIREITOS
+            RESERVADOS
           </p>
 
           <div className="flex items-center gap-4">

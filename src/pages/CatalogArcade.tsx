@@ -1,5 +1,11 @@
 import { useEffect, useMemo } from "react";
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import {
   ArrowRight,
   ChevronRight,
@@ -32,7 +38,10 @@ import {
   type CatalogUniverseThemeRow,
 } from "@/services/catalog/catalog-models-service";
 import type { CatalogCharacterRow, CatalogModelRow } from "@/types/catalog";
-import { getCatalogCharacterName, getCatalogVersionName } from "@/lib/catalog-utils";
+import {
+  getCatalogCharacterName,
+  getCatalogVersionName,
+} from "@/lib/catalog-utils";
 
 function UniverseMiniFolderCard({
   title,
@@ -223,7 +232,9 @@ function isUuidLikePathParam(value: string) {
 }
 
 function normalizeUniverseKey(value: string | null | undefined) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function slugifyUniverseSegment(value: string | null | undefined) {
@@ -280,7 +291,11 @@ function getUniverseFranchiseKeyForCharacter(
 
 export default function CatalogArcade() {
   const navigate = useNavigate();
-  const { themeKey = "", franchiseKey = "", characterSlug = "" } = useParams<{
+  const {
+    themeKey = "",
+    franchiseKey = "",
+    characterSlug = "",
+  } = useParams<{
     themeKey?: string;
     franchiseKey?: string;
     characterSlug?: string;
@@ -288,14 +303,24 @@ export default function CatalogArcade() {
   const [searchParams] = useSearchParams();
   const legacyTheme = searchParams.get("tema")?.trim().toLowerCase() ?? "";
   const legacyFranchise = searchParams.get("obra")?.trim().toLowerCase() ?? "";
-  const legacyCharacter = searchParams.get("personagem")?.trim().toLowerCase() ?? "";
+  const legacyCharacter =
+    searchParams.get("personagem")?.trim().toLowerCase() ?? "";
 
   const activeTheme = (themeKey || legacyTheme).trim().toLowerCase();
-  const activeFranchise = (franchiseKey || legacyFranchise).trim().toLowerCase();
-  const activeCharacter = (characterSlug || legacyCharacter).trim().toLowerCase();
-  const hasLegacyQuery = Boolean(legacyTheme || legacyFranchise || legacyCharacter);
+  const activeFranchise = (franchiseKey || legacyFranchise)
+    .trim()
+    .toLowerCase();
+  const activeCharacter = (characterSlug || legacyCharacter)
+    .trim()
+    .toLowerCase();
+  const hasLegacyQuery = Boolean(
+    legacyTheme || legacyFranchise || legacyCharacter,
+  );
   const shouldRedirectLegacyModel =
-    activeTheme && isUuidLikePathParam(activeTheme) && !activeFranchise && !activeCharacter;
+    activeTheme &&
+    isUuidLikePathParam(activeTheme) &&
+    !activeFranchise &&
+    !activeCharacter;
 
   useEffect(() => {
     if (!hasLegacyQuery) return;
@@ -323,7 +348,10 @@ export default function CatalogArcade() {
     queryFn: listCatalogUniverseIndex,
   });
 
-  const themes = useMemo(() => universeQuery.data?.themes ?? [], [universeQuery.data?.themes]);
+  const themes = useMemo(
+    () => universeQuery.data?.themes ?? [],
+    [universeQuery.data?.themes],
+  );
   const franchises = useMemo(
     () => universeQuery.data?.franchises ?? [],
     [universeQuery.data?.franchises],
@@ -341,7 +369,8 @@ export default function CatalogArcade() {
     () =>
       franchises.find(
         (franchise) =>
-          franchise.themeKey === activeTheme && franchise.key === activeFranchise,
+          franchise.themeKey === activeTheme &&
+          franchise.key === activeFranchise,
       ) ?? null,
     [activeFranchise, activeTheme, franchises],
   );
@@ -360,7 +389,10 @@ export default function CatalogArcade() {
       const rowThemeKey = getUniverseThemeKeyForCharacter(row);
       if (rowThemeKey !== activeTheme) return false;
 
-      const rowFranchiseKey = getUniverseFranchiseKeyForCharacter(row, rowThemeKey);
+      const rowFranchiseKey = getUniverseFranchiseKeyForCharacter(
+        row,
+        rowThemeKey,
+      );
       return rowFranchiseKey === currentFranchise.key;
     });
   }, [activeFranchise, activeTheme, characters, currentFranchise]);
@@ -402,8 +434,12 @@ export default function CatalogArcade() {
     if (activeTheme && activeFranchise) {
       return {
         primary: visibleCharacters.length,
-        primaryLabel: visibleCharacters.length === 1 ? "Personagem" : "Personagens",
-        secondary: visibleCharacters.reduce((total, row) => total + row.model_count, 0),
+        primaryLabel:
+          visibleCharacters.length === 1 ? "Personagem" : "Personagens",
+        secondary: visibleCharacters.reduce(
+          (total, row) => total + row.model_count,
+          0,
+        ),
         secondaryLabel: "Modelos",
       };
     }
@@ -412,7 +448,10 @@ export default function CatalogArcade() {
       return {
         primary: visibleFranchises.length,
         primaryLabel: visibleFranchises.length === 1 ? "Subpasta" : "Subpastas",
-        secondary: visibleFranchises.reduce((total, row) => total + row.modelCount, 0),
+        secondary: visibleFranchises.reduce(
+          (total, row) => total + row.modelCount,
+          0,
+        ),
         secondaryLabel: "Modelos",
       };
     }
@@ -436,7 +475,12 @@ export default function CatalogArcade() {
   const breadcrumb = [
     { label: "Universo", href: PUBLIC_ROUTES.catalog },
     ...(currentTheme
-      ? [{ label: currentTheme.label, href: buildUniversePath({ themeKey: currentTheme.key }) }]
+      ? [
+          {
+            label: currentTheme.label,
+            href: buildUniversePath({ themeKey: currentTheme.key }),
+          },
+        ]
       : []),
     ...(currentFranchise
       ? [
@@ -487,7 +531,14 @@ export default function CatalogArcade() {
     <Page
       title="Universo"
       description="Navegue pelo acervo em estrutura tematica, com pastas, subpastas, personagens e miniaturas de modelos."
-      keywords={["universo", "pastas", "subpastas", "personagens", "modelos", "tonecos"]}
+      keywords={[
+        "universo",
+        "pastas",
+        "subpastas",
+        "personagens",
+        "modelos",
+        "tonecos",
+      ]}
     >
       <section className="relative overflow-hidden">
         <FloatingParticles />
@@ -496,7 +547,11 @@ export default function CatalogArcade() {
         <div className="relative mx-auto max-w-7xl px-4 md:px-6">
           <ArcadeHero
             badge="Arquivo Tematico"
-            title={currentCharacter ? currentCharacter.character_name.toUpperCase() : "UNIVERSO"}
+            title={
+              currentCharacter
+                ? currentCharacter.character_name.toUpperCase()
+                : "UNIVERSO"
+            }
             subtitle={currentLevelSubtitle}
             stats={[
               { value: stats.primary, label: stats.primaryLabel },
@@ -510,7 +565,9 @@ export default function CatalogArcade() {
         <div className="mb-5 flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,48%)]">
           {breadcrumb.map((item, index) => (
             <div key={item.href} className="flex items-center gap-2">
-              {index > 0 && <ChevronRight className="h-3 w-3 text-[hsl(0,0%,30%)]" />}
+              {index > 0 && (
+                <ChevronRight className="h-3 w-3 text-[hsl(0,0%,30%)]" />
+              )}
               <Link
                 to={item.href}
                 className="transition-colors hover:text-[hsl(var(--gold-accent))]"
@@ -603,7 +660,10 @@ export default function CatalogArcade() {
                   subtitle={row.themeLabel}
                   countLabel={`${row.characterCount} ${row.characterCount === 1 ? "personagem" : "personagens"}`}
                   imageUrl={row.thumbnailUrl ?? row.imageUrl}
-                  to={buildUniversePath({ themeKey: row.themeKey, franchiseKey: row.key })}
+                  to={buildUniversePath({
+                    themeKey: row.themeKey,
+                    franchiseKey: row.key,
+                  })}
                   tone="branch"
                 />
               ))}

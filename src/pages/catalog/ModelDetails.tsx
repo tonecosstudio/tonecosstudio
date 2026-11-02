@@ -53,7 +53,6 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   other: "Outro",
 };
 
-
 // ─── Types ───────────────────────────────────────────────────
 function catalogFilterPath(
   key: "tag" | "franchise" | "character",
@@ -364,10 +363,9 @@ export default function ModelDetails() {
           .join(" "),
       )
     : PUBLIC_ROUTES.catalog;
-  const characterPath =
-    model?.character_name
-      ? catalogCharacterPath(model.character_name, sourceTitle)
-      : PUBLIC_ROUTES.catalog;
+  const characterPath = model?.character_name
+    ? catalogCharacterPath(model.character_name, sourceTitle)
+    : PUBLIC_ROUTES.catalog;
   const taxonomyRows = [
     model?.character_name
       ? {
@@ -476,7 +474,9 @@ export default function ModelDetails() {
               className="inline-flex border border-[hsl(var(--gold-accent)/0.45)] bg-[#111111] font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))] shadow-[0_0_16px_hsl(var(--gold-accent)/0.12)] hover:bg-[hsl(var(--gold-accent)/0.12)] hover:text-[hsl(var(--gold-accent))]"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              {model?.character_name ? "Voltar ao Personagem" : "Voltar ao Universo"}
+              {model?.character_name
+                ? "Voltar ao Personagem"
+                : "Voltar ao Universo"}
             </Button>
             <button
               type="button"
@@ -763,12 +763,9 @@ export default function ModelDetails() {
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">
                   Disponibilidade e variacoes no atendimento.
                 </p>
-
               </div>
-
             </div>
           </div>
-
         </div>
       </div>
     </Page>

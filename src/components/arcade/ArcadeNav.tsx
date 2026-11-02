@@ -37,9 +37,12 @@ export function ArcadeNav() {
   const location = useLocation();
   const { user } = useAuth();
   const { data: isAdmin } = useCurrentUserIsAdmin({ currentUserId: user?.id });
-  const { data: balanceData, isLoading: balanceLoading } = useCoinsBalance(user?.id, {
-    enabled: !!user,
-  });
+  const { data: balanceData, isLoading: balanceLoading } = useCoinsBalance(
+    user?.id,
+    {
+      enabled: !!user,
+    },
+  );
   const userBalance = balanceData?.balance ?? 0;
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -106,7 +109,9 @@ export function ArcadeNav() {
               <Bell className="h-4 w-4" />
             </button>
           )}
-          {user && <CoinCounter balance={userBalance} isLoading={balanceLoading} />}
+          {user && (
+            <CoinCounter balance={userBalance} isLoading={balanceLoading} />
+          )}
           {!user && (
             <button
               onClick={() => navigate(PUBLIC_ROUTES.login)}

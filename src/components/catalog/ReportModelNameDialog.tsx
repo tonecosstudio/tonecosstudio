@@ -162,7 +162,9 @@ export function ReportModelNameDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`report-correct-name-${modelId}`}>Nome correto</Label>
+            <Label htmlFor={`report-correct-name-${modelId}`}>
+              Nome correto
+            </Label>
             <Input
               id={`report-correct-name-${modelId}`}
               value={suggestedName}

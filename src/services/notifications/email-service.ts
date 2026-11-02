@@ -90,7 +90,9 @@ export class EmailService {
         import.meta.env.VITE_COMPANY_NAME ||
         CONTACT.COMPANY_NAME,
       maxRetries:
-        Number.isInteger(parsedRetries) && parsedRetries >= 0 ? parsedRetries : 3,
+        Number.isInteger(parsedRetries) && parsedRetries >= 0
+          ? parsedRetries
+          : 3,
       retryDelay:
         Number.isFinite(parsedDelay) && parsedDelay > 0 ? parsedDelay : 2000,
     };
@@ -183,7 +185,10 @@ export class EmailService {
         lastError = error instanceof Error ? error : new Error(String(error));
         attempt += 1;
 
-        if (!this.isRetryableError(lastError) || attempt > this.config.maxRetries) {
+        if (
+          !this.isRetryableError(lastError) ||
+          attempt > this.config.maxRetries
+        ) {
           break;
         }
 
@@ -272,7 +277,8 @@ export class EmailService {
       if (collection?.name) collectionName = collection.name;
     }
 
-    const userName = profile.full_name || profile.display_name || profile.email.split("@")[0];
+    const userName =
+      profile.full_name || profile.display_name || profile.email.split("@")[0];
     const safeUserName = escapeHtml(userName);
     const safeCollection = escapeHtml(collectionName);
     const dashboardUrl = `${window.location.origin}/my-orders`;

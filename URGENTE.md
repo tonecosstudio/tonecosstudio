@@ -6,6 +6,17 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Checkpoint de cobertura e QA da vitrine — 02/11/2026
+
+- **Baseline antes deste checkpoint:** `9b6d682d6e943262efa47cd9859618c29806a215`, branch `integration/tonecosstudio-canonical-20261101`, main `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`, sem merge.
+- **Vercel:** o preview da baseline iniciou após cancelar 15 previews antigos e terminou em **ERROR**, mas avançou por typecheck, lint e auditorias de autoridade. O Vitest fechou com **2.730 testes aprovados**, **0 falhas** e **32 ignorados**. Cobertura total: linhas/declarações 74,04%, branches 78,02%, **funções 65,26%**. O requisito de funções permanece 70%; não foi reduzido. Build de produção e audit de dependências após cobertura **não foram executados** nesse preview.
+- **Nova implementação neste checkpoint:** `src/pages/CatalogModelsArcade.integration.test.tsx` cobre, com HTTP simulado e componentes de UI isolados, 7 cenários de busca mínima, categoria sob demanda, paginação cursor, seleção temporária entre páginas, URL compartilhável, galeria versionada, falha fechada e retries de catálogo/ficha/galeria. **Vitest isolado 7/7 PASS no Desktop Windows autorizado**; ainda exige execução dentro da suíte integral do mesmo SHA.
+- **Formatação:** auditoria dos 24 arquivos TS/TSX alterados desde a main; 17 exigiam normalização. Prettier **3.8.1** confirmou o conjunto formatado localmente. Essa mudança é mecânica e não altera contratos comerciais.
+- **Infraestrutura:** Vercel de produção `tonecosstudio` (projeto existente `prj_yfe9KqNRdWfYNnY6HSXBfT0D2Vsu`) segue com `ordax.com.br` e `www.ordax.com.br` registrados, porém **não verificados**. Removê-los no projeto Tonecos, preservando o OrdaX OS, antes de qualquer merge, promoção ou GO. Apenas previews sem alvo de produção foram afetados pela limpeza.
+- **Próxima ação:** observar o preview do SHA gerado por este commit; corrigir a cobertura funcional até o patamar de 70% **com testes reais**, sem excluir arquivos nem alterar o threshold; continuar pelo build, auditoria `npm audit --omit=dev --audit-level=high`, Quality Gate, E2E móvel/desktop e homologação do proxy antes de promover. Não iniciar varreduras D1/R2/Supabase nem criar novo catálogo ou PR paralelo.
+
+---
+
 ## Checkpoint técnico — 02/11/2026: correção da ficha e liberação do escopo Vercel
 
 - **Destino Vercel confirmado:** projeto existente `tonecosstudio` (ID `prj_yfe9KqNRdWfYNnY6HSXBfT0D2Vsu`) no escopo `jogo-brasils-projects`, ligado a `washingtonmsdj/tonecosstudio` e Vite/Node 24. A renomeação preservou o ID do projeto.
@@ -275,7 +286,6 @@ Depois de coverage PASS, exigir no mesmo SHA:
 **next_action:** primeiro obter uma execução útil contendo `1cdb04c7...`. Se coverage passar, deixar o mesmo SHA atravessar build e `npm audit`. Em paralelo apenas em commits pequenos e reversíveis, remover a falsa UX de `price_categories.description`. Depois executar smokes autenticados e fechar segurança operacional. Continuar em NO-GO até tudo isso estar provado.
 
 **do_not_repeat:** não tratar stderr esperado como teste falho; não corrigir warnings cosméticos antes do gate; não restaurar schema aposentado; não reintroduzir clientes Supabase re-tipados; não reduzir coverage/audits; não confundir rate limit da Vercel com falha de código; não declarar GO sem gate completo same-SHA e smokes críticos.
-
 
 ## Checkpoint documental — 2026-09-30 — plataforma de apps próprios
 

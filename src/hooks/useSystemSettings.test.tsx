@@ -168,7 +168,9 @@ describe("useSystemSettings", () => {
   });
 
   it("centraliza atualizacao de uma configuracao no servico admin", async () => {
-    await expect(updateSystemSetting("company_name", "Nova Ordax")).resolves.toEqual({
+    await expect(
+      updateSystemSetting("company_name", "Nova Ordax"),
+    ).resolves.toEqual({
       success: true,
     });
 
@@ -183,15 +185,21 @@ describe("useSystemSettings", () => {
       contact_email: "novo@ordax.test",
     };
 
-    await expect(updateSystemSettings(payload)).resolves.toEqual({ success: true });
+    await expect(updateSystemSettings(payload)).resolves.toEqual({
+      success: true,
+    });
 
     expect(mocks.upsertAdminSystemSettings).toHaveBeenCalledWith(payload);
   });
 
   it("propaga falhas de atualizacao como contrato de erro", async () => {
-    mocks.upsertAdminSystemSettings.mockRejectedValueOnce(new Error("sem permissao"));
+    mocks.upsertAdminSystemSettings.mockRejectedValueOnce(
+      new Error("sem permissao"),
+    );
 
-    await expect(updateSystemSetting("company_name", "Nova Ordax")).resolves.toEqual({
+    await expect(
+      updateSystemSetting("company_name", "Nova Ordax"),
+    ).resolves.toEqual({
       success: false,
       error: "sem permissao",
     });

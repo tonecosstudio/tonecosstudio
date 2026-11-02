@@ -46,7 +46,9 @@ it("routes model discovery to the canonical gateway and preserves shareable link
   expect(page).toContain("toggleCanonicalSelection(");
   expect(page).toContain("MAX_CANONICAL_SELECTION");
   expect(page).toContain("Nenhum orçamento foi enviado.");
-  expect(page).not.toMatch(/useCatalogModels|UniverseModelCard|supabase|createQuote|submitQuote/);
+  expect(page).not.toMatch(
+    /useCatalogModels|UniverseModelCard|supabase|createQuote|submitQuote/,
+  );
   expect(details).toContain("gateway!.getModel(");
   expect(details).toContain("gateway!.listGallery(");
   expect(router).toContain("LEGACY_MODEL_ID");

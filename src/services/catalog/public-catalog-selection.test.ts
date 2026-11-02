@@ -32,10 +32,13 @@ describe("provisional quote selection", () => {
   });
 
   it("rejects a 51st model without removing the 50 already selected", () => {
-    const selected = Array.from({ length: MAX_CANONICAL_SELECTION }, (_, index) =>
-      model("mdl-" + String(index)),
+    const selected = Array.from(
+      { length: MAX_CANONICAL_SELECTION },
+      (_, index) => model("mdl-" + String(index)),
     );
-    expect(toggleCanonicalSelection(selected, model("mdl-51"))).toEqual(selected);
+    expect(toggleCanonicalSelection(selected, model("mdl-51"))).toEqual(
+      selected,
+    );
     expect(toggleCanonicalSelection(selected, selected[2])).toHaveLength(49);
   });
 
