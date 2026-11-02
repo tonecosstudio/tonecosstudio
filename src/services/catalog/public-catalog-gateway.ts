@@ -124,6 +124,12 @@ function optionalText(value: unknown, field: string): string | null {
   return value;
 }
 
+function validateCatalogCursor(value: string | undefined, field: string): void {
+  if (value !== undefined && (typeof value !== "string" || !value || value.length > 2048)) {
+    throw new Error(field);
+  }
+}
+
 function wholeNumber(value: unknown, field: string): number {
   if (!Number.isInteger(value) || (value as number) < 0) {
     throw new Error(`invalid_catalog_${field}`);
@@ -376,6 +382,7 @@ export function createPublicCatalogGateway(
       const limit = filters.limit ?? 24;
       if (!Number.isInteger(limit) || limit < 1 || limit > 60)
         throw new Error("catalog_gallery_limit_invalid");
+      validateCatalogCursor(filters.cursor, "catalog_gallery_cursor_invalid");
       const url = new URL(
         "api/models/" + encodeURIComponent(slug) + "/images",
         base,
@@ -494,6 +501,7 @@ export function createPublicCatalogGateway(
       if (!Number.isInteger(limit) || limit < 1 || limit > 60) {
         throw new Error("catalog_limit_invalid");
       }
+      validateCatalogCursor(filters.cursor, "catalog_cursor_invalid");
       url.searchParams.set("limit", String(limit));
       if (filters.category && filters.category !== "all")
         url.searchParams.set("category", filters.category);
@@ -525,7 +533,7 @@ export function createPublicCatalogGateway(
       if (
         nextCursor !== null &&
         nextCursor !== undefined &&
-        (typeof nextCursor !== "string" || !nextCursor)
+        (typeof nextCursor !== "string" || !nextCursor || nextCursor.length > 2048)
       ) {
         throw new Error("invalid_catalog_page_cursor");
       }
