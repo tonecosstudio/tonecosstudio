@@ -186,7 +186,7 @@ export function validateFile(file: File): {
     return { valid: true };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { valid: false, error: error.errors[0].message };
+      return { valid: false, error: error.issues[0]?.message ?? "Erro ao validar arquivo" };
     }
     return { valid: false, error: "Erro ao validar arquivo" };
   }
@@ -202,7 +202,7 @@ export function validateMessage(message: string): {
     return { valid: true };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { valid: false, error: error.errors[0].message };
+      return { valid: false, error: error.issues[0]?.message ?? "Erro ao validar mensagem" };
     }
     return { valid: false, error: "Erro ao validar mensagem" };
   }

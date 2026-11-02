@@ -75,8 +75,10 @@ export const tierDescriptionSchema = z
 
 export const priceFullSchema = z
   .number({
-    required_error: "Preço cheio é obrigatório",
-    invalid_type_error: "Preço cheio deve ser um número",
+    error: (issue) =>
+      issue.input === undefined
+        ? "Preço cheio é obrigatório"
+        : "Preço cheio deve ser um número",
   })
   .positive({
     message: "Preço cheio deve ser maior que zero",
@@ -93,8 +95,10 @@ export const priceFullSchema = z
 
 export const depositAmountSchema = z
   .number({
-    required_error: "Valor de entrada é obrigatório",
-    invalid_type_error: "Valor de entrada deve ser um número",
+    error: (issue) =>
+      issue.input === undefined
+        ? "Valor de entrada é obrigatório"
+        : "Valor de entrada deve ser um número",
   })
   .min(0, {
     message: "Valor de entrada não pode ser negativo",
@@ -108,7 +112,7 @@ export const depositAmountSchema = z
 
 export const pixDiscountPercentageSchema = z
   .number({
-    invalid_type_error: "Percentual de desconto deve ser um número",
+    error: "Percentual de desconto deve ser um número",
   })
   .min(MIN_DISCOUNT_PERCENTAGE, {
     message: `Percentual de desconto deve ser no mínimo ${MIN_DISCOUNT_PERCENTAGE}%`,
@@ -175,8 +179,10 @@ export const bulkAssignTierSchema = z.object({
 
 export const getPricingReportsSchema = z.object({
   reportType: z.enum(["collections_by_tier", "revenue_by_tier", "conversion_by_tier"], {
-    required_error: "Tipo de relatório é obrigatório",
-    invalid_type_error: "Tipo de relatório inválido",
+    error: (issue) =>
+      issue.input === undefined
+        ? "Tipo de relatório é obrigatório"
+        : "Tipo de relatório inválido",
   }),
   dateRange: z
     .object({

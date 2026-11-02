@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const purchaseModeSchema = z.object({
   mode_key: z.enum(["standalone", "trimestral", "semestral", "anual"], {
-    errorMap: () => ({ message: "Modalidade inválida" }),
+    error: "Modalidade inválida",
   }),
   name: z.string().min(1, "Nome é obrigatório").max(100, "Nome muito longo"),
   description: z.string().max(500, "Descrição muito longa").optional(),

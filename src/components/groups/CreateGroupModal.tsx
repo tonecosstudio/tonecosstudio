@@ -38,7 +38,7 @@ const createGroupSchema = z.object({
     .min(3, "Nome deve ter pelo menos 3 caracteres")
     .max(100, "Nome deve ter no maximo 100 caracteres"),
   type: z.enum(["manual", "assinantes", "colecao", "lancamentos", "pedidos"], {
-    required_error: "Selecione um tipo de grupo",
+    error: "Selecione um tipo de grupo",
   }),
   subscriptionCollectionId: z.string().optional(),
   subscriptionPlan: z.string().optional(),
