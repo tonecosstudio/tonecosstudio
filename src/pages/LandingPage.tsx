@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { BRAND_NAME, BRAND_SHORT_NAME } from "@/config/brand";
 import {
   ArrowRight,
   Crosshair,
@@ -18,7 +19,6 @@ import {
 } from "@/components/arcade/ArcadeLayout";
 import {
   FloatingParticles,
-  GlitchText,
 } from "@/components/arcade/ArcadeEffects";
 import { useAuth } from "@/lib/auth";
 import { useLandingCatalogModels } from "@/hooks/catalog/useLandingCatalogModels";
@@ -233,7 +233,7 @@ export default function LandingPage() {
 
   return (
     <Page
-      title="ORDAX — Colecionáveis Premium de Elite"
+      title={BRAND_NAME}
       description="Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão."
       keywords={[
         "colecionáveis",
@@ -241,7 +241,7 @@ export default function LandingPage() {
         "artesanal",
         "figuras",
         "estátuas",
-        "ordax",
+        "tonecos",
       ]}
     >
       {/* ═══ HERO ═══ */}
@@ -290,7 +290,7 @@ export default function LandingPage() {
                 textShadow: "0 0 60px hsl(var(--gold-accent) / 0.15)",
               }}
             >
-              <GlitchText text="ORDAX" />
+              <span>{BRAND_SHORT_NAME}</span>
             </span>
             <span
               className="block text-[10px] sm:text-xs text-[hsl(var(--gold-accent))] tracking-[0.5em] mt-4 uppercase"
@@ -469,7 +469,7 @@ export default function LandingPage() {
               className="text-2xl tracking-[0.2em] text-[hsl(var(--gold-accent))]"
               style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
             >
-              ORDAX
+              {BRAND_SHORT_NAME}
             </span>
           </div>
 
@@ -495,7 +495,7 @@ export default function LandingPage() {
             className="text-[7px] text-[hsl(0,0%,20%)] tracking-wider"
             style={{ fontFamily: "'Press Start 2P', monospace" }}
           >
-            © {new Date().getFullYear()} TONECOS STUDIOS
+            © {new Date().getFullYear()} {BRAND_NAME}
           </p>
         </div>
       </footer>
