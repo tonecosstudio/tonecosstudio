@@ -6,15 +6,16 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
-## Checkpoint operacional — 01/11/2026
+## Checkpoint operacional — 02/11/2026
 
-- **Concluído na branch, não promovido:** marca canônica `Tonecos Studio`, cabeçalho/rodapé/home/SEO, metadata sem domínio OS, contatos sem valores falsos, CSP sem `ordax.com.br`, `robots: Disallow /`, sitemap legado retirado; gateway read-only com categorias/detalhe/mídia e rota `/modelos` migrada para busca e paginação canônicas, detalhes sob demanda e seleção provisória de até 50 IDs, sem escrita ou fallback Supabase.
-- **Testes locais reais:** 9/9 testes Node 24 passando com HTTP simulado; esbuild 0.25.12 transpila a rota TSX; TypeScript 5.9.3 `--strict --skipLibCheck` passa nos módulos isolados de marca/gateway/seleção; Prettier 3.6.2 aprova a página e os módulos centrais. Testes Vitest versionados em `src/config/brand.test.ts`, `src/services/catalog/public-catalog-gateway.test.ts` e `src/services/catalog/public-catalog-selection.test.ts`. **Não afirmar TypeScript do aplicativo inteiro, CI/coverage, E2E ou deploy aprovados** sem logs do SHA exato.
-- **Bloqueio P0 de deployment:** registro GitHub Vercel aponta `jogo-brasils-projects/ordax`; a Vercel conectada nesta sessão mostra somente a equipe `ordaxsystems`. Não é prova de desvinculação do domínio OrdaX. **Não fazer push na main ou promover deploy** antes de validar isolamento do projeto Tonecos.
-- **Bloqueio CI:** `Quality Gate` da `main` falhou na execução #36719911543, com todos os jobs em falha; logs históricos não puderam ser recuperados. PR #3 permanece aberta, com correção isolada de cache; não mesclar no escuro.
-- **Sem operação remota:** nenhum deploy, Supabase migration, Cloudflare D1/R2 scan, ingestão ou pedido/valor comercial alterado.
-- **Next action:** validar isolamento do projeto Vercel e o hostname first-party; executar TypeScript/lint/Vitest/coverage, build e segurança no mesmo HEAD da branch; validar rota `/modelos` em desktop/mobile com proxy simulado e estender a fonte canônica a `/universo`, `/modelos/:id` e orçamento comercial idempotente.
-- **Do not repeat:** não reiniciar coleção/ingestão no Drive, não tentar executar queries D1 só para preencher a UI, não recriar o catálogo no Supabase, não usar `ordax.com.br` como domínio ou origem de mídia Tonecos.
+- **HEAD da integração:** `bf162ef20bcd56f0d9b6c45b32d729c794904e06` — `feat(catalog): add canonical model detail pages and galleries`. A `main` segue preservada em `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`.
+- **Implementado na única branch:** cartões de `/modelos` abrem links diretos compartilháveis; slugs usam a ficha canônica. A ficha carrega os metadados pelo Worker e uma página de até 24 imagens pelo endpoint versionado `/api/models/:slug/images`, valida cursor/versão/payload no gateway e permite carregar mais. Rotas antigas com UUID continuam no componente legado.
+- **Testes adicionados, ainda não executados:** dois casos cobrem leitura limitada/versionada da galeria, versão obsoleta e resposta acima do limite em `public-catalog-gateway.test.ts`. Não foi possível executar `npm ci`, TypeScript, lint, Vitest, coverage ou build neste ambiente; o checkout local falhou porque não havia credencial GitHub para o repositório privado. Não declarar PASS com base apenas no código versionado.
+- **CI:** `.github/workflows/quality.yml` dispara push somente em `main` ou execução manual. Para o SHA atual, o único check run é Vercel Preview Comments (sucesso de comentários), sem Quality Gate. O status Vercel do SHA está pendente.
+- **Bloqueio Vercel P0:** o preview automático atual aponta para `jogo-brasils-projects/ordax`. A Vercel API recusou leitura do deployment por falta de autorização no escopo `jogo-brasils-projects` (403). Ainda não há prova de isolamento Tonecos; o preview não foi promovido nem associado ao domínio do OS. Não enviar commits adicionais até corrigir/verificar esse vínculo, nem mesclar ou promover.
+- **Sem alterações de produção:** nenhuma migration Supabase, ingestão, consulta de D1, gravação de orçamento/pedido, publicação de Worker ou promoção foi executada.
+- **Next action:** resolver a integração Vercel automática em equipe autorizada; então executar `npm ci`, o quality gate completo e a revisão desktop/mobile/E2E no mesmo SHA, sem promover antes da prova de isolamento. Próxima fatia de produto após esses gates: migrar `/universo` ao Worker e definir o contrato idempotente do orçamento comercial.
+- **Do not repeat:** não varrer D1/R2, não recriar catálogo no Supabase, não usar `ordax.com.br`, não repetir builds de catálogo para preencher UI, não fazer push de código enquanto o destino Vercel for o projeto `ordax`.
 
 ---
 

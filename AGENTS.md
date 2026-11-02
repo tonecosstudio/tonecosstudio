@@ -20,6 +20,7 @@ Documentos históricos nunca podem sobrescrever o estado observado no código, C
 - A `main` continua sendo a única branch publicada. **Durante a consolidação autorizada em 01/11/2026, usar exclusivamente `integration/tonecosstudio-canonical-20261101` para mudanças de código**, sem PR ou branch paralela.
 - **Não enviar commits para a main enquanto a antiga integração Vercel/OrdaX não for comprovadamente desvinculada.** Uma promoção acidental pode atingir o domínio do OrdaX OS.
 - Antes de qualquer gravação, verificar HEAD, branch alvo, destinatário do deploy e mudanças concorrentes.
+- Antes de cada push de integração, confira o destino automático da Vercel. Se o preview continuar vinculado a `jogo-brasils-projects/ordax`, não envie código até o vínculo ser isolado; atualização documental só é permitida quando o ignore step provar que não haverá build.
 - Não criar outra branch ou PR sem justificativa explícita e autorização; após isolamento do deploy, integrar apenas com gates completos no SHA final.
 - Não misturar limpeza documental, mudança de schema e deploy no mesmo checkpoint.
 - Não apagar histórico útil: arquivar com índice e motivo.

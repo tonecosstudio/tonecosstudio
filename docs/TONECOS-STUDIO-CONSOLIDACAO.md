@@ -16,6 +16,7 @@ Estado: **EM INTEGRAÇÃO / NO-GO**. Esta diretriz substitui o planejamento de p
 `integration/tonecosstudio-canonical-20261101`
 
 Implementado:
+- Commit `bf162ef20bcd56f0d9b6c45b32d729c794904e06`: a ficha pública direta de slugs agora usa o catálogo canônico e a galeria por cursor/versão; links com UUID seguem no fluxo legado durante a transição.
 - `src/config/brand.ts` e teste: marca visual canônica.
 - Header, footer, home e SEO das principais páginas removem OrdaX como marca pública.
 - HTML/OG não anunciam o domínio do OS; a URL pública Tonecos ainda está **pendente de homologação**, portanto não inventar canonical/domain.
@@ -42,7 +43,7 @@ Implementado:
 
 1. Revisar e estabilizar o único branch `integration/tonecosstudio-canonical-20261101`; corrigir qualquer falha de TypeScript/formatos; manter main inalterada.
 2. Obter confirmação operacional dos limites do projeto Vercel e destino exclusivo da Tonecos; configurar pipeline seguro e testável sem domínio OrdaX.
-3. Homologar `/modelos` (já integrada na branch) com proxy HTTPS first-party, UI e segurança, migrar a ficha direta `/modelos/:id` e árvore `/universo`, e implementar galeria paginada sem replicar modelos ao Supabase.
+3. Homologar `/modelos` e `/modelos/:id` com proxy HTTPS first-party, UI e segurança; migrar a árvore `/universo` e validar a galeria paginada sem replicar modelos ao Supabase.
 4. Transformar a seleção em solicitação comercial única com status e idempotência entre sistemas e teste end-to-end; não usar o formulário antigo como ordem de produção automática.
 5. Aplicar nova identidade visual única e revisar fluxos administrativos existentes sem substituí-los por mocks.
 6. Executar gates completos; integrar a main **somente se** o alvo de deployment estiver comprovadamente isolado e seguro.
@@ -53,6 +54,13 @@ Implementado:
 - 9/9 testes Node 24 aprovados em sessão local isolada com respostas HTTP simuladas; incluem mídia malformada, cursor, categorias, detalhe, rejeição de IDs duplicados e limite de 50 modelos na seleção temporária. Foi corrigido um defeito real de barras invertidas na validação de caminho da mídia.
 - Esbuild 0.25.12 analisou e transpiliou a página TSX da branch com exit code 0. TypeScript 5.9.3 validou com `--strict --skipLibCheck` os módulos isolados de gateway, seleção e identidade (exit 0). Prettier 3.6.2 verificou os três módulos de catálogo editados (exit 0). **Não** executamos compilação completa das dependências React, CI, audit de segurança global ou E2E real.
 - Nenhuma chamada ao D1/R2 de produção, workflow de deploy, alteração no Supabase ou migração de schema. CI geral do repositório ainda sem prova verde.
+
+## Checkpoint 02/11/2026 — ficha compartilhável e galeria
+
+- SHA de implementação: `bf162ef20bcd56f0d9b6c45b32d729c794904e06` (branch única de integração).
+- Dois testes de contrato da galeria foram adicionados; não foram executados neste ambiente. O checkout privado não pôde ser clonado sem credencial GitHub, portanto typecheck, lint, Vitest/coverage, build e E2E permanecem pendentes.
+- O workflow Quality Gate não dispara em branch de integração. O check de comentário da Vercel passou, mas o status de deploy segue pendente e aponta ao projeto legado `jogo-brasils-projects/ordax`; API de Vercel respondeu 403 para essa equipe. Não promover, mesclar ou fazer novos pushes até isolamento e gates no SHA final.
+- Nenhuma alteração de produção, Supabase, D1/R2 ou orçamento comercial ocorreu.
 
 ## Restrições
 
