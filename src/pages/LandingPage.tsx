@@ -7,10 +7,10 @@ import {
   Zap,
   Eye,
   Trophy,
-  Gamepad2,
   Star,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeCard,
@@ -18,16 +18,9 @@ import {
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
 import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
-import { useAuth } from "@/lib/auth";
-import { useLandingCatalogModels } from "@/hooks/catalog/useLandingCatalogModels";
-import { useLandingCatalogSummary } from "@/hooks/catalog/useLandingCatalogSummary";
-import { useActiveCollectionPreviews } from "@/hooks/collections/usePublicCollections";
-import {
-  PUBLIC_COLLECTIONS_ENABLED,
-  PUBLIC_ROUTES,
-  catalogCharacterPath,
-  collectionDetailsPath,
-} from "@/config/routes";
+import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
+import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
+import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
 
 // ─── TYPEWRITER ──────────────────────────────────────────────────────
 
@@ -110,81 +103,11 @@ function StatCounter({
   );
 }
 
-// ─── FEATURED COLLECTION CARD ────────────────────────────────────────
-
-function FeaturedCollectionCard({
-  name,
-  description,
-  totalCharacters,
-  coverUrl,
-  slug,
-}: {
-  name: string;
-  description: string | null;
-  totalCharacters: number;
-  coverUrl: string | null;
-  slug: string;
-}) {
-  const navigate = useNavigate();
-
-  return (
-    <ArcadeCard className="cursor-pointer" hover>
-      <div
-        onClick={() => navigate(collectionDetailsPath(slug))}
-        className="relative overflow-hidden"
-      >
-        {/* Image */}
-        <div className="h-40 bg-[hsl(0,0%,8%)] overflow-hidden">
-          {coverUrl ? (
-            <img
-              src={coverUrl}
-              alt={name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80"
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Gamepad2 className="w-12 h-12 text-[hsl(0,0%,15%)]" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0,0%,5%)] via-transparent to-transparent" />
-        </div>
-
-        {/* Info */}
-        <div className="p-4">
-          <div className="flex items-center justify-between gap-3 mb-1.5">
-            <h3
-              className="text-lg tracking-[0.08em] text-[hsl(0,0%,95%)] font-black line-clamp-1"
-              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-            >
-              {name}
-            </h3>
-            <span className="font-mono text-[9px] text-[hsl(var(--gold-accent))] px-2 py-0.5 border border-[hsl(var(--gold-accent)/0.3)]">
-              {totalCharacters} PCS
-            </span>
-          </div>
-          {description && (
-            <p className="text-[hsl(0,0%,40%)] font-mono text-[9px] line-clamp-2 tracking-wider">
-              {description}
-            </p>
-          )}
-        </div>
-
-        {/* Power bar on hover */}
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[hsl(0,0%,10%)]">
-          <div className="h-full w-0 group-hover:w-full bg-[hsl(var(--gold-accent))] transition-all duration-700" />
-        </div>
-      </div>
-    </ArcadeCard>
-  );
-}
 // ─── MAIN LANDING PAGE ───────────────────────────────────────────────
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const [scrollY, setScrollY] = useState(0);
-  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -192,42 +115,35 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const collectionsQuery = useActiveCollectionPreviews(3);
-  const modelsQuery = useLandingCatalogModels(6);
-  const summaryQuery = useLandingCatalogSummary();
-
-  const collections = collectionsQuery.data || [];
-  const models = modelsQuery.data || [];
-  const characterCount = summaryQuery.data?.characterCount ?? 0;
-  const modelCount = summaryQuery.data?.modelCount ?? 0;
-  const isCatalogLoading =
-    collectionsQuery.isPending ||
-    modelsQuery.isPending ||
-    summaryQuery.isPending;
-  const hasCatalogError =
-    collectionsQuery.isError || modelsQuery.isError || summaryQuery.isError;
-  const hasCatalogData =
-    collections.length > 0 ||
-    models.length > 0 ||
-    characterCount > 0 ||
-    modelCount > 0;
-
+  // Use only the first indexed page of the canonical public catalog.
+  const gateway = useMemo(() => {
+    if (!CANONICAL_CATALOG_API_BASE) return null;
+    try {
+      return createPublicCatalogGateway(CANONICAL_CATALOG_API_BASE, fetch);
+    } catch {
+      return null;
+    }
+  }, []);
+  const modelsQuery = useQuery({
+    queryKey: ["tonecos-landing-canonical-models"],
+    queryFn: ({ signal }) => gateway!.listPage({ limit: 6 }, signal),
+    enabled: gateway !== null,
+    retry: false,
+    staleTime: 60 * 1000,
+  });
+  const models = modelsQuery.data?.items ?? [];
+  const isCatalogLoading = gateway !== null && modelsQuery.isPending;
+  const hasCatalogError = gateway === null || modelsQuery.isError;
+  const hasCatalogData = models.length > 0;
   const catalogStatus = isCatalogLoading
-    ? "Carregando catálogo"
+    ? "Carregando referências"
     : hasCatalogError
-      ? hasCatalogData
-        ? "Catálogo parcialmente disponível"
-        : "Catálogo temporariamente indisponível"
+      ? "Acervo temporariamente indisponível"
       : hasCatalogData
-        ? "Catálogo público ativo"
+        ? "Referências publicadas"
         : "Novidades em preparação";
-
-  const characterCountLabel =
-    summaryQuery.isPending || summaryQuery.isError
-      ? "—"
-      : String(characterCount);
-  const modelCountLabel =
-    summaryQuery.isPending || summaryQuery.isError ? "—" : String(modelCount);
+  // These six featured results are not an estimate of all published models.
+  const featuredCount = modelsQuery.isSuccess ? String(models.length) : "—";
 
   return (
     <Page
@@ -314,36 +230,36 @@ export default function LandingPage() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <button
-              onClick={() => navigate(PUBLIC_ROUTES.catalog)}
+              onClick={() => navigate(PUBLIC_ROUTES.catalogModels)}
               className="group inline-flex items-center gap-3 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all"
             >
               <Crosshair
                 className="w-5 h-5 group-hover:animate-spin"
                 style={{ animationDuration: "3s" }}
               />
-              EXPLORAR UNIVERSO
+              EXPLORAR MODELOS
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 
             <button
-              onClick={() => navigate(PUBLIC_ROUTES.catalog)}
+              onClick={() => navigate(PUBLIC_ROUTES.catalogModels)}
               className="inline-flex items-center gap-3 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent)/0.6)] font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 transition-all"
             >
               <Eye className="w-5 h-5" />
-              VER UNIVERSO
+              VER CATÁLOGO
             </button>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 sm:gap-6 max-w-3xl mx-auto">
             <StatCounter
-              value={characterCountLabel}
-              label="Personagens"
+              value={hasCatalogData ? "ATIVO" : "—"}
+              label="Acervo"
               icon={Trophy}
             />
             <StatCounter
-              value={modelCountLabel}
-              label="Modelos"
+              value={featuredCount}
+              label="Destaques"
               icon={Shield}
             />
             <StatCounter value="100%" label="Artesanal" icon={Zap} />
@@ -353,114 +269,65 @@ export default function LandingPage() {
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[hsl(var(--gold-accent)/0.3)] to-transparent" />
       </section>
 
-      {/* ═══ FEATURED COLLECTIONS ═══ */}
-      {PUBLIC_COLLECTIONS_ENABLED && collections.length > 0 && (
-        <section className="relative py-14 px-6">
-          <FloatingParticles />
-          <div className="max-w-6xl mx-auto">
-            <ArcadeSectionTitle>Coleções em Destaque</ArcadeSectionTitle>
-            <div className="grid md:grid-cols-3 gap-5">
-              {collections.map((c) => (
-                <FeaturedCollectionCard
-                  key={c.id}
-                  name={c.name}
-                  description={c.description}
-                  totalCharacters={c.total_characters ?? 0}
-                  coverUrl={c.cover_image_url ?? null}
-                  slug={c.slug ?? c.id}
-                />
-              ))}
+      {/* ═══ MODELOS CANÔNICOS EM DESTAQUE ═══ */}
+      <section className="relative border-t border-[hsl(var(--gold-accent)/0.08)] px-6 py-12">
+        <div className="mx-auto max-w-6xl">
+          <ArcadeSectionTitle>MODELOS EM DESTAQUE</ArcadeSectionTitle>
+          {hasCatalogError ? (
+            <div role="alert" className="mt-5 border border-[hsl(0,0%,18%)] p-6 text-sm text-[hsl(0,0%,70%)]">
+              Não foi possível carregar as referências publicadas.
+              {gateway && (
+                <button type="button" className="ml-3 border border-[hsl(var(--gold-accent))] px-3 py-2 text-[hsl(var(--gold-accent))]" onClick={() => void modelsQuery.refetch()}>
+                  Tentar novamente
+                </button>
+              )}
             </div>
-            <div className="text-center mt-6">
-              <button
-                onClick={() => navigate(PUBLIC_ROUTES.catalog)}
-                className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
-              >
-                VER TODAS AS COLEÇÕES
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ═══ RECENT CHARACTERS ═══ */}
-      {models.length > 0 && (
-        <section className="relative py-12 px-6 border-t border-[hsl(var(--gold-accent)/0.08)]">
-          <div className="max-w-6xl mx-auto">
-            <ArcadeSectionTitle>Personagens em Destaque</ArcadeSectionTitle>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5">
-              {models.map((m) => {
-                const imgUrl = m.thumbnailUrl ?? m.imageUrl;
-                const characterName = m.character_name;
-                const sourceName = m.source_title;
-                const detailPath = catalogCharacterPath(
-                  characterName,
-                  sourceName,
-                );
+          ) : isCatalogLoading ? (
+            <p className="mt-5 p-6 text-sm" role="status">Carregando modelos publicados…</p>
+          ) : models.length === 0 ? (
+            <p className="mt-5 p-6 text-sm" role="status">Novas referências serão publicadas em breve.</p>
+          ) : (
+            <div className="mt-5 grid grid-cols-2 gap-3.5 sm:grid-cols-3 md:grid-cols-6">
+              {models.map((model) => {
+                const imageUrl = gateway?.mediaUrl(model.coverStorageKey);
                 return (
-                  <Link
-                    key={m.id}
-                    to={detailPath}
-                    className="group block"
-                    aria-label={`Abrir pagina de ${characterName}`}
-                  >
+                  <Link key={model.id} to={catalogModelDetailsPath(model.slug)} className="group block" aria-label={"Ver detalhes de " + model.name}>
                     <ArcadeCard>
-                      <div className="aspect-square bg-[hsl(0,0%,8%)] overflow-hidden">
-                        {imgUrl ? (
-                          <img
-                            src={imgUrl}
-                            alt={characterName}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-80 group-hover:opacity-100"
-                            loading="lazy"
-                            decoding="async"
-                          />
+                      <div className="aspect-[3/4] overflow-hidden bg-[hsl(0,0%,8%)]">
+                        {imageUrl ? (
+                          <img src={imageUrl} alt={"Referência visual de " + model.name} className="h-full w-full object-contain p-2 opacity-85 transition-transform duration-500 group-hover:scale-[1.03] group-hover:opacity-100" loading="lazy" decoding="async" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Star className="w-6 h-6 text-[hsl(0,0%,15%)]" />
+                          <div className="flex h-full w-full items-center justify-center">
+                            <Star className="h-6 w-6 text-[hsl(0,0%,25%)]" aria-hidden="true" />
                           </div>
                         )}
                       </div>
                       <div className="p-2.5">
-                        <p className="font-mono text-[9px] text-[hsl(0,0%,70%)] line-clamp-1 tracking-wider uppercase">
-                          {characterName}
-                        </p>
-                        <p className="mt-0.5 font-mono text-[8px] text-[hsl(var(--gold-accent)/0.75)] uppercase tracking-widest">
-                          {m.model_count}{" "}
-                          {m.model_count === 1 ? "modelo" : "modelos"}
-                        </p>
-                        {sourceName && (
-                          <p className="font-mono text-[7px] text-[hsl(0,0%,30%)] mt-0.5 line-clamp-1">
-                            {sourceName}
-                          </p>
-                        )}
+                        <p className="line-clamp-2 font-mono text-[9px] uppercase tracking-wider text-[hsl(0,0%,80%)]">{model.name}</p>
+                        <p className="mt-1 line-clamp-1 font-mono text-[8px] uppercase text-[hsl(var(--gold-accent)/0.75)]">{model.variantName || model.franchise}</p>
                       </div>
                     </ArcadeCard>
                   </Link>
                 );
               })}
             </div>
-            <div className="text-center mt-6">
-              <button
-                onClick={() => navigate(PUBLIC_ROUTES.catalog)}
-                className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
-              >
-                VER UNIVERSO COMPLETO
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
+          )}
+          <div className="mt-6 text-center">
+            <Link to={PUBLIC_ROUTES.catalogModels} className="inline-flex h-11 items-center gap-2 border border-[hsl(var(--gold-accent)/0.4)] px-8 font-mono text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)]">
+              EXPLORAR TODOS OS MODELOS <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            </Link>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* ═══ CTA ═══ */}
       <ArcadeCTA
-        badge="Vagas Limitadas"
+        badge="ACERVO TONECOS"
         title="READY PLAYER?"
         description="Entre para o esquadrão de colecionadores. Peças exclusivas, produção artesanal e acompanhamento total."
         primaryAction={{
-          label: "INSERT COIN",
-          href: user ? PUBLIC_ROUTES.catalog : PUBLIC_ROUTES.login,
+          label: "VER MODELOS",
+          href: PUBLIC_ROUTES.catalogModels,
           icon: <Zap className="w-5 h-5" />,
         }}
         secondaryAction={{ label: "FALE CONOSCO", href: PUBLIC_ROUTES.contact }}
