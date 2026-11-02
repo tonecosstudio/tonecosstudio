@@ -2,6 +2,15 @@
 
 Estado: **EM INTEGRAÇÃO / NO-GO**. Esta diretriz substitui o planejamento de plataforma de apps OrdaX como orientação do produto comercial Tonecos, sem apagar seu histórico.
 
+## Estado mais recente verificável — 02/11/2026
+
+**Código de integração auditado:** `f75c5ef74b2cd3dcc41528cfab6d43a0ae1144b2` (main preservada em `fdd2992`). Preview Vercel `tonecosstudio` `dpl_J83NCKuuV8TVoGxLNPBxEzBwAA1u`: React catálogo 9/9 PASS; typecheck e gates preliminares aprovados; `release:verify` bloqueado em **65,8% de cobertura de funções frente a 70% exigidos**. O build e a auditoria final não chegaram a executar. A aprovação permanece **NO-GO**, sem exclusões artificiais de cobertura.
+
+**Decisão estética vinculante:** visual escuro/dourado original restaurado na listagem e na ficha, com componentes compartilhados Arcade e sem tokens editoriais marfim/oliva; fidelidade real desktop/mobile ainda precisa de evidências. Catálogo Worker como SSOT; franquias sob demanda (até 24 por interação), busca, cursor e galeria aprovados; tags ainda dependem de contrato no Worker. Manter preços/pedidos exclusivamente na autoridade Supabase.
+
+**Bloqueio operacional:** Vercel já está renomeado e acessível como `tonecosstudio`, mas mantém `ordax.com.br` e `www.ordax.com.br` **não verificados** cadastrados nesse projeto. Retirá-los antes do GO; não afetar a implantação do OrdaX OS.
+
+---
 ## Continuidade após liberação da Vercel — 02/11/2026
 
 - A identidade da Vercel foi confirmada diretamente na equipe `jogo-brasils-projects`: o projeto existente agora é `tonecosstudio`, conectado ao repositório `washingtonmsdj/tonecosstudio`. Seu ID foi preservado, evitando cópia paralela.
@@ -54,7 +63,7 @@ Implementado:
 
 ## Bloqueios para merge / release (falha fechada)
 
-1. **Vercel:** GitHub registra a integração antiga `jogo-brasils-projects/ordax` e domínio `ordax.com.br`, hoje reservado ao OrdaX OS. Conta Vercel conectada neste contexto é `ordaxsystems`, não a conta legada. Não fazer push na main nem promover deploy até comprovar que o projeto Tonecos possui deployment independente, com *produção* desvinculada do OS.
+1. **Vercel:** projeto existente `tonecosstudio` já renomeado, acessível e vinculado ao GitHub correto. Contudo, `ordax.com.br` e `www.ordax.com.br` continuam registrados como não verificados no Tonecos, além do alias legado `ordax-three.vercel.app`; retirar esses vínculos antes da publicação. A conexão atual não expõe ação de exclusão de domínios. Não alterar o OrdaX OS.
 2. **CI:** a última execução `Quality Gate #36719911543` da main `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41` falhou; o PR #3 corrige um teste determinístico de feriados, mas ainda está pendente de integração e novos gates. Não reaproveitar alegação antiga de testes verdes como prova atual.
 3. **Domínio e identidade:** definir URL first-party Tonecos, novos endereços reais de contato, política de indexação e vínculos SEO. Não colocar URLs ou e-mails imaginados como produção.
 4. **Gateway:** homologar o endpoint Worker e proxy same-origin de Tonecos **sem varreduras D1/R2**; manter API read-only, capturas tipadas de páginas pequenas e nenhuma conversão silenciosa de orçamento.
@@ -68,7 +77,7 @@ Implementado:
 2. Obter confirmação operacional dos limites do projeto Vercel e destino exclusivo da Tonecos; configurar pipeline seguro e testável sem domínio OrdaX.
 3. Homologar `/modelos` e `/modelos/:id` com proxy HTTPS first-party, UI e segurança; migrar a árvore `/universo` e validar a galeria paginada sem replicar modelos ao Supabase.
 4. Transformar a seleção em solicitação comercial única com status e idempotência entre sistemas e teste end-to-end; não usar o formulário antigo como ordem de produção automática.
-5. Restaurar a fidelidade visual da listagem/ficha ao layout Arcade original, ajustar responsividade/tags/filtros e revisar fluxos administrativos sem remodelar suas interfaces.
+5. Homologar visualmente no desktop/mobile as páginas de listagem e ficha já restauradas à estética Arcade, verificando filtros, desempenho e acessibilidade; corrigir apenas divergências comprovadas, sem redesenhar a aplicação.
 6. Executar gates completos; integrar a main **somente se** o alvo de deployment estiver comprovadamente isolado e seguro.
 7. Só após cutover/rollback validado, redirecionar URLs externas e arquivar o catálogo separado sem apagar Worker, mídia ou histórico.
 
