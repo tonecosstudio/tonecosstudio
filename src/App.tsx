@@ -119,12 +119,7 @@ function AppContent() {
     <>
       <Toaster />
       <Sonner />
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
+      <BrowserRouter>
         <MainLayout>
           <Suspense fallback={<PageLoader />}>
             <Routes>
