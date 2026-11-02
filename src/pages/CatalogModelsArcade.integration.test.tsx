@@ -495,7 +495,7 @@ it("discovers and filters franchises on demand without catalog-wide requests", a
   expect(first.url.searchParams.get("category")).toBe("originais");
   expect(first.url.searchParams.get("limit")).toBe("24");
   expect(
-    screen.getByText(/lista mostra apenas parte das franquias/i),
+    await screen.findByText(/lista mostra apenas parte das franquias/i),
   ).toBeDefined();
 
   fireEvent.change(
