@@ -1,4 +1,5 @@
 import { APP_ROUTES } from "./routes";
+import { BRAND_NAME } from "./brand";
 
 /**
  * Runtime constants that are safe to define in the browser bundle.
@@ -69,7 +70,7 @@ export const CONTACT = {
     import.meta.env.VITE_COMPANY_LOGO_URL || ASSETS.DEFAULT_ICON_URL,
   BUSINESS_HOURS:
     import.meta.env.VITE_BUSINESS_HOURS || "Segunda a Sexta, 9h às 18h",
-  COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME || "Tonecos Studios",
+  COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME || BRAND_NAME,
   LEGAL_NAME: import.meta.env.VITE_LEGAL_NAME || "Tonecos Studios LTDA",
   COMPANY_ADDRESS: import.meta.env.VITE_COMPANY_ADDRESS || "",
 } as const;
