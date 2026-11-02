@@ -68,3 +68,46 @@ describe("canonical catalog read boundary", () => {
       .rejects.toThrow("duplicate_catalog_model_id");
   });
 });
+ 
+describe("read-only catalog discovery and detail", () => {
+  it("decodes bounded categories without catalog scan or SQL access", async () => {
+    const calls: string[] = [];
+    const io = vi.fn(async (url: string) => {
+      calls.push(url);
+      return Response.json({ items: [{ id: "originais", label: "Originais", count: 42 }] });
+    });
+    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
+    expect(await gateway.listCategories()).toEqual([{ id: "originais", label: "Originais", count: 42 }]);
+    expect(calls).toEqual(["https://example.test/catalogo-api/api/categories"]);
+  });
+
+  it("opens one canonical detail and refuses a mismatched slug", async () => {
+    const io = vi.fn(async () => Response.json({
+      ...row,
+      description: "Descrição editorial verificada",
+      height_cm: null,
+      material: null,
+    }));
+    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
+    const model = await gateway.getModel("animal-original");
+    expect(model.id).toBe("mdl-123");
+    expect(model.heightCm).toBeNull();
+    expect(model.description).toBe("Descrição editorial verificada");
+    await expect(gateway.getModel("../admin")).rejects.toThrow("invalid_catalog_slug");
+    const wrong = createPublicCatalogGateway("https://example.test", vi.fn(async () =>
+      Response.json({ ...row, slug: "other" })) as typeof fetch);
+    await expect(wrong.getModel("animal-original")).rejects.toThrow("invalid_catalog_model_slug");
+  });
+
+  it("derives media only from the explicit catalog origin and blocks traversal", () => {
+    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", fetch);
+    expect(gateway.mediaUrl("media/cards/cover 1.webp"))
+      .toBe("https://example.test/catalogo-api/media/cards/cover%201.webp");
+    expect(gateway.mediaUrl(null)).toBeNull();
+    expect(gateway.mediaUrl("../admin")).toBeNull();
+    expect(gateway.mediaUrl("https://evil.example/image")).toBeNull();
+    expect(gateway.mediaUrl("media/%2e%2e/path")).toBeNull();
+    expect(() => createPublicCatalogGateway("https://ordax.com.br", fetch))
+      .toThrow("catalog_endpoint_not_configured");
+  });
+});
