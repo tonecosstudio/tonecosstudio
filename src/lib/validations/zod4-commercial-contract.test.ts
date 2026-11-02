@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   depositAmountSchema,
   getPricingReportsSchema,
@@ -40,4 +42,18 @@ describe("Zod 4 migration — preserve commercial validation feedback", () => {
         .error?.issues[0]?.message,
     ).toBe("Modalidade inválida");
   });
+
+  it("maps invalid Zod 4 form inputs to react-hook-form field errors", async () => {
+    const resolver = zodResolver(z.object({
+      name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
+    }));
+    const options = { fields: {}, shouldUseNativeValidation: false };
+    const invalid = await resolver({ name: "ab" }, {}, options);
+    expect(invalid.values).toEqual({});
+    expect(invalid.errors.name?.message).toBe("Nome deve ter pelo menos 3 caracteres");
+
+    const valid = await resolver({ name: "Ana" }, {}, options);
+    expect(valid).toMatchObject({ values: { name: "Ana" }, errors: {} });
+  });
+
 });
