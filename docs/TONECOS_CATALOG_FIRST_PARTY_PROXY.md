@@ -15,3 +15,7 @@ O Worker `https://tonecos-catalogo-api.tonecosstudio.workers.dev` respondeu `200
 ## Gates
 
 A homologação de UI no navegador protegido ainda depende de acesso autenticado ao preview. A associação histórica de `ordax.com.br`, `www.ordax.com.br` e `ordax-three.vercel.app` ao projeto Vercel precisa ser removida separadamente: não transferir domínio nem alterar DNS. Publicação em produção permanece proibida antes dessa revisão.
+
+## Previews protegidos por autenticação Vercel
+
+O Worker Cloudflare continua acessível sem cookies. Porém, o proxy de primeira origem da Vercel exige o cookie de proteção do próprio preview: o gateway detecta igualdade exata entre origem do navegador e origem da API e usa credentials: same-origin apenas nesse caso. Qualquer origem externa recebe credentials: omit. Isso preserva isolamento e evita o erro de carregar os cartões no preview protegido.

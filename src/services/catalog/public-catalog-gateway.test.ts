@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { createPublicCatalogGateway } from "./public-catalog-gateway";
+import {
+  createPublicCatalogGateway,
+  resolveCatalogFetchCredentials,
+} from "./public-catalog-gateway";
 
 const row = {
   id: "mdl-123",
@@ -366,4 +369,30 @@ describe("franchise discovery stays bounded and uses Worker authority", () => {
       duplicate.listFranchises({ category: "games", limit: 2 }),
     ).rejects.toThrow("duplicate_catalog_franchise");
   });
+});
+
+describe("catalog preview credential isolation", () => {
+  it("sends Vercel protection cookies only through our exact same-origin proxy", () => {
+    expect(resolveCatalogFetchCredentials(
+      "https://tonecosstudio-preview.vercel.app",
+      "https://tonecosstudio-preview.vercel.app",
+    )).toBe("same-origin");
+  });
+
+  it("keeps Cloudflare Worker requests credential-free", () => {
+    expect(resolveCatalogFetchCredentials(
+      "https://tonecos-catalogo-api.tonecosstudio.workers.dev",
+      "https://tonecosstudio-preview.vercel.app",
+    )).toBe("omit");
+  });
+
+  it.each([undefined, "", "http://tonecosstudio-preview.vercel.app"])(
+    "never sends cookies to an unverified or mismatched origin: %s",
+    (origin) => {
+      expect(resolveCatalogFetchCredentials(
+        "https://tonecosstudio-preview.vercel.app",
+        origin,
+      )).toBe("omit");
+    },
+  );
 });

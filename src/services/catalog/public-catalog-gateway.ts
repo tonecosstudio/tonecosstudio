@@ -154,6 +154,17 @@ function decodeModel(value: unknown): PublicCatalogModel {
   };
 }
 
+/**
+ * Cookies are needed only on our own protected Vercel preview proxy.
+ * Cross-origin catalog origins must never receive session credentials.
+ */
+export function resolveCatalogFetchCredentials(
+  catalogOrigin: string,
+  siteOrigin?: string,
+): RequestCredentials {
+  return siteOrigin && siteOrigin === catalogOrigin ? "same-origin" : "omit";
+}
+
 export function createPublicCatalogGateway(
   baseUrl: string,
   fetcher: typeof fetch,
@@ -179,10 +190,15 @@ export function createPublicCatalogGateway(
     throw new Error("catalog_endpoint_not_configured");
   }
 
+  const credentials = resolveCatalogFetchCredentials(
+    base.origin,
+    typeof window === "undefined" ? undefined : window.location.origin,
+  );
+
   async function read(path: string, signal?: AbortSignal): Promise<unknown> {
     const response = await fetcher(new URL(path, base).toString(), {
       method: "GET",
-      credentials: "omit",
+      credentials,,
       headers: { Accept: "application/json" },
       signal,
     });
@@ -369,7 +385,7 @@ export function createPublicCatalogGateway(
       if (filters.cursor) url.searchParams.set("cursor", filters.cursor);
       const response = await fetcher(url.toString(), {
         method: "GET",
-        credentials: "omit",
+        credentials,,
         headers: { Accept: "application/json" },
         signal,
       });
@@ -489,7 +505,7 @@ export function createPublicCatalogGateway(
 
       const response = await fetcher(url.toString(), {
         method: "GET",
-        credentials: "omit",
+        credentials,,
         headers: { Accept: "application/json" },
         signal,
       });
