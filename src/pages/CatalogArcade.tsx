@@ -160,7 +160,7 @@ export default function CatalogArcade() {
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {categories.map((category) => (
                 <ArcadeCard key={category.id}>
-                  <Link className="group flex min-h-44 flex-col gap-4 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(category.id)}>
+                  <Link className="group flex min-h-44 flex-col gap-4 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={category.id === "all" ? modelsPath() : PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(category.id)}>
                     <ImageOff className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
                     <span className="line-clamp-2 font-semibold uppercase">{category.label}</span>
                     <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
