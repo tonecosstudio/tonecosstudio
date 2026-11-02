@@ -5,11 +5,44 @@
   "ignoreCommand": "node scripts/vercel/should-ignore-build.mjs",
   "rewrites": [
     {
+      "source": "/catalogo-api/api/catalog",
+      "destination": "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/catalog"
+    },
+    {
+      "source": "/catalogo-api/api/categories",
+      "destination": "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/categories"
+    },
+    {
+      "source": "/catalogo-api/api/franchises",
+      "destination": "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/franchises"
+    },
+    {
+      "source": "/catalogo-api/api/models/:slug/images",
+      "destination": "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/models/:slug/images"
+    },
+    {
+      "source": "/catalogo-api/api/models/:slug",
+      "destination": "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/models/:slug"
+    },
+    {
+      "source": "/catalogo-api/media/:path*",
+      "destination": "https://tonecos-catalogo-api.tonecosstudio.workers.dev/media/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/catalogo-api/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "1"
+        }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [

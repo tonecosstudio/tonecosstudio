@@ -8,12 +8,13 @@ import {
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES } from "@/config/routes";
+import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import {
   createPublicCatalogGateway,
   type PublicCatalogImage,
 } from "@/services/catalog/public-catalog-gateway";
 
-const API_BASE = import.meta.env.VITE_CANONICAL_CATALOG_API_BASE?.trim() ?? "";
+const API_BASE = CANONICAL_CATALOG_API_BASE;
 
 export default function CanonicalModelDetails() {
   const { id: slug } = useParams<{ id: string }>();

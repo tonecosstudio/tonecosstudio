@@ -20,13 +20,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import {
   createPublicCatalogGateway,
   type PublicCatalogModel,
 } from "@/services/catalog/public-catalog-gateway";
 
 const PAGE_SIZE = 24;
-const API_BASE = import.meta.env.VITE_CANONICAL_CATALOG_API_BASE?.trim() ?? "";
+const API_BASE = CANONICAL_CATALOG_API_BASE;
 
 type PagePosition = {
   scope: string;
