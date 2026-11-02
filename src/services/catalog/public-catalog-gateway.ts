@@ -151,7 +151,7 @@ export function createPublicCatalogGateway(
       if (
         segments.length > 16 ||
         segments.some((part) => !part || part === "." || part === ".." || part.includes(":") ||
-          part.includes("?") || part.includes("#") || part.includes("%") || part.includes("\\\\"))
+          part.includes("?") || part.includes("#") || part.includes("%") || part.includes("\\"))
       ) {
         return null;
       }
