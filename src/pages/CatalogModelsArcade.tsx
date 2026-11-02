@@ -1,221 +1,380 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Package,
-  Search,
-  X,
-} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight, ImageOff, Search, X } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
 import {
-  ArcadeCard,
-  ArcadeHero,
-  ArcadeSectionTitle,
-} from "@/components/arcade/ArcadeLayout";
-import { PUBLIC_ROUTES } from "@/config/routes";
-import { useCatalogModels, type CatalogSort } from "@/hooks/catalog/useCatalogModels";
-import { UniverseModelCard } from "@/components/catalog/UniverseModelCard";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  createPublicCatalogGateway,
+  type PublicCatalogModel,
+} from "@/services/catalog/public-catalog-gateway";
 
-function buildVisiblePageIndexes(currentPage: number, hasNext: boolean) {
-  const knownLastPage = currentPage + (hasNext ? 1 : 0);
-  const windowStart = Math.max(0, currentPage - 2);
-  const windowEnd = Math.min(knownLastPage, currentPage + 1);
-  const pages = new Set<number>([0]);
+const PAGE_SIZE = 24;
+const API_BASE = import.meta.env.VITE_CANONICAL_CATALOG_API_BASE?.trim() ?? "";
 
-  for (let pageIndex = windowStart; pageIndex <= windowEnd; pageIndex += 1) {
-    pages.add(pageIndex);
-  }
+type PagePosition = {
+  scope: string;
+  cursors: Array<string | undefined>;
+  index: number;
+};
 
-  return Array.from(pages).sort((left, right) => left - right);
-}
-
-function parsePageParam(value: string | null) {
-  const pageNumber = Number(value);
-  if (!Number.isFinite(pageNumber) || pageNumber <= 1) return 0;
-  return Math.floor(pageNumber) - 1;
+function ModelCover({
+  model,
+  mediaUrl,
+}: {
+  model: PublicCatalogModel;
+  mediaUrl: (key: string | null) => string | null;
+}) {
+  const url = mediaUrl(model.coverStorageKey);
+  return (
+    <div className="flex aspect-[4/5] items-center justify-center overflow-hidden bg-[hsl(var(--tonecos-soft))]">
+      {url ? (
+        <img
+          src={url}
+          alt={"Imagem de referência: " + model.name}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.025]"
+        />
+      ) : (
+        <span className="flex flex-col items-center gap-2 text-[hsl(var(--tonecos-muted))]">
+          <ImageOff aria-hidden="true" size={26} strokeWidth={1.4} />
+          <span className="text-xs">Imagem indisponível</span>
+        </span>
+      )}
+    </div>
+  );
 }
 
 export default function CatalogModelsArcade() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [q, setQ] = useState(searchParams.get("q") ?? "");
-  const [page, setPage] = useState(() => parsePageParam(searchParams.get("page")));
-  const [sort, setSort] = useState<CatalogSort>(
-    searchParams.get("sort") === "az" ? "az" : "recent",
-  );
-
-  const needle = useMemo(() => q.trim(), [q]);
-
-  useEffect(() => {
-    setPage(0);
-  }, [needle, sort]);
-
-  useEffect(() => {
-    const next = new URLSearchParams(searchParams);
-    if (needle) next.set("q", needle);
-    else next.delete("q");
-
-    if (page > 0) next.set("page", String(page + 1));
-    else next.delete("page");
-
-    if (sort === "az") next.set("sort", "az");
-    else next.delete("sort");
-
-    const currentQuery = searchParams.toString();
-    const nextQuery = next.toString();
-    if (currentQuery !== nextQuery) {
-      setSearchParams(next, { replace: true });
-    }
-  }, [needle, page, searchParams, setSearchParams, sort]);
-
-  const modelsQuery = useCatalogModels(needle, page, {
-    character: "",
-    franchise: "",
-    category: "",
-    sourceType: "",
-    variantType: "",
-    tagsCSV: "",
-    catalogMode: "public",
-    contentMode: "general",
-    sort,
+  const search = searchParams.get("q")?.trim() ?? "";
+  const category = searchParams.get("category")?.trim() ?? "";
+  const [draft, setDraft] = useState(search);
+  const [detailSlug, setDetailSlug] = useState<string | null>(null);
+  const [paging, setPaging] = useState<PagePosition>({
+    scope: "",
+    cursors: [undefined],
+    index: 0,
   });
 
-  const rows = modelsQuery.data?.rows ?? [];
-  const hasNext = modelsQuery.data?.hasNext ?? false;
-  const visiblePageIndexes = useMemo(
-    () => buildVisiblePageIndexes(page, hasNext),
-    [page, hasNext],
-  );
+  useEffect(() => setDraft(search), [search]);
+
+  const gateway = useMemo(() => {
+    if (!API_BASE) return null;
+    try {
+      return createPublicCatalogGateway(API_BASE, fetch);
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const scope = JSON.stringify([search, category]);
+  const activePage =
+    paging.scope === scope
+      ? paging
+      : { scope, cursors: [undefined], index: 0 };
+  const cursor = activePage.cursors[activePage.index];
+  const invalidSearch = search.length > 0 && Array.from(search).length < 3;
+
+  const categories = useQuery({
+    queryKey: ["tonecos-catalog-categories"],
+    queryFn: ({ signal }) => gateway!.listCategories(signal),
+    enabled: gateway !== null,
+    retry: false,
+    staleTime: 15 * 60 * 1000,
+  });
+
+  const models = useQuery({
+    queryKey: ["tonecos-catalog-list", scope, cursor],
+    queryFn: ({ signal }) =>
+      gateway!.listPage(
+        {
+          category: category || undefined,
+          search: search || undefined,
+          limit: PAGE_SIZE,
+          cursor,
+        },
+        signal,
+      ),
+    enabled: gateway !== null && !invalidSearch,
+    retry: false,
+    staleTime: 60 * 1000,
+  });
+
+  const detail = useQuery({
+    queryKey: ["tonecos-catalog-detail", detailSlug],
+    queryFn: ({ signal }) => gateway!.getModel(detailSlug!, signal),
+    enabled: gateway !== null && detailSlug !== null,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const rows = models.data?.items ?? [];
+
+  function changeParams(nextSearch: string, nextCategory: string) {
+    const next = new URLSearchParams();
+    if (nextSearch) next.set("q", nextSearch);
+    if (nextCategory && nextCategory !== "all") next.set("category", nextCategory);
+    setSearchParams(next);
+    setDetailSlug(null);
+  }
+
+  function goNext() {
+    if (!models.data?.nextCursor) return;
+    setPaging({
+      scope,
+      cursors: [
+        ...activePage.cursors.slice(0, activePage.index + 1),
+        models.data.nextCursor,
+      ],
+      index: activePage.index + 1,
+    });
+    setDetailSlug(null);
+  }
+
+  function goBack() {
+    if (activePage.index === 0) return;
+    setPaging({ ...activePage, index: activePage.index - 1 });
+    setDetailSlug(null);
+  }
 
   return (
     <Page
-      title="Modelos"
-      description="Feed plano de modelos unitarios, sem arvore tematica."
-      keywords={["modelos", "esculturas", "catalogo", "tonecos"]}
+      title="Catálogo de modelos"
+      description="Explore referências de esculturas e modelos do acervo Tonecos Studio, com busca por categoria e navegação paginada."
+      keywords={["tonecos", "esculturas", "modelos", "catálogo"]}
     >
-      <ArcadeHero
-        badge="Feed Unitario"
-        title="MODELOS"
-        subtitle=">> POSTS UNITARIOS. ORDENACAO DIRETA."
-        stats={[
-          { value: rows.length, label: rows.length === 1 ? "Post" : "Posts" },
-          { value: page + 1, label: "Pagina" },
-        ]}
-      />
+      <section className="min-h-[80vh] bg-[hsl(var(--tonecos-paper))] pb-20 text-[hsl(var(--tonecos-ink))]">
+        <header className="border-b border-[hsl(var(--tonecos-line))]">
+          <div className="mx-auto max-w-7xl px-4 pb-9 pt-12 md:px-8 md:pb-12 md:pt-16">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[hsl(var(--tonecos-accent))]">
+              Tonecos Studio · Acervo
+            </p>
+            <h1 className="max-w-3xl text-4xl leading-tight md:text-5xl">
+              Encontre a peça que você procura.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--tonecos-muted))]">
+              Explore modelos publicados por categoria ou nome. Cada peça possui
+              sua própria referência e poderá fazer parte de uma solicitação de
+              orçamento quando a integração comercial estiver disponível.
+            </p>
+          </div>
+        </header>
 
-      <section className="relative z-10 mx-auto -mt-4 max-w-7xl px-4 md:px-6">
-        <div className="mb-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[hsl(0,0%,40%)]" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar modelo..."
-              className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] pl-11 pr-10 font-mono text-sm tracking-wider text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] transition-colors focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none"
-            />
-            {q && (
-              <button
-                onClick={() => setQ("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(0,0%,40%)] hover:text-[hsl(var(--gold-accent))]"
+        <div className="mx-auto max-w-7xl px-4 pt-8 md:px-8">
+          <form
+            role="search"
+            className="grid gap-3 md:grid-cols-[minmax(0,1fr)_230px_auto]"
+            onSubmit={(event) => {
+              event.preventDefault();
+              changeParams(draft.trim(), category);
+            }}
+          >
+            <label className="relative block">
+              <span className="sr-only">Pesquisar modelos</span>
+              <Search
+                aria-hidden="true"
+                size={19}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-[hsl(var(--tonecos-muted))]"
+              />
+              <input
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                maxLength={80}
+                placeholder="Buscar modelos ou personagens"
+                className="h-12 w-full rounded-md border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] pl-12 pr-12 text-sm outline-none transition-colors focus-visible:border-[hsl(var(--tonecos-accent))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--tonecos-accent)/0.2)]"
+              />
+              {draft && (
+                <button
+                  type="button"
+                  aria-label="Limpar busca"
+                  onClick={() => {
+                    setDraft("");
+                    changeParams("", category);
+                  }}
+                  className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md hover:bg-[hsl(var(--tonecos-soft))]"
+                >
+                  <X size={17} aria-hidden="true" />
+                </button>
+              )}
+            </label>
+            <label className="block">
+              <span className="sr-only">Filtrar por categoria</span>
+              <select
+                value={category}
+                onChange={(event) => changeParams(search, event.target.value)}
+                disabled={gateway === null || categories.isPending || categories.isError}
+                className="h-12 w-full rounded-md border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--tonecos-accent)/0.2)] disabled:opacity-60"
               >
-                <X className="h-4 w-4" />
-              </button>
+                <option value="">Todas as categorias</option>
+                {categories.data?.filter((item) => item.id !== "all").map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="submit"
+              className="h-12 rounded-md bg-[hsl(var(--tonecos-accent))] px-6 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              Buscar
+            </button>
+          </form>
+
+          <div className="mb-5 mt-10 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-[hsl(var(--tonecos-muted))]">
+                Coleção de referências
+              </p>
+              <h2 className="mt-1 text-2xl">Explorar modelos</h2>
+            </div>
+            {models.isSuccess && (
+              <p className="text-sm text-[hsl(var(--tonecos-muted))]" aria-live="polite">
+                Página {activePage.index + 1} · {rows.length} modelos nesta página
+              </p>
             )}
           </div>
 
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value === "az" ? "az" : "recent")}
-            className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-4 font-mono text-sm tracking-wider text-[hsl(0,0%,90%)] transition-colors focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none"
-          >
-            <option value="recent">Mais recentes</option>
-            <option value="az">A-Z</option>
-          </select>
-        </div>
-
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <ArcadeSectionTitle>Posts unitarios</ArcadeSectionTitle>
-          <Link
-            to={PUBLIC_ROUTES.catalog}
-            className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.28)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.08)]"
-          >
-            Ver universo
-          </Link>
-        </div>
-
-        {modelsQuery.isLoading ? (
-          <ArcadeCard hover={false} className="p-8 text-center">
-            <Package className="mx-auto mb-4 h-12 w-12 animate-pulse text-[hsl(0,0%,22%)]" />
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,45%)]">
-              Carregando posts...
+          {gateway === null ? (
+            <div role="status" className="rounded-lg border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] p-8">
+              <h3 className="text-xl">Catálogo em integração</h3>
+              <p className="mt-2 max-w-xl text-sm text-[hsl(var(--tonecos-muted))]">
+                A origem oficial do catálogo ainda não foi configurada neste ambiente.
+                Nenhum modelo ou preço será apresentado como disponível sem essa validação.
+              </p>
+            </div>
+          ) : invalidSearch ? (
+            <p role="status" className="rounded-lg bg-[hsl(var(--tonecos-panel))] p-7 text-sm">
+              Utilize ao menos três caracteres na pesquisa.
             </p>
-          </ArcadeCard>
-        ) : rows.length === 0 ? (
-          <ArcadeCard hover={false} className="p-8 text-center">
-            <Package className="mx-auto mb-4 h-12 w-12 text-[hsl(0,0%,22%)]" />
-            <h2 className="text-3xl font-black uppercase tracking-[0.08em]">
-              Nenhum modelo encontrado
-            </h2>
-          </ArcadeCard>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+          ) : models.isPending ? (
+            <p role="status" className="rounded-lg bg-[hsl(var(--tonecos-panel))] p-7 text-sm">
+              Carregando os modelos publicados…
+            </p>
+          ) : models.isError ? (
+            <div role="alert" className="rounded-lg border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] p-7">
+              <h3 className="text-lg">Não foi possível consultar o acervo.</h3>
+              <p className="mt-2 text-sm text-[hsl(var(--tonecos-muted))]">
+                Verifique a conexão e tente novamente. Não exibimos resultados antigos
+                como se estivessem disponíveis.
+              </p>
+              <button
+                type="button"
+                onClick={() => void models.refetch()}
+                className="mt-4 rounded-md border border-[hsl(var(--tonecos-accent))] px-4 py-2 text-sm"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          ) : rows.length === 0 ? (
+            <p role="status" className="rounded-lg bg-[hsl(var(--tonecos-panel))] p-7 text-sm">
+              Nenhum modelo publicado corresponde aos filtros utilizados.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-5 lg:grid-cols-4">
               {rows.map((model) => (
-                <UniverseModelCard
+                <button
+                  type="button"
                   key={model.id}
-                  model={model}
-                  isLiked={false}
-                  onToggleLike={() => undefined}
-                />
+                  onClick={() => setDetailSlug(model.slug)}
+                  aria-label={"Ver detalhes de " + model.name}
+                  className="group overflow-hidden rounded-lg border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--tonecos-accent))]"
+                >
+                  <ModelCover
+                    model={model}
+                    mediaUrl={(key) => gateway.mediaUrl(key)}
+                  />
+                  <div className="space-y-1.5 p-3 md:p-4">
+                    <p className="line-clamp-2 min-h-[2.5em] text-sm font-semibold leading-snug md:text-base">
+                      {model.name}
+                    </p>
+                    <p className="truncate text-xs text-[hsl(var(--tonecos-muted))]">
+                      {model.variantName || model.franchise}
+                    </p>
+                    <p className="text-xs text-[hsl(var(--tonecos-muted))]">
+                      {model.code}
+                    </p>
+                    <p className="pt-1 text-xs font-semibold text-[hsl(var(--tonecos-accent))]">
+                      Ver detalhes
+                    </p>
+                  </div>
+                </button>
               ))}
             </div>
+          )}
 
-            <div className="mt-8 flex items-center justify-center gap-2">
+          {models.isSuccess && (activePage.index > 0 || !!models.data.nextCursor) && (
+            <nav aria-label="Páginas do catálogo" className="mt-10 flex items-center justify-center gap-4">
               <button
-                onClick={() => setPage((current) => Math.max(current - 1, 0))}
-                disabled={page === 0}
-                className="flex h-10 w-10 items-center justify-center border border-[hsl(0,0%,15%)] text-[hsl(0,0%,55%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.4)] hover:text-[hsl(var(--gold-accent))] disabled:cursor-not-allowed disabled:opacity-35"
+                type="button"
+                onClick={goBack}
+                disabled={activePage.index === 0}
+                className="inline-flex h-11 items-center gap-2 rounded-md border border-[hsl(var(--tonecos-line))] px-4 text-sm disabled:opacity-40"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ArrowLeft size={16} aria-hidden="true" /> Anterior
               </button>
-
-              {visiblePageIndexes.map((pageIndex, index) => {
-                const previous = visiblePageIndexes[index - 1];
-                const shouldInsertGap =
-                  previous !== undefined && pageIndex - previous > 1;
-
-                return (
-                  <div key={pageIndex} className="flex items-center gap-2">
-                    {shouldInsertGap && (
-                      <span className="px-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,35%)]">
-                        ...
-                      </span>
-                    )}
-                    <button
-                      onClick={() => setPage(pageIndex)}
-                      className={`min-w-[42px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors ${
-                        page === pageIndex
-                          ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.1)] text-[hsl(var(--gold-accent))]"
-                          : "border-[hsl(0,0%,15%)] text-[hsl(0,0%,55%)] hover:border-[hsl(var(--gold-accent)/0.4)] hover:text-[hsl(var(--gold-accent))]"
-                      }`}
-                    >
-                      {String(pageIndex + 1).padStart(2, "0")}
-                    </button>
-                  </div>
-                );
-              })}
-
+              <span className="text-sm text-[hsl(var(--tonecos-muted))]">
+                {activePage.index + 1}
+              </span>
               <button
-                onClick={() => hasNext && setPage((current) => current + 1)}
-                disabled={!hasNext}
-                className="flex h-10 w-10 items-center justify-center border border-[hsl(0,0%,15%)] text-[hsl(0,0%,55%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.4)] hover:text-[hsl(var(--gold-accent))] disabled:cursor-not-allowed disabled:opacity-35"
+                type="button"
+                onClick={goNext}
+                disabled={!models.data.nextCursor}
+                className="inline-flex h-11 items-center gap-2 rounded-md border border-[hsl(var(--tonecos-line))] px-4 text-sm disabled:opacity-40"
               >
-                <ChevronRight className="h-4 w-4" />
+                Próxima <ArrowRight size={16} aria-hidden="true" />
               </button>
-            </div>
-          </>
-        )}
+            </nav>
+          )}
+        </div>
       </section>
+
+      <Dialog open={detailSlug !== null} onOpenChange={(open) => !open && setDetailSlug(null)}>
+        <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto bg-[hsl(var(--tonecos-panel))] text-[hsl(var(--tonecos-ink))]">
+          <DialogHeader>
+            <DialogTitle>Detalhes do modelo</DialogTitle>
+            <DialogDescription>
+              Referências publicadas no catálogo Tonecos Studio.
+            </DialogDescription>
+          </DialogHeader>
+          {detail.isPending ? (
+            <p role="status">Carregando informações do modelo…</p>
+          ) : detail.isError ? (
+            <p role="alert">Detalhes indisponíveis no momento.</p>
+          ) : detail.data ? (
+            <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <ModelCover
+                model={detail.data}
+                mediaUrl={(key) => gateway?.mediaUrl(key) ?? null}
+              />
+              <div className="space-y-3">
+                <h3 className="text-xl">{detail.data.name}</h3>
+                {detail.data.variantName && <p className="text-sm">{detail.data.variantName}</p>}
+                <p className="text-sm text-[hsl(var(--tonecos-muted))]">
+                  {detail.data.franchise} · {detail.data.code}
+                </p>
+                {detail.data.description && <p className="text-sm leading-relaxed">{detail.data.description}</p>}
+                {detail.data.material && <p className="text-sm">Material: {detail.data.material}</p>}
+                {detail.data.heightCm !== null && (
+                  <p className="text-sm">Altura de referência: {detail.data.heightCm} cm</p>
+                )}
+                <p className="border-t border-[hsl(var(--tonecos-line))] pt-3 text-xs leading-relaxed text-[hsl(var(--tonecos-muted))]">
+                  Exibição informativa. Valores, fabricação e disponibilidade são
+                  confirmados somente na etapa comercial de orçamento.
+                </p>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </Page>
   );
 }
