@@ -53,7 +53,7 @@ function setupFetch() {
       calls.push({ url, init });
       if (url.pathname.endsWith("/api/categories")) {
         return Response.json({
-          items: [{ id: "games", label: "Games", count: 12 }],
+          items: [{ id: "all", label: "Todos", count: 12 }, { id: "games", label: "Games", count: 12 }],
         });
       }
       if (url.pathname.endsWith("/api/franchises")) {
@@ -113,6 +113,7 @@ describe("canonical public navigation without Supabase catalog", () => {
     await renderRoute("/universo");
     const games = await screen.findByRole("link", { name: /Games/ });
     expect(games).toHaveAttribute("href", "/universo/games");
+    expect(screen.getByRole("link", { name: /Todos/ })).toHaveAttribute("href", "/modelos");
     expect(calls).toHaveLength(1);
     expect(calls[0].url.pathname).toBe("/catalogo-api/api/categories");
 
