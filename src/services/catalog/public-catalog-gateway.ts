@@ -22,6 +22,18 @@ export type PublicCatalogModel = {
   coverStorageKey: string | null;
 };
 
+export type PublicCatalogCategory = {
+  id: string;
+  label: string;
+  count: number;
+};
+
+export type PublicCatalogDetail = PublicCatalogModel & {
+  description: string | null;
+  material: string | null;
+  heightCm: number | null;
+};
+
 export type PublicCatalogPage = {
   items: PublicCatalogModel[];
   nextCursor: string | null;
@@ -51,6 +63,9 @@ type CatalogWireModel = {
   image_count?: unknown;
   gallery_version?: unknown;
   cover_storage_key?: unknown;
+  description?: unknown;
+  material?: unknown;
+  height_cm?: unknown;
 };
 
 function requiredText(value: unknown, field: string): string {
@@ -114,7 +129,76 @@ export function createPublicCatalogGateway(
     throw new Error("catalog_endpoint_not_configured");
   }
 
+  if (base.hostname === "ordax.com.br" || base.hostname === "www.ordax.com.br") {
+    throw new Error("catalog_endpoint_not_configured");
+  }
+
+  async function read(path: string, signal?: AbortSignal): Promise<unknown> {
+    const response = await fetcher(new URL(path, base).toString(), {
+      method: "GET",
+      credentials: "omit",
+      headers: { Accept: "application/json" },
+      signal,
+    });
+    if (!response.ok) throw new Error(`catalog_request_failed_${response.status}`);
+    return response.json() as Promise<unknown>;
+  }
+
   return {
+    mediaUrl(key: string | null): string | null {
+      if (!key) return null;
+      const segments = key.split("/");
+      if (
+        segments.length > 16 ||
+        segments.some((part) => !part || part === "." || part === ".." || part.includes(":") ||
+          part.includes("?") || part.includes("#") || part.includes("%") || part.includes("\\\\"))
+      ) {
+        return null;
+      }
+      return new URL(segments.map(encodeURIComponent).join("/"), base).toString();
+    },
+
+    async listCategories(signal?: AbortSignal): Promise<PublicCatalogCategory[]> {
+      const result = await read("api/categories", signal);
+      if (!result || typeof result !== "object" || Array.isArray(result)) {
+        throw new Error("invalid_catalog_categories");
+      }
+      const { items } = result as { items?: unknown };
+      if (!Array.isArray(items) || items.length > 100) {
+        throw new Error("invalid_catalog_categories");
+      }
+      return items.map((value: unknown) => {
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
+          throw new Error("invalid_catalog_category");
+        }
+        const category = value as { id?: unknown; label?: unknown; count?: unknown };
+        return {
+          id: requiredText(category.id, "category_id"),
+          label: requiredText(category.label, "category_label"),
+          count: wholeNumber(category.count, "category_count"),
+        };
+      });
+    },
+
+    async getModel(slug: string, signal?: AbortSignal): Promise<PublicCatalogDetail> {
+      if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(slug)) throw new Error("invalid_catalog_slug");
+      const result = await read(`api/models/${encodeURIComponent(slug)}`, signal);
+      const model = decodeModel(result);
+      if (model.slug !== slug) throw new Error("invalid_catalog_model_slug");
+      const row = result as CatalogWireModel;
+      if (row.height_cm !== null && row.height_cm !== undefined &&
+          (typeof row.height_cm !== "number" || !Number.isFinite(row.height_cm) ||
+            row.height_cm < 0)) {
+        throw new Error("invalid_catalog_height");
+      }
+      return {
+        ...model,
+        description: optionalText(row.description, "description"),
+        material: optionalText(row.material, "material"),
+        heightCm: row.height_cm as number | null ?? null,
+      };
+    },
+
     async listPage(
       filters: PublicCatalogFilters = {},
       signal?: AbortSignal,
