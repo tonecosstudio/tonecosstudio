@@ -198,7 +198,7 @@ export function createPublicCatalogGateway(
   async function read(path: string, signal?: AbortSignal): Promise<unknown> {
     const response = await fetcher(new URL(path, base).toString(), {
       method: "GET",
-      credentials,,
+      credentials,
       headers: { Accept: "application/json" },
       signal,
     });
@@ -385,7 +385,7 @@ export function createPublicCatalogGateway(
       if (filters.cursor) url.searchParams.set("cursor", filters.cursor);
       const response = await fetcher(url.toString(), {
         method: "GET",
-        credentials,,
+        credentials,
         headers: { Accept: "application/json" },
         signal,
       });
@@ -505,7 +505,7 @@ export function createPublicCatalogGateway(
 
       const response = await fetcher(url.toString(), {
         method: "GET",
-        credentials,,
+        credentials,
         headers: { Accept: "application/json" },
         signal,
       });
