@@ -485,7 +485,7 @@ export default function CatalogArcade() {
 
   return (
     <Page
-      title="Universo | ORDAX"
+      title="Universo"
       description="Navegue pelo acervo em estrutura tematica, com pastas, subpastas, personagens e miniaturas de modelos."
       keywords={["universo", "pastas", "subpastas", "personagens", "modelos", "ordax"]}
     >
