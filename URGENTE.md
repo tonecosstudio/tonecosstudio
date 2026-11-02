@@ -8,12 +8,12 @@
 
 ## Checkpoint operacional — 01/11/2026
 
-- **Concluído na branch, não promovido:** marca canônica `Tonecos Studio`, cabeçalho/rodapé/home/SEO das páginas principais, metadata inicial sem domínio OS, contatos sem valores falsos, CSP sem `ordax.com.br`, temporariamente `robots: Disallow /`, sitemap legado retirado e gateway read-only com cursor para a API Cloudflare.
-- **Testes de fonte versionados:** `src/config/brand.test.ts` e `src/services/catalog/public-catalog-gateway.test.ts`. Não declarar execução Vitest/coverage/TypeScript verdes sem logs do SHA exato.
+- **Concluído na branch, não promovido:** marca canônica `Tonecos Studio`, cabeçalho/rodapé/home/SEO, metadata sem domínio OS, contatos sem valores falsos, CSP sem `ordax.com.br`, `robots: Disallow /`, sitemap legado retirado; gateway read-only com categorias/detalhe/mídia e rota `/modelos` migrada para busca e paginação canônicas, sem escrita ou fallback Supabase.
+- **Testes locais reais:** 8/8 testes Node 24 passando com HTTP simulado; esbuild 0.25.12 transpila a rota TSX. Testes Vitest versionados em `src/config/brand.test.ts` e `src/services/catalog/public-catalog-gateway.test.ts`. **Não afirmar TypeScript/CI/coverage, E2E ou deploy aprovados** sem logs do SHA exato.
 - **Bloqueio P0 de deployment:** registro GitHub Vercel aponta `jogo-brasils-projects/ordax`; a Vercel conectada nesta sessão mostra somente a equipe `ordaxsystems`. Não é prova de desvinculação do domínio OrdaX. **Não fazer push na main ou promover deploy** antes de validar isolamento do projeto Tonecos.
 - **Bloqueio CI:** `Quality Gate` da `main` falhou na execução #36719911543, com todos os jobs em falha; logs históricos não puderam ser recuperados. PR #3 permanece aberta, com correção isolada de cache; não mesclar no escuro.
 - **Sem operação remota:** nenhum deploy, Supabase migration, Cloudflare D1/R2 scan, ingestão ou pedido/valor comercial alterado.
-- **Next action:** validar isoladamente a configuração do projeto Vercel da Tonecos; executar verificações locais/CI de branch (TypeScript, lint, Vitest, build e segurança); corrigir regressões no mesmo branch; implementar integração visível do gateway depois de proxy e contrato de orçamento homologados.
+- **Next action:** validar isolamento do projeto Vercel e o hostname first-party; executar TypeScript/lint/Vitest/coverage, build e segurança no mesmo HEAD da branch; validar rota `/modelos` em desktop/mobile com proxy simulado e estender a fonte canônica a `/universo`, `/modelos/:id` e orçamento comercial idempotente.
 - **Do not repeat:** não reiniciar coleção/ingestão no Drive, não tentar executar queries D1 só para preencher a UI, não recriar o catálogo no Supabase, não usar `ordax.com.br` como domínio ou origem de mídia Tonecos.
 
 ---
