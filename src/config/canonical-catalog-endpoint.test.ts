@@ -39,10 +39,12 @@ describe("canonical catalog first-party integration", () => {
   it("rewrites only public catalog reads and images, never an unrestricted Worker API", () => {
     const rewrites = deployment.rewrites;
     const origin = "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
-    expect(rewrites.slice(0, 6)).toEqual([
+    // Exact allowlist: folders are bounded GET reads, not an API wildcard.
+    expect(rewrites.slice(0, -1)).toEqual([
       { source: "/catalogo-api/api/catalog", destination: origin + "/api/catalog" },
       { source: "/catalogo-api/api/categories", destination: origin + "/api/categories" },
       { source: "/catalogo-api/api/franchises", destination: origin + "/api/franchises" },
+      { source: "/catalogo-api/api/folders", destination: origin + "/api/folders" },
       { source: "/catalogo-api/api/models/:slug/images", destination: origin + "/api/models/:slug/images" },
       { source: "/catalogo-api/api/models/:slug", destination: origin + "/api/models/:slug" },
       { source: "/catalogo-api/media/:path*", destination: origin + "/media/:path*" },
