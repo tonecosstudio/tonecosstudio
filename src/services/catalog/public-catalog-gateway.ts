@@ -129,7 +129,10 @@ export function createPublicCatalogGateway(
     throw new Error("catalog_endpoint_not_configured");
   }
 
-  if (base.hostname === "ordax.com.br" || base.hostname === "www.ordax.com.br") {
+  if (
+    base.hostname === "ordax.com.br" ||
+    base.hostname === "www.ordax.com.br"
+  ) {
     throw new Error("catalog_endpoint_not_configured");
   }
 
@@ -140,7 +143,8 @@ export function createPublicCatalogGateway(
       headers: { Accept: "application/json" },
       signal,
     });
-    if (!response.ok) throw new Error(`catalog_request_failed_${response.status}`);
+    if (!response.ok)
+      throw new Error(`catalog_request_failed_${response.status}`);
     return response.json() as Promise<unknown>;
   }
 
@@ -150,15 +154,29 @@ export function createPublicCatalogGateway(
       const segments = key.split("/");
       if (
         segments.length > 16 ||
-        segments.some((part) => !part || part === "." || part === ".." || part.includes(":") ||
-          part.includes("?") || part.includes("#") || part.includes("%") || part.includes("\\"))
+        segments.some(
+          (part) =>
+            !part ||
+            part === "." ||
+            part === ".." ||
+            part.includes(":") ||
+            part.includes("?") ||
+            part.includes("#") ||
+            part.includes("%") ||
+            part.includes("\\"),
+        )
       ) {
         return null;
       }
-      return new URL(segments.map(encodeURIComponent).join("/"), base).toString();
+      return new URL(
+        segments.map(encodeURIComponent).join("/"),
+        base,
+      ).toString();
     },
 
-    async listCategories(signal?: AbortSignal): Promise<PublicCatalogCategory[]> {
+    async listCategories(
+      signal?: AbortSignal,
+    ): Promise<PublicCatalogCategory[]> {
       const result = await read("api/categories", signal);
       if (!result || typeof result !== "object" || Array.isArray(result)) {
         throw new Error("invalid_catalog_categories");
@@ -171,7 +189,11 @@ export function createPublicCatalogGateway(
         if (!value || typeof value !== "object" || Array.isArray(value)) {
           throw new Error("invalid_catalog_category");
         }
-        const category = value as { id?: unknown; label?: unknown; count?: unknown };
+        const category = value as {
+          id?: unknown;
+          label?: unknown;
+          count?: unknown;
+        };
         return {
           id: requiredText(category.id, "category_id"),
           label: requiredText(category.label, "category_label"),
@@ -180,22 +202,33 @@ export function createPublicCatalogGateway(
       });
     },
 
-    async getModel(slug: string, signal?: AbortSignal): Promise<PublicCatalogDetail> {
-      if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(slug)) throw new Error("invalid_catalog_slug");
-      const result = await read(`api/models/${encodeURIComponent(slug)}`, signal);
+    async getModel(
+      slug: string,
+      signal?: AbortSignal,
+    ): Promise<PublicCatalogDetail> {
+      if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(slug))
+        throw new Error("invalid_catalog_slug");
+      const result = await read(
+        `api/models/${encodeURIComponent(slug)}`,
+        signal,
+      );
       const model = decodeModel(result);
       if (model.slug !== slug) throw new Error("invalid_catalog_model_slug");
       const row = result as CatalogWireModel;
-      if (row.height_cm !== null && row.height_cm !== undefined &&
-          (typeof row.height_cm !== "number" || !Number.isFinite(row.height_cm) ||
-            row.height_cm < 0)) {
+      if (
+        row.height_cm !== null &&
+        row.height_cm !== undefined &&
+        (typeof row.height_cm !== "number" ||
+          !Number.isFinite(row.height_cm) ||
+          row.height_cm < 0)
+      ) {
         throw new Error("invalid_catalog_height");
       }
       return {
         ...model,
         description: optionalText(row.description, "description"),
         material: optionalText(row.material, "material"),
-        heightCm: row.height_cm as number | null ?? null,
+        heightCm: (row.height_cm as number | null) ?? null,
       };
     },
 
@@ -205,7 +238,10 @@ export function createPublicCatalogGateway(
     ): Promise<PublicCatalogPage> {
       const url = new URL("api/catalog", base);
       const query = filters.search?.trim();
-      if (query && (Array.from(query).length < 3 || Array.from(query).length > 80)) {
+      if (
+        query &&
+        (Array.from(query).length < 3 || Array.from(query).length > 80)
+      ) {
         throw new Error("catalog_search_length_invalid");
       }
       if (filters.folder && (!filters.category || !filters.franchise)) {
@@ -216,8 +252,10 @@ export function createPublicCatalogGateway(
         throw new Error("catalog_limit_invalid");
       }
       url.searchParams.set("limit", String(limit));
-      if (filters.category && filters.category !== "all") url.searchParams.set("category", filters.category);
-      if (filters.franchise) url.searchParams.set("franchise", filters.franchise);
+      if (filters.category && filters.category !== "all")
+        url.searchParams.set("category", filters.category);
+      if (filters.franchise)
+        url.searchParams.set("franchise", filters.franchise);
       if (filters.folder) url.searchParams.set("folder", filters.folder);
       if (query) url.searchParams.set("q", query);
       if (filters.cursor) url.searchParams.set("cursor", filters.cursor);
@@ -228,17 +266,24 @@ export function createPublicCatalogGateway(
         headers: { Accept: "application/json" },
         signal,
       });
-      if (!response.ok) throw new Error(`catalog_request_failed_${response.status}`);
+      if (!response.ok)
+        throw new Error(`catalog_request_failed_${response.status}`);
       const payload: unknown = await response.json();
       if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
         throw new Error("invalid_catalog_page");
       }
-      const { items, nextCursor } = payload as { items?: unknown; nextCursor?: unknown };
+      const { items, nextCursor } = payload as {
+        items?: unknown;
+        nextCursor?: unknown;
+      };
       if (!Array.isArray(items) || items.length > limit) {
         throw new Error("invalid_catalog_page_items");
       }
-      if (nextCursor !== null && nextCursor !== undefined &&
-        (typeof nextCursor !== "string" || !nextCursor)) {
+      if (
+        nextCursor !== null &&
+        nextCursor !== undefined &&
+        (typeof nextCursor !== "string" || !nextCursor)
+      ) {
         throw new Error("invalid_catalog_page_cursor");
       }
       const seen = new Set<string>();
@@ -248,7 +293,10 @@ export function createPublicCatalogGateway(
         seen.add(model.id);
         return model;
       });
-      return { items: models, nextCursor: (nextCursor as string | null | undefined) ?? null };
+      return {
+        items: models,
+        nextCursor: (nextCursor as string | null | undefined) ?? null,
+      };
     },
   };
 }
