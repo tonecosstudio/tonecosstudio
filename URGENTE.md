@@ -1,8 +1,28 @@
-# URGENTE — OrdaX Launch Readiness
+# URGENTE — Tonecos Studio / Estado operacional
 
-> SSOT operacional de `washingtonmsdj/ordax`.
-> Atualizado em 2026-09-17.
-> Não declarar GO sem `release:verify` completo no mesmo SHA candidato e smokes críticos do runtime.
+> Repositório: `washingtonmsdj/tonecosstudio` (privado, confirmado em 01/11/2026).
+> **Estado: NO-GO.** A `main` permanece `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41` e NÃO foi atualizada nesta execução.
+> Frente única de consolidação: `integration/tonecosstudio-canonical-20261101`.
+> Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
+> Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
+
+## Checkpoint operacional — 01/11/2026
+
+- **Concluído na branch, não promovido:** marca canônica `Tonecos Studio`, cabeçalho/rodapé/home/SEO das páginas principais, metadata inicial sem domínio OS, contatos sem valores falsos, CSP sem `ordax.com.br`, temporariamente `robots: Disallow /`, sitemap legado retirado e gateway read-only com cursor para a API Cloudflare.
+- **Testes de fonte versionados:** `src/config/brand.test.ts` e `src/services/catalog/public-catalog-gateway.test.ts`. Não declarar execução Vitest/coverage/TypeScript verdes sem logs do SHA exato.
+- **Bloqueio P0 de deployment:** registro GitHub Vercel aponta `jogo-brasils-projects/ordax`; a Vercel conectada nesta sessão mostra somente a equipe `ordaxsystems`. Não é prova de desvinculação do domínio OrdaX. **Não fazer push na main ou promover deploy** antes de validar isolamento do projeto Tonecos.
+- **Bloqueio CI:** `Quality Gate` da `main` falhou na execução #36719911543, com todos os jobs em falha; logs históricos não puderam ser recuperados. PR #3 permanece aberta, com correção isolada de cache; não mesclar no escuro.
+- **Sem operação remota:** nenhum deploy, Supabase migration, Cloudflare D1/R2 scan, ingestão ou pedido/valor comercial alterado.
+- **Next action:** validar isoladamente a configuração do projeto Vercel da Tonecos; executar verificações locais/CI de branch (TypeScript, lint, Vitest, build e segurança); corrigir regressões no mesmo branch; implementar integração visível do gateway depois de proxy e contrato de orçamento homologados.
+- **Do not repeat:** não reiniciar coleção/ingestão no Drive, não tentar executar queries D1 só para preencher a UI, não recriar o catálogo no Supabase, não usar `ordax.com.br` como domínio ou origem de mídia Tonecos.
+
+---
+
+## Histórico anterior (somente evidência datada — não substituir o checkpoint atual)
+
+### Checkpoint legado de 2026-09-17
+
+> Histórico do antigo `washingtonmsdj/ordax`. Este texto NÃO representa o estado vivo do Tonecos Studio.
 
 ## Estado
 
