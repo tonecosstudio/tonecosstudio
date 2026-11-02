@@ -428,7 +428,7 @@ describe("canonical folder discovery is scoped and fail-closed", () => {
   it("rejects malformed child counts and hasChildren without silent coercion", async () => {
     const io = vi.fn(async () => Response.json({
       current: null, trail: [],
-      items: [{ id: "personagens", label: "Personagens", count: -1, hasChildren: "true" }],
+      items: [{ id: "personagens", label: "Personagens", count: -1, hasChildren: true }],
     }));
     const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
     await expect(gateway.listFolders({ category: "games", franchise: "resident-evil" })).rejects.toThrow("invalid_catalog_folder_count");
