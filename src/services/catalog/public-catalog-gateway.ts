@@ -141,7 +141,8 @@ function validCatalogFolder(value: string): boolean {
       (part) => part.charCodeAt(0) < 32 || part.charCodeAt(0) === 127,
     ) &&
     !value
-      .replaceAll(String.fromCharCode(92), "/")
+      .split(String.fromCharCode(92))
+      .join("/")
       .split("/")
       .some((part) => part === "." || part === "..")
   );
