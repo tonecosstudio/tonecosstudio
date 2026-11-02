@@ -26,6 +26,23 @@ export type PublicCatalogCategory = {
   id: string;
   label: string;
   count: number;
+  coverStorageKey?: string | null;
+};
+export type PublicCatalogFolder = {
+  id: string;
+  label: string;
+  count: number;
+  hasChildren: boolean;
+};
+export type PublicCatalogFolderPage = {
+  current: { id: string; label: string; count: number } | null;
+  trail: Array<{ id: string; label: string }>;
+  items: PublicCatalogFolder[];
+};
+export type PublicCatalogFolderFilters = {
+  category: string;
+  franchise: string;
+  parent?: string;
 };
 
 export type PublicCatalogFranchise = PublicCatalogCategory & {
@@ -276,11 +293,15 @@ export function createPublicCatalogGateway(
           id?: unknown;
           label?: unknown;
           count?: unknown;
+          cover_storage_key?: unknown;
         };
         return {
           id: requiredText(category.id, "category_id"),
           label: requiredText(category.label, "category_label"),
           count: wholeNumber(category.count, "category_count"),
+          ...(category.cover_storage_key === undefined
+            ? {}
+            : { coverStorageKey: optionalText(category.cover_storage_key, "category_cover_key") }),
         };
       });
     },
@@ -337,12 +358,16 @@ export function createPublicCatalogGateway(
             label?: unknown;
             count?: unknown;
             category?: unknown;
+            cover_storage_key?: unknown;
           };
           const franchise = {
             id: requiredText(row.id, "franchise_id"),
             label: requiredText(row.label, "franchise_label"),
             count: wholeNumber(row.count, "franchise_count"),
             category: requiredText(row.category, "franchise_category"),
+            ...(row.cover_storage_key === undefined
+              ? {}
+              : { coverStorageKey: optionalText(row.cover_storage_key, "franchise_cover_key") }),
           };
           if (filters.category && franchise.category !== filters.category) {
             throw new Error("invalid_catalog_franchise_category");
@@ -356,6 +381,92 @@ export function createPublicCatalogGateway(
         }),
         truncated,
       };
+    },
+
+    async listFolders(
+      filters: PublicCatalogFolderFilters,
+      signal?: AbortSignal,
+    ): Promise<PublicCatalogFolderPage> {
+      if (!validCatalogSlug(filters.category) || !validCatalogSlug(filters.franchise)) {
+        throw new Error("catalog_folder_scope_invalid");
+      }
+      const parent = filters.parent ?? "";
+      if (typeof parent !== "string" || parent.length > 240 || !validCatalogFolder(parent)) {
+        throw new Error("catalog_folder_path_invalid");
+      }
+      const params = new URLSearchParams();
+      params.set("category", filters.category);
+      params.set("franchise", filters.franchise);
+      if (parent) params.set("parent", parent);
+      const payload = await read("api/folders?" + params.toString(), signal);
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+        throw new Error("invalid_catalog_folders");
+      }
+      const data = payload as { current?: unknown; trail?: unknown; items?: unknown };
+      if (!Array.isArray(data.trail) || data.trail.length > 24 ||
+          !Array.isArray(data.items) || data.items.length > 256) {
+        throw new Error("invalid_catalog_folder_page");
+      }
+      const decodePath = (input: unknown, field: string): string => {
+        const value = requiredText(input, field);
+        if (value.length > 240 || !validCatalogFolder(value)) {
+          throw new Error("invalid_catalog_folder_path");
+        }
+        return value;
+      };
+      const decodeTrail = (value: unknown) => {
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
+          throw new Error("invalid_catalog_folder_trail");
+        }
+        const row = value as { id?: unknown; label?: unknown };
+        return {
+          id: decodePath(row.id, "folder_trail_id"),
+          label: requiredText(row.label, "folder_trail_label"),
+        };
+      };
+      let current: PublicCatalogFolderPage["current"] = null;
+      if (data.current !== null && data.current !== undefined) {
+        if (typeof data.current !== "object" || Array.isArray(data.current)) {
+          throw new Error("invalid_catalog_folder_current");
+        }
+        const row = data.current as { id?: unknown; label?: unknown; count?: unknown };
+        current = {
+          id: decodePath(row.id, "folder_current_id"),
+          label: requiredText(row.label, "folder_current_label"),
+          count: wholeNumber(row.count, "folder_current_count"),
+        };
+      }
+      if ((parent && current?.id !== parent) || (!parent && current !== null)) {
+        throw new Error("catalog_folder_parent_mismatch");
+      }
+      const trail = data.trail.map(decodeTrail);
+      if ((parent && (trail.length === 0 || trail[trail.length - 1].id !== parent)) ||
+          (!parent && trail.length > 0)) {
+        throw new Error("catalog_folder_trail_mismatch");
+      }
+      const seen = new Set<string>();
+      const items = data.items.map((value: unknown): PublicCatalogFolder => {
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
+          throw new Error("invalid_catalog_folder");
+        }
+        const row = value as { id?: unknown; label?: unknown; count?: unknown; hasChildren?: unknown };
+        const id = decodePath(row.id, "folder_id");
+        if (seen.has(id)) throw new Error("duplicate_catalog_folder");
+        seen.add(id);
+        if (parent && !id.startsWith(parent + "/")) {
+          throw new Error("catalog_folder_child_outside_parent");
+        }
+        if (typeof row.hasChildren !== "boolean") {
+          throw new Error("invalid_catalog_folder_has_children");
+        }
+        return {
+          id,
+          label: requiredText(row.label, "folder_label"),
+          count: wholeNumber(row.count, "folder_count"),
+          hasChildren: row.hasChildren,
+        };
+      });
+      return { current, trail, items };
     },
 
     async getModel(
