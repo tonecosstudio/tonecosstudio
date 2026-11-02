@@ -64,6 +64,20 @@ function setupFetch() {
           truncated: false,
         });
       }
+      if (url.pathname.endsWith("/api/folders")) {
+        if (url.searchParams.get("parent") === "personagens") {
+          return Response.json({
+            current: { id: "personagens", label: "Personagens", count: 1 },
+            trail: [{ id: "personagens", label: "Personagens" }],
+            items: [],
+          });
+        }
+        return Response.json({
+          current: null,
+          trail: [],
+          items: [{ id: "personagens", label: "Personagens", count: 1, hasChildren: false }],
+        });
+      }
       if (url.pathname.endsWith("/api/catalog")) {
         return Response.json({ items: [model], nextCursor: "next-page" });
       }
@@ -121,14 +135,44 @@ describe("canonical public navigation without Supabase catalog", () => {
     const franchise = await screen.findByRole("link", { name: /Resident Evil/ });
     expect(franchise).toHaveAttribute(
       "href",
-      "/modelos?category=games&franchise=resident-evil",
+      "/universo/games/resident-evil",
     );
     const request = calls.find((c) => c.url.pathname.endsWith("/api/franchises"));
     expect(request?.url.searchParams.get("category")).toBe("games");
     expect(request?.url.searchParams.get("limit")).toBe("24");
     expect(calls).toHaveLength(2);
+    fireEvent.click(franchise);
+    const folder = await screen.findByRole("link", { name: /Personagens/ });
+    expect(folder).toHaveAttribute("href", "/universo/games/resident-evil?folder=personagens");
+    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+    await waitFor(() => expect(calls).toHaveLength(4));
+    expect(calls[2].url.pathname).toBe("/catalogo-api/api/folders");
+    expect(calls[3].url.pathname).toBe("/catalogo-api/api/catalog");
+    expect(calls[3].url.searchParams.get("limit")).toBe("8");
     expect(calls.every((c) => c.init.method === "GET")).toBe(true);
     expect(calls.every((c) => c.init.credentials === "omit")).toBe(true);
+  });
+
+  it("navigates into one indexed folder and preserves the folder when opening all models", async () => {
+    const calls = setupFetch();
+    await renderRoute("/universo/games/resident-evil?folder=personagens");
+    expect(await screen.findByRole("link", { name: "Ver detalhes de Escultura original" })).toHaveAttribute(
+      "href", "/modelos/escultura-original",
+    );
+    expect(screen.getByRole("link", { name: /Explorar todos os modelos/ })).toHaveAttribute(
+      "href", "/modelos?category=games&franchise=resident-evil&folder=personagens",
+    );
+    expect(calls).toHaveLength(2);
+    expect(calls[0].url.searchParams.get("parent")).toBe("personagens");
+    expect(calls[1].url.searchParams.get("folder")).toBe("personagens");
+    expect(calls[1].url.searchParams.get("limit")).toBe("8");
+  });
+
+  it("rejects malformed folder scopes without making HTTP calls", async () => {
+    const calls = setupFetch();
+    await renderRoute("/universo/games/resident-evil?folder=characters%2F..%2Fadmin");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Pasta indisponível");
+    expect(calls).toHaveLength(0);
   });
 
   it("retains legacy deep links by routing to canonically filtered models without an extra read", async () => {
