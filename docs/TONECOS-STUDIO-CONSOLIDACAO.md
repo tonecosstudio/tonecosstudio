@@ -23,7 +23,7 @@ Implementado:
 - Contatos e razão social não recebem defaults falsos do OrdaX; habilitar somente valores reais verificados.
 - Mídias do R2 legado não usam fallback `ordax.com.br`; falta configurar a origem de mídia do novo site antes do cutover.
 - `src/services/catalog/public-catalog-gateway.ts` introduz gateway de leitura isolado, com GET de catálogo, categorias e detalhes, cursor e limite de 60, mídia derivada da origem explícita, rejeição de payloads inválidos e nenhuma consulta SQL/D1 direta.
-- A rota **`/modelos`** foi migrada nesta branch para o catálogo canônico: busca somente por envio explícito, categorias sob demanda, 24 modelos por página, navegação por cursor com conjunto de cartões pequeno, detalhes on-demand, estados loading/empty/error e nenhuma gravação de preço/orçamento. **Não é um deploy de produção.**
+- A rota **`/modelos`** foi migrada nesta branch para o catálogo canônico: busca somente por envio explícito, categorias sob demanda, 24 modelos por página, navegação por cursor, detalhes on-demand, estados loading/empty/error e seleção temporária de até 50 IDs com remoção/deduplicação. **Não é um deploy de produção** nem uma transação comercial; nada é enviado até a homologação do orçamento.
 - `VITE_CANONICAL_CATALOG_API_BASE` precisa apontar para um proxy HTTPS Tonecos homologado. Sem configuração, a rota mostra `Catálogo em integração` sem consultar Supabase, D1 ou Worker. Não substituímos ainda as rotas `/universo` e `/modelos/:id` nem o sistema comercial existente.
 - A paleta editorial marfim/oliva da nova rota está centralizada nos tokens `--tonecos-*` do `src/index.css`; não há CSS de marca paralelo. O restante do tema Arcade ainda exige migração progressiva.
 - Nenhuma migration, backend, publicação de Worker, pedido ou orçamento real foi alterado.
@@ -50,7 +50,7 @@ Implementado:
 
 ## Evidências sem acesso à produção
 
-- 8/8 testes Node 24 aprovados em sessão local isolada com respostas HTTP simuladas; incluem mídia malformada, SQL zero, cursor, categorização e rejeição de ID duplicado. Foi corrigido um defeito real de barras invertidas na validação de caminho da mídia.
+- 9/9 testes Node 24 aprovados em sessão local isolada com respostas HTTP simuladas; incluem mídia malformada, cursor, categorias, detalhe, rejeição de IDs duplicados e limite de 50 modelos na seleção temporária. Foi corrigido um defeito real de barras invertidas na validação de caminho da mídia.
 - Esbuild 0.25.12 analisou e transpiliou a página TSX da branch com exit code 0, mas **não** resolveu dependências nem compilou o projeto completo.
 - Nenhuma chamada ao D1/R2 de produção, workflow de deploy, alteração no Supabase ou migração de schema. CI geral do repositório ainda sem prova verde.
 
