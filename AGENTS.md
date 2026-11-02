@@ -2,7 +2,7 @@
 
 ## Missão
 
-Trabalhar até que o ORDAX tenha prova de prontidão para lançamento. O documento URGENTE.md é o plano e status operacional canônico.
+Consolidar o **Tonecos Studio** como produto comercial único: site, catálogo escalável, clientes, orçamentos, pedidos, pagamentos e produção. O OrdaX OS é um produto independente. Consulte `URGENTE.md` para estado real e `docs/TONECOS-STUDIO-CONSOLIDACAO.md` para o contrato de autoridades.
 
 ## Ordem de autoridade
 
@@ -17,10 +17,10 @@ Documentos históricos nunca podem sobrescrever o estado observado no código, C
 
 ## Regras de mudança
 
-- A main é a única branch operacional enquanto esta decisão do usuário estiver vigente.
-- Escrever diretamente na main, em commits pequenos e reversíveis.
-- Antes de escrever, registrar o HEAD atual da main e confirmar que ele não avançou.
-- Não criar branch ou PR sem uma nova instrução explícita do usuário.
+- A `main` continua sendo a única branch publicada. **Durante a consolidação autorizada em 01/11/2026, usar exclusivamente `integration/tonecosstudio-canonical-20261101` para mudanças de código**, sem PR ou branch paralela.
+- **Não enviar commits para a main enquanto a antiga integração Vercel/OrdaX não for comprovadamente desvinculada.** Uma promoção acidental pode atingir o domínio do OrdaX OS.
+- Antes de qualquer gravação, verificar HEAD, branch alvo, destinatário do deploy e mudanças concorrentes.
+- Não criar outra branch ou PR sem justificativa explícita e autorização; após isolamento do deploy, integrar apenas com gates completos no SHA final.
 - Não misturar limpeza documental, mudança de schema e deploy no mesmo checkpoint.
 - Não apagar histórico útil: arquivar com índice e motivo.
 - Não criar um segundo SSOT, segundo executor ou segundo mecanismo de autorização.
@@ -29,6 +29,7 @@ Documentos históricos nunca podem sobrescrever o estado observado no código, C
 - Segredos reais nunca entram no Git, logs, screenshots, issues ou VITE_*.
 - Não executar migration remota, reativar serviço pago ou fazer deploy sem escopo e prova de rollback.
 - Alterações relevantes atualizam URGENTE.md com HEAD, provas, next_action e do_not_repeat.
+- Nunca reconstruir um segundo banco de modelos Supabase: o gateway público do Worker do catálogo é a única autoridade de busca/publicação, com leitura limitada e sem scans D1.
 
 ## Toolchain canônica
 
