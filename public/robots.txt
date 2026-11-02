@@ -1,9 +1,5 @@
-# Robots.txt para Ordax Collectibles
+# Tonecos Studio: staging migration is not cleared for search indexing.
+# Remove this hold only when the verified Tonecos hostname, sitemap and
+# canonical marketing pages have passed the public release gates.
 User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /perfil
-Disallow: /login
-
-# Sitemap
-Sitemap: https://ordax.com.br/sitemap.xml
+Disallow: /
