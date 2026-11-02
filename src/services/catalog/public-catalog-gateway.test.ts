@@ -67,6 +67,25 @@ describe("canonical catalog read boundary", () => {
     await expect(createPublicCatalogGateway("https://example.test", io as typeof fetch).listPage())
       .rejects.toThrow("duplicate_catalog_model_id");
   });
+  it("loads one versioned gallery page with a bounded request", async () => {
+    const image = { id: "image-1", role: "cover", width: 1200, height: 1500, bytes: 240000, mime: "image/webp", qualityScore: 92, sourceSha256: "a".repeat(64), variantKeys: { thumb: "gallery/thumb.webp", card: "gallery/card.webp", detail: "gallery/detail.webp", original: null } };
+    const io = vi.fn(async () => Response.json({ items: [image], nextCursor: "page-2", total: 25, version: 1 }));
+    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
+    const page = await gateway.listGallery("animal-original", { version: 1, limit: 12 });
+    expect(io).toHaveBeenCalledTimes(1);
+    expect(io.mock.calls[0]?.[0]).toBe("https://example.test/catalogo-api/api/models/animal-original/images?limit=12&v=1");
+    expect(page.items[0]?.variantKeys.detail).toBe("gallery/detail.webp");
+    expect(page).toMatchObject({ nextCursor: "page-2", total: 25, version: 1 });
+  });
+
+  it("rejects stale gallery versions and oversized responses", async () => {
+    const stale = vi.fn(async () => Response.json({ items: [], nextCursor: null, total: 0, version: 2 }));
+    const gateway = createPublicCatalogGateway("https://example.test", stale as typeof fetch);
+    await expect(gateway.listGallery("animal-original", { version: 1 })).rejects.toThrow("catalog_gallery_version_mismatch");
+    const oversized = vi.fn(async () => Response.json({ items: [{ id: "1" }, { id: "2" }], nextCursor: null, total: 2, version: 1 }));
+    const bounded = createPublicCatalogGateway("https://example.test", oversized as typeof fetch);
+    await expect(bounded.listGallery("animal-original", { version: 1, limit: 1 })).rejects.toThrow("invalid_catalog_gallery_items");
+  });
 });
  
 describe("read-only catalog discovery and detail", () => {

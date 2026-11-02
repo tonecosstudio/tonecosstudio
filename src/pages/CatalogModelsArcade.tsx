@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ImageOff, Search, X } from "lucide-react";
 import {
   MAX_CANONICAL_SELECTION,
   toggleCanonicalSelection,
 } from "@/services/catalog/public-catalog-selection";
 import { Page } from "@/components/layouts/Page";
+import { catalogModelDetailsPath } from "@/config/routes";
 import {
   Dialog,
   DialogContent,
@@ -62,7 +63,6 @@ export default function CatalogModelsArcade() {
   const category = searchParams.get("category")?.trim() ?? "";
   const [draft, setDraft] = useState(search);
   const [loadCategories, setLoadCategories] = useState(Boolean(category));
-  const [detailSlug, setDetailSlug] = useState<string | null>(null);
   const [selectedModels, setSelectedModels] = useState<PublicCatalogModel[]>(
     [],
   );
@@ -115,14 +115,6 @@ export default function CatalogModelsArcade() {
     staleTime: 60 * 1000,
   });
 
-  const detail = useQuery({
-    queryKey: ["tonecos-catalog-detail", detailSlug],
-    queryFn: ({ signal }) => gateway!.getModel(detailSlug!, signal),
-    enabled: gateway !== null && detailSlug !== null,
-    retry: false,
-    staleTime: 5 * 60 * 1000,
-  });
-
   const rows = models.data?.items ?? [];
 
   function toggleSelected(model: PublicCatalogModel) {
@@ -135,7 +127,6 @@ export default function CatalogModelsArcade() {
     if (nextCategory && nextCategory !== "all")
       next.set("category", nextCategory);
     setSearchParams(next);
-    setDetailSlug(null);
   }
 
   function goNext() {
@@ -148,13 +139,11 @@ export default function CatalogModelsArcade() {
       ],
       index: activePage.index + 1,
     });
-    setDetailSlug(null);
   }
 
   function goBack() {
     if (activePage.index === 0) return;
     setPaging({ ...activePage, index: activePage.index - 1 });
-    setDetailSlug(null);
   }
 
   return (
@@ -343,9 +332,8 @@ export default function CatalogModelsArcade() {
                     key={model.id}
                     className="group overflow-hidden rounded-lg border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
                   >
-                    <button
-                      type="button"
-                      onClick={() => setDetailSlug(model.slug)}
+                    <Link
+                      to={catalogModelDetailsPath(model.slug)}
                       aria-label={"Ver detalhes de " + model.name}
                       className="block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--tonecos-accent))]"
                     >
@@ -367,7 +355,7 @@ export default function CatalogModelsArcade() {
                           Ver detalhes
                         </p>
                       </div>
-                    </button>
+                    </Link>
                     <button
                       type="button"
                       onClick={() => toggleSelected(model)}
@@ -417,58 +405,6 @@ export default function CatalogModelsArcade() {
             )}
         </div>
       </section>
-
-      <Dialog
-        open={detailSlug !== null}
-        onOpenChange={(open) => !open && setDetailSlug(null)}
-      >
-        <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto bg-[hsl(var(--tonecos-panel))] text-[hsl(var(--tonecos-ink))]">
-          <DialogHeader>
-            <DialogTitle>Detalhes do modelo</DialogTitle>
-            <DialogDescription>
-              Referências publicadas no catálogo Tonecos Studio.
-            </DialogDescription>
-          </DialogHeader>
-          {detail.isPending ? (
-            <p role="status">Carregando informações do modelo…</p>
-          ) : detail.isError ? (
-            <p role="alert">Detalhes indisponíveis no momento.</p>
-          ) : detail.data ? (
-            <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <ModelCover
-                model={detail.data}
-                mediaUrl={(key) => gateway?.mediaUrl(key) ?? null}
-              />
-              <div className="space-y-3">
-                <h3 className="text-xl">{detail.data.name}</h3>
-                {detail.data.variantName && (
-                  <p className="text-sm">{detail.data.variantName}</p>
-                )}
-                <p className="text-sm text-[hsl(var(--tonecos-muted))]">
-                  {detail.data.franchise} · {detail.data.code}
-                </p>
-                {detail.data.description && (
-                  <p className="text-sm leading-relaxed">
-                    {detail.data.description}
-                  </p>
-                )}
-                {detail.data.material && (
-                  <p className="text-sm">Material: {detail.data.material}</p>
-                )}
-                {detail.data.heightCm !== null && (
-                  <p className="text-sm">
-                    Altura de referência: {detail.data.heightCm} cm
-                  </p>
-                )}
-                <p className="border-t border-[hsl(var(--tonecos-line))] pt-3 text-xs leading-relaxed text-[hsl(var(--tonecos-muted))]">
-                  Exibição informativa. Valores, fabricação e disponibilidade
-                  são confirmados somente na etapa comercial de orçamento.
-                </p>
-              </div>
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={selectionOpen} onOpenChange={setSelectionOpen}>
         <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto bg-[hsl(var(--tonecos-panel))] text-[hsl(var(--tonecos-ink))]">

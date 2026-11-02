@@ -39,6 +39,20 @@ export type PublicCatalogPage = {
   nextCursor: string | null;
 };
 
+export type PublicCatalogImage = {
+  id: string;
+  role: "cover" | "gallery";
+  width: number;
+  height: number;
+  bytes: number;
+  mime: string;
+  qualityScore: number;
+  sourceSha256: string;
+  variantKeys: { thumb: string | null; card: string | null; detail: string | null; original: string | null };
+};
+
+export type PublicCatalogGalleryPage = { items: PublicCatalogImage[]; nextCursor: string | null; total: number; version: number };
+export type PublicCatalogGalleryFilters = { version: number; cursor?: string; limit?: number };
 export type PublicCatalogFilters = {
   category?: string;
   franchise?: string;
@@ -232,6 +246,43 @@ export function createPublicCatalogGateway(
       };
     },
 
+    async listGallery(slug: string, filters: PublicCatalogGalleryFilters, signal?: AbortSignal): Promise<PublicCatalogGalleryPage> {
+      if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(slug)) throw new Error("invalid_catalog_slug");
+      if (!Number.isInteger(filters.version) || filters.version < 1) throw new Error("catalog_gallery_version_invalid");
+      const limit = filters.limit ?? 24;
+      if (!Number.isInteger(limit) || limit < 1 || limit > 60) throw new Error("catalog_gallery_limit_invalid");
+      const url = new URL("api/models/" + encodeURIComponent(slug) + "/images", base);
+      url.searchParams.set("limit", String(limit));
+      url.searchParams.set("v", String(filters.version));
+      if (filters.cursor) url.searchParams.set("cursor", filters.cursor);
+      const response = await fetcher(url.toString(), { method: "GET", credentials: "omit", headers: { Accept: "application/json" }, signal });
+      if (!response.ok) throw new Error("catalog_request_failed_" + response.status);
+      const payload: unknown = await response.json();
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("invalid_catalog_gallery");
+      const row = payload as { items?: unknown; nextCursor?: unknown; total?: unknown; version?: unknown };
+      if (!Array.isArray(row.items) || row.items.length > limit) throw new Error("invalid_catalog_gallery_items");
+      const total = wholeNumber(row.total, "gallery_total");
+      const version = wholeNumber(row.version, "gallery_version");
+      if (version !== filters.version) throw new Error("catalog_gallery_version_mismatch");
+      const nextCursor = row.nextCursor;
+      if (nextCursor !== null && nextCursor !== undefined && (typeof nextCursor !== "string" || !nextCursor || nextCursor.length > 2048)) throw new Error("invalid_catalog_gallery_cursor");
+      const items = row.items.map((value: unknown): PublicCatalogImage => {
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_catalog_gallery_image");
+        const image = value as { id?: unknown; role?: unknown; width?: unknown; height?: unknown; bytes?: unknown; mime?: unknown; qualityScore?: unknown; sourceSha256?: unknown; variantKeys?: unknown };
+        if (image.role !== "cover" && image.role !== "gallery") throw new Error("invalid_catalog_gallery_role");
+        if (typeof image.qualityScore !== "number" || !Number.isFinite(image.qualityScore)) throw new Error("invalid_catalog_gallery_quality");
+        if (!image.variantKeys || typeof image.variantKeys !== "object" || Array.isArray(image.variantKeys)) throw new Error("invalid_catalog_gallery_variants");
+        const variants = image.variantKeys as { thumb?: unknown; card?: unknown; detail?: unknown; original?: unknown };
+        return {
+          id: requiredText(image.id, "gallery_image_id"), role: image.role,
+          width: wholeNumber(image.width, "gallery_width"), height: wholeNumber(image.height, "gallery_height"),
+          bytes: wholeNumber(image.bytes, "gallery_bytes"), mime: requiredText(image.mime, "gallery_mime"),
+          qualityScore: image.qualityScore, sourceSha256: requiredText(image.sourceSha256, "gallery_source_sha256"),
+          variantKeys: { thumb: optionalText(variants.thumb, "gallery_thumb"), card: optionalText(variants.card, "gallery_card"), detail: optionalText(variants.detail, "gallery_detail"), original: optionalText(variants.original, "gallery_original") },
+        };
+      });
+      return { items, nextCursor: (nextCursor as string | null | undefined) ?? null, total, version };
+    },
     async listPage(
       filters: PublicCatalogFilters = {},
       signal?: AbortSignal,

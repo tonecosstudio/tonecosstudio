@@ -22,7 +22,7 @@ const ArcadeLab = lazy(() => import("./pages/ArcadeLab"));
 const CatalogArcade = lazy(() => import("./pages/CatalogArcade"));
 const CatalogModelsArcade = lazy(() => import("./pages/CatalogModelsArcade"));
 const CatalogCharacterArcade = lazy(() => import("./pages/CatalogCharacterArcade"));
-const ModelDetails = lazy(() => import("./pages/catalog/ModelDetails"));
+const ModelDetails = lazy(() => import("./pages/catalog/ModelDetailsRoute"));
 const AboutArcade = lazy(() => import("./pages/AboutArcade"));
 const PlansArcade = lazy(() => import("./pages/PlansArcade"));
 const CollectionsShowcase = lazy(() => import("./pages/CollectionsShowcase"));
