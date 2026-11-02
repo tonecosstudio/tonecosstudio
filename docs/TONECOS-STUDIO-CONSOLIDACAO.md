@@ -15,6 +15,16 @@ Estado: **EM INTEGRAÇÃO / NO-GO**. Esta diretriz substitui o planejamento de p
 - Consultas informativas podem utilizar o cache existente, mas precificação para uma coleção deve buscar valores atuais. A cotação final e autorização permanecem sob autoridade de serviços comerciais do Supabase, jamais do navegador ou de um modelo do catálogo Cloudflare.
 - Testes de contrato: `pricing-settings-service.test.ts` e `collection-pricing-service.test.ts`, 32/32 aprovados localmente em isolamento; Vercel e `release:verify` do SHA final ainda obrigatórios.
 
+## Identidade visual canônica — decisão do proprietário em 02/11/2026
+
+**Não redesenhar o Tonecos Studio.** O layout oficial é o do antigo OrdaX, com identidade/nomes substituídos por Tonecos. Preservar o visual escuro com detalhes dourados, as estruturas de navegação e HUD, os componentes Arcade, tipografia, espaçamentos, efeitos, Home, cards, área de cliente e administração. Comparar com a `main` pré-integração `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41` como referência visual (não como autoridade para recuperar consultas Supabase legadas).
+
+**Únicas adaptações visuais autorizadas sem novo pedido:** acomodar mais de 2 mil modelos, adicionar categorias, franquias, tags, busca e filtros, listagem paginada por cursor, galerias, seleção, estados vazios/erro e layout responsivo. A API Cloudflare é autoridade dos modelos; os serviços comerciais existentes continuam no Supabase. Não adicionar consultas de acervo em massa nem replicação Supabase.
+
+**Débito visual concreto:** `src/pages/CatalogModelsArcade.tsx` e `src/pages/catalog/CanonicalModelDetails.tsx` foram implementados com paleta marfim/oliva e tokens `--tonecos-*`. Isso diverge do layout aprovado e deve ser corrigido antes de integrar à `main`. Reutilizar `ArcadeHero`, `ArcadeSectionTitle`, `ArcadeCard` e tokens preexistentes `--gold-accent`, sem copiar `UniverseModelCard` com seus hooks legados de catálogo/preços. Manter toda a lógica funcional já implementada de cursor, URL `/modelos/:slug`, mídia, galeria e seleção. Reconciliar os tokens temporários após a migração; não estabelecer outro design system.
+
+**Gate visual:** executar confronto desktop/mobile com referência original, confirmando que não houve redesign geral, e avaliar listagem densa, filtros/tags, controles de paginação, detalhes e acessibilidade. Bloqueia GO enquanto a divergência da nova vitrine não for resolvida.
+
 ## Missão e proprietários
 
 - **Produto único:** `washingtonmsdj/tonecosstudio` hospeda a experiência web Tonecos (home, modelos, seleção, clientes, orçamentos, pagamentos, pedidos e produção).
@@ -39,7 +49,7 @@ Implementado:
 - `src/services/catalog/public-catalog-gateway.ts` introduz gateway de leitura isolado, com GET de catálogo, categorias e detalhes, cursor e limite de 60, mídia derivada da origem explícita, rejeição de payloads inválidos e nenhuma consulta SQL/D1 direta.
 - A rota **`/modelos`** foi migrada nesta branch para o catálogo canônico: busca somente por envio explícito, categorias sob demanda, 24 modelos por página, navegação por cursor, detalhes on-demand, estados loading/empty/error e seleção temporária de até 50 IDs com remoção/deduplicação. **Não é um deploy de produção** nem uma transação comercial; nada é enviado até a homologação do orçamento.
 - `VITE_CANONICAL_CATALOG_API_BASE` precisa apontar para um proxy HTTPS Tonecos homologado. Sem configuração, a rota mostra `Catálogo em integração` sem consultar Supabase, D1 ou Worker. Não substituímos ainda as rotas `/universo` e `/modelos/:id` nem o sistema comercial existente.
-- A paleta editorial marfim/oliva da nova rota está centralizada nos tokens `--tonecos-*` do `src/index.css`; não há CSS de marca paralelo. O restante do tema Arcade ainda exige migração progressiva.
+- **Débito de UI:** a rota `/modelos` e a ficha nova ainda contêm paleta editorial marfim/oliva e tokens `--tonecos-*`, em conflito com a decisão posterior do usuário. Manter gateway e funções implementadas, porém restaurar o estilo Arcade original antes de merge, reutilizando tokens existentes e eliminando tokens temporários após a reconciliação.
 - Nenhuma migration, backend, publicação de Worker, pedido ou orçamento real foi alterado.
 
 ## Bloqueios para merge / release (falha fechada)
@@ -49,7 +59,7 @@ Implementado:
 3. **Domínio e identidade:** definir URL first-party Tonecos, novos endereços reais de contato, política de indexação e vínculos SEO. Não colocar URLs ou e-mails imaginados como produção.
 4. **Gateway:** homologar o endpoint Worker e proxy same-origin de Tonecos **sem varreduras D1/R2**; manter API read-only, capturas tipadas de páginas pequenas e nenhuma conversão silenciosa de orçamento.
 5. **Contratos comerciais:** garantir idempotência, snapshot de nomes/modelos, preço por autoridade Supabase, pedido autenticado e recuperação de falhas (Worker aceita solicitação e Supabase falha ou vice-versa); preservar histórico de clientes, pagamentos e produção.
-6. **Frontend premium:** após os gates, substituir o visual arcade legado pelo sistema editorial da Tonecos com um SSOT de cores, fontes, espaçamento, acessibilidade e navegação. Usar modelos e mídia autorizados; imagens de animais são apenas demonstração, não o tema do catálogo.
+6. **Frontend fiel ao original:** preservar o visual Arcade/HUD escuro/dourado do OrdaX pré-migração, trocando somente branding e adaptando navegação, filtros, tags, cards e galerias ao catálogo de mais de 2 mil modelos. Não redesenhar o produto nem estabelecer nova paleta; usar imagens autorizadas.
 7. **QA:** em 01/11, Node 24 no desktop autorizado executou 8/8 testes locais de gateway/identidade (sem API real); o compilador esbuild validou a **sintaxe TSX** da página `/modelos`. **Isso não prova** TypeScript de todo o app, lint, Vitest/coverage, segurança nem E2E. Esses gates completos seguem pendentes no mesmo SHA de integração e antes de release.
 
 ## Ordem de execução sem trabalho duplicado
@@ -58,7 +68,7 @@ Implementado:
 2. Obter confirmação operacional dos limites do projeto Vercel e destino exclusivo da Tonecos; configurar pipeline seguro e testável sem domínio OrdaX.
 3. Homologar `/modelos` e `/modelos/:id` com proxy HTTPS first-party, UI e segurança; migrar a árvore `/universo` e validar a galeria paginada sem replicar modelos ao Supabase.
 4. Transformar a seleção em solicitação comercial única com status e idempotência entre sistemas e teste end-to-end; não usar o formulário antigo como ordem de produção automática.
-5. Aplicar nova identidade visual única e revisar fluxos administrativos existentes sem substituí-los por mocks.
+5. Restaurar a fidelidade visual da listagem/ficha ao layout Arcade original, ajustar responsividade/tags/filtros e revisar fluxos administrativos sem remodelar suas interfaces.
 6. Executar gates completos; integrar a main **somente se** o alvo de deployment estiver comprovadamente isolado e seguro.
 7. Só após cutover/rollback validado, redirecionar URLs externas e arquivar o catálogo separado sem apagar Worker, mídia ou histórico.
 

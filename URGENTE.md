@@ -6,6 +6,16 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Decisão visual canônica — 02/11/2026 (prioridade sobre planos anteriores)
+
+- **Decisão explícita do proprietário:** manter a aparência do antigo OrdaX; ajustar somente a marca **Tonecos Studio** e a capacidade de apresentar mais de **2 mil modelos** com tags, categorias, franquias, filtros, busca, galeria e paginação. Preservar a Home, HUD, navegação, fontes, dark/gold, cards, área do cliente e administração onde funcionam.
+- **Divergência em código, ainda NÃO corrigida:** `src/pages/CatalogModelsArcade.tsx` e `src/pages/catalog/CanonicalModelDetails.tsx` foram estilizados na integração com paleta marfim/oliva, diferente da base original. A implementação de Worker/cursor/slug/seleção deve ser mantida; a estilização precisa retornar aos componentes Arcade e tokens já canônicos, sem adicionar novos sistemas de UI.
+- **Proibição:** não executar redesign editorial completo; não eliminar o visual arcade; não duplicar o componente legado com acesso Supabase para renderizar dados Cloudflare. Integrar a funcionalidade nas superfícies visuais já existentes.
+- **Gate novo:** confronto visual desktop/mobile do `main` pré-migração (`fdd2992a7`) contra a branch atual, preservando fluxos de navegação; checar alto volume/estados de tags, busca, filtros, 24 por página e URLs estáveis. Não alegar preservação total enquanto a divergência persistir.
+- **Próxima ação de UI:** corrigir a apresentação da listagem e da ficha, mantendo funcionalidade e contratos canônicos; validar regressões e CI. Não consultar D1 ou duplicar catálogo Supabase para testes visuais.
+
+---
+
 ## Checkpoint SSOT de preços comerciais — 02/11/2026
 
 - **Fonte única de leitura e validação:** `src/services/pricing/pricing-settings-service.ts` permanece a autoridade canônica para preços, Pix, sinal e parâmetros operacionais. `src/services/pricing/collection-pricing-service.ts` foi refatorado para **delegar** a `fetchPricingSettings({ forceRefresh: true })`, sem uma segunda consulta direta a `system_settings` nem duplicar parse/validadores.

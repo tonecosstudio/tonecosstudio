@@ -15,6 +15,15 @@ Consolidar o **Tonecos Studio** como produto comercial único: site, catálogo e
 
 Documentos históricos nunca podem sobrescrever o estado observado no código, CI ou produção.
 
+## Contrato visual obrigatório — decisão explícita de 02/11/2026
+
+- **Preservar o layout original da aplicação OrdaX como referência visual oficial do Tonecos Studio.** A versão de `main` anterior à integração (`fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`) é a referência para comparação, não um alvo para ressuscitar a integração de dados antiga.
+- Conservar a estética escura com dourado, o Arcade/HUD existente, componentes compartilhados, tipografia, estrutura, efeitos, espaçamentos, cabeçalho, rodapé, Home, área do cliente e administração. Substituir apenas a marca e textos/dominios antigos por **Tonecos / Tonecos Studio**. Não adotar uma nova paleta marfim/oliva nem substituir o visual por uma vitrine editorial.
+- **Escala do catálogo:** acomodar acervo já superior a 2 mil modelos, com busca, ordenação, categorias, franquias, tags, filtros, galerias, seleção, links `/modelos/:slug`, carregamento incremental por cursor, imagens lazy/responsivas e estados de erro/sem resultados. A interface deve caber no visual antigo, sem sacrificar responsividade, acessibilidade e desempenho.
+- A `/modelos` e a ficha `/modelos/:slug` criadas na integração ainda utilizam tokens `--tonecos-*` em marfim/oliva. **É divergência visual conhecida e bloqueio para merge.** Corrigir para reutilizar componentes e tokens já existentes (por exemplo `ArcadeHero`, `ArcadeSectionTitle`, `ArcadeCard`, `--gold-accent`), preservando gateway Cloudflare, paginação e galeria. Não criar cópia de `UniverseModelCard` atrelada a Supabase; reutilizar o invólucro visual sem reaproveitar autoridade de dados comercial antiga.
+- **Sem redesign geral.** Qualquer alteração visual fora de branding, escala, filtros/tags, responsividade ou correções comprovadas de UX depende de autorização explícita do usuário. Mudanças em telas existentes requerem comparação visual antiga/nova no desktop e no celular antes do merge.
+- Manter um único SSOT de tokens e componentes. Após migrar os consumidores do novo catálogo, remover tokens temporários `--tonecos-*` se não forem utilizados. Não criar um segundo design system.
+
 ## Regras de mudança
 
 - A `main` continua sendo a única branch publicada. **Durante a consolidação autorizada em 01/11/2026, usar exclusivamente `integration/tonecosstudio-canonical-20261101` para mudanças de código**, sem PR ou branch paralela.
