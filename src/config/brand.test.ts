@@ -26,3 +26,16 @@ it("keeps public entry points free of the old OrdaX storefront identity", () => 
     expect(content, sourcePath).not.toMatch(/\bordax\b/i);
   }
 });
+
+it("routes model discovery through the canonical catalog without Supabase fallback", () => {
+  const page = readFileSync(
+    new URL("../pages/CatalogModelsArcade.tsx", import.meta.url),
+    "utf8",
+  );
+  expect(page).toContain("gateway!.listPage(");
+  expect(page).toContain("gateway!.getModel(");
+  expect(page).toContain("toggleCanonicalSelection(");
+  expect(page).toContain("MAX_CANONICAL_SELECTION");
+  expect(page).toContain("Nenhum orçamento foi enviado.");
+  expect(page).not.toMatch(/useCatalogModels|UniverseModelCard|supabase|createQuote|submitQuote/);
+});
