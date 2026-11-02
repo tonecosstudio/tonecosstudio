@@ -130,6 +130,23 @@ function validateCatalogCursor(value: string | undefined, field: string): void {
   }
 }
 
+function validCatalogSlug(value: string): boolean {
+  return /^[a-z0-9][a-z0-9-]{0,239}$/.test(value);
+}
+
+function validCatalogFolder(value: string): boolean {
+  return (
+    value.length <= 512 &&
+    !Array.from(value).some(
+      (part) => part.charCodeAt(0) < 32 || part.charCodeAt(0) === 127,
+    ) &&
+    !value
+      .replaceAll(String.fromCharCode(92), "/")
+      .split("/")
+      .some((part) => part === "." || part === "..")
+  );
+}
+
 function wholeNumber(value: unknown, field: string): number {
   if (!Number.isInteger(value) || (value as number) < 0) {
     throw new Error(`invalid_catalog_${field}`);
@@ -280,7 +297,7 @@ export function createPublicCatalogGateway(
       }
       if (
         filters.category &&
-        !/^[a-z0-9][a-z0-9-]{0,239}$/.test(filters.category)
+        !validCatalogSlug(filters.category)
       ) {
         throw new Error("catalog_franchise_category_invalid");
       }
@@ -344,7 +361,7 @@ export function createPublicCatalogGateway(
       slug: string,
       signal?: AbortSignal,
     ): Promise<PublicCatalogDetail> {
-      if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(slug))
+      if (!validCatalogSlug(slug))
         throw new Error("invalid_catalog_slug");
       const result = await read(
         `api/models/${encodeURIComponent(slug)}`,
@@ -375,7 +392,7 @@ export function createPublicCatalogGateway(
       filters: PublicCatalogGalleryFilters,
       signal?: AbortSignal,
     ): Promise<PublicCatalogGalleryPage> {
-      if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(slug))
+      if (!validCatalogSlug(slug))
         throw new Error("invalid_catalog_slug");
       if (!Number.isInteger(filters.version) || filters.version < 1)
         throw new Error("catalog_gallery_version_invalid");
@@ -493,6 +510,19 @@ export function createPublicCatalogGateway(
         (Array.from(query).length < 3 || Array.from(query).length > 80)
       ) {
         throw new Error("catalog_search_length_invalid");
+      }
+      if (
+        filters.category &&
+        filters.category !== "all" &&
+        !validCatalogSlug(filters.category)
+      ) {
+        throw new Error("catalog_category_invalid");
+      }
+      if (filters.franchise && !validCatalogSlug(filters.franchise)) {
+        throw new Error("catalog_franchise_invalid");
+      }
+      if (filters.folder && !validCatalogFolder(filters.folder)) {
+        throw new Error("catalog_folder_invalid");
       }
       if (filters.folder && (!filters.category || !filters.franchise)) {
         throw new Error("catalog_folder_requires_scope");
