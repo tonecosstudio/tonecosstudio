@@ -22,7 +22,10 @@ Implementado:
 - CSP não inclui `ordax.com.br` por padrão. `robots.txt` mantém `Disallow: /` durante a migração; sitemap antigo foi retirado. Regenerar sitemap e permitir indexação **somente** após domínio Tonecos e publicação aprovados.
 - Contatos e razão social não recebem defaults falsos do OrdaX; habilitar somente valores reais verificados.
 - Mídias do R2 legado não usam fallback `ordax.com.br`; falta configurar a origem de mídia do novo site antes do cutover.
-- `src/services/catalog/public-catalog-gateway.ts` introduz um **gateway de leitura isolado**, com `GET /api/catalog`, cursor e limite 60, rejeição de respostas inválidas, nenhum retry automático e nenhum acesso direto ao D1. Ele **ainda não está conectado à rota de produção**.
+- `src/services/catalog/public-catalog-gateway.ts` introduz gateway de leitura isolado, com GET de catálogo, categorias e detalhes, cursor e limite de 60, mídia derivada da origem explícita, rejeição de payloads inválidos e nenhuma consulta SQL/D1 direta.
+- A rota **`/modelos`** foi migrada nesta branch para o catálogo canônico: busca somente por envio explícito, categorias sob demanda, 24 modelos por página, navegação por cursor com conjunto de cartões pequeno, detalhes on-demand, estados loading/empty/error e nenhuma gravação de preço/orçamento. **Não é um deploy de produção.**
+- `VITE_CANONICAL_CATALOG_API_BASE` precisa apontar para um proxy HTTPS Tonecos homologado. Sem configuração, a rota mostra `Catálogo em integração` sem consultar Supabase, D1 ou Worker. Não substituímos ainda as rotas `/universo` e `/modelos/:id` nem o sistema comercial existente.
+- A paleta editorial marfim/oliva da nova rota está centralizada nos tokens `--tonecos-*` do `src/index.css`; não há CSS de marca paralelo. O restante do tema Arcade ainda exige migração progressiva.
 - Nenhuma migration, backend, publicação de Worker, pedido ou orçamento real foi alterado.
 
 ## Bloqueios para merge / release (falha fechada)
@@ -33,17 +36,23 @@ Implementado:
 4. **Gateway:** homologar o endpoint Worker e proxy same-origin de Tonecos **sem varreduras D1/R2**; manter API read-only, capturas tipadas de páginas pequenas e nenhuma conversão silenciosa de orçamento.
 5. **Contratos comerciais:** garantir idempotência, snapshot de nomes/modelos, preço por autoridade Supabase, pedido autenticado e recuperação de falhas (Worker aceita solicitação e Supabase falha ou vice-versa); preservar histórico de clientes, pagamentos e produção.
 6. **Frontend premium:** após os gates, substituir o visual arcade legado pelo sistema editorial da Tonecos com um SSOT de cores, fontes, espaçamento, acessibilidade e navegação. Usar modelos e mídia autorizados; imagens de animais são apenas demonstração, não o tema do catálogo.
-7. **QA:** compilar TypeScript, lint, formatação, Vitest/coverage, security audits, build e testes desktop/mobile com o **mesmo SHA**. Não afrouxar assertions ou CI para obter verde.
+7. **QA:** em 01/11, Node 24 no desktop autorizado executou 8/8 testes locais de gateway/identidade (sem API real); o compilador esbuild validou a **sintaxe TSX** da página `/modelos`. **Isso não prova** TypeScript de todo o app, lint, Vitest/coverage, segurança nem E2E. Esses gates completos seguem pendentes no mesmo SHA de integração e antes de release.
 
 ## Ordem de execução sem trabalho duplicado
 
 1. Revisar e estabilizar o único branch `integration/tonecosstudio-canonical-20261101`; corrigir qualquer falha de TypeScript/formatos; manter main inalterada.
 2. Obter confirmação operacional dos limites do projeto Vercel e destino exclusivo da Tonecos; configurar pipeline seguro e testável sem domínio OrdaX.
-3. Integrar o gateway do Worker na rota do Studio atrás de contrato versionado, sem replicar dados para o Supabase; adaptar busca, cursor, mídia e galeria.
+3. Homologar `/modelos` (já integrada na branch) com proxy HTTPS first-party, UI e segurança, migrar a ficha direta `/modelos/:id` e árvore `/universo`, e implementar galeria paginada sem replicar modelos ao Supabase.
 4. Transformar a seleção em solicitação comercial única com status e idempotência entre sistemas e teste end-to-end; não usar o formulário antigo como ordem de produção automática.
 5. Aplicar nova identidade visual única e revisar fluxos administrativos existentes sem substituí-los por mocks.
 6. Executar gates completos; integrar a main **somente se** o alvo de deployment estiver comprovadamente isolado e seguro.
 7. Só após cutover/rollback validado, redirecionar URLs externas e arquivar o catálogo separado sem apagar Worker, mídia ou histórico.
+
+## Evidências sem acesso à produção
+
+- 8/8 testes Node 24 aprovados em sessão local isolada com respostas HTTP simuladas; incluem mídia malformada, SQL zero, cursor, categorização e rejeição de ID duplicado. Foi corrigido um defeito real de barras invertidas na validação de caminho da mídia.
+- Esbuild 0.25.12 analisou e transpiliou a página TSX da branch com exit code 0, mas **não** resolveu dependências nem compilou o projeto completo.
+- Nenhuma chamada ao D1/R2 de produção, workflow de deploy, alteração no Supabase ou migração de schema. CI geral do repositório ainda sem prova verde.
 
 ## Restrições
 
