@@ -9,6 +9,7 @@ import {
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES } from "@/config/routes";
+import { CanonicalUniverseFolders } from "@/pages/catalog/CanonicalUniverseFolders";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
 
@@ -28,7 +29,7 @@ function modelsPath(category?: string, franchise?: string): string {
  * synthesize missing character/folder aggregates.
  */
 export default function CatalogArcade() {
-  const { themeKey, franchiseKey } = useParams<{
+  const { themeKey, franchiseKey, characterSlug } = useParams<{
     themeKey?: string;
     franchiseKey?: string;
     characterSlug?: string;
@@ -69,7 +70,7 @@ export default function CatalogArcade() {
 
   // Existing deep links remain navigable. A character-only index is not
   // exposed by the canonical API, so never invent character-level results.
-  if (franchiseKey && themeKey && !invalidScope) {
+  if (characterSlug && franchiseKey && themeKey && !invalidScope) {
     return <Navigate to={modelsPath(themeKey, franchiseKey)} replace />;
   }
 
@@ -105,7 +106,7 @@ export default function CatalogArcade() {
             </Link>
           </nav>
           <ArcadeSectionTitle>
-            {themeKey ? "FRANQUIAS DA CATEGORIA" : "CATEGORIAS"}
+            {franchiseKey ? "PASTAS E MODELOS" : themeKey ? "FRANQUIAS DA CATEGORIA" : "CATEGORIAS"}
           </ArcadeSectionTitle>
 
           {gateway === null ? (
@@ -116,6 +117,12 @@ export default function CatalogArcade() {
             <div role="status" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
               Categoria ou franquia inválida. Volte ao Universo para navegar pelas categorias publicadas.
             </div>
+          ) : franchiseKey && themeKey ? (
+            <CanonicalUniverseFolders
+              category={themeKey}
+              franchise={franchiseKey}
+              gateway={gateway}
+            />
           ) : activeQuery.isPending ? (
             <p role="status" className="mt-6 p-8 text-sm">Carregando categorias publicadas…</p>
           ) : activeQuery.isError ? (
@@ -135,8 +142,12 @@ export default function CatalogArcade() {
                 <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {franchises.map((franchise) => (
                     <ArcadeCard key={franchise.category + "/" + franchise.id}>
-                      <Link className="group flex min-h-44 flex-col gap-4 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={modelsPath(themeKey, franchise.id)}>
-                        <FolderOpen className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                      <Link className="group flex min-h-44 flex-col gap-4 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + themeKey + "/" + franchise.id}>
+                        {franchise.coverStorageKey && gateway.mediaUrl(franchise.coverStorageKey) ? (
+                          <img src={gateway.mediaUrl(franchise.coverStorageKey)!} alt={"Prévia de " + franchise.label} loading="lazy" decoding="async" className="h-24 w-full object-contain" />
+                        ) : (
+                          <FolderOpen className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                        )}
                         <span className="line-clamp-2 font-semibold uppercase">{franchise.label}</span>
                         <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
                           {franchise.count} modelos <ArrowRight size={16} aria-hidden="true" />
@@ -161,7 +172,11 @@ export default function CatalogArcade() {
               {categories.map((category) => (
                 <ArcadeCard key={category.id}>
                   <Link className="group flex min-h-44 flex-col gap-4 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={category.id === "all" ? modelsPath() : PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(category.id)}>
-                    <ImageOff className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                    {category.coverStorageKey && gateway.mediaUrl(category.coverStorageKey) ? (
+                      <img src={gateway.mediaUrl(category.coverStorageKey)!} alt={"Prévia de " + category.label} loading="lazy" decoding="async" className="h-24 w-full object-contain" />
+                    ) : (
+                      <ImageOff className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                    )}
                     <span className="line-clamp-2 font-semibold uppercase">{category.label}</span>
                     <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
                       {category.count} modelos <ArrowRight size={16} aria-hidden="true" />
