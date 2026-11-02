@@ -243,8 +243,8 @@ export default function ModelDetails() {
       : buildModelTitle(displayName, sourceTitle)
     : "Modelo";
   const seoDescription = model
-    ? `Veja detalhes do modelo ${title}. Peca disponivel no universo ORDAX.`
-    : "Veja detalhes do modelo. Peca disponivel no universo ORDAX.";
+    ? `Veja detalhes do modelo ${title}. Referência do catálogo Tonecos.`
+    : "Veja detalhes do modelo. Referência do catálogo Tonecos.";
   const headlineTitle = displayName;
   const subtitleParts = uniqueStrings([
     sourceTitle,
