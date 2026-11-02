@@ -49,7 +49,7 @@ export async function checkCollectionTypeNameExists(
 
   if (error) {
     log.error("Failed to check collection type name", { error, name, excludeId });
-    return false;
+    throw new Error(`Erro ao verificar nome do tipo de colecao: ${error.message}`);
   }
 
   return data && data.length > 0;
@@ -62,7 +62,12 @@ export async function getNextCollectionTypeSortOrder(): Promise<number> {
     .order("sort_order", { ascending: false })
     .limit(1);
 
-  if (error || !data || data.length === 0) {
+  if (error) {
+    log.error("Failed to read next collection type sort order", { error });
+    throw new Error(`Erro ao buscar ordem do tipo de colecao: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
     return 0;
   }
 

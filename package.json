@@ -65,8 +65,6 @@
     "catalog:repair-manifest-coverage": "node scripts/catalog/repair-catalog-manifest-coverage.mjs",
     "catalog:restore-missing-physical": "node scripts/catalog/restore-catalog-missing-physical-from-source.mjs",
     "catalog:sync-manifest-case": "node scripts/catalog/sync-catalog-manifest-case-from-physical.mjs",
-    "cloudflare:bootstrap": "node scripts/cloudflare/bootstrap-cloudflare.mjs",
-    "cloudflare:pages:deploy": "npm run build && npx wrangler pages deploy dist --project-name ordax",
     "cloudflare:r2:upload-catalog": "node scripts/cloudflare/upload-catalog-webp-to-r2.mjs",
     "cloudflare:r2:import-queue": "node scripts/cloudflare/import-r2-catalog-queue.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\" \"*.{json,md}\"",
