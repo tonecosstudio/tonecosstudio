@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { BRAND_NAME, BRAND_SHORT_NAME, BRAND_STUDIO_LABEL } from "./brand";
 
 describe("Tonecos public identity", () => {
@@ -8,4 +9,20 @@ describe("Tonecos public identity", () => {
     expect(BRAND_STUDIO_LABEL).toBe("Studio");
     expect(BRAND_NAME).not.toMatch(/ordax/i);
   });
+});
+
+it("keeps public entry points free of the old OrdaX storefront identity", () => {
+  const entryPoints = [
+    "../../index.html",
+    "../pages/LandingPage.tsx",
+    "../pages/CatalogArcade.tsx",
+    "../pages/CatalogModelsArcade.tsx",
+    "../components/arcade/ArcadeNav.tsx",
+    "../components/arcade/ArcadeFooter.tsx",
+    "../components/SEOHead.tsx",
+  ];
+  for (const sourcePath of entryPoints) {
+    const content = readFileSync(new URL(sourcePath, import.meta.url), "utf8");
+    expect(content, sourcePath).not.toMatch(/\bordax\b/i);
+  }
 });
