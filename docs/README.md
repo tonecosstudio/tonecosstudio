@@ -1,4 +1,4 @@
-# Documentação ORDAX
+# Documentação Tonecos Studio
 
 Este diretório contém somente documentação que pode orientar trabalho atual. O histórico datado pertence a docs-archive e não define o estado do produto.
 
@@ -7,8 +7,9 @@ Este diretório contém somente documentação que pode orientar trabalho atual.
 1. [URGENTE.md](../URGENTE.md) — plano, evidências, bloqueios e checkpoints de lançamento;
 2. [AGENTS.md](../AGENTS.md) — regras de execução e handoff;
 3. [README.md](../README.md) — visão geral e comandos;
-4. documentos temáticos vigentes deste diretório;
-5. [docs-archive/](../docs-archive/) — histórico para consulta, sem autoridade operacional.
+4. [TONECOS-STUDIO-CONSOLIDACAO.md](TONECOS-STUDIO-CONSOLIDACAO.md) — autoridade do produto comercial e integração escalável;
+5. documentos temáticos vigentes deste diretório;
+6. [docs-archive/](../docs-archive/) — histórico para consulta, sem autoridade operacional.
 
 ## Estado da organização
 
