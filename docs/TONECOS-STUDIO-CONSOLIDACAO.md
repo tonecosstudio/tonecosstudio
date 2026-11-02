@@ -51,7 +51,7 @@ Implementado:
 ## Evidências sem acesso à produção
 
 - 9/9 testes Node 24 aprovados em sessão local isolada com respostas HTTP simuladas; incluem mídia malformada, cursor, categorias, detalhe, rejeição de IDs duplicados e limite de 50 modelos na seleção temporária. Foi corrigido um defeito real de barras invertidas na validação de caminho da mídia.
-- Esbuild 0.25.12 analisou e transpiliou a página TSX da branch com exit code 0, mas **não** resolveu dependências nem compilou o projeto completo.
+- Esbuild 0.25.12 analisou e transpiliou a página TSX da branch com exit code 0. TypeScript 5.9.3 validou com `--strict --skipLibCheck` os módulos isolados de gateway, seleção e identidade (exit 0). Prettier 3.6.2 verificou os três módulos de catálogo editados (exit 0). **Não** executamos compilação completa das dependências React, CI, audit de segurança global ou E2E real.
 - Nenhuma chamada ao D1/R2 de produção, workflow de deploy, alteração no Supabase ou migração de schema. CI geral do repositório ainda sem prova verde.
 
 ## Restrições
