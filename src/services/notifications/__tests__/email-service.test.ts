@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { EmailService } from '../email-service';
+import { CONTACT } from '@/config/constants';
 import { supabase } from '@/integrations/supabase/client';
 
 describe('EmailService', () => {
@@ -26,7 +27,11 @@ describe('EmailService', () => {
       const config = emailService.getConfig();
       
       expect(config.provider).toBe('edge-function');
-      expect(config.from).toMatch(/@/);
+      expect(config.from).toBe(import.meta.env.VITE_EMAIL_FROM || CONTACT.SUPPORT_EMAIL);
+      expect(emailService.isConfigured()).toBe(Boolean(config.from && config.fromName));
+      if (config.from) {
+        expect(config.from).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+      }
       expect(config.fromName).toBeTruthy();
       expect(config.maxRetries).toBeGreaterThanOrEqual(0);
       expect(config.retryDelay).toBeGreaterThan(0);

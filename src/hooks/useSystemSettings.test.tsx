@@ -1,4 +1,5 @@
 import type React from "react";
+import { CONTACT } from "@/config/constants";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -101,7 +102,7 @@ describe("useSystemSettings", () => {
       character_choice_days: 7,
       balance_payment_days: 5,
     });
-    expect(result.current.data?.support_email).toBeTruthy();
+    expect(result.current.data?.support_email).toBe(CONTACT.SUPPORT_EMAIL);
     expect(mocks.from).toHaveBeenCalledWith("system_settings");
     expect(mocks.select).toHaveBeenCalledWith("key,value");
 

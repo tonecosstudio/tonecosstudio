@@ -111,6 +111,7 @@ describe("catalog models service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.unstubAllEnvs();
+    vi.stubEnv("VITE_CATALOG_ASSET_BASE_URL", "https://cdn.example.com");
     Object.keys(CATALOG_CHARACTER_PRESENTATION_OVERRIDES).forEach((key) => {
       delete CATALOG_CHARACTER_PRESENTATION_OVERRIDES[key];
     });
@@ -144,10 +145,22 @@ describe("catalog models service", () => {
     expect(models[0]).toMatchObject({
       id: "model-1",
       imageUrl:
-        "https://ordax.com.br/catalog-webp-final/display/filmes/lilo-and-stitch/stitch/stitch.webp",
+        "https://cdn.example.com/catalog-webp-final/display/filmes/lilo-and-stitch/stitch/stitch.webp",
       thumbnailUrl:
-        "https://ordax.com.br/catalog-webp-final/display/filmes/lilo-and-stitch/stitch/stitch.webp",
+        "https://cdn.example.com/catalog-webp-final/display/filmes/lilo-and-stitch/stitch/stitch.webp",
     });
+  });
+
+  it("does not invent legacy OrdaX media when the asset origin is absent", async () => {
+    vi.stubEnv("VITE_CATALOG_ASSET_BASE_URL", "");
+    const query = createCatalogQuery({ data: [modelRow], error: null });
+    mocks.select.mockReturnValue(query);
+
+    const rows = await listRecentLandingModels(6);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe("model-1");
+    expect(rows[0].imageUrl).toBeNull();
+    expect(rows[0].thumbnailUrl).toBeNull();
   });
 
   it("does not hide schema drift behind a legacy fallback query", async () => {

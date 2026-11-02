@@ -88,7 +88,7 @@ export class EmailService {
       fromName:
         import.meta.env.VITE_EMAIL_FROM_NAME ||
         import.meta.env.VITE_COMPANY_NAME ||
-        "ORDAX",
+        CONTACT.COMPANY_NAME,
       maxRetries:
         Number.isInteger(parsedRetries) && parsedRetries >= 0 ? parsedRetries : 3,
       retryDelay:
@@ -286,7 +286,7 @@ export class EmailService {
 
     await this.sendEmail(
       profile.email,
-      "Atualização de produção do seu pedido ORDAX",
+      `Atualização de produção do seu pedido ${CONTACT.COMPANY_NAME}`,
       html,
       "production_update",
       purchase.user_id,

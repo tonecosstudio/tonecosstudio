@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { BRAND_NAME, BRAND_SHORT_NAME, BRAND_STUDIO_LABEL } from "./brand";
 
 describe("Tonecos public identity", () => {
@@ -13,29 +14,42 @@ describe("Tonecos public identity", () => {
 
 it("keeps public entry points free of the old OrdaX storefront identity", () => {
   const entryPoints = [
-    "../../index.html",
-    "../pages/LandingPage.tsx",
-    "../pages/CatalogArcade.tsx",
-    "../pages/CatalogModelsArcade.tsx",
-    "../components/arcade/ArcadeNav.tsx",
-    "../components/arcade/ArcadeFooter.tsx",
-    "../components/SEOHead.tsx",
+    "index.html",
+    "src/pages/LandingPage.tsx",
+    "src/pages/CatalogArcade.tsx",
+    "src/pages/CatalogModelsArcade.tsx",
+    "src/components/arcade/ArcadeNav.tsx",
+    "src/components/arcade/ArcadeFooter.tsx",
+    "src/components/SEOHead.tsx",
   ];
   for (const sourcePath of entryPoints) {
-    const content = readFileSync(new URL(sourcePath, import.meta.url), "utf8");
+    const content = readFileSync(resolve(process.cwd(), sourcePath), "utf8");
     expect(content, sourcePath).not.toMatch(/\bordax\b/i);
   }
 });
 
-it("routes model discovery through the canonical catalog without Supabase fallback", () => {
+it("routes model discovery to the canonical gateway and preserves shareable links", () => {
   const page = readFileSync(
-    new URL("../pages/CatalogModelsArcade.tsx", import.meta.url),
+    resolve(process.cwd(), "src/pages/CatalogModelsArcade.tsx"),
+    "utf8",
+  );
+  const details = readFileSync(
+    resolve(process.cwd(), "src/pages/catalog/CanonicalModelDetails.tsx"),
+    "utf8",
+  );
+  const router = readFileSync(
+    resolve(process.cwd(), "src/pages/catalog/ModelDetailsRoute.tsx"),
     "utf8",
   );
   expect(page).toContain("gateway!.listPage(");
-  expect(page).toContain("gateway!.getModel(");
+  expect(page).toContain("catalogModelDetailsPath(model.slug)");
   expect(page).toContain("toggleCanonicalSelection(");
   expect(page).toContain("MAX_CANONICAL_SELECTION");
   expect(page).toContain("Nenhum orçamento foi enviado.");
   expect(page).not.toMatch(/useCatalogModels|UniverseModelCard|supabase|createQuote|submitQuote/);
+  expect(details).toContain("gateway!.getModel(");
+  expect(details).toContain("gateway!.listGallery(");
+  expect(router).toContain("LEGACY_MODEL_ID");
+  expect(router).toContain("CanonicalModelDetails");
+  expect(router).toContain("LegacyModelDetails");
 });
