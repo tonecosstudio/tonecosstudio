@@ -6,7 +6,7 @@ Plataforma comercial Tonecos: site, contas, catálogo integrado, seleção de mo
 
 **NO-GO para lançamento ou substituição do site público.** O repositório está privado e a main foi preservada. O trabalho atual acontece somente na branch `integration/tonecosstudio-canonical-20261101`, porque o projeto Vercel antigo ainda precisa ser comprovadamente isolado do domínio OrdaX.
 
-O catálogo escalável permanece tecnicamente no projeto `washingtonmsdj/catalogo` (Cloudflare Worker/D1/R2) durante a migração. O Studio aproveita o núcleo comercial Supabase existente. A integração nova está em preparação: o gateway HTTP já foi implementado em branch, mas **não** está conectado às rotas públicas nem autorizado a publicar dados ou criar pedidos.
+O catálogo escalável permanece tecnicamente no projeto `washingtonmsdj/catalogo` (Cloudflare Worker/D1/R2) durante a migração. O Studio aproveita o núcleo comercial Supabase existente. A primeira integração de leitura está na branch: a rota `/modelos` usa o gateway canônico HTTPS com filtros/cursor e detalhes sob demanda, sem copiar catálogo ao Supabase. A configuração `VITE_CANONICAL_CATALOG_API_BASE` é obrigatória para ativar essa origem; sem ela, a interface mostra indisponibilidade explícita. **Não há autorização para publicar dados, emitir pedidos ou criar orçamentos automaticamente.**
 
 Veja [URGENTE.md](URGENTE.md) para o checkpoint operacional e [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md) para o contrato entre catálogo, sistema comercial, identidade, deploy e orçamento. Não usar métricas ou relatórios datados como prova atual.
 
@@ -30,7 +30,7 @@ Veja [URGENTE.md](URGENTE.md) para o checkpoint operacional e [docs/TONECOS-STUD
 1. Clone o repositório.
 2. Execute npm ci.
 3. Copie .env.example para .env.local.
-4. Preencha somente os valores do seu ambiente.
+4. Preencha somente os valores do seu ambiente, incluindo `VITE_CANONICAL_CATALOG_API_BASE` **após** homologar o proxy HTTPS do Worker da Tonecos (nunca `ordax.com.br`).
 5. Execute npm run dev.
 
 Nunca coloque service_role, Stripe secret, OAuth secret, SMTP secret ou tokens em variáveis VITE_*.
