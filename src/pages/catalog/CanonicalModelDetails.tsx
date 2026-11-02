@@ -45,7 +45,8 @@ export default function CanonicalModelDetails() {
         signal,
       ),
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    enabled: gateway !== null && model !== undefined && model.galleryVersion > 0,
+    enabled:
+      gateway !== null && model !== undefined && model.galleryVersion > 0,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
@@ -56,7 +57,7 @@ export default function CanonicalModelDetails() {
     ? (activeImage.variantKeys.detail ??
       activeImage.variantKeys.card ??
       activeImage.variantKeys.thumb)
-    : model?.coverStorageKey ?? null;
+    : (model?.coverStorageKey ?? null);
   const activeImageUrl = gateway?.mediaUrl(activeImageKey) ?? null;
 
   function imageUrl(image: PublicCatalogImage) {
@@ -74,7 +75,11 @@ export default function CanonicalModelDetails() {
         model?.description ??
         "Ficha do modelo publicado no catálogo Tonecos Studio."
       }
-      keywords={model ? [model.name, model.category, model.franchise, "Tonecos Studio"] : ["Tonecos Studio", "modelo"]}
+      keywords={
+        model
+          ? [model.name, model.category, model.franchise, "Tonecos Studio"]
+          : ["Tonecos Studio", "modelo"]
+      }
     >
       <main className="min-h-[80vh] bg-[hsl(var(--tonecos-paper))] px-4 py-8 text-[hsl(var(--tonecos-ink))] md:px-8 md:py-12">
         <div className="mx-auto max-w-7xl">
@@ -86,15 +91,33 @@ export default function CanonicalModelDetails() {
             Voltar ao catálogo
           </Link>
 
-          {gateway === null || !slug ? (\n            <section className="mt-8 rounded-lg border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] p-6">\n              <h1 className="text-2xl font-medium">Ficha indisponível</h1>\n              <p role="alert" className="mt-2 text-sm text-[hsl(var(--tonecos-muted))]">A origem do catálogo Tonecos ainda não está configurada para este ambiente.</p>\n            </section>\n          ) : modelQuery.isPending ? (
-            <p role="status" className="mt-8 text-sm text-[hsl(var(--tonecos-muted))]">
+          {gateway === null || !slug ? (
+            <section className="mt-8 rounded-lg border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] p-6">
+              <h1 className="text-2xl font-medium">Ficha indisponível</h1>
+              <p
+                role="alert"
+                className="mt-2 text-sm text-[hsl(var(--tonecos-muted))]"
+              >
+                A origem do catálogo Tonecos ainda não está configurada para
+                este ambiente.
+              </p>
+            </section>
+          ) : modelQuery.isPending ? (
+            <p
+              role="status"
+              className="mt-8 text-sm text-[hsl(var(--tonecos-muted))]"
+            >
               Carregando ficha do modelo…
             </p>
           ) : modelQuery.isError || !model ? (
             <section className="mt-8 rounded-lg border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] p-6">
               <h1 className="text-2xl font-medium">Ficha indisponível</h1>
-              <p role="alert" className="mt-2 text-sm text-[hsl(var(--tonecos-muted))]">
-                Não foi possível carregar este modelo publicado. Tente novamente mais tarde.
+              <p
+                role="alert"
+                className="mt-2 text-sm text-[hsl(var(--tonecos-muted))]"
+              >
+                Não foi possível carregar este modelo publicado. Tente novamente
+                mais tarde.
               </p>
               <button
                 type="button"
@@ -117,19 +140,29 @@ export default function CanonicalModelDetails() {
                     />
                   ) : (
                     <div className="flex flex-col items-center gap-3 p-8 text-center text-[hsl(var(--tonecos-muted))]">
-                      <ImageOff aria-hidden="true" size={32} strokeWidth={1.4} />
+                      <ImageOff
+                        aria-hidden="true"
+                        size={32}
+                        strokeWidth={1.4}
+                      />
                       <span>Imagem indisponível</span>
                     </div>
                   )}
                 </div>
 
                 {model.galleryVersion > 0 && galleryQuery.isPending ? (
-                  <p role="status" className="mt-4 text-sm text-[hsl(var(--tonecos-muted))]">
+                  <p
+                    role="status"
+                    className="mt-4 text-sm text-[hsl(var(--tonecos-muted))]"
+                  >
                     Carregando galeria…
                   </p>
                 ) : galleryQuery.isError ? (
                   <div className="mt-4 flex flex-wrap items-center gap-3">
-                    <p role="alert" className="text-sm text-[hsl(var(--tonecos-muted))]">
+                    <p
+                      role="alert"
+                      className="text-sm text-[hsl(var(--tonecos-muted))]"
+                    >
                       A galeria não pôde ser carregada.
                     </p>
                     <button
@@ -150,7 +183,9 @@ export default function CanonicalModelDetails() {
                             key={image.id}
                             type="button"
                             onClick={() => setActiveImageId(image.id)}
-                            aria-label={"Ver imagem " + (index + 1) + " de " + model.name}
+                            aria-label={
+                              "Ver imagem " + (index + 1) + " de " + model.name
+                            }
                             aria-pressed={activeImage?.id === image.id}
                             className="aspect-square overflow-hidden rounded-md border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--tonecos-accent))] aria-pressed:border-[hsl(var(--tonecos-accent))]"
                           >
@@ -178,7 +213,9 @@ export default function CanonicalModelDetails() {
                         disabled={galleryQuery.isFetchingNextPage}
                         className="mt-4 min-h-11 rounded-md border border-[hsl(var(--tonecos-line))] px-4 text-sm font-medium hover:bg-[hsl(var(--tonecos-soft))] disabled:opacity-60"
                       >
-                        {galleryQuery.isFetchingNextPage ? "Carregando…" : "Carregar mais imagens"}
+                        {galleryQuery.isFetchingNextPage
+                          ? "Carregando…"
+                          : "Carregar mais imagens"}
                       </button>
                     ) : null}
                   </>
@@ -194,7 +231,9 @@ export default function CanonicalModelDetails() {
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[hsl(var(--tonecos-accent))]">
                     {model.category} · {model.franchise}
                   </p>
-                  <h1 className="mt-3 text-3xl leading-tight md:text-4xl">{model.name}</h1>
+                  <h1 className="mt-3 text-3xl leading-tight md:text-4xl">
+                    {model.name}
+                  </h1>
                   {model.variantName ? (
                     <p className="mt-2 text-base text-[hsl(var(--tonecos-muted))]">
                       {model.variantName}
@@ -215,24 +254,34 @@ export default function CanonicalModelDetails() {
                   </div>
                   {model.material ? (
                     <div>
-                      <dt className="text-[hsl(var(--tonecos-muted))]">Material</dt>
+                      <dt className="text-[hsl(var(--tonecos-muted))]">
+                        Material
+                      </dt>
                       <dd className="mt-1 font-medium">{model.material}</dd>
                     </div>
                   ) : null}
                   {model.heightCm !== null ? (
                     <div>
-                      <dt className="text-[hsl(var(--tonecos-muted))]">Altura informada</dt>
+                      <dt className="text-[hsl(var(--tonecos-muted))]">
+                        Altura informada
+                      </dt>
                       <dd className="mt-1 font-medium">{model.heightCm} cm</dd>
                     </div>
                   ) : null}
                   <div>
-                    <dt className="text-[hsl(var(--tonecos-muted))]">Imagens publicadas</dt>
-                    <dd className="mt-1 font-medium">{galleryQuery.data?.pages[0]?.total ?? model.imageCount}</dd>
+                    <dt className="text-[hsl(var(--tonecos-muted))]">
+                      Imagens publicadas
+                    </dt>
+                    <dd className="mt-1 font-medium">
+                      {galleryQuery.data?.pages[0]?.total ?? model.imageCount}
+                    </dd>
                   </div>
                 </dl>
 
                 <p className="text-sm leading-relaxed text-[hsl(var(--tonecos-muted))]">
-                  Disponibilidade e preço são confirmados pela equipe na etapa de orçamento. Esta ficha apresenta somente os dados publicados no catálogo.
+                  Disponibilidade e preço são confirmados pela equipe na etapa
+                  de orçamento. Esta ficha apresenta somente os dados publicados
+                  no catálogo.
                 </p>
               </div>
             </article>

@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Checkpoint técnico — 02/11/2026: correção da ficha e liberação do escopo Vercel
+
+- **Destino Vercel confirmado:** projeto existente `tonecosstudio` (ID `prj_yfe9KqNRdWfYNnY6HSXBfT0D2Vsu`) no escopo `jogo-brasils-projects`, ligado a `washingtonmsdj/tonecosstudio` e Vite/Node 24. A renomeação preservou o ID do projeto.
+- **Domínios antigos ainda vinculados:** `ordax.com.br` e `www.ordax.com.br` seguem **não verificados** no projeto Tonecos. **Remover ambos antes de promover à main/produção** e homologar um domínio exclusivo Tonecos. Não declarar isolamento completo até a limpeza.
+- **Causa raiz do preview falho:** o Vercel build no commit `bf162ef` falhou em TypeScript (`CanonicalModelDetails.tsx`, linha 89, `TS1127` e erro derivado na linha 239) por sequências literais `\\n` dentro do JSX.
+- **Correção nesta entrega:** substituir as cinco sequências `\\n` por quebras de linha reais, formatar a ficha compartilhável, o gateway de galeria e seus testes sem alterar as autoridades.
+- **Provas locais isoladas:** Vitest 3.2.4, `public-catalog-gateway.test.ts` **9/9 PASS** incluindo 2 cenários de galeria; TypeScript estrito com `--skipLibCheck` aprovado no gateway; esbuild aprovou a sintaxe TSX da ficha corrigida; Prettier 3.6.2 aprovou os arquivos modificados. Ainda não são substituto do `release:verify` integral, auditorias de dependências, build ou E2E.
+- **Segurança:** sem acesso a D1/R2/Supabase de produção, sem preços, pagamentos ou pedidos modificados; `main` preservada. A Vercel registra 49 advisories totais no `npm ci` do preview `bf162ef`; investigar especialmente `npm audit --omit=dev --audit-level=high` com a árvore instalada, sem `npm audit fix --force` automático.
+- **Próximo passo:** ler o resultado do preview isolado desta correção, corrigir a próxima falha causal no mesmo branch, executar gates completos no mesmo SHA; depois retirar os dois domínios antigos e homologar mídia/proxy first-party, UX móvel e orçamento idempotente.
+
+---
+
 ## Checkpoint operacional — 02/11/2026
 
 - **HEAD da integração:** `bf162ef20bcd56f0d9b6c45b32d729c794904e06` — `feat(catalog): add canonical model detail pages and galleries`. A `main` segue preservada em `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`.

@@ -2,6 +2,13 @@
 
 Estado: **EM INTEGRAÇÃO / NO-GO**. Esta diretriz substitui o planejamento de plataforma de apps OrdaX como orientação do produto comercial Tonecos, sem apagar seu histórico.
 
+## Continuidade após liberação da Vercel — 02/11/2026
+
+- A identidade da Vercel foi confirmada diretamente na equipe `jogo-brasils-projects`: o projeto existente agora é `tonecosstudio`, conectado ao repositório `washingtonmsdj/tonecosstudio`. Seu ID foi preservado, evitando cópia paralela.
+- **Separação de produção ainda bloqueada:** `ordax.com.br` e `www.ordax.com.br` permanecem registrados mas não verificados na configuração do projeto Tonecos. Retirá-los antes de qualquer merge/deploy de produção. Preservar sites do OrdaX OS.
+- Vercel `bf162ef`: `npm run release:verify` atingiu TypeScript e parou por cinco `\\n` literais no JSX da ficha (`TS1127`). Correção validada com esbuild local, e gateway/galeria validado com Vitest 9/9, TS estrito isolado e Prettier. Estes resultados não comprovam ainda que `release:verify` completo passa.
+- O checkout privado pode ser substituído para verificações pontuais por arquivos obtidos pela conexão autorizada do GitHub e testes offline, sem reconstruir os 2.008 arquivos nem consultar D1; compilação E2E completa requer ambiente com acesso ao repositório ou CI/preview autenticado.
+
 ## Missão e proprietários
 
 - **Produto único:** `washingtonmsdj/tonecosstudio` hospeda a experiência web Tonecos (home, modelos, seleção, clientes, orçamentos, pagamentos, pedidos e produção).
