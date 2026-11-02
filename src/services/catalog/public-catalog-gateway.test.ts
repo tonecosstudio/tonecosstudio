@@ -85,6 +85,57 @@ describe("canonical catalog read boundary", () => {
     expect(io).not.toHaveBeenCalled();
   });
 
+  it("blocks malformed catalog scopes and folder traversal without querying Worker", async () => {
+    const io = vi.fn(async () =>
+      Response.json({ items: [], nextCursor: null }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    for (const category of ["../admin", "x".repeat(241), "categoria?x=1"]) {
+      await expect(gateway.listPage({ category })).rejects.toThrow(
+        "catalog_category_invalid",
+      );
+    }
+    for (const franchise of ["../admin", "x".repeat(241), "autoral#x"]) {
+      await expect(gateway.listPage({ franchise })).rejects.toThrow(
+        "catalog_franchise_invalid",
+      );
+    }
+    for (const folder of [
+      "x".repeat(513),
+      "games/../admin",
+      "games\\\\..\\\\admin",
+      "games\\nother",
+    ]) {
+      await expect(
+        gateway.listPage({ category: "games", franchise: "autoral", folder }),
+      ).rejects.toThrow("catalog_folder_invalid");
+    }
+    expect(io).not.toHaveBeenCalled();
+  });
+
+  it("preserves valid scoped filters without broadening catalog access", async () => {
+    const io = vi.fn(async () =>
+      Response.json({ items: [], nextCursor: null }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    await gateway.listPage({
+      category: "games",
+      franchise: "resident-evil",
+      folder: "games/resident-evil/figures",
+      limit: 5,
+    });
+    expect(io).toHaveBeenCalledExactlyOnceWith(
+      "https://example.test/catalogo-api/api/catalog?limit=5&category=games&franchise=resident-evil&folder=games%2Fresident-evil%2Ffigures",
+      expect.objectContaining({ method: "GET", credentials: "omit" }),
+    );
+  });
+
   it("rejects oversized and empty pagination cursors before making requests", async () => {
     const io = vi.fn(async () => Response.json({ items: [], nextCursor: null }));
     const gateway = createPublicCatalogGateway(
