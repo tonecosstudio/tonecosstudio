@@ -25,21 +25,21 @@ function isAbsoluteUrl(value: string) {
   return /^https?:\/\//i.test(value);
 }
 
-function getFallbackWebsiteUrl() {
-  const explicitWebsiteUrl = import.meta.env.VITE_WEBSITE_URL?.trim().replace(/\/+$/, "");
-  if (explicitWebsiteUrl) return explicitWebsiteUrl;
-
-  const runtimeOrigin = globalThis.location?.origin?.trim().replace(/\/+$/, "");
-  if (runtimeOrigin && !/^https?:\/\/(?:localhost|127(?:\.\d{1,3}){3})(?::\d+)?$/i.test(runtimeOrigin)) {
-    return runtimeOrigin;
-  }
-
-  return "https://ordax.com.br";
-}
-
 function getCatalogAssetBaseUrl() {
-  const explicitAssetBase = import.meta.env.VITE_CATALOG_ASSET_BASE_URL?.trim().replace(/\/+$/, "");
-  return explicitAssetBase || getFallbackWebsiteUrl();
+  // Legacy R2 assets must not silently reuse the OS domain or the current
+  // site's origin. A future verified first-party media proxy is required.
+  const value = import.meta.env.VITE_CATALOG_ASSET_BASE_URL?.trim().replace(/\/+$/, "");
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash ||
+        url.hostname === "ordax.com.br" || url.hostname === "www.ordax.com.br") {
+      return null;
+    }
+    return url.toString().replace(/\/+$/, "");
+  } catch {
+    return null;
+  }
 }
 
 function shouldUseCatalogAssetBase(bucket: string, path: string) {
@@ -60,8 +60,8 @@ export function getCatalogStoragePublicUrl(
 
   const normalizedPath = normalizeStoragePath(path);
   const assetBaseUrl = getCatalogAssetBaseUrl();
-  if (assetBaseUrl && shouldUseCatalogAssetBase(bucket, normalizedPath)) {
-    return `${assetBaseUrl}/${encodeAssetPath(normalizedPath)}`;
+  if (shouldUseCatalogAssetBase(bucket, normalizedPath)) {
+    return assetBaseUrl ? `${assetBaseUrl}/${encodeAssetPath(normalizedPath)}` : null;
   }
 
   return getPublicStorageUrl(bucket, normalizedPath);
