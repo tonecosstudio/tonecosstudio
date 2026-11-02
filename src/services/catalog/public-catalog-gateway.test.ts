@@ -85,6 +85,43 @@ describe("canonical catalog read boundary", () => {
     expect(io).not.toHaveBeenCalled();
   });
 
+  it("rejects oversized and empty pagination cursors before making requests", async () => {
+    const io = vi.fn(async () => Response.json({ items: [], nextCursor: null }));
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    await expect(gateway.listPage({ cursor: "x".repeat(2049) })).rejects.toThrow(
+      "catalog_cursor_invalid",
+    );
+    await expect(gateway.listPage({ cursor: "" })).rejects.toThrow(
+      "catalog_cursor_invalid",
+    );
+    await expect(gateway.listGallery("animal-original", {
+      version: 1,
+      cursor: "x".repeat(2049),
+    })).rejects.toThrow("catalog_gallery_cursor_invalid");
+    await expect(gateway.listGallery("animal-original", {
+      version: 1,
+      cursor: "",
+    })).rejects.toThrow("catalog_gallery_cursor_invalid");
+    expect(io).not.toHaveBeenCalled();
+  });
+
+  it("rejects an oversized response cursor rather than propagating it", async () => {
+    const io = vi.fn(async () =>
+      Response.json({ items: [], nextCursor: "x".repeat(2049) }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    await expect(gateway.listPage()).rejects.toThrow(
+      "invalid_catalog_page_cursor",
+    );
+    expect(io).toHaveBeenCalledTimes(1);
+  });
+
   it("fails closed on absent endpoint, HTTP failure and malformed data", async () => {
     expect(() => createPublicCatalogGateway("", fetch)).toThrow(
       "catalog_endpoint_not_configured",
