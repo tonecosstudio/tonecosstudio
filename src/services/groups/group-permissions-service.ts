@@ -22,7 +22,7 @@ export async function isAdmin(): Promise<boolean> {
       return false;
     }
 
-    return currentUserHasAdminAccess();
+    return await currentUserHasAdminAccess();
   } catch (error) {
     log.error("Erro ao verificar permissao administrativa", { error });
     return false;
