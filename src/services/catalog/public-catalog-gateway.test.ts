@@ -262,3 +262,108 @@ describe("read-only catalog discovery and detail", () => {
     ).toThrow("catalog_endpoint_not_configured");
   });
 });
+
+describe("franchise discovery stays bounded and uses Worker authority", () => {
+  it("fetches only a small indexed franchise page, scoped by category and explicit search", async () => {
+    const io = vi.fn(async () =>
+      Response.json({
+        items: [
+          {
+            id: "resident-evil",
+            label: "Resident Evil",
+            count: 120,
+            category: "games",
+          },
+        ],
+        truncated: true,
+      }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    const result = await gateway.listFranchises({
+      category: "games",
+      search: "resident",
+      limit: 24,
+    });
+    expect(result).toEqual({
+      items: [
+        {
+          id: "resident-evil",
+          label: "Resident Evil",
+          count: 120,
+          category: "games",
+        },
+      ],
+      truncated: true,
+    });
+    expect(io).toHaveBeenCalledExactlyOnceWith(
+      "https://example.test/catalogo-api/api/franchises?category=games&q=resident&limit=24",
+      expect.objectContaining({ method: "GET", credentials: "omit" }),
+    );
+  });
+
+  it("rejects short search, invalid category and large windows before any HTTP request", async () => {
+    const io = vi.fn(async () =>
+      Response.json({ items: [], truncated: false }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test",
+      io as typeof fetch,
+    );
+    await expect(gateway.listFranchises({ search: "ab" })).rejects.toThrow(
+      "catalog_franchise_search_length_invalid",
+    );
+    await expect(
+      gateway.listFranchises({ search: "a".repeat(81) }),
+    ).rejects.toThrow("catalog_franchise_search_length_invalid");
+    await expect(
+      gateway.listFranchises({ category: "../admin" }),
+    ).rejects.toThrow("catalog_franchise_category_invalid");
+    await expect(gateway.listFranchises({ limit: 5000 })).rejects.toThrow(
+      "catalog_franchise_limit_invalid",
+    );
+    expect(io).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed discovery, oversized results, duplicated identifiers and mismatched category", async () => {
+    const origin = "https://example.test/catalogo-api";
+    const expected = {
+      id: "resident-evil",
+      label: "Resident Evil",
+      count: 120,
+      category: "games",
+    };
+    for (const [payload, code] of [
+      [{ items: [], truncated: "false" }, "invalid_catalog_franchises"],
+      [
+        { items: [expected, expected], truncated: false },
+        "invalid_catalog_franchises",
+      ],
+      [
+        { items: [{ ...expected, count: -1 }], truncated: false },
+        "invalid_catalog_franchise_count",
+      ],
+      [
+        { items: [{ ...expected, category: "movies" }], truncated: false },
+        "invalid_catalog_franchise_category",
+      ],
+    ] as const) {
+      const fetcher = vi.fn(async () => Response.json(payload));
+      const api = createPublicCatalogGateway(origin, fetcher as typeof fetch);
+      await expect(
+        api.listFranchises({ category: "games", limit: 1 }),
+      ).rejects.toThrow(code);
+    }
+    const duplicate = createPublicCatalogGateway(
+      origin,
+      vi.fn(async () =>
+        Response.json({ items: [expected, expected], truncated: false }),
+      ) as typeof fetch,
+    );
+    await expect(
+      duplicate.listFranchises({ category: "games", limit: 2 }),
+    ).rejects.toThrow("duplicate_catalog_franchise");
+  });
+});

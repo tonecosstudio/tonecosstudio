@@ -28,6 +28,21 @@ export type PublicCatalogCategory = {
   count: number;
 };
 
+export type PublicCatalogFranchise = PublicCatalogCategory & {
+  category: string;
+};
+
+export type PublicCatalogFranchisePage = {
+  items: PublicCatalogFranchise[];
+  truncated: boolean;
+};
+
+export type PublicCatalogFranchiseFilters = {
+  category?: string;
+  search?: string;
+  limit?: number;
+};
+
 export type PublicCatalogDetail = PublicCatalogModel & {
   description: string | null;
   material: string | null;
@@ -228,6 +243,79 @@ export function createPublicCatalogGateway(
           count: wholeNumber(category.count, "category_count"),
         };
       });
+    },
+
+    async listFranchises(
+      filters: PublicCatalogFranchiseFilters = {},
+      signal?: AbortSignal,
+    ): Promise<PublicCatalogFranchisePage> {
+      const query = filters.search?.trim();
+      if (
+        query &&
+        (Array.from(query).length < 3 || Array.from(query).length > 80)
+      ) {
+        throw new Error("catalog_franchise_search_length_invalid");
+      }
+      if (
+        filters.category &&
+        !/^[a-z0-9][a-z0-9-]{0,239}$/.test(filters.category)
+      ) {
+        throw new Error("catalog_franchise_category_invalid");
+      }
+      const limit = filters.limit ?? 24;
+      if (!Number.isInteger(limit) || limit < 1 || limit > 48) {
+        throw new Error("catalog_franchise_limit_invalid");
+      }
+      const params = new URLSearchParams();
+      if (filters.category) params.set("category", filters.category);
+      if (query) params.set("q", query);
+      params.set("limit", String(limit));
+
+      const payload = await read("api/franchises?" + params.toString(), signal);
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+        throw new Error("invalid_catalog_franchises");
+      }
+      const { items, truncated } = payload as {
+        items?: unknown;
+        truncated?: unknown;
+      };
+      if (
+        !Array.isArray(items) ||
+        items.length > limit ||
+        typeof truncated !== "boolean"
+      ) {
+        throw new Error("invalid_catalog_franchises");
+      }
+      const seen = new Set<string>();
+      return {
+        items: items.map((value: unknown): PublicCatalogFranchise => {
+          if (!value || typeof value !== "object" || Array.isArray(value)) {
+            throw new Error("invalid_catalog_franchise");
+          }
+          const row = value as {
+            id?: unknown;
+            label?: unknown;
+            count?: unknown;
+            category?: unknown;
+          };
+          const franchise = {
+            id: requiredText(row.id, "franchise_id"),
+            label: requiredText(row.label, "franchise_label"),
+            count: wholeNumber(row.count, "franchise_count"),
+            category: requiredText(row.category, "franchise_category"),
+          };
+          if (filters.category && franchise.category !== filters.category) {
+            throw new Error("invalid_catalog_franchise_category");
+          }
+          const identity = franchise.category + "/" + franchise.id;
+          if (seen.has(identity)) {
+            throw new Error("duplicate_catalog_franchise");
+          }
+          seen.add(identity);
+          return franchise;
+        }),
+        truncated,
+      };
     },
 
     async getModel(

@@ -6,6 +6,17 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Catálogo grande: filtro canônico por franquia e correção React Query — 02/11/2026
+
+- **Causa raiz resolvida na branch:** `usePricingSettings` passa uma função sem argumentos ao `queryFn` do TanStack Query. `fetchPricingSettings({ forceRefresh: true })` continua disponível para as coleções e mantém o SSOT do serviço comercial. A incompatibilidade anterior produzia `TS2769` no hook e `TS2339` em consumidores.
+- **Franquias, sem catálogo duplicado:** o gateway Cloudflare existente passou a expor `listFranchises` pelo endpoint oficial `GET /api/franchises`, com categoria opcional, busca explícita `q` (3–80 caracteres), máximo 48 itens por contrato e validação estrita de `truncated`, IDs, categorias e contagens. A vitrine solicita somente 24 resultados quando o usuário abre o filtro ou pesquisa uma franquia, exibindo aviso de recorte incompleto. Nada de baixar toda a taxonomia ou consultar D1 diretamente.
+- **Fluxo preservado:** categoria, franquia e busca agora participam da URL e do escopo do cursor; trocar de categoria limpa franquia incompatível. Seleção continua até 50 modelos, sem orçamento automático. Interface mantém `ArcadeHero`, `ArcadeCard`, tema escuro/dourado e a ficha por slug/galeria versionada.
+- **Testes locais isolados:** Vitest gateway **12/12 PASS** (incluindo 3 novas provas de franquias), TypeScript strict do gateway **PASS**, esbuild dos 2 TSX e hook **PASS**, Prettier 3.6.2 aplicado nos cinco arquivos. Novos cenários React validam descoberta por interação e filtro persistente, **mas ainda dependem da suíte React completa da Vercel**.
+- **Limitação explícita:** tags ainda não fazem parte do contrato público do Worker, não criar tags fictícias/filtros client-side. A `main` segue preservada, sem mudanças no D1, R2, Supabase ou domínios.
+- **Próximos gates:** `release:verify` do SHA final, cobertura 70% funções, audit e build; QA visual desktop/mobile e domínio próprio Tonecos. Sem fallback, sem aprovação antecipada.
+
+---
+
 ## Recuperação visual do catálogo — 02/11/2026
 
 - **Código restaurado na branch:** `src/pages/CatalogModelsArcade.tsx` reutiliza `ArcadeHero`, `ArcadeSectionTitle` e `ArcadeCard`. `src/pages/catalog/CanonicalModelDetails.tsx` reutiliza `ArcadeCard` e `ArcadeSectionTitle`, com fundo escuro e detalhes dourados.

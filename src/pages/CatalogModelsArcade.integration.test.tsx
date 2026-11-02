@@ -82,6 +82,14 @@ function setupFetch() {
   const fetcher = vi.fn(async (input: string, init: RequestInit) => {
     const url = new URL(input);
     calls.push({ url, init });
+    if (url.pathname.endsWith("/api/franchises")) {
+      return Response.json({
+        items: [
+          { id: "autoral", label: "Autoral", count: 2, category: "originais" },
+        ],
+        truncated: true,
+      });
+    }
     if (url.pathname.endsWith("/api/categories")) {
       return Response.json({
         items: [{ id: "originais", label: "Originais", count: 2 }],
@@ -462,5 +470,72 @@ describe("Tonecos shareable model detail UI", () => {
       await screen.findByText("Nenhuma imagem publicada nesta galeria."),
     ).toBeInTheDocument();
     expect(galleryCalls).toBe(2);
+  });
+});
+
+it("discovers and filters franchises on demand without catalog-wide requests", async () => {
+  const { calls } = setupFetch();
+  await renderCatalog("/modelos?category=originais");
+  await screen.findByRole("link", {
+    name: "Ver detalhes de Escultura original",
+  });
+  expect(
+    calls.filter((c) => c.url.pathname.endsWith("/api/franchises")),
+  ).toHaveLength(0);
+
+  fireEvent.focus(
+    screen.getByRole("combobox", { name: "Filtrar por franquia" }),
+  );
+  await waitFor(() => {
+    expect(
+      calls.filter((c) => c.url.pathname.endsWith("/api/franchises")),
+    ).toHaveLength(1);
+  });
+  const first = calls.find((c) => c.url.pathname.endsWith("/api/franchises"))!;
+  expect(first.url.searchParams.get("category")).toBe("originais");
+  expect(first.url.searchParams.get("limit")).toBe("24");
+  expect(
+    screen.getByText(/lista mostra apenas parte das franquias/i),
+  ).toBeDefined();
+
+  fireEvent.change(
+    screen.getByRole("combobox", { name: "Filtrar por franquia" }),
+    {
+      target: { value: "autoral" },
+    },
+  );
+  await waitFor(() => {
+    expect(
+      calls.some(
+        (c) =>
+          c.url.pathname.endsWith("/api/catalog") &&
+          c.url.searchParams.get("franchise") === "autoral",
+      ),
+    ).toBe(true);
+  });
+  expect(calls.every((c) => c.init.method === "GET")).toBe(true);
+});
+
+it("only searches franchise names when explicitly requested, with an indexed bounded query", async () => {
+  const { calls } = setupFetch();
+  await renderCatalog("/modelos?category=originais");
+  await screen.findByRole("link", {
+    name: "Ver detalhes de Escultura original",
+  });
+  const search = screen.getByRole("textbox", { name: "Pesquisar franquias" });
+  fireEvent.change(search, { target: { value: "autoral" } });
+  expect(
+    calls.filter((c) => c.url.pathname.endsWith("/api/franchises")),
+  ).toHaveLength(0);
+  fireEvent.click(screen.getByRole("button", { name: "Buscar franquias" }));
+  await waitFor(() => {
+    expect(
+      calls.some(
+        (c) =>
+          c.url.pathname.endsWith("/api/franchises") &&
+          c.url.searchParams.get("q") === "autoral" &&
+          c.url.searchParams.get("limit") === "24",
+      ),
+    ).toBe(true);
   });
 });

@@ -66,8 +66,12 @@ export default function CatalogModelsArcade() {
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get("q")?.trim() ?? "";
   const category = searchParams.get("category")?.trim() ?? "";
+  const franchise = searchParams.get("franchise")?.trim() ?? "";
   const [draft, setDraft] = useState(search);
   const [loadCategories, setLoadCategories] = useState(Boolean(category));
+  const [loadFranchises, setLoadFranchises] = useState(Boolean(franchise));
+  const [franchiseDraft, setFranchiseDraft] = useState("");
+  const [franchiseNeedle, setFranchiseNeedle] = useState("");
   const [selectedModels, setSelectedModels] = useState<PublicCatalogModel[]>(
     [],
   );
@@ -89,7 +93,7 @@ export default function CatalogModelsArcade() {
     }
   }, []);
 
-  const scope = JSON.stringify([search, category]);
+  const scope = JSON.stringify([search, category, franchise]);
   const activePage =
     paging.scope === scope ? paging : { scope, cursors: [undefined], index: 0 };
   const cursor = activePage.cursors[activePage.index];
@@ -103,12 +107,29 @@ export default function CatalogModelsArcade() {
     staleTime: 15 * 60 * 1000,
   });
 
+  const franchises = useQuery({
+    queryKey: ["tonecos-catalog-franchises", category, franchiseNeedle],
+    queryFn: ({ signal }) =>
+      gateway!.listFranchises(
+        {
+          category: category || undefined,
+          search: franchiseNeedle || undefined,
+          limit: 24,
+        },
+        signal,
+      ),
+    enabled: gateway !== null && loadFranchises,
+    retry: false,
+    staleTime: 15 * 60 * 1000,
+  });
+
   const models = useQuery({
     queryKey: ["tonecos-catalog-list", scope, cursor],
     queryFn: ({ signal }) =>
       gateway!.listPage(
         {
           category: category || undefined,
+          franchise: franchise || undefined,
           search: search || undefined,
           limit: PAGE_SIZE,
           cursor,
@@ -126,12 +147,25 @@ export default function CatalogModelsArcade() {
     setSelectedModels((current) => toggleCanonicalSelection(current, model));
   }
 
-  function changeParams(nextSearch: string, nextCategory: string) {
+  function changeParams(
+    nextSearch: string,
+    nextCategory: string,
+    nextFranchise = franchise,
+  ) {
     const next = new URLSearchParams();
     if (nextSearch) next.set("q", nextSearch);
     if (nextCategory && nextCategory !== "all")
       next.set("category", nextCategory);
+    if (nextFranchise) next.set("franchise", nextFranchise);
     setSearchParams(next);
+  }
+
+  function findFranchises() {
+    const query = franchiseDraft.trim();
+    const length = Array.from(query).length;
+    if (query && (length < 3 || length > 80)) return;
+    setFranchiseNeedle(query);
+    setLoadFranchises(true);
   }
 
   function goNext() {
@@ -168,7 +202,7 @@ export default function CatalogModelsArcade() {
         <div className="relative z-10 mx-auto -mt-4 max-w-7xl px-4 md:px-6">
           <form
             role="search"
-            className="grid gap-3 md:grid-cols-[minmax(0,1fr)_230px_auto]"
+            className="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_190px_190px_auto]"
             onSubmit={(event) => {
               event.preventDefault();
               changeParams(draft.trim(), category);
@@ -206,7 +240,11 @@ export default function CatalogModelsArcade() {
               <span className="sr-only">Filtrar por categoria</span>
               <select
                 value={category}
-                onChange={(event) => changeParams(search, event.target.value)}
+                onChange={(event) => {
+                  setFranchiseDraft("");
+                  setFranchiseNeedle("");
+                  changeParams(search, event.target.value, "");
+                }}
                 onFocus={() => setLoadCategories(true)}
                 onPointerDown={() => setLoadCategories(true)}
                 aria-busy={loadCategories && categories.isFetching}
@@ -225,6 +263,33 @@ export default function CatalogModelsArcade() {
                   ))}
               </select>
             </label>
+            <label className="block">
+              <span className="sr-only">Filtrar por franquia</span>
+              <select
+                value={franchise}
+                onChange={(event) =>
+                  changeParams(search, category, event.target.value)
+                }
+                onFocus={() => setLoadFranchises(true)}
+                onPointerDown={() => setLoadFranchises(true)}
+                aria-busy={loadFranchises && franchises.isFetching}
+                disabled={
+                  gateway === null || (loadFranchises && franchises.isError)
+                }
+                className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 text-sm text-[hsl(0,0%,94%)] outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)] disabled:opacity-60"
+              >
+                <option value="">Todas as franquias</option>
+                {franchise &&
+                  !franchises.data?.items.some(
+                    (item) => item.id === franchise,
+                  ) && <option value={franchise}>{franchise}</option>}
+                {franchises.data?.items.map((item) => (
+                  <option key={item.category + "/" + item.id} value={item.id}>
+                    {item.label} ({item.count})
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               type="submit"
               className="h-12 border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-6 font-mono text-xs font-semibold uppercase tracking-[0.15em] text-[hsl(0,0%,5%)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -232,6 +297,55 @@ export default function CatalogModelsArcade() {
               Buscar
             </button>
           </form>
+
+          <div className="mt-3 flex flex-wrap items-end gap-3 border-b border-[hsl(0,0%,15%)] pb-6">
+            <label className="min-w-[220px] flex-1 sm:max-w-sm">
+              <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(0,0%,56%)]">
+                Encontrar franquia
+              </span>
+              <input
+                value={franchiseDraft}
+                onChange={(event) => setFranchiseDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    findFranchises();
+                  }
+                }}
+                maxLength={80}
+                placeholder="Digite ao menos 3 caracteres"
+                aria-label="Pesquisar franquias"
+                disabled={gateway === null}
+                className="h-11 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 font-mono text-xs text-[hsl(0,0%,94%)] placeholder:text-[hsl(0,0%,42%)] focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))] disabled:opacity-60"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={findFranchises}
+              disabled={
+                gateway === null ||
+                (franchiseDraft.trim().length > 0 &&
+                  Array.from(franchiseDraft.trim()).length < 3)
+              }
+              className="h-11 border border-[hsl(var(--gold-accent)/0.5)] px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] disabled:opacity-40"
+            >
+              Buscar franquias
+            </button>
+            {franchises.data?.truncated ? (
+              <p
+                className="max-w-xs text-xs text-[hsl(0,0%,56%)]"
+                role="status"
+              >
+                A lista mostra apenas parte das franquias. Pesquise pelo nome
+                para refinar.
+              </p>
+            ) : null}
+            {franchises.isError ? (
+              <p className="text-xs text-[hsl(0,0%,56%)]" role="alert">
+                Não foi possível consultar as franquias.
+              </p>
+            ) : null}
+          </div>
 
           <div className="mb-5 mt-10 flex flex-wrap items-end justify-between gap-3">
             <ArcadeSectionTitle>MODELOS DO ACERVO</ArcadeSectionTitle>
