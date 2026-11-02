@@ -1,14 +1,14 @@
-# ORDAX
+# Tonecos Studio
 
-Plataforma web da Tonecos Studios para catálogo, clientes, assinaturas, pagamentos e operação de produção de colecionáveis.
+Plataforma comercial Tonecos: site, contas, catálogo integrado, seleção de modelos, solicitações de orçamento, pedidos, pagamentos e acompanhamento da produção.
 
 ## Estado atual
 
-**NO-GO para lançamento.** A recuperação está sendo executada diretamente na **main**, única branch operacional.
+**NO-GO para lançamento ou substituição do site público.** O repositório está privado e a main foi preservada. O trabalho atual acontece somente na branch `integration/tonecosstudio-canonical-20261101`, porque o projeto Vercel antigo ainda precisa ser comprovadamente isolado do domínio OrdaX.
 
-O site público renderiza, mas o catálogo publicado está vazio e o projeto Supabase declarado pelo repositório está inativo. O repositório também não possuía CI versionado nem release publicada na auditoria de 2026-08-30.
+O catálogo escalável permanece tecnicamente no projeto `washingtonmsdj/catalogo` (Cloudflare Worker/D1/R2) durante a migração. O Studio aproveita o núcleo comercial Supabase existente. A integração nova está em preparação: o gateway HTTP já foi implementado em branch, mas **não** está conectado às rotas públicas nem autorizado a publicar dados ou criar pedidos.
 
-O plano, as evidências e o próximo passo ficam em [URGENTE.md](URGENTE.md). Não use percentuais ou relatórios datados como estado atual.
+Veja [URGENTE.md](URGENTE.md) para o checkpoint operacional e [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md) para o contrato entre catálogo, sistema comercial, identidade, deploy e orçamento. Não usar métricas ou relatórios datados como prova atual.
 
 ## Stack
 
@@ -54,6 +54,7 @@ O GitHub Actions deve executar o mesmo gate em cada push para a main. Um build l
 - [URGENTE.md](URGENTE.md): plano e status de lançamento;
 - [AGENTS.md](AGENTS.md): regras de continuidade e qualidade;
 - [docs/README.md](docs/README.md): mapa da documentação vigente;
+- [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md): arquitetura e gates de migração;
 - [docs-archive/](docs-archive/): histórico sem autoridade operacional.
 
 ## Estrutura principal
