@@ -89,9 +89,9 @@ export default function CatalogModelsArcade() {
 
   return (
     <Page
-      title="Modelos | ORDAX"
+      title="Modelos"
       description="Feed plano de modelos unitarios, sem arvore tematica."
-      keywords={["modelos", "posts", "catalogo", "ordax"]}
+      keywords={["modelos", "esculturas", "catalogo", "tonecos"]}
     >
       <ArcadeHero
         badge="Feed Unitario"
