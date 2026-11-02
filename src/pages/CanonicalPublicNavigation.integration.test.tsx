@@ -39,7 +39,7 @@ const model = {
   cover_storage_key: "covers/escultura.webp",
 };
 
-function destination() {
+function Destination() {
   const location = useLocation();
   return <p>destination: {location.pathname + location.search}</p>;
 }
@@ -88,8 +88,8 @@ async function renderRoute(path: string) {
           <Route path="/universo/:themeKey" element={<CatalogArcade />} />
           <Route path="/universo/:themeKey/:franchiseKey" element={<CatalogArcade />} />
           <Route path="/universo/:themeKey/:franchiseKey/:characterSlug" element={<CatalogArcade />} />
-          <Route path="/modelos" element={destination()} />
-          <Route path="/modelos/:id" element={destination()} />
+          <Route path="/modelos" element={<Destination />} />
+          <Route path="/modelos/:id" element={<Destination />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
