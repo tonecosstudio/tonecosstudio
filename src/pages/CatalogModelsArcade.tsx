@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ImageOff, Search, X } from "lucide-react";
+import {
+  MAX_CANONICAL_SELECTION,
+  toggleCanonicalSelection,
+} from "@/services/catalog/public-catalog-selection";
 import { Page } from "@/components/layouts/Page";
 import {
   Dialog,
@@ -16,7 +20,6 @@ import {
 } from "@/services/catalog/public-catalog-gateway";
 
 const PAGE_SIZE = 24;
-const MAX_QUOTE_SELECTION = 50;
 const API_BASE = import.meta.env.VITE_CANONICAL_CATALOG_API_BASE?.trim() ?? "";
 
 type PagePosition = {
@@ -123,14 +126,7 @@ export default function CatalogModelsArcade() {
   const rows = models.data?.items ?? [];
 
   function toggleSelected(model: PublicCatalogModel) {
-    setSelectedModels((current) => {
-      if (current.some((item) => item.id === model.id)) {
-        return current.filter((item) => item.id !== model.id);
-      }
-      return current.length >= MAX_QUOTE_SELECTION
-        ? current
-        : [...current, model];
-    });
+    setSelectedModels((current) => toggleCanonicalSelection(current, model));
   }
 
   function changeParams(nextSearch: string, nextCategory: string) {
@@ -266,7 +262,7 @@ export default function CatalogModelsArcade() {
                 aria-label={"Abrir seleção para orçamento com " + selectedModels.length + " modelos"}
                 className="inline-flex min-h-11 items-center rounded-md border border-[hsl(var(--tonecos-accent))] px-4 text-sm font-semibold text-[hsl(var(--tonecos-accent))] hover:bg-[hsl(var(--tonecos-soft))]"
               >
-                Minha seleção ({selectedModels.length}/{MAX_QUOTE_SELECTION})
+                Minha seleção ({selectedModels.length}/{MAX_CANONICAL_SELECTION})
               </button>
             </div>
           </div>
@@ -340,7 +336,7 @@ export default function CatalogModelsArcade() {
                     <button
                       type="button"
                       onClick={() => toggleSelected(model)}
-                      disabled={!isSelected && selectedModels.length >= MAX_QUOTE_SELECTION}
+                      disabled={!isSelected && selectedModels.length >= MAX_CANONICAL_SELECTION}
                       aria-pressed={isSelected}
                       className="mx-3 mb-3 flex min-h-11 w-[calc(100%-1.5rem)] items-center justify-center rounded-md border border-[hsl(var(--tonecos-line))] px-2 text-xs font-medium transition-colors hover:border-[hsl(var(--tonecos-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
                     >
@@ -426,7 +422,7 @@ export default function CatalogModelsArcade() {
             </DialogDescription>
           </DialogHeader>
           <p role="status" aria-live="polite" className="text-sm text-[hsl(var(--tonecos-muted))]">
-            {selectedModels.length} de {MAX_QUOTE_SELECTION} modelos selecionados.
+            {selectedModels.length} de {MAX_CANONICAL_SELECTION} modelos selecionados.
           </p>
           {selectedModels.length === 0 ? (
             <p className="rounded-md bg-[hsl(var(--tonecos-soft))] p-4 text-sm">
