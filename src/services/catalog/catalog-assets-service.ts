@@ -32,8 +32,15 @@ function getCatalogAssetBaseUrl() {
   if (!value) return null;
   try {
     const url = new URL(value);
-    if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash ||
-        url.hostname === "ordax.com.br" || url.hostname === "www.ordax.com.br") {
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash ||
+      url.hostname === "ordax.com.br" ||
+      url.hostname === "www.ordax.com.br"
+    ) {
       return null;
     }
     return url.toString().replace(/\/+$/, "");
@@ -55,7 +62,20 @@ export function getCatalogStoragePublicUrl(
   path: string | null,
 ) {
   if (!path) return null;
-  if (isAbsoluteUrl(path)) return path;
+  if (isAbsoluteUrl(path)) {
+    try {
+      const absolute = new URL(path);
+      if (
+        absolute.hostname === "ordax.com.br" ||
+        absolute.hostname === "www.ordax.com.br"
+      ) {
+        return null;
+      }
+      return path;
+    } catch {
+      return null;
+    }
+  }
   if (!bucket) return null;
 
   const normalizedPath = normalizeStoragePath(path);
