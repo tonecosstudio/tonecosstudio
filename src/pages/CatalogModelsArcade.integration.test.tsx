@@ -539,3 +539,29 @@ it("only searches franchise names when explicitly requested, with an indexed bou
     ).toBe(true);
   });
 });
+
+it("preserves a canonical folder filter through model reads and clears it explicitly", async () => {
+  const { calls } = setupFetch();
+  await renderCatalog("/modelos?category=originais&franchise=autoral&folder=personagens");
+  await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+  const requests = calls.filter((c) => c.url.pathname.endsWith("/api/catalog"));
+  expect(requests).toHaveLength(1);
+  expect(requests[0].url.searchParams.get("category")).toBe("originais");
+  expect(requests[0].url.searchParams.get("franchise")).toBe("autoral");
+  expect(requests[0].url.searchParams.get("folder")).toBe("personagens");
+  expect(screen.getByText(/Pasta selecionada:/i)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Limpar pasta" }));
+  await waitFor(() => {
+    expect(calls.some((c) =>
+      c.url.pathname.endsWith("/api/catalog") &&
+      !c.url.searchParams.has("folder")
+    )).toBe(true);
+  });
+});
+
+it("does not issue catalog reads when folder scope is absent", async () => {
+  const { calls } = setupFetch();
+  await renderCatalog("/modelos?folder=personagens");
+  expect(await screen.findByText(/A pasta requer uma categoria/i)).toBeInTheDocument();
+  expect(calls.filter((c) => c.url.pathname.endsWith("/api/catalog"))).toHaveLength(0);
+});
