@@ -17,6 +17,10 @@
       "destination": "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/franchises"
     },
     {
+      "source": "/catalogo-api/api/folders",
+      "destination": "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/folders"
+    },
+    {
       "source": "/catalogo-api/api/models/:slug/images",
       "destination": "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/models/:slug/images"
     },
