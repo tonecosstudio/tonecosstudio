@@ -10,6 +10,16 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* Tonecos Studio editorial identity — single visual token authority.
+       Applied incrementally to the new catalog route; no independent palette files. */
+    --tonecos-paper: 43 28% 96%;
+    --tonecos-panel: 42 30% 99%;
+    --tonecos-soft: 45 20% 91%;
+    --tonecos-ink: 98 16% 17%;
+    --tonecos-muted: 95 8% 42%;
+    --tonecos-accent: 89 23% 32%;
+    --tonecos-line: 75 12% 81%;
+
     /* Premium Light Theme */
     --background: 0 0% 100%;
     --foreground: 0 0% 5%;
