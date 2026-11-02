@@ -57,6 +57,7 @@ export default function CatalogModelsArcade() {
   const search = searchParams.get("q")?.trim() ?? "";
   const category = searchParams.get("category")?.trim() ?? "";
   const [draft, setDraft] = useState(search);
+  const [loadCategories, setLoadCategories] = useState(Boolean(category));
   const [detailSlug, setDetailSlug] = useState<string | null>(null);
   const [paging, setPaging] = useState<PagePosition>({
     scope: "",
@@ -86,7 +87,7 @@ export default function CatalogModelsArcade() {
   const categories = useQuery({
     queryKey: ["tonecos-catalog-categories"],
     queryFn: ({ signal }) => gateway!.listCategories(signal),
-    enabled: gateway !== null,
+    enabled: gateway !== null && loadCategories,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -210,7 +211,10 @@ export default function CatalogModelsArcade() {
               <select
                 value={category}
                 onChange={(event) => changeParams(search, event.target.value)}
-                disabled={gateway === null || categories.isPending || categories.isError}
+                onFocus={() => setLoadCategories(true)}
+                onPointerDown={() => setLoadCategories(true)}
+                aria-busy={loadCategories && categories.isFetching}
+                disabled={gateway === null || (loadCategories && categories.isError)}
                 className="h-12 w-full rounded-md border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--tonecos-accent)/0.2)] disabled:opacity-60"
               >
                 <option value="">Todas as categorias</option>
