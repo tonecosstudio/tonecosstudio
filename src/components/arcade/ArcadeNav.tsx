@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { useCurrentUserIsAdmin } from "@/lib/roles";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { CoinCounter } from "@/components/arcade/CoinCounter";
+import { BRAND_SHORT_NAME } from "@/config/brand";
 import {
   ADMIN_ROUTES,
   AUTH_ROUTES,
@@ -70,7 +71,7 @@ export function ArcadeNav() {
             textShadow: "0 0 20px hsl(var(--gold-accent) / 0.3)",
           }}
         >
-          ORDAX
+          {BRAND_SHORT_NAME}
         </Link>
 
         <div className="hidden items-center gap-5 lg:flex">
