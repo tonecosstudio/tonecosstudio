@@ -63,7 +63,9 @@ export default function CatalogModelsArcade() {
   const [draft, setDraft] = useState(search);
   const [loadCategories, setLoadCategories] = useState(Boolean(category));
   const [detailSlug, setDetailSlug] = useState<string | null>(null);
-  const [selectedModels, setSelectedModels] = useState<PublicCatalogModel[]>([]);
+  const [selectedModels, setSelectedModels] = useState<PublicCatalogModel[]>(
+    [],
+  );
   const [selectionOpen, setSelectionOpen] = useState(false);
   const [paging, setPaging] = useState<PagePosition>({
     scope: "",
@@ -84,9 +86,7 @@ export default function CatalogModelsArcade() {
 
   const scope = JSON.stringify([search, category]);
   const activePage =
-    paging.scope === scope
-      ? paging
-      : { scope, cursors: [undefined], index: 0 };
+    paging.scope === scope ? paging : { scope, cursors: [undefined], index: 0 };
   const cursor = activePage.cursors[activePage.index];
   const invalidSearch = search.length > 0 && Array.from(search).length < 3;
 
@@ -132,7 +132,8 @@ export default function CatalogModelsArcade() {
   function changeParams(nextSearch: string, nextCategory: string) {
     const next = new URLSearchParams();
     if (nextSearch) next.set("q", nextSearch);
-    if (nextCategory && nextCategory !== "all") next.set("category", nextCategory);
+    if (nextCategory && nextCategory !== "all")
+      next.set("category", nextCategory);
     setSearchParams(next);
     setDetailSlug(null);
   }
@@ -224,15 +225,19 @@ export default function CatalogModelsArcade() {
                 onFocus={() => setLoadCategories(true)}
                 onPointerDown={() => setLoadCategories(true)}
                 aria-busy={loadCategories && categories.isFetching}
-                disabled={gateway === null || (loadCategories && categories.isError)}
+                disabled={
+                  gateway === null || (loadCategories && categories.isError)
+                }
                 className="h-12 w-full rounded-md border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--tonecos-accent)/0.2)] disabled:opacity-60"
               >
                 <option value="">Todas as categorias</option>
-                {categories.data?.filter((item) => item.id !== "all").map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.label}
-                  </option>
-                ))}
+                {categories.data
+                  ?.filter((item) => item.id !== "all")
+                  .map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label}
+                    </option>
+                  ))}
               </select>
             </label>
             <button
@@ -252,43 +257,65 @@ export default function CatalogModelsArcade() {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {models.isSuccess && (
-                <p className="text-sm text-[hsl(var(--tonecos-muted))]" aria-live="polite">
-                  Página {activePage.index + 1} · {rows.length} modelos nesta página
+                <p
+                  className="text-sm text-[hsl(var(--tonecos-muted))]"
+                  aria-live="polite"
+                >
+                  Página {activePage.index + 1} · {rows.length} modelos nesta
+                  página
                 </p>
               )}
               <button
                 type="button"
                 onClick={() => setSelectionOpen(true)}
-                aria-label={"Abrir seleção para orçamento com " + selectedModels.length + " modelos"}
+                aria-label={
+                  "Abrir seleção para orçamento com " +
+                  selectedModels.length +
+                  " modelos"
+                }
                 className="inline-flex min-h-11 items-center rounded-md border border-[hsl(var(--tonecos-accent))] px-4 text-sm font-semibold text-[hsl(var(--tonecos-accent))] hover:bg-[hsl(var(--tonecos-soft))]"
               >
-                Minha seleção ({selectedModels.length}/{MAX_CANONICAL_SELECTION})
+                Minha seleção ({selectedModels.length}/{MAX_CANONICAL_SELECTION}
+                )
               </button>
             </div>
           </div>
 
           {gateway === null ? (
-            <div role="status" className="rounded-lg border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] p-8">
+            <div
+              role="status"
+              className="rounded-lg border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] p-8"
+            >
               <h3 className="text-xl">Catálogo em integração</h3>
               <p className="mt-2 max-w-xl text-sm text-[hsl(var(--tonecos-muted))]">
-                A origem oficial do catálogo ainda não foi configurada neste ambiente.
-                Nenhum modelo ou preço será apresentado como disponível sem essa validação.
+                A origem oficial do catálogo ainda não foi configurada neste
+                ambiente. Nenhum modelo ou preço será apresentado como
+                disponível sem essa validação.
               </p>
             </div>
           ) : invalidSearch ? (
-            <p role="status" className="rounded-lg bg-[hsl(var(--tonecos-panel))] p-7 text-sm">
+            <p
+              role="status"
+              className="rounded-lg bg-[hsl(var(--tonecos-panel))] p-7 text-sm"
+            >
               Utilize ao menos três caracteres na pesquisa.
             </p>
           ) : models.isPending ? (
-            <p role="status" className="rounded-lg bg-[hsl(var(--tonecos-panel))] p-7 text-sm">
+            <p
+              role="status"
+              className="rounded-lg bg-[hsl(var(--tonecos-panel))] p-7 text-sm"
+            >
               Carregando os modelos publicados…
             </p>
           ) : models.isError ? (
-            <div role="alert" className="rounded-lg border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] p-7">
+            <div
+              role="alert"
+              className="rounded-lg border border-[hsl(var(--tonecos-line))] bg-[hsl(var(--tonecos-panel))] p-7"
+            >
               <h3 className="text-lg">Não foi possível consultar o acervo.</h3>
               <p className="mt-2 text-sm text-[hsl(var(--tonecos-muted))]">
-                Verifique a conexão e tente novamente. Não exibimos resultados antigos
-                como se estivessem disponíveis.
+                Verifique a conexão e tente novamente. Não exibimos resultados
+                antigos como se estivessem disponíveis.
               </p>
               <button
                 type="button"
@@ -299,13 +326,18 @@ export default function CatalogModelsArcade() {
               </button>
             </div>
           ) : rows.length === 0 ? (
-            <p role="status" className="rounded-lg bg-[hsl(var(--tonecos-panel))] p-7 text-sm">
+            <p
+              role="status"
+              className="rounded-lg bg-[hsl(var(--tonecos-panel))] p-7 text-sm"
+            >
               Nenhum modelo publicado corresponde aos filtros utilizados.
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-5 lg:grid-cols-4">
               {rows.map((model) => {
-                const isSelected = selectedModels.some((item) => item.id === model.id);
+                const isSelected = selectedModels.some(
+                  (item) => item.id === model.id,
+                );
                 return (
                   <article
                     key={model.id}
@@ -317,7 +349,10 @@ export default function CatalogModelsArcade() {
                       aria-label={"Ver detalhes de " + model.name}
                       className="block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--tonecos-accent))]"
                     >
-                      <ModelCover model={model} mediaUrl={(key) => gateway.mediaUrl(key)} />
+                      <ModelCover
+                        model={model}
+                        mediaUrl={(key) => gateway.mediaUrl(key)}
+                      />
                       <div className="space-y-1.5 p-3 md:p-4">
                         <p className="line-clamp-2 min-h-[2.5em] text-sm font-semibold leading-snug md:text-base">
                           {model.name}
@@ -336,11 +371,16 @@ export default function CatalogModelsArcade() {
                     <button
                       type="button"
                       onClick={() => toggleSelected(model)}
-                      disabled={!isSelected && selectedModels.length >= MAX_CANONICAL_SELECTION}
+                      disabled={
+                        !isSelected &&
+                        selectedModels.length >= MAX_CANONICAL_SELECTION
+                      }
                       aria-pressed={isSelected}
                       className="mx-3 mb-3 flex min-h-11 w-[calc(100%-1.5rem)] items-center justify-center rounded-md border border-[hsl(var(--tonecos-line))] px-2 text-xs font-medium transition-colors hover:border-[hsl(var(--tonecos-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      {isSelected ? "Remover da seleção" : "Adicionar à seleção"}
+                      {isSelected
+                        ? "Remover da seleção"
+                        : "Adicionar à seleção"}
                     </button>
                   </article>
                 );
@@ -348,33 +388,40 @@ export default function CatalogModelsArcade() {
             </div>
           )}
 
-          {models.isSuccess && (activePage.index > 0 || !!models.data.nextCursor) && (
-            <nav aria-label="Páginas do catálogo" className="mt-10 flex items-center justify-center gap-4">
-              <button
-                type="button"
-                onClick={goBack}
-                disabled={activePage.index === 0}
-                className="inline-flex h-11 items-center gap-2 rounded-md border border-[hsl(var(--tonecos-line))] px-4 text-sm disabled:opacity-40"
+          {models.isSuccess &&
+            (activePage.index > 0 || !!models.data.nextCursor) && (
+              <nav
+                aria-label="Páginas do catálogo"
+                className="mt-10 flex items-center justify-center gap-4"
               >
-                <ArrowLeft size={16} aria-hidden="true" /> Anterior
-              </button>
-              <span className="text-sm text-[hsl(var(--tonecos-muted))]">
-                {activePage.index + 1}
-              </span>
-              <button
-                type="button"
-                onClick={goNext}
-                disabled={!models.data.nextCursor}
-                className="inline-flex h-11 items-center gap-2 rounded-md border border-[hsl(var(--tonecos-line))] px-4 text-sm disabled:opacity-40"
-              >
-                Próxima <ArrowRight size={16} aria-hidden="true" />
-              </button>
-            </nav>
-          )}
+                <button
+                  type="button"
+                  onClick={goBack}
+                  disabled={activePage.index === 0}
+                  className="inline-flex h-11 items-center gap-2 rounded-md border border-[hsl(var(--tonecos-line))] px-4 text-sm disabled:opacity-40"
+                >
+                  <ArrowLeft size={16} aria-hidden="true" /> Anterior
+                </button>
+                <span className="text-sm text-[hsl(var(--tonecos-muted))]">
+                  {activePage.index + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={goNext}
+                  disabled={!models.data.nextCursor}
+                  className="inline-flex h-11 items-center gap-2 rounded-md border border-[hsl(var(--tonecos-line))] px-4 text-sm disabled:opacity-40"
+                >
+                  Próxima <ArrowRight size={16} aria-hidden="true" />
+                </button>
+              </nav>
+            )}
         </div>
       </section>
 
-      <Dialog open={detailSlug !== null} onOpenChange={(open) => !open && setDetailSlug(null)}>
+      <Dialog
+        open={detailSlug !== null}
+        onOpenChange={(open) => !open && setDetailSlug(null)}
+      >
         <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto bg-[hsl(var(--tonecos-panel))] text-[hsl(var(--tonecos-ink))]">
           <DialogHeader>
             <DialogTitle>Detalhes do modelo</DialogTitle>
@@ -394,18 +441,28 @@ export default function CatalogModelsArcade() {
               />
               <div className="space-y-3">
                 <h3 className="text-xl">{detail.data.name}</h3>
-                {detail.data.variantName && <p className="text-sm">{detail.data.variantName}</p>}
+                {detail.data.variantName && (
+                  <p className="text-sm">{detail.data.variantName}</p>
+                )}
                 <p className="text-sm text-[hsl(var(--tonecos-muted))]">
                   {detail.data.franchise} · {detail.data.code}
                 </p>
-                {detail.data.description && <p className="text-sm leading-relaxed">{detail.data.description}</p>}
-                {detail.data.material && <p className="text-sm">Material: {detail.data.material}</p>}
+                {detail.data.description && (
+                  <p className="text-sm leading-relaxed">
+                    {detail.data.description}
+                  </p>
+                )}
+                {detail.data.material && (
+                  <p className="text-sm">Material: {detail.data.material}</p>
+                )}
                 {detail.data.heightCm !== null && (
-                  <p className="text-sm">Altura de referência: {detail.data.heightCm} cm</p>
+                  <p className="text-sm">
+                    Altura de referência: {detail.data.heightCm} cm
+                  </p>
                 )}
                 <p className="border-t border-[hsl(var(--tonecos-line))] pt-3 text-xs leading-relaxed text-[hsl(var(--tonecos-muted))]">
-                  Exibição informativa. Valores, fabricação e disponibilidade são
-                  confirmados somente na etapa comercial de orçamento.
+                  Exibição informativa. Valores, fabricação e disponibilidade
+                  são confirmados somente na etapa comercial de orçamento.
                 </p>
               </div>
             </div>
@@ -421,8 +478,13 @@ export default function CatalogModelsArcade() {
               Modelos reunidos para preparar um orçamento, sem envio automático.
             </DialogDescription>
           </DialogHeader>
-          <p role="status" aria-live="polite" className="text-sm text-[hsl(var(--tonecos-muted))]">
-            {selectedModels.length} de {MAX_CANONICAL_SELECTION} modelos selecionados.
+          <p
+            role="status"
+            aria-live="polite"
+            className="text-sm text-[hsl(var(--tonecos-muted))]"
+          >
+            {selectedModels.length} de {MAX_CANONICAL_SELECTION} modelos
+            selecionados.
           </p>
           {selectedModels.length === 0 ? (
             <p className="rounded-md bg-[hsl(var(--tonecos-soft))] p-4 text-sm">
@@ -431,10 +493,17 @@ export default function CatalogModelsArcade() {
           ) : (
             <ul className="max-h-[50dvh] space-y-2 overflow-y-auto">
               {selectedModels.map((item) => (
-                <li key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-[hsl(var(--tonecos-line))] p-3">
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-3 rounded-md border border-[hsl(var(--tonecos-line))] p-3"
+                >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{item.name}</p>
-                    <p className="text-xs text-[hsl(var(--tonecos-muted))]">{item.code}</p>
+                    <p className="truncate text-sm font-semibold">
+                      {item.name}
+                    </p>
+                    <p className="text-xs text-[hsl(var(--tonecos-muted))]">
+                      {item.code}
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -449,9 +518,9 @@ export default function CatalogModelsArcade() {
             </ul>
           )}
           <p className="border-t border-[hsl(var(--tonecos-line))] pt-4 text-xs leading-relaxed text-[hsl(var(--tonecos-muted))]">
-            A seleção é temporária e permanece apenas nesta página. A solicitação
-            comercial será liberada depois da integração de preços, autenticação
-            e pedidos com o Studio. Nenhum orçamento foi enviado.
+            A seleção é temporária e permanece apenas nesta página. A
+            solicitação comercial será liberada depois da integração de preços,
+            autenticação e pedidos com o Studio. Nenhum orçamento foi enviado.
           </p>
         </DialogContent>
       </Dialog>
