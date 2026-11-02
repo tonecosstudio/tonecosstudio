@@ -487,7 +487,7 @@ export default function CatalogArcade() {
     <Page
       title="Universo"
       description="Navegue pelo acervo em estrutura tematica, com pastas, subpastas, personagens e miniaturas de modelos."
-      keywords={["universo", "pastas", "subpastas", "personagens", "modelos", "ordax"]}
+      keywords={["universo", "pastas", "subpastas", "personagens", "modelos", "tonecos"]}
     >
       <section className="relative overflow-hidden">
         <FloatingParticles />
