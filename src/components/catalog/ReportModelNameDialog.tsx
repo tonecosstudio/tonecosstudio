@@ -61,7 +61,8 @@ export function ReportModelNameDialog({
 
   const reportUrl = useMemo(() => {
     if (!detailPath.startsWith("/")) return detailPath;
-    return `${CONTACT.WEBSITE_URL}${detailPath}`;
+    const origin = CONTACT.WEBSITE_URL || window.location.origin;
+    return `${origin}${detailPath}`;
   }, [detailPath]);
 
   const handleSubmit = async () => {
