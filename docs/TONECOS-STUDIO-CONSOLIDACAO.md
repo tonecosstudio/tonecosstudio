@@ -21,7 +21,7 @@ Estado: **EM INTEGRAÇÃO / NO-GO**. Esta diretriz substitui o planejamento de p
 
 **Únicas adaptações visuais autorizadas sem novo pedido:** acomodar mais de 2 mil modelos, adicionar categorias, franquias, tags, busca e filtros, listagem paginada por cursor, galerias, seleção, estados vazios/erro e layout responsivo. A API Cloudflare é autoridade dos modelos; os serviços comerciais existentes continuam no Supabase. Não adicionar consultas de acervo em massa nem replicação Supabase.
 
-**Débito visual concreto:** `src/pages/CatalogModelsArcade.tsx` e `src/pages/catalog/CanonicalModelDetails.tsx` foram implementados com paleta marfim/oliva e tokens `--tonecos-*`. Isso diverge do layout aprovado e deve ser corrigido antes de integrar à `main`. Reutilizar `ArcadeHero`, `ArcadeSectionTitle`, `ArcadeCard` e tokens preexistentes `--gold-accent`, sem copiar `UniverseModelCard` com seus hooks legados de catálogo/preços. Manter toda a lógica funcional já implementada de cursor, URL `/modelos/:slug`, mídia, galeria e seleção. Reconciliar os tokens temporários após a migração; não estabelecer outro design system.
+**Restauração visual implementada na branch, pendente de QA:** listagem e ficha voltaram a usar os componentes Arcade existentes e a paleta escura/dourada com `--gold-accent`. Os tokens `--tonecos-*` foram retirados. O gateway, a seleção, a galeria e os links por slug foram preservados. A comparação real em desktop/mobile e o CI completo continuam sendo bloqueios de merge.
 
 **Gate visual:** executar confronto desktop/mobile com referência original, confirmando que não houve redesign geral, e avaliar listagem densa, filtros/tags, controles de paginação, detalhes e acessibilidade. Bloqueia GO enquanto a divergência da nova vitrine não for resolvida.
 
@@ -49,7 +49,7 @@ Implementado:
 - `src/services/catalog/public-catalog-gateway.ts` introduz gateway de leitura isolado, com GET de catálogo, categorias e detalhes, cursor e limite de 60, mídia derivada da origem explícita, rejeição de payloads inválidos e nenhuma consulta SQL/D1 direta.
 - A rota **`/modelos`** foi migrada nesta branch para o catálogo canônico: busca somente por envio explícito, categorias sob demanda, 24 modelos por página, navegação por cursor, detalhes on-demand, estados loading/empty/error e seleção temporária de até 50 IDs com remoção/deduplicação. **Não é um deploy de produção** nem uma transação comercial; nada é enviado até a homologação do orçamento.
 - `VITE_CANONICAL_CATALOG_API_BASE` precisa apontar para um proxy HTTPS Tonecos homologado. Sem configuração, a rota mostra `Catálogo em integração` sem consultar Supabase, D1 ou Worker. Não substituímos ainda as rotas `/universo` e `/modelos/:id` nem o sistema comercial existente.
-- **Débito de UI:** a rota `/modelos` e a ficha nova ainda contêm paleta editorial marfim/oliva e tokens `--tonecos-*`, em conflito com a decisão posterior do usuário. Manter gateway e funções implementadas, porém restaurar o estilo Arcade original antes de merge, reutilizando tokens existentes e eliminando tokens temporários após a reconciliação.
+- **UI restaurada em código (ainda não homologada):** `/modelos` e `/modelos/:slug` agora usam componentes Arcade compartilhados, sem os tokens marfim/oliva. O gateway permanece canônico; executar testes de interface e screenshots em desktop/mobile antes de integrar.
 - Nenhuma migration, backend, publicação de Worker, pedido ou orçamento real foi alterado.
 
 ## Bloqueios para merge / release (falha fechada)

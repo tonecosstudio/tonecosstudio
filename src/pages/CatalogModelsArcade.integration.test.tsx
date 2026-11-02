@@ -10,6 +10,30 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
+vi.mock("@/components/arcade/ArcadeLayout", () => ({
+  ArcadeHero: ({
+    badge,
+    title,
+    subtitle,
+  }: {
+    badge: string;
+    title: string;
+    subtitle: string;
+  }) => (
+    <header>
+      <p>{badge}</p>
+      <h1>{title}</h1>
+      <p>{subtitle}</p>
+    </header>
+  ),
+  ArcadeSectionTitle: ({ children }: { children: ReactNode }) => (
+    <h2>{children}</h2>
+  ),
+  ArcadeCard: ({ children }: { children: ReactNode }) => (
+    <article>{children}</article>
+  ),
+}));
+
 vi.mock("@/components/layouts/Page", () => ({
   Page: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
@@ -76,8 +100,9 @@ function setupFetch() {
 }
 
 async function renderCatalog(path = "/modelos") {
-  const { default: CatalogModelsArcade } =
-    await import("./CatalogModelsArcade");
+  const { default: CatalogModelsArcade } = await import(
+    "./CatalogModelsArcade"
+  );
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
@@ -291,8 +316,9 @@ describe("Tonecos shareable model detail UI", () => {
       throw new Error("Unexpected detail request: " + url);
     });
     vi.stubGlobal("fetch", fetcher);
-    const { default: CanonicalModelDetails } =
-      await import("./catalog/CanonicalModelDetails");
+    const { default: CanonicalModelDetails } = await import(
+      "./catalog/CanonicalModelDetails"
+    );
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 0 } },
     });
@@ -353,8 +379,9 @@ describe("Tonecos shareable model detail UI", () => {
           : Response.json({ ...original, gallery_version: 0, image_count: 0 });
       }),
     );
-    const { default: Details } =
-      await import("./catalog/CanonicalModelDetails");
+    const { default: Details } = await import(
+      "./catalog/CanonicalModelDetails"
+    );
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -412,8 +439,9 @@ describe("Tonecos shareable model detail UI", () => {
         throw new Error("Unexpected request: " + url.toString());
       }),
     );
-    const { default: Details } =
-      await import("./catalog/CanonicalModelDetails");
+    const { default: Details } = await import(
+      "./catalog/CanonicalModelDetails"
+    );
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });

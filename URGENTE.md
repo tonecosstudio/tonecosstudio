@@ -6,6 +6,17 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Recuperação visual do catálogo — 02/11/2026
+
+- **Código restaurado na branch:** `src/pages/CatalogModelsArcade.tsx` reutiliza `ArcadeHero`, `ArcadeSectionTitle` e `ArcadeCard`. `src/pages/catalog/CanonicalModelDetails.tsx` reutiliza `ArcadeCard` e `ArcadeSectionTitle`, com fundo escuro e detalhes dourados.
+- Removidos do `src/index.css` os sete tokens temporários `--tonecos-*` da paleta marfim/oliva. Nenhum segundo design system foi criado.
+- **Contratos preservados:** gateway Cloudflare de leitura, 24 modelos por página, busca, categorias sob demanda, paginação por cursor, seleção de até 50 IDs, URL compartilhável e galeria versionada incremental. Sem regresso à base de modelos do Supabase.
+- **QA local:** Prettier 3.6.2 aprovou quatro arquivos; esbuild 0.25.12 transpila listagem, ficha e teste de integração. **O CI completo, Vitest/coverage do novo SHA e comparação visual desktop/mobile ainda são obrigatórios** antes do merge.
+- **Tags:** o gateway atual expõe categoria/franquia/coleção, mas não contrato canônico de tags. Não duplicar campos nem inventar filtro até o Worker disponibilizar contrato explícito.
+- Nenhuma migração, consulta D1, deploy de produção ou alteração da `main` foi realizada. O preview de integração ainda requer gates verdes.
+
+---
+
 ## Decisão visual canônica — 02/11/2026 (prioridade sobre planos anteriores)
 
 - **Decisão explícita do proprietário:** manter a aparência do antigo OrdaX; ajustar somente a marca **Tonecos Studio** e a capacidade de apresentar mais de **2 mil modelos** com tags, categorias, franquias, filtros, busca, galeria e paginação. Preservar a Home, HUD, navegação, fontes, dark/gold, cards, área do cliente e administração onde funcionam.
