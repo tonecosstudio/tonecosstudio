@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { parseSystemSettingNumber } from "@/lib/system-settings-values";
+import { fetchPricingSettings } from "@/services/pricing/pricing-settings-service";
 
 export interface CollectionPricing {
   price_full: number;
@@ -84,34 +84,16 @@ export async function getCollectionPricing(
   });
 }
 
-export async function getGlobalPricingSettings(): Promise<Record<string, number>> {
-  const requiredKeys = [
-    "default_price_full",
-    "default_price_pix",
-    "default_deposit_amount",
-    "pix_discount_percentage",
-  ] as const;
-
-  const { data, error } = await supabase
-    .from("system_settings")
-    .select("key, value")
-    .in("key", [...requiredKeys]);
-
-  if (error) throw error;
-
-  const settings = data.reduce(
-    (acc, setting) => {
-      acc[setting.key] = parseSystemSettingNumber(setting.key, setting.value);
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
-
-  for (const key of requiredKeys) {
-    if (settings[key] === undefined) {
-      throw new Error(`Configuração obrigatória de preço ausente: ${key}`);
-    }
-  }
-
-  return settings;
+export async function getGlobalPricingSettings(): Promise<
+  Record<string, number>
+> {
+  // Commercial prices require a fresh authoritative read; never reuse
+  // the 5-minute presentation cache for a customer-facing quote.
+  const settings = await fetchPricingSettings({ forceRefresh: true });
+  return {
+    default_price_full: settings.defaultPriceFull,
+    default_price_pix: settings.defaultPricePix,
+    default_deposit_amount: settings.defaultDepositAmount,
+    pix_discount_percentage: settings.pixDiscountPercentage,
+  };
 }

@@ -9,6 +9,12 @@ Estado: **EM INTEGRAÇÃO / NO-GO**. Esta diretriz substitui o planejamento de p
 - Vercel `bf162ef`: `npm run release:verify` atingiu TypeScript e parou por cinco `\\n` literais no JSX da ficha (`TS1127`). Correção validada com esbuild local, e gateway/galeria validado com Vitest 9/9, TS estrito isolado e Prettier. Estes resultados não comprovam ainda que `release:verify` completo passa.
 - O checkout privado pode ser substituído para verificações pontuais por arquivos obtidos pela conexão autorizada do GitHub e testes offline, sem reconstruir os 2.008 arquivos nem consultar D1; compilação E2E completa requer ambiente com acesso ao repositório ou CI/preview autenticado.
 
+## Autoridade de preços — atualização do SSOT em 02/11/2026
+
+- `src/services/pricing/pricing-settings-service.ts` é o **único leitor/validador canônico** de `system_settings` para preços públicos e orçamento de coleção. O módulo `collection-pricing-service.ts` delega a `fetchPricingSettings({ forceRefresh: true })`, eliminando a leitura e o parse comerciais duplicados. Não introduzir consulta paralela a `system_settings` em outros serviços de coleção.
+- Consultas informativas podem utilizar o cache existente, mas precificação para uma coleção deve buscar valores atuais. A cotação final e autorização permanecem sob autoridade de serviços comerciais do Supabase, jamais do navegador ou de um modelo do catálogo Cloudflare.
+- Testes de contrato: `pricing-settings-service.test.ts` e `collection-pricing-service.test.ts`, 32/32 aprovados localmente em isolamento; Vercel e `release:verify` do SHA final ainda obrigatórios.
+
 ## Missão e proprietários
 
 - **Produto único:** `washingtonmsdj/tonecosstudio` hospeda a experiência web Tonecos (home, modelos, seleção, clientes, orçamentos, pagamentos, pedidos e produção).

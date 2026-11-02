@@ -59,7 +59,10 @@ function assertFiniteInRange(
   return value;
 }
 
-function readRequiredSetting(settings: Map<string, unknown>, key: string): number {
+function readRequiredSetting(
+  settings: Map<string, unknown>,
+  key: string,
+): number {
   if (!settings.has(key)) {
     throw new Error(`Configuração comercial ausente: ${key}`);
   }
@@ -79,9 +82,15 @@ function readOptionalSetting(
   return parseSystemSettingNumber(key, settings.get(key));
 }
 
-export async function fetchPricingSettings(): Promise<PricingSettings> {
+export async function fetchPricingSettings(
+  options: { forceRefresh?: boolean } = {},
+): Promise<PricingSettings> {
   const now = Date.now();
-  if (cachedSettings && now - cacheTimestamp < CACHE_DURATION) {
+  if (
+    !options.forceRefresh &&
+    cachedSettings &&
+    now - cacheTimestamp < CACHE_DURATION
+  ) {
     return cachedSettings;
   }
 
@@ -93,7 +102,9 @@ export async function fetchPricingSettings(): Promise<PricingSettings> {
       .in("key", keys);
 
     if (error) {
-      throw new Error(`Falha ao carregar configuração comercial: ${error.message}`);
+      throw new Error(
+        `Falha ao carregar configuração comercial: ${error.message}`,
+      );
     }
 
     const settingValues = new Map<string, unknown>();
@@ -133,12 +144,21 @@ export async function fetchPricingSettings(): Promise<PricingSettings> {
     );
     const salesOpenDay = assertFiniteInRange(
       "sales_open_day",
-      readOptionalSetting(settingValues, "sales_open_day", BATCH.SALES_OPEN_DAY),
+      readOptionalSetting(
+        settingValues,
+        "sales_open_day",
+        BATCH.SALES_OPEN_DAY,
+      ),
       { min: 1, max: 31 },
     );
 
-    if (!Number.isInteger(monthlyProductionLimit) || !Number.isInteger(salesOpenDay)) {
-      throw new Error("Configuração operacional de vendas deve usar números inteiros");
+    if (
+      !Number.isInteger(monthlyProductionLimit) ||
+      !Number.isInteger(salesOpenDay)
+    ) {
+      throw new Error(
+        "Configuração operacional de vendas deve usar números inteiros",
+      );
     }
 
     const settings: PricingSettings = {
@@ -202,15 +222,24 @@ export const TAX_RATES: TaxRates = {
   taxInstallment10xClient: 0.2065,
 };
 
-export function calculatePixPrice(fullPrice: number, discountPercentage: number): number {
+export function calculatePixPrice(
+  fullPrice: number,
+  discountPercentage: number,
+): number {
   return fullPrice * (1 - discountPercentage / 100);
 }
 
-export function calculateRemaining(totalPrice: number, depositAmount: number): number {
+export function calculateRemaining(
+  totalPrice: number,
+  depositAmount: number,
+): number {
   return totalPrice - depositAmount;
 }
 
-export function calculateNetValues(fullPrice: number, pixDiscountPercentage: number) {
+export function calculateNetValues(
+  fullPrice: number,
+  pixDiscountPercentage: number,
+) {
   const pixPrice = calculatePixPrice(fullPrice, pixDiscountPercentage);
   const safePercentage = (amount: number, base: number) =>
     base > 0 ? (amount / base) * 100 : 0;
@@ -230,7 +259,8 @@ export function calculateNetValues(fullPrice: number, pixDiscountPercentage: num
   const priceWithInterest = fullPrice + clientSurcharge;
   const tax10xClientSale = fullPrice * TAX_RATES.taxSaleInstallment;
   const tax10xClientInstallment = fullPrice * TAX_RATES.taxInstallment10xClient;
-  const net10xClient = priceWithInterest - tax10xClientSale - tax10xClientInstallment;
+  const net10xClient =
+    priceWithInterest - tax10xClientSale - tax10xClientInstallment;
 
   return {
     pix: {

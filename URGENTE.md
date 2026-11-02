@@ -6,6 +6,17 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Checkpoint SSOT de preços comerciais — 02/11/2026
+
+- **Fonte única de leitura e validação:** `src/services/pricing/pricing-settings-service.ts` permanece a autoridade canônica para preços, Pix, sinal e parâmetros operacionais. `src/services/pricing/collection-pricing-service.ts` foi refatorado para **delegar** a `fetchPricingSettings({ forceRefresh: true })`, sem uma segunda consulta direta a `system_settings` nem duplicar parse/validadores.
+- **Atualização sem preços obsoletos:** a apresentação geral mantém seu cache existente; a leitura para cálculo de uma coleção exige valores frescos e passa pelas mesmas validações de preços. Preço customizado sem contrato servidor é rejeitado, nunca inferido. Supabase segue autoridade do negócio e não há integração comercial automática com os IDs Cloudflare.
+- **Prova local:** Vitest 3.2.4 **32/32 PASS** em Desktop Windows autorizado, com mocks explícitos da API de dados e os serviços de produção originais. Casos: campos faltantes, valores inválidos, depósitos acima do Pix, cache e refresh, coleções sem permissão, preços customizados, divergência entre desconto e total, impostos e saldo. Prettier 3.6.2 **PASS** nos quatro arquivos.
+- **Release:** o preview do SHA anterior `2c3781cac9474a7d03efa65cf700529cc24c8d29` ainda não foi considerado verde; o último bloqueio conhecido no Vercel era cobertura global de funções `65,62%` contra `70%`. **Não reduzir os thresholds, não mascarar falhas ou afirmar liberação com apenas testes isolados.**
+- **Infraestrutura:** `ordax.com.br` e `www.ordax.com.br` continuam vinculados (não verificados) ao projeto Vercel `tonecosstudio`; a separação completa de domínios é gate obrigatório para produção. Main, D1, R2, pedidos e pagamentos não foram alterados.
+- **Próxima ação:** examinar o preview do SHA atual e suas métricas reais, corrigir as causas que ainda bloquearem `release:verify` (inclusive cobertura e auditorias) e homologar UX/E2E. Não criar branches nem PRs paralelos.
+
+---
+
 ## Checkpoint de cobertura e QA da vitrine — 02/11/2026
 
 - **Baseline antes deste checkpoint:** `9b6d682d6e943262efa47cd9859618c29806a215`, branch `integration/tonecosstudio-canonical-20261101`, main `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`, sem merge.

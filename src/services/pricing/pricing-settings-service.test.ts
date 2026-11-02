@@ -210,3 +210,22 @@ describe("commercial pricing settings — single authority", () => {
     expect(result.installment10xClient.percentage).toBe(0);
   });
 });
+
+it("forces a fresh commercial read when a collection needs an authoritative quote", async () => {
+  clearPricingCache();
+  const from = await fetchPricingSettings();
+  expect(from.defaultPriceFull).toBe(500);
+  mocks.in.mockResolvedValueOnce({
+    data: rows({
+      ...official,
+      default_price_full: "600",
+      default_price_pix: "560",
+    }),
+    error: null,
+  });
+  const updated = await fetchPricingSettings({ forceRefresh: true });
+  expect(updated.defaultPriceFull).toBe(600);
+  expect(updated.defaultPricePix).toBe(560);
+  expect(mocks.in).toHaveBeenCalledTimes(2);
+  expect(await fetchPricingSettings()).toBe(updated);
+});
