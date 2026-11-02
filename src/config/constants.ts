@@ -60,18 +60,18 @@ export const ASSETS = {
 } as const;
 
 export const CONTACT = {
-  SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL || "suporte@ordax.com.br",
-  CONTACT_EMAIL: import.meta.env.VITE_CONTACT_EMAIL || "contato@ordax.com.br",
+  SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL || "",
+  CONTACT_EMAIL: import.meta.env.VITE_CONTACT_EMAIL || "",
   PRIVACY_EMAIL:
-    import.meta.env.VITE_PRIVACY_EMAIL || "privacidade@ordax.com.br",
-  DPO_EMAIL: import.meta.env.VITE_DPO_EMAIL || "dpo@ordax.com.br",
-  WEBSITE_URL: import.meta.env.VITE_WEBSITE_URL || "https://ordax.com.br",
+    import.meta.env.VITE_PRIVACY_EMAIL || "",
+  DPO_EMAIL: import.meta.env.VITE_DPO_EMAIL || "",
+  WEBSITE_URL: import.meta.env.VITE_WEBSITE_URL || (typeof window !== "undefined" ? window.location.origin : ""),
   COMPANY_LOGO_URL:
     import.meta.env.VITE_COMPANY_LOGO_URL || ASSETS.DEFAULT_ICON_URL,
   BUSINESS_HOURS:
     import.meta.env.VITE_BUSINESS_HOURS || "Segunda a Sexta, 9h às 18h",
   COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME || BRAND_NAME,
-  LEGAL_NAME: import.meta.env.VITE_LEGAL_NAME || "Tonecos Studios LTDA",
+  LEGAL_NAME: import.meta.env.VITE_LEGAL_NAME || "",
   COMPANY_ADDRESS: import.meta.env.VITE_COMPANY_ADDRESS || "",
 } as const;
 
