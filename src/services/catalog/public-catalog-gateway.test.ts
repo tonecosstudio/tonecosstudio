@@ -106,8 +106,8 @@ describe("canonical catalog read boundary", () => {
     for (const folder of [
       "x".repeat(513),
       "games/../admin",
-      "games\\\\..\\\\admin",
-      "games\\nother",
+      "games" + String.fromCharCode(92) + ".." + String.fromCharCode(92) + "admin",
+      "games" + String.fromCharCode(10) + "other",
     ]) {
       await expect(
         gateway.listPage({ category: "games", franchise: "autoral", folder }),
