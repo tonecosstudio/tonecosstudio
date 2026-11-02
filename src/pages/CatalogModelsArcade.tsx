@@ -68,6 +68,7 @@ export default function CatalogModelsArcade() {
   const search = searchParams.get("q")?.trim() ?? "";
   const category = searchParams.get("category")?.trim() ?? "";
   const franchise = searchParams.get("franchise")?.trim() ?? "";
+  const folder = searchParams.get("folder")?.trim() ?? "";
   const [draft, setDraft] = useState(search);
   const [loadCategories, setLoadCategories] = useState(Boolean(category));
   const [loadFranchises, setLoadFranchises] = useState(Boolean(franchise));
@@ -94,11 +95,12 @@ export default function CatalogModelsArcade() {
     }
   }, []);
 
-  const scope = JSON.stringify([search, category, franchise]);
+  const scope = JSON.stringify([search, category, franchise, folder]);
   const activePage =
     paging.scope === scope ? paging : { scope, cursors: [undefined], index: 0 };
   const cursor = activePage.cursors[activePage.index];
   const invalidSearch = search.length > 0 && Array.from(search).length < 3;
+  const invalidFolderScope = Boolean(folder && (!category || !franchise));
 
   const categories = useQuery({
     queryKey: ["tonecos-catalog-categories"],
@@ -131,13 +133,14 @@ export default function CatalogModelsArcade() {
         {
           category: category || undefined,
           franchise: franchise || undefined,
+          folder: folder || undefined,
           search: search || undefined,
           limit: PAGE_SIZE,
           cursor,
         },
         signal,
       ),
-    enabled: gateway !== null && !invalidSearch,
+    enabled: gateway !== null && !invalidSearch && !invalidFolderScope,
     retry: false,
     staleTime: 60 * 1000,
   });
@@ -152,12 +155,16 @@ export default function CatalogModelsArcade() {
     nextSearch: string,
     nextCategory: string,
     nextFranchise = franchise,
+    keepFolder = true,
   ) {
     const next = new URLSearchParams();
     if (nextSearch) next.set("q", nextSearch);
     if (nextCategory && nextCategory !== "all")
       next.set("category", nextCategory);
     if (nextFranchise) next.set("franchise", nextFranchise);
+    if (keepFolder && folder && nextCategory === category && nextFranchise === franchise) {
+      next.set("folder", folder);
+    }
     setSearchParams(next);
   }
 
@@ -348,6 +355,15 @@ export default function CatalogModelsArcade() {
             ) : null}
           </div>
 
+          {folder && !invalidFolderScope && (
+            <div role="status" className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[hsl(var(--gold-accent))]">
+              Pasta selecionada: {folder}
+              <button type="button" onClick={() => changeParams(search, category, franchise, false)} className="border border-[hsl(var(--gold-accent)/0.5)] px-3 py-2">
+                Limpar pasta
+              </button>
+            </div>
+          )}
+
           <div className="mb-5 mt-10 flex flex-wrap items-end justify-between gap-3">
             <ArcadeSectionTitle>MODELOS DO ACERVO</ArcadeSectionTitle>
             <div className="flex flex-wrap items-center gap-3">
@@ -385,6 +401,10 @@ export default function CatalogModelsArcade() {
                 disponível sem essa validação.
               </p>
             </div>
+          ) : invalidFolderScope ? (
+            <p role="status" className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm">
+              A pasta requer uma categoria e uma franquia válidas.
+            </p>
           ) : invalidSearch ? (
             <p
               role="status"
