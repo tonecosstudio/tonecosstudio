@@ -11,6 +11,14 @@ Estado: **EM INTEGRAÇÃO / NO-GO**. Esta diretriz substitui o planejamento de p
 **Bloqueio operacional:** Vercel já está renomeado e acessível como `tonecosstudio`, mas mantém `ordax.com.br` e `www.ordax.com.br` **não verificados** cadastrados nesse projeto. Retirá-los antes do GO; não afetar a implantação do OrdaX OS.
 
 ---
+## Checkpoint operacional — 02/11/2026 (Vercel e isolamento)
+
+- Projeto Vercel confirmado na equipe Tonecos: `tonecosstudio`, ID `prj_yfe9KqNRdWfYNnY6HSXBfT0D2Vsu`; Node 24, Vite, previews protegidos por SSO. Deployment `dpl_A7CbaaijadXJmHbRK4rPS6fPgsSH`, commit `f758619d89c79b270c50ed853f719b64905abc75`, estado **READY** e status GitHub Vercel **success**. Esses sinais não substituem validação E2E ou aprovação comercial.
+- As configurações `autoAssignCustomDomains=false` e `directoryListing=false` foram aplicadas no projeto Tonecos, mantendo o mesmo ID. Isso evita associação automática de novos domínios personalizados e impede listagem de diretórios; não remove domínios já vinculados.
+- Domínios herdados ainda cadastrados no projeto Tonecos: `ordax.com.br` e `www.ordax.com.br` (não verificados), além de `ordax-three.vercel.app` (verificado). **Pendente:** remover somente os vínculos do projeto Tonecos com ação própria da Vercel; a conexão de gestão atual não expõe exclusão de domínio. Não mexer em DNS nem nos domínios do projeto OrdaX.
+- Verificação cruzada em conta OrdaX: `ordax-os-public` mantém `ordax.com.br` e `www.ordax.com.br` verificados, e `ordax-web` mantém `web.ordax.com.br` verificado. Não utilizar esses endereços como destino da Tonecos.
+- A branch `integration/tonecosstudio-canonical-20261101` está **83 commits à frente** de `main` e **0 atrás** nesta inspeção. Preservar a branch; não abrir cópias nem promover produção enquanto os bloqueios desta página permanecerem.
+
 ## Continuidade após liberação da Vercel — 02/11/2026
 
 - A identidade da Vercel foi confirmada diretamente na equipe `jogo-brasils-projects`: o projeto existente agora é `tonecosstudio`, conectado ao repositório `washingtonmsdj/tonecosstudio`. Seu ID foi preservado, evitando cópia paralela.
