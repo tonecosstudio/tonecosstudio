@@ -1,5 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { ASSETS, CONTACT } from "@/config/constants";
+import { BRAND_NAME } from "@/config/brand";
 
 interface SEOHeadProps {
   title?: string;
@@ -14,7 +15,7 @@ interface SEOHeadProps {
 
 export default function SEOHead({
   title,
-  description = "Tonecos Studios - Estatuetas premium artesanais feitas à mão. Produção sob encomenda de colecionáveis de alta qualidade com pintura artística.",
+  description = "Tonecos Studio — modelos para referência, esculturas sob encomenda e acompanhamento de pedidos.",
   keywords = ["estatuetas", "colecionáveis", "premium", "artesanal", "tonecos", "collectibles"],
   image = ASSETS.FALLBACK_IMAGE_URL,
   url,
@@ -22,7 +23,7 @@ export default function SEOHead({
   noindex = false,
   jsonLd,
 }: SEOHeadProps) {
-  const siteTitle = `Ordax | ${CONTACT.COMPANY_NAME}`;
+  const siteTitle = BRAND_NAME;
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
   const siteUrl = CONTACT.WEBSITE_URL.replace(/\/$/, "");
   const currentOrigin = typeof window !== "undefined" ? window.location.origin : siteUrl;
@@ -44,7 +45,7 @@ export default function SEOHead({
       <meta property="og:image" content={fullImageUrl} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:type" content={type} />
-      <meta property="og:site_name" content="Ordax" />
+      <meta property="og:site_name" content={BRAND_NAME} />
       <meta property="og:locale" content="pt_BR" />
 
       <meta name="twitter:card" content="summary_large_image" />
