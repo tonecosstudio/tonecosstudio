@@ -60,7 +60,7 @@ export default function ContactArcade() {
 
   return (
     <Page
-      title="Contato | ORDAX Comms"
+      title="Contato"
       description="Entre em contato conosco. Canal direto para duvidas e solicitacoes."
     >
       <ArcadeHero badge="Canal Aberto" title="CONTATO" subtitle=">> TRANSMITA SUA MENSAGEM." />
