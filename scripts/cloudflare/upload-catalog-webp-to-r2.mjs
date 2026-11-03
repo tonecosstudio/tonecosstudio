@@ -53,7 +53,7 @@ const ACCESS_KEY_ID = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
 const SECRET_ACCESS_KEY = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
 const BUCKET = argValue(
   "bucket",
-  process.env.CLOUDFLARE_R2_BUCKET || "ordax-catalog",
+  process.env.CLOUDFLARE_R2_BUCKET || "",
 );
 const ENDPOINT = (
   process.env.CLOUDFLARE_R2_ENDPOINT ||
@@ -190,6 +190,9 @@ async function putObject(operation, bytes) {
 }
 
 function assertConfig() {
+  if (/^ordax(?:-|$)/i.test(BUCKET)) {
+    throw new Error("OrdaX R2 buckets are not authorized for Tonecos Studio.");
+  }
   if (!ENDPOINT || !ACCESS_KEY_ID || !SECRET_ACCESS_KEY || !BUCKET) {
     throw new Error(
       "Missing Cloudflare R2 config. Set CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY and CLOUDFLARE_R2_BUCKET.",

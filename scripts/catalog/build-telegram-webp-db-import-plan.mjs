@@ -49,7 +49,7 @@ const ASSET_BASE_URL = argValue(
   "asset-base-url",
   process.env.VITE_CATALOG_ASSET_BASE_URL ||
     process.env.CATALOG_ASSET_BASE_URL ||
-    "https://ordax.com.br",
+    "",
 ).replace(/\/+$/, "");
 const SOURCE_FOLDER_ID = argValue("source-folder-id", "telegram-2370335738-images");
 const SOURCE_FOLDER_NAME = argValue("source-folder-name", "telegram-2370335738-images");
@@ -201,7 +201,7 @@ function normalizeRelpath(value) {
 
 function publicAssetUrl(storagePath) {
   const cleanPath = normalizeRelpath(storagePath);
-  return cleanPath ? `${ASSET_BASE_URL}/${cleanPath}` : null;
+  return ASSET_BASE_URL && cleanPath ? `${ASSET_BASE_URL}/${cleanPath}` : null;
 }
 
 function deriveIdentityStemFromPath(filePath) {
@@ -623,6 +623,23 @@ function buildUploadIndex(storagePlan) {
 }
 
 async function main() {
+  if (ASSET_BASE_URL) {
+    let origin;
+    try {
+      origin = new URL(ASSET_BASE_URL);
+    } catch {
+      throw new Error("Invalid catalog asset origin.");
+    }
+    if (
+      origin.protocol !== "https:" || origin.username || origin.password ||
+      origin.search || origin.hash || origin.pathname !== "/" ||
+      origin.hostname === "ordax.com.br" ||
+      origin.hostname.endsWith(".ordax.com.br") ||
+      origin.hostname.endsWith(".vercel.app")
+    ) {
+      throw new Error("A dedicated HTTPS Tonecos media origin is required; OrdaX domains are forbidden.");
+    }
+  }
   await loadTagPolicy();
 
   if (!LEGAL_IMPORT_SOURCE_TYPES.has(IMPORT_SOURCE_TYPE)) {

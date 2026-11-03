@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Isolamento do bootstrap Cloudflare legado — 03/11/2026
+
+- **Baseline validada:** commit `14ea548ff744bcdad9c396162a32a4e0a6420d40` alcançou Vercel `READY`, `release:verify` terminou, `npm audit` reportou 0 vulnerabilidades de produção, e preview inicial + imagem social responderam HTTP 200. Alias de preview da Tonecos repontado para esse commit, sem promover `main`.
+- **Achado:** `.env.example` e `.env.local.template` ainda ofereciam domínio, Pages, Worker, rota e R2 da OrdaX como defaults. O bootstrap antigo de Cloudflare podia alterar DNS, zona, bucket, Worker e Pages da OrdaX com `--execute`. Um uploader legado independente aceitava origem `ordax.com.br` como default.
+- **Correção:** templates sem origens, projetos ou buckets legados; retirar da árvore ativa o bootstrap Cloudflare antigo, seu Worker `ORDAX_CATALOG` e o uploader HTTP legado, que não são consumidores do gateway canônico e não eram chamados por `release:verify`. O histórico permanece íntegro no Git. Scripts locais de preparação/importação remanescentes devem falhar fechados com origem/bucket OrdaX, não criar links falsos quando não houver origem aprovada, e nunca acessar o Cloudflare nesta etapa.
+- **Regressão:** teste canônico de branding exige ausência dos executores órfãos e dos destinos OrdaX pré-configurados nos templates e scripts. Não criar novo mecanismo de deploy nem segundo catálogo.
+- **Bloqueios:** ambiente comercial continua `NO-GO`; aliases `ordax.com.br`, `www.ordax.com.br`, `ordax-three.vercel.app` ainda exigem desvinculação administrativa cuidadosa; docs Cloudflare antigas devem ser classificadas como histórico em trabalho separado.
+- **next_action:** `release:verify` do SHA final, smoke em preview, QA visual desktop/mobile, isolamento de domínios OrdaX e definição de hostname próprio Tonecos antes de `main`.
+- **do_not_repeat:** não executar bootstrap/Cloudflare/D1, não criar aliases OrdaX, não reativar importer Supabase como SSOT, não alterar projeto OrdaX nem criar branch/PR duplicada.
+
+---
+
 ## Scripts Docker órfãos da antiga OrdaX — 03/11/2026
 
 - **Baseline verificada:** branch canônica em `59ed86ddb7c6fcb33963c152262868b59386a231`, preview Vercel `READY`. GET do HTML inicial, `/modelos`, `/og-image.png` e `/favicon.svg` retornaram HTTP 200; a imagem social e as tags `og:image`/`twitter:image` já são servidas no HTML estático.

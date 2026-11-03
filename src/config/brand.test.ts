@@ -74,6 +74,32 @@ it("does not expose obsolete Docker commands or the former OrdaX image name", ()
   expect(existsSync(resolve(process.cwd(), "docker-compose.dev.yml"))).toBe(false);
 });
 
+it("never bootstraps OrdaX Cloudflare resources from the Tonecos repo", () => {
+  for (const path of [
+    "scripts/cloudflare/bootstrap-cloudflare.mjs",
+    "scripts/cloudflare/upload-r2-via-worker-route.mjs",
+    "workers/ordax-catalog-assets.js",
+  ]) {
+    expect(existsSync(resolve(process.cwd(), path)), path).toBe(false);
+  }
+  for (const path of [".env.example", ".env.local.template"]) {
+    const contents = readFileSync(resolve(process.cwd(), path), "utf8");
+    expect(contents, path).not.toMatch(
+      /^(?:VITE_CATALOG_ASSET_BASE_URL|CLOUDFLARE_ZONE_NAME|CLOUDFLARE_PAGES_PROJECT|CLOUDFLARE_PAGES_CUSTOM_DOMAIN|CLOUDFLARE_CATALOG_WORKER|CLOUDFLARE_CATALOG_ROUTE|CLOUDFLARE_R2_BUCKET)=.*ordax/im,
+    );
+  }
+  const uploader = readFileSync(
+    resolve(process.cwd(), "scripts/cloudflare/upload-catalog-webp-to-r2.mjs"),
+    "utf8",
+  );
+  const planner = readFileSync(
+    resolve(process.cwd(), "scripts/catalog/build-telegram-webp-db-import-plan.mjs"),
+    "utf8",
+  );
+  expect(uploader).not.toContain('|| "ordax-catalog"');
+  expect(planner).not.toContain('"https://ordax.com.br"');
+});
+
 it("builds a single deterministic social image from Tonecos-owned sources", () => {
   const packageJson = JSON.parse(
     readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
