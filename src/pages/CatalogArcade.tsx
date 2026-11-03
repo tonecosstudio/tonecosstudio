@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowRight, FolderOpen, ImageOff } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
 import {
@@ -37,6 +37,27 @@ export default function CatalogArcade() {
   const invalidScope =
     (themeKey !== undefined && !VALID_SLUG.test(themeKey)) ||
     (franchiseKey !== undefined && !VALID_SLUG.test(franchiseKey));
+  const [searchParams, setSearchParams] = useSearchParams();
+  const franchiseSearch = searchParams.get("q")?.trim() ?? "";
+  const [franchiseDraft, setFranchiseDraft] = useState(franchiseSearch);
+  const invalidFranchiseSearch =
+    franchiseSearch.length > 0 &&
+    (Array.from(franchiseSearch).length < 3 ||
+      Array.from(franchiseSearch).length > 80);
+
+  useEffect(() => {
+    setFranchiseDraft(franchiseSearch);
+  }, [franchiseSearch, themeKey]);
+
+  function submitFranchiseSearch() {
+    const needle = franchiseDraft.trim();
+    if (needle && (Array.from(needle).length < 3 || Array.from(needle).length > 80)) {
+      return;
+    }
+    const params = new URLSearchParams();
+    if (needle) params.set("q", needle);
+    setSearchParams(params);
+  }
 
   const gateway = useMemo(() => {
     if (!CANONICAL_CATALOG_API_BASE) return null;
@@ -56,14 +77,19 @@ export default function CatalogArcade() {
   });
 
   const franchisesQuery = useQuery({
-    queryKey: ["tonecos-universe-canonical-franchises", themeKey],
+    queryKey: ["tonecos-universe-canonical-franchises", themeKey, franchiseSearch],
     queryFn: ({ signal }) =>
-      gateway!.listFranchises({ category: themeKey, limit: 24 }, signal),
+      gateway!.listFranchises({
+        category: themeKey,
+        search: franchiseSearch || undefined,
+        limit: 24,
+      }, signal),
     enabled:
       gateway !== null &&
       Boolean(themeKey) &&
       !franchiseKey &&
-      !invalidScope,
+      !invalidScope &&
+      !invalidFranchiseSearch,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -114,6 +140,45 @@ export default function CatalogArcade() {
             {franchiseKey ? "PASTAS E MODELOS" : themeKey ? "FRANQUIAS DA CATEGORIA" : "CATEGORIAS"}
           </ArcadeSectionTitle>
 
+          {themeKey && !franchiseKey && !invalidScope && (
+            <form
+              role="search"
+              aria-label="Buscar franquias desta categoria"
+              onSubmit={(event) => {
+                event.preventDefault();
+                submitFranchiseSearch();
+              }}
+              className="mt-6 flex flex-wrap items-center gap-3"
+            >
+              <label className="min-w-56 flex-1">
+                <span className="sr-only">Nome da franquia</span>
+                <input
+                  type="search"
+                  value={franchiseDraft}
+                  onChange={(event) => setFranchiseDraft(event.target.value)}
+                  maxLength={80}
+                  placeholder="Pesquisar franquia (mínimo 3 letras)"
+                  className="h-12 w-full border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,7%)] px-4 text-sm text-[hsl(0,0%,94%)] focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={Boolean(franchiseDraft.trim()) && Array.from(franchiseDraft.trim()).length < 3}
+                className="h-12 border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] disabled:opacity-40"
+              >
+                Buscar franquias
+              </button>
+              {franchiseSearch && (
+                <Link
+                  to={PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(themeKey)}
+                  className="inline-flex min-h-12 items-center border border-[hsl(0,0%,18%)] px-4 text-xs text-[hsl(0,0%,75%)] hover:text-[hsl(var(--gold-accent))]"
+                >
+                  Limpar busca
+                </Link>
+              )}
+            </form>
+          )}
+
           {gateway === null ? (
             <div role="status" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
               Acervo em integração neste ambiente. Não exibimos modelos de outra fonte.
@@ -122,6 +187,10 @@ export default function CatalogArcade() {
             <div role="status" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
               Categoria ou franquia inválida. Volte ao Universo para navegar pelas categorias publicadas.
             </div>
+          ) : themeKey && !franchiseKey && invalidFranchiseSearch ? (
+            <p role="status" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
+              Pesquise franquias usando de 3 a 80 caracteres ou limpe a busca.
+            </p>
           ) : franchiseKey && themeKey ? (
             <CanonicalUniverseFolders
               category={themeKey}
@@ -163,7 +232,7 @@ export default function CatalogArcade() {
                 </div>
                 {franchisesQuery.data?.truncated && (
                   <p role="status" className="mt-5 text-xs text-[hsl(0,0%,56%)]">
-                    Exibindo parte das franquias. Use a busca do catálogo para encontrar outras.
+                    Exibindo parte das franquias. Pesquise pelo nome acima para encontrar outras sem carregar todas as páginas do acervo.
                   </p>
                 )}
               </>

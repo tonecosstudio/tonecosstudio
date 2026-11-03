@@ -18,6 +18,18 @@
 
 ---
 
+## Checkpoint de 03/11/2026 — busca pontual no Universo
+
+- **Baseline:** `0937fcd0fe3c201d4fb2174c30a00b64f384ac12` no branch canônico; Vercel `dpl_2XJKq4scczzLsHMaJ1MR4kcef3ka` READY, status Vercel SUCCESS e `release:verify` passou com auditoria final `found 0 vulnerabilities`. Sem deploy de produção.
+- **Auditoria funcional:** a página `/universo` já usava `createPublicCatalogGateway`, e não uma cópia Supabase. Por isso NÃO foi duplicada ou migrada novamente.
+- **Melhoria:** na categoria do Universo, a lista inicial continua limitada a 24 franquias. Agora há busca por nome com submissão explícita e parâmetros no URL; utiliza apenas `GET api/franchises?category=...&q=...&limit=24`, sem varrer todas as páginas nem listar todos os modelos. Busca curta ou excessiva de link direto falha fechada sem I/O. Link para limpar volta à lista padrão e reaproveita cache.
+- **Prova adicional (pendente do gate deste commit):** teste de categorias, busca que encontra franquia fora das primeiras 24, validação de zero consultas durante digitação e de ausência de request com `q` curto.
+- **Pendências:** verificar `release:verify` no novo SHA; revisar UX real em desktop/mobile e isolar os domínios OrdaX vinculados antes de promoção.
+- **next_action:** observar preview no SHA exato, corrigir qualquer falha causal e continuar a homologação visual/funcional; PR antiga #3 contém somente fix de teste cache já incorporado e pode ser encerrada sem merge após prova.
+- **do_not_repeat:** sem scan D1, sem segundo catálogo Supabase, sem PR/branch paralela e sem alteração em main/prod.
+
+---
+
 ## Consolidação de 03/11/2026 — gateway verde e cache sem perda de dados
 
 - **Baseline verificada:** `f490c5786e7ad9e15701d7126b90234f11e7734e` na única branch de integração; Vercel `dpl_4chA6gWzu8EvKDW6i7ur5wNF913k` terminou READY no próprio SHA, como **preview** sem alvo de produção. `release:verify` concluiu typecheck, lint, auditorias, testes/cobertura, build e `npm audit --omit=dev --audit-level=high`.
