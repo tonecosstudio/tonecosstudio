@@ -97,8 +97,13 @@ export default function CatalogArcade() {
               Universo
             </Link>
             {themeKey && (
-              <span className="text-[hsl(0,0%,56%)]">
+              <Link className="text-[hsl(0,0%,56%)] hover:text-[hsl(var(--gold-accent))] hover:underline" to={PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(themeKey)}>
                 / {themeKey}
+              </Link>
+            )}
+            {franchiseKey && (
+              <span className="text-[hsl(0,0%,56%)]">
+                / {franchiseKey}
               </span>
             )}
             <Link className="ml-auto border border-[hsl(var(--gold-accent)/0.4)] px-4 py-3 font-mono uppercase text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]" to={modelsPath()}>
@@ -186,7 +191,7 @@ export default function CatalogArcade() {
               ))}
             </div>
           )}
-          {themeKey && !invalidScope && (
+          {themeKey && !franchiseKey && !invalidScope && (
             <Link className="mt-8 inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.4)] px-5 py-3 text-sm text-[hsl(var(--gold-accent))]" to={modelsPath(themeKey)}>
               Explorar modelos desta categoria <ArrowRight size={16} aria-hidden="true" />
             </Link>
