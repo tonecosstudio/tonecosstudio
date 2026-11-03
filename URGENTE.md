@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Cloudflare Pages — transporte de catálogo somente leitura — 03/11/2026
+
+- **Infraestrutura confirmada:** Cloudflare Pages `tonecosstudio` na conta Tonecos, conectado ao repositório privado `tonecosstudio/tonecosstudio`. Produção e previews automáticos desabilitados; nenhum deploy iniciado.
+- **Implementação na branch única:** `functions/catalogo-api/[[path]].js` encaminha somente GET das rotas públicas de catálogo, categorias, franquias, pastas, fichas, galerias e mídia para o Worker canônico existente. Rejeita métodos de escrita, rotas desconhecidas, redirecionamentos upstream e caminhos inseguros; não encaminha cookies nem Authorization, não acessa D1 ou Supabase.
+- **Regressão:** `scripts/cloudflare/catalog-pages-proxy.test.mjs` com 9 cenários aprovados em execução local Node.js 22; `npm run build` passou a executar esta suíte junto aos testes existentes de imagem social. A execução completa `release:verify` em Node 24 e CI no novo SHA continua pendente.
+- **Proteções:** `NODE_VERSION=24` e `VITE_PREVIEW_READ_ONLY=true` configurados em preview e produção no Pages. Não inferir liberação pública, usuário real, domínio próprio ou catálogo homologado.
+- **Pendente:** verificar CI no mesmo SHA, autenticação/segurança do ambiente de preview, integração e cabeçalhos reais das Pages Functions, QA desktop/mobile, SEO e auditoria Supabase Tonecos antes de publicar. Vercel e projetos OrdaX intocados.
+- **next_action:** executar gate completo e homologação protegida da nova função sem promoção à `main` nem alteração de domínios.
+- **do_not_repeat:** não criar proxy/catalogo/banco paralelo, não consultar D1/R2, não criar branch ou PR adicional, não iniciar builds concorrentes.
+
+---
+
 ## MVP — rodapé público sem funções e contato não homologados — 03/11/2026
 
 - **Baseline validada:** `db2fbe0a29b7503652906b95b65c25e7845e6a59`, Vercel `READY` e alias estável do preview Tonecos atualizado. HTTP GET Home, modelos, contato, login e favicon + PNG social responderam 200.
