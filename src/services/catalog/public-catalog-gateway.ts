@@ -150,11 +150,11 @@ function validateCatalogCursor(value: string | undefined, field: string): void {
   }
 }
 
-function validCatalogSlug(value: string): boolean {
+export function validCatalogSlug(value: string): boolean {
   return /^[a-z0-9][a-z0-9-]{0,239}$/.test(value);
 }
 
-function validCatalogFolder(value: string): boolean {
+export function validCatalogFolder(value: string): boolean {
   return (
     value.length <= 512 &&
     !Array.from(value).some(

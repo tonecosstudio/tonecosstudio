@@ -248,6 +248,33 @@ describe("Tonecos canonical model discovery UI", () => {
     );
   });
 
+  it("blocks excessively long direct-link searches before Worker reads", async () => {
+    const { calls } = setupFetch();
+    await renderCatalog("/modelos?q=" + "a".repeat(81));
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "no máximo 80 caracteres",
+    );
+    expect(calls).toHaveLength(0);
+  });
+
+  it("rejects invalid catalog scope from direct links without Worker reads", async () => {
+    const cases = [
+      "/modelos?category=games%2Fadmin",
+      "/modelos?franchise=https%3A%2F%2Fexample.test",
+      "/modelos?category=games&franchise=nier&folder=..%2Fadmin",
+    ];
+    for (const path of cases) {
+      const { calls } = setupFetch();
+      const result = await renderCatalog(path);
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Categoria, franquia ou pasta inválida",
+      );
+      expect(calls).toHaveLength(0);
+      result.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("fails closed without an explicitly configured HTTPS catalog origin", async () => {
     vi.stubEnv("VITE_CANONICAL_CATALOG_API_BASE", "");
     const fetcher = vi.fn();

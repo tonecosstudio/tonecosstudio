@@ -25,6 +25,8 @@ import {
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import {
   createPublicCatalogGateway,
+  validCatalogFolder,
+  validCatalogSlug,
   type PublicCatalogModel,
 } from "@/services/catalog/public-catalog-gateway";
 
@@ -80,13 +82,18 @@ export default function CatalogModelsArcade() {
   const activePage =
     paging.scope === scope ? paging : { scope, cursors: [undefined], index: 0 };
   const cursor = activePage.cursors[activePage.index];
-  const invalidSearch = search.length > 0 && Array.from(search).length < 3;
+  const searchLength = Array.from(search).length;
+  const invalidSearch = searchLength > 0 && (searchLength < 3 || searchLength > 80);
+  const invalidCatalogScope =
+    Boolean(category && category !== "all" && !validCatalogSlug(category)) ||
+    Boolean(franchise && !validCatalogSlug(franchise)) ||
+    Boolean(folder && !validCatalogFolder(folder));
   const invalidFolderScope = Boolean(folder && (!category || !franchise));
 
   const categories = useQuery({
     queryKey: ["tonecos-catalog-categories"],
     queryFn: ({ signal }) => gateway!.listCategories(signal),
-    enabled: gateway !== null && loadCategories,
+    enabled: gateway !== null && loadCategories && !invalidCatalogScope && !invalidSearch,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -102,7 +109,7 @@ export default function CatalogModelsArcade() {
         },
         signal,
       ),
-    enabled: gateway !== null && loadFranchises,
+    enabled: gateway !== null && loadFranchises && !invalidCatalogScope && !invalidSearch,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -121,7 +128,7 @@ export default function CatalogModelsArcade() {
         },
         signal,
       ),
-    enabled: gateway !== null && !invalidSearch && !invalidFolderScope,
+    enabled: gateway !== null && !invalidSearch && !invalidFolderScope && !invalidCatalogScope,
     retry: false,
     staleTime: 60 * 1000,
   });
@@ -392,6 +399,10 @@ export default function CatalogModelsArcade() {
                 disponível sem essa validação.
               </p>
             </div>
+          ) : invalidCatalogScope ? (
+            <p role="status" className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm">
+              Categoria, franquia ou pasta inválida. Revise os filtros da URL.
+            </p>
           ) : invalidFolderScope ? (
             <p role="status" className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm">
               A pasta requer uma categoria e uma franquia válidas.
@@ -401,7 +412,9 @@ export default function CatalogModelsArcade() {
               role="status"
               className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm"
             >
-              Utilize ao menos três caracteres na pesquisa.
+              {searchLength > 80
+                ? "Utilize no máximo 80 caracteres na pesquisa."
+                : "Utilize ao menos três caracteres na pesquisa."}
             </p>
           ) : models.isPending ? (
             <p

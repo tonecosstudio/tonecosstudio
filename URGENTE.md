@@ -53,6 +53,19 @@
 
 ---
 
+## Filtros públicos fail-closed e evidências de QA — 03/11/2026
+
+- **Baseline aprovado:** `7637d53295be8d57d6fe47129e037c4652f2d337` na única branch canônica; preview Vercel `dpl_BF3jrMgxpEsqrF1JQ3FVv7ebX4ca` READY. `release:verify` finalizado com `found 0 vulnerabilities` na auditoria final. `main` ainda `fdd2992a...`; produção e domínios OrdaX inalterados.
+- **Chrome real autorizado em Windows:** preview protegido acessado via permissão temporária Vercel, sem desabilitar proteção e sem salvar token no repo. Em um carregamento da vitrine, emulação CDP verificou 320/360/390/430/768/1024/1440 px, todos com `scrollWidth == innerWidth`; 24 cards reais. Home apresentou 6 links de modelos e 6 mídias carregadas; Universo 6 links de categoria e 6 mídias carregadas; ficha real do modelo 10H mostrou 2 mídias carregadas sem overflow. Este teste usou apenas buscas normais limitadas da interface, sem auditoria integral D1.
+- **Defeito restante:** links diretos para `/modelos` com busca de 81+ caracteres ou slug/pasta inválida são bloqueados no gateway, mas a UI apresenta erro genérico; filtros auxiliares podem chamar endpoints que não contribuem para corrigir parâmetros inválidos.
+- **Correção deste commit:** `validCatalogSlug` e `validCatalogFolder` passam a ser exportados da única autoridade, `public-catalog-gateway.ts`. A vitrine reutiliza essas funções para impedir consultas inválidas a modelos, categorias e franquias; mostra mensagens específicas para pesquisa curta, pesquisa longa ou escopo incorreto. Sem duplicar validação.
+- **Testes offline:** `q` com 81 caracteres, categoria com barra, franquia que simula URL externa e pasta `../admin`, todos com zero leituras ao Worker. Testes já existentes continuam cobrindo buscas válidas e paginação.
+- **Gate pendente:** confirmar o `release:verify` integral deste novo SHA antes de uso ou divulgação. Não alterar `main`, produção, pagamentos, Supabase ou D1.
+- **next_action:** homologar comportamento de URLs manuais no preview protegido; isolar com segurança os domínios vinculados a OrdaX antes de qualquer promoção.
+- **do_not_repeat:** sem builds paralelos, sem branches/PRs adicionais e sem varredura integral do catálogo.
+
+---
+
 ## Gate das capas: correção do teste e SEO — 03/11/2026
 
 - **Resultado no SHA `480667f85a02ad073448e44d87fb8ed50ff34120`:** Vercel `dpl_8BczvuXGanVTE7Dn3qdtcsEWi1Wx` ERROR após `test:coverage`. 3.262 testes aprovados, 32 ignorados, 1 falho (`CatalogArcade.integration.test.tsx:125`). O teste procurava link por regex `/Franquia 1/` e encontrava também Franquias 10–19. Componentes da mídia canônica passaram em 4/4 testes; falha não foi de produção nem do gateway.
