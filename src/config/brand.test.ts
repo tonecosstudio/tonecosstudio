@@ -168,8 +168,15 @@ it("builds a single deterministic social image from Tonecos-owned sources", () =
     resolve(process.cwd(), "src/components/SEOHead.tsx"),
     "utf8",
   );
-  expect(packageJson.scripts.build).toBe(
-    "node --test scripts/branding/generate-og-image.test.mjs && vite build && node scripts/branding/generate-og-image.mjs",
+  const buildStages = packageJson.scripts.build.split(" && ");
+  const preflight = buildStages[0] ?? "";
+  expect(preflight).toContain("node --test");
+  expect(preflight).toContain("scripts/branding/generate-og-image.test.mjs");
+  expect(preflight).toContain("scripts/cloudflare/catalog-pages-proxy.test.mjs");
+  const bundleIndex = buildStages.indexOf("vite build");
+  expect(bundleIndex).toBeGreaterThan(0);
+  expect(buildStages.indexOf("node scripts/branding/generate-og-image.mjs")).toBeGreaterThan(
+    bundleIndex,
   );
   expect(generator).toContain("dist/og-image.png");
   expect(generator).not.toContain("public/og-image.png");
