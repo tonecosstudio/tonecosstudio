@@ -289,7 +289,7 @@ export default function LandingPage() {
           ) : (
             <div className="mt-5 grid grid-cols-2 gap-3.5 sm:grid-cols-3 md:grid-cols-6">
               {models.map((model) => {
-                const imageUrl = gateway?.mediaUrl(model.coverStorageKey);
+                const imageUrl = gateway?.mediaUrl(model.coverStorageKey) ?? null;
                 return (
                   <Link key={model.id} to={catalogModelDetailsPath(model.slug)} className="group block" aria-label={"Ver detalhes de " + model.name}>
                     <ArcadeCard>

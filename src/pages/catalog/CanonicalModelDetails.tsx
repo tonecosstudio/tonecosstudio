@@ -101,12 +101,12 @@ export default function CanonicalModelDetails() {
     : (model?.coverStorageKey ?? null);
   const activeImageUrl = gateway?.mediaUrl(activeImageKey) ?? null;
 
-  function imageUrl(image: PublicCatalogImage) {
+  function imageUrl(image: PublicCatalogImage): string | null {
     return gateway?.mediaUrl(
       image.variantKeys.thumb ??
         image.variantKeys.card ??
         image.variantKeys.detail,
-    );
+    ) ?? null;
   }
 
   return (

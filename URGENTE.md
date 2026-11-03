@@ -30,6 +30,15 @@
 
 ---
 
+## Correção TypeScript do media fallback — 03/11/2026
+
+- **Falha observada:** preview `dpl_5jqYaPh5Rs8bxTk3AmHGe7oPUqV2` do commit `c1cdedd679c80627a25d57b30a1d4ed22e8ad87d` bloqueado no `tsc -b` por `CanonicalModelDetails.tsx:211`, onde `imageUrl()` devolvia `string | null | undefined` para a prop `src` que exige `string | null`.
+- **Correção:** tipagem explícita `imageUrl(...): string | null` e `?? null` na fronteira do gateway; a Home também normaliza explicitamente o possível `undefined`. Sem mudança de backend, sem I/O adicional, sem exclusão de testes.
+- **Próximo gate:** executar `release:verify` no novo SHA e continuar somente após PASS. Main, Cloudflare e produção intocados.
+- **do_not_repeat:** manter contratos de ausência de mídia em `null`; não permitir `undefined` na prop compartilhada.
+
+---
+
 ## Imagens resilientes do catálogo — 03/11/2026
 
 - **Baseline comprovada:** `444722fc73fb38b672d50565c5d7d4c853425b4d`, branch `integration/tonecosstudio-canonical-20261101`, Vercel preview `dpl_FYGCpEkqRmNQ4DGgsQh2JX92k8ah` READY e status SUCCESS, `release:verify` concluído. Continua NO-GO de lançamento e main inalterada.
