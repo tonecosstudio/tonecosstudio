@@ -219,3 +219,17 @@ it("routes model discovery to the canonical gateway and preserves shareable link
   expect(router).toContain("CanonicalModelDetails");
   expect(router).toContain("LegacyModelDetails");
 });
+
+
+it("uses Pages native SPA routing without a circular fallback rewrite", () => {
+  // Cloudflare Pages serves index.html for missing SPA routes when no 404.html exists.
+  // The old /* /index.html 200 rule was rejected as an infinite loop by Pages.
+  const redirectsPath = resolve(process.cwd(), "public/_redirects");
+  if (existsSync(redirectsPath)) {
+    expect(readFileSync(redirectsPath, "utf8")).not.toMatch(
+      /^\/\*\s+\/index\.html\s+200\s*$/m,
+    );
+  }
+  expect(existsSync(resolve(process.cwd(), "public/404.html"))).toBe(false);
+  expect(existsSync(resolve(process.cwd(), "functions/catalogo-api/[[path]].js"))).toBe(true);
+});
