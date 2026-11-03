@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Checkpoint 03/11/2026 — prova HTTP Vercel e Arcade Lab canônico
+
+- **Baseline:** `5781d1f43662d2ff9d189745fec976418dfcebe4` na branch exclusiva, preview Vercel `dpl_G7Yakm7ucvRvb9SR3enFePkaFg7J` READY, `release:verify` finalizado e auditoria de dependências de produção `found 0 vulnerabilities`. Sem mudanças de main/prod.
+- **Prova mínima e real do acervo:** GET `/modelos` no preview anterior recebeu HTTP 200 com HTML da aplicação; GET `/catalogo-api/api/catalog?limit=1` recebeu HTTP 200 e exatamente uma referência publicada (`10H` / `NieR` / `Games`), mais `nextCursor`. GET da capa correspondente por `/catalogo-api/media/...` recebeu HTTP 206 Partial Content, `image/webp`, `content-length: 71276`. Uma única consulta limitada a um modelo; sem varredura D1. Isso **não prova** renderização do React no browser desktop/mobile.
+- **Auditoria de múltiplas frentes:** a Home já usa a primeira página do gateway canônico com limite 6; porém, o modo `Catálogo real` do Arcade Lab usava `useLandingCatalogModels` (Supabase legado), construía link para `/universo/personagem/:slug` e ainda exibia branding OrdaX. Isso misturava autoridades de inventário e links comerciais.
+- **Correção neste commit:** Arcade Lab preserva demo visual independente; quando o visitante escolhe `Catálogo real`, consulta somente `listPage({limit:12})` do gateway de leitura canônico e liga cada imagem/ficha a `/modelos/:slug`. Falha fechada se gateway ausente; sem preço/pedido, scan ou import de modelo Supabase. Branding residual da interface Arcade Lab corrigido para Tonecos sem redesign.
+- **Testes offline:** demonstração não consulta Worker, resultados reais usam gateway e links canônicos, erros permitem retentar, seleção via teclado permanece intacta. `release:verify` deste novo SHA permanece **pendente** até evidência do CI.
+- **next_action:** acompanhar gate do novo SHA; homologar cards da Home, modelos no Arcade Lab e imagens no browser desktop/mobile; isolar domínios OrdaX e manter NO-GO.
+- **do_not_repeat:** sem duplicação de catálogo Supabase, sem consulta D1 em massa, sem alterar App/SSOT além da frente de integração e sem tocar `main`/produção.
+
+---
+
 ## Continuidade de 03/11/2026 — paginação fail-closed
 
 - **Baseline anterior:** `a5daae89b9488dd5351777aaf55d14f9b790d7ff` na branch de integração. `main` preservada.

@@ -1,10 +1,12 @@
 import {
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
   type KeyboardEvent,
 } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowLeft,
@@ -27,8 +29,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PUBLIC_ROUTES, catalogCharacterPath } from "@/config/routes";
-import { useLandingCatalogModels } from "@/hooks/catalog/useLandingCatalogModels";
+import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
+import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
+import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
 import {
   ARCADE_UNIVERSES,
   DEMO_FIGHTERS,
@@ -208,7 +211,7 @@ function CharacterSelect({
               </div>
             ) : (
               <p className="al-eyebrow">
-                PERSONAGENS RECENTES / SELECIONE UMA PEÇA
+                MODELOS PUBLICADOS / SELECIONE UMA PEÇA
               </p>
             )}
             <div
@@ -257,7 +260,7 @@ function CharacterSelect({
               <p>
                 {illustrative
                   ? "Personagens ilustrativos. Explore a direção visual e encontre seu favorito."
-                  : "Seleção conectada ao acervo. Abra o personagem para consultar os modelos."}
+                  : "Seleção conectada ao acervo oficial. Abra a ficha do modelo."}
               </p>
             </div>
           </div>
@@ -268,7 +271,7 @@ function CharacterSelect({
                   <Crosshair size={13} /> EM DESTAQUE
                 </span>
                 <span>
-                  ORDAX /{" "}
+                  TONECOS /{" "}
                   {String(fighters.indexOf(selected) + 1).padStart(2, "0")}
                 </span>
               </div>
@@ -292,7 +295,7 @@ function CharacterSelect({
                     className="al-button al-button--gold"
                     to={selected.href}
                   >
-                    Ver modelos <ArrowRight size={18} />
+                    Ver ficha do modelo <ArrowRight size={18} />
                   </Link>
                 ) : (
                   <button
@@ -312,7 +315,7 @@ function CharacterSelect({
           )}
         </div>
         <div className="al-machine-bottom">
-          <span>ORDAX ORIGINAL EXPERIENCE</span>
+          <span>TONECOS ARCADE EXPERIENCE</span>
           <span>
             ESCOLHA. COLECIONE. RECOMECE.{" "}
             <span className="al-tiny-cross">+</span>
@@ -420,13 +423,42 @@ function CharacterSelect({
 }
 
 function PublishedRoster() {
-  const query = useLandingCatalogModels(12);
+  // Mounts only in real-catalog mode. The demo never spends Worker reads.
+  // No Supabase model mirror, character aggregation or catalog-wide scan.
+  const gateway = useMemo(() => {
+    if (!CANONICAL_CATALOG_API_BASE) return null;
+    try {
+      return createPublicCatalogGateway(CANONICAL_CATALOG_API_BASE, fetch);
+    } catch {
+      return null;
+    }
+  }, []);
+  const query = useQuery({
+    queryKey: ["tonecos-arcade-canonical-models"],
+    queryFn: ({ signal }) => gateway!.listPage({ limit: 12 }, signal),
+    enabled: gateway !== null,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (gateway === null) {
+    return (
+      <div className="al-state" role="status">
+        <Layers3 size={32} />
+        <h2>Catálogo em integração.</h2>
+        <p>A origem oficial não está configurada neste ambiente.</p>
+        <Link className="al-button" to={PUBLIC_ROUTES.catalogModels}>
+          Voltar aos modelos <ArrowRight size={16} />
+        </Link>
+      </div>
+    );
+  }
   if (query.isPending)
     return (
       <div className="al-state" role="status">
         <Crosshair className="al-loading" size={32} />
         <h2>Preparando a seleção…</h2>
-        <p>Consultando os personagens publicados.</p>
+        <p>Consultando uma página de modelos publicados.</p>
       </div>
     );
   if (query.isError)
@@ -444,13 +476,13 @@ function PublishedRoster() {
         </button>
       </div>
     );
-  if (!query.data?.length)
+  if (!query.data?.items.length)
     return (
       <div className="al-state" role="status">
         <Layers3 size={32} />
         <h2>Uma nova seleção está a caminho.</h2>
-        <p>Nenhum personagem publicado foi encontrado.</p>
-        <Link className="al-button" to={PUBLIC_ROUTES.catalog}>
+        <p>Nenhum modelo publicado foi encontrado.</p>
+        <Link className="al-button" to={PUBLIC_ROUTES.catalogModels}>
           Abrir catálogo <ArrowRight size={16} />
         </Link>
       </div>
@@ -458,14 +490,14 @@ function PublishedRoster() {
   return (
     <CharacterSelect
       illustrative={false}
-      fighters={query.data.map((row) => ({
+      fighters={query.data.items.map((row) => ({
         id: row.id,
-        name: row.character_name,
-        universe: row.source_title ?? "Acervo ORDAX",
-        subtitle: `${row.model_count} ${row.model_count === 1 ? "modelo" : "modelos"} no catálogo`,
+        name: row.name,
+        universe: row.franchise,
+        subtitle: row.variantName || "Modelo do acervo publicado",
         description: "",
-        image: row.thumbnailUrl ?? row.imageUrl,
-        href: catalogCharacterPath(row.character_name, row.source_title),
+        image: gateway.mediaUrl(row.coverStorageKey),
+        href: catalogModelDetailsPath(row.slug),
       }))}
     />
   );
@@ -483,7 +515,7 @@ export default function ArcadeLab() {
     >
       <SEOHead
         title="Arcade Lab — Escolha seu personagem"
-        description="Uma experiência visual ORDAX inspirada nas telas de seleção dos fliperamas. Explore personagens e universos no Arcade Lab."
+        description="Uma experiência visual Tonecos Studio inspirada nas telas de seleção dos fliperamas. Explore modelos publicados e universos no Arcade Lab."
         noindex
       />
       <a className="al-skip" href="#al-main">
@@ -493,10 +525,10 @@ export default function ArcadeLab() {
         <Link
           to={PUBLIC_ROUTES.home}
           className="al-logo"
-          aria-label="ORDAX — página inicial"
+          aria-label="Tonecos Studio — página inicial"
         >
-          ORDA<span>X</span>
-          <small>TONECOS STUDIOS</small>
+          TONE<span>COS</span>
+          <small>STUDIO</small>
         </Link>
         <nav aria-label="Navegação principal">
           <Link to={PUBLIC_ROUTES.catalog}>Catálogo</Link>
@@ -557,7 +589,7 @@ export default function ArcadeLab() {
           <div className="al-coin-art" aria-hidden="true">
             <div className="al-coin al-coin--back">X</div>
             <div className="al-coin al-coin--front">
-              X<small>ORDAX</small>
+              X<small>TONECOS</small>
             </div>
             <span>
               INSERT COIN
@@ -586,7 +618,7 @@ export default function ArcadeLab() {
             </button>
           </div>
           <div className="al-coin-side" aria-hidden="true">
-            CREDIT SYSTEM / ORDAX
+            CREDIT SYSTEM / TONECOS
           </div>
         </section>
         <section className="al-journey" aria-labelledby="al-journey-title">
@@ -627,8 +659,8 @@ export default function ArcadeLab() {
       </main>
       <footer className="al-footer">
         <div>
-          <strong>ORDAX</strong>
-          <span>UMA PLATAFORMA TONECOS STUDIOS.</span>
+          <strong>TONECOS</strong>
+          <span>ESCULTURAS E COLECIONÁVEIS.</span>
         </div>
         <p>Arcade Lab · Artes e coleções demonstrativas.</p>
         <Link to={PUBLIC_ROUTES.home}>
@@ -640,7 +672,7 @@ export default function ArcadeLab() {
           <DialogHeader>
             <DialogTitle>Uma ficha para a sua próxima escolha.</DialogTitle>
             <DialogDescription>
-              Coins são os créditos do sistema de assinaturas ORDAX.
+              Coins são créditos ilustrativos no conceito Arcade da Tonecos Studio.
             </DialogDescription>
           </DialogHeader>
           <ol>
