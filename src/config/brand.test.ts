@@ -60,6 +60,25 @@ it("keeps the npm package identity canonical across both manifests", () => {
   expect(lock.packages[""].name).toBe(pkg.name);
 });
 
+it("builds a single deterministic social image from Tonecos-owned sources", () => {
+  const packageJson = JSON.parse(
+    readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
+  ) as { scripts: { build: string } };
+  const generator = readFileSync(
+    resolve(process.cwd(), "scripts/branding/generate-og-image.mjs"),
+    "utf8",
+  );
+  const seo = readFileSync(
+    resolve(process.cwd(), "src/components/SEOHead.tsx"),
+    "utf8",
+  );
+  expect(packageJson.scripts.build).toContain("scripts/branding/generate-og-image.mjs");
+  expect(generator).toContain("public/og-image.png");
+  expect(generator).toContain("TONECOS STUDIO");
+  expect(generator).not.toMatch(/ordax|fetch\(|https?:\/\//i);
+  expect(seo).toContain('image = "/og-image.png"');
+});
+
 it("routes model discovery to the canonical gateway and preserves shareable links", () => {
   const page = readFileSync(
     resolve(process.cwd(), "src/pages/CatalogModelsArcade.tsx"),

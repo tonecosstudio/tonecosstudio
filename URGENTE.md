@@ -6,6 +6,16 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Imagem social canônica gerada no build — 03/11/2026
+
+- **Baseline:** commit `65bd0546d772347137af1295926fbeb65f48c6be`, preview `READY` confirmado antes da alteração. O commit `fd983ed` havia removido corretamente o `og-image.png` legado que mostrava ORDAX, mas o arquivo ausente caía no HTML da SPA (`/og-image.png` → HTML, não PNG).
+- **Implementação:** um script Node ESM `scripts/branding/generate-og-image.mjs`, executado pelo comando `npm run build`, produz `public/og-image.png` 1200×630 com `sharp` já presente em devDependencies. Identidade Tonecos escura/dourada, origem local determinística, nenhuma consulta ao Worker/D1, Supabase ou serviço externo. `SEOHead` agora usa este PNG, não a imagem fallback do catálogo.
+- **Provas:** regressão estática em `src/config/brand.test.ts` para branding, saída/rota da imagem e uso pelo componente SEO; confirmar também `release:verify` no novo SHA e resposta HTTP200 `image/png` em `/og-image.png`. Até então permanece NO-GO. Meta OG absoluta para crawlers sem JS depende do hostname oficial validado; não publicar link absoluto para domínios OrdaX ou previews efêmeros.
+- **next_action:** validação com preview protegido, QA de metatags no browser, separar aliases OrdaX do projeto Vercel com remoção segura, e homologar operação comercial em staging isolado.
+- **do_not_repeat:** não criar imagens sociais paralelas nem segundo design system; não alterar a main, production, DNS, D1 nem staging comercial.
+
+---
+
 ## Identidade interna dos manifestos npm — 03/11/2026
 
 - **Baseline validada:** `fd983ed65754d70f171677129ee5eb4082e33365` atingiu `READY` no preview Vercel (build `dpl_DjhG6iQTN7tA4nTtYfNTnDSAT1Wa`). `/favicon.svg` e `/image-fallback.svg` responderam HTTP 200, com Content-Type SVG e sem a marca antiga; `/og-image.png` ainda não existe e cai no fallback HTML da SPA. Não anunciar card social final antes de adicionar imagem real.

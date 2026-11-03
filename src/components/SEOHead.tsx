@@ -37,7 +37,7 @@ export default function SEOHead({
     "tonecos",
     "collectibles",
   ],
-  image = ASSETS.FALLBACK_IMAGE_URL,
+  image = "/og-image.png",
   url,
   type = "website",
   noindex = false,
