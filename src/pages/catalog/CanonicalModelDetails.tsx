@@ -128,7 +128,22 @@ export default function CanonicalModelDetails() {
     staleTime: 5 * 60 * 1000,
   });
   const galleryData = galleryQuery.data;
-  const images = galleryData?.pages.flatMap((page) => page.items) ?? [];
+  // Identity is validated within each response by the gateway. The UI is
+  // the only place with all fetched pages, so verify cross-page uniqueness
+  // before presenting any thumbnails or provisional gallery counts.
+  const seenGalleryIds = new Set<string>();
+  const duplicateGalleryIdentity = Boolean(
+    galleryData?.pages.some((page) =>
+      page.items.some((image) => {
+        if (seenGalleryIds.has(image.id)) return true;
+        seenGalleryIds.add(image.id);
+        return false;
+      }),
+    ),
+  );
+  const images = duplicateGalleryIdentity
+    ? []
+    : galleryData?.pages.flatMap((page) => page.items) ?? [];
   const galleryCursorCycle = Boolean(
     galleryData?.pages.some(
       (page) =>
@@ -224,7 +239,7 @@ export default function CanonicalModelDetails() {
                   >
                     Carregando galeria…
                   </p>
-                ) : galleryQuery.isError ? (
+                ) : galleryQuery.isError || duplicateGalleryIdentity ? (
                   <div className="mt-4 flex flex-wrap items-center gap-3">
                     <p role="alert" className="text-sm text-[hsl(0,0%,56%)]">
                       A galeria não pôde ser carregada.
@@ -338,7 +353,7 @@ export default function CanonicalModelDetails() {
                         Imagens publicadas
                       </dt>
                       <dd className="mt-1 font-medium">
-                        {galleryQuery.isError
+                        {galleryQuery.isError || duplicateGalleryIdentity
                           ? "Indisponível"
                           : galleryQuery.data?.pages[0]?.total ??
                             (model.galleryVersion > 0

@@ -61,15 +61,33 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function mountGallery(options: { total: number; coverKey?: string; returnState?: unknown; cyclicPage?: boolean }) {
+function mountGallery(options: { total: number; coverKey?: string; returnState?: unknown; cyclicPage?: boolean; repeatedImageAcrossPages?: boolean }) {
   const io = vi.fn(async (input: string, _init: RequestInit) => {
     const url = new URL(input);
     if (url.pathname.endsWith("/api/models/animal-original")) {
       return Response.json(
-        options.cyclicPage ? { ...model, image_count: 3 } : model,
+        options.cyclicPage
+          ? { ...model, image_count: 3 }
+          : options.repeatedImageAcrossPages
+            ? { ...model, image_count: 2 }
+            : model,
       );
     }
     if (url.pathname.endsWith("/api/models/animal-original/images")) {
+      if (options.repeatedImageAcrossPages) {
+        const cursor = url.searchParams.get("cursor");
+        if (cursor !== null && cursor !== "page-2") {
+          throw new Error("unexpected_gallery_cursor");
+        }
+        return Response.json({
+          items: [
+            { ...image, role: cursor === null ? "cover" : "gallery" },
+          ],
+          total: 2,
+          nextCursor: cursor === null ? "page-2" : null,
+          version: 9,
+        });
+      }
       if (options.cyclicPage) {
         const cursor = url.searchParams.get("cursor");
         const nextCursor = cursor === null
@@ -236,6 +254,22 @@ describe("published model/gallery identity on the public detail page", () => {
         .toHaveAttribute("href", "/modelos");
       view.unmount();
     }
+  });
+
+  it("fails closed on an image ID repeated across two valid gallery pages", async () => {
+    const { io } = mountGallery({ total: 2, repeatedImageAcrossPages: true });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
+
+    await screen.findByText("A galeria não pôde ser carregada.");
+    expect(
+      screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"),
+    ).toHaveTextContent("Indisponível");
+    expect(screen.queryByRole("button", { name: "Ver imagem 1 de Animal original" }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Carregar mais imagens" }))
+      .not.toBeInTheDocument();
+    expect(io).toHaveBeenCalledTimes(3);
   });
 
   it("stops a non-adjacent gallery cursor cycle and preserves fetched images", async () => {

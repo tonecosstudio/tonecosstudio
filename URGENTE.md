@@ -6,6 +6,17 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Identidade única de imagem entre páginas da galeria — 03/11/2026
+
+- **Baseline:** branch `integration/tonecosstudio-canonical-20261101` no commit `5023ac6601185e2b3498b717ca81d4e0b6744b0d`. O preview `dpl_9FE2tx5kG8r6CyaGmuqWE32Qpbzm` executava `release:verify` durante a preparação. O gate anterior, `74d4c436`, está READY.
+- **Problema real de integridade:** `public-catalog-gateway.ts` rejeita IDs de imagens duplicados dentro de cada página, mas não pode conhecer os IDs de páginas anteriores, pois é um gateway de chamadas individuais. `CanonicalModelDetails` pode acabar exibindo duas miniaturas de mesmo ID, com keys React e seleção ambíguas, quando a mesma imagem aparece em páginas diferentes.
+- **Correção preparada:** a ficha deriva um `Set` dos IDs já carregados por `useInfiniteQuery`. Se qualquer ID reaparecer entre páginas, a galeria inteira apresenta o erro já existente e a contagem "Indisponível" em vez de mostrar miniaturas inconsistentes. O título, metadados publicados da ficha e a origem canônica da mídia ficam intactos. Não há consultas adicionais, dados locais duplicados, nem novo sistema de autorização.
+- **Regressão offline:** duas páginas GET individualmente válidas, ambas contendo `img-1`, `total=2`, com `nextCursor=page-2`; exige rejeição ao receber a segunda página, sem miniaturas ou botão "Carregar mais imagens", e exatamente três chamadas simuladas (detalhe + duas páginas). Manter testes de ciclo e capa.
+- **Gate e isolamento:** atualizar branch apenas após `5023ac66` concluir a validação, conferir ausência de commits concorrentes e exigir `release:verify` integral do novo SHA. Não alterar `main`, domínios OrdaX, produção, pedidos, pagamentos, D1 ou R2.
+- **next_action:** confirmar o novo gate e verificar integração de galeria no preview protegido. Testes comerciais só em staging isolado.
+
+---
+
 ## Recuperação da mídia ao retornar a uma foto — 03/11/2026
 
 - **Baseline:** branch canônica `integration/tonecosstudio-canonical-20261101` no commit `74d4c436dc0d4fe3bf62ca6c9154368de1c35566`, preview Vercel `dpl_4PVnPXvCxCkekzVriWekhTc2XSQT` aguardando gate integral no início desta etapa. `main` e produção não modificadas.
