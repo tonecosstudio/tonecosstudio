@@ -122,7 +122,8 @@ describe("Tonecos canonical Universe discovery", () => {
     const cover = await screen.findByRole("img", { name: "Prévia de Franquia 1" });
     fireEvent.error(cover);
     expect(screen.queryByRole("img", { name: "Prévia de Franquia 1" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Franquia 1/ })).toHaveAttribute(
+    // Match the exact card title, not "Franquia 10" through "Franquia 19".
+    expect(screen.getByText("Franquia 1").closest("a")).toHaveAttribute(
       "href",
       "/universo/originais/franquia-1",
     );

@@ -13,6 +13,19 @@ interface SEOHeadProps {
   jsonLd?: Record<string, unknown>;
 }
 
+function formatBrandTitle(title?: string): string {
+  const normalized = title?.trim();
+  if (!normalized) return BRAND_NAME;
+  if (
+    normalized === BRAND_NAME ||
+    normalized.endsWith(` | ${BRAND_NAME}`) ||
+    normalized.endsWith(` — ${BRAND_NAME}`)
+  ) {
+    return normalized;
+  }
+  return `${normalized} | ${BRAND_NAME}`;
+}
+
 export default function SEOHead({
   title,
   description = "Tonecos Studio — modelos para referência, esculturas sob encomenda e acompanhamento de pedidos.",
@@ -30,8 +43,7 @@ export default function SEOHead({
   noindex = false,
   jsonLd,
 }: SEOHeadProps) {
-  const siteTitle = BRAND_NAME;
-  const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
+  const fullTitle = formatBrandTitle(title);
   const siteUrl = CONTACT.WEBSITE_URL.replace(/\/$/, "");
   const currentOrigin =
     typeof window !== "undefined" ? window.location.origin : siteUrl;

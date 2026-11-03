@@ -53,6 +53,17 @@
 
 ---
 
+## Gate das capas: correção do teste e SEO — 03/11/2026
+
+- **Resultado no SHA `480667f85a02ad073448e44d87fb8ed50ff34120`:** Vercel `dpl_8BczvuXGanVTE7Dn3qdtcsEWi1Wx` ERROR após `test:coverage`. 3.262 testes aprovados, 32 ignorados, 1 falho (`CatalogArcade.integration.test.tsx:125`). O teste procurava link por regex `/Franquia 1/` e encontrava também Franquias 10–19. Componentes da mídia canônica passaram em 4/4 testes; falha não foi de produção nem do gateway.
+- **Correção causal neste commit:** asserção passa a identificar o título exato do card `Franquia 1`, preservando a prova da rota e do fallback de mídia, sem mexer na API ou no componente visual.
+- **Outro defeito comprovado por Chrome real:** título duplicado `10H — Tonecos Studio | Tonecos Studio`. O formatter central do `SEOHead` agora reconhece títulos já terminados com a marca ou iguais à marca, evitando duplicação no HTML, OG e Twitter. Testes do React Helmet cobrem Home, ficha e catálogo.
+- **Gate pendente:** exigir `release:verify` completo no SHA atualizado; não declarar PASS antes de CI Vercel READY e status GitHub sucesso. Preview segue protegido e read-only.
+- **next_action:** verificar novo gate; acompanhar isolamento seguro de domínios OrdaX e homologação de operações comerciais em staging isolado. `main`, D1, pedidos e produção não alterados.
+- **do_not_repeat:** evitar regex de correspondência parcial em nomes numerados; não fazer builds paralelos, não varrer D1, não criar novo SSOT SEO.
+
+---
+
 ## Verificação visual real e capas do Universo — 03/11/2026
 
 - **Gate `53ff8fed810598c8118c9c6607cf7efe6c3e0708` (último READY):** preview `dpl_DSg9HW7HmvdA6yWdGZkdhuqKMLez` READY, `release:verify` passou com auditoria final `found 0 vulnerabilities`. `main` e produção intocadas.
