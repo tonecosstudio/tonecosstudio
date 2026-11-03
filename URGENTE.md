@@ -53,6 +53,18 @@
 
 ---
 
+## Retorno seguro da ficha /modelos — 03/11/2026
+
+- **Baseline aprovada:** `1d7c1a740bc8a17cf33059ff70d8d8caebb4d5a8` na única branch `integration/tonecosstudio-canonical-20261101`; Vercel preview `dpl_2zHbGKiutqDTJEAG3bR27XXwyEkK` READY, `release:verify` completo, `npm audit --omit=dev --audit-level=high` com `found 0 vulnerabilities`. Nenhuma alteração na main ou produção.
+- **Problema observado no código:** `CanonicalModelDetails.catalogReturnPath` confiava no `location.state.catalogReturnSearch` (até 1024 caracteres) para remontar a URL de retorno, sem reutilizar as regras da API de slug, pasta e busca 3–80 caracteres. Podia devolver a pessoa a filtros inválidos e cair num estado de erro após visitar uma ficha. A validação do retorno à pasta do Universo também duplicava regex e limites.
+- **Correção:** retorno de ambos os percursos reutiliza `validCatalogSlug` e `validCatalogFolder` exportados pelo gateway. URL de busca inválida, pasta travessia e escopo inválido voltam a `/modelos` em vez de preservar filtro não aceito. URLs válidas mantêm `q`, categoria, franquia e pasta sem alterar o conteúdo. Sem novas consultas, novos sistemas de estado, mudanças no Worker ou escrita Supabase.
+- **Testes:** retorno com todos os filtros válidos; rejeição de buscas curta/longa, categoria com barra, franquia que simula endereço externo, pasta com `../` e pasta sem escopo. Mantidos os testes de retorno à pasta do Universo.
+- **Gate pendente:** exigir `release:verify` no SHA deste commit. Não promover `main` ou desligar Deployment Protection. Não consultar D1 em massa.
+- **next_action:** verificar o gate e, após PASS, homologar no navegador protegido a navegação para o Universo, fichas e retorno com filtros.
+- **do_not_repeat:** não duplicar regex do gateway; sem builds concorrentes; sem desfazer o contrato de NO-GO de produção/domínios OrdaX.
+
+---
+
 ## Correção do gate de filtros — 03/11/2026
 
 - **Falha observada na suíte de `cccb8c9c`:** `CatalogModelsArcade.integration.test.tsx` (16 testes, 1 falhou). O cenário `folder=../admin` exibia simultaneamente a mensagem de escopo inválido e o badge de pasta selecionada; `getByRole("status")` encontrava dois elementos. A busca com 81 caracteres e os demais casos executados passaram.

@@ -183,6 +183,41 @@ describe("published model/gallery identity on the public detail page", () => {
       .toHaveAttribute("href", "/modelos");
   });
 
+  it("restores valid catalog search filters without changing their values", async () => {
+    mountGallery({
+      total: 1,
+      returnState: {
+        catalogReturnSearch:
+          "q=escultura&category=games&franchise=nier&folder=heroes%2Ffigures",
+      },
+    });
+    expect(await screen.findByRole("link", { name: "Voltar ao catálogo" }))
+      .toHaveAttribute(
+        "href",
+        "/modelos?q=escultura&category=games&franchise=nier&folder=heroes%2Ffigures",
+      );
+  });
+
+  it("rejects invalid catalog return filters using the same gateway constraints", async () => {
+    const invalidStates = [
+      "q=ab",
+      "q=" + "x".repeat(81),
+      "category=games%2Fadmin",
+      "franchise=https%3A%2F%2Foutside.test",
+      "category=games&franchise=nier&folder=..%2Fadmin",
+      "folder=heroes",
+    ];
+    for (const catalogReturnSearch of invalidStates) {
+      const view = mountGallery({
+        total: 1,
+        returnState: { catalogReturnSearch },
+      });
+      expect(await screen.findByRole("link", { name: "Voltar ao catálogo" }))
+        .toHaveAttribute("href", "/modelos");
+      view.unmount();
+    }
+  });
+
   it("blocks a stale gallery total instead of claiming unverified published images", async () => {
     const { io } = mountGallery({ total: 2 });
     await screen.findByRole("alert", { name: "" }).catch(() => screen.getByText("A galeria não pôde ser carregada."));

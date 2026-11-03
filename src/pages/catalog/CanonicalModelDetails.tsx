@@ -17,6 +17,8 @@ import {
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import {
   createPublicCatalogGateway,
+  validCatalogFolder,
+  validCatalogSlug,
   type PublicCatalogImage,
 } from "@/services/catalog/public-catalog-gateway";
 
@@ -30,17 +32,16 @@ function catalogReturnPath(state: unknown): string {
   const universe = values.catalogReturnUniverse;
   if (universe && typeof universe === "object" && !Array.isArray(universe)) {
     const scope = universe as Record<string, unknown>;
-    const validSlug = (value: unknown): value is string =>
-      typeof value === "string" && /^[a-z0-9][a-z0-9-]{0,239}$/.test(value);
-
-    if (validSlug(scope.category) && validSlug(scope.franchise)) {
+    if (
+      typeof scope.category === "string" &&
+      validCatalogSlug(scope.category) &&
+      typeof scope.franchise === "string" &&
+      validCatalogSlug(scope.franchise)
+    ) {
       const folder = scope.folder;
       if (
         folder !== undefined &&
-        (typeof folder !== "string" ||
-          folder.length > 240 ||
-          Array.from(folder).some((part) => part.charCodeAt(0) < 32 || part.charCodeAt(0) === 127) ||
-          folder.split("\\").join("/").split("/").some((part) => part === "." || part === ".."))
+        (typeof folder !== "string" || !validCatalogFolder(folder))
       ) {
         return base;
       }
@@ -49,6 +50,7 @@ function catalogReturnPath(state: unknown): string {
         ? route + "?" + new URLSearchParams({ folder }).toString()
         : route;
     }
+    return base;
   }
   const raw = values.catalogReturnSearch;
   if (typeof raw !== "string" || raw.length > 1024) return base;
@@ -60,9 +62,15 @@ function catalogReturnPath(state: unknown): string {
     const value = values[0]?.trim();
     if (value) filters.set(key, value);
   }
-  if (filters.has("folder") && (!filters.has("category") || !filters.has("franchise"))) {
-    filters.delete("folder");
-  }
+  const query = filters.get("q");
+  const queryLength = query ? Array.from(query).length : 0;
+  if (query && (queryLength < 3 || queryLength > 80)) return base;
+  const category = filters.get("category");
+  const franchise = filters.get("franchise");
+  const folder = filters.get("folder");
+  if (category && category !== "all" && !validCatalogSlug(category)) return base;
+  if (franchise && !validCatalogSlug(franchise)) return base;
+  if (folder && (!category || !franchise || !validCatalogFolder(folder))) return base;
   const search = filters.toString();
   return search ? `${base}?${search}` : base;
 }
