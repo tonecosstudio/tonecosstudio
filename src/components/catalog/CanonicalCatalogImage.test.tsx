@@ -35,6 +35,29 @@ describe("CanonicalCatalogImage", () => {
     expect(screen.queryByText("Imagem indisponível")).not.toBeInTheDocument();
   });
 
+  it("retries a previously failed source after selecting another gallery image", () => {
+    const first = "/catalogo-api/media/first.webp";
+    const second = "/catalogo-api/media/second.webp";
+    const { rerender } = render(
+      <CanonicalCatalogImage src={first} alt="Primeiro" />,
+    );
+    fireEvent.error(screen.getByRole("img", { name: "Primeiro" }));
+    expect(screen.getByText("Imagem indisponível")).toBeInTheDocument();
+
+    rerender(<CanonicalCatalogImage src={second} alt="Segundo" />);
+    expect(screen.getByRole("img", { name: "Segundo" })).toHaveAttribute(
+      "src",
+      second,
+    );
+
+    rerender(<CanonicalCatalogImage src={first} alt="Primeiro" />);
+    expect(screen.getByRole("img", { name: "Primeiro" })).toHaveAttribute(
+      "src",
+      first,
+    );
+    expect(screen.queryByText("Imagem indisponível")).not.toBeInTheDocument();
+  });
+
   it("uses an existing category or franchise icon after a broken cover", () => {
     render(
       <CanonicalCatalogImage

@@ -16,7 +16,16 @@ type CanonicalCatalogImageProps = {
  * A missing or broken media asset must never leave a broken-image icon in
  * the Home, model list, Universe, or detail/gallery. No secondary source.
  */
-export function CanonicalCatalogImage({
+/**
+ * Key the failure state by the current source. A gallery visit A -> B -> A
+ * must be able to retry A rather than reusing its failure from the first
+ * visit (e.g. after a transient network error).
+ */
+export function CanonicalCatalogImage(props: CanonicalCatalogImageProps) {
+  return <CatalogImageSource key={props.src ?? "absent"} {...props} />;
+}
+
+function CatalogImageSource({
   src,
   alt,
   imageClassName = "h-full w-full object-contain",
@@ -25,17 +34,16 @@ export function CanonicalCatalogImage({
   fallbackIcon,
   loading = "lazy",
 }: CanonicalCatalogImageProps) {
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  if (src && src !== failedSrc) {
+  const [failed, setFailed] = useState(false);
+  if (src && !failed) {
     return (
       <img
-        key={src}
         src={src}
         alt={alt}
         loading={loading}
         decoding="async"
         className={imageClassName}
-        onError={() => setFailedSrc(src)}
+        onError={() => setFailed(true)}
       />
     );
   }

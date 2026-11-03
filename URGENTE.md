@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Recuperação da mídia ao retornar a uma foto — 03/11/2026
+
+- **Baseline:** branch canônica `integration/tonecosstudio-canonical-20261101` no commit `74d4c436dc0d4fe3bf62ca6c9154368de1c35566`, preview Vercel `dpl_4PVnPXvCxCkekzVriWekhTc2XSQT` aguardando gate integral no início desta etapa. `main` e produção não modificadas.
+- **Problema auditado:** `CanonicalCatalogImage` persistia `failedSrc` em todo o ciclo de vida do componente. Se a capa A falhasse, o visitante selecionasse B e voltasse à A, o estado antigo de A impedia uma nova tentativa, mesmo quando a falha de rede tivesse sido transitória.
+- **Correção causal preparada:** encapsular a renderização da mídia em `CatalogImageSource` com identidade React `key={src}`, mantendo o estado de erro local apenas enquanto o URL permanece o mesmo. Assim A falha e exibe placeholder; B pode carregar; ao retornar à A, o navegador pode tentar novamente. Ícones, aparência e fallback existentes são preservados, sem consulta ao gateway.
+- **Regressões offline:** acrescentado teste `A → falha → B → A` ao arquivo `CanonicalCatalogImage.test.tsx`, mantendo testes já existentes de mídia ausente, falha e ícones de categoria/franquia.
+- **Gate:** somente enviar após `release:verify` do SHA anterior concluir e após confirmar HEAD, pois o projeto usa builds serializados; exigir nova passagem completa do gate. Nada em pedidos, pagamentos, D1, R2, Supabase ou domínios OrdaX é tocado.
+- **next_action:** confirmar gate, integrar alteração no mesmo branch, executar testes completos e inspecionar preview protegido se necessário.
+- **do_not_repeat:** sem novas imagens locais, sem duplicar componente para cada página, sem builds paralelos e sem desabilitar preview privado.
+
+---
+
 ## Ajuste do gate de regressão da galeria — 03/11/2026
 
 - **Gate `2a983f31d0112eeabdbbcef8d7a1cbbfdd561f54`:** preview `dpl_6u9CdF7wdHci24CmGkUk5yC8tHAJ` terminou ERROR em `test:coverage`, com 3.280 testes aprovados, 32 ignorados, 1 falho em `CanonicalModelDetails.integration.test.tsx:252`.
