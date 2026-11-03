@@ -24,21 +24,22 @@ import {
 import { Page } from "@/components/layouts/Page";
 import { useState } from "react";
 import { PUBLIC_ROUTES } from "@/config/routes";
+import { BRAND_NAME } from "@/config/brand";
 
 const VALUES = [
-  { icon: Shield, title: "QUALIDADE", desc: "Inspeção rigorosa antes do envio. Padrões elevados em todas as etapas." },
-  { icon: Sparkles, title: "TRANSPARÊNCIA", desc: "Acompanhe cada etapa com fotos e atualizações em tempo real." },
-  { icon: Heart, title: "PERSONALIZAÇÃO", desc: "Sua peça, suas especificações. Customização completa disponível." },
-  { icon: Clock, title: "CONFIABILIDADE", desc: "Prazos claros, comunicação direta, compromisso cumprido." },
+  { icon: Shield, title: "QUALIDADE", desc: "Cuidado com acabamentos e detalhes, com conferência antes da entrega." },
+  { icon: Sparkles, title: "TRANSPARÊNCIA", desc: "Informações sobre cada etapa conforme o andamento do seu pedido." },
+  { icon: Heart, title: "PERSONALIZAÇÃO", desc: "Escalas, acabamentos e detalhes avaliados conforme a viabilidade do projeto." },
+  { icon: Clock, title: "CONFIABILIDADE", desc: "Prazos e condições apresentados durante a avaliação da encomenda." },
 ];
 
 const PROCESS = [
-  { step: 1, title: "MODELAGEM 3D", desc: "Design digital preciso com atenção aos detalhes.", icon: Crosshair },
-  { step: 2, title: "IMPRESSÃO 3D", desc: "Resina de alta qualidade, definição e durabilidade.", icon: Zap },
+  { step: 1, title: "ESCOLHA DA REFERÊNCIA", desc: "Escolha da referência e avaliação de escala, pose e acabamento.", icon: Crosshair },
+  { step: 2, title: "PRODUÇÃO", desc: "Preparação e produção conforme as necessidades da peça.", icon: Zap },
   { step: 3, title: "ACABAMENTO", desc: "Lixamento, tratamento e preparação profissional.", icon: Eye },
   { step: 4, title: "PINTURA", desc: "Pintura à mão com técnicas profissionais.", icon: Palette },
-  { step: 5, title: "INSPEÇÃO", desc: "Verificação rigorosa de acabamento e detalhes.", icon: Shield },
-  { step: 6, title: "ENVIO", desc: "Embalagem premium com proteção adequada.", icon: Package },
+  { step: 5, title: "INSPEÇÃO", desc: "Conferência visual dos detalhes e do acabamento.", icon: Shield },
+  { step: 6, title: "ENVIO", desc: "Embalagem e condições de entrega definidas para a encomenda.", icon: Package },
 ];
 
 const FAQS = [
@@ -51,14 +52,14 @@ const FAQS = [
 export default function AboutArcade() {
   return (
     <Page
-      title="Sobre | ORDAX Intel"
-      description="Ordax é a plataforma brasileira de colecionáveis premium sob encomenda."
-      keywords={["sobre", "ordax", "colecionáveis", "impressão 3d"]}
+      title="Sobre"
+      description="Conheça a Tonecos Studio, seu catálogo de referências e o processo de avaliação de esculturas sob encomenda."
+      keywords={["sobre", "tonecos", "colecionáveis", "esculturas sob encomenda"]}
     >
       <ArcadeHero
-        badge="Arquivo Classificado"
+        badge="TONECOS STUDIO"
         title="SOBRE"
-        subtitle=">> CONHEÇA A OPERAÇÃO ORDAX."
+        subtitle=">> CONHEÇA O ESTÚDIO E COMO UMA PEÇA GANHA FORMA."
       />
 
       {/* ═══ MISSION ═══ */}
@@ -70,9 +71,9 @@ export default function AboutArcade() {
             <FloatingParticles />
             <div className="relative z-10">
               <p className="font-mono text-sm md:text-base text-[hsl(0,0%,60%)] leading-relaxed tracking-wider max-w-3xl mx-auto">
-                Tornar colecionáveis premium acessíveis através de uma plataforma organizada,
-                transparente e confiável. Cada peça é produzida sob encomenda com atenção aos detalhes
-                e acompanhamento completo.
+                A Tonecos Studio reúne referências de personagens, universos e esculturas
+                para ajudar você a encontrar ideias para sua próxima peça. Cada solicitação
+                é avaliada conforme escala, acabamento e possibilidades de produção.
               </p>
             </div>
           </div>
@@ -91,11 +92,11 @@ export default function AboutArcade() {
                   <Zap className="w-5 h-5 text-[hsl(var(--gold-accent))]" />
                 </div>
                 <h3 className="text-xl font-black tracking-[0.1em]" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
-                  PLATAFORMA ORDAX
+                  EXPERIÊNCIA TONECOS
                 </h3>
               </div>
               <ul className="space-y-3">
-                {["Universo digital organizado", "Sistema de pedidos personalizado", "Timeline com fotos em tempo real", "Comunicação direta e transparente", "Garantia de qualidade e suporte"].map((item) => (
+                {["Catálogo de modelos e referências", "Navegação por categorias, franquias e pastas", "Solicitação de avaliação pelo contato", "Informações de produção conforme o pedido", "Atendimento para dúvidas sobre a encomenda"].map((item) => (
                   <li key={item} className="flex items-start gap-2 font-mono text-xs text-[hsl(0,0%,50%)] tracking-wider">
                     <div className="mt-1.5 w-1.5 h-1.5 bg-[hsl(var(--gold-accent))] shrink-0" />
                     {item}
@@ -112,11 +113,11 @@ export default function AboutArcade() {
                   <Palette className="w-5 h-5 text-[hsl(280,80%,65%)]" />
                 </div>
                 <h3 className="text-xl font-black tracking-[0.1em]" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
-                  PRODUÇÃO PROFISSIONAL
+                  CRIAÇÃO SOB ENCOMENDA
                 </h3>
               </div>
               <ul className="space-y-3">
-                {["Estúdio criativo especializado", "Impressão 3D em resina premium", "Acabamento profissional detalhado", "Pintura por especialistas", "Inspeção rigorosa pré-envio"].map((item) => (
+                {["Avaliação da referência escolhida", "Definição da escala e dos detalhes", "Produção conforme a peça", "Acabamento e pintura quando aplicáveis", "Conferência e preparação para envio"].map((item) => (
                   <li key={item} className="flex items-start gap-2 font-mono text-xs text-[hsl(0,0%,50%)] tracking-wider">
                     <div className="mt-1.5 w-1.5 h-1.5 bg-[hsl(280,80%,65%)] shrink-0" />
                     {item}
@@ -125,7 +126,7 @@ export default function AboutArcade() {
               </ul>
               <div className="mt-6 pt-4 border-t border-[hsl(0,0%,12%)]">
                 <p className="font-mono text-[10px] text-[hsl(0,0%,35%)] tracking-wider">
-                  Produção principal: <span className="text-[hsl(var(--gold-accent))]">Tonecos Studios</span>
+                  Estúdio: <span className="text-[hsl(var(--gold-accent))]">{BRAND_NAME}</span>
                 </p>
               </div>
             </div>
@@ -135,7 +136,7 @@ export default function AboutArcade() {
 
       {/* ═══ VALUES ═══ */}
       <section className="max-w-5xl mx-auto px-4 md:px-6 pb-16 relative z-10">
-        <ArcadeSectionTitle>Nossos Stats</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Nossos valores</ArcadeSectionTitle>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {VALUES.map(({ icon: Icon, title, desc }) => (
@@ -192,14 +193,14 @@ export default function AboutArcade() {
 
         <div className="mt-8 text-center">
           <p className="font-mono text-[10px] text-[hsl(0,0%,35%)] tracking-wider">
-            Tempo médio: <span className="text-[hsl(var(--gold-accent))]">30 dias</span> • Envio a partir do dia 15 do mês seguinte
+            Prazos de produção e entrega são informados após a avaliação de cada encomenda.
           </p>
         </div>
       </section>
 
       {/* ═══ FAQ ═══ */}
       <section className="max-w-4xl mx-auto px-4 md:px-6 pb-16 relative z-10">
-        <ArcadeSectionTitle>Intel FAQ</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Dúvidas frequentes</ArcadeSectionTitle>
 
         <div className="space-y-3">
           {FAQS.map((faq, i) => (
@@ -210,10 +211,10 @@ export default function AboutArcade() {
 
       <ArcadeCTA
         badge="Pronto para começar?"
-        title="MISSÃO DISPONÍVEL"
+        title="SUA PRÓXIMA PEÇA"
         description="Explore nosso catálogo e solicite um orçamento personalizado."
         primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog, icon: <ArrowRight className="w-4 h-4" /> }}
-        secondaryAction={{ label: "FAZER ORÇAMENTO", href: "/orcamento/carrinho" }}
+        secondaryAction={{ label: "FALAR COM O ESTÚDIO", href: PUBLIC_ROUTES.contact }}
       />
     </Page>
   );
