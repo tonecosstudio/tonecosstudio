@@ -18,6 +18,19 @@
 
 ---
 
+## Consolidação de 03/11/2026 — gateway verde e cache sem perda de dados
+
+- **Baseline verificada:** `f490c5786e7ad9e15701d7126b90234f11e7734e` na única branch de integração; Vercel `dpl_4chA6gWzu8EvKDW6i7ur5wNF913k` terminou READY no próprio SHA, como **preview** sem alvo de produção. `release:verify` concluiu typecheck, lint, auditorias, testes/cobertura, build e `npm audit --omit=dev --audit-level=high`.
+- **Resultados do gate:** cobertura global **70,34% funções**, **77,96% linhas** e auditoria final `found 0 vulnerabilities`. O limiar de 70% foi atendido sem afrouxamento. Isso NÃO substitui homologação visual, operações autenticadas ou isolamento de domínios.
+- **Falha funcional corrigida neste checkpoint:** `getHolidays` armazenava um `Set` de datas e devolvia feriados com `id` e `name` vazios no cache. Agora mantém cópias completas dos registros do ano e retorna cópias, preservando metadados e impedindo que alterações do consumidor contaminem o cache.
+- **Testes de regressão adicionados/reforçados:** metadados após cache-hit, mutabilidade externa, leitura única na repetição de cálculos/consultas e invalidação depois de adicionar feriado. Asserções temporais flutuantes substituídas por verificação determinística de I/O; consolida a intenção da PR antiga #3 na branch canônica, sem merge na `main`.
+- **Validação deste novo SHA:** aguardar `release:verify` e smoke visual completos antes de afirmar PASS. Sem consultas diretas D1, R2 ou mutações Supabase; sem deploy de produção.
+- **Bloqueio de lançamento:** os domínios herdados `ordax.com.br` e `www.ordax.com.br` (não verificados) e `ordax-three.vercel.app` continuam vinculados ao projeto Tonecos na Vercel. Não alterar DNS nem promover sem remover com segurança esses vínculos.
+- **next_action:** acompanhar o preview exato da correção de cache e validar fluxo real do catálogo, identidade de navegação e responsividade; fechar PR #3 somente depois de verificar que o conserto equivalente está integrado no branch canônico e o gate passa.
+- **do_not_repeat:** sem branch/PR paralela, sem duplicação de catálogos ou clientes Supabase, sem varrer a D1, sem promover `main` prematuramente.
+
+---
+
 ## Gate real e continuidade da vitrine — 02/11/2026
 
 - **Branch única / código atual auditado:** `f75c5ef74b2cd3dcc41528cfab6d43a0ae1144b2`, sem merge na `main` e sem deploy de produção.

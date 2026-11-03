@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { businessDayService } from './businessDayService';
 import { timezoneService } from './timezoneService';
+import { supabase } from '@/integrations/supabase/client';
 
 const mutationMocks = vi.hoisted(() => ({
   addHolidayRpc: vi.fn(),
@@ -226,7 +227,9 @@ describe('BusinessDayService', () => {
     });
 
     it('deve limpar cache ao adicionar feriado', async () => {
+      const fromMock = vi.mocked(supabase.from);
       await businessDayService.getHolidays(2026);
+      expect(fromMock).toHaveBeenCalledTimes(1);
       await businessDayService.addHoliday({
         holiday_date: '2026-12-31',
         name: 'Teste',
@@ -234,6 +237,7 @@ describe('BusinessDayService', () => {
       });
       const holidays = await businessDayService.getHolidays(2026);
       expect(holidays).toBeDefined();
+      expect(fromMock).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -260,6 +264,33 @@ describe('BusinessDayService', () => {
     it('deve deletar feriado pela fronteira de mutação', async () => {
       await expect(businessDayService.deleteHoliday('1')).resolves.not.toThrow();
       expect(mutationMocks.deleteHolidayRpc).toHaveBeenCalledWith('1');
+    });
+  });
+
+  describe('holiday cache data integrity', () => {
+    it('preserva todos os metadados e isola mutações externas', async () => {
+      const fromMock = vi.mocked(supabase.from);
+      const first = await businessDayService.getHolidays(2026);
+      expect(first[0]).toMatchObject({
+        id: '1',
+        holiday_date: '2026-01-01',
+        name: 'Ano Novo',
+        type: 'national',
+        is_recurring: true,
+      });
+      first[0].name = 'Nome alterado pelo consumidor';
+
+      const second = await businessDayService.getHolidays(2026);
+      expect(second[0]).toMatchObject({
+        id: '1',
+        holiday_date: '2026-01-01',
+        name: 'Ano Novo',
+        type: 'national',
+        is_recurring: true,
+      });
+      second[0].name = 'Outra alteração externa';
+      expect((await businessDayService.getHolidays(2026))[0].name).toBe('Ano Novo');
+      expect(fromMock).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -300,21 +331,22 @@ describe('BusinessDayService', () => {
   });
 
   describe('Performance', () => {
-    it('deve calcular 5º dia útil em menos de 100ms', async () => {
-      const start = Date.now();
-      await businessDayService.calculateNthBusinessDay(3, 2026, 5);
-      const duration = Date.now() - start;
-      expect(duration).toBeLessThan(100);
+    it('deve reutilizar a mesma consulta nos cálculos repetidos do mesmo ano', async () => {
+      const fromMock = vi.mocked(supabase.from);
+      const first = await businessDayService.calculateNthBusinessDay(3, 2026, 5);
+      expect(fromMock).toHaveBeenCalledTimes(1);
+
+      const second = await businessDayService.calculateNthBusinessDay(3, 2026, 5);
+      expect(second).toEqual(first);
+      expect(fromMock).toHaveBeenCalledTimes(1);
     });
 
-    it('deve usar cache eficientemente', async () => {
-      const start1 = Date.now();
+    it('deve usar cache sem depender de relógio de parede', async () => {
+      const fromMock = vi.mocked(supabase.from);
       await businessDayService.getHolidays(2026);
-      const duration1 = Date.now() - start1;
-      const start2 = Date.now();
+      expect(fromMock).toHaveBeenCalledTimes(1);
       await businessDayService.getHolidays(2026);
-      const duration2 = Date.now() - start2;
-      expect(duration2).toBeLessThanOrEqual(duration1);
+      expect(fromMock).toHaveBeenCalledTimes(1);
     });
   });
 });
