@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { BRAND_NAME, BRAND_SHORT_NAME, BRAND_STUDIO_LABEL } from "./brand";
 
@@ -26,6 +26,26 @@ it("keeps public entry points free of the old OrdaX storefront identity", () => 
     const content = readFileSync(resolve(process.cwd(), sourcePath), "utf8");
     expect(content, sourcePath).not.toMatch(/\bordax\b/i);
   }
+});
+
+it("uses only Tonecos visual assets for public pages and browser notifications", () => {
+  const html = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
+  const icon = readFileSync(resolve(process.cwd(), "public/favicon.svg"), "utf8");
+  const fallback = readFileSync(resolve(process.cwd(), "public/image-fallback.svg"), "utf8");
+  const constants = readFileSync(resolve(process.cwd(), "src/config/constants.ts"), "utf8");
+  const alerts = readFileSync(
+    resolve(process.cwd(), "src/services/notifications/alert-notification-service.ts"),
+    "utf8",
+  );
+  expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/favicon.svg" />');
+  expect(icon).toContain(">Tonecos Studio</title>");
+  expect(icon).not.toMatch(/ordax|lovable/i);
+  expect(fallback).toContain(">TONECOS</text>");
+  expect(fallback).not.toMatch(/ordax/i);
+  expect(constants).toContain('DEFAULT_ICON_URL: "/favicon.svg"');
+  expect(alerts).toContain("icon: icon || ASSETS.DEFAULT_ICON_URL");
+  expect(existsSync(resolve(process.cwd(), "public/favicon.ico"))).toBe(false);
+  expect(existsSync(resolve(process.cwd(), "public/og-image.png"))).toBe(false);
 });
 
 it("routes model discovery to the canonical gateway and preserves shareable links", () => {

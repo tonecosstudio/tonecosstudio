@@ -6,6 +6,19 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Identidade visual dos ativos públicos — 03/11/2026
+
+- **Baseline:** branch `integration/tonecosstudio-canonical-20261101` em `1cfdcab68fb360f7b3b4f4673d2b04386924cf68`; últimos previews dessa branch publicados no projeto `tonecosstudio`, com proteção de preview via SSO.
+- **Evidência:** `public/favicon.ico` era o ícone do template Lovable; `public/image-fallback.svg` exibia `ORDAX`; `public/og-image.png` ainda continha `ORDAX` e `ordax.com.br`. O `index.html` atual não usa mais esse PNG para compartilhamentos.
+- **Correção canônica:** um único `public/favicon.svg` com monograma T e paleta atual, declarado explicitamente em `index.html`; `ASSETS.DEFAULT_ICON_URL` é consumido pelas notificações (sem URL hardcoded paralela); fallback mantém visual existente, substitui somente a marca/texto. Os dois binários herdados `favicon.ico` e `og-image.png` são removidos da branch.
+- **Provas de regressão:** `src/config/brand.test.ts` verifica assinatura Tonecos, fonte única do ícone e ausência dos dois arquivos antigos. `release:verify` no novo SHA ainda é gate obrigatório; testes devem ser considerados pendentes até conclusão de build.
+- **Limitação deliberada:** não anunciar card social PNG final sem nova arte Tonecos revisada. Não publicar OG antigo nem deixar imagem da OrdaX em páginas Tonecos. O restante do layout escuro/dourado permanece inalterado.
+- **Ambiente:** `main`/produção ficam NO-GO; os aliases antigos `ordax-three.vercel.app`, `ordax.com.br` e `www.ordax.com.br` continuam bloqueios de isolamento na Vercel e não foram reatribuídos.
+- **next_action:** confirmar `release:verify` e assets servidos no preview; homologar desktop/mobile; separar aliases antigos via ação administrativa suportada, preservando o projeto canônico OrdaX.
+- **do_not_repeat:** não recuperar banners/ícones OrdaX, não introduzir segundo design system, não migrar catálogo para Supabase nem consultar D1 em massa.
+
+---
+
 ## IDs de navegação do catálogo — 03/11/2026
 
 - **Baseline:** branch exclusiva `integration/tonecosstudio-canonical-20261101` em `7ff5153bf1245167cfa8fa3b2fcd026073c7e593`; preview Vercel do baseline READY. `main` e produção preservadas.
