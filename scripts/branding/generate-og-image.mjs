@@ -21,6 +21,28 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" v
   <circle cx="1000" cy="314" r="10" fill="#e5b752"/>
 </svg>`;
 export function resolveSocialOrigin(env = process.env) {
+  if (env.CF_PAGES === "1") {
+    const branch = (env.CF_PAGES_BRANCH || "").trim();
+    if (!branch) {
+      throw new Error("Cloudflare Pages requires a verified deployment branch.");
+    }
+    if (branch !== "main") {
+      let url;
+      try {
+        url = new URL((env.CF_PAGES_URL || "").trim());
+      } catch {
+        throw new Error("Tonecos Pages preview requires a valid Pages URL.");
+      }
+      if (
+        url.protocol !== "https:" || url.username || url.password ||
+        url.port || url.pathname !== "/" || url.search || url.hash ||
+        !/^[a-z0-9][a-z0-9-]*\.tonecosstudio\.pages\.dev$/.test(url.hostname)
+      ) {
+        throw new Error("Tonecos Pages preview requires its own HTTPS hostname.");
+      }
+      return url.origin;
+    }
+  }
   if (env.VERCEL_ENV === "preview") {
     const host = (env.VERCEL_URL || "").trim().toLowerCase();
     if (!/^tonecosstudio-[a-z0-9-]+\.vercel\.app$/.test(host)) {
@@ -28,7 +50,7 @@ export function resolveSocialOrigin(env = process.env) {
     }
     return `https://${host}`;
   }
-  if (env.VERCEL_ENV === "production") {
+  if (env.VERCEL_ENV === "production" || (env.CF_PAGES === "1" && env.CF_PAGES_BRANCH === "main")) {
     const raw = (env.TONECOS_PUBLIC_ORIGIN || "").trim();
     if (!raw) throw new Error("A verified Tonecos public origin is required for production social metadata.");
     let url;

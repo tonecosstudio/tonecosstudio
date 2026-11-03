@@ -6,6 +6,16 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Cloudflare Pages — metadados sociais e proteção de preview — 03/11/2026
+
+- Gerador social canônico atualizado para reconhecer `CF_PAGES`, `CF_PAGES_BRANCH` e `CF_PAGES_URL`. Apenas URLs HTTPS de preview em `*.tonecosstudio.pages.dev` recebem imagem OG/Twitter absoluta; a produção `main` exige `TONECOS_PUBLIC_ORIGIN` explícito. O fluxo Vercel continua preservado.
+- Três regressões foram adicionadas à suíte do gerador social; a lógica de resolução foi testada isoladamente em Node 22 (6 cenários aprovados). O teste completo com `sharp`, o build Node 24 e `release:verify` ainda dependem de execução no ambiente de CI.
+- Pages registrou 4 deploys em `queued/idle`, sem publicação confirmada. Cloudflare Access retornou `access.api.error.not_enabled`; previews do Pages são públicos por padrão. **GO permanece bloqueado** até ativar Access, executar build homologado e validar backend/QA.
+- **next_action:** habilitar Access no dashboard da conta Tonecos; validar proteção do preview, build único e funcionamento do catálogo/SEO no SHA homologado antes de publicação.
+- **do_not_repeat:** não tocar D1/R2, não duplicar SEO/catálogo, não modificar DNS, Vercel, OrdaX, `main` ou abrir branches/PRs adicionais.
+
+---
+
 ## Cloudflare Pages — transporte de catálogo somente leitura — 03/11/2026
 
 - **Infraestrutura confirmada:** Cloudflare Pages `tonecosstudio` na conta Tonecos, conectado ao repositório privado `tonecosstudio/tonecosstudio`. Produção e previews automáticos desabilitados; nenhum deploy iniciado.

@@ -56,3 +56,45 @@ test("local builds skip server tags; duplicate or altered templates fail closed"
   const duplicated = `${html}\n<meta property="og:image" content="/old.png" />`;
   assert.throws(() => injectSocialMeta(duplicated, "https://tonecos.example"));
 });
+
+test("Cloudflare Pages preview generates absolute branded social URLs", () => {
+  const origin = resolveSocialOrigin({
+    CF_PAGES: "1",
+    CF_PAGES_BRANCH: "integration/tonecosstudio-canonical-20261101",
+    CF_PAGES_URL: "https://87422d7a.tonecosstudio.pages.dev",
+  });
+  assert.equal(origin, "https://87422d7a.tonecosstudio.pages.dev");
+  const page = injectSocialMeta(html, origin);
+  assert.ok(page.includes('content="https://87422d7a.tonecosstudio.pages.dev/og-image.png"'));
+});
+
+test("Cloudflare Pages preview rejects untrusted or malformed deployment URLs", () => {
+  for (const url of [
+    "", "https://tonecosstudio.pages.dev",
+    "https://87422d7a.other.pages.dev",
+    "http://87422d7a.tonecosstudio.pages.dev",
+    "https://87422d7a.tonecosstudio.pages.dev.evil.test",
+    "https://username@87422d7a.tonecosstudio.pages.dev",
+    "https://87422d7a.tonecosstudio.pages.dev/path",
+    "https://87422d7a.tonecosstudio.pages.dev/?debug=1",
+  ]) {
+    assert.throws(() => resolveSocialOrigin({
+      CF_PAGES: "1",
+      CF_PAGES_BRANCH: "integration/tonecosstudio-canonical-20261101",
+      CF_PAGES_URL: url,
+    }), url);
+  }
+  assert.throws(() => resolveSocialOrigin({ CF_PAGES: "1", CF_PAGES_URL: "https://87422d7a.tonecosstudio.pages.dev" }));
+});
+
+test("Cloudflare Pages main requires explicit production origin", () => {
+  assert.throws(() => resolveSocialOrigin({
+    CF_PAGES: "1", CF_PAGES_BRANCH: "main",
+    CF_PAGES_URL: "https://tonecosstudio.pages.dev",
+  }));
+  assert.equal(resolveSocialOrigin({
+    CF_PAGES: "1", CF_PAGES_BRANCH: "main",
+    CF_PAGES_URL: "https://tonecosstudio.pages.dev",
+    TONECOS_PUBLIC_ORIGIN: "https://tonecos.example",
+  }), "https://tonecos.example");
+});
