@@ -13,10 +13,11 @@ export default function CharacterSelect() {
   const { search } = useLocation();
   const query = (new URLSearchParams(search).get("q") ?? "").trim();
   const length = Array.from(query).length;
-  const validSearch =
-    length >= 3 &&
-    length <= 80 &&
-    !/[\u0000-\u001f\u007f]/.test(query);
+  const hasControlCharacter = Array.from(query).some((character) => {
+    const code = character.charCodeAt(0);
+    return code <= 31 || code === 127;
+  });
+  const validSearch = length >= 3 && length <= 80 && !hasControlCharacter;
 
   const destination = validSearch
     ? `${PUBLIC_ROUTES.catalogModels}?q=${encodeURIComponent(query)}`
