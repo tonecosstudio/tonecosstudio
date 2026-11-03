@@ -6,6 +6,29 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Correção causal de cobertura sem afrouxar o gate — 03/11/2026
+
+- **Falha confirmada:** no commit `10b4d37ce49167b8a85e3d16702518e8710440d1`, `test:coverage` terminou com **3.273 aprovados, 32 ignorados e 0 falhas**, mas `functions=69.76%` abaixo de 70%; o pipeline falhou fechado. Não foi erro de rede, pacote ou D1.
+- **Correção deste checkpoint:** remover apenas o `ArcadeNav` duplicado e não utilizado em `ArcadeLayout.tsx`, pois `MainLayout.tsx` e `src/components/arcade/index.ts` já usam exclusivamente `ArcadeNav.tsx`. A cópia antiga ainda tinha branding OR DAX e callbacks não usados; eliminá-la reduz duplicação real e melhora a integridade da métrica. Preservar ArcadeHero, Card, CTA, efeitos e visual; testar owner canônico por import/barrel.
+- **Testes adicionais de comportamento:** autenticação e envio no contato com dados realmente aceitos pelo serviço; erro de suporte visível sem declarar sucesso; navegação para suporte após resposta bem-sucedida; sessão expirada redireciona para login. O serviço é mockado em testes offline, sem escrita Supabase ou chamada real.
+- **Gate obrigatório:** mesmo limite 70% de funções, demais limites da baseline preservados; build e auditorias somente após `test:coverage` PASS. Nenhuma exceção, skip ou relaxamento de métricas.
+- **next_action:** acompanhar novo preview até READY/ERROR, corrigir a causa se falhar; manter NO-GO de produção/domínios OrdaX.
+- **do_not_repeat:** não baixar `coverageThreshold`, não remover testes, não criar dados de produção ou varrer D1, não modificar main.
+
+---
+
+## Estado operacional atual — 03/11/2026
+
+- **Branch SSOT:** `integration/tonecosstudio-canonical-20261101`.
+- **Último gate integralmente aprovado antes desta etapa:** `1c48b3295f90cda201b3905de2f92cc911ebce33`, preview `dpl_CKeQnb4FpUBjPA1AzAn3QTWhXGaV` READY, `release:verify` completo (zero vulnerabilidades na auditoria final de produção).
+- **Último gate após o READY anterior:** `10b4d37ce49167b8a85e3d16702518e8710440d1`, preview `dpl_7vyGpiFcH49D9gtRBiwqpX91hsQr` **ERROR somente em cobertura de funções**: 69,76% versus mínimo 70%. 3.273 testes passaram e 32 foram ignorados, sem teste falho; TypeScript, lint e auditorias de autoridade passaram, mas `release:verify` não chegou ao build Vite. A mudança de filtros/contato permanece na branch, sem promoção.
+- **Prova real de acervo:** gateway HTTPS, cards e mídias publicados carregados em Chrome para Home, Universo e /modelos; ficha 10H com imagem principal e miniatura; emulação CDP 320–1440 px sem overflow horizontal. Isso não é autorização para pagamentos/produção.
+- **Bloqueadores de GO:** `main` não atualizada, vínculos Vercel de domínios OrdaX não isolados, preview read-only impede testes reais de autenticação/pedidos, contatos comerciais e produção ainda exigem staging isolado e revisão editorial; formatação baseline pendente segundo AGENTS.md.
+- **next_action:** executar o próximo gate com testes comportamentais adicionais para contato e remoção da cópia antiga da navegação. Não reduzir o limite de cobertura; exigir READY e release:verify completo no mesmo SHA. Não iniciar builds concorrentes.
+- **do_not_repeat:** nenhuma varredura integral Cloudflare D1, nenhum mirror Supabase, nenhuma alteração dos domínios OrdaX, nem promoção de produção. Uma branch, sem PRs paralelas.
+
+---
+
 ## Correção do gate Arcade Lab — 03/11/2026
 
 - **CI do SHA `87038a1bd5de5873c9a895dc613a5fdf6c770490`:** `release:verify` chegou a 3.252 testes aprovados, 32 ignorados e 1 falho; falha única em `ArcadeLab.test.tsx`, asserção `getByRole("img", {name:"10H"})` encontrou dois elementos, como deve ocorrer no layout que mostra miniatura + modelo selecionado.
@@ -50,6 +73,16 @@
 
 - **SHA anterior `7c97e733dcc5c35fe0adf57fa9005dd30f9289ae`:** preview Vercel `dpl_69QkCo7SJRy9mMcX7sa5bzBBsHBB` READY; `release:verify` passou até `npm audit --omit=dev --audit-level=high` com `found 0 vulnerabilities`. Testes da pasta (1/1) e da ficha (6/6) aprovados, incluindo o retorno validado. Preview privado; produção, `main` e D1 intocadas.
 - **NO-GO** continua até homologação visual real e desvinculação segura dos domínios do OrdaX.
+
+---
+
+## Consolidação da navegação Arcade sem cópias legadas — 03/11/2026
+
+- **Auditoria:** `MainLayout.tsx` importa `ArcadeNav` da implementação dedicada `src/components/arcade/ArcadeNav.tsx`; o barrel `src/components/arcade/index.ts` também exporta esta implementação. Porém `ArcadeLayout.tsx` conserva outra função `ArcadeNav`, com HUD antigo e logo `ORDAX`, sem consumo no shell canônico.
+- **Correção preparada:** eliminar somente a função de navegação e seus links/hook imports em `ArcadeLayout.tsx`, cerca de 156 linhas duplicadas. Preservar `ArcadeHero`, `ArcadeCard`, `ArcadeCTA`, CoinCounter e demais componentes usados, além do arquivo canônico `ArcadeNav.tsx`. A compilação de TypeScript serve de gate para algum import direto remanescente.
+- **Gate:** remover junto com a correção causal da cobertura do commit `10b4d37ce49167b8a85e3d16702518e8710440d1`, pois a implementação duplicada e não usada acrescenta funções ao denominador sem uso no shell real. Preservar a navegação dedicada como SSOT. Adicionar teste do export canônico e exigir `release:verify` completo no mesmo SHA, sem alterar o layout gold/Arcade.
+- **next_action:** verificar outras exportações redundantes apenas após inventário de consumidores; não fazer supressão em massa sem provas.
+- **do_not_repeat:** sem duplicar barra lateral/topo e sem reintroduzir marca OrdaX no frontend Tonecos.
 
 ---
 
