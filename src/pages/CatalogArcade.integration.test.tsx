@@ -47,7 +47,9 @@ function setupFetch() {
 async function renderUniverse(path: string) {
   const { default: CatalogArcade } = await import("./CatalogArcade");
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    // Keep query-cache semantics aligned with the application: a cleared
+    // search may reuse a fresh category list instead of refetching it.
+    defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>

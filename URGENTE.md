@@ -18,6 +18,16 @@
 
 ---
 
+## Correção do gate 03/11/2026 — cache do teste do Universo
+
+- **Falha reproduzida no gate da integração `a29c36998e583e0809e20457ecc6499b3a33c8c4`:** `release:verify` concluiu 3.252 testes aprovados, 32 ignorados e apenas 1 falho em 3.285; `CatalogArcade.integration.test.tsx` exigia reutilização do cache ao limpar a busca, mas sua configuração de teste `gcTime: 0` eliminava esse cache imediatamente. O erro foi assertion `expected 2, received 3`, sem evidência de acesso indevido ao catálogo.
+- **Correção causal:** removido apenas `gcTime: 0` do QueryClient de teste; o React Query passa a usar o cache padrão do app, mantendo o teste que exige zero consultas durante a digitação e retorno à listagem previamente buscada. Sem ajuste da lógica de produção, da segurança ou dos limiares.
+- **Validação:** aguardar o gate completo no SHA deste commit; bloquear `main` e lançamento até PASS same-SHA e isolamento dos domínios. Os warnings do restante da suíte foram produzidos por cenários simulados e não equivalem a novos testes falhos.
+- **next_action:** verificar Vercel preview deste SHA e homologar interface real em desktop/mobile.
+- **do_not_repeat:** não trocar assertions por timers, não eliminar cache do test harness que pretende validá-lo, não disparar varreduras D1, não alterar `main` ou domínios OrdaX.
+
+---
+
 ## Checkpoint de 03/11/2026 — busca pontual no Universo
 
 - **Baseline:** `0937fcd0fe3c201d4fb2174c30a00b64f384ac12` no branch canônico; Vercel `dpl_2XJKq4scczzLsHMaJ1MR4kcef3ka` READY, status Vercel SUCCESS e `release:verify` passou com auditoria final `found 0 vulnerabilities`. Sem deploy de produção.
