@@ -20,7 +20,6 @@ import {
 const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.home, label: "INICIO" },
   { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
-  { to: PUBLIC_ROUTES.characterSelect, label: "PERSONAGENS" },
   { to: PUBLIC_ROUTES.catalogModels, label: "MODELOS" },
 ];
 
