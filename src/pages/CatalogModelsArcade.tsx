@@ -368,7 +368,7 @@ export default function CatalogModelsArcade() {
                 aria-label={
                   "Abrir seleção para orçamento com " +
                   selectedModels.length +
-                  " modelos"
+                  (selectedModels.length === 1 ? " modelo" : " modelos")
                 }
                 className="inline-flex min-h-11 items-center rounded-none border border-[hsl(var(--gold-accent))] px-4 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(0,0%,9%)]"
               >
