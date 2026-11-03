@@ -53,6 +53,19 @@
 
 ---
 
+## Recuperação dos filtros e formulário de contato — 03/11/2026
+
+- **Ponto de partida aprovado:** `1c48b3295f90cda201b3905de2f92cc911ebce33` em `integration/tonecosstudio-canonical-20261101`. Preview Vercel `dpl_CKeQnb4FpUBjPA1AzAn3QTWhXGaV` **READY**; `release:verify` completo, 8/8 testes da ficha aprovados, build Vite concluído e auditoria final `found 0 vulnerabilities`. Nenhum build concorrente iniciado.
+- **Problema dos filtros:** após erro HTTP temporário, `Filtrar por categoria` e `Filtrar por franquia` ficam desativados, sem recuperação visível no próprio formulário. Recarregar a página inteira é desnecessário e repete consultas. Preparação: botões de retry manuais e acessíveis junto aos alertas, usando `refetch()` da query existente. Sem leitura extra enquanto o usuário digita ou quando parâmetros da URL são inválidos.
+- **Problema da página de contato:** `ContactArcade` pede nome, e-mail e mensagem como formulário público, mas `submitCustomerContact` só aceita `userId`, nome e mensagem de usuário autenticado; o e-mail digitado é ignorado, e visitantes recebem a exigência de login depois de preencher o formulário. `VITE_CONTACT_EMAIL` não está presente nos envs da Vercel listados para este projeto, então o card “Email Direto” pode aparecer vazio. Não criar endpoint público sem autorização/controle.
+- **Correção preparada para contato:** visitantes veem o acesso claro ao suporte via login antes do formulário; quem está autenticado preenche somente nome e mensagem, validados por `contactFormSchema.omit({ email: true })` (SSOT mantida). O card de e-mail direto só é exibido quando um endereço estiver realmente configurado; nenhum endereço foi inventado e nenhuma operação de envio anônimo foi criada.
+- **Provas planejadas:** simular 503 em categorias e franquias, exigir apenas o retry explícito e zero leituras adicionais da lista; testar formulário oculto ao visitante, login de retorno `/contato` e formulário coerente com os campos aceitos pelo serviço autenticado. Executar `release:verify` completo no SHA seguinte e manter NO-GO de lançamento.
+- **Autoridades e segurança:** API pública de modelos permanece Cloudflare Worker D1/R2 read-only, sem duplicação em Supabase; suporte segue autoridade autenticada existente. `main`, produção Vercel, domínios OrdaX, D1, pedidos e pagamentos intocados.
+- **next_action:** publicar essas duas correções juntas no commit seguinte da branch de integração; executar o gate completo do mesmo SHA e só então homologar a interface visualmente.
+- **do_not_repeat:** não fazer backup ou migração D1, não adicionar e-mail fake, não simular envio de contato como sucesso, não criar branch/PR paralela, não desativar Deployment Protection.
+
+---
+
 ## Retorno seguro da ficha /modelos — 03/11/2026
 
 - **Baseline aprovada:** `1d7c1a740bc8a17cf33059ff70d8d8caebb4d5a8` na única branch `integration/tonecosstudio-canonical-20261101`; Vercel preview `dpl_2zHbGKiutqDTJEAG3bR27XXwyEkK` READY, `release:verify` completo, `npm audit --omit=dev --audit-level=high` com `found 0 vulnerabilities`. Nenhuma alteração na main ou produção.

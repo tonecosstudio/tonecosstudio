@@ -275,6 +275,78 @@ describe("Tonecos canonical model discovery UI", () => {
     }
   });
 
+  it("recovers a failed on-demand category request without a full catalog reload", async () => {
+    const calls: string[] = [];
+    let categoryAttempts = 0;
+    vi.stubGlobal("fetch", vi.fn(async (input: string, init: RequestInit) => {
+      expect(init.method).toBe("GET");
+      const url = new URL(input);
+      calls.push(url.pathname);
+      if (url.pathname.endsWith("/api/catalog")) {
+        return Response.json({ items: [original], nextCursor: null });
+      }
+      if (url.pathname.endsWith("/api/categories")) {
+        categoryAttempts += 1;
+        return categoryAttempts === 1
+          ? new Response("Unavailable", { status: 503 })
+          : Response.json({
+              items: [{ id: "originais", label: "Originais", count: 2 }],
+            });
+      }
+      throw new Error("unexpected_worker_request: " + url.pathname);
+    }));
+
+    await renderCatalog();
+    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+    expect(calls).toHaveLength(1);
+    fireEvent.focus(screen.getByRole("combobox", { name: "Filtrar por categoria" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar as categorias",
+    );
+    expect(screen.getByRole("combobox", { name: "Filtrar por categoria" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente categorias" }));
+    await screen.findByRole("option", { name: "Originais" });
+    expect(screen.getByRole("combobox", { name: "Filtrar por categoria" })).toBeEnabled();
+    expect(categoryAttempts).toBe(2);
+    expect(calls.filter(path => path.endsWith("/api/catalog"))).toHaveLength(1);
+  });
+
+  it("recovers a failed franchise request without repeating the catalog scan", async () => {
+    const calls: string[] = [];
+    let franchiseAttempts = 0;
+    vi.stubGlobal("fetch", vi.fn(async (input: string, init: RequestInit) => {
+      expect(init.method).toBe("GET");
+      const url = new URL(input);
+      calls.push(url.pathname);
+      if (url.pathname.endsWith("/api/catalog")) {
+        return Response.json({ items: [original], nextCursor: null });
+      }
+      if (url.pathname.endsWith("/api/franchises")) {
+        franchiseAttempts += 1;
+        return franchiseAttempts === 1
+          ? new Response("Unavailable", { status: 503 })
+          : Response.json({
+              items: [{ id: "autoral", label: "Autoral", count: 2, category: "originais" }],
+              truncated: false,
+            });
+      }
+      throw new Error("unexpected_worker_request: " + url.pathname);
+    }));
+
+    await renderCatalog();
+    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+    fireEvent.focus(screen.getByRole("combobox", { name: "Filtrar por franquia" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível consultar as franquias",
+    );
+    expect(screen.getByRole("combobox", { name: "Filtrar por franquia" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente franquias" }));
+    await screen.findByRole("option", { name: /Autoral/ });
+    expect(screen.getByRole("combobox", { name: "Filtrar por franquia" })).toBeEnabled();
+    expect(franchiseAttempts).toBe(2);
+    expect(calls.filter(path => path.endsWith("/api/catalog"))).toHaveLength(1);
+  });
+
   it("fails closed without an explicitly configured HTTPS catalog origin", async () => {
     vi.stubEnv("VITE_CANONICAL_CATALOG_API_BASE", "");
     const fetcher = vi.fn();

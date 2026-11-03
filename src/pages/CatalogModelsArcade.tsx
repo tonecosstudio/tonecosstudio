@@ -304,6 +304,20 @@ export default function CatalogModelsArcade() {
             </button>
           </form>
 
+          {categories.isError && !invalidSearch && !invalidCatalogScope && (
+            <div role="alert" className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[hsl(0,0%,56%)]">
+              <span>Não foi possível carregar as categorias.</span>
+              <button
+                type="button"
+                onClick={() => void categories.refetch()}
+                disabled={categories.isFetching}
+                className="min-h-11 border border-[hsl(var(--gold-accent)/0.5)] px-3 text-[hsl(var(--gold-accent))] disabled:opacity-40"
+              >
+                Tentar novamente categorias
+              </button>
+            </div>
+          )}
+
           <div className="mt-3 flex flex-wrap items-end gap-3 border-b border-[hsl(0,0%,15%)] pb-6">
             <label className="min-w-[220px] flex-1 sm:max-w-sm">
               <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(0,0%,56%)]">
@@ -346,10 +360,18 @@ export default function CatalogModelsArcade() {
                 para refinar.
               </p>
             ) : null}
-            {franchises.isError ? (
-              <p className="text-xs text-[hsl(0,0%,56%)]" role="alert">
-                Não foi possível consultar as franquias.
-              </p>
+            {franchises.isError && !invalidSearch && !invalidCatalogScope ? (
+              <div className="flex flex-wrap items-center gap-2 text-xs text-[hsl(0,0%,56%)]" role="alert">
+                <span>Não foi possível consultar as franquias.</span>
+                <button
+                  type="button"
+                  onClick={() => void franchises.refetch()}
+                  disabled={franchises.isFetching}
+                  className="min-h-11 border border-[hsl(var(--gold-accent)/0.5)] px-3 text-[hsl(var(--gold-accent))] disabled:opacity-40"
+                >
+                  Tentar novamente franquias
+                </button>
+              </div>
             ) : null}
           </div>
 
