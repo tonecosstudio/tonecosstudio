@@ -305,6 +305,9 @@ describe("Tonecos shareable model detail UI", () => {
       if (url.pathname.endsWith("/api/models/escultura-original")) {
         return Response.json({
           ...original,
+          // The Worker detail and first gallery cover must describe the same
+          // published photograph; unrelated cover keys are now fail-closed.
+          cover_storage_key: "card/img-one.webp",
           description: "Modelo publicado e revisado",
           height_cm: 28,
           material: "Resina",
@@ -466,10 +469,18 @@ describe("Tonecos shareable model detail UI", () => {
       "A galeria não pôde ser carregada",
     );
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    await waitFor(() => expect(galleryCalls).toBe(2));
+    // A published model declares two images: an empty gallery on retry is
+    // inconsistent, not a legitimate zero-image collection.
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "A galeria não pôde ser carregada",
+    );
     expect(
-      await screen.findByText("Nenhuma imagem publicada nesta galeria."),
-    ).toBeInTheDocument();
-    expect(galleryCalls).toBe(2);
+      screen.queryByText("Nenhuma imagem publicada nesta galeria."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"),
+    ).toHaveTextContent("Indisponível");
   });
 });
 
