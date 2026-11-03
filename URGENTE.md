@@ -53,6 +53,15 @@
 
 ---
 
+## Correção do gate de filtros — 03/11/2026
+
+- **Falha observada na suíte de `cccb8c9c`:** `CatalogModelsArcade.integration.test.tsx` (16 testes, 1 falhou). O cenário `folder=../admin` exibia simultaneamente a mensagem de escopo inválido e o badge de pasta selecionada; `getByRole("status")` encontrava dois elementos. A busca com 81 caracteres e os demais casos executados passaram.
+- **Correção causal:** a indicação de pasta selecionada só aparece quando `!invalidFolderScope && !invalidCatalogScope`. Não anunciar pasta malformada como seleção válida. Mantidos bloqueios de rede e o teste original, sem relaxar asserções.
+- **Gate:** publicar este ajuste somente quando o build falho estiver encerrado e repetir `release:verify` integral no novo SHA.
+- **next_action:** verificar que cenário de escopo inválido gera uma mensagem coerente e nenhuma consulta ao Worker, e manter NO-GO de produção.
+
+---
+
 ## Filtros públicos fail-closed e evidências de QA — 03/11/2026
 
 - **Baseline aprovado:** `7637d53295be8d57d6fe47129e037c4652f2d337` na única branch canônica; preview Vercel `dpl_BF3jrMgxpEsqrF1JQ3FVv7ebX4ca` READY. `release:verify` finalizado com `found 0 vulnerabilities` na auditoria final. `main` ainda `fdd2992a...`; produção e domínios OrdaX inalterados.

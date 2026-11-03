@@ -353,7 +353,7 @@ export default function CatalogModelsArcade() {
             ) : null}
           </div>
 
-          {folder && !invalidFolderScope && (
+          {folder && !invalidFolderScope && !invalidCatalogScope && (
             <div role="status" className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[hsl(var(--gold-accent))]">
               Pasta selecionada: {folder}
               <button type="button" onClick={() => changeParams(search, category, franchise, false)} className="border border-[hsl(var(--gold-accent)/0.5)] px-3 py-2">
