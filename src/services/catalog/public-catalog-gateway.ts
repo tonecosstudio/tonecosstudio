@@ -98,6 +98,9 @@ export type PublicCatalogGalleryFilters = {
   version: number;
   cursor?: string;
   limit?: number;
+  /** From the same published model detail, not an external index. */
+  expectedTotal?: number;
+  expectedCoverStorageKey?: string | null;
 };
 export type PublicCatalogFilters = {
   category?: string;
@@ -542,6 +545,17 @@ export function createPublicCatalogGateway(
       const version = wholeNumber(row.version, "gallery_version");
       if (version !== filters.version)
         throw new Error("catalog_gallery_version_mismatch");
+      if (
+        filters.expectedTotal !== undefined &&
+        (!Number.isSafeInteger(filters.expectedTotal) ||
+          filters.expectedTotal < 1 ||
+          total !== filters.expectedTotal)
+      ) {
+        throw new Error("catalog_gallery_count_mismatch");
+      }
+      if (row.items.length > total) {
+        throw new Error("catalog_gallery_count_mismatch");
+      }
       const nextCursor = row.nextCursor;
       if (
         nextCursor !== null &&
@@ -604,6 +618,16 @@ export function createPublicCatalogGateway(
           },
         };
       });
+      if (
+        !filters.cursor &&
+        filters.expectedCoverStorageKey !== undefined &&
+        (!filters.expectedCoverStorageKey ||
+          items.length === 0 ||
+          items[0].role !== "cover" ||
+          items[0].variantKeys.card !== filters.expectedCoverStorageKey)
+      ) {
+        throw new Error("catalog_gallery_cover_mismatch");
+      }
       return {
         items,
         nextCursor: (nextCursor as string | null | undefined) ?? null,
