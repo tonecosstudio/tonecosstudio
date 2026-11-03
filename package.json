@@ -72,15 +72,7 @@
     "prepare": "husky",
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
-    "release:major": "standard-version --release-as major",
-    "docker:dev": "docker-compose -f docker-compose.dev.yml up -d",
-    "docker:dev:stop": "docker-compose -f docker-compose.dev.yml down",
-    "docker:dev:logs": "docker-compose -f docker-compose.dev.yml logs -f",
-    "docker:prod:build": "docker build -t ordax-app:latest .",
-    "docker:prod": "docker-compose up -d",
-    "docker:prod:stop": "docker-compose down",
-    "docker:prod:logs": "docker-compose logs -f",
-    "docker:clean": "docker-compose down -v && docker-compose -f docker-compose.dev.yml down -v"
+    "release:major": "standard-version --release-as major"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

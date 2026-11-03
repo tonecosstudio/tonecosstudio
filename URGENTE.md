@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Scripts Docker órfãos da antiga OrdaX — 03/11/2026
+
+- **Baseline verificada:** branch canônica em `59ed86ddb7c6fcb33963c152262868b59386a231`, preview Vercel `READY`. GET do HTML inicial, `/modelos`, `/og-image.png` e `/favicon.svg` retornaram HTTP 200; a imagem social e as tags `og:image`/`twitter:image` já são servidas no HTML estático.
+- **Causa real:** `package.json` mantinha oito scripts `docker:*` herdados; `docker:prod:build` gerava uma imagem `ordax-app:latest`. A árvore inteira do repositório nessa revisão **não possui** Dockerfile, `docker-compose.yml` ou `docker-compose.dev.yml`; os comandos, portanto, não constituem entrega funcional e reutilizariam o nome de outro produto.
+- **Correção:** excluir apenas os oito scripts órfãos, sem criar imagens, segundo instalador, segundo build system ou containers paralelos. Preservar `release:verify`, `build`, `test:coverage`, lockfile, deploy e código do catálogo. Nova regressão no teste canônico de identidade verifica a ausência dos comandos e dos arquivos Docker ausentes.
+- **Provas:** revisão estática comparou a árvore Git e os scripts existentes, assegurando que comandos de CI e scripts de produto permanecem inalterados. A aprovação do commit final ainda depende de `release:verify` e do deploy `READY` no mesmo SHA, sem afirmar teste local ou navegador interativo.
+- **Bloqueios:** `main` permanece NO-GO; três aliases OrdaX ainda constam no projeto Vercel `tonecosstudio`. Exigir isolamento administrativo seguro antes de alterar produção/domínio e QA visual desktop/mobile.
+- **next_action:** confirmar o gate da branch final, validar preview, isolar aliases antigos via ferramenta própria, selecionar domínio Tonecos e homologar fluxo comercial isolado.
+- **do_not_repeat:** não recriar Docker sem demanda e infraestrutura real; não consultar Cloudflare D1, não tocar Supabase/produção, não abrir PR/branch paralela e não iniciar builds manuais.
+
+---
+
 ## Metadados sociais absolutos no HTML servido — 03/11/2026
 
 - **Baseline validada:** `7c24338ee355b3dc16eef49fabdbb35086423bf6` teve `release:verify` concluído e Vercel `READY`. HTTP do preview: `/` e `/modelos` 200, `/favicon.svg` 200 `image/svg+xml` e `/og-image.png` 200 `image/png` (1200×630, 15.786 bytes). O HTML inicial, porém, ainda não incluía `og:image` nem `twitter:image` porque essas tags só eram adicionadas pelo React.

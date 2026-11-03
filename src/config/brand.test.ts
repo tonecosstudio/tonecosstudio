@@ -60,6 +60,20 @@ it("keeps the npm package identity canonical across both manifests", () => {
   expect(lock.packages[""].name).toBe(pkg.name);
 });
 
+it("does not expose obsolete Docker commands or the former OrdaX image name", () => {
+  const manifest = JSON.parse(
+    readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
+  ) as { scripts: Record<string, string> };
+  const dockerCommands = Object.entries(manifest.scripts).filter(([name]) =>
+    name.startsWith("docker:"),
+  );
+  expect(dockerCommands).toEqual([]);
+  expect(JSON.stringify(manifest.scripts)).not.toContain("ordax-app:latest");
+  expect(existsSync(resolve(process.cwd(), "Dockerfile"))).toBe(false);
+  expect(existsSync(resolve(process.cwd(), "docker-compose.yml"))).toBe(false);
+  expect(existsSync(resolve(process.cwd(), "docker-compose.dev.yml"))).toBe(false);
+});
+
 it("builds a single deterministic social image from Tonecos-owned sources", () => {
   const packageJson = JSON.parse(
     readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
