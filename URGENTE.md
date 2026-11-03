@@ -6,6 +6,17 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## IDs de navegação do catálogo — 03/11/2026
+
+- **Baseline:** branch exclusiva `integration/tonecosstudio-canonical-20261101` em `7ff5153bf1245167cfa8fa3b2fcd026073c7e593`; preview Vercel do baseline READY. `main` e produção preservadas.
+- **Causa identificada:** categorias e franquias vindas do Worker eram verificadas como texto e como IDs únicos, mas não como slugs seguros. A UI constrói rotas internas a partir desses IDs; barras, `..` ou delimitadores de consulta podiam criar navegação incorreta.
+- **Correção:** o gateway de leitura reutiliza `validCatalogSlug` para os IDs de categoria/franquia e para a categoria de cada franquia. Respostas inconsistentes falham fechadas; não há consulta extra, reindexação, mecanismo duplicado ou alteração do Worker.
+- **Regressões offline acrescentadas:** resposta de categoria com `../admin`, franquia com `../admin` e escopo de franquia `games/../admin`, todos rejeitados após uma única leitura HTTP simulada. A aprovação final depende do `release:verify` do SHA deste commit.
+- **next_action:** confirmar gate no SHA final e QA de navegação no preview protegido; isolar vínculos legados de domínios OrdaX antes de qualquer lançamento comercial.
+- **do_not_repeat:** não alterar `main`, produção, DNS, D1/R2 nem criar branch/PR paralela ou build intermediário.
+
+---
+
 ## Identidade única de imagem entre páginas da galeria — 03/11/2026
 
 - **Baseline:** branch `integration/tonecosstudio-canonical-20261101` no commit `5023ac6601185e2b3498b717ca81d4e0b6744b0d`. O preview `dpl_9FE2tx5kG8r6CyaGmuqWE32Qpbzm` executava `release:verify` durante a preparação. O gate anterior, `74d4c436`, está READY.

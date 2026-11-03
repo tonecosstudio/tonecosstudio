@@ -495,6 +495,22 @@ describe("read-only catalog discovery and detail", () => {
     expect(io).toHaveBeenCalledTimes(1);
   });
 
+  it("rejects unsafe category route IDs from the bounded Worker response", async () => {
+    const io = vi.fn(async () =>
+      Response.json({
+        items: [{ id: "../admin", label: "Malformed", count: 1 }],
+      }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    await expect(gateway.listCategories()).rejects.toThrow(
+      "invalid_catalog_category_id",
+    );
+    expect(io).toHaveBeenCalledTimes(1);
+  });
+
   it("opens one canonical detail and refuses a mismatched slug", async () => {
     const io = vi.fn(async () =>
       Response.json({
@@ -711,6 +727,14 @@ describe("franchise discovery stays bounded and uses Worker authority", () => {
       [
         { items: [{ ...expected, count: -1 }], truncated: false },
         "invalid_catalog_franchise_count",
+      ],
+      [
+        { items: [{ ...expected, id: "../admin" }], truncated: false },
+        "invalid_catalog_franchise_id",
+      ],
+      [
+        { items: [{ ...expected, category: "games/../admin" }], truncated: false },
+        "invalid_catalog_franchise_category",
       ],
       [
         { items: [{ ...expected, category: "movies" }], truncated: false },

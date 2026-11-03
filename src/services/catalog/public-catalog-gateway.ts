@@ -300,6 +300,9 @@ export function createPublicCatalogGateway(
           cover_storage_key?: unknown;
         };
         const id = requiredText(category.id, "category_id");
+        if (!validCatalogSlug(id)) {
+          throw new Error("invalid_catalog_category_id");
+        }
         if (seen.has(id)) throw new Error("duplicate_catalog_category");
         seen.add(id);
         return {
@@ -376,6 +379,12 @@ export function createPublicCatalogGateway(
               ? {}
               : { coverStorageKey: optionalText(row.cover_storage_key, "franchise_cover_key") }),
           };
+          if (!validCatalogSlug(franchise.id)) {
+            throw new Error("invalid_catalog_franchise_id");
+          }
+          if (!validCatalogSlug(franchise.category)) {
+            throw new Error("invalid_catalog_franchise_category");
+          }
           if (filters.category && franchise.category !== filters.category) {
             throw new Error("invalid_catalog_franchise_category");
           }
