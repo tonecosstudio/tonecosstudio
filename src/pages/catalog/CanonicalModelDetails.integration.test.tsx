@@ -61,7 +61,7 @@ afterEach(() => {
 });
 
 function mountGallery(options: { total: number; coverKey?: string }) {
-  const io = vi.fn(async (input: string, init: RequestInit) => {
+  const io = vi.fn(async (input: string, _init: RequestInit) => {
     const url = new URL(input);
     if (url.pathname.endsWith("/api/models/animal-original")) {
       return Response.json(model);
