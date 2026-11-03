@@ -286,6 +286,115 @@ describe("canonical catalog read boundary", () => {
   });
 });
 
+describe("cross-endpoint published gallery integrity", () => {
+  const galleryImage = {
+    id: "image-1",
+    role: "cover",
+    width: 1280,
+    height: 1600,
+    bytes: 250000,
+    mime: "image/webp",
+    qualityScore: 96,
+    sourceSha256: "a".repeat(64),
+    variantKeys: {
+      thumb: "media/mdl-123/1/thumb.webp",
+      card: "media/mdl-123/1/card.webp",
+      detail: "media/mdl-123/1/detail.webp",
+      original: null,
+    },
+  };
+
+  function gatewayFor(page: object) {
+    const io = vi.fn(async () => Response.json(page));
+    return {
+      io,
+      gateway: createPublicCatalogGateway(
+        "https://example.test/catalogo-api",
+        io as typeof fetch,
+      ),
+    };
+  }
+
+  const expected = {
+    version: 9,
+    limit: 8,
+    expectedTotal: 1,
+    expectedCoverStorageKey: "media/mdl-123/1/card.webp",
+  };
+
+  it("accepts one approved cover as a complete gallery without inventing further views", async () => {
+    const { io, gateway } = gatewayFor({
+      items: [galleryImage],
+      nextCursor: null,
+      total: 1,
+      version: 9,
+    });
+    const page = await gateway.listGallery("animal-original", expected);
+    expect(page.items).toHaveLength(1);
+    expect(page.total).toBe(1);
+    expect(io).toHaveBeenCalledTimes(1);
+    expect(io.mock.calls[0]?.[0]).toBe(
+      "https://example.test/catalogo-api/api/models/animal-original/images?limit=8&v=9",
+    );
+  });
+
+  it("refuses a gallery count that disagrees with the published model detail", async () => {
+    const { io, gateway } = gatewayFor({
+      items: [galleryImage],
+      nextCursor: null,
+      total: 2,
+      version: 9,
+    });
+    await expect(gateway.listGallery("animal-original", expected))
+      .rejects.toThrow("catalog_gallery_count_mismatch");
+    expect(io).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a first-page cover that differs from the model's published cover", async () => {
+    const { io, gateway } = gatewayFor({
+      items: [{
+        ...galleryImage,
+        variantKeys: {
+          ...galleryImage.variantKeys,
+          card: "media/mdl-other/1/card.webp",
+        },
+      }],
+      nextCursor: null,
+      total: 1,
+      version: 9,
+    });
+    await expect(gateway.listGallery("animal-original", expected))
+      .rejects.toThrow("catalog_gallery_cover_mismatch");
+    expect(io).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a gallery whose first image is not the cover", async () => {
+    const { gateway } = gatewayFor({
+      items: [{ ...galleryImage, role: "gallery" }],
+      nextCursor: null,
+      total: 1,
+      version: 9,
+    });
+    await expect(gateway.listGallery("animal-original", expected))
+      .rejects.toThrow("catalog_gallery_cover_mismatch");
+  });
+
+  it("does not require the original cover on later cursor pages", async () => {
+    const { gateway } = gatewayFor({
+      items: [{ ...galleryImage, id: "image-2", role: "gallery" }],
+      nextCursor: null,
+      total: 2,
+      version: 9,
+    });
+    const page = await gateway.listGallery("animal-original", {
+      ...expected,
+      cursor: "page-2",
+      expectedTotal: 2,
+    });
+    expect(page.items[0].role).toBe("gallery");
+  });
+});
+
 describe("read-only catalog discovery and detail", () => {
   it("decodes bounded categories without catalog scan or SQL access", async () => {
     const calls: string[] = [];
