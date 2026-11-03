@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { PUBLIC_ROUTES, loginReturnToPath, profileSectionPath } from "@/config/routes";
@@ -59,6 +59,7 @@ function mount() {
 }
 
 beforeEach(() => {
+  vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
   auth.user = null;
   submission.onError = null;
   submission.onSuccess = null;
@@ -66,7 +67,42 @@ beforeEach(() => {
   submission.submit.mockClear();
 });
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 describe("Tonecos public contact entry", () => {
+  it("provides model discovery rather than a broken login in read-only preview", () => {
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
+    mount();
+    const heading = screen.getByRole("heading", { name: "CONTATO EM PREPARAÇÃO" });
+    expect(heading.closest('[role="status"]')).toHaveTextContent(
+      "Esta prévia é somente leitura e não recebe mensagens",
+    );
+    expect(screen.getByRole("link", { name: "EXPLORAR MODELOS" })).toHaveAttribute(
+      "href",
+      PUBLIC_ROUTES.catalogModels,
+    );
+    expect(screen.queryByRole("link", { name: "Entrar para enviar mensagem" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Enviar Transmissao" })).not.toBeInTheDocument();
+    expect(submission.submit).not.toHaveBeenCalled();
+  });
+
+  it("never exposes contact submission for an existing session in read-only preview", () => {
+    auth.user = { id: "existing-session" };
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
+    mount();
+    expect(screen.getByRole("heading", { name: "CONTATO EM PREPARAÇÃO" })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Seu nome completo")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Enviar Transmissao" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "EXPLORAR MODELOS" })).toHaveAttribute(
+      "href",
+      PUBLIC_ROUTES.catalogModels,
+    );
+    expect(submission.submit).not.toHaveBeenCalled();
+  });
+
+
   it("prompts guests to authenticate before collecting a support message", () => {
     mount();
     const guestHeading = screen.getByRole("heading", {

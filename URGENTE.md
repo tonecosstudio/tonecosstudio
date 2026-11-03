@@ -6,6 +6,17 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Correção de gate do MVP — contato em preview somente leitura — 03/11/2026
+
+- **Falha reproduzida no CI:** `5fd73a460ed2f99e7725d80e9b263a7a6bd8efcf` terminou `ERROR` na Vercel; `release:verify` teve 1 teste falho, 3291 aprovados e 32 ignorados. Falhou `src/pages/ContactArcade.test.tsx` ao esperar o texto comercial `Atendimento pela sua conta` enquanto o preview usa `VITE_PREVIEW_READ_ONLY=true` e apresenta `CONTATO EM PREPARAÇÃO`. A Vercel não deve promover SHA com gate falho.
+- **Correção de causa raiz:** o modo preview passa a ser avaliado no componente `ContactArcade`, permitindo aos testes Vitest exercer os dois modos com `vi.stubEnv`. A interface esconde o envio em modo somente leitura mesmo se existir uma sessão legada no navegador, sem criar fluxo paralelo. O caminho comercial autenticado continua intacto.
+- **Regressões:** testes explícitos para visitante sem sessão e usuário com sessão no preview read-only; os cenários comerciais existentes ficam sob `VITE_PREVIEW_READ_ONLY=false`, com `unstubAllEnvs` no final. Executar gate completo do SHA novo; aprovação não pode ser inferida só do diff.
+- **Estado de lançamento:** contas reais ainda NO-GO por ausência de auditoria do Supabase comercial Tonecos, redirecionamentos, confirmação e-mail e RLS, e pelo vínculo herdado dos domínios OrdaX ao projeto Vercel. O alias público de preview mantém a última revisão `READY`.
+- **next_action:** confirmar CI/preview `READY` no SHA final, repontar apenas o alias Tonecos ao commit aprovado e fazer teste visual desktop/mobile.
+- **do_not_repeat:** não reduzir cobertura nem pular testes; não habilitar cadastro no preview; não criar backend alternativo, consultar D1 ou alterar produção/dominios OrdaX.
+
+---
+
 ## MVP — continuidade da marca e contato na área de usuários — 03/11/2026
 
 - **Baseline validada:** `a283923c39d3a1a18530408f1e3abacc37f82ec8` passou na Vercel com estado `READY`. Este checkpoint avança a experiência de conta na mesma branch, sem criar novo sistema de cadastro.

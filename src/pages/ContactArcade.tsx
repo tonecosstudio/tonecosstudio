@@ -30,14 +30,13 @@ import {
 } from "@/config/routes";
 import { CONTACT } from "@/config/constants";
 
-const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
-
 // The authenticated contact service uses account identity; it does not
 // accept or persist an arbitrary email field from this public page.
 const authenticatedContactFormSchema = contactFormSchema.omit({ email: true });
 type ContactFormData = z.infer<typeof authenticatedContactFormSchema>;
 
 export default function ContactArcade() {
+  const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
   const navigate = useNavigate();
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +97,7 @@ export default function ContactArcade() {
           <div className="p-6 md:p-8 relative overflow-hidden">
             <FloatingParticles />
 
-            {!user ? (
+            {PREVIEW_READ_ONLY || !user ? (
               <div className="relative z-10 space-y-4 text-center" role="status">
                 <h2 className="text-lg font-medium text-[hsl(0,0%,94%)]">
                   {PREVIEW_READ_ONLY ? "CONTATO EM PREPARAÇÃO" : "Atendimento pela sua conta"}
