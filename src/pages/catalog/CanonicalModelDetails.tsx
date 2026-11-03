@@ -46,6 +46,8 @@ export default function CanonicalModelDetails() {
           version: model!.galleryVersion,
           limit: 24,
           cursor: pageParam || undefined,
+          expectedTotal: model!.imageCount,
+          expectedCoverStorageKey: model!.coverStorageKey,
         },
         signal,
       ),
@@ -268,7 +270,12 @@ export default function CanonicalModelDetails() {
                         Imagens publicadas
                       </dt>
                       <dd className="mt-1 font-medium">
-                        {galleryQuery.data?.pages[0]?.total ?? model.imageCount}
+                        {galleryQuery.isError
+                          ? "Indisponível"
+                          : galleryQuery.data?.pages[0]?.total ??
+                            (model.galleryVersion > 0
+                              ? "Verificando…"
+                              : "Indisponível")}
                       </dd>
                     </div>
                   </dl>
