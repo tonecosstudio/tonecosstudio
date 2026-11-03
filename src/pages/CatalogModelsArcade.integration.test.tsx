@@ -111,16 +111,21 @@ async function renderCatalog(path = "/modelos") {
   const { default: CatalogModelsArcade } = await import(
     "./CatalogModelsArcade"
   );
+  const { CatalogBrowsingProvider } = await import(
+    "@/services/catalog/catalog-browsing-context"
+  );
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
+      <CatalogBrowsingProvider>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="/modelos" element={<CatalogModelsArcade />} />
         </Routes>
       </MemoryRouter>
+      </CatalogBrowsingProvider>
     </QueryClientProvider>,
   );
 }
@@ -325,15 +330,20 @@ describe("Tonecos canonical model discovery UI", () => {
     );
     const { default: Models } = await import("./CatalogModelsArcade");
     const { default: Details } = await import("./catalog/CanonicalModelDetails");
+    const { CatalogBrowsingProvider } = await import(
+      "@/services/catalog/catalog-browsing-context"
+    );
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={client}>
+        <CatalogBrowsingProvider>
         <MemoryRouter initialEntries={[startingPath]}>
           <Routes>
             <Route path="/modelos" element={<Models />} />
             <Route path="/modelos/:id" element={<Details />} />
           </Routes>
         </MemoryRouter>
+        </CatalogBrowsingProvider>
       </QueryClientProvider>,
     );
     fireEvent.click(
@@ -355,6 +365,78 @@ describe("Tonecos canonical model discovery UI", () => {
       url.searchParams.get("franchise") === "autoral" &&
       url.searchParams.get("folder") === "esculturas/classicas"
     )).toBe(true);
+  });
+
+  it("keeps page two and a provisional selection across model detail navigation", async () => {
+    const { calls, fetcher } = setupFetch();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string, init: RequestInit) => {
+        const pathname = new URL(input).pathname;
+        if (pathname.endsWith("/api/models/escultura-seguinte")) {
+          return Response.json({ ...second, description: null, material: null, height_cm: null });
+        }
+        if (pathname.endsWith("/api/models/escultura-seguinte/images")) {
+          const image = (id: string, role: "cover" | "gallery") => ({
+            id, role, width: 800, height: 1000, bytes: 4096,
+            mime: "image/webp", qualityScore: 92,
+            sourceSha256: role === "cover" ? "a".repeat(64) : "b".repeat(64),
+            variantKeys: {
+              thumb: "media/model-two/" + id + "/thumb.webp",
+              card: role === "cover" ? second.cover_storage_key : "media/model-two/" + id + "/card.webp",
+              detail: "media/model-two/" + id + "/detail.webp",
+              original: null,
+            },
+          });
+          return Response.json({
+            items: [image("image-1", "cover"), image("image-2", "gallery")],
+            nextCursor: null, total: 2, version: 1,
+          });
+        }
+        return fetcher(input, init);
+      }),
+    );
+    const { default: Models } = await import("./CatalogModelsArcade");
+    const { default: Details } = await import("./catalog/CanonicalModelDetails");
+    const { CatalogBrowsingProvider } = await import(
+      "@/services/catalog/catalog-browsing-context"
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <CatalogBrowsingProvider>
+          <MemoryRouter initialEntries={["/modelos"]}>
+            <Routes>
+              <Route path="/modelos" element={<Models />} />
+              <Route path="/modelos/:id" element={<Details />} />
+            </Routes>
+          </MemoryRouter>
+        </CatalogBrowsingProvider>
+      </QueryClientProvider>,
+    );
+    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar à seleção" }));
+    fireEvent.click(screen.getByRole("button", { name: "Próxima" }));
+    await screen.findByRole("link", { name: "Ver detalhes de Escultura seguinte" });
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar à seleção" }));
+    fireEvent.click(screen.getByRole("link", { name: "Ver detalhes de Escultura seguinte" }));
+    const back = await screen.findByRole("link", { name: "Voltar ao catálogo" });
+    expect(back).toHaveAttribute("href", "/modelos");
+    fireEvent.click(back);
+    await screen.findByRole("link", { name: "Ver detalhes de Escultura seguinte" });
+    expect(screen.getByText("Página 2 · 1 modelos nesta página")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Anterior" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Remover da seleção" }))
+      .toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(
+      screen.getByRole("button", { name: /Abrir seleção para orçamento com 2 modelos/ }),
+    );
+    const selection = screen.getByRole("dialog");
+    expect(selection).toHaveTextContent("2 de 50 modelos selecionados.");
+    expect(selection).toHaveTextContent("Escultura original");
+    expect(selection).toHaveTextContent("Escultura seguinte");
+    expect(selection).toHaveTextContent("Nenhum orçamento foi enviado.");
+    expect(calls.every(({ init }) => init.method === "GET")).toBe(true);
   });
 
 describe("Tonecos shareable model detail UI", () => {

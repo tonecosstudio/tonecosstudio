@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ImageOff, Search, X } from "lucide-react";
@@ -28,12 +29,6 @@ import {
 
 const PAGE_SIZE = 24;
 const API_BASE = CANONICAL_CATALOG_API_BASE;
-
-type PagePosition = {
-  scope: string;
-  cursors: Array<string | undefined>;
-  index: number;
-};
 
 function ModelCover({
   model,
@@ -74,15 +69,9 @@ export default function CatalogModelsArcade() {
   const [loadFranchises, setLoadFranchises] = useState(Boolean(franchise));
   const [franchiseDraft, setFranchiseDraft] = useState("");
   const [franchiseNeedle, setFranchiseNeedle] = useState("");
-  const [selectedModels, setSelectedModels] = useState<PublicCatalogModel[]>(
-    [],
-  );
+  const { selectedModels, setSelectedModels, paging, setPaging } =
+    useCatalogBrowsing();
   const [selectionOpen, setSelectionOpen] = useState(false);
-  const [paging, setPaging] = useState<PagePosition>({
-    scope: "",
-    cursors: [undefined],
-    index: 0,
-  });
 
   useEffect(() => setDraft(search), [search]);
 
@@ -575,7 +564,7 @@ export default function CatalogModelsArcade() {
             </ul>
           )}
           <p className="border-t border-[hsl(0,0%,15%)] pt-4 text-xs leading-relaxed text-[hsl(0,0%,56%)]">
-            A seleção é temporária e permanece apenas nesta página. A
+            A seleção é temporária e permanece durante esta visita. A
             solicitação comercial será liberada depois da integração de preços,
             autenticação e pedidos com o Studio. Nenhum orçamento foi enviado.
           </p>

@@ -7,6 +7,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MainLayout } from "@/components/layouts/MainLayout";
+import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
 import { CustomerChat } from "@/components/customer/CustomerChat";
@@ -120,6 +121,7 @@ function AppContent() {
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <CatalogBrowsingProvider>
         <MainLayout>
           <Suspense fallback={<PageLoader />}>
             <Routes>
@@ -679,6 +681,7 @@ function AppContent() {
             </Routes>
           </Suspense>
         </MainLayout>
+        </CatalogBrowsingProvider>
         <CustomerChat />
       </BrowserRouter>
     </>
