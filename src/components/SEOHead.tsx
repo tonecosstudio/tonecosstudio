@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { ASSETS, CONTACT } from "@/config/constants";
+import { CONTACT } from "@/config/constants";
 import { BRAND_NAME } from "@/config/brand";
 
 interface SEOHeadProps {
