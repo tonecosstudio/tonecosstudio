@@ -1,5 +1,17 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## Checkpoint horário — 03/11/2026, 20h56 (Bahia)
+
+- **Fonte Git:** repositório transferido `tonecosstudio/tonecosstudio`, branch única `integration/tonecosstudio-canonical-20261101`, HEAD `9ad335568330189608ce15ca7355384d727993dd`. O catálogo `washingtonmsdj/catalogo/main` permanece `a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c`. Sem alteração confirmada nesses HEADs em relação ao checkpoint mais recente.
+- **Drive (somente metadados):** SSOT STLForgeCatalogo modificado em `2026-11-01T18:26:52.906Z`; Índice Tonecos Studios em `2026-08-09T22:55:11.541Z`. Conteúdo/licenças/capas não foram revalidados nesta hora.
+- **Cloudflare Pages Tonecos (somente endpoint de deployments):** build manual `5ebcbc98-352e-4f61-8aba-b85a5b370a8b` do HEAD `9ad33556` ainda `build/active`, sem resultado; deploy automático do mesmo SHA `46599831-29db-4cd4-9bd2-d77474530be8` `queued/idle`. Último preview confirmado `deploy/success`: `cd223b66-5c5d-4489-bda9-c3f5f01e9024` (`57c26e5e`). **Não iniciar build concorrente, não promover SHA sem gate verde.**
+- **Gates:** `release:verify` completo no SHA final e recuperação de `src/pages/ContactArcade.test.tsx` ainda **não comprovados** nesta hora; conferir resultado de build e logs uma única vez se falhar. Home, catálogo Worker como SSOT, busca, fichas, navegação, primeiro uso e QA anônimo precisam de homologação. Acesso público **NO-GO**. Supabase Tonecos (RLS/redirect/SMTP e E2E com conta de teste) não autorizado/auditado: cadastro/login real **NO-GO**. Compras, pedidos e pagamentos **NO-GO**.
+- **Segurança e custos:** nenhuma consulta D1/R2, migração, reimportação, reupload, deploy novo, mudança DNS, Vercel, `main`, Supabase ou projetos OrdaX. Cloudflare Access permanece somente para `*.tonecosstudio.pages.dev` conforme checkpoint anterior; não inferir que o domínio raiz Pages esteja protegido.
+- **Próximas prioridades:** (1) aguardar e avaliar gate único do build ativo; (2) homologar fluxo público somente leitura contra catálogo Worker e conferir checkpoints/proveniência; (3) obter autorização de Supabase Tonecos e auditar segurança antes de habilitar contas.
+
+---
+
+
 > Repositório: `washingtonmsdj/tonecosstudio` (privado, confirmado em 01/11/2026).
 > **Estado: NO-GO.** A `main` permanece `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41` e NÃO foi atualizada nesta execução.
 > Frente única de consolidação: `integration/tonecosstudio-canonical-20261101`.
