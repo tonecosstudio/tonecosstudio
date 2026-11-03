@@ -40,7 +40,7 @@ function catalogReturnPath(state: unknown): string {
         (typeof folder !== "string" ||
           folder.length > 240 ||
           Array.from(folder).some((part) => part.charCodeAt(0) < 32 || part.charCodeAt(0) === 127) ||
-          folder.replaceAll("\\", "/").split("/").some((part) => part === "." || part === ".."))
+          folder.split("\\").join("/").split("/").some((part) => part === "." || part === ".."))
       ) {
         return base;
       }

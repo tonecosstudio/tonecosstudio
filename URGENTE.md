@@ -46,6 +46,16 @@
 
 ---
 
+## Compatibilidade de compilação do retorno ao Universo — 03/11/2026
+
+- **Falha no gate do SHA `bc00c665f8fdcdc456cd4cd3a9015a168c7551ca`:** `tsc -b` bloqueou `String.replaceAll` no alvo atual (`TS2550`), com diagnóstico secundário de `part` implícito `any` na cadeia interrompida.
+- **Correção mínima:** substituído `folder.replaceAll("\\\\", "/")` por `folder.split("\\\\").join("/")`, que mantém a mesma normalização de separadores e validação de travessia sem elevar o alvo TypeScript, reduzir proteção ou alterar URLs.
+- **Validação:** exigir `release:verify` completo neste SHA; a melhoria de paginação multi-página segue apenas preparada, sem novo build paralelo.
+- **next_action:** confirmar gate, então concluir a proteção de cursores na mesma branch.
+- **do_not_repeat:** sem mudanças de toolchain por causa de um único método de string, sem `main` e sem consultas diretas à D1.
+
+---
+
 ## Navegação sem perda da pasta de origem — 03/11/2026
 
 - **Situação encontrada:** ao abrir a ficha de um modelo a partir de `/universo/:categoria/:franquia?folder=...`, o botão `Voltar ao catálogo` voltava à lista geral de /modelos e perdia a origem da navegação.
