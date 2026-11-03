@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { ArrowLeft, ImageOff } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeCard,
@@ -162,23 +163,12 @@ export default function CanonicalModelDetails() {
             <article className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
               <section aria-label="Imagens do modelo">
                 <ArcadeCard className="flex min-h-[360px] items-center justify-center md:min-h-[560px]">
-                  {activeImageUrl ? (
-                    <img
-                      src={activeImageUrl}
-                      alt={"Referência visual de " + model.name}
-                      className="max-h-[75vh] w-full object-contain p-4"
-                      decoding="async"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center gap-3 p-8 text-center text-[hsl(0,0%,56%)]">
-                      <ImageOff
-                        aria-hidden="true"
-                        size={32}
-                        strokeWidth={1.4}
-                      />
-                      <span>Imagem indisponível</span>
-                    </div>
-                  )}
+                  <CanonicalCatalogImage
+                    src={activeImageUrl}
+                    alt={"Referência visual de " + model.name}
+                    imageClassName="max-h-[75vh] w-full object-contain p-4"
+                    loading="eager"
+                  />
                 </ArcadeCard>
 
                 {model.galleryVersion > 0 && galleryQuery.isPending ? (
@@ -217,19 +207,12 @@ export default function CanonicalModelDetails() {
                             aria-pressed={activeImage?.id === image.id}
                             className="aspect-square overflow-hidden rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] aria-pressed:border-[hsl(var(--gold-accent))]"
                           >
-                            {src ? (
-                              <img
-                                src={src}
-                                alt=""
-                                loading="lazy"
-                                decoding="async"
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <span className="flex h-full items-center justify-center text-xs text-[hsl(0,0%,56%)]">
-                                Sem prévia
-                              </span>
-                            )}
+                            <CanonicalCatalogImage
+                              src={src}
+                              alt=""
+                              imageClassName="h-full w-full object-cover"
+                              fallbackLabel="Sem prévia"
+                            />
                           </button>
                         );
                       })}

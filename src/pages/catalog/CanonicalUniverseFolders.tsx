@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { ArrowRight, Folder, ImageOff } from "lucide-react";
+import { ArrowRight, Folder } from "lucide-react";
+import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { ArcadeCard } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
@@ -119,13 +120,11 @@ export function CanonicalUniverseFolders({
               <ArcadeCard key={model.id}>
                 <Link to={catalogModelDetailsPath(model.slug)} className="group block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" aria-label={"Ver detalhes de " + model.name}>
                   <div className="flex aspect-[3/4] items-center justify-center overflow-hidden bg-[hsl(0,0%,8%)]">
-                    {image ? (
-                      <img src={image} alt={"Referência visual de " + model.name} loading="lazy" decoding="async" className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.03]" />
-                    ) : (
-                      <span className="flex flex-col items-center gap-2 text-xs text-[hsl(0,0%,55%)]">
-                        <ImageOff size={26} aria-hidden="true" /> Imagem indisponível
-                      </span>
-                    )}
+                    <CanonicalCatalogImage
+                      src={image}
+                      alt={"Referência visual de " + model.name}
+                      imageClassName="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.03]"
+                    />
                   </div>
                   <div className="p-3">
                     <p className="line-clamp-2 font-semibold uppercase">{model.name}</p>

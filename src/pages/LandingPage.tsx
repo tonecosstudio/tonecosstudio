@@ -7,7 +7,6 @@ import {
   Zap,
   Eye,
   Trophy,
-  Star,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +17,7 @@ import {
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
 import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
+import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
@@ -294,13 +294,11 @@ export default function LandingPage() {
                   <Link key={model.id} to={catalogModelDetailsPath(model.slug)} className="group block" aria-label={"Ver detalhes de " + model.name}>
                     <ArcadeCard>
                       <div className="aspect-[3/4] overflow-hidden bg-[hsl(0,0%,8%)]">
-                        {imageUrl ? (
-                          <img src={imageUrl} alt={"Referência visual de " + model.name} className="h-full w-full object-contain p-2 opacity-85 transition-transform duration-500 group-hover:scale-[1.03] group-hover:opacity-100" loading="lazy" decoding="async" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <Star className="h-6 w-6 text-[hsl(0,0%,25%)]" aria-hidden="true" />
-                          </div>
-                        )}
+                        <CanonicalCatalogImage
+                          src={imageUrl}
+                          alt={"Referência visual de " + model.name}
+                          imageClassName="h-full w-full object-contain p-2 opacity-85 transition-transform duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
+                        />
                       </div>
                       <div className="p-2.5">
                         <p className="line-clamp-2 font-mono text-[9px] uppercase tracking-wider text-[hsl(0,0%,80%)]">{model.name}</p>

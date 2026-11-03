@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, ImageOff, Search, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search, X } from "lucide-react";
+import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import {
   MAX_CANONICAL_SELECTION,
   toggleCanonicalSelection,
@@ -40,20 +41,11 @@ function ModelCover({
   const url = mediaUrl(model.coverStorageKey);
   return (
     <div className="flex aspect-[3/4] items-center justify-center overflow-hidden bg-[hsl(0,0%,9%)]">
-      {url ? (
-        <img
-          src={url}
-          alt={"Imagem de referência: " + model.name}
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.025]"
-        />
-      ) : (
-        <span className="flex flex-col items-center gap-2 text-[hsl(0,0%,56%)]">
-          <ImageOff aria-hidden="true" size={26} strokeWidth={1.4} />
-          <span className="text-xs">Imagem indisponível</span>
-        </span>
-      )}
+      <CanonicalCatalogImage
+        src={url}
+        alt={"Imagem de referência: " + model.name}
+        imageClassName="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.025]"
+      />
     </div>
   );
 }

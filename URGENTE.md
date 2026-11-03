@@ -30,6 +30,18 @@
 
 ---
 
+## Imagens resilientes do catálogo — 03/11/2026
+
+- **Baseline comprovada:** `444722fc73fb38b672d50565c5d7d4c853425b4d`, branch `integration/tonecosstudio-canonical-20261101`, Vercel preview `dpl_FYGCpEkqRmNQ4DGgsQh2JX92k8ah` READY e status SUCCESS, `release:verify` concluído. Continua NO-GO de lançamento e main inalterada.
+- **Falha de UX encontrada:** Home, /modelos, Universe e ficha/galeria tratavam a ausência de `cover_storage_key`, mas quando um URL existente falhava ao carregar a imagem, aparecia o ícone nativo de imagem quebrada. Isso é particularmente relevante na vitrine pública de um acervo com milhares de referências.
+- **Correção canônica:** componente compartilhado `CanonicalCatalogImage`, que preserva os estilos existentes e troca qualquer imagem com `onError` por `Imagem indisponível` (ou `Sem prévia` no thumbnail); ao trocar o URL de um modelo ou imagem selecionada, apresenta o novo URL sem estado antigo contaminado. Aplicado à Home, /modelos, Universe, capa principal e thumbnails da ficha. Nenhuma consulta nova de Worker, D1 ou Supabase. Nenhum segundo media client ou fallback para acervo legado.
+- **Testes novos:** falha de carregamento, troca de URL após falha e ausência total de mídia. `release:verify` do novo SHA deve comprovar lint, typecheck, cobertura, auditorias e build. Não tratar somente unit tests como aprovação do projeto.
+- **Teste visual externo:** Chrome headless em Windows foi redirecionado à autenticação Vercel. Acessar conteúdo via `web_fetch_vercel_url` confirmou resposta HTML e API, mas não autentica o navegador real para QA visual. Não desativar Deployment Protection. Mobile/desktop real continua pendente.
+- **next_action:** obter o gate completo same-SHA e, com acesso apropriado ao preview protegido, homologar visualmente desktop/mobile; isolar os domínios OrdaX antes de qualquer promoção.
+- **do_not_repeat:** sem varredura D1, sem reintrodução de Supabase models no frontend, sem redesenho, sem novos PRs e sem mudança na main/prod.
+
+---
+
 ## Continuidade de 03/11/2026 — paginação fail-closed
 
 - **Baseline anterior:** `a5daae89b9488dd5351777aaf55d14f9b790d7ff` na branch de integração. `main` preservada.
