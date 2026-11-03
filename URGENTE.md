@@ -53,6 +53,18 @@
 
 ---
 
+## Verificação visual real e capas do Universo — 03/11/2026
+
+- **Gate `53ff8fed810598c8118c9c6607cf7efe6c3e0708` (último READY):** preview `dpl_DSg9HW7HmvdA6yWdGZkdhuqKMLez` READY, `release:verify` passou com auditoria final `found 0 vulnerabilities`. `main` e produção intocadas.
+- **Navegador físico/real:** Chrome headless no Windows `DESKTOP-4UFL03B`, preview protegido acessado por link temporário da Vercel, sem desativar Deployment Protection. DOM desktop apresentou cards com imagens publicadas. Emulação CDP de mobile `390×844`: `innerWidth=390`, `scrollWidth=390` (sem overflow), 24 cards reais, 24 fontes `/catalogo-api/media/`, 6 imagens já carregadas (lazy) e 0 falhas entre essas imagens. Screenshot local temporário fora do Git; sem expor link de acesso. O Chrome CLI headless sem CDP impôs largura mínima de 500px e produziu um falso recorte, descartado após validação.
+- **Falha remanescente encontrada:** /universo usava `<img>` cru nas capas de categorias/franquias. URLs existentes que retornassem erro exibiam o ícone quebrado do navegador, enquanto cards de modelos já usavam `CanonicalCatalogImage`.
+- **Correção neste commit:** /universo passa a reutilizar `CanonicalCatalogImage` com suporte a `fallbackIcon` personalizável, preservando os ícones Gold `FolderOpen` e `ImageOff` anteriores e sem redesenho. Falha de mídia não gera consulta adicional ao gateway; capa ausente continua com o ícone visual original.
+- **Regressões:** falha de imagem em categorias/franquias mantém links navegáveis, testes unitários para ícone de fallback, e exatamente uma consulta limitada por rota nos testes. `release:verify` deste novo SHA deve passar antes de qualquer GO.
+- **Próximos bloqueios:** teste completo de fluxo comercial em staging isolado, limpeza segura das associações de domínios OrdaX no projeto Vercel e homologação editorial; sem `main`/produção.
+- **do_not_repeat:** não alterar componentes Arcade globais só por falso recorte de viewport, não retirar proteção do preview, não varrer D1, não criar segundo catálogo Supabase.
+
+---
+
 ## Paginação da vitrine protegida contra ciclos multi-página — 03/11/2026
 
 - **Problema funcional:** o gateway já rejeitava a devolução do mesmo `nextCursor` de uma requisição, mas um ciclo `A → B → A` atravessando páginas diferentes ainda podia repetir os resultados indefinidamente na UI.

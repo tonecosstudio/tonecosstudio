@@ -19,6 +19,7 @@ const rootFranchises = Array.from({ length: 24 }, (_, i) => ({
   label: "Franquia " + (i + 1),
   count: 6,
   category: "originais",
+  ...(i === 0 ? { cover_storage_key: "media/franquia-1/card.webp" } : {}),
 }));
 
 function setupFetch() {
@@ -29,7 +30,7 @@ function setupFetch() {
     calls.push(url);
     if (url.pathname.endsWith("/api/categories")) {
       return Response.json({
-        items: [{ id: "originais", label: "Originais", count: 150 }],
+        items: [{ id: "originais", label: "Originais", count: 150, cover_storage_key: "media/originais/card.webp" }],
       });
     }
     if (url.pathname.endsWith("/api/franchises")) {
@@ -103,6 +104,29 @@ describe("Tonecos canonical Universe discovery", () => {
     fireEvent.click(screen.getByRole("link", { name: "Limpar busca" }));
     await screen.findByText("Franquia 24");
     expect(calls).toHaveLength(2); // React Query reuses the first page.
+  });
+
+  it("keeps a category navigable after its published cover fails", async () => {
+    const calls = setupFetch();
+    await renderUniverse("/universo");
+    const cover = await screen.findByRole("img", { name: "Prévia de Originais" });
+    fireEvent.error(cover);
+    expect(screen.queryByRole("img", { name: "Prévia de Originais" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Originais/ })).toHaveAttribute("href", "/universo/originais");
+    expect(calls).toHaveLength(1);
+  });
+
+  it("keeps a franchise navigable after its published cover fails", async () => {
+    const calls = setupFetch();
+    await renderUniverse("/universo/originais");
+    const cover = await screen.findByRole("img", { name: "Prévia de Franquia 1" });
+    fireEvent.error(cover);
+    expect(screen.queryByRole("img", { name: "Prévia de Franquia 1" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Franquia 1/ })).toHaveAttribute(
+      "href",
+      "/universo/originais/franquia-1",
+    );
+    expect(calls).toHaveLength(1);
   });
 
   it("blocks short direct-link searches before any Worker request", async () => {

@@ -35,6 +35,20 @@ describe("CanonicalCatalogImage", () => {
     expect(screen.queryByText("Imagem indisponível")).not.toBeInTheDocument();
   });
 
+  it("uses an existing category or franchise icon after a broken cover", () => {
+    render(
+      <CanonicalCatalogImage
+        src="/catalogo-api/media/franchise.webp"
+        alt="Prévia de franquia"
+        fallbackIcon={<span>Ícone da franquia</span>}
+        fallbackLabel=""
+      />,
+    );
+    fireEvent.error(screen.getByRole("img", { name: "Prévia de franquia" }));
+    expect(screen.getByText("Ícone da franquia")).toBeInTheDocument();
+    expect(screen.queryByText("Imagem indisponível")).not.toBeInTheDocument();
+  });
+
   it("does not render an empty image request when media is absent", () => {
     const { container } = render(
       <CanonicalCatalogImage src={null} alt="" fallbackLabel="Sem prévia" />,

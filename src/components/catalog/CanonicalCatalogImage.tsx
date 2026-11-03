@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ImageOff } from "lucide-react";
 
 type CanonicalCatalogImageProps = {
@@ -7,6 +7,7 @@ type CanonicalCatalogImageProps = {
   imageClassName?: string;
   fallbackClassName?: string;
   fallbackLabel?: string;
+  fallbackIcon?: ReactNode;
   loading?: "eager" | "lazy";
 };
 
@@ -21,6 +22,7 @@ export function CanonicalCatalogImage({
   imageClassName = "h-full w-full object-contain",
   fallbackClassName = "flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center text-xs text-[hsl(0,0%,56%)]",
   fallbackLabel = "Imagem indisponível",
+  fallbackIcon,
   loading = "lazy",
 }: CanonicalCatalogImageProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -39,8 +41,8 @@ export function CanonicalCatalogImage({
   }
   return (
     <span className={fallbackClassName}>
-      <ImageOff size={26} strokeWidth={1.4} aria-hidden="true" />
-      <span>{fallbackLabel}</span>
+      {fallbackIcon ?? <ImageOff size={26} strokeWidth={1.4} aria-hidden="true" />}
+      {fallbackLabel ? <span>{fallbackLabel}</span> : null}
     </span>
   );
 }

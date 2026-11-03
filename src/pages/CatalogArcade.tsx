@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowRight, FolderOpen, ImageOff } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
+import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import {
   ArcadeCard,
   ArcadeHero,
@@ -217,11 +218,14 @@ export default function CatalogArcade() {
                   {franchises.map((franchise) => (
                     <ArcadeCard key={franchise.category + "/" + franchise.id}>
                       <Link className="group flex min-h-44 flex-col gap-4 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + themeKey + "/" + franchise.id}>
-                        {franchise.coverStorageKey && gateway.mediaUrl(franchise.coverStorageKey) ? (
-                          <img src={gateway.mediaUrl(franchise.coverStorageKey)!} alt={"Prévia de " + franchise.label} loading="lazy" decoding="async" className="h-24 w-full object-contain" />
-                        ) : (
-                          <FolderOpen className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
-                        )}
+                        <CanonicalCatalogImage
+                          src={gateway.mediaUrl(franchise.coverStorageKey ?? null)}
+                          alt={"Prévia de " + franchise.label}
+                          imageClassName="h-24 w-full object-contain"
+                          fallbackClassName="flex items-start"
+                          fallbackIcon={<FolderOpen className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />}
+                          fallbackLabel=""
+                        />
                         <span className="line-clamp-2 font-semibold uppercase">{franchise.label}</span>
                         <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
                           {franchise.count} modelos <ArrowRight size={16} aria-hidden="true" />
@@ -246,11 +250,14 @@ export default function CatalogArcade() {
               {categories.map((category) => (
                 <ArcadeCard key={category.id}>
                   <Link className="group flex min-h-44 flex-col gap-4 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={category.id === "all" ? modelsPath() : PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(category.id)}>
-                    {category.coverStorageKey && gateway.mediaUrl(category.coverStorageKey) ? (
-                      <img src={gateway.mediaUrl(category.coverStorageKey)!} alt={"Prévia de " + category.label} loading="lazy" decoding="async" className="h-24 w-full object-contain" />
-                    ) : (
-                      <ImageOff className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
-                    )}
+                    <CanonicalCatalogImage
+                      src={gateway.mediaUrl(category.coverStorageKey ?? null)}
+                      alt={"Prévia de " + category.label}
+                      imageClassName="h-24 w-full object-contain"
+                      fallbackClassName="flex items-start"
+                      fallbackIcon={<ImageOff className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />}
+                      fallbackLabel=""
+                    />
                     <span className="line-clamp-2 font-semibold uppercase">{category.label}</span>
                     <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
                       {category.count} modelos <ArrowRight size={16} aria-hidden="true" />
