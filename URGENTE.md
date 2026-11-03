@@ -6,6 +6,17 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Identidade interna dos manifestos npm — 03/11/2026
+
+- **Baseline validada:** `fd983ed65754d70f171677129ee5eb4082e33365` atingiu `READY` no preview Vercel (build `dpl_DjhG6iQTN7tA4nTtYfNTnDSAT1Wa`). `/favicon.svg` e `/image-fallback.svg` responderam HTTP 200, com Content-Type SVG e sem a marca antiga; `/og-image.png` ainda não existe e cai no fallback HTML da SPA. Não anunciar card social final antes de adicionar imagem real.
+- **Causa:** o pacote npm e os dois registros raiz de `package-lock.json` usavam `ordax-web`, apesar do repositório/produto `tonecosstudio`.
+- **Correção:** renomear somente a identidade do pacote para `tonecosstudio` em `package.json` e no lockfile, sem alterar versões, dependências, scripts, árvore de dependências nem conexão do repositório Vercel. Regressão verifica igualdade dos três valores de nome nos manifestos.
+- **Aprovação:** este commit exige `release:verify` completo e preview `READY` no mesmo SHA. Ainda não promover para produção.
+- **next_action:** consolidar arte social Tonecos em imagem real + metatags adequadas quando domínio oficial for definido; QA desktop/mobile com preview protegido; isolar aliases OrdaX no projeto legado com ferramenta de remoção apropriada.
+- **do_not_repeat:** não criar segunda instalação/projeto, não publicar antes de gate comercial, não consultar D1 nem tocar DNS OrdaX.
+
+---
+
 ## Identidade visual dos ativos públicos — 03/11/2026
 
 - **Baseline:** branch `integration/tonecosstudio-canonical-20261101` em `1cfdcab68fb360f7b3b4f4673d2b04386924cf68`; últimos previews dessa branch publicados no projeto `tonecosstudio`, com proteção de preview via SSO.

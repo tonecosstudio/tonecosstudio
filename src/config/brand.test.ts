@@ -48,6 +48,18 @@ it("uses only Tonecos visual assets for public pages and browser notifications",
   expect(existsSync(resolve(process.cwd(), "public/og-image.png"))).toBe(false);
 });
 
+it("keeps the npm package identity canonical across both manifests", () => {
+  const pkg = JSON.parse(
+    readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
+  ) as { name: string };
+  const lock = JSON.parse(
+    readFileSync(resolve(process.cwd(), "package-lock.json"), "utf8"),
+  ) as { name: string; packages: { "": { name: string } } };
+  expect(pkg.name).toBe("tonecosstudio");
+  expect(lock.name).toBe(pkg.name);
+  expect(lock.packages[""].name).toBe(pkg.name);
+});
+
 it("routes model discovery to the canonical gateway and preserves shareable links", () => {
   const page = readFileSync(
     resolve(process.cwd(), "src/pages/CatalogModelsArcade.tsx"),
