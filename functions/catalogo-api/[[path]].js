@@ -25,7 +25,7 @@ function isSafeMediaPath(path) {
     try {
       const decoded = decodeURIComponent(segment);
       return decoded !== "." && decoded !== ".." &&
-        !/[\\/\x00-\x1f\x7f]/.test(decoded);
+        !/[\\/\x00-\x1f\x7f%:?#]/.test(decoded);
     } catch {
       return false;
     }

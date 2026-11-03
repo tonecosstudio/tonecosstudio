@@ -62,6 +62,8 @@ test("admin and unknown endpoints or unsafe media fail closed", async () => {
     "api/admin", "api/quotes", "api/models", "api/models/model-one/publish",
     "api/models/%2e%2e", "media/a%2fb.webp", "media/a%5cb.webp",
     "media/a%00b.webp", "media/%zz.webp", "media/%2e%2e%2fprivate.webp",
+    "media/%252e%252e%252fsecret.webp", "media/%252e%252e%255csecret.webp",
+    "media/images/%252fsecret.webp", "media/images/%253asecret.webp",
     "unknown", "api/catalog/extra",
   ]) {
     const io = mockFetch();
