@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Correção do gate Arcade Lab — 03/11/2026
+
+- **CI do SHA `87038a1bd5de5873c9a895dc613a5fdf6c770490`:** `release:verify` chegou a 3.252 testes aprovados, 32 ignorados e 1 falho; falha única em `ArcadeLab.test.tsx`, asserção `getByRole("img", {name:"10H"})` encontrou dois elementos, como deve ocorrer no layout que mostra miniatura + modelo selecionado.
+- **Conserto:** o teste agora exige exatamente duas imagens com o mesmo `src` canônico de `/catalogo-api/media/...`. Preserva prova de que os dois lugares não usam assets legados. Nenhuma alteração de implementação, preços, dados, controles ou rotas.
+- **Validação:** o gate completo deste commit é obrigatório antes de afirmar PASS. Sem builds simultâneos, sem varreduras D1.
+- **Produção:** Vercel `main` `fdd2992a...` tem deploy ERROR causado pelo antigo teste `BusinessDayService` que comparava `Date.now()`; essa falha já foi corrigida apenas na branch canônica. A última produção READY anterior mantém alias `ordax-three.vercel.app`; sem troca de tráfego, promoção ou alteração DNS.
+- **Proteção do preview verificada:** `VITE_PREVIEW_READ_ONLY=true` e `VITE_UPLOAD_SECURITY_FAIL_CLOSED=true` na branch, embora controles de navegador não substituam fronteiras de servidor.
+- **next_action:** confirmar `release:verify` neste SHA, inspecionar UX desktop/mobile autenticada em preview e isolar domínios antes de promover.
+- **do_not_repeat:** não enfraquecer asserts, não duplicar imagens, não consultar todas as páginas do Worker, não editar main/produção.
+
+---
+
 ## Checkpoint 03/11/2026 — prova HTTP Vercel e Arcade Lab canônico
 
 - **Baseline:** `5781d1f43662d2ff9d189745fec976418dfcebe4` na branch exclusiva, preview Vercel `dpl_G7Yakm7ucvRvb9SR3enFePkaFg7J` READY, `release:verify` finalizado e auditoria de dependências de produção `found 0 vulnerabilities`. Sem mudanças de main/prod.

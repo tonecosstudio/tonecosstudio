@@ -143,10 +143,16 @@ describe("Arcade Lab", () => {
     expect(
       screen.getByRole("link", { name: /Ver ficha do modelo/ }),
     ).toHaveAttribute("href", "/modelos/nier-10h-nier");
-    expect(screen.getByRole("img", { name: "10H" })).toHaveAttribute(
-      "src",
-      "/catalogo-api/media/mdl-1/card.webp",
-    );
+    // The same canonical image appears in both the roster thumbnail and
+    // the selected-model panel. Both must point to the official media proxy.
+    const modelImages = screen.getAllByRole("img", { name: "10H" });
+    expect(modelImages).toHaveLength(2);
+    for (const image of modelImages) {
+      expect(image).toHaveAttribute(
+        "src",
+        "/catalogo-api/media/mdl-1/card.webp",
+      );
+    }
     expect(screen.getByText("Modelo do acervo publicado")).toBeInTheDocument();
     expect(catalog.listPage).toHaveBeenCalledOnce();
     expect(catalog.listPage).toHaveBeenCalledWith(
