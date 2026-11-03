@@ -6,6 +6,16 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Correção pontual do teste de contato — 03/11/2026
+
+- **Falha de CI em `1816f1f2af2f91cdb6e1ad014ce9937c751508a3`:** Vercel `dpl_FFCWktmC2Asw8nuoUwYWhVzuWqoF` ERROR, `test:coverage` com **3.277 testes aprovados, 32 ignorados e 1 falho (3310)**. A única falha foi `ContactArcade.test.tsx:72`: `screen.getByRole("status")` encontrou mais de um elemento de status no DOM. O aviso de login existe e aparece corretamente; o teste estava pouco específico. `ArcadeLayout.navigation.test.ts` passou.
+- **Correção:** buscar o heading exato `Atendimento pela sua conta` e verificar o contêiner `role="status"` mais próximo. Preserva verificação da UX de visitante e demais casos de envio, erro e sessão expirada. Nenhum ajuste no produto nem redução de threshold.
+- **Gate:** `release:verify` completo obrigatório no SHA seguinte. A métrica de funções só pode ser considerada aprovada após sua medição explícita; sem heurística.
+- **next_action:** conferir o novo preview até READY ou causa real; manter produção e Cloudflare intocadas.
+- **do_not_repeat:** não usar `getByRole("status")` sem escopo em telas com múltiplos status, não baixar a cobertura, não duplicar builds simultâneos.
+
+---
+
 ## Correção causal de cobertura sem afrouxar o gate — 03/11/2026
 
 - **Falha confirmada:** no commit `10b4d37ce49167b8a85e3d16702518e8710440d1`, `test:coverage` terminou com **3.273 aprovados, 32 ignorados e 0 falhas**, mas `functions=69.76%` abaixo de 70%; o pipeline falhou fechado. Não foi erro de rede, pacote ou D1.

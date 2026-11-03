@@ -69,8 +69,11 @@ beforeEach(() => {
 describe("Tonecos public contact entry", () => {
   it("prompts guests to authenticate before collecting a support message", () => {
     mount();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Atendimento pela sua conta",
+    const guestHeading = screen.getByRole("heading", {
+      name: "Atendimento pela sua conta",
+    });
+    expect(guestHeading.closest('[role="status"]')).toHaveTextContent(
+      "Para enviar uma mensagem ao suporte",
     );
     expect(
       screen.getByRole("link", { name: "Entrar para enviar mensagem" }),
