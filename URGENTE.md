@@ -6,6 +6,16 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Cloudflare Pages — Access e teste de proxy no Node 24 — 03/11/2026
+
+- Access habilitado e verificado na conta Cloudflare da Tonecos. Aplicação `tonecosstudio - Cloudflare Pages` protege `*.tonecosstudio.pages.dev`; política `Allow Members - Cloudflare Pages` permite o e-mail institucional Tonecos. Isso cobre previews, não o domínio principal `tonecosstudio.pages.dev`.
+- O adaptador `functions/catalogo-api/[[path]].js` foi testado fisicamente em `DESKTOP-4UFL03B` com Node `v24.22.2`: **9/9 testes passaram** após corrigir uma expectativa de teste sobre normalização feita pelo padrão URL (o caminho `media/.hidden/../private.webp` já chega normalizado). O teste agora cobre tentativa codificada `media/%2e%2e%2fprivate.webp`, que permanece bloqueada antes de contatar o Worker.
+- O Pages registrou previews da branch atual, ainda sem build concluído; produção automática desativada. Não declarar GO, não habilitar acesso público ou registro real sem gate completo, homologação de dados, browser QA e segurança do Supabase Tonecos.
+- **next_action:** build único controlado da branch protegida, verificar logs e teste HTTP de assets e Pages Function, depois seguir homologação isolada do Supabase e da publicação.
+- **do_not_repeat:** não consultar D1, não tocar na `main`, domínios e Vercel OrdaX, não duplicar repositório nem iniciar builds concorrentes.
+
+---
+
 ## Cloudflare Pages — metadados sociais e proteção de preview — 03/11/2026
 
 - Gerador social canônico atualizado para reconhecer `CF_PAGES`, `CF_PAGES_BRANCH` e `CF_PAGES_URL`. Apenas URLs HTTPS de preview em `*.tonecosstudio.pages.dev` recebem imagem OG/Twitter absoluta; a produção `main` exige `TONECOS_PUBLIC_ORIGIN` explícito. O fluxo Vercel continua preservado.
