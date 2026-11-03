@@ -1,11 +1,16 @@
 import { PropsWithChildren } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
-import { loginReturnToPath } from "@/config/routes";
+import { PUBLIC_ROUTES, loginReturnToPath } from "@/config/routes";
 
 export default function RequireAuth({ children }: PropsWithChildren) {
   const location = useLocation();
   const { user, isLoading } = useAuth();
+  const previewReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+
+  if (previewReadOnly) {
+    return <Navigate to={PUBLIC_ROUTES.catalogModels} replace />;
+  }
 
   // Não renderizar nada durante o loading inicial para evitar flash
   if (isLoading) {

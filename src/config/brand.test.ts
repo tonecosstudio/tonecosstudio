@@ -64,6 +64,17 @@ it("keeps account entry points honest in read-only preview and signup journeys",
   expect(auth).toContain("emailConfirmationRequired: !data.session");
 });
 
+it("keeps preview-only routes isolated from stale account sessions", () => {
+  const auth = readFileSync(resolve(process.cwd(), "src/components/RequireAuth.tsx"), "utf8");
+  const admin = readFileSync(resolve(process.cwd(), "src/components/RequireAdmin.tsx"), "utf8");
+  const nav = readFileSync(resolve(process.cwd(), "src/components/arcade/ArcadeNav.tsx"), "utf8");
+  const sync = readFileSync(resolve(process.cwd(), "src/hooks/useAuthProfileSync.ts"), "utf8");
+  expect(auth).toContain("previewReadOnly");
+  expect(admin).toContain("enabled: !previewReadOnly");
+  expect(nav).toContain("visibleUser = PREVIEW_READ_ONLY ? null : user");
+  expect(sync).toContain('VITE_PREVIEW_READ_ONLY === "true"');
+});
+
 it("uses only Tonecos visual assets for public pages and browser notifications", () => {
   const html = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
   const icon = readFileSync(resolve(process.cwd(), "public/favicon.svg"), "utf8");

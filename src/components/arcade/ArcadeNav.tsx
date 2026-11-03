@@ -37,11 +37,16 @@ export function ArcadeNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { data: isAdmin } = useCurrentUserIsAdmin({ currentUserId: user?.id });
+  // Read-only previews never reveal private controls from persisted sessions.
+  const visibleUser = PREVIEW_READ_ONLY ? null : user;
+  const { data: isAdmin } = useCurrentUserIsAdmin({
+    currentUserId: visibleUser?.id,
+    enabled: !PREVIEW_READ_ONLY,
+  });
   const { data: balanceData, isLoading: balanceLoading } = useCoinsBalance(
-    user?.id,
+    visibleUser?.id,
     {
-      enabled: !!user,
+      enabled: !!visibleUser,
     },
   );
   const userBalance = balanceData?.balance ?? 0;
@@ -84,13 +89,13 @@ export function ArcadeNav() {
               {link.label}
             </Link>
           ))}
-          {user &&
+          {visibleUser &&
             authNavLinks.map((link) => (
               <Link key={link.to} to={link.to} className={linkClass(link.to)}>
                 {link.label}
               </Link>
             ))}
-          {isAdmin && (
+          {!PREVIEW_READ_ONLY && isAdmin && (
             <Link
               to={ADMIN_ROUTES.home}
               className="font-mono text-[10px] uppercase tracking-[0.2em] text-red-500 transition-colors hover:text-red-400"
@@ -101,7 +106,7 @@ export function ArcadeNav() {
         </div>
 
         <div className="flex items-center gap-3">
-          {user && (
+          {visibleUser && (
             <button
               onClick={() => navigate(AUTH_ROUTES.notifications)}
               className="relative text-[hsl(0,0%,55%)] transition-colors hover:text-[hsl(var(--gold-accent))]"
@@ -110,10 +115,10 @@ export function ArcadeNav() {
               <Bell className="h-4 w-4" />
             </button>
           )}
-          {user && (
+          {visibleUser && (
             <CoinCounter balance={userBalance} isLoading={balanceLoading} />
           )}
-          {!user && !PREVIEW_READ_ONLY && (
+          {!visibleUser && !PREVIEW_READ_ONLY && (
             <button
               onClick={() => navigate(PUBLIC_ROUTES.login)}
               className="border border-[hsl(var(--gold-accent)/0.4)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.1)]"
@@ -121,7 +126,7 @@ export function ArcadeNav() {
               ENTRAR
             </button>
           )}
-          {!user && !PREVIEW_READ_ONLY && (
+          {!visibleUser && !PREVIEW_READ_ONLY && (
             <Link
               to={`${PUBLIC_ROUTES.login}?mode=signup`}
               className="hidden sm:inline-flex min-h-10 items-center border border-[hsl(var(--gold-accent)/0.4)] px-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]"
@@ -161,7 +166,7 @@ export function ArcadeNav() {
               {link.label}
             </Link>
           ))}
-          {!user && !PREVIEW_READ_ONLY && (
+          {!visibleUser && !PREVIEW_READ_ONLY && (
             <Link
               to={`${PUBLIC_ROUTES.login}?mode=signup`}
               onClick={() => setMobileOpen(false)}
@@ -170,7 +175,7 @@ export function ArcadeNav() {
               CRIAR CONTA
             </Link>
           )}
-          {user &&
+          {visibleUser &&
             authNavLinks.map((link) => (
               <Link
                 key={link.to}
@@ -181,7 +186,7 @@ export function ArcadeNav() {
                 {link.label}
               </Link>
             ))}
-          {user && (
+          {visibleUser && (
             <Link
               to={AUTH_ROUTES.notifications}
               onClick={() => setMobileOpen(false)}
@@ -190,7 +195,7 @@ export function ArcadeNav() {
               NOTIFICACOES
             </Link>
           )}
-          {isAdmin && (
+          {!PREVIEW_READ_ONLY && isAdmin && (
             <Link
               to={ADMIN_ROUTES.home}
               onClick={() => setMobileOpen(false)}

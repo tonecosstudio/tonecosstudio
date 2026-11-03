@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## MVP — isolamento de sessões antigas no preview — 03/11/2026
+
+- **Baseline:** `d021f9e2463e155477e20b1ecc80714e45b13f8b` teve Vercel `READY`; o preview estável foi atualizado para esse deploy. Home, modelos, contato e login responderam HTTP 200, `og-image.png` HTTP 200 `image/png`, favicon SVG válido. Uma página pequena de catálogo via proxy respondeu 200 com um item e cursor; sem varredura.
+- **Achado:** RequireAuth e RequireAdmin dependiam somente de sessão e papel. Mesmo em `VITE_PREVIEW_READ_ONLY=true`, uma sessão armazenada poderia abrir rotas privadas e renderizar menu com Conta/Admin/Coins/Notificações. O sincronizador do perfil também iniciava mesmo em preview.
+- **Correção:** guards existentes redirecionam previews diretamente a `/modelos`; consulta de papel desabilitada em preview; menu usa `visibleUser` somente no ambiente comercial e não consulta saldo ou papel em preview; perfil não inicia sincronizador no modo só leitura. Regras server-side/RLS permanecem autoridade de segurança.
+- **Regressão:** seis testes React cobrem modos preview/comercial, sessões antigas e prevenção do sincronizador; regressão estática garante guardas e menu. Novo `release:verify` completo obrigatório no SHA novo, sem suprimir testes.
+- **Bloqueios:** MVP com usuários reais requer auditoria de RLS, SMTP, redirects, auth e perfil no Supabase Tonecos; projeto disponível no conector ainda não inclui essa autoridade. Separar domínios antigos OrdaX do Vercel e homologar QA visual desktop/mobile.
+- **next_action:** gate CI/preview READY no SHA final, smoke dos caminhos protegidos e eventual atualização somente do alias preview. Manter main/produção NO-GO até conclusão dos gates comerciais.
+- **do_not_repeat:** não abrir cadastro no preview, não criar segundo backend, não consultar Cloudflare D1, não tocar OrdaX nem gerar builds paralelos.
+
+---
+
 ## Correção de gate do MVP — contato em preview somente leitura — 03/11/2026
 
 - **Falha reproduzida no CI:** `5fd73a460ed2f99e7725d80e9b263a7a6bd8efcf` terminou `ERROR` na Vercel; `release:verify` teve 1 teste falho, 3291 aprovados e 32 ignorados. Falhou `src/pages/ContactArcade.test.tsx` ao esperar o texto comercial `Atendimento pela sua conta` enquanto o preview usa `VITE_PREVIEW_READ_ONLY=true` e apresenta `CONTATO EM PREPARAÇÃO`. A Vercel não deve promover SHA com gate falho.

@@ -3,6 +3,7 @@ import { subscribeToAuthProfileSync } from "@/services/auth/auth-profile-sync-se
 
 export function useAuthProfileSync() {
   useEffect(() => {
+    if (import.meta.env.VITE_PREVIEW_READ_ONLY === "true") return;
     return subscribeToAuthProfileSync();
   }, []);
 }
