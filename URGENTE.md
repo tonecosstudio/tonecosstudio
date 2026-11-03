@@ -6,6 +6,20 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## MVP público com usuários — primeira etapa de contas — 03/11/2026
+
+- **Objetivo explícito:** disponibilizar o Tonecos Studio como MVP incremental para pessoas reais, reutilizando autenticação existente sem criar segundo backend de usuários e sem aguardar recursos avançados de coleções, moedas, pedidos e pagamentos.
+- **Baseline:** `61f89733fe9bb56891957015c9d8ab1902811c84`, Vercel preview `READY` e alias estável atualizado para ele. `main` permanece protegida; os três aliases OrdaX herdados ainda estão configurados no projeto Tonecos.
+- **MVP público candidato:** Home, universo, modelos/fichas, páginas institucionais e autenticação básica existente. Compras/pagamentos não entram no GO apenas porque o front-end possui rotas.
+- **Contas:** exibir `CRIAR CONTA` no menu para visitantes quando o ambiente permite autenticação; aceitar `/login?mode=signup`; manter o mesmo cliente e serviço Supabase. Mostrar confirmação por e-mail quando `signUp` não retorna sessão; nunca garantir que a conta existe em respostas anti-enumeração. Em preview read-only, login/cadastro retorna explicação e link ao catálogo, sem formulário que falharia com 403.
+- **Marca e transparência:** corrigir referência `Ordax` no login, Termos e Privacidade; remover prazo comercial fixo não atestado dos Termos e promessa não verificada de monitoramento 24/7 na Privacidade. Conteúdo jurídico restante requer revisão do responsável antes de GO.
+- **Segurança do MVP:** conexão Supabase disponível neste chat mostra apenas `ordax-platform`, **não** o projeto de autenticação Tonecos. Portanto não foram inspecionadas configurações de confirmação de e-mail, allowlist de redirect, SMTP, CAPTCHA, RLS, políticas de perfil e signup, nem operações reais de clientes. Não testar registro real com credenciais de produção sem acesso e ambiente isolado.
+- **Gates:** testes de fluxo de confirmação na camada `auth-session-service`, branding e Vercel `release:verify` no SHA final; QA visual desktop/mobile e E2E autenticado com conta de teste no backend Tonecos ainda pendentes. Preview `READY` sozinho não equivale a MVP público.
+- **next_action:** confirmar SHA final e preview; testar inscrição, confirmação, login e perfil em backend Tonecos isolado; confirmar URL pública Tonecos, separar aliases OrdaX e homologar política legal e RLS antes de abrir o MVP a usuários reais.
+- **do_not_repeat:** não criar projeto Supabase alternativo, não testar com usuários existentes, não ativar pagamentos/cadastro no preview de leitura, não repontar produção OrdaX, não consultar Cloudflare D1, não abrir branch/PR duplicada.
+
+---
+
 ## Isolamento do bootstrap Cloudflare legado — 03/11/2026
 
 - **Baseline validada:** commit `14ea548ff744bcdad9c396162a32a4e0a6420d40` alcançou Vercel `READY`, `release:verify` terminou, `npm audit` reportou 0 vulnerabilidades de produção, e preview inicial + imagem social responderam HTTP 200. Alias de preview da Tonecos repontado para esse commit, sem promover `main`.

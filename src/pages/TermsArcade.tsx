@@ -18,7 +18,7 @@ export default function TermsArcade() {
       num: "01",
       title: "Aceitação dos Termos",
       icon: <Shield className="w-4 h-4" />,
-      content: "Ao acessar e usar a plataforma Ordax, operada pela Tonecos Studios, você concorda em cumprir e estar vinculado aos seguintes termos e condições de uso.",
+      content: "Ao acessar e usar o site Tonecos Studio, você concorda com os seguintes termos e condições de uso.",
     },
     {
       num: "02",
@@ -36,7 +36,7 @@ export default function TermsArcade() {
       num: "04",
       title: "Produtos e Pedidos",
       icon: <FileText className="w-4 h-4" />,
-      content: "Produtos sob encomenda com preços estimados. Prazo de ~30 dias de produção + envio na segunda quinzena. Pagamento conforme orçamento aprovado.",
+      content: "Produtos sob encomenda: valores, prazos de produção, frete e pagamento são definidos no orçamento aprovado. A navegação no catálogo não confirma pedidos.",
     },
     {
       num: "05",
@@ -80,7 +80,7 @@ export default function TermsArcade() {
   return (
     <Page
       title="Termos de Uso"
-      description="Termos e condições de uso da plataforma Ordax"
+      description="Termos e condições de uso do Tonecos Studio"
       keywords={["termos", "condições", "uso", "legal"]}
     >
       <ArcadeHero

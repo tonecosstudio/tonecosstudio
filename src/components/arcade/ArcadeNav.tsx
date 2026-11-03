@@ -17,6 +17,8 @@ import {
   PUBLIC_ROUTES,
 } from "@/config/routes";
 
+const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+
 const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.home, label: "INICIO" },
   { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
@@ -111,13 +113,26 @@ export function ArcadeNav() {
           {user && (
             <CoinCounter balance={userBalance} isLoading={balanceLoading} />
           )}
-          {!user && (
+          {!user && !PREVIEW_READ_ONLY && (
             <button
               onClick={() => navigate(PUBLIC_ROUTES.login)}
               className="border border-[hsl(var(--gold-accent)/0.4)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.1)]"
             >
               ENTRAR
             </button>
+          )}
+          {!user && !PREVIEW_READ_ONLY && (
+            <Link
+              to={`${PUBLIC_ROUTES.login}?mode=signup`}
+              className="hidden sm:inline-flex min-h-10 items-center border border-[hsl(var(--gold-accent)/0.4)] px-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]"
+            >
+              CRIAR CONTA
+            </Link>
+          )}
+          {PREVIEW_READ_ONLY && (
+            <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(0,0%,55%)]">
+              PRÉVIA
+            </span>
           )}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -146,6 +161,15 @@ export function ArcadeNav() {
               {link.label}
             </Link>
           ))}
+          {!user && !PREVIEW_READ_ONLY && (
+            <Link
+              to={`${PUBLIC_ROUTES.login}?mode=signup`}
+              onClick={() => setMobileOpen(false)}
+              className={`block py-2 ${linkClass(PUBLIC_ROUTES.login)}`}
+            >
+              CRIAR CONTA
+            </Link>
+          )}
           {user &&
             authNavLinks.map((link) => (
               <Link

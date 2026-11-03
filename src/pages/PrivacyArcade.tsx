@@ -18,7 +18,7 @@ export default function PrivacyArcade() {
     { num: "02", title: "Finalidade", icon: <Eye className="w-4 h-4" />, content: "Processar pedidos • Comunicar status • Personalizar experiência • Processar pagamentos • Melhorar serviços • Cumprir obrigações legais" },
     { num: "03", title: "Base Legal", icon: <UserCheck className="w-4 h-4" />, content: "Consentimento expresso • Execução de contrato • Obrigação legal • Legítimo interesse para melhorias e segurança" },
     { num: "04", title: "Compartilhamento", icon: <Users className="w-4 h-4" />, content: "Processadores de pagamento • Serviços de entrega • Provedores de tecnologia • Autoridades (quando exigido). Nunca vendemos seus dados.", highlight: true },
-    { num: "05", title: "Segurança", icon: <Lock className="w-4 h-4" />, content: "Criptografia SSL/TLS • Autenticação segura • Controle de acesso restrito • Monitoramento 24/7 • Backups regulares" },
+    { num: "05", title: "Segurança", icon: <Lock className="w-4 h-4" />, content: "Transmissão HTTPS/TLS, autenticação e controles de acesso. Nenhuma solução tecnológica elimina todos os riscos." },
     { num: "06", title: "Seus Direitos (LGPD)", icon: <UserCheck className="w-4 h-4" />, content: "Confirmação • Acesso • Correção • Anonimização • Portabilidade • Eliminação • Revogação • Oposição", highlight: true },
     { num: "07", title: "Cookies", icon: <Cookie className="w-4 h-4" />, content: "Manter sessão • Lembrar preferências • Analisar uso • Melhorar experiência. Gerencie nas configurações do navegador." },
     { num: "08", title: "Menores", icon: <Baby className="w-4 h-4" />, content: "Plataforma não destinada a menores de 18 anos. Não coletamos dados de menores intencionalmente." },
@@ -29,7 +29,7 @@ export default function PrivacyArcade() {
   return (
     <Page
       title="Política de Privacidade"
-      description="Política de privacidade e proteção de dados da plataforma Ordax"
+      description="Política de privacidade e proteção de dados do Tonecos Studio"
       keywords={["privacidade", "dados", "lgpd", "proteção"]}
     >
       <ArcadeHero

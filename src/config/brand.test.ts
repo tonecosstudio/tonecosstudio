@@ -16,6 +16,9 @@ it("keeps public entry points free of the old OrdaX storefront identity", () => 
   const entryPoints = [
     "index.html",
     "src/pages/LandingPage.tsx",
+    "src/pages/LoginArcade.tsx",
+    "src/pages/TermsArcade.tsx",
+    "src/pages/PrivacyArcade.tsx",
     "src/pages/CatalogArcade.tsx",
     "src/pages/CatalogModelsArcade.tsx",
     "src/components/arcade/ArcadeNav.tsx",
@@ -26,6 +29,27 @@ it("keeps public entry points free of the old OrdaX storefront identity", () => 
     const content = readFileSync(resolve(process.cwd(), sourcePath), "utf8");
     expect(content, sourcePath).not.toMatch(/\bordax\b/i);
   }
+});
+
+it("keeps account entry points honest in read-only preview and signup journeys", () => {
+  const login = readFileSync(
+    resolve(process.cwd(), "src/pages/LoginArcade.tsx"),
+    "utf8",
+  );
+  const nav = readFileSync(
+    resolve(process.cwd(), "src/components/arcade/ArcadeNav.tsx"),
+    "utf8",
+  );
+  const auth = readFileSync(
+    resolve(process.cwd(), "src/services/auth/auth-session-service.ts"),
+    "utf8",
+  );
+  expect(login).toContain('VITE_PREVIEW_READ_ONLY === "true"');
+  expect(login).toContain("CONTAS EM PREPARAÇÃO");
+  expect(login).toContain("emailConfirmationRequired");
+  expect(login).not.toContain("Conta criada!");
+  expect(nav).toContain("?mode=signup");
+  expect(auth).toContain("emailConfirmationRequired: !data.session");
 });
 
 it("uses only Tonecos visual assets for public pages and browser notifications", () => {

@@ -59,6 +59,51 @@ describe("auth-session-service rate limits", () => {
     });
   });
 
+  it("keeps email-confirmation pending separate from an authenticated session", async () => {
+    authMock.signUp.mockResolvedValue({
+      data: { user: { id: "pending-user" }, session: null },
+      error: null,
+    });
+
+    await expect(
+      signUpWithPasswordCredentials({
+        email: " NEW@Example.com ",
+        password: "Aaaaaaaa111!",
+        fullName: "Cliente Tonecos",
+        emailRedirectTo: "https://tonecos.example/login",
+      }),
+    ).resolves.toEqual({ emailConfirmationRequired: true });
+
+    expect(authMock.signUp).toHaveBeenCalledWith({
+      email: "new@example.com",
+      password: "Aaaaaaaa111!",
+      options: {
+        emailRedirectTo: "https://tonecos.example/login",
+        data: { full_name: "Cliente Tonecos" },
+      },
+    });
+  });
+
+  it("recognizes a session returned by signup without another sign-in", async () => {
+    authMock.signUp.mockResolvedValue({
+      data: {
+        user: { id: "user-1" },
+        session: { access_token: "test" },
+      },
+      error: null,
+    });
+
+    await expect(
+      signUpWithPasswordCredentials({
+        email: "cliente@example.com",
+        password: "Aaaaaaaa111!",
+        fullName: "Cliente Tonecos",
+        emailRedirectTo: "https://tonecos.example/login",
+      }),
+    ).resolves.toEqual({ emailConfirmationRequired: false });
+    expect(authMock.signUp).toHaveBeenCalledTimes(1);
+  });
+
   it("blocks repeated signup attempts before calling Supabase again", async () => {
     authMock.signUp.mockResolvedValue({
       error: new Error("User already registered"),

@@ -11,6 +11,9 @@ import {
 import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
 import { PUBLIC_ROUTES, isSafeInAppPath } from "@/config/routes";
 import { AUTH_PASSWORD_POLICY, isPasswordPolicyCompliant } from "@/config/auth";
+import { BRAND_NAME } from "@/config/brand";
+
+const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -35,7 +38,9 @@ export default function LoginArcade() {
     return isSafeInAppPath(raw) ? raw : PUBLIC_ROUTES.home;
   }, [params]);
 
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup">(
+    params.get("mode") === "signup" ? "signup" : "login",
+  );
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const isSignupPasswordValid = mode !== "signup" || isPasswordPolicyCompliant(password);
@@ -73,18 +78,26 @@ export default function LoginArcade() {
       } else {
         const sanitizedName = getSanitizedValue("name");
         const sanitizedPhone = formData.phone.trim() ? getSanitizedValue("phone") : "";
-        await signUpWithPasswordCredentials({
+        const { emailConfirmationRequired } = await signUpWithPasswordCredentials({
           email: sanitizedEmail,
           password,
           fullName: sanitizedName,
           phone: sanitizedPhone || undefined,
           emailRedirectTo: window.location.origin,
         });
-        toast({
-          title: "Conta criada!",
-          description: "Você já pode entrar com seu e-mail e senha.",
-        });
-        setMode("login");
+        if (emailConfirmationRequired) {
+          toast({
+            title: "Confira seu e-mail",
+            description: "Se o cadastro for aceito, você receberá instruções de confirmação no endereço informado.",
+          });
+          setMode("login");
+        } else {
+          toast({
+            title: "Acesso iniciado",
+            description: "Sua conta Tonecos Studio está pronta para uso.",
+          });
+          navigate(next);
+        }
         setPassword("");
       }
     } catch (e) {
@@ -113,10 +126,43 @@ export default function LoginArcade() {
   const inputClass =
     "w-full h-12 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,18%)] text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] font-mono text-sm px-4 focus:outline-none focus:border-[hsl(var(--gold-accent))] focus:shadow-[0_0_10px_hsl(var(--gold-accent)/0.15)] transition-all";
 
+  if (PREVIEW_READ_ONLY) {
+    return (
+      <Page
+        title="Contas em preparação"
+        description="Prévia do catálogo Tonecos Studio, sem autenticação nem operações comerciais."
+        keywords={["tonecos", "catálogo", "prévia"]}
+      >
+        <section className="px-6 py-16 md:py-24">
+          <div className="mx-auto max-w-md">
+            <ArcadeCard>
+              <div role="status" className="p-8 text-center">
+                <Shield className="mx-auto mb-5 h-9 w-9 text-[hsl(var(--gold-accent))]" />
+                <h1 className="mb-4 font-mono text-lg font-bold uppercase tracking-wider text-[hsl(0,0%,95%)]">
+                  CONTAS EM PREPARAÇÃO
+                </h1>
+                <p className="mb-7 font-mono text-sm leading-relaxed text-[hsl(0,0%,65%)]">
+                  Este ambiente é uma prévia do catálogo, somente leitura.
+                  Cadastro, login e operações comerciais não estão disponíveis aqui.
+                </p>
+                <Link
+                  to={PUBLIC_ROUTES.catalogModels}
+                  className="inline-flex min-h-11 items-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]"
+                >
+                  EXPLORAR MODELOS
+                </Link>
+              </div>
+            </ArcadeCard>
+          </div>
+        </section>
+      </Page>
+    );
+  }
+
   return (
     <Page
       title={mode === "login" ? "Entrar" : "Criar Conta"}
-      description="Entre na sua conta Ordax para acessar o sistema."
+      description={`Entre na sua conta ${BRAND_NAME} ou cadastre-se para acompanhar suas solicitações.`}
       keywords={["login", "entrar", "criar conta", "cadastro"]}
     >
       <section className="relative py-16 md:py-24 px-6 overflow-hidden">
@@ -137,7 +183,7 @@ export default function LoginArcade() {
               className="text-4xl md:text-5xl font-black tracking-[0.15em] mb-3"
               style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 30px hsl(var(--gold-accent)/0.15)" }}
             >
-              <GlitchText text={mode === "login" ? "IDENTIFICAÇÃO" : "NOVO RECRUTA"} />
+              <GlitchText text={mode === "login" ? "ENTRAR" : "CRIAR CONTA"} />
             </h1>
             <p
               className="text-[hsl(0,0%,45%)] text-[9px] tracking-[0.2em] uppercase"
