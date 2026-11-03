@@ -491,16 +491,21 @@ describe("Tonecos shareable model detail UI", () => {
     const { default: CanonicalModelDetails } = await import(
       "./catalog/CanonicalModelDetails"
     );
+    const { CatalogBrowsingProvider } = await import(
+      "@/services/catalog/catalog-browsing-context"
+    );
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 0 } },
     });
     render(
       <QueryClientProvider client={queryClient}>
+        <CatalogBrowsingProvider>
         <MemoryRouter initialEntries={["/modelos/escultura-original"]}>
           <Routes>
             <Route path="/modelos/:id" element={<CanonicalModelDetails />} />
           </Routes>
         </MemoryRouter>
+        </CatalogBrowsingProvider>
       </QueryClientProvider>,
     );
 
@@ -554,16 +559,21 @@ describe("Tonecos shareable model detail UI", () => {
     const { default: Details } = await import(
       "./catalog/CanonicalModelDetails"
     );
+    const { CatalogBrowsingProvider } = await import(
+      "@/services/catalog/catalog-browsing-context"
+    );
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
     render(
       <QueryClientProvider client={client}>
+        <CatalogBrowsingProvider>
         <MemoryRouter initialEntries={["/modelos/escultura-original"]}>
           <Routes>
             <Route path="/modelos/:id" element={<Details />} />
           </Routes>
         </MemoryRouter>
+        </CatalogBrowsingProvider>
       </QueryClientProvider>,
     );
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -614,16 +624,21 @@ describe("Tonecos shareable model detail UI", () => {
     const { default: Details } = await import(
       "./catalog/CanonicalModelDetails"
     );
+    const { CatalogBrowsingProvider } = await import(
+      "@/services/catalog/catalog-browsing-context"
+    );
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
     render(
       <QueryClientProvider client={client}>
+        <CatalogBrowsingProvider>
         <MemoryRouter initialEntries={["/modelos/escultura-original"]}>
           <Routes>
             <Route path="/modelos/:id" element={<Details />} />
           </Routes>
         </MemoryRouter>
+        </CatalogBrowsingProvider>
       </QueryClientProvider>,
     );
     expect(await screen.findByRole("alert")).toHaveTextContent(

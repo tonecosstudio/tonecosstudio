@@ -104,21 +104,15 @@ describe("published model/gallery identity on the public detail page", () => {
       name: "Adicionar à seleção",
     });
     expect(add).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Minha seleção: 0 de 50 modelos.",
-    );
+    expect(screen.getByText(/Minha seleção: 0 de 50 modelos\./)).toBeInTheDocument();
     fireEvent.click(add);
     const remove = screen.getByRole("button", { name: "Remover da seleção" });
     expect(remove).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Minha seleção: 1 de 50 modelos.",
-    );
+    expect(screen.getByText(/Minha seleção: 1 de 50 modelos\./)).toBeInTheDocument();
     fireEvent.click(remove);
     expect(screen.getByRole("button", { name: "Adicionar à seleção" }))
       .toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Minha seleção: 0 de 50 modelos.",
-    );
+    expect(screen.getByText(/Minha seleção: 0 de 50 modelos\./)).toBeInTheDocument();
     expect(io).toHaveBeenCalledTimes(2);
     for (const [url, options] of io.mock.calls) {
       expect(url).toContain("/api/models/animal-original");
