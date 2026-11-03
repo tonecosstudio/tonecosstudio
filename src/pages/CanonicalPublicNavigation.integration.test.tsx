@@ -162,10 +162,24 @@ describe("canonical public navigation without Supabase catalog", () => {
     expect(screen.getByRole("link", { name: /Explorar todos os modelos/ })).toHaveAttribute(
       "href", "/modelos?category=games&franchise=resident-evil&folder=personagens",
     );
+    expect(screen.getByRole("link", { name: /\/ games/i })).toHaveAttribute(
+      "href", "/universo/games",
+    );
+    expect(screen.getByText(/\/ resident-evil/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Explorar modelos desta categoria/i })).not.toBeInTheDocument();
     expect(calls).toHaveLength(2);
     expect(calls[0].url.searchParams.get("parent")).toBe("personagens");
     expect(calls[1].url.searchParams.get("folder")).toBe("personagens");
     expect(calls[1].url.searchParams.get("limit")).toBe("8");
+  });
+
+  it("keeps the category-wide action only at the category level", async () => {
+    setupFetch();
+    await renderRoute("/universo/games");
+    expect(await screen.findByRole("link", { name: /Resident Evil/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Explorar modelos desta categoria/i })).toHaveAttribute(
+      "href", "/modelos?category=games",
+    );
   });
 
   it("rejects malformed folder scopes without making HTTP calls", async () => {
