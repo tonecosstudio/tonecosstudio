@@ -420,6 +420,8 @@ describe("Tonecos canonical model discovery UI", () => {
     await screen.findByRole("link", { name: "Ver detalhes de Escultura seguinte" });
     fireEvent.click(screen.getByRole("button", { name: "Adicionar à seleção" }));
     fireEvent.click(screen.getByRole("link", { name: "Ver detalhes de Escultura seguinte" }));
+    expect(screen.getByRole("button", { name: "Remover da seleção" }))
+      .toHaveAttribute("aria-pressed", "true");
     const back = await screen.findByRole("link", { name: "Voltar ao catálogo" });
     expect(back).toHaveAttribute("href", "/modelos");
     fireEvent.click(back);

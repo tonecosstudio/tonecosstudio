@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
@@ -83,17 +84,48 @@ function mountGallery(options: { total: number; coverKey?: string }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const view = render(
     <QueryClientProvider client={client}>
+      <CatalogBrowsingProvider>
       <MemoryRouter initialEntries={["/modelos/animal-original"]}>
         <Routes>
           <Route path="/modelos/:id" element={<CanonicalModelDetails />} />
         </Routes>
       </MemoryRouter>
+      </CatalogBrowsingProvider>
     </QueryClientProvider>,
   );
   return { io, ...view };
 }
 
 describe("published model/gallery identity on the public detail page", () => {
+
+  it("allows provisional selection directly from the model detail without a write request", async () => {
+    const { io } = mountGallery({ total: 1 });
+    const add = await screen.findByRole("button", {
+      name: "Adicionar à seleção",
+    });
+    expect(add).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Minha seleção: 0 de 50 modelos.",
+    );
+    fireEvent.click(add);
+    const remove = screen.getByRole("button", { name: "Remover da seleção" });
+    expect(remove).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Minha seleção: 1 de 50 modelos.",
+    );
+    fireEvent.click(remove);
+    expect(screen.getByRole("button", { name: "Adicionar à seleção" }))
+      .toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Minha seleção: 0 de 50 modelos.",
+    );
+    expect(io).toHaveBeenCalledTimes(2);
+    for (const [url, options] of io.mock.calls) {
+      expect(url).toContain("/api/models/animal-original");
+      expect(options).toMatchObject({ method: "GET", credentials: "omit" });
+    }
+  });
+
   it("renders a single approved cover without inventing extra photographs", async () => {
     const { io } = mountGallery({ total: 1 });
     await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });

@@ -8,6 +8,11 @@ import {
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES } from "@/config/routes";
+import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
+import {
+  MAX_CANONICAL_SELECTION,
+  toggleCanonicalSelection,
+} from "@/services/catalog/public-catalog-selection";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import {
   createPublicCatalogGateway,
@@ -43,6 +48,7 @@ export default function CanonicalModelDetails() {
   const location = useLocation();
   const catalogReturnTo = catalogReturnPath(location.state);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
+  const { selectedModels, setSelectedModels } = useCatalogBrowsing();
   const gateway = useMemo(() => {
     if (!API_BASE) return null;
     try {
@@ -60,6 +66,9 @@ export default function CanonicalModelDetails() {
     staleTime: 5 * 60 * 1000,
   });
   const model = modelQuery.data;
+  const isSelected = Boolean(
+    model && selectedModels.some((entry) => entry.id === model.id),
+  );
   const galleryQuery = useInfiniteQuery({
     queryKey: ["tonecos-catalog-gallery", model?.slug, model?.galleryVersion],
     initialPageParam: "",
@@ -309,6 +318,35 @@ export default function CanonicalModelDetails() {
                     de orçamento. Esta ficha apresenta somente os dados
                     publicados no catálogo.
                   </p>
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedModels((current) =>
+                          toggleCanonicalSelection(current, model),
+                        )
+                      }
+                      aria-pressed={isSelected}
+                      disabled={
+                        !isSelected &&
+                        selectedModels.length >= MAX_CANONICAL_SELECTION
+                      }
+                      className="inline-flex min-h-11 w-full items-center justify-center rounded-none border border-[hsl(var(--gold-accent))] px-4 py-3 text-sm font-semibold text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(0,0%,9%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {isSelected
+                        ? "Remover da seleção"
+                        : "Adicionar à seleção"}
+                    </button>
+                    <p
+                      role="status"
+                      aria-live="polite"
+                      className="text-xs text-[hsl(0,0%,56%)]"
+                    >
+                      Minha seleção: {selectedModels.length} de{" "}
+                      {MAX_CANONICAL_SELECTION} modelos. Nenhum pedido é enviado
+                      automaticamente.
+                    </p>
+                  </div>
                 </div>
               </ArcadeCard>
             </article>
