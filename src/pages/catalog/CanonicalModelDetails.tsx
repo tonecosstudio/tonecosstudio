@@ -117,13 +117,25 @@ export default function CanonicalModelDetails() {
         },
         signal,
       ),
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    // Prevent a non-adjacent cursor cycle (A → B → A) without new state.
+    getNextPageParam: (lastPage, _pages, _lastParam, pageParams) => {
+      const next = lastPage.nextCursor;
+      return next && !pageParams.includes(next) ? next : undefined;
+    },
     enabled:
       gateway !== null && model !== undefined && model.galleryVersion > 0,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
-  const images = galleryQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const galleryData = galleryQuery.data;
+  const images = galleryData?.pages.flatMap((page) => page.items) ?? [];
+  const galleryCursorCycle = Boolean(
+    galleryData?.pages.some(
+      (page) =>
+        page.nextCursor !== null &&
+        galleryData.pageParams.includes(page.nextCursor),
+    ),
+  );
   const activeImage =
     images.find((image) => image.id === activeImageId) ?? images[0] ?? null;
   const activeImageKey = activeImage
@@ -262,6 +274,12 @@ export default function CanonicalModelDetails() {
                           ? "Carregando…"
                           : "Carregar mais imagens"}
                       </button>
+                    ) : null}
+                    {galleryCursorCycle ? (
+                      <p role="status" className="mt-4 text-sm text-[hsl(0,0%,56%)]">
+                        A sequência da galeria retornou a uma página já visitada.
+                        O carregamento adicional foi interrompido.
+                      </p>
                     ) : null}
                   </>
                 ) : (

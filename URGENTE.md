@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Correções canônicas de integridade e paginação de galeria — 03/11/2026
+
+- **Baseline concorrente observada:** o commit `366de85c2a331144f2038241536e2112362ef6ca` corrigiu a asserção de contato e executou o preview Vercel `dpl_6MfM5SfWC8MUs6tLufH7Eurbsux3`. Esta frente usa exatamente a mesma branch e preserva integralmente os arquivos de Contato/Arcade. A regra é encerrar primeiro o gate anterior, confirmar HEAD/target preview e só então submeter um novo commit.
+- **Respostas públicas com identidades incoerentes:** o gateway de leitura já rejeitava duplicatas em modelos e franquias, mas não categorias nem imagens da galeria. Uma resposta limitada com duas categorias de mesmo ID ou duas imagens com mesmo ID deve falhar fechada com `duplicate_catalog_category` e `duplicate_catalog_gallery_image`, respectivamente. Validação local por `Set` por resposta, sem outra fonte, consulta adicional ou modificação no Worker/D1/R2.
+- **Paginação da galeria sem ciclo:** a ficha `CanonicalModelDetails` utilizava `getNextPageParam: lastPage.nextCursor`; embora o gateway rejeitasse o cursor idêntico ao anterior, uma sequência `A → B → A` ainda poderia trazer infinitas páginas quando o visitante clicasse em `Carregar mais imagens`. A correção reutiliza `allPageParams` do próprio React Query para não seguir um cursor já visitado, e informa o visitante, mantendo todas as imagens aprovadas já carregadas, sem criar estado paralelo.
+- **Testes offline adicionados:** uma resposta GET de categorias com IDs duplicados, uma página GET de galeria com IDs duplicados e um ciclo de galeria entre 3 páginas com uma única leitura da ficha. Provar parada segura, ausência de botão `Carregar mais imagens` após ciclo e quatro chamadas simuladas ao total, sem nenhuma leitura de produção.
+- **Gate obrigatório:** `release:verify` integral no novo SHA antes de qualquer alegação de aprovação. `main`, produção, domínios OrdaX, pedidos e pagamentos intocados. Preview protegido e read-only.
+- **next_action:** confirmar o gate novo; depois homologar a apresentação de erros/galeria no navegador protegido e avaliar a futura separação dos domínios antes de lançar.
+- **do_not_repeat:** não repetir leituras de D1 para testar cursores, não criar mecanismos de execução ou SSOT paralelos, não iniciar builds concorrentes e não enfraquecer testes/coverage.
+
+---
+
 ## Correção pontual do teste de contato — 03/11/2026
 
 - **Falha de CI em `1816f1f2af2f91cdb6e1ad014ce9937c751508a3`:** Vercel `dpl_FFCWktmC2Asw8nuoUwYWhVzuWqoF` ERROR, `test:coverage` com **3.277 testes aprovados, 32 ignorados e 1 falho (3310)**. A única falha foi `ContactArcade.test.tsx:72`: `screen.getByRole("status")` encontrou mais de um elemento de status no DOM. O aviso de login existe e aparece corretamente; o teste estava pouco específico. `ArcadeLayout.navigation.test.ts` passou.

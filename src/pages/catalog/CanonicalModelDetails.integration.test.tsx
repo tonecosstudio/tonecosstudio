@@ -61,13 +61,33 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function mountGallery(options: { total: number; coverKey?: string; returnState?: unknown }) {
+function mountGallery(options: { total: number; coverKey?: string; returnState?: unknown; cyclicPage?: boolean }) {
   const io = vi.fn(async (input: string, _init: RequestInit) => {
     const url = new URL(input);
     if (url.pathname.endsWith("/api/models/animal-original")) {
-      return Response.json(model);
+      return Response.json(
+        options.cyclicPage ? { ...model, image_count: 3 } : model,
+      );
     }
     if (url.pathname.endsWith("/api/models/animal-original/images")) {
+      if (options.cyclicPage) {
+        const cursor = url.searchParams.get("cursor");
+        const nextCursor = cursor === null
+          ? "page-2"
+          : cursor === "page-2"
+            ? "page-3"
+            : "page-2";
+        const imageId = cursor === null ? "img-1" : cursor === "page-2" ? "img-2" : "img-3";
+        if (cursor !== null && cursor !== "page-2" && cursor !== "page-3") {
+          throw new Error("unexpected_gallery_cursor");
+        }
+        return Response.json({
+          items: [{ ...image, id: imageId, role: cursor === null ? "cover" : "gallery" }],
+          total: 3,
+          nextCursor,
+          version: 9,
+        });
+      }
       return Response.json({
         items: [{
           ...image,
@@ -216,6 +236,24 @@ describe("published model/gallery identity on the public detail page", () => {
         .toHaveAttribute("href", "/modelos");
       view.unmount();
     }
+  });
+
+  it("stops a non-adjacent gallery cursor cycle and preserves fetched images", async () => {
+    const { io } = mountGallery({ total: 3, cyclicPage: true });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
+    await screen.findByRole("button", { name: "Ver imagem 2 de Animal original" });
+    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
+    await screen.findByRole("button", { name: "Ver imagem 3 de Animal original" });
+
+    expect(screen.queryByRole("button", { name: "Carregar mais imagens" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "A sequência da galeria retornou a uma página já visitada",
+    );
+    // Exactly one published model detail and three bounded gallery pages.
+    expect(io).toHaveBeenCalledTimes(4);
   });
 
   it("blocks a stale gallery total instead of claiming unverified published images", async () => {

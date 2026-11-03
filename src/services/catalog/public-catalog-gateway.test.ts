@@ -399,6 +399,25 @@ describe("cross-endpoint published gallery integrity", () => {
       .rejects.toThrow("catalog_gallery_cover_mismatch");
   });
 
+  it("rejects duplicate gallery image IDs instead of rendering ambiguous thumbnails", async () => {
+    const { io, gateway } = gatewayFor({
+      items: [
+        galleryImage,
+        { ...galleryImage, role: "gallery" },
+      ],
+      nextCursor: null,
+      total: 2,
+      version: 9,
+    });
+    await expect(
+      gateway.listGallery("animal-original", {
+        version: 9,
+        limit: 8,
+      }),
+    ).rejects.toThrow("duplicate_catalog_gallery_image");
+    expect(io).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects a repeated gallery cursor and empty pages that claim more images", async () => {
     const { gateway: loopingGateway } = gatewayFor({
       items: [galleryImage],
@@ -457,6 +476,23 @@ describe("read-only catalog discovery and detail", () => {
       { id: "originais", label: "Originais", count: 42 },
     ]);
     expect(calls).toEqual(["https://example.test/catalogo-api/api/categories"]);
+  });
+
+  it("rejects duplicate category IDs from a single bounded response", async () => {
+    const io = vi.fn(async () => Response.json({
+      items: [
+        { id: "games", label: "Games", count: 2 },
+        { id: "games", label: "Outra categoria", count: 1 },
+      ],
+    }));
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    await expect(gateway.listCategories()).rejects.toThrow(
+      "duplicate_catalog_category",
+    );
+    expect(io).toHaveBeenCalledTimes(1);
   });
 
   it("opens one canonical detail and refuses a mismatched slug", async () => {

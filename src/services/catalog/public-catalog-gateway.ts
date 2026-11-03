@@ -288,6 +288,7 @@ export function createPublicCatalogGateway(
       if (!Array.isArray(items) || items.length > 100) {
         throw new Error("invalid_catalog_categories");
       }
+      const seen = new Set<string>();
       return items.map((value: unknown) => {
         if (!value || typeof value !== "object" || Array.isArray(value)) {
           throw new Error("invalid_catalog_category");
@@ -298,8 +299,11 @@ export function createPublicCatalogGateway(
           count?: unknown;
           cover_storage_key?: unknown;
         };
+        const id = requiredText(category.id, "category_id");
+        if (seen.has(id)) throw new Error("duplicate_catalog_category");
+        seen.add(id);
         return {
-          id: requiredText(category.id, "category_id"),
+          id,
           label: requiredText(category.label, "category_label"),
           count: wholeNumber(category.count, "category_count"),
           ...(category.cover_storage_key === undefined
@@ -624,6 +628,13 @@ export function createPublicCatalogGateway(
           },
         };
       });
+      const seenImages = new Set<string>();
+      for (const image of items) {
+        if (seenImages.has(image.id)) {
+          throw new Error("duplicate_catalog_gallery_image");
+        }
+        seenImages.add(image.id);
+      }
       if (
         !filters.cursor &&
         filters.expectedCoverStorageKey !== undefined &&
