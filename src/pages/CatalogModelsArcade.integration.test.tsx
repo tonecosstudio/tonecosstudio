@@ -115,7 +115,9 @@ async function renderCatalog(path = "/modelos") {
     "@/services/catalog/catalog-browsing-context"
   );
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    // Match the application's normal query-cache lifetime so forward/back
+    // navigation can reuse a recently fetched page.
+    defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
@@ -747,6 +749,54 @@ it("preserves a canonical folder filter through model reads and clears it explic
       !c.url.searchParams.has("folder")
     )).toBe(true);
   });
+});
+
+it("blocks multi-page cursor cycles but still allows revisiting the next cached page", async () => {
+  const cursors: string[] = [];
+  vi.stubGlobal("fetch", vi.fn(async (input: string, init: RequestInit) => {
+    expect(init.method).toBe("GET");
+    const url = new URL(input);
+    if (!url.pathname.endsWith("/api/catalog")) {
+      throw new Error("unexpected_catalog_endpoint: " + url.pathname);
+    }
+    const cursor = url.searchParams.get("cursor");
+    cursors.push(cursor ?? "");
+    const pageIndex = cursor === null ? 1 : cursor === "page-two" ? 2 : 3;
+    const model = {
+      ...original,
+      id: "model-" + pageIndex,
+      slug: "escultura-" + pageIndex,
+      name: "Escultura " + pageIndex,
+      code: "TS-" + pageIndex,
+    };
+    return Response.json({
+      items: [model],
+      nextCursor: pageIndex === 1
+        ? "page-two"
+        : pageIndex === 2
+          ? "page-three"
+          : "page-two",
+    });
+  }));
+
+  await renderCatalog();
+  await screen.findByRole("link", { name: "Ver detalhes de Escultura 1" });
+  fireEvent.click(screen.getByRole("button", { name: "Próxima" }));
+  await screen.findByRole("link", { name: "Ver detalhes de Escultura 2" });
+  fireEvent.click(screen.getByRole("button", { name: "Próxima" }));
+  await screen.findByRole("link", { name: "Ver detalhes de Escultura 3" });
+  expect(screen.getByRole("button", { name: "Próxima" })).toBeDisabled();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "retornaria a uma página já visitada",
+  );
+  expect(cursors).toEqual(["", "page-two", "page-three"]);
+
+  fireEvent.click(screen.getByRole("button", { name: "Anterior" }));
+  await screen.findByRole("link", { name: "Ver detalhes de Escultura 2" });
+  expect(screen.getByRole("button", { name: "Próxima" })).toBeEnabled();
+  fireEvent.click(screen.getByRole("button", { name: "Próxima" }));
+  await screen.findByRole("link", { name: "Ver detalhes de Escultura 3" });
+  expect(cursors).toEqual(["", "page-two", "page-three"]);
 });
 
 it("does not issue catalog reads when folder scope is absent", async () => {

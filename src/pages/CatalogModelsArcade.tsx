@@ -157,8 +157,18 @@ export default function CatalogModelsArcade() {
     setLoadFranchises(true);
   }
 
+  // Prevent a Worker cursor that points back to an already visited page
+  // from trapping visitors in a multi-page loop. Adjacent forward history
+  // remains usable after returning to a previous page.
+  const repeatedCursor = Boolean(
+    models.data?.nextCursor &&
+      activePage.cursors
+        .slice(0, activePage.index + 1)
+        .includes(models.data.nextCursor),
+  );
+
   function goNext() {
-    if (!models.data?.nextCursor) return;
+    if (!models.data?.nextCursor || repeatedCursor) return;
     setPaging({
       scope,
       cursors: [
@@ -480,6 +490,13 @@ export default function CatalogModelsArcade() {
             </div>
           )}
 
+          {models.isSuccess && repeatedCursor && (
+            <p role="status" className="mt-5 text-center text-sm text-[hsl(0,0%,56%)]">
+              Esta sequência de páginas retornaria a uma página já visitada.
+              Volte ou refine a busca para continuar.
+            </p>
+          )}
+
           {models.isSuccess &&
             (activePage.index > 0 || !!models.data.nextCursor) && (
               <nav
@@ -500,7 +517,7 @@ export default function CatalogModelsArcade() {
                 <button
                   type="button"
                   onClick={goNext}
-                  disabled={!models.data.nextCursor}
+                  disabled={!models.data.nextCursor || repeatedCursor}
                   className="inline-flex h-11 items-center gap-2 rounded-none border border-[hsl(0,0%,15%)] px-4 text-sm disabled:opacity-40"
                 >
                   Próxima <ArrowRight size={16} aria-hidden="true" />

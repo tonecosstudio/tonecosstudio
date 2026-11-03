@@ -46,6 +46,24 @@
 
 ---
 
+## Gate de navegação concluído — 03/11/2026
+
+- **SHA anterior `7c97e733dcc5c35fe0adf57fa9005dd30f9289ae`:** preview Vercel `dpl_69QkCo7SJRy9mMcX7sa5bzBBsHBB` READY; `release:verify` passou até `npm audit --omit=dev --audit-level=high` com `found 0 vulnerabilities`. Testes da pasta (1/1) e da ficha (6/6) aprovados, incluindo o retorno validado. Preview privado; produção, `main` e D1 intocadas.
+- **NO-GO** continua até homologação visual real e desvinculação segura dos domínios do OrdaX.
+
+---
+
+## Paginação da vitrine protegida contra ciclos multi-página — 03/11/2026
+
+- **Problema funcional:** o gateway já rejeitava a devolução do mesmo `nextCursor` de uma requisição, mas um ciclo `A → B → A` atravessando páginas diferentes ainda podia repetir os resultados indefinidamente na UI.
+- **Correção implementada:** a vitrine verifica `nextCursor` contra a parte já percorrida do histórico da página atual, desativa `Próxima` e explica o motivo. Retornar à página anterior e avançar novamente para a página já conhecida continua permitido, reaproveitando o cache do React Query.
+- **Teste novo:** três páginas HTTP simuladas com ciclo entre cursores; confirma parada segura, retorno à página 2, avanço novamente à página 3 e exatamente três leituras, sem ampliar o escopo de consultas ao catálogo real. O QueryClient do harness preserva o cache normal da aplicação em vez de expirar a página imediatamente com `gcTime: 0`.
+- **Gate:** a navegação anterior foi aprovada antes deste commit; exigir `release:verify` completo no SHA da paginação sem reduzir testes.
+- **next_action:** homologar navegação com dados publicados no preview e concluir isolamento de domínios antes do GO.
+- **do_not_repeat:** sem varredura D1, sem inventar ordenação do Worker, sem ampliar limites de página e sem alterar `main`.
+
+---
+
 ## Compatibilidade de compilação do retorno ao Universo — 03/11/2026
 
 - **Falha no gate do SHA `bc00c665f8fdcdc456cd4cd3a9015a168c7551ca`:** `tsc -b` bloqueou `String.replaceAll` no alvo atual (`TS2550`), com diagnóstico secundário de `part` implícito `any` na cadeia interrompida.
