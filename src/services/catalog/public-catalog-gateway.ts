@@ -565,6 +565,12 @@ export function createPublicCatalogGateway(
           nextCursor.length > 2048)
       )
         throw new Error("invalid_catalog_gallery_cursor");
+      if (
+        nextCursor &&
+        (nextCursor === filters.cursor || row.items.length === 0)
+      ) {
+        throw new Error("invalid_catalog_gallery_cursor");
+      }
       const items = row.items.map((value: unknown): PublicCatalogImage => {
         if (!value || typeof value !== "object" || Array.isArray(value))
           throw new Error("invalid_catalog_gallery_image");
@@ -701,6 +707,9 @@ export function createPublicCatalogGateway(
         nextCursor !== undefined &&
         (typeof nextCursor !== "string" || !nextCursor || nextCursor.length > 2048)
       ) {
+        throw new Error("invalid_catalog_page_cursor");
+      }
+      if (nextCursor && (nextCursor === filters.cursor || items.length === 0)) {
         throw new Error("invalid_catalog_page_cursor");
       }
       const seen = new Set<string>();

@@ -173,6 +173,26 @@ describe("canonical catalog read boundary", () => {
     expect(io).toHaveBeenCalledTimes(1);
   });
 
+  it("rejects repeated or non-progressing catalog cursor pages", async () => {
+    const io = vi.fn(async (url: string) =>
+      Response.json({
+        items: new URL(url).searchParams.has("cursor") ? [row] : [],
+        nextCursor: "repeated",
+      }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    await expect(gateway.listPage()).rejects.toThrow(
+      "invalid_catalog_page_cursor",
+    );
+    await expect(gateway.listPage({ cursor: "repeated" })).rejects.toThrow(
+      "invalid_catalog_page_cursor",
+    );
+    expect(io).toHaveBeenCalledTimes(2);
+  });
+
   it("fails closed on absent endpoint, HTTP failure and malformed data", async () => {
     expect(() => createPublicCatalogGateway("", fetch)).toThrow(
       "catalog_endpoint_not_configured",
@@ -377,6 +397,31 @@ describe("cross-endpoint published gallery integrity", () => {
     });
     await expect(gateway.listGallery("animal-original", expected))
       .rejects.toThrow("catalog_gallery_cover_mismatch");
+  });
+
+  it("rejects a repeated gallery cursor and empty pages that claim more images", async () => {
+    const { gateway: loopingGateway } = gatewayFor({
+      items: [galleryImage],
+      nextCursor: "repeated",
+      total: 2,
+      version: 9,
+    });
+    await expect(
+      loopingGateway.listGallery("animal-original", {
+        version: 9,
+        cursor: "repeated",
+      }),
+    ).rejects.toThrow("invalid_catalog_gallery_cursor");
+
+    const { gateway: emptyGateway } = gatewayFor({
+      items: [],
+      nextCursor: "page-2",
+      total: 2,
+      version: 9,
+    });
+    await expect(
+      emptyGateway.listGallery("animal-original", { version: 9 }),
+    ).rejects.toThrow("invalid_catalog_gallery_cursor");
   });
 
   it("does not require the original cover on later cursor pages", async () => {

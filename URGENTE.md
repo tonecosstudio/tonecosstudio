@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Continuidade de 03/11/2026 — paginação fail-closed
+
+- **Baseline anterior:** `a5daae89b9488dd5351777aaf55d14f9b790d7ff` na branch de integração. `main` preservada.
+- **Causa corrigida:** o gateway verificava o formato dos cursores, mas aceitava cursores repetidos e páginas vazias com `nextCursor`, que podem causar paginação sem progresso na vitrine/galeria.
+- **Implementado:** `listPage` e `listGallery` rejeitam os dois estados inconsistentes e mantêm a fronteira somente leitura do Worker. Dois testes de regressão com HTTP simulado cobrem esses casos; sem mudança em Supabase, D1, R2, preços, pedidos ou contratos do Worker.
+- **Gates pendentes:** executar `release:verify` no SHA da mudança e QA no navegador desktop/mobile; não confundir preview READY com lançamento autorizado.
+- **Vercel:** destino de preview confirmado como `jogo-brasils-projects/tonecosstudio`, não `ordax`. Continuam anexados ao projeto Tonecos os domínios `ordax.com.br`, `www.ordax.com.br` (não verificados) e `ordax-three.vercel.app`; manter **NO-GO** até remoção segura desses vínculos, sem mexer em DNS.
+- **next_action:** conferir o Quality Gate no preview desse SHA, homologar paginação/ficha e QA visual, isolar os domínios herdados do projeto Tonecos antes de promoção.
+- **do_not_repeat:** sem catálogo duplicado Supabase, varredura D1, novas PRs/branches ou alterações na `main` enquanto NO-GO.
+
+---
+
 ## Gate real e continuidade da vitrine — 02/11/2026
 
 - **Branch única / código atual auditado:** `f75c5ef74b2cd3dcc41528cfab6d43a0ae1144b2`, sem merge na `main` e sem deploy de produção.
