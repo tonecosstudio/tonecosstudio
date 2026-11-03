@@ -30,6 +30,8 @@ import {
 } from "@/config/routes";
 import { CONTACT } from "@/config/constants";
 
+const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+
 // The authenticated contact service uses account identity; it does not
 // accept or persist an arbitrary email field from this public page.
 const authenticatedContactFormSchema = contactFormSchema.omit({ email: true });
@@ -99,17 +101,18 @@ export default function ContactArcade() {
             {!user ? (
               <div className="relative z-10 space-y-4 text-center" role="status">
                 <h2 className="text-lg font-medium text-[hsl(0,0%,94%)]">
-                  Atendimento pela sua conta
+                  {PREVIEW_READ_ONLY ? "CONTATO EM PREPARAÇÃO" : "Atendimento pela sua conta"}
                 </h2>
                 <p className="text-sm text-[hsl(0,0%,65%)]">
-                  Para enviar uma mensagem ao suporte, entre na sua conta.
-                  Assim a equipe poderá acompanhar sua solicitação pelo perfil.
+                  {PREVIEW_READ_ONLY
+                    ? "Esta prévia é somente leitura e não recebe mensagens. Explore o catálogo enquanto o atendimento é homologado."
+                    : "Para enviar uma mensagem ao suporte, entre na sua conta. Assim a equipe poderá acompanhar sua solicitação pelo perfil."}
                 </p>
                 <Link
-                  to={loginReturnToPath(PUBLIC_ROUTES.contact)}
+                  to={PREVIEW_READ_ONLY ? PUBLIC_ROUTES.catalogModels : loginReturnToPath(PUBLIC_ROUTES.contact)}
                   className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))]"
                 >
-                  Entrar para enviar mensagem
+                  {PREVIEW_READ_ONLY ? "EXPLORAR MODELOS" : "Entrar para enviar mensagem"}
                 </Link>
               </div>
             ) : (

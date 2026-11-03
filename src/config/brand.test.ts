@@ -19,6 +19,12 @@ it("keeps public entry points free of the old OrdaX storefront identity", () => 
     "src/pages/LoginArcade.tsx",
     "src/pages/TermsArcade.tsx",
     "src/pages/PrivacyArcade.tsx",
+    "src/pages/ProfileArcade.tsx",
+    "src/pages/NotificationsArcade.tsx",
+    "src/pages/PaymentDetails.tsx",
+    "src/pages/CustomerOrderProgressPage.tsx",
+    "src/pages/GroupsArcade.tsx",
+    "src/pages/MigratePedido.tsx",
     "src/pages/CatalogArcade.tsx",
     "src/pages/CatalogModelsArcade.tsx",
     "src/components/arcade/ArcadeNav.tsx",
@@ -49,6 +55,12 @@ it("keeps account entry points honest in read-only preview and signup journeys",
   expect(login).toContain("emailConfirmationRequired");
   expect(login).not.toContain("Conta criada!");
   expect(nav).toContain("?mode=signup");
+  const contact = readFileSync(
+    resolve(process.cwd(), "src/pages/ContactArcade.tsx"),
+    "utf8",
+  );
+  expect(contact).toContain('VITE_PREVIEW_READ_ONLY === "true"');
+  expect(contact).toContain("CONTATO EM PREPARAÇÃO");
   expect(auth).toContain("emailConfirmationRequired: !data.session");
 });
 

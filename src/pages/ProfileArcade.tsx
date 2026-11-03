@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
+import { BRAND_NAME } from "@/config/brand";
 import { ArcadeCard } from "@/components/arcade/ArcadeLayout";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -378,7 +379,7 @@ export default function ProfileArcade() {
 
   return (
     <Page
-      title="Minha Conta | ORDAX"
+      title={`Minha Conta | ${BRAND_NAME}`}
       description="Gerencie dados da conta, nivel do colecionador, pagamentos e comunicacoes."
     >
       <section className="relative px-6 py-12 md:py-16">

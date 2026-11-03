@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## MVP — continuidade da marca e contato na área de usuários — 03/11/2026
+
+- **Baseline validada:** `a283923c39d3a1a18530408f1e3abacc37f82ec8` passou na Vercel com estado `READY`. Este checkpoint avança a experiência de conta na mesma branch, sem criar novo sistema de cadastro.
+- **Identidade:** títulos do perfil, notificações, pagamentos, pedidos, grupos e solicitação de migração usam `BRAND_NAME` do Tonecos Studio; equipe de atendimento da solicitação deixa de ser exibida como OrdaX. Nenhum contrato de dados ou rota foi movido.
+- **Contato no preview:** a rota /contato em ambiente `VITE_PREVIEW_READ_ONLY=true` não conduz a login bloqueado. Apresenta transparência sobre ausência de atendimento no preview e caminho para o catálogo; em produção mantém o fluxo autenticado existente sem criar formulário anônimo paralelo.
+- **Regressão:** `brand.test.ts` verifica identidade dos pontos de entrada autenticados e a mensagem de preview de contato. Gate completo no SHA final segue obrigatório.
+- **Bloqueios:** `main`, domínio público e usuários reais continuam `NO-GO` enquanto houver aliases OrdaX herdados no projeto Vercel e o Supabase Tonecos não for auditável para signup, RLS, redirects, SMTP e perfil. Canal comercial real precisa de configuração verificada antes do lançamento.
+- **next_action:** validar este commit no gate e browser desktop/mobile, depois definir domínio Tonecos e homologar autenticação no projeto Supabase comercial. Só então promover MVP público sem pagamentos.
+- **do_not_repeat:** não criar cadastro paralelo, não iniciar builds concorrentes, não usar projeto Supabase OrdaX, não alterar Cloudflare D1 ou projetos OrdaX.
+
+---
+
 ## MVP público com usuários — primeira etapa de contas — 03/11/2026
 
 - **Objetivo explícito:** disponibilizar o Tonecos Studio como MVP incremental para pessoas reais, reutilizando autenticação existente sem criar segundo backend de usuários e sem aguardar recursos avançados de coleções, moedas, pedidos e pagamentos.

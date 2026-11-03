@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Page } from '@/components/layouts/Page';
+import { BRAND_NAME } from '@/config/brand';
 import { log } from '@/lib/logger';
 import { useOrderMigrationSubmission } from '@/hooks/customer/useOrderMigrationSubmission';
 import { AUTH_ROUTES, PUBLIC_ROUTES } from '@/config/routes';
@@ -55,7 +56,7 @@ export default function MigratePedido() {
 
   if (submitted) {
     return (
-      <Page title="Migração Concluída | ORDAX" description="Sua solicitação de migração foi recebida">
+      <Page title={`Migração Concluída | ${BRAND_NAME}`} description="Sua solicitação de migração foi recebida">
         <div className="min-h-[60vh] flex items-center justify-center px-4">
           <Card className="max-w-2xl w-full bg-gray-800/50 border-amber-600/30 p-8 text-center">
             <CheckCircle2 className="w-20 h-20 text-amber-400 mx-auto mb-6" />
@@ -115,7 +116,7 @@ export default function MigratePedido() {
   }
 
   return (
-    <Page title="Migrar Pedido | ORDAX" description="Integre seu pedido anterior à nova estrutura ORDAX">
+    <Page title={`Migrar Pedido | ${BRAND_NAME}`} description={`Integre seu pedido anterior à nova estrutura ${BRAND_NAME}`}>
       <div className="py-12 px-4">
         <div className="max-w-3xl mx-auto">
           <Button
@@ -134,7 +135,7 @@ export default function MigratePedido() {
               Migrar <span className="text-amber-400">Pedido Anterior</span>
             </h1>
             <p className="text-xl text-gray-300">
-              Integre seu pedido anterior à nova estrutura ORDAX
+              Integre seu pedido anterior à nova estrutura {BRAND_NAME}
             </p>
           </div>
 
@@ -244,7 +245,7 @@ export default function MigratePedido() {
             <div className="bg-gray-900/50 border border-amber-600/30 rounded-lg p-4">
               <p className="text-sm text-gray-400">
                 Ao enviar esta solicitação, você concorda que as informações fornecidas
-                sejam analisadas pela equipe ORDAX para fins de migração do pedido.
+                sejam analisadas pela equipe {BRAND_NAME} para fins de migração do pedido.
               </p>
             </div>
 

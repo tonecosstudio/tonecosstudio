@@ -6,6 +6,7 @@ import { EstimatedDatesCard } from "@/components/customer/EstimatedDatesCard";
 import { ProgressTimeline } from "@/components/customer/ProgressTimeline";
 import { TrackingCard } from "@/components/customer/TrackingCard";
 import { Page } from "@/components/layouts/Page";
+import { BRAND_NAME } from "@/config/brand";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AUTH_ROUTES, profileSectionPath } from "@/config/routes";
@@ -28,7 +29,7 @@ export default function CustomerOrderProgressPage() {
 
   if (isLoading) {
     return (
-      <Page title="Carregando pedido | ORDAX" description="Carregando informacoes do pedido.">
+      <Page title={`Carregando pedido | ${BRAND_NAME}`} description="Carregando informacoes do pedido.">
         <section className="mx-auto max-w-6xl px-6 py-12">
           <div className="space-y-6">
             <Skeleton className="h-14 w-72 rounded-sm" />
@@ -51,7 +52,7 @@ export default function CustomerOrderProgressPage() {
 
   if (error || !orderProgress) {
     return (
-      <Page title="Pedido nao encontrado | ORDAX" description="Erro ao carregar informacoes do pedido.">
+      <Page title={`Pedido nao encontrado | ${BRAND_NAME}`} description="Erro ao carregar informacoes do pedido.">
         <section className="mx-auto max-w-5xl px-6 py-12">
           <ArcadeCard className="p-12 text-center">
             <AlertCircle className="mx-auto mb-4 h-16 w-16 text-red-400" />
@@ -75,7 +76,7 @@ export default function CustomerOrderProgressPage() {
 
   return (
     <Page
-      title={`Pedido #${orderProgress.orderNumber} | ORDAX`}
+      title={`Pedido #${orderProgress.orderNumber} | ${BRAND_NAME}`}
       description="Acompanhe o progresso do pedido em tempo real."
     >
       <section className="mx-auto max-w-6xl px-6 py-12">

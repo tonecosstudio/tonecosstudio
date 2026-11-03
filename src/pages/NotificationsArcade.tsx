@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { ArcadeCard, ArcadeHero } from "@/components/arcade/ArcadeLayout";
 import { Page } from "@/components/layouts/Page";
+import { BRAND_NAME } from "@/config/brand";
 import { Input } from "@/components/ui/input";
 import { useUserNotificationCenterData } from "@/hooks/notifications/useUserNotificationCenterData";
 import { cn } from "@/lib/utils";
@@ -77,7 +78,7 @@ export default function NotificationsArcade() {
   };
 
   return (
-    <Page title="Notificacoes | ORDAX" description="Historico de notificacoes">
+    <Page title={`Notificacoes | ${BRAND_NAME}`} description="Historico de notificacoes">
       <ArcadeHero
         badge="COMMS CENTER"
         title="NOTIFICACOES"
