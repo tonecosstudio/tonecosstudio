@@ -6,6 +6,19 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Saída da imagem social exclusivamente no artefato — 03/11/2026
+
+- **Baseline:** `5f33c09743df8402837157521e089e156e6603de` corrigiu o bloqueio TS6133 e iniciou o gate de preview; não supor aprovação enquanto ele estiver em execução.
+- **Correção de ciclo de vida:** `npm run build` primeiro compila com Vite, depois gera `dist/og-image.png` (1200×630, PNG) com o gerador Tonecos existente. Não escrever em `public/`: a geração anterior deixava artefato residual no diretório-fonte, contrariando o teste de ausência do PNG legado após um build local.
+- **Regressão:** teste canônico de branding verifica ordem do comando, saída exclusivamente em `dist/` e mantém a exclusão do asset OrdaX legado em `public/`.
+- **Gate anterior:** `5f33c097` terminou `ERROR` com 3.286 testes aprovados, 32 ignorados e 1 falha estática em `brand.test.ts`: o regex anterior proibia indiscriminadamente `http://`, incluindo o namespace SVG padrão obrigatório. O teste agora admite apenas esse namespace fixo e continua rejeitando URLs HTTP adicionais, chamadas `fetch` e o nome OrdaX no gerador.
+- **Gate:** `release:verify` completo no SHA final e GET do preview em `/og-image.png` com HTTP 200 e `image/png`; sem inferir QA visual nem status de produção.
+- **Limite:** metatags OG absolutas dependem de hostname Tonecos estável e verificado; não apontar para aliases OrdaX nem preview efêmero.
+- **next_action:** validar mesmo SHA, isolar os aliases OrdaX e realizar QA de navegador desktop/mobile antes de promover `main`.
+- **do_not_repeat:** não criar gerador paralelo, outro PNG autoritativo, nova branch, consultas ao D1 nem deploy manual.
+
+---
+
 ## Imagem social canônica gerada no build — 03/11/2026
 
 - **Baseline:** commit `65bd0546d772347137af1295926fbeb65f48c6be`, preview `READY` confirmado antes da alteração. O commit `fd983ed` havia removido corretamente o `og-image.png` legado que mostrava ORDAX, mas o arquivo ausente caía no HTML da SPA (`/og-image.png` → HTML, não PNG).

@@ -72,10 +72,14 @@ it("builds a single deterministic social image from Tonecos-owned sources", () =
     resolve(process.cwd(), "src/components/SEOHead.tsx"),
     "utf8",
   );
-  expect(packageJson.scripts.build).toContain("scripts/branding/generate-og-image.mjs");
-  expect(generator).toContain("public/og-image.png");
+  expect(packageJson.scripts.build).toBe("vite build && node scripts/branding/generate-og-image.mjs");
+  expect(generator).toContain("dist/og-image.png");
+  expect(generator).not.toContain("public/og-image.png");
   expect(generator).toContain("TONECOS STUDIO");
-  expect(generator).not.toMatch(/ordax|fetch\(|https?:\/\//i);
+  expect(generator).toContain('xmlns="http://www.w3.org/2000/svg"');
+  expect(generator.replaceAll("http://www.w3.org/2000/svg", "")).not.toMatch(
+    /ordax|fetch\(|https?:\/\//i,
+  );
   expect(seo).toContain('image = "/og-image.png"');
 });
 

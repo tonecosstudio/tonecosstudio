@@ -3,7 +3,7 @@ import sharp from "sharp";
 
 // Single, deterministic social image for the Tonecos brand.
 // Generated at build-time, never from a remote catalog or customer data.
-const output = fileURLToPath(new URL("../../public/og-image.png", import.meta.url));
+const output = fileURLToPath(new URL("../../dist/og-image.png", import.meta.url));
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#080808"/>
   <path d="M50 56H1150V574H50Z" fill="none" stroke="#b68b3b" stroke-width="2"/>
