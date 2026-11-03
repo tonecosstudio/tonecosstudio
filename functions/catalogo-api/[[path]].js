@@ -1,0 +1,105 @@
+/**
+ * Cloudflare Pages transport adapter for the single canonical Tonecos catalog.
+ * Only public, read-only routes are forwarded to the existing Worker.
+ * No D1 bindings, writes, alternate catalog service or browser credentials.
+ */
+const CATALOG_ORIGIN = "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
+const PREFIX = "/catalogo-api/";
+const PUBLIC_LIST_ROUTES = new Set([
+  "api/catalog",
+  "api/categories",
+  "api/franchises",
+  "api/folders",
+]);
+
+function isSafeMediaPath(path) {
+  if (!path.startsWith("media/")) return false;
+  const parts = path.slice("media/".length).split("/");
+  if (parts.length < 1 || parts.length > 16) return false;
+  return parts.every((segment) => {
+    if (
+      !segment ||
+      segment.length > 256 ||
+      !/^(?:[a-zA-Z0-9._~-]|%[0-9a-fA-F]{2})+$/.test(segment)
+    ) return false;
+    try {
+      const decoded = decodeURIComponent(segment);
+      return decoded !== "." && decoded !== ".." &&
+        !/[\\/\x00-\x1f\x7f]/.test(decoded);
+    } catch {
+      return false;
+    }
+  });
+}
+
+function isPublicCatalogRoute(path) {
+  return PUBLIC_LIST_ROUTES.has(path) ||
+    /^api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?$/.test(path) ||
+    isSafeMediaPath(path);
+}
+
+export async function proxyCatalogRequest(request, fetcher) {
+  if (request.method !== "GET") {
+    return new Response("Method not allowed", {
+      status: 405,
+      headers: { Allow: "GET", "Cache-Control": "no-store" },
+    });
+  }
+
+  let incoming;
+  try {
+    incoming = new URL(request.url);
+  } catch {
+    return new Response("Bad request", { status: 400 });
+  }
+
+  if (!incoming.pathname.startsWith(PREFIX) ||
+      incoming.pathname.length + incoming.search.length > 4096) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  const route = incoming.pathname.slice(PREFIX.length);
+  if (!isPublicCatalogRoute(route)) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  const upstream = new URL("/" + route + incoming.search, CATALOG_ORIGIN);
+  const headers = new Headers();
+  headers.set("Accept", request.headers.get("Accept") || "application/json");
+  if (request.headers.has("If-None-Match")) {
+    headers.set("If-None-Match", request.headers.get("If-None-Match"));
+  }
+  if (route.startsWith("media/") && request.headers.has("Range")) {
+    headers.set("Range", request.headers.get("Range"));
+  }
+
+  try {
+    const response = await fetcher(upstream, {
+      method: "GET",
+      headers,
+      redirect: "manual",
+    });
+    // No arbitrary external redirect or upstream cookie is promoted to our site.
+    if (response.status >= 300 && response.status < 400 && response.status !== 304) {
+      return new Response("Upstream redirect rejected", {
+        status: 502, headers: { "Cache-Control": "no-store" },
+      });
+    }
+    const safeHeaders = new Headers(response.headers);
+    safeHeaders.delete("set-cookie");
+    safeHeaders.set("X-Content-Type-Options", "nosniff");
+    return new Response(response.body, {
+      status: response.status,
+      headers: safeHeaders,
+    });
+  } catch {
+    return new Response("Catalog unavailable", {
+      status: 502, headers: { "Cache-Control": "no-store" },
+    });
+  }
+}
+
+/** Pages Functions entrypoint. */
+export function onRequest({ request }) {
+  return proxyCatalogRequest(request, fetch);
+}
