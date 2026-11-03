@@ -75,6 +75,15 @@ it("keeps preview-only routes isolated from stale account sessions", () => {
   expect(sync).toContain('VITE_PREVIEW_READ_ONLY === "true"');
 });
 
+it("keeps preview footer free of unavailable account and checkout promises", () => {
+  const footer = readFileSync(resolve(process.cwd(), "src/components/arcade/ArcadeFooter.tsx"), "utf8");
+  expect(footer).toContain('VITE_PREVIEW_READ_ONLY === "true"');
+  expect(footer).toContain("enabled: !previewReadOnly");
+  expect(footer).not.toContain('label: "Pagamentos"');
+  expect(footer).not.toContain('label: "Dashboard"');
+  expect(footer).not.toContain('label: "Wishlist"');
+});
+
 it("uses only Tonecos visual assets for public pages and browser notifications", () => {
   const html = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
   const icon = readFileSync(resolve(process.cwd(), "public/favicon.svg"), "utf8");

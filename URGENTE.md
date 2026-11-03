@@ -6,6 +6,18 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## MVP — rodapé público sem funções e contato não homologados — 03/11/2026
+
+- **Baseline validada:** `db2fbe0a29b7503652906b95b65c25e7845e6a59`, Vercel `READY` e alias estável do preview Tonecos atualizado. HTTP GET Home, modelos, contato, login e favicon + PNG social responderam 200.
+- **Achado:** `ArcadeFooter` mostrava links públicos para Dashboard, Pagamentos, Wishlist e Conta mesmo em `VITE_PREVIEW_READ_ONLY=true`. Além disso, carregava `system_settings` sem necessidade em um preview de catálogo e podia publicar dados de contato não homologados.
+- **Correção MVP:** no preview, o rodapé possui somente navegação e um aviso de atendimento em preparação, sem links privados, e não consulta `system_settings`. No ambiente comercial, preserva a entrada única Minha Conta e os canais já configurados; links avançados de Dashboard/Pagamentos/Wishlist não são anunciados até homologação. Nenhuma rota ou serviço foi excluído.
+- **Regressão:** `useSystemSettings({ enabled:false })` comprova ausência de leitura; `ArcadeFooter` tem teste de prévia/comercial e a identidade canônica impede regressão dos links. `release:verify` é obrigatório no SHA resultante, não declarar GO antes.
+- **Bloqueios:** produção e cadastro público aguardam auditoria Supabase Tonecos (RLS, SMTP, redirects e testes de perfil), isolamento dos domínios OrdaX e QA real desktop/mobile. Preview `READY` não equivale a liberação de usuários.
+- **next_action:** validar gate deste commit, repontar alias de preview somente depois de `READY` e obter autoridade de backend Tonecos para E2E de usuário.
+- **do_not_repeat:** não criar projetos e fluxos duplicados, não tocar D1/produção/OrdaX, não iniciar builds concorrentes.
+
+---
+
 ## MVP — isolamento de sessões antigas no preview — 03/11/2026
 
 - **Baseline:** `d021f9e2463e155477e20b1ecc80714e45b13f8b` teve Vercel `READY`; o preview estável foi atualizado para esse deploy. Home, modelos, contato e login responderam HTTP 200, `og-image.png` HTTP 200 `image/png`, favicon SVG válido. Uma página pequena de catálogo via proxy respondeu 200 com um item e cursor; sem varredura.

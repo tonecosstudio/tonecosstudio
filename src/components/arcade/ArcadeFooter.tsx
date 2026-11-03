@@ -36,13 +36,11 @@ if (PUBLIC_COLLECTIONS_ENABLED) {
 
 const accountLinks = [
   { to: AUTH_ROUTES.profile, label: "Minha Conta" },
-  { to: AUTH_ROUTES.dashboard, label: "Dashboard" },
-  { to: AUTH_ROUTES.payments, label: "Pagamentos" },
-  { to: AUTH_ROUTES.wishlist, label: "Wishlist" },
 ];
 
 export function ArcadeFooter() {
-  const { data: settings } = useSystemSettings();
+  const previewReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  const { data: settings } = useSystemSettings({ enabled: !previewReadOnly });
   const contactEmail = settings?.contact_email || CONTACT.CONTACT_EMAIL;
   const contactEmailHref = buildSafeMailtoHref(contactEmail);
   const whatsAppHref = settings?.phone_whatsapp
@@ -73,7 +71,9 @@ export function ArcadeFooter() {
       />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-16">
-        <div className="grid gap-10 md:grid-cols-[2fr_1fr_1fr_1fr]">
+        <div className={previewReadOnly
+          ? "grid gap-10 md:grid-cols-[2fr_1fr_1fr]"
+          : "grid gap-10 md:grid-cols-[2fr_1fr_1fr_1fr]"}>
           {/* Brand */}
           <div>
             <Link to="/" className="inline-block mb-5">
@@ -130,8 +130,8 @@ export function ArcadeFooter() {
             </ul>
           </div>
 
-          {/* Account */}
-          <div>
+          {/* Account: customer-only, never visible in read-only preview. */}
+          {!previewReadOnly && <div>
             <h4
               className="text-[8px] tracking-[0.3em] uppercase text-[hsl(var(--gold-accent)/0.6)] mb-5"
               style={{ fontFamily: "'Press Start 2P', monospace" }}
@@ -151,7 +151,7 @@ export function ArcadeFooter() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div>}
 
           {/* Contact */}
           <div>
@@ -161,6 +161,11 @@ export function ArcadeFooter() {
             >
               Contato
             </h4>
+            {previewReadOnly ? (
+              <p className="max-w-[16rem] font-mono text-xs leading-relaxed text-[hsl(0,0%,50%)]">
+                Atendimento em preparação. Esta prévia não recebe solicitações.
+              </p>
+            ) : (
             <ul className="space-y-3">
               {contactEmailHref && (
                 <li>
@@ -203,6 +208,7 @@ export function ArcadeFooter() {
                 </li>
               )}
             </ul>
+            )}
           </div>
         </div>
 

@@ -85,6 +85,17 @@ describe("useSystemSettings", () => {
     mocks.upsertAdminSystemSettings.mockResolvedValue(undefined);
   });
 
+  it("does not request system settings in a read-only preview", () => {
+    const { result } = renderHook(
+      () => useSystemSettings({ enabled: false }),
+      { wrapper: createWrapper() },
+    );
+
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(result.current.data).toBeUndefined();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
   it("busca somente chaves publicas allowlisted e normaliza valores oficiais", async () => {
     const { result } = renderHook(() => useSystemSettings(), {
       wrapper: createWrapper(),
