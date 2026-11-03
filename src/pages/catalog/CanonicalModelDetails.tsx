@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, ImageOff } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
 import {
@@ -16,8 +16,32 @@ import {
 
 const API_BASE = CANONICAL_CATALOG_API_BASE;
 
+/** Restore only known first-party catalog filters from navigation state. */
+function catalogReturnPath(state: unknown): string {
+  const base = PUBLIC_ROUTES.catalogModels;
+  if (!state || typeof state !== "object" || Array.isArray(state)) return base;
+  const raw = (state as Record<string, unknown>).catalogReturnSearch;
+  if (typeof raw !== "string" || raw.length > 1024) return base;
+  const source = new URLSearchParams(raw);
+  const filters = new URLSearchParams();
+  for (const key of ["q", "category", "franchise", "folder"] as const) {
+    const values = source.getAll(key);
+    if (values.length > 1) return base;
+    const value = values[0]?.trim();
+    if (value) filters.set(key, value);
+  }
+  if (filters.has("folder") && (!filters.has("category") || !filters.has("franchise"))) {
+    filters.delete("folder");
+  }
+  const search = filters.toString();
+  return search ? `${base}?${search}` : base;
+}
+
+
 export default function CanonicalModelDetails() {
   const { id: slug } = useParams<{ id: string }>();
+  const location = useLocation();
+  const catalogReturnTo = catalogReturnPath(location.state);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const gateway = useMemo(() => {
     if (!API_BASE) return null;
@@ -91,7 +115,7 @@ export default function CanonicalModelDetails() {
       <main className="min-h-[80vh] bg-[hsl(0,0%,4%)] px-4 py-8 text-[hsl(0,0%,94%)] md:px-8 md:py-12">
         <div className="mx-auto max-w-7xl">
           <Link
-            to={PUBLIC_ROUTES.catalogModels}
+            to={catalogReturnTo}
             className="inline-flex min-h-11 items-center gap-2 rounded-none text-sm font-medium text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
           >
             <ArrowLeft aria-hidden="true" size={17} />

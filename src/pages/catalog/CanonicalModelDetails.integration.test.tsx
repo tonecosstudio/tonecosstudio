@@ -97,6 +97,8 @@ describe("published model/gallery identity on the public detail page", () => {
   it("renders a single approved cover without inventing extra photographs", async () => {
     const { io } = mountGallery({ total: 1 });
     await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    expect(screen.getByRole("link", { name: "Voltar ao catálogo" }))
+      .toHaveAttribute("href", "/modelos");
     expect(screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"))
       .toHaveTextContent("1");
     expect(screen.queryByRole("button", { name: "Carregar mais imagens" }))

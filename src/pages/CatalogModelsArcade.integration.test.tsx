@@ -280,6 +280,83 @@ describe("Tonecos canonical model discovery UI", () => {
   });
 });
 
+  it("returns to the same catalog search and folder filters after opening a model", async () => {
+    const startingPath =
+      "/modelos?q=escultura&category=originais&franchise=autoral&folder=esculturas%2Fclassicas";
+    const { calls, fetcher: listFetch } = setupFetch();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string, init: RequestInit) => {
+        const path = new URL(input).pathname;
+        if (path.endsWith("/api/models/escultura-original")) {
+          return Response.json({
+            ...original,
+            description: null,
+            material: null,
+            height_cm: null,
+          });
+        }
+        if (path.endsWith("/api/models/escultura-original/images")) {
+          const makeImage = (id: string, role: "cover" | "gallery") => ({
+            id,
+            role,
+            width: 800,
+            height: 1000,
+            bytes: 4096,
+            mime: "image/webp",
+            qualityScore: 95,
+            sourceSha256: role === "cover" ? "a".repeat(64) : "b".repeat(64),
+            variantKeys: {
+              thumb: "media/model-one/" + id + "/thumb.webp",
+              card: role === "cover" ? original.cover_storage_key : "media/model-one/" + id + "/card.webp",
+              detail: "media/model-one/" + id + "/detail.webp",
+              original: null,
+            },
+          });
+          return Response.json({
+            items: [makeImage("image-1", "cover"), makeImage("image-2", "gallery")],
+            nextCursor: null,
+            total: 2,
+            version: 1,
+          });
+        }
+        return listFetch(input, init);
+      }),
+    );
+    const { default: Models } = await import("./CatalogModelsArcade");
+    const { default: Details } = await import("./catalog/CanonicalModelDetails");
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[startingPath]}>
+          <Routes>
+            <Route path="/modelos" element={<Models />} />
+            <Route path="/modelos/:id" element={<Details />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    fireEvent.click(
+      await screen.findByRole("link", { name: "Ver detalhes de Escultura original" }),
+    );
+    const back = await screen.findByRole("link", { name: "Voltar ao catálogo" });
+    expect(back).toHaveAttribute("href", startingPath);
+    fireEvent.click(back);
+    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+    expect(screen.getByRole("textbox", { name: "Pesquisar modelos" })).toHaveValue("escultura");
+    expect(screen.getByRole("combobox", { name: "Filtrar por categoria" })).toHaveValue("originais");
+    expect(screen.getByRole("combobox", { name: "Filtrar por franquia" })).toHaveValue("autoral");
+    expect(screen.getByText(/Pasta selecionada:/)).toHaveTextContent("esculturas/classicas");
+    const catalogReads = calls.filter((call) => call.url.pathname.endsWith("/api/catalog"));
+    expect(catalogReads.length).toBeGreaterThan(0);
+    expect(catalogReads.every(({ url }) =>
+      url.searchParams.get("q") === "escultura" &&
+      url.searchParams.get("category") === "originais" &&
+      url.searchParams.get("franchise") === "autoral" &&
+      url.searchParams.get("folder") === "esculturas/classicas"
+    )).toBe(true);
+  });
+
 describe("Tonecos shareable model detail UI", () => {
   it("loads a versioned gallery, selects images and pages without submitting an order", async () => {
     const requests: Array<{ url: URL; method: string }> = [];

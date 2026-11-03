@@ -455,6 +455,7 @@ export default function CatalogModelsArcade() {
                     <div className="flex h-full flex-col">
                       <Link
                         to={catalogModelDetailsPath(model.slug)}
+                         state={{ catalogReturnSearch: searchParams.toString() }}
                         aria-label={"Ver detalhes de " + model.name}
                         className="block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                       >
