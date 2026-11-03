@@ -6,6 +6,15 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Metadados sociais absolutos no HTML servido — 03/11/2026
+
+- **Baseline validada:** `7c24338ee355b3dc16eef49fabdbb35086423bf6` teve `release:verify` concluído e Vercel `READY`. HTTP do preview: `/` e `/modelos` 200, `/favicon.svg` 200 `image/svg+xml` e `/og-image.png` 200 `image/png` (1200×630, 15.786 bytes). O HTML inicial, porém, ainda não incluía `og:image` nem `twitter:image` porque essas tags só eram adicionadas pelo React.
+- **Correção sem outro gerador:** o script existente de imagem social gera o mesmo PNG em `dist/` e injeta `og:image`, `twitter:image`, formato, dimensões e texto alternativo em `dist/index.html`, somente quando há um origin HTTPS autorizado. Preview usa `VERCEL_URL` validado para projeto `tonecosstudio`; produção exige `TONECOS_PUBLIC_ORIGIN` explícito com hostname próprio HTTPS, rejeitando aliases antigos da OrdaX e `.vercel.app`. Nenhum domínio foi definido automaticamente como oficial.
+- **Regressão offline:** `node --test scripts/branding/generate-og-image.test.mjs` testa preview, host forjado, ausência de origem oficial, origens OrdaX rejeitadas e duplicação de metatags. O `release:verify` continua incluindo a suíte Vitest e o build; o teste Node é executado somente no build.
+- **Gate de publicação:** exigir o novo `release:verify`, preview `READY` e verificação HTTP de HTML estático com URL absoluta, PNG real e ausência de redirects da OrdaX. Preview protegido não é compartilhamento público homologado; domínios antigos ainda exigem separação administrativa antes de produção.
+- **next_action:** homologar os metadados no novo SHA e seguir QA desktop/mobile. Não alterar `main`, domínios OrdaX, Supabase, catálogo Worker/D1 ou produção.
+
+---
 ## Saída da imagem social exclusivamente no artefato — 03/11/2026
 
 - **Baseline:** `5f33c09743df8402837157521e089e156e6603de` corrigiu o bloqueio TS6133 e iniciou o gate de preview; não supor aprovação enquanto ele estiver em execução.

@@ -1,4 +1,5 @@
-import { fileURLToPath } from "node:url";
+import { readFile, writeFile } from "node:fs/promises";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import sharp from "sharp";
 
 // Single, deterministic social image for the Tonecos brand.
@@ -19,5 +20,65 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" v
   <path d="M1000 181V447M867 314H1133" stroke="#8e702f" stroke-width="2"/>
   <circle cx="1000" cy="314" r="10" fill="#e5b752"/>
 </svg>`;
-await sharp(Buffer.from(svg)).png({ palette: true, quality: 90, compressionLevel: 9 })
-  .toFile(output);
+export function resolveSocialOrigin(env = process.env) {
+  if (env.VERCEL_ENV === "preview") {
+    const host = (env.VERCEL_URL || "").trim().toLowerCase();
+    if (!/^tonecosstudio-[a-z0-9-]+\.vercel\.app$/.test(host)) {
+      throw new Error("Tonecos preview requires its own authenticated Vercel hostname.");
+    }
+    return `https://${host}`;
+  }
+  if (env.VERCEL_ENV === "production") {
+    const raw = (env.TONECOS_PUBLIC_ORIGIN || "").trim();
+    if (!raw) throw new Error("A verified Tonecos public origin is required for production social metadata.");
+    let url;
+    try {
+      url = new URL(raw);
+    } catch {
+      throw new Error("Invalid Tonecos public origin.");
+    }
+    const host = url.hostname.toLowerCase();
+    const legacyHost = host === "ordax.com.br" || host.endsWith(".ordax.com.br") || host === "ordax-three.vercel.app";
+    if (url.protocol !== "https:" || url.username || url.password || url.port || url.pathname !== "/" || url.search || url.hash || legacyHost || host.endsWith(".vercel.app")) {
+      throw new Error("A dedicated, HTTPS Tonecos hostname is required for production social metadata.");
+    }
+    return url.origin;
+  }
+  return null;
+}
+
+export function injectSocialMeta(html, origin) {
+  if (!origin) return html;
+  const anchor = '    <meta property="og:site_name" content="Tonecos Studio" />';
+  if (html.split(anchor).length !== 2 || html.includes('property="og:image"') || html.includes('name="twitter:image"')) {
+    throw new Error("Unexpected Tonecos social metadata template; refusing to generate duplicates.");
+  }
+  const imageUrl = new URL("/og-image.png", origin).href;
+  const tags = [
+    `<meta property="og:image" content="${imageUrl}" />`,
+    `<meta property="og:image:secure_url" content="${imageUrl}" />`,
+    '<meta property="og:image:type" content="image/png" />',
+    '<meta property="og:image:width" content="1200" />',
+    '<meta property="og:image:height" content="630" />',
+    '<meta property="og:image:alt" content="Tonecos Studio — esculturas sob encomenda" />',
+    `<meta name="twitter:image" content="${imageUrl}" />`,
+    '<meta name="twitter:image:alt" content="Tonecos Studio — esculturas sob encomenda" />',
+  ];
+  return html.replace(anchor, `${anchor}\n    ${tags.join("\n    ")}`);
+}
+
+async function main() {
+  await sharp(Buffer.from(svg))
+    .png({ palette: true, quality: 90, compressionLevel: 9 })
+    .toFile(output);
+  const origin = resolveSocialOrigin();
+  if (!origin) return;
+  const indexPath = fileURLToPath(new URL("../../dist/index.html", import.meta.url));
+  const html = await readFile(indexPath, "utf8");
+  await writeFile(indexPath, injectSocialMeta(html, origin), "utf8");
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}
+
