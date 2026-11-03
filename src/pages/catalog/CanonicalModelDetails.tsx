@@ -26,7 +26,31 @@ const API_BASE = CANONICAL_CATALOG_API_BASE;
 function catalogReturnPath(state: unknown): string {
   const base = PUBLIC_ROUTES.catalogModels;
   if (!state || typeof state !== "object" || Array.isArray(state)) return base;
-  const raw = (state as Record<string, unknown>).catalogReturnSearch;
+  const values = state as Record<string, unknown>;
+  const universe = values.catalogReturnUniverse;
+  if (universe && typeof universe === "object" && !Array.isArray(universe)) {
+    const scope = universe as Record<string, unknown>;
+    const validSlug = (value: unknown): value is string =>
+      typeof value === "string" && /^[a-z0-9][a-z0-9-]{0,239}$/.test(value);
+
+    if (validSlug(scope.category) && validSlug(scope.franchise)) {
+      const folder = scope.folder;
+      if (
+        folder !== undefined &&
+        (typeof folder !== "string" ||
+          folder.length > 240 ||
+          Array.from(folder).some((part) => part.charCodeAt(0) < 32 || part.charCodeAt(0) === 127) ||
+          folder.replaceAll("\\", "/").split("/").some((part) => part === "." || part === ".."))
+      ) {
+        return base;
+      }
+      const route = `${PUBLIC_ROUTES.catalog}/${scope.category}/${scope.franchise}`;
+      return typeof folder === "string" && folder
+        ? route + "?" + new URLSearchParams({ folder }).toString()
+        : route;
+    }
+  }
+  const raw = values.catalogReturnSearch;
   if (typeof raw !== "string" || raw.length > 1024) return base;
   const source = new URLSearchParams(raw);
   const filters = new URLSearchParams();
@@ -129,7 +153,9 @@ export default function CanonicalModelDetails() {
             className="inline-flex min-h-11 items-center gap-2 rounded-none text-sm font-medium text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
           >
             <ArrowLeft aria-hidden="true" size={17} />
-            Voltar ao catálogo
+            {catalogReturnTo.startsWith(PUBLIC_ROUTES.catalog + "/")
+              ? "Voltar à pasta"
+              : "Voltar ao catálogo"}
           </Link>
 
           {gateway === null || !slug ? (

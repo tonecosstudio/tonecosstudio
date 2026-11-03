@@ -61,7 +61,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function mountGallery(options: { total: number; coverKey?: string }) {
+function mountGallery(options: { total: number; coverKey?: string; returnState?: unknown }) {
   const io = vi.fn(async (input: string, _init: RequestInit) => {
     const url = new URL(input);
     if (url.pathname.endsWith("/api/models/animal-original")) {
@@ -85,7 +85,7 @@ function mountGallery(options: { total: number; coverKey?: string }) {
   const view = render(
     <QueryClientProvider client={client}>
       <CatalogBrowsingProvider>
-      <MemoryRouter initialEntries={["/modelos/animal-original"]}>
+      <MemoryRouter initialEntries={[{ pathname: "/modelos/animal-original", state: options.returnState }]}>
         <Routes>
           <Route path="/modelos/:id" element={<CanonicalModelDetails />} />
         </Routes>
@@ -134,6 +134,53 @@ describe("published model/gallery identity on the public detail page", () => {
       expect(url).toContain("https://catalog.example.test/catalogo-api/api/models/animal-original");
       expect(init).toMatchObject({ method: "GET", credentials: "omit" });
     }
+  });
+
+  it("returns to the exact canonical Universe folder when entered from a folder preview", async () => {
+    mountGallery({
+      total: 1,
+      returnState: {
+        catalogReturnUniverse: {
+          category: "games",
+          franchise: "nier",
+          folder: "heroes/figures",
+        },
+      },
+    });
+    const back = await screen.findByRole("link", { name: "Voltar à pasta" });
+    expect(back).toHaveAttribute(
+      "href",
+      "/universo/games/nier?folder=heroes%2Ffigures",
+    );
+  });
+
+  it("rejects untrusted return scopes and traversal folders", async () => {
+    const { unmount } = mountGallery({
+      total: 1,
+      returnState: {
+        catalogReturnUniverse: {
+          category: "https://outside.test",
+          franchise: "nier",
+          folder: "heroes",
+        },
+      },
+    });
+    expect(await screen.findByRole("link", { name: "Voltar ao catálogo" }))
+      .toHaveAttribute("href", "/modelos");
+    unmount();
+
+    mountGallery({
+      total: 1,
+      returnState: {
+        catalogReturnUniverse: {
+          category: "games",
+          franchise: "nier",
+          folder: "../admin",
+        },
+      },
+    });
+    expect(await screen.findByRole("link", { name: "Voltar ao catálogo" }))
+      .toHaveAttribute("href", "/modelos");
   });
 
   it("blocks a stale gallery total instead of claiming unverified published images", async () => {

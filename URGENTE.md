@@ -39,6 +39,24 @@
 
 ---
 
+## Gate das imagens concluído — 03/11/2026
+
+- **Commit `98632545751aa257c2a647ff46f09155ce8686fc`:** preview `dpl_95ZXutQkLGJFGXDKJeTZaHBQ8JHR` READY, `release:verify` completo até `npm audit --omit=dev --audit-level=high` com `found 0 vulnerabilities`. Typecheck, lint, auditorias de autoridade, Vitest/cobertura e Vite atravessados no mesmo SHA. Não confundir gate automatizado com homologação visual real.
+- **Produção:** não promovida, `main` não atualizada, domínios OrdaX ainda vinculados ao projeto e lançamento segue NO-GO.
+
+---
+
+## Navegação sem perda da pasta de origem — 03/11/2026
+
+- **Situação encontrada:** ao abrir a ficha de um modelo a partir de `/universo/:categoria/:franquia?folder=...`, o botão `Voltar ao catálogo` voltava à lista geral de /modelos e perdia a origem da navegação.
+- **Correção preparada:** o link do card transmite apenas o contexto estruturado de categoria/franquia/pasta; a ficha reconstrói exclusivamente uma rota interna do Universo após validar slugs e segmentos sem travessia. Com contexto válido, o botão mostra `Voltar à pasta`; contextos malformados voltam para `/modelos`. Preservado o comportamento atual de filtros `catalogReturnSearch` da lista geral.
+- **Regressões:** testes de retorno exato, rejeição de escopo externo/travessia e prova de que abrir a ficha a partir da pasta não dispara consultas adicionais ao Worker. Nenhuma mudança de D1/Supabase, preços, pedidos ou rotas globais.
+- **Gate de mudanças:** aplicar e testar somente depois de concluir o build anterior de imagens para evitar builds concorrentes; não declarar PASS antes de `release:verify` neste SHA.
+- **next_action:** homologar navegação e responsividade no preview autenticado, isolar domínios do OrdaX antes da promoção.
+- **do_not_repeat:** sem URLs externas de retorno, sem estado de seleção duplicado, sem consultas de busca em massa.
+
+---
+
 ## Imagens resilientes do catálogo — 03/11/2026
 
 - **Baseline comprovada:** `444722fc73fb38b672d50565c5d7d4c853425b4d`, branch `integration/tonecosstudio-canonical-20261101`, Vercel preview `dpl_FYGCpEkqRmNQ4DGgsQh2JX92k8ah` READY e status SUCCESS, `release:verify` concluído. Continua NO-GO de lançamento e main inalterada.

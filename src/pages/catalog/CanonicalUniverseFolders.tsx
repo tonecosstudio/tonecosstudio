@@ -118,7 +118,12 @@ export function CanonicalUniverseFolders({
             const image = gateway.mediaUrl(model.coverStorageKey);
             return (
               <ArcadeCard key={model.id}>
-                <Link to={catalogModelDetailsPath(model.slug)} className="group block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" aria-label={"Ver detalhes de " + model.name}>
+                <Link
+                  to={catalogModelDetailsPath(model.slug)}
+                  state={{ catalogReturnUniverse: { category, franchise, folder: parent } }}
+                  className="group block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]"
+                  aria-label={"Ver detalhes de " + model.name}
+                >
                   <div className="flex aspect-[3/4] items-center justify-center overflow-hidden bg-[hsl(0,0%,8%)]">
                     <CanonicalCatalogImage
                       src={image}
