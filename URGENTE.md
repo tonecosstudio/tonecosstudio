@@ -6,6 +6,17 @@
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
 > Não declarar GO sem `release:verify` completo no mesmo SHA e smokes críticos do runtime.
 
+## Ajuste do gate de regressão da galeria — 03/11/2026
+
+- **Gate `2a983f31d0112eeabdbbcef8d7a1cbbfdd561f54`:** preview `dpl_6u9CdF7wdHci24CmGkUk5yC8tHAJ` terminou ERROR em `test:coverage`, com 3.280 testes aprovados, 32 ignorados, 1 falho em `CanonicalModelDetails.integration.test.tsx:252`.
+- **Causa reproduzida:** a interface usa `role="status"` tanto para a seleção de modelos quanto para o aviso de cursor circular da galeria. O teste do ciclo usava `getByRole("status")` sem escopo, gerando ambiguidade. A lógica de bloqueio do cursor não foi a causa da falha.
+- **Correção:** localizar a mensagem exata do ciclo e exigir que seu elemento tenha `role="status"`. Mantidos os cliques, três imagens obtidas, botão desabilitado e contagem de quatro requisições simuladas. Não modificar código de produção nem reduzir cobertura.
+- **Gate:** exigir `release:verify` completo no novo SHA antes de considerar a proteção aprovada. Preview somente leitura, `main`, Vercel produção e D1 intocadas.
+- **next_action:** verificar a suíte de galeria e o gate integral, e avançar na auditoria de catálogo somente se o mesmo SHA for READY.
+- **do_not_repeat:** não procurar genericamente um role presente em múltiplas seções na mesma tela.
+
+---
+
 ## Correções canônicas de integridade e paginação de galeria — 03/11/2026
 
 - **Baseline concorrente observada:** o commit `366de85c2a331144f2038241536e2112362ef6ca` corrigiu a asserção de contato e executou o preview Vercel `dpl_6MfM5SfWC8MUs6tLufH7Eurbsux3`. Esta frente usa exatamente a mesma branch e preserva integralmente os arquivos de Contato/Arcade. A regra é encerrar primeiro o gate anterior, confirmar HEAD/target preview e só então submeter um novo commit.

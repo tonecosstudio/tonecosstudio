@@ -249,9 +249,13 @@ describe("published model/gallery identity on the public detail page", () => {
 
     expect(screen.queryByRole("button", { name: "Carregar mais imagens" }))
       .not.toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "A sequência da galeria retornou a uma página já visitada",
-    );
+    // The model selection also uses role="status"; target the gallery
+    // message specifically and preserve its accessibility semantics.
+    expect(
+      screen.getByText(
+        /A sequência da galeria retornou a uma página já visitada\./,
+      ),
+    ).toHaveAttribute("role", "status");
     // Exactly one published model detail and three bounded gallery pages.
     expect(io).toHaveBeenCalledTimes(4);
   });
