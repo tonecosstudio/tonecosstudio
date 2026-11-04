@@ -193,6 +193,6 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 
 - A ficha do Androide 17 abriu a partir de `Dragon Ball → Androides → Androide 17`, carregou a imagem publicada e o link “Voltar à pasta” retornou ao caminho exato da subpasta.
 - A ficha do Androide 18 tem duas imagens: selecionar a segunda muda a imagem principal e `aria-pressed`; imagem e miniaturas carregam corretamente.
-- Ambas as fichas passaram em 320, 360, 390, 414, 768, 1024, 1280, 1440, 1600 e 1920 px sem overflow. Link de retorno 44 px, seleção 46 px e miniaturas entre 62 e 106 px. A seleção permaneceu vazia durante o QA.
+- Ambas as fichas passaram em 320, 360, 390, 414, 768, 1024, 1280, 1440, 1600 e 1920 px sem overflow. Link de retorno 44 px, seleção 46 px e miniaturas entre 62 e 106 px. A navegação por Tab alcançou “Raiz da franquia” e mostrou contorno dourado sólido de 2 px no alvo de 44 px; a seleção permaneceu vazia.
 - Preview protegido `9201bcb6`, source funcional `a0312bb91b533d6830a85e0f5b7524d7ed4c33c2`; sem novo build ou alteração de código nesta rodada. Produção e recursos do Worker continuam intactos.
 - **NEXT_ACTION:** seguir por `/universo/marvel-dc/equipes-e-grupos`, revisar busca/franquias de maior volume e foco de teclado. Não repetir testes já aprovados de ficha/galeria nem gerar build somente para documentação.
