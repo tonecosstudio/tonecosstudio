@@ -117,6 +117,7 @@ export default function CatalogArcade() {
           title="UNIVERSO"
           subtitle=">> CATEGORIAS E FRANQUIAS DO ACERVO PUBLICADO."
           stats={[]}
+          compact
         />
         <div className="relative z-10 mx-auto max-w-7xl px-4 pt-8 md:px-6">
           <nav aria-label="Navegação do acervo" className="mb-8 flex flex-wrap items-center gap-3 text-xs">
