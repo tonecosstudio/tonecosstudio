@@ -129,7 +129,7 @@ export function ArcadeNavView({
           )}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="text-[hsl(0,0%,55%)] transition-colors hover:text-[hsl(var(--gold-accent))] lg:hidden"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-[hsl(0,0%,55%)] transition-colors hover:text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] lg:hidden"
             aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
             aria-expanded={mobileOpen}
           >
@@ -149,7 +149,7 @@ export function ArcadeNavView({
               key={link.to}
               to={link.to}
               onClick={() => setMobileOpen(false)}
-              className={`block py-2 ${linkClass(link.to)}`}
+              className={`flex min-h-11 items-center ${linkClass(link.to)}`}
             >
               {link.label}
             </Link>
@@ -158,7 +158,7 @@ export function ArcadeNavView({
             <Link
               to={`${PUBLIC_ROUTES.login}?mode=signup`}
               onClick={() => setMobileOpen(false)}
-              className={`block py-2 ${linkClass(PUBLIC_ROUTES.login)}`}
+              className={`flex min-h-11 items-center ${linkClass(PUBLIC_ROUTES.login)}`}
             >
               CRIAR CONTA
             </Link>
@@ -169,7 +169,7 @@ export function ArcadeNavView({
                 key={link.to}
                 to={link.to}
                 onClick={() => setMobileOpen(false)}
-                className={`block py-2 ${linkClass(link.to)}`}
+                className={`flex min-h-11 items-center ${linkClass(link.to)}`}
               >
                 {link.label}
               </Link>
@@ -178,7 +178,7 @@ export function ArcadeNavView({
             <Link
               to={AUTH_ROUTES.notifications}
               onClick={() => setMobileOpen(false)}
-              className={`block py-2 ${linkClass(AUTH_ROUTES.notifications)}`}
+              className={`flex min-h-11 items-center ${linkClass(AUTH_ROUTES.notifications)}`}
             >
               NOTIFICACOES
             </Link>
@@ -187,7 +187,7 @@ export function ArcadeNavView({
             <Link
               to={ADMIN_ROUTES.home}
               onClick={() => setMobileOpen(false)}
-              className="block py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-red-500"
+              className="flex min-h-11 items-center font-mono text-[10px] uppercase tracking-[0.2em] text-red-500"
             >
               ADMIN
             </Link>
