@@ -1,5 +1,15 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## Infraestrutura — Workers Builds redundante desconectado — 04/11/2026
+
+- **Raiz do check vermelho `Workers Builds: tonecosstudio`:** além do Pages `tonecosstudio`, existia um Worker separado `tonecosstudio` (script tag `0b8d360beb814e69a3fa2ab2dc9e3524`, criado em 03/11), sem subdomínio público, bindings ou tráfego declarado. Esse Worker havia sido conectado ao mesmo repositório GitHub institucional por um gatilho Workers Builds com `bun run build` e `npx wrangler deploy`, auto-build e previews ativados; não corresponde ao deploy Pages/Functions oficial e gerava check adicional falho no PR.
+- **Ação real e verificada:** remoção, pela API Cloudflare, **somente da configuração de Workers Builds** desse Worker e seus gatilhos. `DELETE /accounts/{account_id}/builds/workers/{script_tag}` retornou success; o recurso Worker `tonecosstudio` não foi excluído, a API canônica `tonecos-catalogo-api` foi preservada, e o Pages `tonecosstudio` continuou com Service Binding `CATALOG_WORKER` e auto deploys de produção desativados. Verificação de leitura da configuração removida retornou recurso ausente.
+- O check GitHub histórico que já falhou pode não ser corrigido retroativamente; **não forçar um novo build apenas para limpar indicador histórico**. Se o check continuar requerido, reconciliar ruleset após inspeção da política GitHub, não enfraquecer CI, sem reativar Workers Builds redundante.
+- **Release vigente:** deployment privado Cloudflare Pages `db3d7ce8-3afd-4145-951a-87d71b722b16` SHA `0bba0003`, `build=success` e `deploy=success`, 04/11 03:32 UTC, incluindo novas páginas legais MVP. Nenhum novo build por esta documentação.
+- **Gates restantes:** sem URL/anon key de produção Supabase Tonecos comprovadamente autorizadas; `src/integrations/supabase/client.ts` exige ambas; Access protege somente previews; `robots.txt` bloqueia indexação; QA autenticado completo e revisão jurídica dos textos faltam. PR #4 segue draft, sem merge ou publicação pública.
+
+---
+
 ## MVP — páginas legais homologadas em preview — 04/11/2026
 
 - **Build/Deploy GREEN**: Cloudflare Pages projeto `tonecosstudio`, deployment manual `db3d7ce8-3afd-4145-951a-87d71b722b16` do código `0bba00036e3b3d1ae57bdfa4ae8db47fcd436102` terminou em **04/11/2026 03:32:14 UTC** com `clone_repo`, `build` e `deploy` = `success`. Os logs confirmam `release:verify` aprovado, Vite build completo, Pages Functions compiladas, arquivos publicados e `found 0 vulnerabilities`. Preview privado: `https://db3d7ce8.tonecosstudio.pages.dev`; teste sem login respondeu HTTP 302 para Cloudflare Access.
