@@ -163,3 +163,17 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - QA visual em 320, 360, 390, 430, 640, 768, 1024, 1280, 1440 e 1920 px: sem overflow; o hero acompanha 88svh, as grades se ajustam à largura e os modelos em destaque carregam.
 - Ações principais medem 56 px; ações de navegação secundária, 44 px. Nenhuma alteração de código na Home.
 - **NEXT_ACTION:** continuar QA das interações de busca, paginação e seleção do catálogo no mesmo preview privado.
+
+## Rodada 9 — franquia Street Fighter e alvos móveis (04/11/2026)
+
+- Na página `/universo/games/street-fighter`, o breadcrumb “Raiz da franquia” tinha 16 px de altura; “Ver mais modelos” tinha 20 px. O componente agora aplica alvo mínimo de 44 px, foco visível e o mesmo tratamento aos breadcrumbs das pastas e ao CTA “Explorar todos os modelos”.
+- Preview privado [abrir Street Fighter](https://9201bcb6.tonecosstudio.pages.dev/universo/games/street-fighter), deployment `9201bcb6-f3fb-4945-9aac-6cb1a38da974`, ambiente preview, source commit `a0312bb91b533d6830a85e0f5b7524d7ed4c33c2`, build/deploy SUCCESS.
+- QA em 320, 360, 390, 414, 768, 1024, 1280, 1440, 1600 e 1920 px: sem overflow; root, breadcrumb, exploração e “Ver mais” medem 44 px. A pasta Akuma lista 6 referências, abre e retorna à raiz; o CTA mantém `category=games&franchise=street-fighter` ao abrir Modelos.
+- Gates do Pages: typecheck, `catalog:mvp:test` (78/78), monorepo (9/9), segurança/proxy/SEO (28/28), Vite build e compilação da Pages Function passaram. Preview readonly/noindex; produção, Worker, D1 e R2 inalterados.
+
+## Rodada 10 — interações de Modelos no preview atual (04/11/2026)
+
+- Na mesma versão de preview: página 2 mostra 36 modelos e volta à página 1; busca “androide” retorna 35, limpar restaura 36; adicionar e remover referência alterna `0/50 → 1/50 → 0/50`. Sem overflow. Nenhum pedido ou dado comercial é criado.
+- **HEAD funcional validado:** `a0312bb91b533d6830a85e0f5b7524d7ed4c33c2`. PR #4 segue draft; preview manual; produção automática e previews automáticos permanecem desativados.
+- **NEXT_ACTION:** seguir por `/universo/filmes-series`, auditar a categoria em larguras móveis e desktop e corrigir somente achados concretos. Não repetir as páginas já aprovadas nem gerar build só por alterações documentais.
+- **DO_NOT_REPEAT:** não publicar produção, alterar Worker/D1/R2/DNS, varrer catálogo integral ou criar branch/PR adicional.
