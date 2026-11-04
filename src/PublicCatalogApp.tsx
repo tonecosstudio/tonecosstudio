@@ -53,6 +53,7 @@ export default function PublicCatalogApp() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="tonecos-catalog-theme">
         <BrowserRouter>
+          <PublicRouteScrollReset />
           <CatalogBrowsingProvider>
             <ArcadeFrame nav={<ArcadeNavView />} footer={<ArcadeFooterView />}>
               <Suspense fallback={<div role="status" className="min-h-[50vh] p-12 text-center">Carregando catálogo...</div>}>
