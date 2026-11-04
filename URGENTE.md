@@ -224,3 +224,12 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - **Preview atualizado:** [abrir Sobre](https://5efaa52b.tonecosstudio.pages.dev/sobre), deployment `5efaa52b-44f1-44d3-b9b6-1c721b052974`; build e deploy **SUCCESS** no mesmo SHA, ambiente `preview`. As configurações de produção automática desligada e preview automático desativado foram preservadas.
 - QA visual em 320/390/768/1440 px: sem overflow horizontal; valores e produção usam 1/1/2/4 e 1/1/2/3 colunas; FAQ manteve controles utilizáveis. Teste manual por Space abriu/fechou o painel, sincronizou `aria-expanded` e `hidden`, e exibiu o contorno de foco de 2 px. Nenhum erro no console.
 - Sem alteração de produção, Worker, D1, R2 ou DNS. PR #4 segue draft. **NEXT_ACTION:** continuar pela página Contato, revisar o formulário por e-mail e responsividade em 320/390/768/1440 px.
+
+
+## Rodada 16 — Contato responsivo no preview atual (04/11/2026)
+
+- QA do componente público `PublicCatalogContact` no preview protegido mais recente, sem acionar o link `mailto:`.
+- Em 320, 390, 768 e 1440 px, não houve overflow horizontal. Hero com 211/211/248/260 px; botão de e-mail 143×44 px; ações “Ver Modelos” 188×48 px e “Início” 116×44 px. As ações empilham no celular e ficam em linha a partir de 768 px.
+- O texto explicativo quebra sem ultrapassar o card. Navegação por teclado mostrou contorno dourado de foco com 2 px no link de e-mail.
+- Preview privado: [Contato](https://3bc09d16.tonecosstudio.pages.dev/contato), deployment `3bc09d16-0dff-41bf-91ae-e65712e95eb2`, build e deploy SUCCESS no SHA de código `446ab60396c96e64f31892d9bbf14253d0b96c57`. Nenhuma mensagem foi enviada; produção e Worker inalterados.
+- **NEXT_ACTION:** revisar a rota 404 responsiva no preview atual. Manter a PR #4 draft e não gerar build por atualização documental.
