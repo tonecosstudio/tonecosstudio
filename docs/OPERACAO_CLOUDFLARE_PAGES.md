@@ -24,6 +24,10 @@ Mitigação existente: Vercel aceitou requisição previewDeploymentsDisabled=tr
 
 A desconexão final, quando aprovada, é no **projeto Tonecos legado**: Vercel → equipe jogo-brasils-projects → tonecosstudio → Settings → Git → Disconnect. Referência oficial: https://vercel.com/docs/project-configuration/git-settings . Não há registro de que o Disconnect tenha sido feito. Os domínios históricos devem ser removidos só no projeto legado após verificar que o OrdaX permanece intocado.
 
+## Configuração residual do repositório
+
+A única configuração Vercel mantida no projeto é o `vercel.json` mínimo com `git.deploymentEnabled=false`. Foram removidas as rotas de proxy, regras de cache, cabeçalhos e comandos de compilação da Vercel, bem como o antigo script de decisão de builds. **O site não depende desses recursos.** O frontend e o transporte do catálogo são propriedade do Cloudflare Pages; a configuração Vercel mínima existe apenas como trava preventiva enquanto o projeto antigo ainda apresenta Git conectado. Para desconectar definitivamente, usar o painel Vercel na equipe Washington, mantendo a OrdaX intacta.
+
 ## Gates antes de ativar o público
 
 1. Revisar diff/CI da PR #4 e verificação completa de **npm run release:verify** no SHA candidato. O workflow GitHub quality.yml roda em main ou manualmente, não automaticamente em PR draft.
