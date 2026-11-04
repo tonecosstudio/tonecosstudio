@@ -11,7 +11,12 @@ export default function PublicCatalogContact() {
   const emailHref = buildSafeMailtoHref(CONTACT.CONTACT_EMAIL);
   return (
     <Page title="Contato" description="Fale com a Tonecos sobre modelos e referências.">
-      <ArcadeHero badge="Canal Aberto" title="CONTATO" subtitle=">> FALE COM A TONECOS." />
+      <ArcadeHero
+        badge="Canal Aberto"
+        title="CONTATO"
+        subtitle=">> FALE COM A TONECOS."
+        compact
+      />
       <section className="relative z-10 mx-auto max-w-2xl px-4 pb-16 md:px-6">
         <ArcadeSectionTitle>Contato</ArcadeSectionTitle>
         <ArcadeCard hover={false}>
