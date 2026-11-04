@@ -215,9 +215,15 @@ it("routes model discovery to the canonical gateway and preserves shareable link
   );
   expect(details).toContain("gateway!.getModel(");
   expect(details).toContain("gateway!.listGallery(");
-  expect(router).toContain("LEGACY_MODEL_ID");
-  expect(router).toContain("CanonicalModelDetails");
-  expect(router).toContain("LegacyModelDetails");
+  expect(router).toContain('export { default } from "./CanonicalModelDetails"');
+  expect(router).not.toMatch(/LEGACY_MODEL_ID|LegacyModelDetails|\.\/ModelDetails["']/);
+  const historicalCharacter = readFileSync(
+    resolve(process.cwd(), "src/pages/CatalogCharacterArcade.tsx"),
+    "utf8",
+  );
+  expect(historicalCharacter).toContain("PUBLIC_ROUTES.catalogModels");
+  expect(historicalCharacter).toContain("<Navigate");
+  expect(historicalCharacter).not.toMatch(/ORDAX|listCatalogCharacterModels|catalog-models-service/);
 });
 
 
