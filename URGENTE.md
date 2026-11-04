@@ -126,3 +126,12 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - QA do preview em 320, 360, 390, 430, 640, 768, 1024, 1280, 1440 e 1920 px: **sem overflow horizontal**; grade em 2/3/4 colunas e os três alvos do breadcrumb medindo 44 px em todas as larguras. Foco de teclado confirmado nos três links com contorno dourado de 2 px. Primeira listagem mostra 24 franquias.
 - Deploy manual somente em `preview`; produção, Worker, D1 e R2 permanecem inalterados. Previews automáticos continuam desativados.
 - **NEXT_ACTION:** continuar na mesma PR draft #4 pela próxima tela pública; manter o preview privado como fonte de validação.
+
+## Rodada 4 — navegação e responsividade da ficha do modelo (04/11/2026)
+
+- Ao abrir uma ficha a partir de uma franquia, a rota mantinha a rolagem da listagem e podia esconder o início do conteúdo. O roteador público agora leva navegações novas ao topo, preserva links com hash e deixa o navegador restaurar a posição em navegações de volta.
+- Preview privado: [abrir ficha do Androide 17](https://307479be.tonecosstudio.pages.dev/modelos/dragon-ball-androide-17-busto-display) — Cloudflare Pages deployment `307479be-f003-45b1-ae6b-5710e9647cc5`, código `e294b8a9515e2e53338eede9992f57ec2649453d`, build/deploy SUCCESS.
+- QA real: clique da franquia para a ficha iniciou em `scrollY=0`; “Voltar” do navegador recuperou a listagem em `scrollY=610`. Dez larguras (320–1920 px), sem overflow horizontal; link de retorno 44 px, botão de seleção 46 px e miniatura entre 62–106 px.
+- Validações Cloudflare: typecheck, `catalog:mvp:test` (78/78), `catalog:monorepo:check` (9/9), gates de segurança/proxy/SEO (28/28) e Vite build passaram. Preview preserva robots/noindex e exclui o runtime comercial/Supabase.
+- A primeira execução do build falhou porque o componente ainda não estava montado; a ligação foi corrigida no commit acima e o build final passou. Só preview manual; produção, Worker, D1 e R2 inalterados. PR #4 continua draft.
+- **NEXT_ACTION:** seguir para a próxima rota pública na mesma PR e manter a validação visual no preview privado.
