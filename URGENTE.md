@@ -109,9 +109,10 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - **NEXT_ACTION:** validar o painel e os filtros em preview protegido antes de promover qualquer versão. **DO_NOT_REPEAT:** não reconstruir por este checkpoint documental nem consultar D1/R2 para validar layout.
 
 
-## 04/11/2026 — Responsividade de /universo (preview pendente)
+## 04/11/2026 — Responsividade de /universo
 
-- PR #4, branch `integration/tonecosstudio-canonical-20261101`. O commit `1aa61962ad1f4f021c9e095f4590b76e9a0cba24` reaproveita em `/universo` a prop `compact` já implementada em `ArcadeHero`, reduzindo a área do hero em telas de navegação do acervo. Evidência antes do ajuste: 321 px de altura em viewport 320×780; 420 px em 1440×900.
-- No preview privado anterior, a primeira consulta do acervo falhou transitoriamente; a ação visível “Tentar novamente” recuperou a página, exibindo 2.575 modelos e seis categorias. Nenhum código da API/Worker foi alterado.
-- **Validação deste commit:** pendente de build e QA visual em preview privado em celular e desktop. Produção segue inalterada.
-- **NEXT_ACTION:** criar preview ad hoc do HEAD de integração, confirmar build/deploy, verificar a hierarquia do hero e os links/categorias. Sem alterar a configuração de produção nem habilitar previews automáticos.
+- PR #4, branch `integration/tonecosstudio-canonical-20261101`. O commit de código `1aa61962ad1f4f021c9e095f4590b76e9a0cba24` reaproveita em `/universo` a prop `compact` já existente em `ArcadeHero`, reduzindo a altura do hero. Comparação medida: 321 → 241 px em 320×780 e 420 → 276 px em 1440×900.
+- Preview Cloudflare privado [`bf4f697f`](https://bf4f697f.tonecosstudio.pages.dev/universo), deployment `bf4f697f-2df9-4539-8c19-6a7538c09793`, build/deploy **SUCCESS**, ambiente `preview`, fonte `084a6ed33be039a2f74c7e0a49953ee3f5721208`. Pipeline: typecheck, `catalog:mvp:test` (**78/78**) e `npm run build` concluídos.
+- QA do Universo no preview em 320, 390, 768, 1024, 1440 e 1920 px: **nenhum overflow horizontal**; grade responsiva de categorias em 2/2/3/4/4/4 colunas. Seis links/categorias e total de 2.575 modelos renderizados. Uma primeira consulta no preview anterior falhou de forma transitória e se recuperou pelo botão “Tentar novamente”; a página nova carregou sem estado de erro.
+- Produção/Worker/D1/R2 e configuração de deploy **inalterados**. Prévia iniciada manualmente porque previews automáticos seguem desativados.
+- **NEXT_ACTION:** seguir na mesma PR draft #4 para a próxima página do frontend, usando o preview privado e verificando breakpoints antes de avançar.
