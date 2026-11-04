@@ -142,4 +142,11 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - Preview privado: [abrir Sobre](https://02462383.tonecosstudio.pages.dev/sobre) — deployment `02462383-a2f9-48b1-8226-43bc605f92b6`, código `35e7d3fe614f0558c82192def5e904ff3997268a`, build/deploy SUCCESS.
 - QA em 320, 360, 390, 430, 640, 768, 1024, 1280, 1440 e 1920 px: sem overflow; grades adaptam entre 1/2/4 colunas conforme a largura; alvos de FAQ com 56 px.
 - Typecheck, `catalog:mvp:test` (78/78), verificação monorepo (9/9), gates de segurança/proxy/SEO (28/28) e Vite build passaram. Navegação ficha/listagem também revalidada no mesmo preview. Robots/noindex preservados, sem runtime comercial/Supabase; produção, Worker, D1 e R2 inalterados.
-- **NEXT_ACTION:** seguir para a página Contato na mesma PR e continuar QA responsivo no preview privado.
+- **NEXT_ACTION concluída:** a página Contato foi validada na Rodada 6.
+
+## Rodada 6 — QA responsivo de Contato (04/11/2026)
+
+- Preview privado [Contato](https://02462383.tonecosstudio.pages.dev/contato), deployment `02462383-a2f9-48b1-8226-43bc605f92b6`, build/deploy SUCCESS no código `35e7d3fe614f0558c82192def5e904ff3997268a`.
+- QA em 320, 360, 390, 430, 640, 768, 1024, 1280, 1440 e 1920 px: sem overflow horizontal; os links de e-mail têm altura de 44 px. A página explica que o catálogo é informativo e não recebe cadastro, pedidos ou pagamentos.
+- Sem mudança de código: o layout e os links existentes funcionaram no preview atualizado. Typecheck e gates de build já passaram no mesmo deployment, registrados na Rodada 5. Produção inalterada.
+- **NEXT_ACTION:** validar Termos e Privacidade no mesmo preview.
