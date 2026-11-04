@@ -4,10 +4,11 @@
 
 ## Frontend — rodada 1 de responsividade (04/11/2026)
 
-- **Escopo:** navegação compartilhada, rodapé e catálogo público. Revisão visual no preview protegido anterior em 320 px, 390 px e 768 px, mais desktop. Home, Universo, categoria/franquia, Modelos, ficha, Sobre, Contato, Termos e Privacidade mantiveram conteúdo dentro da largura disponível; a grade passou para quatro colunas em 768 px.
-- **Ajustes no código desta rodada:** menu mobile, links do menu e ações do rodapé com alvo mínimo de 44 px; busca da listagem com placeholder curto e espaço de texto ajustado ao estado do botão limpar. Corrige o botão de menu medido em 20 × 20 px e o placeholder truncado em 320 px.
-- **Commits de código:** 35c492e (menu), 7ce12ea (rodapé), e7351da (busca).
-- **Validação:** o primeiro build manual interrompeu em um teste de integração que ainda esperava o placeholder antigo. A expectativa foi alinhada no commit 2bf5357. Nenhuma versão foi publicada nesse intento; o retry de preview está pendente. Produção permanece bloqueada.
+- **Escopo:** navegação compartilhada, rodapé e catálogo público. No preview protegido atual, as oito rotas principais foram conferidas a 320 px sem rolagem horizontal. A listagem foi verificada em 320, 390, 768, 1024, 1440 e 1920 px, com 2, 2, 4, 4, 5 e 6 colunas. Categorias e franquias também foram abertas em celular; o painel de seleção ocupa a largura de 320 px e mantém o modelo e as ações visíveis.
+- **Ajustes no código:** alvos de toque de 44 × 44 px no botão do menu e 44 px de altura nos links do menu e do rodapé; busca da listagem com placeholder curto e largura de texto ajustada quando o controle para limpar não está presente.
+- **Commits de código:** 35c492e (menu), 7ce12ea (rodapé), e7351da (busca), 2bf5357 (expectativa de teste atualizada).
+- **Preview privado pronto:** [https://0694c96e.tonecosstudio.pages.dev/modelos](https://0694c96e.tonecosstudio.pages.dev/modelos), deployment 0694c96e-2482-44b8-ab52-e2b8b3886c00, commit 54b6ead2fb22ba3ebacb676a314a9142a8090157. Cloudflare Pages build SUCCESS / deploy SUCCESS; typecheck, catalog:mvp:test (4 arquivos, 78 testes) e npm run build concluíram.
+- **Tentativa anterior:** deployment b73d4bce falhou porque um teste ainda procurava o placeholder antigo; foi corrigido em 2bf5357. Não publicou assets. Produção e o Worker permanecem inalterados.
 
 ## Contas e fontes de verdade
 
@@ -34,7 +35,7 @@
 
 ## Pendente para GO
 
-1. **QA visual autenticado** no preview ad578030 em desktop e celular: Home, seis capas, busca/listagem/filtros, ficha e galeria do 10H, navegação direta/refresh, acessibilidade e estados de falha.
+1. **QA visual completo — pendente:** [preview privado atual](https://0694c96e.tonecosstudio.pages.dev/modelos). A rodada responsiva foi validada; seguem pendentes a revisão individual das capas e galeria, caminhos de refresh/deep link, acessibilidade e estados de falha.
 2. **Revisão jurídica humana** de Termos e Privacidade, dados reais do operador (não presumir LTDA), LGPD, cookies/logs e direitos de mídia/personagens.
 3. **Desconexão/prova de isolamento da Vercel antiga**, limpeza dos vínculos de domínio no projeto legado sem afetar OrdaX, hostname/canonical/HTTPS/SEO corretos e rollback Pages verificado.
 4. **Gates do SHA candidato, merge e publicação Cloudflare Pages** apenas com autorização explícita. SEO TONECOS_PUBLIC_INDEXING_RELEASE não está habilitado; sem autorização mantém robots Disallow, noindex e nenhum sitemap.
