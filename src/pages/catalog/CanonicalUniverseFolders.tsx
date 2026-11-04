@@ -72,11 +72,11 @@ export function CanonicalUniverseFolders({
   return (
     <div className="mt-6">
       <nav aria-label="Caminho das pastas" className="mb-5 flex flex-wrap items-center gap-2 font-mono text-xs text-[hsl(var(--gold-accent))]">
-        <Link to={folderPath()} className="underline-offset-4 hover:underline">Raiz da franquia</Link>
+        <Link to={folderPath()} className="inline-flex min-h-11 items-center py-2 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]">Raiz da franquia</Link>
         {foldersQuery.data.trail.map((part) => (
           <span key={part.id} className="flex items-center gap-2">
             <span aria-hidden="true" className="text-[hsl(0,0%,45%)]">/</span>
-            <Link to={folderPath(part.id)} className="underline-offset-4 hover:underline">{part.label}</Link>
+            <Link to={folderPath(part.id)} className="inline-flex min-h-11 items-center py-2 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]">{part.label}</Link>
           </span>
         ))}
       </nav>
@@ -99,7 +99,7 @@ export function CanonicalUniverseFolders({
         <h3 className="text-lg font-semibold uppercase tracking-widest text-[hsl(var(--gold-accent))]">
           Referências desta {parent ? "pasta" : "franquia"}
         </h3>
-        <Link to={modelsPath()} className="border border-[hsl(var(--gold-accent)/0.5)] px-4 py-3 font-mono text-xs uppercase text-[hsl(var(--gold-accent))]">
+        <Link to={modelsPath()} className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent)/0.5)] px-4 py-3 font-mono text-xs uppercase text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]">
           Explorar todos os modelos
         </Link>
       </div>
@@ -142,7 +142,7 @@ export function CanonicalUniverseFolders({
         </div>
       )}
       {modelsQuery.data?.nextCursor && (
-        <Link to={modelsPath()} className="mt-6 inline-flex gap-2 text-sm text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline">
+        <Link to={modelsPath()} className="mt-6 inline-flex min-h-11 items-center gap-2 py-2 text-sm text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]">
           Ver mais modelos <ArrowRight size={16} aria-hidden="true" />
         </Link>
       )}
