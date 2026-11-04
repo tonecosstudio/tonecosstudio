@@ -1,5 +1,17 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## Teste HTTP mínimo de catálogo e mídia — 03/11/2026
+
+- **Prova HTTP real, limitada e não destrutiva:** em 03/11 (Bahia), foi consultada apenas a primeira página pública `GET /api/catalog?limit=6` do Worker canônico `tonecos-catalogo-api`. Resposta **HTTP 200** com 6 modelos publicados, `nextCursor` presente e `cover_storage_key` presente em todos os seis. Modelos observados: `10H` (`nier-10h-nier`), três variantes `2B`, `A mascara`, `A2`. Não inferir que o acervo total tem somente seis modelos.
+- **Capa real R2:** feito somente um GET de mídia com solicitação `Range: bytes=0-15` para o primeiro `cover_storage_key`, por meio do Worker público. Respondeu **HTTP 206**, `Content-Type: image/webp`, 71.276 bytes (assinatura RIFF/WEBP verificada). A resposta entregou o objeto completo apesar da solicitação de faixa; não fazer polling repetido para investigar isso. Apenas esta capa foi examinada; não afirmar seis capas visualmente homologadas.
+- **Ficha e galeria reais:** `GET /api/models/nier-10h-nier` retornou HTTP 200, slug canônico, `image_count=1`, `gallery_version=1` e chave de capa. `GET /api/models/nier-10h-nier/images?limit=1&v=1` retornou **HTTP 200**, `total=1`, `version=1`, papel `cover`, variante `card` presente. O campo `description` não tinha texto; não inventar descrição.
+- **Cota antes dos probes:** GraphQL de métricas da conta Tonecos em 04/11 UTC informou `rowsRead=1119`, `readQueries=30`, `rowsWritten=0`. A verificação em si usou somente três GETs públicos JSON e uma mídia; não realizou varredura, auditoria integral, importação ou escrita no D1/R2. As métricas podem ter atraso; não tratar números como contabilidade em tempo real.
+- **Front-end:** o usuário já abriu a Home de `6c43e5bd.tonecosstudio.pages.dev` autenticado no Access; o indicador `6 destaques` coincide com a API. Isto é evidência da Home e do serviço; não equivale a prova visual de todas as capas ou teste de clique/navegação da ficha.
+- **Estado de deploy:** `6c43e5bd-ef5d-46fd-b402-aebeae5ede40` do SHA `d4c9846e` continua como último bundle verificado `deploy=success`; branch `main` e produção pública não mudaram. Este checkpoint é só documental e **NÃO autoriza novo build**.
+- **next_action:** QA visual autenticado das seis miniaturas na Home e clique em `/modelos/nier-10h-nier`, checando uma capa e galeria; depois auditoria RLS/redirect/SMTP do Supabase Tonecos antes de abrir cadastro. Se browser automatizado não estiver conectado, solicitar apenas uma captura da seção e/ou detalhe. Sem consultas D1 adicionais para simples status.
+
+---
+
 ## Checkpoint horário — 03/11/2026, 23h (Bahia)
 
 - **Git verificado:** `tonecosstudio/tonecosstudio` branch canônica em `366aa82210c6ee62d23e5ce57f3ef75915ce7811` antes deste registro; `washingtonmsdj/catalogo/main` em `a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c`. Sem alteração de código confirmada desde o checkpoint anterior.
