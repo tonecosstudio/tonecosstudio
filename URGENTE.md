@@ -216,3 +216,11 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - **Preview final:** [abrir Home](https://a00e389a.tonecosstudio.pages.dev/), deployment `a00e389a-939b-4ddc-bba4-91cb1265de7e`, SHA exato acima; Cloudflare Pages build **SUCCESS** e deploy **SUCCESS**, ambiente `preview`. Configuração remota manteve `main` como produção com deployments automáticos desligados e previews automáticos desativados. Produção, Worker, D1, R2 e DNS inalterados.
 - **QA responsivo da Home:** 320/390/768/1024/1280/1440 px sem overflow horizontal; grade em 2/2/3/4/6/6 colunas; seis imagens conferidas em `cover`, proporção 2:3.
 - **NEXT_ACTION:** continuar a revisão detalhada pela página Sobre em 320/390/768/1440 px; manter PR #4 em draft e não refazer build por documentação.
+
+## Rodada 15 — página Sobre e FAQ acessível (04/11/2026)
+
+- O FAQ agora expõe o estado aberto/fechado com `aria-expanded`, liga cada botão ao painel correspondente e mantém foco visível dourado no teclado. A área de pergunta pode quebrar linha em celular; os alvos mantêm pelo menos 44 px de altura.
+- **Quality Gate:** [#41926515835](https://github.com/tonecosstudio/tonecosstudio/actions/runs/41926515835) **SUCCESS** no SHA `6287a342078f5b4bf6a47f29850e949d56e22cc1` (job aplicável concluído com sucesso; demais jobs condicionais ignorados).
+- **Preview atualizado:** [abrir Sobre](https://5efaa52b.tonecosstudio.pages.dev/sobre), deployment `5efaa52b-44f1-44d3-b9b6-1c721b052974`; build e deploy **SUCCESS** no mesmo SHA, ambiente `preview`. As configurações de produção automática desligada e preview automático desativado foram preservadas.
+- QA visual em 320/390/768/1440 px: sem overflow horizontal; valores e produção usam 1/1/2/4 e 1/1/2/3 colunas; FAQ manteve controles utilizáveis. Teste manual por Space abriu/fechou o painel, sincronizou `aria-expanded` e `hidden`, e exibiu o contorno de foco de 2 px. Nenhum erro no console.
+- Sem alteração de produção, Worker, D1, R2 ou DNS. PR #4 segue draft. **NEXT_ACTION:** continuar pela página Contato, revisar o formulário por e-mail e responsividade em 320/390/768/1440 px.
