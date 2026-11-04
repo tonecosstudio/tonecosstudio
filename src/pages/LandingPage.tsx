@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { BRAND_NAME, BRAND_SHORT_NAME } from "@/config/brand";
+import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
   ArrowRight,
   Crosshair,
@@ -103,10 +104,27 @@ function StatCounter({
   );
 }
 
+// Preserve the commercial copy outside the public read-only catalog.
+export function landingCopyForMode(publicReadOnly: boolean) {
+  return publicReadOnly
+    ? {
+        description: "Explore modelos, personagens e referências de esculturas da Tonecos Studio. Catálogo para consulta, sem compras ou cadastro.",
+        ctaTitle: "CONHEÇA O ACERVO",
+        ctaDescription: "Explore modelos e referências. Para conversar sobre uma peça, entre em contato com o estúdio por e-mail.",
+      }
+    : {
+        description: "Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão.",
+        ctaTitle: "READY PLAYER?",
+        ctaDescription: "Entre para o esquadrão de colecionadores. Peças exclusivas, produção artesanal e acompanhamento total.",
+      };
+}
+
 // ─── MAIN LANDING PAGE ───────────────────────────────────────────────
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const publicReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true" && isCatalogPublicMvpEnabled();
+  const landingCopy = landingCopyForMode(publicReadOnly);
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -148,7 +166,7 @@ export default function LandingPage() {
   return (
     <Page
       title={BRAND_NAME}
-      description="Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão."
+      description={landingCopy.description}
       keywords={[
         "colecionáveis",
         "premium",
@@ -321,8 +339,8 @@ export default function LandingPage() {
       {/* ═══ CTA ═══ */}
       <ArcadeCTA
         badge="ACERVO TONECOS"
-        title="READY PLAYER?"
-        description="Entre para o esquadrão de colecionadores. Peças exclusivas, produção artesanal e acompanhamento total."
+        title={landingCopy.ctaTitle}
+        description={landingCopy.ctaDescription}
         primaryAction={{
           label: "VER MODELOS",
           href: PUBLIC_ROUTES.catalogModels,
