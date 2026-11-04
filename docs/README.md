@@ -1,34 +1,23 @@
-# Documentação Tonecos Studio
+# Documentação operacional — Tonecos Studio
 
-Este diretório contém somente documentação que pode orientar trabalho atual. O histórico datado pertence a docs-archive e não define o estado do produto.
+**Hospedagem oficial: Cloudflare Pages da conta Tonecos.** Vercel Washington é legado. Estado 04/11/2026: MVP somente leitura sob Cloudflare Access, sem produção pública; PR #4 draft.
 
-## Autoridade
+## Ordem de leitura
 
-1. [URGENTE.md](../URGENTE.md) — plano, evidências, bloqueios e checkpoints de lançamento;
-2. [AGENTS.md](../AGENTS.md) — regras de execução e handoff;
-3. [README.md](../README.md) — visão geral e comandos;
-4. [TONECOS-STUDIO-CONSOLIDACAO.md](TONECOS-STUDIO-CONSOLIDACAO.md) — autoridade do produto comercial e integração escalável;
-5. documentos temáticos vigentes deste diretório;
-6. [docs-archive/](../docs-archive/) — histórico para consulta, sem autoridade operacional.
+1. [README principal](../README.md) — contas, produto, stack e arquitetura.
+2. [AGENTS](../AGENTS.md) — regras de autorização e implementação.
+3. [URGENTE](../URGENTE.md) — checkpoint verificável, próximos gates e do_not_repeat.
+4. [TONECOS-STUDIO-CONSOLIDACAO.md](TONECOS-STUDIO-CONSOLIDACAO.md) — autoridades do produto, das contas e das integrações.
+5. [TONECOS_CATALOG_FIRST_PARTY_PROXY.md](TONECOS_CATALOG_FIRST_PARTY_PROXY.md) — proxy Cloudflare/Worker e contrato GET.
+6. [TONECOS_SAFE_PREVIEW.md](TONECOS_SAFE_PREVIEW.md) — preview protegido e isolamento de Supabase.
+7. [OPERACAO_CLOUDFLARE_PAGES.md](OPERACAO_CLOUDFLARE_PAGES.md) — release, rollback, SEO, QA e desativação do legado.
 
-## Estado da organização
+## Documentos históricos
 
-A documentação ainda está em consolidação. Na auditoria de 2026-08-30 foram encontrados 41 Markdown na raiz, 40 neste diretório e 54 no arquivo histórico. Vários relatórios antigos se contradizem.
+Em 04/11/2026 foram identificados **36 documentos de docs/** que descreviam configuração antiga, relatórios datados, catálogo em Supabase, Vercel como hosting, scripts de importação ou recursos da OrdaX. Devem residir apenas em [docs-archive/historico-2026-11-04](../docs-archive/historico-2026-11-04/), sem autoridade operacional. O conteúdo de URGENTE anterior e ORDAX_APP_PLATFORM também pertence ao arquivo. O Git preserva versões anteriores.
 
-Até P1 do plano urgente terminar:
+Documentação junto aos módulos em src/ e supabase/functions/ é específica desses módulos, majoritariamente da fase comercial futura; não altera o escopo do MVP readonly. Não executar instruções de importação ou consultas caras encontradas em históricos sem escopo e orçamento aprovados.
 
-- trate relatórios FASE, PROGRESSO, RESUMO, STATUS e FINAL como candidatos a arquivo;
-- confirme comandos contra package.json e configuração vigente;
-- confirme segurança contra migrations, funções, CI e ambiente remoto;
-- não copie percentuais ou datas antigas para novos documentos.
+## Regra de manutenção
 
-## Áreas que terão documentação canônica
-
-- architecture/: visão de componentes, fronteiras e ADRs;
-- operations/: deploy, rollback, observabilidade e incidentes;
-- setup/: ambiente local, Supabase, Stripe e OAuth;
-- security/: modelo de ameaça, RBAC/RLS e resposta a vulnerabilidades;
-- product/: fluxos públicos, cliente e admin;
-- release/: critérios, checklist e notas de versão.
-
-A estrutura será criada apenas quando os documentos forem classificados, evitando novas pastas vazias ou SSOT concorrentes.
+Status mutável vai para URGENTE.md; decisão arquitetural, para o contrato vigente; operações, para o runbook existente. **Não abrir SSOT paralelo** por ocasião de um novo chat. Verificar ambiente remoto antes de afirmar estados. Documentação não é teste visual nem gate de segurança.

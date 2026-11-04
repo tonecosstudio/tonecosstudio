@@ -1,76 +1,41 @@
 # Tonecos Studio
 
-Plataforma comercial Tonecos: site, contas, catálogo integrado, seleção de modelos, solicitações de orçamento, pedidos, pagamentos e acompanhamento da produção.
+O site oficial Tonecos Studio usa **GitHub Tonecos + Cloudflare Pages da conta Tonecos**. **Vercel não é a hospedagem escolhida**; existe apenas como projeto legado da conta Washington. Estado em 04/11/2026: **MVP do catálogo somente leitura em homologação; NO-GO para lançamento público**.
 
-## Estado atual
+## Quem é dono de quê
 
-**NO-GO para lançamento ou substituição do site público.** O repositório está privado e a main foi preservada. O trabalho atual acontece somente na branch `integration/tonecosstudio-canonical-20261101`, porque o projeto Vercel antigo ainda precisa ser comprovadamente isolado do domínio OrdaX.
+| Recurso | Conta e origem | Estado |
+| --- | --- | --- |
+| Repositório do site | GitHub tonecosstudio/tonecosstudio (ID 1163825583) | Único código-fonte do site; PR #4 draft |
+| Hospedagem do site | Cloudflare conta tonecosstudio@gmail.com, Pages tonecosstudio | Domínio reservado https://tonecosstudio.pages.dev; produção automática OFF |
+| Prévia | Cloudflare Pages + Cloudflare Access | Builds privados aprovados; QA visual ainda pendente |
+| API de modelos e imagens | Cloudflare Worker tonecos-catalogo-api, mesma conta Tonecos | Autoridade única dos modelos; D1/R2 somente via Worker |
+| Código do backend da API | GitHub washingtonmsdj/catalogo | Dependência histórica separada; não migrar nem duplicar sem autorização |
+| Vercel tonecosstudio | Equipe Washington jogo-brasils-projects, Hobby | Projeto antigo, fora do fluxo oficial de lançamento |
+| Supabase, Stripe, clientes, pedidos | Aplicação comercial futura | Excluídos do MVP público somente leitura |
 
-O catálogo escalável permanece tecnicamente no projeto `washingtonmsdj/catalogo` (Cloudflare Worker/D1/R2) durante a migração. O Studio aproveita o núcleo comercial Supabase existente. A primeira integração de leitura está na branch: a rota `/modelos` usa o gateway canônico HTTPS com filtros/cursor e detalhes sob demanda, sem copiar catálogo ao Supabase. A configuração `VITE_CANONICAL_CATALOG_API_BASE` é obrigatória para ativar essa origem; sem ela, a interface mostra indisponibilidade explícita. **Não há autorização para publicar dados, emitir pedidos ou criar orçamentos automaticamente.**
+O endereço GitHub antigo washingtonmsdj/tonecosstudio redireciona ao mesmo repositório institucional ID 1163825583. Isso **não** transfere a Vercel antiga para a conta Tonecos.
 
-Veja [URGENTE.md](URGENTE.md) para o checkpoint operacional e [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md) para o contrato entre catálogo, sistema comercial, identidade, deploy e orçamento. Não usar métricas ou relatórios datados como prova atual.
+## Arquitetura e escopo
 
-## Stack
+Navegador → Cloudflare Pages React/Vite → /catalogo-api/ na mesma origem → Pages Function com allowlist de GET → Service Binding CATALOG_WORKER → Worker tonecos-catalogo-api → D1/R2. O Pages não controla o banco nem mantém outro catálogo. O site público mostra Home, Universo, listagem/busca, fichas/galerias, Sobre, Contato por e-mail, Termos e Privacidade. Sem cadastro, login, orçamento confirmado, checkout, pagamento ou admin nesta fase.
 
-- React 18, TypeScript e Vite;
-- Tailwind CSS, shadcn/ui e Radix UI;
-- Supabase Auth, PostgreSQL, Storage e Edge Functions;
-- Stripe;
-- Vitest e Testing Library.
+A aplicação comercial antiga continua no repositório para uma fase posterior, mas não foi incluída nos chunks do MVP readonly homologado. Preservar a identidade visual escura/dourada Arcade existente, sem outro frontend ou design system.
 
-## Requisitos
+## Desenvolvimento e validação
 
-- Node.js 24 LTS;
-- npm;
-- projeto Supabase separado por ambiente;
-- credenciais server-side configuradas fora do Git.
+Requer Node.js 24 LTS e npm. Usar **npm ci** e **npm run release:verify** em ambiente configurado para validar TypeScript, lint, auditorias, testes/cobertura, build e dependências. Copiar .env.example para .env.local apenas em desenvolvimento; segredos não podem entrar em VITE_* nem no Git. O proxy first-party é configurado no Cloudflare Pages, não em uma nova API do site.
 
-## Desenvolvimento local
+O workflow GitHub quality.yml dispara na main ou manualmente, **não automaticamente na branch da PR draft**. Compilação verde não comprova QA visual, revisão jurídica ou liberação pública.
 
-1. Clone o repositório.
-2. Execute npm ci.
-3. Copie .env.example para .env.local.
-4. Preencha somente os valores do seu ambiente, incluindo `VITE_CANONICAL_CATALOG_API_BASE` **após** homologar o proxy HTTPS do Worker da Tonecos (nunca `ordax.com.br`).
-5. Execute npm run dev.
+## Documentação vigente
 
-Nunca coloque service_role, Stripe secret, OAuth secret, SMTP secret ou tokens em variáveis VITE_*.
+- [AGENTS.md](AGENTS.md): regras de execução, conta e SSOT.
+- [URGENTE.md](URGENTE.md): checkpoint operacional e bloqueios.
+- [docs/README.md](docs/README.md): índice da documentação ativa e do arquivo histórico.
+- [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md): autoridade de cada camada.
+- [docs/TONECOS_CATALOG_FIRST_PARTY_PROXY.md](docs/TONECOS_CATALOG_FIRST_PARTY_PROXY.md): caminho do Worker.
+- [docs/TONECOS_SAFE_PREVIEW.md](docs/TONECOS_SAFE_PREVIEW.md): proteção do preview.
+- [docs/OPERACAO_CLOUDFLARE_PAGES.md](docs/OPERACAO_CLOUDFLARE_PAGES.md): publicação, rollback e limite gratuito.
 
-## Quality Gate
-
-Execute antes de cada commit relevante e confirme novamente no push:
-
-- npm run format:check
-- npm run typecheck
-- npm run lint
-- npm run security:supabase-access
-- npm run test:coverage
-- npm run build
-- npm audit --omit=dev --audit-level=high
-
-O GitHub Actions deve executar o mesmo gate em cada push para a main. Um build local isolado não prova prontidão de produção.
-
-## Documentação canônica
-
-- [URGENTE.md](URGENTE.md): plano e status de lançamento;
-- [AGENTS.md](AGENTS.md): regras de continuidade e qualidade;
-- [docs/README.md](docs/README.md): mapa da documentação vigente;
-- [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md): arquitetura e gates de migração;
-- [docs-archive/](docs-archive/): histórico sem autoridade operacional.
-
-## Estrutura principal
-
-- src/: aplicação React;
-- supabase/migrations/: histórico do schema;
-- supabase/functions/: Edge Functions;
-- scripts/: automações e auditorias;
-- docs/: documentação vigente;
-- docs-archive/: relatórios históricos;
-- public/: assets públicos.
-
-## Segurança
-
-A base possui TypeScript strict, CSP, RLS e auditoria de fronteiras Supabase, mas segurança de lançamento só será declarada após CI verde, projeto remoto acessível, advisors, revisão de grants/RLS/funções e testes de autorização. Veja os gates em URGENTE.md.
-
-## Licença
-
-Proprietary — todos os direitos reservados.
+Não ativar produção, domínio, indexação, conta ou pagamento até QA autenticado, revisão jurídica, isolamento do legado Vercel, validação de rollback e autorização explícita.
