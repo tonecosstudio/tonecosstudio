@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "decision": "one-repository-for-site-and-catalog-source",
+  "target": {
+    "repository": "tonecosstudio/tonecosstudio",
+    "repositoryId": 1163825583,
+    "serviceRoot": "services/catalogo"
+  },
+  "origin": {
+    "repository": "washingtonmsdj/catalogo",
+    "repositoryId": 1398242143,
+    "observedMainSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "openPullRequestsAtAudit": [
+      266,
+      264,
+      263
+    ],
+    "fileCounts": {
+      "totalTrackedBlobs": 652,
+      "worker": 12,
+      "migrations": 22,
+      "tools": 211,
+      "config": 26,
+      "docs": 280,
+      "legacySrc": 68
+    },
+    "workerFiles": {
+      "worker/entry.ts": "a628fce19ce0b84f76760a716eab0152668e2290",
+      "worker/galleryAggregation.ts": "0d52583d6f76e4c01c139c12636e5e593b315271",
+      "worker/galleryValidation.ts": "2222446f7a182e611708aa72f7e2a026b8f3681a",
+      "worker/index.ts": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
+      "worker/media.ts": "e6e083f25d5f15a28667976df9b3e9104fbeacba",
+      "worker/modelAliases.ts": "b354bc6ab4dad3d12f07ee6b6c43af60aac87d38",
+      "worker/quoteAdminAccess.ts": "30c01b4dbbbde77a25daf471fdd89b12b80a846b",
+      "worker/quoteAdminApi.ts": "63c663cc63c8bc7096514be6a92518328daf3bcb",
+      "worker/quoteWorkflow.ts": "2c95e211e3a5ed7d275258f4f1a503c67f0284ac",
+      "worker/schemaContract.ts": "6e9f77269e844849653b9314517c28df7ef3c976",
+      "worker/sharedCollections.ts": "bd66879a41798f2e2695273b30d9b562c44dd53a",
+      "worker/turnstile.ts": "6dc1f8f779a9b5ff8b1a5c0d4c11b24c9d5917a3"
+    },
+    "migrationFiles": {
+      "migrations/0001_catalog.sql": "818d21a4f0ce4de8236208ce42c734bbd0f8c6d2",
+      "migrations/0002_keyset_pagination.sql": "7ee03dcc4d9271c4c28b2a9a04b60f2d6ddd8fd1",
+      "migrations/0003_catalog_counts.sql": "3e11fef28ae019dc3d225760b34dd609ee07d0e3",
+      "migrations/0004_search_fts.sql": "b238774ae2b6a7b96221dd7b025b12d97660421a",
+      "migrations/0005_franchise_discovery.sql": "8c5978e42bd5663cc4ea970e41a62a4869ca9840",
+      "migrations/0006_franchise_search_fts.sql": "bcc5b86ac8ee588829217fba12d2422b73920766",
+      "migrations/0007_quote_public_reference.sql": "8d6161915de93c5f0b93747849a21c2a3d9f843d",
+      "migrations/0008_shared_collections.sql": "cd4ab7d3d6f8a20d734ec9f337f22cae428d13e0",
+      "migrations/0009_catalog_folders.sql": "c0b5807887d865c8788b6622885b0c9c1c2acdf9",
+      "migrations/0010_recent_models_index.sql": "bee97edfccc8f864d85527ab7c1e12136912f429",
+      "migrations/0011_model_gallery_members.sql": "8e11a40924c4071c27015a62ddd4dbe9cd4a140f",
+      "migrations/0012_folder_materialized_counts.sql": "cbe44d905efc2f4e66f95d3d0dda703543ec14d5",
+      "migrations/0013_model_image_sources.sql": "cfa03027ff84cc2afb63cbdd5136d1c76b82969e",
+      "migrations/0014_gallery_member_integrity.sql": "fdfb40da4f05a80a050590dc90eb41b7b3b867b8",
+      "migrations/0015_gallery_publication_invariant.sql": "77e4c71ab537bb5fdbb97db98c008bef4fecffe3",
+      "migrations/0016_public_gallery_revision.sql": "00c01baf2a2fa713e848d0ddbc62d6b59925b1d7",
+      "migrations/0017_gallery_lifecycle_integrity.sql": "6a526ce95f51364411edc3c6b01ea50760681541",
+      "migrations/0018_gallery_alias_immutability.sql": "3feaaefe6748556957853ba9e061c6e6da78b448",
+      "migrations/0019_model_variant_name.sql": "9b928576ccb379508cff2a8011d2096fc81975ad",
+      "migrations/0020_gallery_member_explicit_approvals.sql": "449fbb85c45acd4ad641607133943d9e514dfb25",
+      "migrations/0021_quote_admin_audit_events.sql": "027af727eb1220f0f9a288d5245e696efc7737b5",
+      "migrations/0022_catalog_height_filter_index.sql": "35e91a6533777acd6220fe692a84107456cde09f"
+    }
+  },
+  "runtime": {
+    "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
+    "cloudflarePages": "tonecosstudio",
+    "pagesServiceBinding": "CATALOG_WORKER",
+    "worker": "tonecos-catalogo-api",
+    "d1": "tonecos-catalogo",
+    "r2": "tonecos-catalogo-media"
+  },
+  "activeWorkerPublisher": "washingtonmsdj/catalogo",
+  "migration": {
+    "phase": "inventoried",
+    "releaseAuthorized": false,
+    "sourceWriterDisabled": false,
+    "targetWorkerReleaseEnabled": false,
+    "targetD1MigrationEnabled": false,
+    "legacySiteRetired": false,
+    "sourceRepoArchived": false
+  },
+  "safety": {
+    "copyR2OrD1": false,
+    "recreateWorker": false,
+    "copyOldFrontend": false,
+    "allowAutoDeploy": false
+  },
+  "lastVerifiedDate": "2026-11-04",
+  "notes": "Snapshot audit only. Revalidate source main and open PRs immediately before copying; this historical SHA is not authority for a future deploy."
+}

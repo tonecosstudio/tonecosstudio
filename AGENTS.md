@@ -8,9 +8,9 @@
 4. Documentos técnicos específicos.
 5. docs-archive e relatórios datados: **somente histórico**, nunca autorização de deploy.
 
-**Repositório único:** tonecosstudio/tonecosstudio (GitHub ID 1163825583). Usar a branch integration/tonecosstudio-canonical-20261101, **PR #4 draft**; main preservada. Não criar outro repo/PR/branch, não fazer merge ou deploy de produção sem gates e autorização. washingtonmsdj/tonecosstudio é alias histórico para o mesmo ID.
+**Repositório canônico único para site + backend após cutover:** tonecosstudio/tonecosstudio (GitHub ID 1163825583). Usar a branch integration/tonecosstudio-canonical-20261101, **PR #4 draft**; main preservada. Não criar outro repo/PR/branch, não fazer merge ou deploy de produção sem gates e autorização. washingtonmsdj/tonecosstudio é alias histórico para o mesmo ID.
 
-**Hosting oficial:** Cloudflare da conta tonecosstudio@gmail.com, projeto Pages tonecosstudio; Service Binding CATALOG_WORKER para o Worker existente tonecos-catalogo-api. O backend do catálogo ainda tem código em washingtonmsdj/catalogo, que é outra frente de trabalho. D1/R2 permanecem autoridade única desse Worker. Vercel na equipe Washington é **legado**, não destino de produção. Não tocar no DNS ou nos domínios OrdaX.
+**Hosting oficial:** Cloudflare da conta tonecosstudio@gmail.com, projeto Pages tonecosstudio; Service Binding CATALOG_WORKER para o Worker existente tonecos-catalogo-api. O backend do catálogo permanece **temporariamente** no GitHub washingtonmsdj/catalogo enquanto a migração para **services/catalogo/** deste mesmo repositório é preparada com gates; não transferir para um segundo repo nem autorizar outro publicador até cutover. D1/R2 permanecem autoridade única desse Worker. Vercel na equipe Washington é **legado**, não destino de produção. Não tocar no DNS ou nos domínios OrdaX.
 
 ## MVP somente leitura
 
@@ -35,3 +35,7 @@ Cloudflare Pages tem production_deployments_enabled=false e preview_deployment_s
 - Autorização explícita para merge e para a publicação pública. **Estado atual NO-GO.**
 
 Ao encerrar uma alteração, atualizar o checkpoint de URGENTE.md com base/HEAD, provas, bloqueios, next_action e do_not_repeat. Evitar novos documentos redundantes. Textos históricos devem ser movidos para docs-archive sem reescrever seu conteúdo.
+
+## Migração monorepo — ordem obrigatória
+
+O [plano único de migração](docs/MIGRACAO_CATALOGO_MONOREPO.md) e o manifesto **config/catalog-code-consolidation.json** são autoridade de fases M0–M6; o guard **npm run catalog:monorepo:check** deve passar antes de registrar avanço. Não considerar a proposta antiga de transferir o repo para tonecosstudio/catalogo como plano vigente. Primeiro reconciliar PR #266 e dependências da origem, depois importar o código Worker **inativo**, testar offline, isolar CI, autorizar um único writer e por último aposentar URLs/arquivar o repositório Washington. Não duplicar frontend, D1, R2, Worker, workflows ou permissões.

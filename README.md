@@ -10,11 +10,13 @@ O site oficial Tonecos Studio usa **GitHub Tonecos + Cloudflare Pages da conta T
 | Hospedagem do site | Cloudflare conta tonecosstudio@gmail.com, Pages tonecosstudio | Domínio reservado https://tonecosstudio.pages.dev; produção automática OFF |
 | Prévia | Cloudflare Pages + Cloudflare Access | Builds privados aprovados; QA visual ainda pendente |
 | API de modelos e imagens | Cloudflare Worker tonecos-catalogo-api, mesma conta Tonecos | Autoridade única dos modelos; D1/R2 somente via Worker |
-| Código do backend da API | GitHub washingtonmsdj/catalogo | Dependência histórica separada; não migrar nem duplicar sem autorização |
+| Código do backend da API | Origem temporária GitHub washingtonmsdj/catalogo → destino **services/catalogo/** neste repo | Migração para monorepo **autorizada como plano**, sem copiar/cutover/publicar até gates |
 | Vercel tonecosstudio | Equipe Washington jogo-brasils-projects, Hobby | Projeto antigo, fora do fluxo oficial de lançamento |
 | Supabase, Stripe, clientes, pedidos | Aplicação comercial futura | Excluídos do MVP público somente leitura |
 
 O endereço GitHub antigo washingtonmsdj/tonecosstudio redireciona ao mesmo repositório institucional ID 1163825583. Isso **não** transfere a Vercel antiga para a conta Tonecos.
+
+**Decisão canônica:** o frontend e o backend ficarão no **mesmo repositório tonecosstudio/tonecosstudio**. O serviço Worker, os dados D1 e imagens R2 continuam únicos na Cloudflare Tonecos. A implementação segue o [plano canônico de consolidação](docs/MIGRACAO_CATALOGO_MONOREPO.md), sem criar outro GitHub repo nem importar a antiga interface React.
 
 ## Arquitetura e escopo
 

@@ -12,6 +12,12 @@
 6. [TONECOS_SAFE_PREVIEW.md](TONECOS_SAFE_PREVIEW.md) — preview protegido e isolamento de Supabase.
 7. [OPERACAO_CLOUDFLARE_PAGES.md](OPERACAO_CLOUDFLARE_PAGES.md) — release, rollback, SEO, QA e desativação do legado.
 
+## Execução canônica da consolidação
+
+- **[MIGRACAO_CATALOGO_MONOREPO.md](MIGRACAO_CATALOGO_MONOREPO.md)** — plano M0–M6, SSOT de etapas, critérios de GO, ownership, dependências, rollback e checkpoint; prevalece sobre a proposta anterior de transferir o repo do catálogo.
+- **[Manifesto de migração](../config/catalog-code-consolidation.json)** — fonte verificável dos blobs Worker/D1 da origem; é snapshot auditado, não autorização de release.
+- **[Guard offline](../scripts/architecture/catalog-monorepo.test.mjs)** — executado por npm run catalog:monorepo:check e pelo build, sem rede, D1 ou R2.
+
 ## Documentos históricos
 
 Em 04/11/2026 foram identificados **36 documentos de docs/** que descreviam configuração antiga, relatórios datados, catálogo em Supabase, Vercel como hosting, scripts de importação ou recursos da OrdaX. Devem residir apenas em [docs-archive/historico-2026-11-04](../docs-archive/historico-2026-11-04/), sem autoridade operacional. O conteúdo de URGENTE anterior e ORDAX_APP_PLATFORM também pertence ao arquivo. O Git preserva versões anteriores.

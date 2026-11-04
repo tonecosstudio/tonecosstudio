@@ -16,7 +16,7 @@
 | Hospedagem oficial | Cloudflare Pages tonecosstudio, identidade tonecosstudio@gmail.com | Produção automática OFF, auto preview none, Access no preview |
 | API e mídia | Cloudflare Worker tonecos-catalogo-api na mesma conta Tonecos | Autoridade única de modelos, categorias, franquias, pastas, galeria e imagens |
 | Banco e objetos | D1 e R2 sob o Worker canônico | Não duplicar no Supabase, navegador ou Pages Function |
-| Fonte do Worker | GitHub washingtonmsdj/catalogo | Dependência histórica separada; migração de dono somente em projeto autorizado |
+| Fonte do Worker | GitHub washingtonmsdj/catalogo → services/catalogo/ na repo Tonecos | Publicador Washington temporário até cutover da API; não criar outro repo |
 | Comercial futuro | Supabase/Stripe da Tonecos | Não incluídos no bundle público readonly |
 | Hosting antigo | Vercel tonecosstudio, equipe Washington jogo-brasils-projects (Hobby) | Legado, sem autoridade de publicar o novo site |
 | OrdaX | Contas, domínios e sites independentes | Nunca usar ordax.com.br no catálogo Tonecos |
@@ -50,9 +50,7 @@ A auditoria em 04/11/2026 comprovou que `washingtonmsdj/catalogo` **não é some
 
 **A integração do catálogo com o novo site já funciona por código e binding.** O site `tonecosstudio/tonecosstudio` não replica modelos: `functions/catalogo-api/[[path]].js` usa `CATALOG_WORKER` para falar com o Worker `tonecos-catalogo-api` na Cloudflare da conta Tonecos, que controla D1 `tonecos-catalogo` e R2 `tonecos-catalogo-media`. As duas interfaces HTML existentes não representam duas bases de dados. A apresentação oficial a ser mantida após o lançamento é o **site único Tonecos Studios em Pages**. Não copiar a UI antiga para o Studio nem mover o banco para o repositório do frontend.
 
-**Situação de titularidade:** `washingtonmsdj/catalogo` (GitHub repo ID `1398242143`, público) é propriedade da conta Washington; a conexão GitHub Tonecos tem somente `pull=true`, sem `push` nem `admin`. `tonecosstudio/tonecosstudio` (repo ID `1163825583`, privado) é propriedade da Tonecos e tem autorização administrativa na conexão correspondente. O nome `tonecosstudio/catalogo` ainda não existe como repositório acessível. **Destino desejado, ainda não efetuado:** transferência do repo ID `1398242143` para `tonecosstudio/catalogo`, preservando ID, commits, issues e PRs. Não criar um fork, cópia ou repo vazio com o mesmo nome.
-
-**Gate de transferência:** o GitHub redireciona URLs do **repositório** após transferir, mas **não redireciona URLs de GitHub Pages**. Portanto, como o preview antigo ainda responde HTTP 200, a troca deve ocorrer em janela controlada após assegurar a continuidade da rota Achegue-se e o novo site público. A movimentação não requer duplicar nem copiar D1/R2; porém é obrigatório revisar credenciais, `GitHub Actions`, ambiente `production`, URLs, CORS, frontend legado, webhooks e links que dependam do nome de usuário antigo. Consulte o [runbook Pages](OPERACAO_CLOUDFLARE_PAGES.md) antes de qualquer transferência.
+**Decisão atual do proprietário: um só repositório para site e backend.** O destino NÃO é tonecosstudio/catalogo. O código Worker, suas migrations D1 e ferramentas essenciais serão consolidados em **services/catalogo/** sob **tonecosstudio/tonecosstudio**; o frontend Vite antigo do Washington não será importado. A conta Tonecos continuará dona dos mesmos Worker, D1 e R2. A fonte Washington permanece publicadora somente até ser desligada de forma segura; consulte **[MIGRACAO_CATALOGO_MONOREPO.md](MIGRACAO_CATALOGO_MONOREPO.md)**. Preservar o GitHub Pages/Achegue-se antigo enquanto o site Tonecos não tiver cutover verificado.
 
 ## Segurança, SEO e critérios de GO
 
