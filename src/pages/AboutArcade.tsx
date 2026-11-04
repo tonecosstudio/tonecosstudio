@@ -223,23 +223,41 @@ export default function AboutArcade() {
 
 function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
   const [open, setOpen] = useState(false);
+  const triggerId = `about-faq-trigger-${index}`;
+  const answerId = `about-faq-answer-${index}`;
 
   return (
     <ArcadeCard hover={false}>
-      <button onClick={() => setOpen(!open)} className="w-full text-left p-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <button
+        type="button"
+        id={triggerId}
+        aria-expanded={open}
+        aria-controls={answerId}
+        onClick={() => setOpen((currentOpen) => !currentOpen)}
+        className="flex min-h-11 w-full items-center justify-between gap-4 p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(0,0%,4%)]"
+      >
+        <div className="flex min-w-0 items-center gap-3">
           <span className="font-mono text-[10px] text-[hsl(var(--gold-accent))] tracking-widest">
             {String(index + 1).padStart(2, "0")}
           </span>
-          <span className="font-mono text-xs text-[hsl(0,0%,80%)] tracking-wider">{question}</span>
+          <span className="min-w-0 font-mono text-xs text-[hsl(0,0%,80%)] tracking-wider">{question}</span>
         </div>
-        <span className={`text-[hsl(var(--gold-accent))] transition-transform duration-300 ${open ? "rotate-45" : ""}`}>+</span>
+        <span
+          aria-hidden="true"
+          className={`shrink-0 text-[hsl(var(--gold-accent))] transition-transform duration-300 ${open ? "rotate-45" : ""}`}
+        >
+          +
+        </span>
       </button>
-      {open && (
-        <div className="px-4 pb-4 pl-12 animate-fade-in">
-          <p className="font-mono text-[11px] text-[hsl(0,0%,45%)] leading-relaxed tracking-wide">{answer}</p>
-        </div>
-      )}
+      <div
+        id={answerId}
+        role="region"
+        aria-labelledby={triggerId}
+        hidden={!open}
+        className="px-4 pb-4 pl-12 animate-fade-in"
+      >
+        <p className="font-mono text-[11px] text-[hsl(0,0%,45%)] leading-relaxed tracking-wide">{answer}</p>
+      </div>
     </ArcadeCard>
   );
 }
