@@ -73,7 +73,9 @@
     "prepare": "husky",
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
-    "release:major": "standard-version --release-as major"
+    "release:major": "standard-version --release-as major",
+    "catalog:worker:test": "node --experimental-strip-types --test services/catalogo/tools/test_worker_media_contract.mjs services/catalogo/tools/test_gallery_validation.mjs services/catalogo/tools/test_gallery_aggregation.mjs services/catalogo/tools/test_model_aliases.mjs services/catalogo/tools/test_schema_contract.mjs services/catalogo/tools/test_worker_turnstile.mjs services/catalogo/tools/test_worker_folder_counts.mjs services/catalogo/tools/test_public_gallery_revision.mjs services/catalogo/tools/test_worker_gallery_contract.mjs",
+    "catalog:worker:typecheck": "tsc -p services/catalogo/tsconfig.worker.json --noEmit"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

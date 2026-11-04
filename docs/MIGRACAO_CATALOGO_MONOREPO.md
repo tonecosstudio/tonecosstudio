@@ -54,16 +54,18 @@
 
 **Saída M1:** lista fechada de arquivos e dependências, base fonte reconciliada, nenhum código copiado por especulação. **Não saltar para M5.**
 
-### M2 — Importação inativa do backend na MESMA PR #4 (PENDENTE)
+### M2 — Importação inativa do backend na MESMA PR #4 (STAGED-OFFLINE; TYPECHECK/CI PENDENTES)
 
-- [ ] Copiar **uma vez** o Worker reconciliado, config, migrations D1 e utilitários indispensáveis sob **services/catalogo/**; manter proveniência path/sha e testes equivalentes. Não incluir UI React antiga, docs acumulativos, objetos R2 ou dados D1.
+- [x] Importados **9 módulos públicos Worker**, **22 SQL D1**, config/schema/tsconfig/Wrangler e **10 arquivos de testes/utilitário** (total **44 arquivos de origem**) sob `services/catalogo/`, com `staging.fileBlobs` do manifesto comparável por SHA Git. `media.ts` e teste de mídia incorporam a correção da **PR #266 ainda draft**, sem fazer merge/publicação na origem. As três unidades quote/admin não importadas pelo entrypoint foram excluídas. Nenhum arquivo React antigo, dado, imagem ou deploy foi copiado.
 - [ ] Ajustar import paths e tooling para o novo root, sem trocar nome/id de Worker, D1, R2 nem alterar contratos públicos. Sem bundle duplicado de Pages.
-- [ ] Na migração, mudar fase do manifesto para **staged-offline**, mantendo **activeWorkerPublisher=washingtonmsdj/catalogo** e **targetWorkerReleaseEnabled=false**. Um código candidato inativo pode coexistir para **verificação**; não podem existir **dois writers ativos**.
+- [x] Manifesto passou a **staged-offline**, com `activeWorkerPublisher=washingtonmsdj/catalogo`, `releaseAuthorized=false`, `targetWorkerReleaseEnabled=false`, `targetD1MigrationEnabled=false`; um candidato inativo para testes **não é um segundo writer**.
 - [ ] Verificar que o código existente do Studio não possui consumidores de API antiga fora do allowlist da Pages. Não colar segredos, artefatos compilados ou modelos.
 
 **Saída M2:** candidato completo versionado, não publicado, na mesma branch/PR, com hashes verificáveis.
 
 ### M3 — Equivalência e testes offline / custo-zero (PENDENTE)
+
+**Prova inicial (ainda não gate completo):** Worker e testes da origem main a4bf22b + patch PR #266 foram copiados em diretório isolado equivalente no desktop Windows, executados com Node 24.22.2, **58/58 PASS**, 0 FAIL, exit 0. Nenhum banco/acervo remoto foi consultado. Faltam prova dos blobs na PR final, typecheck e checagem de contrato Pages; não promover.
 
 - [ ] Node/TypeScript tests do Worker, gallery/media (incluindo range, HEAD/GET, status 200, ETag, traversal, ausência de Range e correção #266), busca/cursor, schema e Turnstile.
 - [ ] Gates de integração Pages Function → CATALOG_WORKER usando mocks; respostas 405/404 para métodos/caminhos não públicos; nunca encaminhar cookies/tokens; erro de binding falha fechado.
@@ -112,10 +114,10 @@
 
 ## 5. Checkpoint para qualquer conversa/agente
 
-**ESTADO AGORA: M0 verificado (5/5 em d2cffee; 6/6 em d4b5041) / M1 em execução (9/12 Worker e 19 ferramentas de deploy mapeados; importação pendente).**
+**ESTADO AGORA: M0 concluído; M1: closure de importações públicas rastreada, 19 ferramentas de deploy classificadas como FUTURAS (M4); M2: código candidato inativo importado 44 arquivos, 58/58 testes offline aprovados em estrutura equivalente, aguardando teste de guarda/hashes no SHA final e typecheck. M3–M6 sem liberação.**
 **HEAD de observação do frontend:** 7e70ec68a4ac0338be5ddc4a8df9ad47957191c8 (antes deste plano; nunca presumir que continua atual).
 **MAIN origem observada:** a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c.
 **PRs origem abertas na auditoria:** #266 (prioritária), #264, #263.
 **DO_NOT_REPEAT:** não rodar D1/R2 para investigar Git, não criar tonecosstudio/catalogo, não replicar UI, não construir novo Worker, não criar PR/branch, não reiniciar builds só por docs.
-**NEXT_ACTION:** revalidar main/PR #266 da origem e testar o gate novamente se o código/manifesto mudar → completar dependências de ferramentas/migrations e testes em M1 → importar código necessário somente após reconciliação da #266 e fechamento do mapa.
+**NEXT_ACTION:** confirmar 8/8 no guard local com a árvore `staged-offline` e 58/58 nos arquivos exatos do checkout candidato; executar typecheck Worker sem deploy; integrar CI por impacto (M4) quando M3 estiver verde; manter PR #266 como fonte conhecida até resolução em origem, sem publicar Worker.
 **BLOQUEIOS:** API publisher ainda em Washington; QA legal/visual, Vercel desconectada e release aprovados ainda pendentes.

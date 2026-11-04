@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
@@ -112,6 +113,34 @@ test('an unapproved or incomplete migration cannot switch publishers or enable w
     assert.equal(m.sourceWriterDisabled, true);
     assert.equal(m.targetWorkerReleaseEnabled, true);
   }
+});
+
+test('the staged Worker is byte-identical to the audited Git blobs, with no commercial code', () => {
+  assert.equal(contract.migration.phase, 'staged-offline');
+  assert.equal(contract.staging.sourceMain, contract.origin.observedMainSha);
+  assert.equal(contract.staging.sourceFixPullRequest, 266);
+  assert.match(contract.staging.sourceFixHead, sha);
+  const stage = contract.staging.fileBlobs;
+  assert.equal(Object.keys(stage).length, 44);
+  assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 9);
+  assert.equal(Object.keys(stage).filter(p => p.startsWith('migrations/')).length, 22);
+  for (const [path, expectedBlob] of Object.entries(stage)) {
+    assert.match(expectedBlob, sha, path);
+    const buf = readFileSync(join(root, contract.target.serviceRoot, path));
+    const actual = createHash('sha1').update('blob ' + buf.byteLength + '\\0').update(buf).digest('hex');
+    assert.equal(actual, expectedBlob, 'Unexpected content drift in ' + path);
+  }
+  for (const excluded of contract.staging.excludedModules) {
+    assert.equal(existsSync(join(root, contract.target.serviceRoot, excluded)), false, excluded);
+  }
+  assert.equal(existsSync(join(root, contract.target.serviceRoot, 'src')), false);
+  assert.equal(existsSync(join(root, contract.target.serviceRoot, 'package.json')), false);
+  assert.equal(contract.staging.tests.fail, 0);
+  assert.equal(contract.staging.tests.pass, 58);
+  assert.equal(contract.migration.releaseAuthorized, false);
+  assert.equal(contract.migration.targetWorkerReleaseEnabled, false);
+  assert.equal(contract.migration.targetD1MigrationEnabled, false);
+  assert.equal(contract.activeWorkerPublisher, 'washingtonmsdj/catalogo');
 });
 
 test('the canonical plan is discoverable and supersedes the old transfer proposal', () => {

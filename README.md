@@ -18,6 +18,8 @@ O endereço GitHub antigo washingtonmsdj/tonecosstudio redireciona ao mesmo repo
 
 **Decisão canônica:** o frontend e o backend ficarão no **mesmo repositório tonecosstudio/tonecosstudio**. O serviço Worker, os dados D1 e imagens R2 continuam únicos na Cloudflare Tonecos. A implementação segue o [plano canônico de consolidação](docs/MIGRACAO_CATALOGO_MONOREPO.md), sem criar outro GitHub repo nem importar a antiga interface React.
 
+**Migração em andamento:** a API pública foi copiada **inativa** para [`services/catalogo/`](services/catalogo/README.md), com 22 migrations D1 versionadas e testes offline. O publicador ativo e o banco **continuam na origem atual**; nenhuma versão nova do Worker foi publicada. Plano: [MIGRACAO_CATALOGO_MONOREPO.md](docs/MIGRACAO_CATALOGO_MONOREPO.md).
+
 ## Arquitetura e escopo
 
 Navegador → Cloudflare Pages React/Vite → /catalogo-api/ na mesma origem → Pages Function com allowlist de GET → Service Binding CATALOG_WORKER → Worker tonecos-catalogo-api → D1/R2. O Pages não controla o banco nem mantém outro catálogo. O site público mostra Home, Universo, listagem/busca, fichas/galerias, Sobre, Contato por e-mail, Termos e Privacidade. Sem cadastro, login, orçamento confirmado, checkout, pagamento ou admin nesta fase.
