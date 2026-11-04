@@ -1,5 +1,16 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## QA das seis capas e HTTP Range do Worker — 04/11/2026
+
+- **Seis capas verificadas por HTTP HEAD no Worker canônico** (uma única leitura prévia `GET /api/catalog?limit=6` e seis HEADs individuais; sem varredura D1/R2). Todos os modelos da primeira página possuíam capa e cada objeto respondeu `Content-Type: image/webp`, `ETag` e `Content-Length` coerentes: 10H 71.276 B; 2B #2 46.842 B; 2B #4 43.126 B; 2B #5 44.170 B; A Máscara 54.858 B; A2 31.742 B.
+- **Achado causal:** todas as seis respostas `HEAD` sem cabeçalho `Range` retornaram `206 Partial Content`. Em `washingtonmsdj/catalogo/worker/media.ts`, `servePublicMedia()` trata `object.range` retornado pelo R2 como se o cliente tivesse pedido byte range. Teste isolado do arquivo real em Windows/Node 24: **2 falhas de GET/HEAD sem Range** e 1 sucesso para Range explícito; alteração somente local para `if (request.headers.has('range') && object.range)` levou a **3/3 PASS**. A correção **NÃO foi implantada**.
+- **Seguimento na autoridade correta:** issue <https://github.com/washingtonmsdj/catalogo/issues/265> contém evidência e critérios para o proprietário testar com a suíte canônica e promover versão staged. **Não corrigir na Pages Function como workaround; não fazer commit direto na main do catálogo**, pois push em `worker/**` aciona deploy Cloudflare automaticamente.
+- **Orçamento:** leitura prévia de métricas Cloudflare (04/11 UTC) indicou 1.564 linhas lidas, 47 consultas de leitura e zero escrita; dados podem ter atraso. As seis sondas HEAD de mídia dispensam D1 pelo contrato de `worker/entry.ts`.
+- **Implantação vigente Tonecos Pages:** `6c43e5bd-ef5d-46fd-b402-aebeae5ede40` / SHA `d4c9846e` com deploy success; alterações posteriores em `URGENTE.md` apenas documentais; produção automática e preview automático desabilitados, Access privado. **Não criar outro build só por este checkpoint.**
+- **Próximo gate:** confirmar visualmente no preview autenticado a exibição das seis capas e o clique na ficha `nier-10h-nier`; depois corrigir/promover HTTP Range no repositório do Worker com gates. Sem cadastramento comercial até auditoria do Supabase Tonecos.
+
+---
+
 ## Teste HTTP mínimo de catálogo e mídia — 03/11/2026
 
 - **Prova HTTP real, limitada e não destrutiva:** em 03/11 (Bahia), foi consultada apenas a primeira página pública `GET /api/catalog?limit=6` do Worker canônico `tonecos-catalogo-api`. Resposta **HTTP 200** com 6 modelos publicados, `nextCursor` presente e `cover_storage_key` presente em todos os seis. Modelos observados: `10H` (`nier-10h-nier`), três variantes `2B`, `A mascara`, `A2`. Não inferir que o acervo total tem somente seis modelos.
