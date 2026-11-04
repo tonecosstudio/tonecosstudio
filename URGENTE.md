@@ -1,5 +1,16 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## MVP — páginas legais homologadas em preview — 04/11/2026
+
+- **Build/Deploy GREEN**: Cloudflare Pages projeto `tonecosstudio`, deployment manual `db3d7ce8-3afd-4145-951a-87d71b722b16` do código `0bba00036e3b3d1ae57bdfa4ae8db47fcd436102` terminou em **04/11/2026 03:32:14 UTC** com `clone_repo`, `build` e `deploy` = `success`. Os logs confirmam `release:verify` aprovado, Vite build completo, Pages Functions compiladas, arquivos publicados e `found 0 vulnerabilities`. Preview privado: `https://db3d7ce8.tonecosstudio.pages.dev`; teste sem login respondeu HTTP 302 para Cloudflare Access.
+- **Alteração homologada**: páginas `/privacidade` e `/termos` agora apresentam política específica para catálogo somente leitura; teste novo `src/pages/LegalArcade.mvp.test.tsx` integrado. O resultado do build não substitui revisão jurídica e QA visual autenticado.
+- **SSOT e gates**: PR draft #4 `integration/tonecosstudio-canonical-20261101` → `main`, sem conflitos conhecidos. GitHub reporta check `Cloudflare Pages` = success, mas **`Workers Builds: tonecosstudio` = failure** no mesmo commit; não declarar todos os checks verdes nem fazer merge enquanto essa configuração extra não for diagnosticada. `tonecosstudio.pages.dev` ainda responde 404, produção Pages desabilitada e previews automáticos `none`.
+- **Bloqueio de produção**: o bootstrap de `src/integrations/supabase/client.ts` exige `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` mesmo em modo público/readonly. A produção Pages ainda não contém essas variáveis; somente a conexão Supabase OrdaX está disponível via plugin. Não copiar credenciais de outro projeto, não adicionar falsa configuração e não abrir produção enquanto identidade/RLS do Supabase Tonecos não estiver verificada ou houver refatoração canônica que remova essa dependência do MVP. `robots.txt` continua em `Disallow: /`; sitemap público ausente.
+- **next_action**: diagnosticar check Worker Builds que falha, confirmar QA autenticado de home/modelos/ficha/capas em desktop/mobile e verificar o projeto Supabase correto. Somente depois revisar merge, SEO e publicação manual controlada. Nenhum novo build por este checkpoint documental.
+- **do_not_repeat**: não mesclar draft PR #4 automaticamente; não disparar deploys concorrentes; não consultar D1/R2 para checks de status, não alterar Vercel antiga ou OrdaX.
+
+---
+
 ## MVP — textos legais coerentes com catálogo somente leitura — 04/11/2026
 
 - Identificada divergência entre as páginas `/privacidade` e `/termos` e o modo MVP público: apresentavam coleta de CPF, processamento de pagamento, assinatura e Coins, indisponíveis nesta fase. As páginas agora apresentam textos próprios apenas quando `VITE_PUBLIC_CATALOG_MVP=true` e `VITE_PREVIEW_READ_ONLY=true`; conteúdo comercial anterior permanece para etapa posterior.
