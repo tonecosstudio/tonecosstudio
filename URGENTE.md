@@ -187,3 +187,12 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - Em Dragon Ball, raiz → Androides → Androide 17 mostrou 2 referências; os três breadcrumbs medem 44 px, os retornos para pai e raiz funcionam e não há overflow nas dez larguras. Imagens carregaram após a consulta completar.
 - Sem nova alteração de código: permanece a prévia manual aprovada da Rodada 9, commit funcional `a0312bb91b533d6830a85e0f5b7524d7ed4c33c2`. Produção, Worker, D1 e R2 inalterados.
 - **NEXT_ACTION:** revisar uma ficha e galeria com sessão do preview atual, incluindo retorno ao caminho de franquia/pasta e dimensões de miniaturas. Não rebuildar para este registro documental.
+
+
+## Rodada 12 — fichas e galeria a partir de pasta aninhada (04/11/2026)
+
+- A ficha do Androide 17 abriu a partir de `Dragon Ball → Androides → Androide 17`, carregou a imagem publicada e o link “Voltar à pasta” retornou ao caminho exato da subpasta.
+- A ficha do Androide 18 tem duas imagens: selecionar a segunda muda a imagem principal e `aria-pressed`; imagem e miniaturas carregam corretamente.
+- Ambas as fichas passaram em 320, 360, 390, 414, 768, 1024, 1280, 1440, 1600 e 1920 px sem overflow. Link de retorno 44 px, seleção 46 px e miniaturas entre 62 e 106 px. A seleção permaneceu vazia durante o QA.
+- Preview protegido `9201bcb6`, source funcional `a0312bb91b533d6830a85e0f5b7524d7ed4c33c2`; sem novo build ou alteração de código nesta rodada. Produção e recursos do Worker continuam intactos.
+- **NEXT_ACTION:** seguir por `/universo/marvel-dc/equipes-e-grupos`, revisar busca/franquias de maior volume e foco de teclado. Não repetir testes já aprovados de ficha/galeria nem gerar build somente para documentação.
