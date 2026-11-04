@@ -43,6 +43,17 @@ O projeto **tonecosstudio** da Vercel permanece na equipe **jogo-brasils-project
 
 Foi aceita uma solicitação de desligar previews no projeto antigo, sem confirmação fim a fim. A política premium de deployments retornou **403 pro_plan_required**; não contratar Pro. Desativar o Git link ou provar ausência de auto-deploy antes de liberar a main. Ver [OPERACAO_CLOUDFLARE_PAGES.md](OPERACAO_CLOUDFLARE_PAGES.md).
 
+
+## Catálogo legado: dois frontends, apenas um backend
+
+A auditoria em 04/11/2026 comprovou que `washingtonmsdj/catalogo` **não é somente backend**: contém uma interface React/Vite independente, `config/brand.json`, `config/public-runtime.json` e os workflows `.github/workflows/pages.yml` (GitHub Pages) e `.github/workflows/cloudflare.yml` (Worker + D1/R2). Seu README aponta `https://acheguese.com.br/tonecosstudios/` como URL canônica legada e `https://washingtonmsdj.github.io/catalogo/` como preview. Em um HEAD físico de 04/11/2026, **ambas as URLs responderam HTTP 200**, o que comprova entrega HTTP e **não** homologação da experiência completa nem da API.
+
+**A integração do catálogo com o novo site já funciona por código e binding.** O site `tonecosstudio/tonecosstudio` não replica modelos: `functions/catalogo-api/[[path]].js` usa `CATALOG_WORKER` para falar com o Worker `tonecos-catalogo-api` na Cloudflare da conta Tonecos, que controla D1 `tonecos-catalogo` e R2 `tonecos-catalogo-media`. As duas interfaces HTML existentes não representam duas bases de dados. A apresentação oficial a ser mantida após o lançamento é o **site único Tonecos Studios em Pages**. Não copiar a UI antiga para o Studio nem mover o banco para o repositório do frontend.
+
+**Situação de titularidade:** `washingtonmsdj/catalogo` (GitHub repo ID `1398242143`, público) é propriedade da conta Washington; a conexão GitHub Tonecos tem somente `pull=true`, sem `push` nem `admin`. `tonecosstudio/tonecosstudio` (repo ID `1163825583`, privado) é propriedade da Tonecos e tem autorização administrativa na conexão correspondente. O nome `tonecosstudio/catalogo` ainda não existe como repositório acessível. **Destino desejado, ainda não efetuado:** transferência do repo ID `1398242143` para `tonecosstudio/catalogo`, preservando ID, commits, issues e PRs. Não criar um fork, cópia ou repo vazio com o mesmo nome.
+
+**Gate de transferência:** o GitHub redireciona URLs do **repositório** após transferir, mas **não redireciona URLs de GitHub Pages**. Portanto, como o preview antigo ainda responde HTTP 200, a troca deve ocorrer em janela controlada após assegurar a continuidade da rota Achegue-se e o novo site público. A movimentação não requer duplicar nem copiar D1/R2; porém é obrigatório revisar credenciais, `GitHub Actions`, ambiente `production`, URLs, CORS, frontend legado, webhooks e links que dependam do nome de usuário antigo. Consulte o [runbook Pages](OPERACAO_CLOUDFLARE_PAGES.md) antes de qualquer transferência.
+
 ## Segurança, SEO e critérios de GO
 
 - SEO gerado por scripts/seo/generate-public-index.mjs: sem TONECOS_PUBLIC_INDEXING_RELEASE=true, publicar **Disallow: /**, meta **noindex,nofollow** e nenhum sitemap. Release só após gates explícitos na main/Pages com origem HTTPS validada.
