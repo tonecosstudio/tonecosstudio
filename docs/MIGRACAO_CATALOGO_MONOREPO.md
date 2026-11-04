@@ -63,24 +63,26 @@
 
 **Saída M2:** candidato completo versionado, não publicado, na mesma branch/PR, com hashes verificáveis.
 
-### M3 — Equivalência e testes offline / custo-zero (PENDENTE)
+### M3 — Equivalência e testes offline / custo-zero (VALIDADA LOCALMENTE; CI A VERIFICAR)
 
-**Provas reais no Windows autorizado / Node.js 24.22.2:** Worker + patch PR #266 na MESMA estrutura `services/catalogo/` passaram **58/58**. Arquivos de origem foram verificados byte a byte contra **44 SHA Git** com o guard **8/8**, corrigido no commit `b5abd44`; o proxy do site Cloudflare Pages passou **12/12** testes offline. **Total 78/78 PASS; todos os comandos terminaram exit 0.** O clone local inicialmente alterou CRLF; normalização foi permitida APENAS quando o SHA exato esperado foi comprovado. Isso não é teste de produção. **Pendente:** typecheck real TS, testes offline de busca/cursor e o CI por impacto; não promover.
+**Provas reais no Windows autorizado / Node.js 24.22.2:** Worker + patch PR #266 na MESMA estrutura `services/catalogo/` passaram **58/58**. Arquivos de origem foram verificados byte a byte contra **44 SHA Git** com o guard **8/8**, corrigido no commit `b5abd44`; o proxy do site Cloudflare Pages passou **12/12** testes offline. **Suite anterior: 78/78 PASS. Após importação dos dois testes de busca/SQLite: 82/82 PASS localmente, todos exit 0.** O clone local inicialmente alterou CRLF; normalização foi permitida APENAS quando o SHA exato esperado foi comprovado. Isso não é teste de produção. **Typecheck:** TypeScript 5.8.3 do lockfile PASS (exit 0). **Escala:** SQLite local com 22 migrações e 20.320 modelos sintéticos, 4/4 PASS (exit 0). Guard atualizado e comprovado para **46 blobs**: 8/8 PASS. **Pendente:** CI remoto por impacto e corte de publicador autorizado; não promover.
 
 - [x] Suite offline Node 24 **58/58 PASS** no código Worder importado e patch #266: galeria/media (Range, GET/HEAD, ETag, traversal, 200/206/304), aliases, schema e Turnstile.
 - [x] Prova de **44/44 hashes Git** por guard **8/8 PASS**, NUL correto no cabeçalho SHA-1; nenhum outro pacote Worker/admin de origem importado.
-- [ ] TypeScript Worker (`npm run catalog:worker:typecheck`) e testes isolados específicos de busca/cursor ainda não executados. O Windows de prova não tinha `tsc` instalado; não afirmar TS compilado.
+- [x] `npm run catalog:worker:typecheck` com **tsc 5.8.3** do lockfile: PASS no Windows isolado Node 24.22.2. Ferramenta instalada somente em diretório temporário, sem alterar produção.
+- [x] `npm run catalog:worker:search:test`: 4/4 PASS no mesmo ambiente, incluindo SQLite local com **20.320 modelos sintéticos**, filtros e cursor. Dependência esbuild 0.28.2 explicitamente pinada no package/lock do monorepo.
 - [x] Pages Function → `CATALOG_WORKER`: **12/12 testes offline PASS**, métodos e paths bloqueados (405/404), não encaminhamento de cookies/autorização, Range em mídia e binding ausente fail-closed. Nenhuma rede/D1/R2.
 - [x] **22/22 SQL D1** copiados com os mesmos blobs SHA da origem; teste `schema contract` passou e os bindings continuam DB/MEDIA apontando para recursos EXISTENTES. Nenhum SQL remoto aplicado.
-- [ ] Verificar equivalência operacional de migrações/queries em testes SQLite locais adicionais antes do cutover, sem consultas ao D1 de produção.
+- [x] Migrações 0001–0022 aplicadas apenas em `node:sqlite` **in-memory** durante a prova de escala; índices e paginação validados sem D1 remoto.
 - [ ] Revisar se há testes de Worker que dependem de endpoints antigos do Achegue-se e separá-los de testes de frontend. CI não deve usar o D1 como fixture.
 
 **Saída M3:** relatório verificável de testes e SHA da origem/candidato, nenhuma alegação de equivalência sem logs.
 
-### M4 — CI por impacto, SEM publicação (PENDENTE)
+### M4 — CI por impacto, SEM publicação (IMPLEMENTADO; RESULTADO CI PENDENTE)
 
-- [ ] Integrar ao fluxo CI **existente** do Studio jobs com filtros exclusivos de paths para Worker e Pages; não duplicar workflows/branches. Reutilizar caches Node/CI.
-- [ ] Release do Worker **desligado por padrão**; ambiente production e credenciais Tonecos somente após autorização. Mudança de frontend nunca aplica migration. Usar M3 + controle de custo como preflight.
+- [x] Integração ao **workflow existente** `.github/workflows/quality.yml`: evento `pull_request` filtrado por paths, único job `catalog-offline` com npm cache e apenas guard/typecheck/testes do Worker/busca/proxy. Jobs comerciais originais ficam restritos ao push/dispatch; nenhum segundo workflow criado.
+- [ ] Confirmar resultado do job `catalog-offline` no HEAD após o push; não afirmar CI verde antes.
+- [x] CI offline de PR não recebe secrets, não executa Wrangler deploy nem migrations D1. Manifesto permanece `releaseAuthorized=false`, `targetWorkerReleaseEnabled=false`, `targetD1MigrationEnabled=false`; não altera o publicador Washington.
 - [ ] Conferir diffs, checks verdes e readiness do rollback; preparar plano para impedir que o GitHub Washington continue publicando Worker depois do cutover.
 - [ ] Preservar deploy Cloudflare Pages produção/preview automáticos **OFF** e manter Cloudflare Access/noindex até autorização de lançamento.
 
@@ -117,10 +119,10 @@
 
 ## 5. Checkpoint para qualquer conversa/agente
 
-**ESTADO AGORA: M0 concluído; M1: closure do Worker público mapeada, toolchain de release separada para M4; M2: 44 arquivos do Worker/D1/testes importados **staged-offline** na mesma PR #4; M3: 78/78 testes offline aprovados (8 arquitetura e hashes, 58 Worker, 12 Pages), aguardando typecheck, busca/cursor e testes SQLite; M4–M6 sem liberação.**
+**ESTADO AGORA: M0/M1 rastreados; M2 `staged-offline` com **46 blobs Git**, sem UI antiga nem serviço duplicado; M3 **82/82 testes locais PASS** e typecheck TS 5.8.3 PASS; M4 job `catalog-offline` integrado ao workflow existente, **CI remoto ainda a confirmar**; M5/M6 bloqueadas por GO de cutover, QA visual e revisão jurídica.**
 **HEAD de observação do frontend:** 7e70ec68a4ac0338be5ddc4a8df9ad47957191c8 (antes deste plano; nunca presumir que continua atual).
 **MAIN origem observada:** a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c.
 **PRs origem abertas na auditoria:** #266 (prioritária), #264, #263.
 **DO_NOT_REPEAT:** não rodar D1/R2 para investigar Git, não criar tonecosstudio/catalogo, não replicar UI, não construir novo Worker, não criar PR/branch, não reiniciar builds só por docs.
-**NEXT_ACTION:** executar typecheck Worker e testes adicionais de busca/cursor no checkout com dependências adequadas; preparar apenas os filtros de CI pertinentes (sem deploy) e revisar diferenças da PR #266 antes de qualquer promoção. Não criar outra PR, não tocar D1/R2 de produção, não importar o frontend antigo.
+**NEXT_ACTION:** inspecionar job `catalog-offline` da PR #4 no SHA atual e corrigir exclusivamente falhas reais; revalidar #266 antes de cutover. Não reexecutar auditorias de produção, nem instalar recursos em Cloudflare, nem criar outra PR/branch.
 **BLOQUEIOS:** API publisher ainda em Washington; QA legal/visual, Vercel desconectada e release aprovados ainda pendentes.

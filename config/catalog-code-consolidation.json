@@ -256,6 +256,15 @@
         "remoteD1Reads": 0,
         "remoteR2Reads": 0
       }
+    },
+    "ci": {
+      "status": "configured-not-yet-verified",
+      "workflow": ".github/workflows/quality.yml",
+      "scope": "PRs to main affecting services/catalogo or catalog proxy/config/dependencies",
+      "job": "catalog-offline",
+      "productionSecrets": false,
+      "deploy": false,
+      "d1Migrations": false
     }
   }
 }

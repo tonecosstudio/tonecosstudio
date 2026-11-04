@@ -4,6 +4,18 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'services/catalogo/**'
+      - 'config/catalog-code-consolidation.json'
+      - 'scripts/architecture/catalog-monorepo.test.mjs'
+      - 'scripts/cloudflare/catalog-pages-proxy.test.mjs'
+      - 'functions/catalogo-api/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/quality.yml'
   workflow_dispatch:
 
 permissions:
@@ -15,6 +27,7 @@ concurrency:
 
 jobs:
   quality:
+    if: github.event_name != 'pull_request'
     name: Build, test and security
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -65,6 +78,7 @@ jobs:
           npx prettier --check "${prettier_files[@]}"
 
   unit:
+    if: github.event_name != 'pull_request'
     name: Unit coverage
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -88,6 +102,7 @@ jobs:
         run: npm run test:coverage
 
   build:
+    if: github.event_name != 'pull_request'
     name: Production build and dependency audit
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -114,6 +129,7 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
   authority:
+    if: github.event_name != 'pull_request'
     name: Authority audits
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -164,3 +180,41 @@ jobs:
       - name: Audit commercial authority
         if: always()
         run: node scripts/security/audit-commercial-authority.mjs
+
+  catalog-offline:
+    name: Catalog Worker offline / no deploy
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Verify monorepo ownership and Git blobs
+        run: npm run catalog:monorepo:check
+
+      - name: Typecheck Worker
+        run: npm run catalog:worker:typecheck
+
+      - name: Test Worker runtime offline
+        run: npm run catalog:worker:test
+
+      - name: Test catalog search and SQLite locally
+        run: npm run catalog:worker:search:test
+
+      - name: Test Pages proxy offline
+        run: node --test scripts/cloudflare/catalog-pages-proxy.test.mjs
