@@ -1,5 +1,17 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## Checkpoint horário — 03/11/2026, 23h (Bahia)
+
+- **Git verificado:** `tonecosstudio/tonecosstudio` branch canônica em `366aa82210c6ee62d23e5ce57f3ef75915ce7811` antes deste registro; `washingtonmsdj/catalogo/main` em `a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c`. Sem alteração de código confirmada desde o checkpoint anterior.
+- **Drive, apenas metadados:** SSOT STLForgeCatalogo modificado em `2026-11-01T18:26:52.906Z`; Índice Tonecos Studios em `2026-08-09T22:55:11.541Z`. Licenças, capas e proveniência não foram revalidadas nesta hora.
+- **Cloudflare Pages, apenas endpoint de deployments:** `6c43e5bd-ef5d-46fd-b402-aebeae5ede40` (`d4c9846e`) segue `build=success`, `deploy=success`; o deployment documental `c98798e7-9baa-4093-87f2-43168f576920` (`366aa822`) permanece `queued/idle`, sem build iniciado. Não disparar outro build: commit posterior é somente documentação. Falha antiga `34aa0b1a` no teste de marca foi corrigida em `d4c9846e`, cujo gate de build passou. Nenhum workflow GitHub recente retornou na consulta da branch.
+- **QA ainda ausente:** screenshot autenticado anterior prova Home e seis destaques retornados, **não** prova carregamento das seis capas, fichas individuais, navegação de volta nem E2E completo. Próximo gate é verificar visualmente as seis capas e uma ficha via Edge autenticado/Cloudflare Access, sem consultar D1 para status.
+- **Liberação:** MVP público **NO-GO** (QA e acesso anônimo não homologados); cadastro/login/perfil **NO-GO** (Supabase comercial Tonecos ainda sem auditoria RLS/redirect/SMTP/E2E autorizado); pedidos/compras/pagamentos **NO-GO**. `main`, DNS, produção, Vercel legado, OrdaX, Supabase remoto, D1/R2 e clientes intactos.
+- **Próximas 3 prioridades:** (1) QA autenticado das seis capas e ficha/voltar; (2) conciliar proveniência/licenças/capas aprovadas no Drive/Git sem reimportar; (3) auditar Supabase comercial após autorização, sem abrir cadastro no preview somente leitura.
+
+---
+
+
 ## Homologação visual — preview protegido aprovado — 03/11/2026 (Bahia)
 
 - **Build final aprovado:** Cloudflare Pages deployment `6c43e5bd-ef5d-46fd-b402-aebeae5ede40`, SHA de código `d4c9846e32cec6c1bc5dbce46026ae747b7abb16`. Estágio `deploy=success`; Pages Functions compiladas, 214 assets publicados, `npm run release:verify` concluído e `npm audit` sem vulnerabilidades relatadas. URL protegida: `https://6c43e5bd.tonecosstudio.pages.dev`.
