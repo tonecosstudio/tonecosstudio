@@ -1,5 +1,16 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## Homologação visual — preview protegido aprovado — 03/11/2026 (Bahia)
+
+- **Build final aprovado:** Cloudflare Pages deployment `6c43e5bd-ef5d-46fd-b402-aebeae5ede40`, SHA de código `d4c9846e32cec6c1bc5dbce46026ae747b7abb16`. Estágio `deploy=success`; Pages Functions compiladas, 214 assets publicados, `npm run release:verify` concluído e `npm audit` sem vulnerabilidades relatadas. URL protegida: `https://6c43e5bd.tonecosstudio.pages.dev`.
+- **Evidência E2E fornecida pelo usuário:** screenshot do Microsoft Edge já autenticado no Cloudflare Access, Home Tonecos carregando com layout preto/dourado, menu INÍCIO/UNIVERSO/MODELOS, CTAs e `6` destaques. No código `src/pages/LandingPage.tsx`, `featuredCount` vem de `modelsQuery.data.items.length` e `ATIVO` é estado de acervo condicionado a `models.length > 0`: a tela indica que ao menos seis itens foram retornados para a Home. **Não inferir de uma captura da primeira dobra que as capas carregaram nem que as fichas /modelos/:id foram inspecionadas.**
+- **Conferência estática de imagens:** `CanonicalCatalogImage` trata onError mostrando placeholder, com testes próprios; `mediaUrl` conserva o prefixo `media/`, compatível com a rota pública do Worker; nenhum arquivo de mídia foi buscado neste checkpoint.
+- **Proteções preservadas:** Cloudflare Access em `*.tonecosstudio.pages.dev`; Pages Service Binding `CATALOG_WORKER` para Worker existente; `production_deployments_enabled=false`, preview automático `none`. Não publicar `main`, abrir cadastro, criar nova origem de modelos ou fazer varredura D1/R2.
+- **next_action:** QA autenticado do bloco `MODELOS EM DESTAQUE`, verificar carregamento das seis capas e a ficha de uma miniatura, inclusive navegação/voltar; depois auditoria RLS/auth do Supabase comercial Tonecos antes de liberar usuários.
+- **do_not_repeat:** o build do SHA `d4c9846e` já foi aprovado; não recompilar ou criar deployment por esta atualização só documental; evitar consultas D1 só para status.
+
+---
+
 ## Catálogo — remoção da rota antiga de personagens — 03/11/2026
 
 - A rota pública `/universo/personagem/:slug` ainda invocava `CatalogCharacterArcade.tsx`, que buscava índices/modelos no Supabase e apresentava o título errado `Universo ORDAX`. Isso misturava marcas e criava uma segunda fonte de modelos.
