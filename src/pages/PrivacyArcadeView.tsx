@@ -47,6 +47,7 @@ export function PrivacyArcadeView({ settings }: { settings?: SystemSettings }) {
         badge="Arquivo Confidencial"
         title="PRIVACIDADE"
         subtitle={publicMvp ? "Informações sobre a navegação no catálogo" : "Seus dados estão protegidos"}
+        compact
       />
 
       <section className="max-w-4xl mx-auto px-6 pb-16">
