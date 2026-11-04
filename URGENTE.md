@@ -1,5 +1,15 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## Ficha de modelo — autoridade única — 03/11/2026
+
+- Identificada a bifurcação `src/pages/catalog/ModelDetailsRoute.tsx`: slugs consultavam o Worker canônico, mas parâmetros que pareciam UUID ativavam `ModelDetails.tsx` (consulta ao catálogo legado em Supabase), violando SSOT e permitindo informações distintas para o mesmo caminho público.
+- A entrada ativa `/modelos/:id` agora é exportada exclusivamente de `CanonicalModelDetails` e `public-catalog-gateway` (Worker D1/R2). UUIDs/links antigos não provocam consulta a dados Supabase: só serão exibidos se o Worker canônico tiver esse slug; caso contrário, a ficha mostra indisponibilidade, sem inventar correspondências.
+- Criada regressão `src/pages/catalog/ModelDetailsRoute.test.tsx` para slug canônico, UUID e deep link UUID, garantindo que a ficha Supabase não seja renderizada. O arquivo antigo permanece inativo até auditoria de imports antes de exclusão física. **Ainda exige teste Vitest/coverage no próximo gate; não promover a main nem iniciar build concorrente ao deployment `c702a8a4`.**
+- **next_action:** concluir homologação da Service Binding no Pages, depois executar gate completo do HEAD e verificar navegação de detalhe; auditar imports residuais da ficha antiga antes de removê-la. O Worker segue autoridade única; D1 não foi consultado.
+- **do_not_repeat:** sem fonte de catálogo paralela, sem fallback a Supabase, sem reset/import, sem alteração em `main`/domínios/Vercel.
+
+---
+
 ## Pages → Worker — Service Binding nativa — 03/11/2026
 
 - **Causa estrutural:** a Pages Function do catálogo fazia `fetch()` ao endereço público do Worker, o que pode falhar em comunicação entre Workers da mesma conta Cloudflare. Migração para **Service Binding** interna, preservando o Worker `tonecos-catalogo-api` como única autoridade do catálogo e mantendo o proxy de leitura pública.
