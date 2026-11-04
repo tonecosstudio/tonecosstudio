@@ -1,5 +1,17 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## Gate FINAL do catálogo sem Supabase — 04/11/2026
+
+- **MVP público de leitura, independentemente de Supabase:** Cloudflare Pages preview `a3b545fb-680b-4ceb-94bc-1a013588ca2a`, código do commit `134f2792877a8af53cff9f7b5996c9337ac5e13d`, **clone_repo, build e deploy SUCCESS** em `2026-11-04T04:22:32Z`. URL sob Access: `https://a3b545fb.tonecosstudio.pages.dev`; GET sem autenticação redirecionou com HTTP 302 para Access.
+- **Prova do isolamento:** a configuração Cloudflare preview **não possui** `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` nem `VITE_SUPABASE_PROJECT_ID`; confirmação API após remoção com `null`. O log oficial do `release:verify`/build registrou `Public catalog excludes commercial and Supabase runtime { entry: 'index.html', chunks: 20 }`. Auditoria de dependências: `found 0 vulnerabilities`. Pages Function compilada e 23 assets novos enviados (15 reutilizados); nenhum D1 ou R2 foi alterado.
+- **Correção preventiva no gate:** `bbe361d1` adequou a análise à entrada Vite `index.html`; `134f2792` corrigiu regex ancorada que ignorava `App.tsx` em paths concatenados. Teste Node 24 no desktop físico: 5/5 PASS; gate final também passou na Cloudflare. A versão anterior `f0f778f4` falhara no verificador antigo, apesar do Vite e testes unitários passarem.
+- **SSOT:** PR #4 `integration/tonecosstudio-canonical-20261101` → `main`, permanece draft, sem conflitos na última leitura, sem merge. Deploy Pages production OFF e auto previews `none`; `CATALOG_WORKER` aponta ao Worker canônico existente, sem banco direto nem API paralela. Módulos comerciais antigos estão isolados para fase posterior, não foram apagados ou reconstruídos.
+- **Bloqueio de Supabase REMOVIDO apenas para o MVP público somente leitura.** Auditoria RLS, SMTP, login e conta Supabase Tonecos volta a ser necessária quando recursos comerciais forem ativados; nunca usar credenciais da OrdaX.
+- **Gates de publicação restantes:** QA visual autenticado de Home, 6 capas, filtro/listagem, ficha e galeria com navegador real (desktop e mobile); revisão final de conteúdo jurídico; SEO e sitemap canônicos (robots.txt ainda Disallow:/); validação do cutover `main`/Pages sem acionamento do legado Vercel. Não declarar site comercial aberto só pelo CI.
+- **Do not repeat:** o bundle `134f2792` já foi homologado. Este commit é APENAS documentação, não iniciar build por ele. Não consultar D1 só por status, não mesclar Worker catálogo PR #266, não mudar Vercel, DNS ou produção fora do gate.
+
+---
+
 ## Infraestrutura — Workers Builds redundante desconectado — 04/11/2026
 
 - **Raiz do check vermelho `Workers Builds: tonecosstudio`:** além do Pages `tonecosstudio`, existia um Worker separado `tonecosstudio` (script tag `0b8d360beb814e69a3fa2ab2dc9e3524`, criado em 03/11), sem subdomínio público, bindings ou tráfego declarado. Esse Worker havia sido conectado ao mesmo repositório GitHub institucional por um gatilho Workers Builds com `bun run build` e `npx wrangler deploy`, auto-build e previews ativados; não corresponde ao deploy Pages/Functions oficial e gerava check adicional falho no PR.
