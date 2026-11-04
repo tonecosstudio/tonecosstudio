@@ -2,6 +2,13 @@
 
 **Auditado em 04/11/2026 (Bahia). Estado: NO-GO para publicação pública.** O enorme checkpoint cumulativo anterior foi preservado integralmente em [docs-archive/historico-2026-11-04/URGENTE.md](docs-archive/historico-2026-11-04/URGENTE.md). Use [docs/README.md](docs/README.md) como índice dos documentos atuais.
 
+## Frontend — rodada 1 de responsividade (04/11/2026)
+
+- **Escopo:** navegação compartilhada, rodapé e catálogo público. Revisão visual no preview protegido anterior em 320 px, 390 px e 768 px, mais desktop. Home, Universo, categoria/franquia, Modelos, ficha, Sobre, Contato, Termos e Privacidade mantiveram conteúdo dentro da largura disponível; a grade passou para quatro colunas em 768 px.
+- **Ajustes no código desta rodada:** menu mobile, links do menu e ações do rodapé com alvo mínimo de 44 px; busca da listagem com placeholder curto e espaço de texto ajustado ao estado do botão limpar. Corrige o botão de menu medido em 20 × 20 px e o placeholder truncado em 320 px.
+- **Commits de código:** 35c492e (menu), 7ce12ea (rodapé), e7351da (busca).
+- **Validação e preview desta rodada:** aguardando build manual do Cloudflare Pages em preview privado. O preview anterior e a produção não recebem estas mudanças até a nova publicação de preview; produção permanece bloqueada.
+
 ## Contas e fontes de verdade
 
 - **Repositório do site:** tonecosstudio/tonecosstudio, GitHub ID 1163825583. O nome antigo washingtonmsdj/tonecosstudio redireciona ao mesmo ID. PR [#4](https://github.com/tonecosstudio/tonecosstudio/pull/4), branch integration/tonecosstudio-canonical-20261101, **draft**, sem merge na main. Commits 74b7b60, 5acf41c e 171c84a são de reorganização documental.
