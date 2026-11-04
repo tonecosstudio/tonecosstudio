@@ -38,7 +38,7 @@
 - [x] Árvore de origem lida **uma vez**: 652 blobs, incluindo **12 arquivos worker, 22 migrations, 211 tools, 26 config, 68 src e 280 docs**. Esses conjuntos não têm a mesma autoridade: não migrar 652 arquivos cegamente.
 - [x] PRs de origem #266, #264 e #263 identificadas; prioridade para **#266**, que corrige imagem R2. A homologação final dessa mudança é pendência real.
 - [x] Checkpoint e inventário de blobs SHA gravados na **branch/PR #4**, sem acionamento de Cloudflare.
-- [x] **Guard executado no Windows físico isolado**: Node.js **v24.22.2**, comando `node --test scripts/architecture/catalog-monorepo.test.mjs`, **5 testes / 5 PASS / 0 FAIL**, exit **0**, arquivos provenientes do SHA `d2cffee1fb94b0540b7e362d163200404a929bbe`. Ambiente temporário, sem deploy, D1, R2, rede ou build. O guard passa a ter **6** testes após a inclusão do grafo de imports em M1; executar de novo antes de encerrar o novo commit.
+- [x] **Guard executado no Windows físico isolado**: Node.js **v24.22.2**, comando `node --test scripts/architecture/catalog-monorepo.test.mjs`, **5 testes / 5 PASS / 0 FAIL**, exit **0**, arquivos provenientes do SHA `d2cffee1fb94b0540b7e362d163200404a929bbe`. Ambiente temporário, sem deploy, D1, R2, rede ou build. O guard de **6/6 PASS (exit 0)** foi reexecutado no SHA **d4b5041821c86893095de7b6bf146d5814fa4ee0**, também no mesmo ambiente isolado Windows Node 24, antes de ampliar os gates do toolchain. O novo teste de utilitários deverá ser executado após este commit.
 
 **Saída M0:** plano/manifesto/teste versionados; Pages público e Writer do Worker inalterados; próxima ação M1.
 
@@ -46,7 +46,8 @@
 
 - [ ] Reconsultar a **main viva** da origem, PRs abertas e o que a #266 efetivamente corrigiu; preservar mudanças exclusivas. Não copiar revisão obsoleta.
 - [x] **Mapa inicial de imports do entrypoint feito na origem main auditada:** **9/12** arquivos TS são alcançáveis via import estático de **worker/entry.ts**; **worker/quoteAdminAccess.ts**, **worker/quoteAdminApi.ts** e **worker/quoteWorkflow.ts** não fazem parte desse grafo, não importá-los automaticamente como runtime público. **worker/schemaContract.ts** importa **config/catalog-schema-contract.json**. Paths verificáveis em **config/catalog-code-consolidation.json → origin.staticImportGraph**. Importação dinâmica e funções comerciais ainda requerem revisão.
-- [ ] Completar dependências de **22 migrations, wrangler e das 211 ferramentas** de deploy, validação, cache e media. Classificar **essencial**, **somente frontend antigo**, **manutenção editorial** ou **histórico**, sem assumir que todo arquivo do antigo repo integra o Worker.
+- [x] **Grafo do deploy API** do workflow **.github/workflows/cloudflare.yml**: **18 referências diretas a utilitários tools/**, com **mais 1 dependência transitiva** `tools/check_worker_gallery_contract.mjs` usada por `worker_release_smoke.mjs`. Todos os **19 hashes** estão no manifesto único; além disso foram identificados wrangler, contrato JSON e tsconfig Worker. `wrangler.jsonc` fixa o MESMO Worker, binding D1 **DB** (database ID 87006366-60f3-4937-af73-2ef5a5f901fb), R2 **MEDIA** e segredo nominal **TURNSTILE_SECRET_KEY**. Não publicar com esse workflow importado sem reconciliação e gates.
+- [ ] Finalizar classificação das demais ferramentas (211 arquivos no total), 22 migrations e testes necessários; rastrear consumo interno dos candidatos. Classificar **essencial**, **somente frontend antigo**, **manutenção editorial** ou **histórico**. O mapa de 19 utilitários é **candidato**, não autorização de importação nem prova de todos os imports dinâmicos.
 - [ ] Comparar os 60 scripts/catalog presentes no site: não permitir pipelines concorrentes de publicação; manter ingestion/Drive sob o respectivo proprietário até provar ownership e quota.
 - [ ] Definir pacote Node/TS isolado sem conflito com **src/** e **supabase/migrations/**, com testes offline reais e prova de cobertura. Construir um mapa de destino/sha de cada arquivo escolhido; nenhuma consulta remota D1/R2.
 - [ ] Verificar triggers ativos em **washingtonmsdj/catalogo**, proteção de branch, environments, secrets/variables por presença (**nunca exibir segredos**), histórico de release e rollback. Coordenar com responsável do catálogo antes de travar seus pushes.
@@ -111,10 +112,10 @@
 
 ## 5. Checkpoint para qualquer conversa/agente
 
-**ESTADO AGORA: M0 verificado (5/5 no SHA d2cffee) / M1 em execução (grafo 9/12, importação pendente).**
+**ESTADO AGORA: M0 verificado (5/5 em d2cffee; 6/6 em d4b5041) / M1 em execução (9/12 Worker e 19 ferramentas de deploy mapeados; importação pendente).**
 **HEAD de observação do frontend:** 7e70ec68a4ac0338be5ddc4a8df9ad47957191c8 (antes deste plano; nunca presumir que continua atual).
 **MAIN origem observada:** a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c.
 **PRs origem abertas na auditoria:** #266 (prioritária), #264, #263.
 **DO_NOT_REPEAT:** não rodar D1/R2 para investigar Git, não criar tonecosstudio/catalogo, não replicar UI, não construir novo Worker, não criar PR/branch, não reiniciar builds só por docs.
-**NEXT_ACTION:** revalidar PR #4 HEAD + main/PR #266 da origem → validar o guard de 6 testes no novo SHA → mapear ferramentas e 22 migrations em M1 → importar somente código necessário depois de fechar o mapa e reconciliar a correção de mídia da #266.
+**NEXT_ACTION:** validar o guard ampliado no novo HEAD → revalidar main/PR #266 da origem → completar mapa de ferramentas/migrations/QA em M1 → importar código necessário somente após reconciliação da #266 e o gate de dependências.
 **BLOQUEIOS:** API publisher ainda em Washington; QA legal/visual, Vercel desconectada e release aprovados ainda pendentes.

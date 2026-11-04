@@ -52,6 +52,23 @@ test('M1 import graph distinguishes public Worker from disconnected commercial m
   for (const path of graph.notImportedByEntrypoint) assert.match(path, /quote(Admin|Workflow)/);
 });
 
+test('M1 deploy tooling inventory is pinned without authorizing a second pipeline', () => {
+  const origin = contract.origin;
+  const shaValues = Object.values(origin.workflowApiToolCandidates);
+  assert.equal(shaValues.length, 18);
+  for (const [path, blob] of Object.entries(origin.workflowApiToolCandidates)) {
+    assert.match(path, /^tools\/[a-zA-Z0-9_.-]+\.(mjs|py)$/);
+    assert.match(blob, sha);
+  }
+  assert.deepEqual(Object.keys(origin.transitiveApiToolCandidates), ['tools/check_worker_gallery_contract.mjs']);
+  assert.ok(Object.values(origin.transitiveApiToolCandidates).every(v => sha.test(v)));
+  assert.deepEqual(Object.keys(origin.apiBuildConfigBlobs).sort(),
+    ['config/catalog-schema-contract.json','tsconfig.worker.json','wrangler.jsonc']);
+  assert.ok(Object.values(origin.apiBuildConfigBlobs).every(v => sha.test(v)));
+  assert.equal(origin.apiDeployPipeline, '.github/workflows/cloudflare.yml');
+  assert.equal(contract.migration.targetWorkerReleaseEnabled, false);
+});
+
 test('only the existing Cloudflare resources may serve requests', () => {
   assert.equal(contract.runtime.cloudflarePages, 'tonecosstudio');
   assert.equal(contract.runtime.worker, 'tonecos-catalogo-api');

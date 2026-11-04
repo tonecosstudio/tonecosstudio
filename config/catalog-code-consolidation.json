@@ -85,7 +85,37 @@
         "config/catalog-schema-contract.json"
       ],
       "note": "Static import closure only; not proof of dynamic wiring or production release. Quote/admin modules require separate commercial ownership review."
-    }
+    },
+    "workflowApiToolCandidates": {
+      "tools/audit_d1_integrity.py": "4548cb3c1aefc1d9e9ff821abb36c7e40159f3f5",
+      "tools/bounded_retry.mjs": "1c1c8320fcaf4139c18ab3c2533155213893620e",
+      "tools/catalog_schema_contract.py": "aedfade4a3bdb7e805669c4300e221ca33f69a9b",
+      "tools/check_d1_editorial_audit_budget.py": "c7a55151b32d0bb217e69b7781e37159f7bcf170",
+      "tools/check_main_push_provenance.mjs": "dd8e24698c9d556c246bceccdea10ecd548948ad",
+      "tools/check_migration_deploy_policy.py": "a1f9de00ea22bd82ff38ed80fb9d0275db670bd5",
+      "tools/check_promoted_worker_version.mjs": "2d92742b39ff08c17e05846e45ce86b605770520",
+      "tools/check_public_catalog_hierarchy.mjs": "3b1bbda5b696842abf1762dcb1ba7aee3972f4d0",
+      "tools/check_remote_worker_config.mjs": "71673045554c227c071c5741b72fb3824ca9401d",
+      "tools/check_staged_worker_version.mjs": "390fc85d827a80122cf1dfa19eec4e4a63056cea",
+      "tools/check_worker_cache_hit.mjs": "28144b9c3f77516829b8a7a1542d4adea02ec046",
+      "tools/check_worker_health.mjs": "857b139069d0917c9fd98d071f1034df788c7c0e",
+      "tools/cloudflare_deploy_state.mjs": "8c3bf22fbb3aca9c8fd3491c309e8610f3d5b50f",
+      "tools/read_wrangler_d1_id.mjs": "9144e74418b3394efaf58119d8e1b6666c5b4b60",
+      "tools/render_wrangler_config.mjs": "f66c69e313a8fd8974e86eb747e4ad6296a1de22",
+      "tools/verify_public_catalog.py": "34c1986b9e68602fa60881e6c656355767716b3b",
+      "tools/worker_release_smoke.mjs": "1d1187f78eca424d4f0d8e0c14af9faa9677470b",
+      "tools/wrangler_config_contract.mjs": "59821cfda7350afbf3c8ee5fb3a0c715264d7eac"
+    },
+    "transitiveApiToolCandidates": {
+      "tools/check_worker_gallery_contract.mjs": "27f17721805afc21c24d017170b19e4fbf678733"
+    },
+    "apiBuildConfigBlobs": {
+      "wrangler.jsonc": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
+      "config/catalog-schema-contract.json": "084ca978a3d2352221a4c9cd606c6376697a8c9d",
+      "tsconfig.worker.json": "7c5455357b873f9514fa5cfae9f88f9d652140e0"
+    },
+    "apiDeployPipeline": ".github/workflows/cloudflare.yml",
+    "toolingAnalysisNote": "18 direct references from API deploy workflow, one additional transitive import from worker_release_smoke. Tooling selection is provisional, not a copied/activated pipeline. Other scripts and tests must still be classified; CORS and Wrangler path relocation must be tested offline."
   },
   "runtime": {
     "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
