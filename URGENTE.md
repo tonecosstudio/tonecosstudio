@@ -116,3 +116,11 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - QA do Universo no preview em 320, 390, 768, 1024, 1440 e 1920 px: **nenhum overflow horizontal**; grade responsiva de categorias em 2/2/3/4/4/4 colunas. Seis links/categorias e total de 2.575 modelos renderizados. Uma primeira consulta no preview anterior falhou de forma transitória e se recuperou pelo botão “Tentar novamente”; a página nova carregou sem estado de erro.
 - Produção/Worker/D1/R2 e configuração de deploy **inalterados**. Prévia iniciada manualmente porque previews automáticos seguem desativados.
 - **NEXT_ACTION:** seguir na mesma PR draft #4 para a próxima página do frontend, usando o preview privado e verificando breakpoints antes de avançar.
+
+
+## 04/11/2026 — Alvos do breadcrumb em /universo/:categoria (preview pendente)
+
+- PR #4, branch `integration/tonecosstudio-canonical-20261101`. O commit `d87640d30dd94937ec3f5ca3fc6137beede7ebb7` dá altura mínima de 44 px aos links do breadcrumb e à ação “Ver todos os modelos”, com contorno de foco visível. Antes do ajuste, em 320 px os dois breadcrumbs tinham 16 px de altura e a ação principal 42 px. Busca e botão de busca já mediam 48 px.
+- QA anterior da página `/universo/animes-desenhos` entre 320 e 1920 px: sem overflow horizontal; grade 2/3/4 colunas conforme a largura; 24 franquias renderizadas na primeira listagem.
+- **Validação do commit d87640d:** aguardando build/deploy do Pages e nova medida dos alvos e do layout no preview privado. Produção e Worker permanecem inalterados.
+- **NEXT_ACTION:** publicar somente preview ad hoc do HEAD de integração, confirmar o pipeline e revalidar 320–1920 px. Sem ativar previews automáticos ou publicar em produção.
