@@ -3,7 +3,7 @@
  *
  * Authority: the catalog's Cloudflare Worker (D1/R2), not Supabase.
  * No model mirroring, write path, token or implicit health preflight.
- * This is staged until the commercial site has a verified first-party API proxy.
+ * The public MVP uses the verified first-party Cloudflare Pages Function.
  */
 export type PublicCatalogModel = {
   id: string;
@@ -199,7 +199,7 @@ function decodeModel(value: unknown): PublicCatalogModel {
 }
 
 /**
- * Cookies are needed only on our own protected Vercel preview proxy.
+ * Same-origin Cloudflare Pages calls may carry the browser's own Access cookie.
  * Cross-origin catalog origins must never receive session credentials.
  */
 export function resolveCatalogFetchCredentials(

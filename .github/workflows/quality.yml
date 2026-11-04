@@ -13,6 +13,14 @@ on:
       - 'scripts/architecture/catalog-monorepo.test.mjs'
       - 'scripts/cloudflare/catalog-pages-proxy.test.mjs'
       - 'functions/catalogo-api/**'
+      - 'src/PublicCatalogApp.tsx'
+      - 'src/config/canonical-catalog-endpoint*'
+      - 'src/services/catalog/public-catalog-gateway*'
+      - 'src/pages/CatalogModelsArcade*'
+      - 'src/pages/catalog/CanonicalModelDetails*'
+      - 'src/pages/LandingPage*'
+      - 'src/components/catalog/**'
+      - 'public/_headers'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/quality.yml'
@@ -218,6 +226,9 @@ jobs:
 
       - name: Test Pages proxy offline
         run: node --test scripts/cloudflare/catalog-pages-proxy.test.mjs
+
+      - name: Test public MVP frontend and catalog navigation
+        run: npm run catalog:mvp:test
 
       - name: Validate cutover gate fail-closed without network
         run: node --test scripts/catalog/cutover-readiness.test.mjs

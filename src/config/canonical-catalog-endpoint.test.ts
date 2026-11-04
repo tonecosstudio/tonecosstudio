@@ -1,30 +1,40 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import deployment from "../../vercel.json";
+import legacy from "../../vercel.json";
 import {
   CANONICAL_CATALOG_PROXY_PATH,
   resolveCanonicalCatalogApiBase,
 } from "./canonical-catalog-endpoint";
 
-describe("canonical catalog first-party integration", () => {
-  it("derives only the same-origin, HTTPS endpoint for production previews", () => {
+const pagesFunction = readFileSync(
+  new URL("../../functions/catalogo-api/[[path]].js", import.meta.url),
+  "utf8",
+);
+const pagesHeaders = readFileSync(
+  new URL("../../public/_headers", import.meta.url),
+  "utf8",
+);
+
+describe("Cloudflare Pages canonical public catalog", () => {
+  it("uses HTTPS same-origin Pages Function for public MVP", () => {
     expect(resolveCanonicalCatalogApiBase(
       undefined,
-      "https://tonecosstudio-preview.vercel.app",
+      "https://tonecosstudio.pages.dev",
       true,
-    )).toBe("https://tonecosstudio-preview.vercel.app/catalogo-api/");
+    )).toBe("https://tonecosstudio.pages.dev/catalogo-api/");
     expect(CANONICAL_CATALOG_PROXY_PATH).toBe("/catalogo-api/");
   });
 
-  it("keeps the explicit deployment base as the only override", () => {
+  it("accepts an explicitly configured base without inferring another provider", () => {
     expect(resolveCanonicalCatalogApiBase(
-      " https://custom.example/api/ ",
-      "https://tonecosstudio-preview.vercel.app",
+      " https://catalog.example.test/api/ ",
+      "https://tonecosstudio.pages.dev",
       true,
-    )).toBe("https://custom.example/api/");
+    )).toBe("https://catalog.example.test/api/");
   });
 
   it.each([
-    [undefined, "https://tonecosstudio-preview.vercel.app", false],
+    [undefined, "https://tonecosstudio.pages.dev", false],
     [undefined, "http://localhost:5173", true],
     [undefined, "https://ordax.com.br", true],
     [undefined, "https://www.ordax.com.br", true],
@@ -32,43 +42,28 @@ describe("canonical catalog first-party integration", () => {
     [undefined, "https://example.com?other=1", true],
     [undefined, "not-a-url", true],
     [undefined, undefined, true],
-  ] as const)("fails closed without a trustworthy origin %#", (configured, origin, prod) => {
+  ] as const)("fails closed without a trustworthy production origin %#", (configured, origin, prod) => {
     expect(resolveCanonicalCatalogApiBase(configured, origin, prod)).toBe("");
   });
 
-  it("rewrites only public catalog reads and images, never an unrestricted Worker API", () => {
-    const rewrites = deployment.rewrites;
-    const origin = "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
-    // Exact allowlist: folders are bounded GET reads, not an API wildcard.
-    expect(rewrites.slice(0, -1)).toEqual([
-      { source: "/catalogo-api/api/catalog", destination: origin + "/api/catalog" },
-      { source: "/catalogo-api/api/categories", destination: origin + "/api/categories" },
-      { source: "/catalogo-api/api/franchises", destination: origin + "/api/franchises" },
-      { source: "/catalogo-api/api/folders", destination: origin + "/api/folders" },
-      { source: "/catalogo-api/api/models/:slug/images", destination: origin + "/api/models/:slug/images" },
-      { source: "/catalogo-api/api/models/:slug", destination: origin + "/api/models/:slug" },
-      { source: "/catalogo-api/media/:path*", destination: origin + "/media/:path*" },
-    ]);
-    expect(rewrites.at(-1)).toEqual({
-      source: "/(.*)",
-      destination: "/index.html",
-    });
-    expect(rewrites.some((route) => route.source === "/catalogo-api/:path*" ||
-      route.source === "/catalogo-api/api/:path*")).toBe(false);
+  it("requires the existing Cloudflare Pages Service Binding and read-only transport", () => {
+    expect(pagesFunction).toContain("env.CATALOG_WORKER.fetch(String(url), options)");
+    expect(pagesFunction).toContain('const PUBLIC_LIST_ROUTES = new Set([');
+    expect(pagesFunction).toContain('if (request.method !== "GET")');
+    expect(pagesFunction).toContain('return new Response("Catalog unavailable"');
+    expect(pagesFunction).not.toContain("env.DB");
+    expect(pagesFunction).not.toContain("env.MEDIA");
+    // Request/response behavior, including unauthorized routes, is covered by
+    // scripts/cloudflare/catalog-pages-proxy.test.mjs on the same CI job.
   });
 
-  it("keeps catalog caching subordinate to origin policy, with a restrictive site CSP", () => {
-    const rule = deployment.headers.find((entry) =>
-      entry.source === "/catalogo-api/:path*");
-    expect(rule?.headers).toContainEqual({
-      key: "x-vercel-enable-rewrite-caching",
-      value: "1",
-    });
-    const siteHeaders = deployment.headers.find((entry) => entry.source === "/(.*)");
-    const csp = siteHeaders?.headers.find((header) =>
-      header.key === "Content-Security-Policy")?.value;
-    expect(csp).toContain("img-src 'self'");
-    expect(csp).toContain("connect-src 'self'");
-    expect(csp).not.toContain("workers.dev");
+  it("keeps the first-party CSP and disables the obsolete Vercel publisher", () => {
+    expect(pagesHeaders).toContain("Content-Security-Policy:");
+    expect(pagesHeaders).toContain("connect-src 'self'");
+    expect(pagesHeaders).toContain("img-src 'self'");
+    expect(pagesHeaders).not.toContain("workers.dev");
+    expect(legacy.git?.deploymentEnabled).toBe(false);
+    expect(legacy).not.toHaveProperty("rewrites");
+    expect(legacy).not.toHaveProperty("headers");
   });
 });

@@ -77,7 +77,8 @@
     "catalog:worker:test": "node --experimental-strip-types --test services/catalogo/tools/test_worker_media_contract.mjs services/catalogo/tools/test_gallery_validation.mjs services/catalogo/tools/test_gallery_aggregation.mjs services/catalogo/tools/test_model_aliases.mjs services/catalogo/tools/test_schema_contract.mjs services/catalogo/tools/test_worker_turnstile.mjs services/catalogo/tools/test_worker_folder_counts.mjs services/catalogo/tools/test_public_gallery_revision.mjs services/catalogo/tools/test_worker_gallery_contract.mjs services/catalogo/tools/test_worker_entry_integration.mjs",
     "catalog:worker:typecheck": "tsc -p services/catalogo/tsconfig.worker.json --noEmit",
     "catalog:worker:search:test": "cd services/catalogo && node --test tools/test_worker_catalog_facets.mjs tools/test_worker_catalog_scale_sqlite.mjs",
-    "catalog:cutover:check": "node scripts/catalog/cutover-readiness.mjs --live"
+    "catalog:cutover:check": "node scripts/catalog/cutover-readiness.mjs --live",
+    "catalog:mvp:test": "vitest run src/config/canonical-catalog-endpoint.test.ts src/services/catalog/public-catalog-gateway.test.ts src/pages/CatalogModelsArcade.integration.test.tsx src/pages/catalog/CanonicalModelDetails.integration.test.tsx"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

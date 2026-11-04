@@ -1,7 +1,7 @@
 /**
  * One browser origin for the canonical, read-only catalog.
- * Vercel forwards only public model, category, franchise and media routes to
- * the Cloudflare Worker. No catalog rows are copied to Supabase.
+ * Cloudflare Pages Functions forwards only public read-only paths through
+ * the native CATALOG_WORKER binding. No catalog rows are copied to Supabase.
  */
 export const CANONICAL_CATALOG_PROXY_PATH = "/catalogo-api/";
 
