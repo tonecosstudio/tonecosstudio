@@ -38,7 +38,7 @@
 - [x] Árvore de origem lida **uma vez**: 652 blobs, incluindo **12 arquivos worker, 22 migrations, 211 tools, 26 config, 68 src e 280 docs**. Esses conjuntos não têm a mesma autoridade: não migrar 652 arquivos cegamente.
 - [x] PRs de origem #266, #264 e #263 identificadas; prioridade para **#266**, que corrige imagem R2. A homologação final dessa mudança é pendência real.
 - [x] Checkpoint e inventário de blobs SHA gravados na **branch/PR #4**, sem acionamento de Cloudflare.
-- [x] **Guard executado no Windows físico isolado**: Node.js **v24.22.2**, comando `node --test scripts/architecture/catalog-monorepo.test.mjs`, **5 testes / 5 PASS / 0 FAIL**, exit **0**, arquivos provenientes do SHA `d2cffee1fb94b0540b7e362d163200404a929bbe`. Ambiente temporário, sem deploy, D1, R2, rede ou build. O guard de **6/6 PASS (exit 0)** foi reexecutado no SHA **d4b5041821c86893095de7b6bf146d5814fa4ee0**, também no mesmo ambiente isolado Windows Node 24, antes de ampliar os gates do toolchain. O novo teste de utilitários deverá ser executado após este commit.
+- [x] **Guard executado no Windows físico isolado**: Node.js **v24.22.2**, comando `node --test scripts/architecture/catalog-monorepo.test.mjs`, **5 testes / 5 PASS / 0 FAIL**, exit **0**, arquivos provenientes do SHA `d2cffee1fb94b0540b7e362d163200404a929bbe`. Ambiente temporário, sem deploy, D1, R2, rede ou build. O guard de **6/6 PASS (exit 0)** foi reexecutado no SHA **d4b5041821c86893095de7b6bf146d5814fa4ee0**, também no mesmo ambiente isolado Windows Node 24, antes de ampliar os gates do toolchain. A ampliação do guard do toolchain foi executada no SHA **424cdd9fb3a22f6d58167c37fa23b4e94ab48556**, também no Windows isolado Node **24.22.2**: **7/7 PASS, 0 FAIL, exit 0**. Isso prova apenas os contratos locais, não CI completo nem Worker deploy.
 
 **Saída M0:** plano/manifesto/teste versionados; Pages público e Writer do Worker inalterados; próxima ação M1.
 
@@ -117,5 +117,5 @@
 **MAIN origem observada:** a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c.
 **PRs origem abertas na auditoria:** #266 (prioritária), #264, #263.
 **DO_NOT_REPEAT:** não rodar D1/R2 para investigar Git, não criar tonecosstudio/catalogo, não replicar UI, não construir novo Worker, não criar PR/branch, não reiniciar builds só por docs.
-**NEXT_ACTION:** validar o guard ampliado no novo HEAD → revalidar main/PR #266 da origem → completar mapa de ferramentas/migrations/QA em M1 → importar código necessário somente após reconciliação da #266 e o gate de dependências.
+**NEXT_ACTION:** revalidar main/PR #266 da origem e testar o gate novamente se o código/manifesto mudar → completar dependências de ferramentas/migrations e testes em M1 → importar código necessário somente após reconciliação da #266 e fechamento do mapa.
 **BLOQUEIOS:** API publisher ainda em Washington; QA legal/visual, Vercel desconectada e release aprovados ainda pendentes.

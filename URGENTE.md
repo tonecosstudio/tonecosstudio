@@ -68,4 +68,4 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 ## 04/11/2026 — M1, dependências do deploy API (sem deploy)
 
 - Leitura do workflow Cloudflare API **na main origem a4bf22b**: 18 referências tools, mais 1 ferramenta transitiva (check_worker_gallery_contract), todos com Git blobs no manifesto único. Wrangler, schema JSON e tsconfig Worker também ancorados em SHA. A pipeline existente pode publicar versões e aplicar migrações quando muda schema: **não copiar/ativar gatilhos sem neutralizar este comportamento**.
-- O guard estático 6/6 PASS no SHA d4b5041 (Node 24 Windows, exit 0). Novo teste para ferramentas do deploy precisa ser reexecutado no HEAD resultante. M1 ainda não concluiu análise das 211 ferramentas, testes e PR #266; **M2 bloqueado**.
+- O guard estático 6/6 PASS no SHA d4b5041 (Node 24 Windows, exit 0). Teste do toolchain executado na versão 424cdd9: **7/7 PASS, 0 FAIL, exit 0** em Node 24 no Windows isolado. **M1 continua bloqueada** pela revisão de ferramentas/migrations e PR #266. M1 ainda não concluiu análise das 211 ferramentas, testes e PR #266; **M2 bloqueado**.
