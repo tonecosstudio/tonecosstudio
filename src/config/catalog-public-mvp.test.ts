@@ -4,14 +4,12 @@ afterEach(() => vi.unstubAllEnvs());
 describe("Tonecos catalog MVP allowlist", () => {
   it.each(["/", "/landing", "/universo", "/universo/anime", "/universo/anime/nier",
     "/universo/anime/nier/2b", "/universo/personagem/legado", "/modelos", "/modelos/nier-10h-nier",
-    "/sobre", "/contato", "/termos", "/privacidade", "/modelos/"])
-    ("accepts %s", p => expect(isPublicCatalogMvpPath(p)).toBe(true));
+    "/sobre", "/contato", "/termos", "/privacidade", "/modelos/"])("accepts %s", p => expect(isPublicCatalogMvpPath(p)).toBe(true));
   it.each(["/login", "/admin", "/admin/users", "/perfil", "/dashboard", "/wishlist",
     "/pedido/colecao/1/progresso", "/grupos", "/colecoes", "/selecionar-personagem",
     "/arcade-lab", "/migrar-pedido", "//evil.example", "/modelos/%2e%2e",
     "/modelos/../../admin", "/modelos/model/extra", "/universo/a/b/c/d",
-    "/modelos/a%2fb", "/modelos/a?x=y"])
-    ("blocks %s", p => expect(isPublicCatalogMvpPath(p)).toBe(false));
+    "/modelos/a%2fb", "/modelos/a?x=y"])("blocks %s", p => expect(isPublicCatalogMvpPath(p)).toBe(false));
   it("fails closed when read-only mode is absent", () => {
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
