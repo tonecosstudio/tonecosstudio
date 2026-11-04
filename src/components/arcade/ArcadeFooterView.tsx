@@ -104,7 +104,7 @@ export function ArcadeFooterView({ settings }: { settings?: SystemSettings }) {
                 <li key={link.to}>
                   <Link
                     to={link.to}
-                    className="text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors tracking-wider uppercase flex items-center gap-2 group"
+                    className="text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors tracking-wider uppercase flex min-h-11 items-center gap-2 group"
                   >
                     <span className="w-1 h-1 bg-[hsl(0,0%,20%)] group-hover:bg-[hsl(var(--gold-accent))] transition-colors" />
                     {link.label}
@@ -127,7 +127,7 @@ export function ArcadeFooterView({ settings }: { settings?: SystemSettings }) {
                 <li key={link.to}>
                   <Link
                     to={link.to}
-                    className="text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors tracking-wider uppercase flex items-center gap-2 group"
+                    className="text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors tracking-wider uppercase flex min-h-11 items-center gap-2 group"
                   >
                     <span className="w-1 h-1 bg-[hsl(0,0%,20%)] group-hover:bg-[hsl(var(--gold-accent))] transition-colors" />
                     {link.label}
@@ -147,7 +147,7 @@ export function ArcadeFooterView({ settings }: { settings?: SystemSettings }) {
             </h4>
             {previewReadOnly ? (
               isCatalogPublicMvpEnabled() && contactEmailHref ? (
-                <a href={contactEmailHref} className="flex items-center gap-2 font-mono text-xs text-[hsl(var(--gold-accent))]">
+                <a href={contactEmailHref} className="inline-flex min-h-11 items-center gap-2 font-mono text-xs text-[hsl(var(--gold-accent))]">
                   <Mail className="h-3.5 w-3.5" /> {contactEmail}
                 </a>
               ) : (
@@ -161,7 +161,7 @@ export function ArcadeFooterView({ settings }: { settings?: SystemSettings }) {
                 <li>
                   <a
                     href={contactEmailHref}
-                    className="flex items-center gap-2 text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors group"
+                    className="flex min-h-11 items-center gap-2 text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors group"
                   >
                     <Mail className="w-3.5 h-3.5 text-[hsl(0,0%,30%)] group-hover:text-[hsl(var(--gold-accent))] transition-colors" />
                     <span className="tracking-wider">{contactEmail}</span>
@@ -172,7 +172,7 @@ export function ArcadeFooterView({ settings }: { settings?: SystemSettings }) {
                 <li>
                   <a
                     href={`tel:${settings.phone_primary}`}
-                    className="flex items-center gap-2 text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors group"
+                    className="flex min-h-11 items-center gap-2 text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors group"
                   >
                     <Phone className="w-3.5 h-3.5 text-[hsl(0,0%,30%)] group-hover:text-[hsl(var(--gold-accent))] transition-colors" />
                     <span className="tracking-wider">
@@ -187,7 +187,7 @@ export function ArcadeFooterView({ settings }: { settings?: SystemSettings }) {
                     href={whatsAppHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors group"
+                    className="flex min-h-11 items-center gap-2 text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors group"
                   >
                     <MessageCircle className="w-3.5 h-3.5 text-[hsl(0,0%,30%)] group-hover:text-[hsl(var(--gold-accent))] transition-colors" />
                     <span className="tracking-wider">
@@ -212,14 +212,14 @@ export function ArcadeFooterView({ settings }: { settings?: SystemSettings }) {
           <div className="flex items-center gap-4">
             <Link
               to={PUBLIC_ROUTES.terms}
-              className="text-[10px] font-mono text-[hsl(0,0%,30%)] hover:text-[hsl(var(--gold-accent))] transition-colors tracking-wider uppercase"
+              className="inline-flex min-h-11 items-center text-[10px] font-mono text-[hsl(0,0%,30%)] hover:text-[hsl(var(--gold-accent))] transition-colors tracking-wider uppercase"
             >
               Termos
             </Link>
             <span className="text-[hsl(0,0%,15%)]">•</span>
             <Link
               to={PUBLIC_ROUTES.privacy}
-              className="text-[10px] font-mono text-[hsl(0,0%,30%)] hover:text-[hsl(var(--gold-accent))] transition-colors tracking-wider uppercase"
+              className="inline-flex min-h-11 items-center text-[10px] font-mono text-[hsl(0,0%,30%)] hover:text-[hsl(var(--gold-accent))] transition-colors tracking-wider uppercase"
             >
               Privacidade
             </Link>
