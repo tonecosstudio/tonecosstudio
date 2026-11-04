@@ -1,5 +1,15 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## Catálogo — remoção da rota antiga de personagens — 03/11/2026
+
+- A rota pública `/universo/personagem/:slug` ainda invocava `CatalogCharacterArcade.tsx`, que buscava índices/modelos no Supabase e apresentava o título errado `Universo ORDAX`. Isso misturava marcas e criava uma segunda fonte de modelos.
+- O Worker canônico atual possui categorias, franquias, pastas e modelos, **não possui índice de personagem isolado**. Em vez de fazer consulta Supabase ou inventar filtro, `CatalogCharacterArcade.tsx` agora faz um redirecionamento determinístico para `/modelos`, a navegação canônica; os links antigos continuam resolvendo para uma página útil sem expor dados antigos.
+- Adicionada `src/pages/CatalogCharacterArcade.test.tsx` com 3 cenários: link antigo, query string com personagem/origem e slug desconhecido. Sem alteração de API, RLS ou D1. Depende do próximo gate completo de Vitest/TypeScript antes de implantação.
+- `/modelos/:id` também deixou de acionar ficha Supabase por UUID no commit anterior `90970364`. Não excluir outros módulos legados sem auditar as referências ativas.
+- **next_action:** somente após concluir o deploy `c702a8a4` do Worker Service Binding, executar um build único do HEAD com os dois ajustes de roteamento e garantir que todos os testes permaneçam verdes. QA visual autenticado, RLS do Supabase comercial e abertura pública seguem NO-GO.
+
+---
+
 ## Ficha de modelo — autoridade única — 03/11/2026
 
 - Identificada a bifurcação `src/pages/catalog/ModelDetailsRoute.tsx`: slugs consultavam o Worker canônico, mas parâmetros que pareciam UUID ativavam `ModelDetails.tsx` (consulta ao catálogo legado em Supabase), violando SSOT e permitindo informações distintas para o mesmo caminho público.
