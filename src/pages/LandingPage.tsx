@@ -305,7 +305,7 @@ export default function LandingPage() {
           ) : models.length === 0 ? (
             <p className="mt-5 p-6 text-sm" role="status">Novas referências serão publicadas em breve.</p>
           ) : (
-            <div className="mt-5 grid grid-cols-2 gap-3.5 sm:grid-cols-3 md:grid-cols-6">
+            <div className="mt-5 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
               {models.map((model) => {
                 const imageUrl = gateway?.mediaUrl(model.coverStorageKey) ?? null;
                 return (
