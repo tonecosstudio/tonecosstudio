@@ -195,7 +195,9 @@
       "worker/schemaContract.ts": "6e9f77269e844849653b9314517c28df7ef3c976",
       "worker/sharedCollections.ts": "bd66879a41798f2e2695273b30d9b562c44dd53a",
       "worker/turnstile.ts": "6dc1f8f779a9b5ff8b1a5c0d4c11b24c9d5917a3",
-      "wrangler.jsonc": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d"
+      "wrangler.jsonc": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
+      "tools/test_worker_catalog_facets.mjs": "bd7ede29ce84a68fb26fb67a5aca02b696f85d0b",
+      "tools/test_worker_catalog_scale_sqlite.mjs": "b4dca481759d53448f31aaaff879b01546c3c74f"
     },
     "excludedModules": [
       "worker/quoteAdminAccess.ts",
@@ -221,7 +223,7 @@
         "fail": 0,
         "exitCode": 0,
         "testedGuardCommit": "b5abd4428899f1d03ff96e8a8702e94b101f0b03",
-        "verifiedGitBlobs": 44,
+        "verifiedGitBlobs": 46,
         "remoteD1Queries": 0,
         "remoteR2Queries": 0
       },
@@ -235,10 +237,25 @@
         "remoteR2Queries": 0
       },
       "typecheck": {
-        "status": "pending",
-        "reason": "No local tsc available in isolated Windows environment; not installing dependency or running CI without proper scope."
+        "status": "pass",
+        "command": "npm run catalog:worker:typecheck",
+        "typescriptVersion": "5.8.3",
+        "exitCode": 0,
+        "environment": "Windows Node 24.22.2, isolated dependency installation"
       },
-      "totalPassed": 78
+      "totalPassed": 82,
+      "search": {
+        "status": "pass",
+        "command": "node --test tools/test_worker_catalog_facets.mjs tools/test_worker_catalog_scale_sqlite.mjs (cwd services/catalogo)",
+        "pass": 4,
+        "fail": 0,
+        "exitCode": 0,
+        "fixtureModels": 20320,
+        "sqlite": "in-memory; 22 local migrations",
+        "esbuildVersion": "0.28.2",
+        "remoteD1Reads": 0,
+        "remoteR2Reads": 0
+      }
     }
   }
 }

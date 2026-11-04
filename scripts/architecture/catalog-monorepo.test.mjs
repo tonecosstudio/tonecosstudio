@@ -121,7 +121,7 @@ test('the staged Worker is byte-identical to the audited Git blobs, with no comm
   assert.equal(contract.staging.sourceFixPullRequest, 266);
   assert.match(contract.staging.sourceFixHead, sha);
   const stage = contract.staging.fileBlobs;
-  assert.equal(Object.keys(stage).length, 44);
+  assert.equal(Object.keys(stage).length, 46);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 9);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('migrations/')).length, 22);
   for (const [path, expectedBlob] of Object.entries(stage)) {
@@ -137,6 +137,9 @@ test('the staged Worker is byte-identical to the audited Git blobs, with no comm
   assert.equal(existsSync(join(root, contract.target.serviceRoot, 'package.json')), false);
   assert.equal(contract.staging.tests.fail, 0);
   assert.equal(contract.staging.tests.pass, 58);
+  assert.equal(contract.staging.tests.search.pass, 4);
+  assert.equal(contract.staging.tests.typecheck.status, 'pass');
+  assert.equal(contract.staging.tests.totalPassed, 82);
   assert.equal(contract.migration.releaseAuthorized, false);
   assert.equal(contract.migration.targetWorkerReleaseEnabled, false);
   assert.equal(contract.migration.targetD1MigrationEnabled, false);
