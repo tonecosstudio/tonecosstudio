@@ -1,5 +1,16 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## Pages — deploy aprovado e pendências reais — 03/11/2026 (Bahia)
+
+- **Último deploy manual comprovadamente aprovado:** Cloudflare Pages `5ebcbc98-352e-4f61-8aba-b85a5b370a8b` do commit `9ad335568330189608ce15ca7355384d727993dd`, URL privada `https://5ebcbc98.tonecosstudio.pages.dev`. Todos os estágios `queued`, `initialize`, `clone_repo`, `build` e `deploy` retornaram `success` (finalizado 03/11/2026 23:59 UTC). O comando `npm ci ... && npm run release:verify` retornou sucesso; Vite, Pages Functions e publicação dos 218 assets aprovados, `npm audit` com zero vulnerabilidades reportadas.
+- **Roteamento SPA:** o commit `9ad33556` removeu a regra inválida `public/_redirects` e adicionou teste de regressão. O deploy confirmou ausência do aviso de loop de redirecionamento; Pages usa fallback SPA nativo sem arquivo `404.html`.
+- **Git SSOT atual:** a branch de integração avançou para `d3967a484be5c1214da11cd428280c38fd6780c0` exclusivamente com uma alteração de documentação de checkpoint, depois do deploy. Não declarar que esse SHA de documentação foi homologado como bundle distinto; não refazer build só por documentação.
+- **Proteção e custos:** o preview `*.tonecosstudio.pages.dev` está sob Cloudflare Access e o site está em modo somente leitura; `tonecosstudio.pages.dev` (endereço raiz) não é coberto por essa política. Produção e previews automáticos seguem desligados. Nada foi consultado/alterado no D1/R2, na produção da Vercel, na `main` ou nos domínios públicos.
+- **Gates que NÃO foram comprovados:** acesso autenticado ao preview com QA visual desktop/mobile, navegação profunda, execução real da Pages Function no endereço protegido, imagens e fluxos de catálogo; RLS/redirect/SMTP e E2E do projeto Supabase Tonecos. O bloqueio local de escrita via `VITE_PREVIEW_READ_ONLY` não substitui RLS. Cadastro real, pedidos e pagamentos continuam **NO-GO**.
+- **next_action:** testar o preview autenticado e a navegação/catalogo sem reimportar dados; confirmar RLS e autoridade de cadastro no Supabase Tonecos com acesso próprio; só então decidir sobre `main`, domínio e abertura de MVP. Não lançar builds paralelos/duplicados.
+
+---
+
 ## Checkpoint horário — 03/11/2026, 20h56 (Bahia)
 
 - **Fonte Git:** repositório transferido `tonecosstudio/tonecosstudio`, branch única `integration/tonecosstudio-canonical-20261101`, HEAD `9ad335568330189608ce15ca7355384d727993dd`. O catálogo `washingtonmsdj/catalogo/main` permanece `a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c`. Sem alteração confirmada nesses HEADs em relação ao checkpoint mais recente.
@@ -12,7 +23,7 @@
 ---
 
 
-> Repositório: `washingtonmsdj/tonecosstudio` (privado, confirmado em 01/11/2026).
+> Repositório: `tonecosstudio/tonecosstudio` (privado, transferido do proprietário Washington; identidade institucional).
 > **Estado: NO-GO.** A `main` permanece `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41` e NÃO foi atualizada nesta execução.
 > Frente única de consolidação: `integration/tonecosstudio-canonical-20261101`.
 > Regras e destino técnico: [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md).
