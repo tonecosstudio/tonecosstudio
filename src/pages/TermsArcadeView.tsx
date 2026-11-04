@@ -97,6 +97,7 @@ export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
         badge="Documento Oficial"
         title="TERMOS DE USO"
         subtitle={publicMvp ? "Catálogo público somente leitura" : "Última atualização: 03/02/2026"}
+        compact
       />
 
       <section className="max-w-4xl mx-auto px-6 pb-16">
