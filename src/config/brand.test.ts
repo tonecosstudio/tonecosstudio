@@ -169,7 +169,8 @@ it("builds a single deterministic social image from Tonecos-owned sources", () =
     "utf8",
   );
   const buildStages = packageJson.scripts.build.split(" && ");
-  const preflight = buildStages[0] ?? "";
+  expect(buildStages[0]).toBe("node scripts/security/assert-catalog-mvp-build.mjs");
+  const preflight = buildStages.find(stage => stage.includes("node --test")) ?? "";
   expect(preflight).toContain("node --test");
   expect(preflight).toContain("scripts/branding/generate-og-image.test.mjs");
   expect(preflight).toContain("scripts/cloudflare/catalog-pages-proxy.test.mjs");

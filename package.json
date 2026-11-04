@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node --test scripts/branding/generate-og-image.test.mjs scripts/cloudflare/catalog-pages-proxy.test.mjs && vite build && node scripts/branding/generate-og-image.mjs",
+    "build": "node scripts/security/assert-catalog-mvp-build.mjs && node --test scripts/branding/generate-og-image.test.mjs scripts/cloudflare/catalog-pages-proxy.test.mjs && vite build && node scripts/branding/generate-og-image.mjs",
     "build:dev": "vite build --mode development",
     "typecheck": "tsc -b --pretty false",
     "typecheck:app": "tsc -p tsconfig.app.json --pretty false --noEmit",

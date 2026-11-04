@@ -1,9 +1,9 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MainLayout } from "@/components/layouts/MainLayout";
@@ -11,6 +11,7 @@ import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-con
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
 import { CustomerChat } from "@/components/customer/CustomerChat";
+import { isCatalogPublicMvpEnabled, isCatalogMvpReadOnlyConfigurationSafe, isPublicCatalogMvpPath } from "@/config/catalog-public-mvp";
 import {
   ADMIN_ROUTES,
   AUTH_ROUTES,
@@ -113,8 +114,16 @@ function HiddenCollectionsPage() {
   return <NotFoundArcade />;
 }
 
+function CatalogPublicMvpGate({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return isCatalogPublicMvpEnabled() && !isPublicCatalogMvpPath(pathname)
+    ? <NotFoundArcade /> : <>{children}</>;
+}
+
 function AppContent() {
   useAuthProfileSync();
+  if (!isCatalogMvpReadOnlyConfigurationSafe())
+    throw new Error("MVP público exige somente leitura");
 
   return (
     <>
@@ -124,6 +133,7 @@ function AppContent() {
         <CatalogBrowsingProvider>
         <MainLayout>
           <Suspense fallback={<PageLoader />}>
+            <CatalogPublicMvpGate>
             <Routes>
               <Route path={PUBLIC_ROUTES.home} element={<LandingPage />} />
               <Route path={PUBLIC_ROUTES.landing} element={<LandingPage />} />
@@ -679,10 +689,11 @@ function AppContent() {
 
               <Route path="*" element={<NotFoundArcade />} />
             </Routes>
+            </CatalogPublicMvpGate>
           </Suspense>
         </MainLayout>
         </CatalogBrowsingProvider>
-        <CustomerChat />
+        {import.meta.env.VITE_PREVIEW_READ_ONLY !== "true" && <CustomerChat />}
       </BrowserRouter>
     </>
   );

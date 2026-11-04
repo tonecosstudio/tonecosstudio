@@ -10,6 +10,7 @@ import { useCurrentUserIsAdmin } from "@/lib/roles";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { CoinCounter } from "@/components/arcade/CoinCounter";
 import { BRAND_SHORT_NAME } from "@/config/brand";
+import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
   ADMIN_ROUTES,
   AUTH_ROUTES,
@@ -136,7 +137,7 @@ export function ArcadeNav() {
           )}
           {PREVIEW_READ_ONLY && (
             <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(0,0%,55%)]">
-              PRÉVIA
+              {isCatalogPublicMvpEnabled() ? "CATÁLOGO" : "PRÉVIA"}
             </span>
           )}
           <button
