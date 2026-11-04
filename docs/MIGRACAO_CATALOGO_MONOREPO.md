@@ -65,11 +65,14 @@
 
 ### M3 — Equivalência e testes offline / custo-zero (PENDENTE)
 
-**Prova inicial (ainda não gate completo):** Worker e testes da origem main a4bf22b + patch PR #266 foram copiados em diretório isolado equivalente no desktop Windows, executados com Node 24.22.2, **58/58 PASS**, 0 FAIL, exit 0. Nenhum banco/acervo remoto foi consultado. Faltam prova dos blobs na PR final, typecheck e checagem de contrato Pages; não promover.
+**Provas reais no Windows autorizado / Node.js 24.22.2:** Worker + patch PR #266 na MESMA estrutura `services/catalogo/` passaram **58/58**. Arquivos de origem foram verificados byte a byte contra **44 SHA Git** com o guard **8/8**, corrigido no commit `b5abd44`; o proxy do site Cloudflare Pages passou **12/12** testes offline. **Total 78/78 PASS; todos os comandos terminaram exit 0.** O clone local inicialmente alterou CRLF; normalização foi permitida APENAS quando o SHA exato esperado foi comprovado. Isso não é teste de produção. **Pendente:** typecheck real TS, testes offline de busca/cursor e o CI por impacto; não promover.
 
-- [ ] Node/TypeScript tests do Worker, gallery/media (incluindo range, HEAD/GET, status 200, ETag, traversal, ausência de Range e correção #266), busca/cursor, schema e Turnstile.
-- [ ] Gates de integração Pages Function → CATALOG_WORKER usando mocks; respostas 405/404 para métodos/caminhos não públicos; nunca encaminhar cookies/tokens; erro de binding falha fechado.
-- [ ] Validar **migrations D1 por contrato e diff de código**, sem aplicar nem executar SQL remoto. Conferir que DB e MEDIA continuam nomes/IDs canônicos.
+- [x] Suite offline Node 24 **58/58 PASS** no código Worder importado e patch #266: galeria/media (Range, GET/HEAD, ETag, traversal, 200/206/304), aliases, schema e Turnstile.
+- [x] Prova de **44/44 hashes Git** por guard **8/8 PASS**, NUL correto no cabeçalho SHA-1; nenhum outro pacote Worker/admin de origem importado.
+- [ ] TypeScript Worker (`npm run catalog:worker:typecheck`) e testes isolados específicos de busca/cursor ainda não executados. O Windows de prova não tinha `tsc` instalado; não afirmar TS compilado.
+- [x] Pages Function → `CATALOG_WORKER`: **12/12 testes offline PASS**, métodos e paths bloqueados (405/404), não encaminhamento de cookies/autorização, Range em mídia e binding ausente fail-closed. Nenhuma rede/D1/R2.
+- [x] **22/22 SQL D1** copiados com os mesmos blobs SHA da origem; teste `schema contract` passou e os bindings continuam DB/MEDIA apontando para recursos EXISTENTES. Nenhum SQL remoto aplicado.
+- [ ] Verificar equivalência operacional de migrações/queries em testes SQLite locais adicionais antes do cutover, sem consultas ao D1 de produção.
 - [ ] Revisar se há testes de Worker que dependem de endpoints antigos do Achegue-se e separá-los de testes de frontend. CI não deve usar o D1 como fixture.
 
 **Saída M3:** relatório verificável de testes e SHA da origem/candidato, nenhuma alegação de equivalência sem logs.
@@ -114,10 +117,10 @@
 
 ## 5. Checkpoint para qualquer conversa/agente
 
-**ESTADO AGORA: M0 concluído; M1: closure de importações públicas rastreada, 19 ferramentas de deploy classificadas como FUTURAS (M4); M2: código candidato inativo importado 44 arquivos, 58/58 testes offline aprovados em estrutura equivalente, aguardando teste de guarda/hashes no SHA final e typecheck. M3–M6 sem liberação.**
+**ESTADO AGORA: M0 concluído; M1: closure do Worker público mapeada, toolchain de release separada para M4; M2: 44 arquivos do Worker/D1/testes importados **staged-offline** na mesma PR #4; M3: 78/78 testes offline aprovados (8 arquitetura e hashes, 58 Worker, 12 Pages), aguardando typecheck, busca/cursor e testes SQLite; M4–M6 sem liberação.**
 **HEAD de observação do frontend:** 7e70ec68a4ac0338be5ddc4a8df9ad47957191c8 (antes deste plano; nunca presumir que continua atual).
 **MAIN origem observada:** a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c.
 **PRs origem abertas na auditoria:** #266 (prioritária), #264, #263.
 **DO_NOT_REPEAT:** não rodar D1/R2 para investigar Git, não criar tonecosstudio/catalogo, não replicar UI, não construir novo Worker, não criar PR/branch, não reiniciar builds só por docs.
-**NEXT_ACTION:** confirmar 8/8 no guard local com a árvore `staged-offline` e 58/58 nos arquivos exatos do checkout candidato; executar typecheck Worker sem deploy; integrar CI por impacto (M4) quando M3 estiver verde; manter PR #266 como fonte conhecida até resolução em origem, sem publicar Worker.
+**NEXT_ACTION:** executar typecheck Worker e testes adicionais de busca/cursor no checkout com dependências adequadas; preparar apenas os filtros de CI pertinentes (sem deploy) e revisar diferenças da PR #266 antes de qualquer promoção. Não criar outra PR, não tocar D1/R2 de produção, não importar o frontend antigo.
 **BLOQUEIOS:** API publisher ainda em Washington; QA legal/visual, Vercel desconectada e release aprovados ainda pendentes.

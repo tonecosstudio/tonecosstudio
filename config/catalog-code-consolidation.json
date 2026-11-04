@@ -214,7 +214,31 @@
       "executionEnvironment": "isolated temporary directory with copied source-main files and PR #266 media/test files; source ref hashes checked",
       "remoteD1Queries": 0,
       "remoteR2Queries": 0,
-      "deployments": 0
+      "deployments": 0,
+      "architecture": {
+        "command": "npm run catalog:monorepo:check",
+        "pass": 8,
+        "fail": 0,
+        "exitCode": 0,
+        "testedGuardCommit": "b5abd4428899f1d03ff96e8a8702e94b101f0b03",
+        "verifiedGitBlobs": 44,
+        "remoteD1Queries": 0,
+        "remoteR2Queries": 0
+      },
+      "pagesProxy": {
+        "command": "node --test scripts/cloudflare/catalog-pages-proxy.test.mjs",
+        "pass": 12,
+        "fail": 0,
+        "exitCode": 0,
+        "siteProxyBlob": "1c565282be39a673e22dfaaa652151d804c9a19b",
+        "remoteD1Queries": 0,
+        "remoteR2Queries": 0
+      },
+      "typecheck": {
+        "status": "pending",
+        "reason": "No local tsc available in isolated Windows environment; not installing dependency or running CI without proper scope."
+      },
+      "totalPassed": 78
     }
   }
 }
