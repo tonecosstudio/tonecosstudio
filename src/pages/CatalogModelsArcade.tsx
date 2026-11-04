@@ -44,11 +44,11 @@ function ModelCover({
 }) {
   const url = mediaUrl(model.coverStorageKey);
   return (
-    <div className="flex aspect-[3/4] items-center justify-center overflow-hidden bg-[hsl(0,0%,9%)]">
+    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden bg-[hsl(0,0%,9%)]">
       <CanonicalCatalogImage
         src={url}
         alt={"Imagem de referência: " + model.name}
-        imageClassName="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.025]"
+        imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
       />
     </div>
   );

@@ -81,7 +81,7 @@ export function CanonicalUniverseFolders({
         ))}
       </nav>
       {folders.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {folders.map((folder) => (
             <ArcadeCard key={folder.id}>
               <Link to={folderPath(folder.id)} className="group flex min-h-36 flex-col gap-3 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]">
@@ -124,11 +124,11 @@ export function CanonicalUniverseFolders({
                   className="group block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                   aria-label={"Ver detalhes de " + model.name}
                 >
-                  <div className="flex aspect-[3/4] items-center justify-center overflow-hidden bg-[hsl(0,0%,8%)]">
+                  <div className="flex aspect-[2/3] items-center justify-center overflow-hidden bg-[hsl(0,0%,8%)]">
                     <CanonicalCatalogImage
                       src={image}
                       alt={"Referência visual de " + model.name}
-                      imageClassName="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.03]"
+                      imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
                     />
                   </div>
                   <div className="p-3">
