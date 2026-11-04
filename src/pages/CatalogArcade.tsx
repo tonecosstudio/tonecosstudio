@@ -121,11 +121,11 @@ export default function CatalogArcade() {
         />
         <div className="relative z-10 mx-auto max-w-7xl px-4 pt-8 md:px-6">
           <nav aria-label="Navegação do acervo" className="mb-8 flex flex-wrap items-center gap-3 text-xs">
-            <Link className="text-[hsl(var(--gold-accent))] hover:underline" to={PUBLIC_ROUTES.catalog}>
+            <Link className="inline-flex min-h-11 items-center text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog}>
               Universo
             </Link>
             {themeKey && (
-              <Link className="text-[hsl(0,0%,56%)] hover:text-[hsl(var(--gold-accent))] hover:underline" to={PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(themeKey)}>
+              <Link className="inline-flex min-h-11 items-center text-[hsl(0,0%,56%)] hover:text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(themeKey)}>
                 / {themeKey}
               </Link>
             )}
@@ -134,7 +134,7 @@ export default function CatalogArcade() {
                 / {franchiseKey}
               </span>
             )}
-            <Link className="ml-auto border border-[hsl(var(--gold-accent)/0.4)] px-4 py-3 font-mono uppercase text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]" to={modelsPath()}>
+            <Link className="ml-auto inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent)/0.4)] px-4 py-3 font-mono uppercase text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={modelsPath()}>
               Ver todos os modelos
             </Link>
           </nav>
