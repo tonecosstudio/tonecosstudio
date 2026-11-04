@@ -218,3 +218,6 @@ jobs:
 
       - name: Test Pages proxy offline
         run: node --test scripts/cloudflare/catalog-pages-proxy.test.mjs
+
+      - name: Validate cutover gate fail-closed without network
+        run: node --test scripts/catalog/cutover-readiness.test.mjs
