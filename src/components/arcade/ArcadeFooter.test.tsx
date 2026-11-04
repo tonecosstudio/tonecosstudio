@@ -20,6 +20,7 @@ function mount() {
 
 beforeEach(() => {
   vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+  vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
   mock.useSystemSettings.mockClear();
 });
 afterEach(() => {
