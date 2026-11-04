@@ -34,6 +34,7 @@ export default defineConfig(({ mode }) => ({
     include: ["react", "react-dom"],
   },
   build: {
+    manifest: true,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -60,7 +61,9 @@ export default defineConfig(({ mode }) => ({
           'vendor-query': ['@tanstack/react-query'],
 
           // Supabase
-          'vendor-supabase': ['@supabase/supabase-js'],
+          ...(process.env.VITE_PUBLIC_CATALOG_MVP === "true"
+            ? {}
+            : { 'vendor-supabase': ['@supabase/supabase-js'] }),
         },
       },
     },
