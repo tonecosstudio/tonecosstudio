@@ -196,3 +196,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - Ambas as fichas passaram em 320, 360, 390, 414, 768, 1024, 1280, 1440, 1600 e 1920 px sem overflow. Link de retorno 44 px, seleção 46 px e miniaturas entre 62 e 106 px. A navegação por Tab alcançou “Raiz da franquia” e mostrou contorno dourado sólido de 2 px no alvo de 44 px; a seleção permaneceu vazia.
 - Preview protegido `9201bcb6`, source funcional `a0312bb91b533d6830a85e0f5b7524d7ed4c33c2`; sem novo build ou alteração de código nesta rodada. Produção e recursos do Worker continuam intactos.
 - **NEXT_ACTION:** seguir por `/universo/marvel-dc/equipes-e-grupos`, revisar busca/franquias de maior volume e foco de teclado. Não repetir testes já aprovados de ficha/galeria nem gerar build somente para documentação.
+
+
+## Rodada 13 — miniaturas imersivas e pastas responsivas (04/11/2026)
+
+- Referência visual analisada: [STLForge](https://stlforge.cl/stl-models/), com quadro vertical 2:3, imagem em `object-fit: cover` e zoom suave. O padrão foi aplicado às capas da listagem `/modelos` e às referências nas páginas de franquia/pasta; ficha e galeria continuam exibindo a imagem inteira com `contain`.
+- Na página `/universo/marvel-dc/equipes-e-grupos`, o grid de pastas usa uma coluna em 320 px para evitar truncar nomes longos; passa a duas a partir de 360 px, três em `sm` e quatro em `lg`.
+- **QA do código:** GitHub Actions Quality Gate #41920100209 **completed/success** no SHA `8044a7f2b533a941d59b8cc1bd103a69bae22d49`.
+- **Preview privado atualizado:** [abrir Modelos](https://5eff704d.tonecosstudio.pages.dev/modelos), deployment `5eff704d-77be-40fa-b53f-ed2e355d47b3`, commit exato acima; ambiente `preview`, Cloudflare Pages build **SUCCESS** e deploy **SUCCESS**. Configuração remota confirmada: produção na `main`, produção automática desativada e previews automáticos desativados; publicação manual restrita ao preview. Produção, Worker, D1, R2 e DNS inalterados.
+- **Responsividade medida:** `/modelos` em 320, 360, 390, 768, 1440 e 1920 px: sem overflow horizontal; grade em 2/2/2/4/5/6 colunas; capas `cover` na proporção 2:3. Página da franquia em 320, 360, 390, 768 e 1440 px: sem overflow, grid de pastas em 1/2/2/3/4 colunas e miniaturas preenchendo os quadros. X-Men aninhado também conferido a 320 px, com rótulos inteiros.
+- **NEXT_ACTION:** continuar a revisão página por página pela Home, priorizando hero, imagens, navegação e layout em 320/390/768/1440 px. Manter a PR #4 em draft; não publicar produção nem refazer builds só por documentação.
