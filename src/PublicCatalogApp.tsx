@@ -1,7 +1,7 @@
 /** Catalog-only entry of the existing Tonecos app: no auth, Supabase, purchases or admin imports. */
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useLayoutEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ArcadeFrame } from "@/components/layouts/ArcadeFrame";
 import { ArcadeNavView } from "@/components/arcade/ArcadeNavView";
@@ -21,6 +21,18 @@ const Terms = lazy(() => import("@/pages/TermsArcadeView").then(m => ({ default:
 const HistoricalCharacter = lazy(() => import("@/pages/CatalogCharacterArcade"));
 
 const queryClient = new QueryClient();
+
+function PublicRouteScrollReset() {
+  const { pathname, hash } = useLocation();
+  const navigationType = useNavigationType();
+
+  useLayoutEffect(() => {
+    if (navigationType === "POP" || hash) return;
+    window.scrollTo(0, 0);
+  }, [pathname, hash, navigationType]);
+
+  return null;
+}
 
 function NotFound() {
   return (
