@@ -1,21 +1,29 @@
-# Integração canônica do catálogo público no Tonecos Studio
+# Catálogo público — proxy canônico do Cloudflare Pages
 
-A única autoridade para modelos, categorias, franquias, galerias e imagens é o Worker Cloudflare `tonecos-catalogo-api` (D1/R2). O Tonecos Studio não mantém cópia dos modelos no Supabase.
+**Hospedagem do frontend:** Cloudflare Pages tonecosstudio, conta Tonecos. **API única:** Worker tonecos-catalogo-api na mesma conta, controlador de D1/R2. O site não possui catálogo em Supabase nem outra API.
 
-## Caminho de leitura
+## Como funciona
 
-Em produção e previews HTTPS, sem configuração explícita, o navegador usa `/catalogo-api/` na própria origem. O `vercel.json` encaminha somente as rotas públicas indexadas de catálogo, categoria, franquia, ficha, galeria e `media/` para o Worker, antes do fallback SPA. Nenhum endpoint genérico ou administrativo é exposto pelo proxy. As chamadas são `GET`, sem credenciais; paginação máxima 60 no gateway e padrão 24 na UI. O proxy respeita as instruções de cache da origem, sem impor TTL novo. A CSP não precisa liberar domínios externos.
+Em HTTPS, o navegador usa **/catalogo-api/** na própria origem do site. A função **functions/catalogo-api/[[path]].js** só atende rotas públicas GET da allowlist; sua única saída autorizada é **env.CATALOG_WORKER.fetch**. O Service Binding **CATALOG_WORKER → tonecos-catalogo-api** está configurado nos ambientes preview e produção do Pages. Sem binding, retornar erro em vez de usar outro Worker, URL externa ou outro banco.
 
-`src/config/canonical-catalog-endpoint.ts` é o único resolvedor da base para as duas telas (`/modelos` e `/modelos/:slug`). `VITE_CANONICAL_CATALOG_API_BASE` continua sendo um override explícito; em desenvolvimento sem HTTPS a integração permanece desabilitada, sem fallback para OrdaX.
+Rotas de leitura aceitas pela função:
+- /catalogo-api/api/catalog
+- /catalogo-api/api/categories
+- /catalogo-api/api/franchises
+- /catalogo-api/api/folders
+- /catalogo-api/api/models/:slug
+- /catalogo-api/api/models/:slug/images
+- /catalogo-api/media/:path* (segmentos validados)
 
-## Evidência de conectividade (02/11/2026)
+Método diferente de GET → 405; path fora da allowlist → 404; exceção no upstream → 502; redirecionamento inesperado é rejeitado. Encaminha Range de mídia e If-None-Match, mas não promove cookies de upstream. O contrato da **Pages Function** não é o mesmo que um HEAD direto no Worker, que pode ter suporte diferente.
 
-O Worker `https://tonecos-catalogo-api.tonecosstudio.workers.dev` respondeu `200` e `ok=true` no endpoint de saúde. Uma única consulta de amostra `/api/catalog?limit=1` respondeu `200`, 1 item e cursor seguinte. Um `HEAD` da capa de amostra respondeu `206`, tipo `image/webp`. Não foram executadas varreduras, migrações, escritas ou consultas integrais ao D1.
+**Resolver SSOT:** src/config/canonical-catalog-endpoint.ts. **Cliente:** src/services/catalog/public-catalog-gateway.ts. A variável VITE_CANONICAL_CATALOG_API_BASE é override explícito, não convite para fallback OrdaX. As rewrites no vercel.json são apenas compatibilidade histórica, não o caminho oficial Cloudflare.
 
-## Gates
+## Testes e evidências
 
-A homologação de UI no navegador protegido ainda depende de acesso autenticado ao preview. A associação histórica de `ordax.com.br`, `www.ordax.com.br` e `ordax-three.vercel.app` ao projeto Vercel precisa ser removida separadamente: não transferir domínio nem alterar DNS. Publicação em produção permanece proibida antes dessa revisão.
+- Teste offline: scripts/cloudflare/catalog-pages-proxy.test.mjs, seleção/gateway de catálogo e gate scripts/security/assert-public-mvp-bundle.mjs.
+- Sondas anteriores de baixo volume validaram seis capas WebP, ficha do modelo **nier-10h-nier** e galeria. **Não** confundir isso com renderização visual correta em mobile/desktop.
+- Problema HTTP Range no backend está separado em **washingtonmsdj/catalogo#266**; não corrigir na Pages Function com workaround e não implantar Worker sem testes/staging/rollback.
+- Jamais realizar scan SQL, importação ou varredura D1/R2 para validar integração do frontend.
 
-## Previews protegidos por autenticação Vercel
-
-O Worker Cloudflare continua acessível sem cookies. Porém, o proxy de primeira origem da Vercel exige o cookie de proteção do próprio preview: o gateway detecta igualdade exata entre origem do navegador e origem da API e usa credentials: same-origin apenas nesse caso. Qualquer origem externa recebe credentials: omit. Isso preserva isolamento e evita o erro de carregar os cartões no preview protegido.
+Ver [arquitetura](TONECOS-STUDIO-CONSOLIDACAO.md) e [runbook](OPERACAO_CLOUDFLARE_PAGES.md).

@@ -1,16 +1,19 @@
-# Tonecos Studio — preview privado, somente leitura
+# Preview seguro — Tonecos em Cloudflare Pages
 
-O catálogo de modelos é propriedade do Cloudflare Worker (D1/R2); nenhuma réplica comercial no Supabase.
+**Produto atual:** catálogo somente leitura. **Preview oficial:** Cloudflare Pages da conta Tonecos, protegido pelo **Cloudflare Access**. Vercel Authentication/preview é resíduo histórico e não define o fluxo de QA do MVP.
 
-## Causa raiz
-O bundle Vite publicado no preview anterior continha uma exceção no carregamento dos módulos, porque VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY existiam apenas em produção. Assim, READY não significava que o React inicializava.
+## Ambiente comprovado
 
-## Política canônica
-Para homologação visual limitada, a branch canônica de preview pode usar somente a URL e a chave pública anon já usadas no site comercial, verificadas contra o ref do JWT. Nunca copiar service_role ou chaves secretas. O preview continua protegido por Vercel Authentication.
-VITE_PREVIEW_READ_ONLY=true é obrigatório junto dessas variáveis e VITE_UPLOAD_SECURITY_FAIL_CLOSED=true. Em modo preview-read-only, a única instância Supabase desativa persistência de sessão, auto-refresh e callback de login, e aceita somente GET/HEAD em tabelas PostgREST e objetos públicos na origem configurada. Todos os outros métodos, RPC, auth, Functions, storage upload e outros hosts retornam 403 sem rede.
+- Configuração: VITE_PUBLIC_CATALOG_MVP=true, VITE_PREVIEW_READ_ONLY=true, VITE_UPLOAD_SECURITY_FAIL_CLOSED=true, VITE_CONTACT_EMAIL institucional.
+- Service Binding CATALOG_WORKER → tonecos-catalogo-api em preview e produção.
+- Sem VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY ou VITE_SUPABASE_PROJECT_ID no preview; build real provou 20 chunks públicos sem runtime Supabase/comercial. Não acrescentar anon key por conveniência.
+- Produção automática desativada, preview automático none; indexação bloqueada por robots Disallow, meta noindex e ausência de sitemap.
+- Cloudflare Access bloqueia acesso anônimo aos previews. Uma requisição HTTP 200 à página Sign in **não** demonstra o HTML do site ou o funcionamento de robots/sitemap.
 
-Esse bloqueio no navegador é defesa em profundidade, não substitui RLS, políticas de banco ou autenticação do servidor. As páginas podem ler dados explicitamente públicos da produção; não executar testes de autenticação, pagamento, pedido ou upload nesse preview. É necessário Supabase staging isolado para homologar operações comerciais.
+## Homologação legítima
 
-## Contratos
-Sem envs Supabase, o aplicativo comercial falha fechado. Os envs do preview são exclusivos da branch de integração. A produção não recebe alterações. A variável VITE_SUPABASE_PROJECT_ID deve coincidir com o subdomínio da URL; em 02/11/2026 a produção apresentava divergência e exige revisão antes de lançamento.
-Os gates continuam TypeScript, lint, auditorias, Vitest, cobertura >=70%, Vite build e npm audit.
+Executar QA de navegador com sessão autorizada, em desktop e mobile, testando Home, seis capas amostradas, listagem/busca/filtros, detalhe/galeria, navegação direta/refresh, estados de erro, acessibilidade e imagens. Salvar evidência do SHA e deployment **exatos**. O último bundle de código aprovado por build/deploy é o SHA **39e7a04a**, preview **ad578030**; o QA visual deste build não foi concluído.
+
+Não desabilitar Access, inventar cookie/bypass, consultar D1 por status, usar Supabase de OrdaX, ligar pagamentos ou habilitar produção/indexação para fazer teste. Operações comerciais exigirão homologação de Auth/RLS/SMTP/autorização em ambiente próprio.
+
+Gates seguintes: revisão jurídica responsável, prova de isolamento da Vercel antiga, domínio/canonical/HTTPS e rollback. Referências: [runbook](OPERACAO_CLOUDFLARE_PAGES.md) e [checkpoint](../URGENTE.md).
