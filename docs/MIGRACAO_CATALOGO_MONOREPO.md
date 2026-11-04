@@ -90,6 +90,18 @@
 
 ### M5 — Cutover do ÚNICO publicador da API (BLOQUEADO ATÉ GO EXPLÍCITO)
 
+**Preflight real, somente leitura — 04/11/2026:**
+- Cloudflare Workers deployments: `tonecos-catalogo-api` versão **28**, id `a32b09a0-377d-4ff7-b313-4e5a7bf994b6`, recebe **100%**; deployment `a9f13dd7-537d-4106-bfcf-30510cca388b`, de **01/11/2026 10:35:46 UTC**, relacionado ao commit Washington `77ff9b0559c911de992ae9c84b78fdaa5e0fed6b`. A versão anterior **27** (id `3fdef475-a483-4439-a778-bd87f9f76bb1`) existe como **candidata** a rollback, mas o retorno não foi testado; não presumir recuperabilidade.
+- Comparação Git `77ff9b0...a4bf22b`: **21 commits** à frente na origem, **nenhum diff em worker/**, **migrations/**, `wrangler.jsonc`, `config/catalog-schema-contract.json` ou `tsconfig.worker.json`. A mudança de API específica do candidato é a correção de mídia da PR #266 (ainda draft); não supor que ela já esteja servida em produção.
+- Cloudflare configurações atuais: Worker com bindings **DB** (D1 existente, ID `87006366-60f3-4937-af73-2ef5a5f901fb`), **MEDIA** (R2 atual), secret nominal **TURNSTILE_SECRET_KEY** e var **CORS_ORIGINS**. Pages binding **CATALOG_WORKER** aponta ao mesmo Worker; autodeploy de Pages produção OFF, preview none.
+- O workflow existente Washington `.github/workflows/cloudflare.yml` aceita push para main em paths de runtime **e** `workflow_dispatch`. Na origem, dispatch pode ativar D1 migrations remotas. **NÃO copiar, disparar ou adaptar essa lógica sem separar SQL/Worker e comprovar que o writer antigo foi desligado.**
+- Candidato Tonecos: Worker de borda compilado **ESM/browser/es2022** e exercitado por mocks reais: **3/3 PASS**, GET/HEAD 200 sem Range, GET com Range 206 e POST 405, **zero D1**. Os comandos do `catalog:worker:test` incluem essa prova; não são release.
+- JSON `productionObservation` em `config/catalog-code-consolidation.json` guarda o snapshot verificável, **não** uma permissão ou compromisso de versão. Revalidar imediatamente na janela M5, pois IDs e autorias mudam.
+
+**Sequência única futura (somente após autorização específica):** confirmar nenhuma execução ativa; coordenar desabilitação do workflow de escrita Washington nos gatilhos push **e** dispatch; provar desabilitado pela autoridade do GitHub e publicação única; conferir versão 100% atual (anotar ID como alvo de rollback) e segredo do Worker **por presença, sem expor conteúdo**; aprovar candidato já testado e sem migrations para mudança runtime-only; promover pelo procedimento Cloudflare de versão staged/0% → smoke → 100%; revalidar API/galeria, preservar bundle anterior; se falhar, rollback para o **ID capturado na janela**, validar recuperação e não fingir sucesso. **Não** executar D1 migrations em runtime-only. Somente registrar conclusão depois de provas reais de versão ativa, QA e desativação da origem. Sem GO, nenhuma etapa de produção é permitida.
+
+
+
 - [ ] Revalidar main/PRs e pipeline da origem imediatamente antes da janela; coordenar pausa de gatilho da **.github/workflows/cloudflare.yml** no Washington sem apagar provas/branches.
 - [ ] Com autorização explícita, desabilitar primeiro **writer antigo**, comprovar que somente o Studio pode promover o MESMO Worker; liberar exatamente um pipeline novo depois de testes M3/M4. **Nunca habilitar dois publishers simultaneamente.**
 - [ ] Validar estado remoto do Worker, bindings, compatibilidade de schema, orçamento D1 e versão a restaurar. Se o código não alterou schema, não fazer migrations; se alterou, aplicar somente as necessárias com gates reais.
@@ -119,7 +131,7 @@
 
 ## 5. Checkpoint para qualquer conversa/agente
 
-**ESTADO AGORA: M0/M1 rastreados; M2 `staged-offline` com **46 blobs Git**, sem UI antiga nem serviço duplicado; M3 **82/82 testes locais PASS** e typecheck TS 5.8.3 PASS; M4 job `catalog-offline` no workflow existente, **CI sucesso no HEAD de código 90503aa, run #41789856366**; M5/M6 bloqueadas por GO de cutover, QA visual e revisão jurídica.**
+**ESTADO AGORA: M0–M4 concluídas em validação offline; M2 `staged-offline` mantém 46 arquivos de origem + 1 teste de borda nativo. M3: 82/82 testes anteriores + 3/3 novos do Worker compilado = **85/85 locais**, typecheck TS 5.8.3 aprovado. CI M4 está verde nos runs #41789856366 e #41790227284, mas o novo teste ainda precisa passar no HEAD desta alteração. M5 preflight read-only executado, **cutover bloqueado sem GO**; M6 bloqueada.**
 **HEAD de observação do frontend:** 7e70ec68a4ac0338be5ddc4a8df9ad47957191c8 (antes deste plano; nunca presumir que continua atual).
 **MAIN origem observada:** a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c.
 **PRs origem abertas na auditoria:** #266 (prioritária), #264, #263.

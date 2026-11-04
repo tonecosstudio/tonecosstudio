@@ -243,7 +243,7 @@
         "exitCode": 0,
         "environment": "Windows Node 24.22.2, isolated dependency installation"
       },
-      "totalPassed": 82,
+      "totalPassed": 85,
       "search": {
         "status": "pass",
         "command": "node --test tools/test_worker_catalog_facets.mjs tools/test_worker_catalog_scale_sqlite.mjs (cwd services/catalogo)",
@@ -255,6 +255,17 @@
         "esbuildVersion": "0.28.2",
         "remoteD1Reads": 0,
         "remoteR2Reads": 0
+      },
+      "entryBundle": {
+        "status": "pass-local",
+        "count": 3,
+        "pass": 3,
+        "fail": 0,
+        "exitCode": 0,
+        "command": "node --test services/catalogo/tools/test_worker_entry_integration.mjs",
+        "target": "es2022 / browser ESM via esbuild",
+        "remoteD1Queries": 0,
+        "remoteR2Queries": 0
       }
     },
     "ci": {
@@ -273,5 +284,41 @@
       "generalJobs": "skipped-on-pull-request",
       "catalogSteps": "all-success"
     }
+  },
+  "productionObservation": {
+    "observedDate": "2026-11-04",
+    "worker": "tonecos-catalogo-api",
+    "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
+    "currentDeploymentId": "a9f13dd7-537d-4106-bfcf-30510cca388b",
+    "currentVersionId": "a32b09a0-377d-4ff7-b313-4e5a7bf994b6",
+    "currentVersionNumber": 28,
+    "currentTrafficPercent": 100,
+    "currentVersionSourceCommit": "77ff9b0559c911de992ae9c84b78fdaa5e0fed6b",
+    "currentVersionDeployedAt": "2026-11-01T10:35:46.410856Z",
+    "previousVersionId": "3fdef475-a483-4439-a778-bd87f9f76bb1",
+    "previousVersionNumber": 27,
+    "previousVersionMayBeRollbackCandidate": true,
+    "rollbackTestedAgainstProduction": false,
+    "observedMainAheadOfProductionByCommits": 21,
+    "runtimeFileChangesBetweenProductionSourceAndObservedMain": 0,
+    "observedSourceMainSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "sourceDeployWorkflow": ".github/workflows/cloudflare.yml",
+    "sourceWorkflowTriggers": [
+      "push/main with runtime paths",
+      "workflow_dispatch"
+    ],
+    "sourceDispatchCanApplyRemoteD1Migrations": true,
+    "currentSettingsBindings": [
+      "DB",
+      "MEDIA",
+      "TURNSTILE_SECRET_KEY",
+      "CORS_ORIGINS"
+    ],
+    "sourceWorkflowDisabledVerified": false,
+    "releaseGoApproved": false,
+    "targetProductionCredentialsVerified": false,
+    "runtimeCutoverPerformed": false,
+    "observationIsApproval": false,
+    "note": "Read-only metadata and Git compare snapshot. Recheck remote active version, source workflow status, in-progress releases, credential presence and rollback viability immediately before cutover. Do not treat former version as tested rollback."
   }
 }

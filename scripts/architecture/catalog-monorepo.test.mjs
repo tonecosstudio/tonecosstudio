@@ -139,11 +139,40 @@ test('the staged Worker is byte-identical to the audited Git blobs, with no comm
   assert.equal(contract.staging.tests.pass, 58);
   assert.equal(contract.staging.tests.search.pass, 4);
   assert.equal(contract.staging.tests.typecheck.status, 'pass');
-  assert.equal(contract.staging.tests.totalPassed, 82);
+  assert.equal(contract.staging.tests.entryBundle.pass, 3);
+  assert.equal(contract.staging.tests.totalPassed, 85);
+  assert.ok(existsSync(join(root, contract.target.serviceRoot, 'tools/test_worker_entry_integration.mjs')));
   assert.equal(contract.migration.releaseAuthorized, false);
   assert.equal(contract.migration.targetWorkerReleaseEnabled, false);
   assert.equal(contract.migration.targetD1MigrationEnabled, false);
   assert.equal(contract.activeWorkerPublisher, 'washingtonmsdj/catalogo');
+});
+
+test('M5 snapshot is a pinned observation, not production approval', () => {
+  const o = contract.productionObservation
+  const uuid = /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/
+  assert.equal(o.worker, contract.runtime.worker)
+  assert.equal(o.cloudflareAccountId, contract.runtime.cloudflareAccountId)
+  for (const key of ['currentVersionId', 'currentDeploymentId', 'previousVersionId']) {
+    assert.match(o[key], uuid)
+  }
+  assert.equal(o.currentTrafficPercent, 100)
+  assert.equal(o.currentVersionNumber, 28)
+  assert.equal(o.previousVersionNumber, 27)
+  assert.match(o.currentVersionSourceCommit, sha)
+  assert.equal(o.observedSourceMainSha, contract.origin.observedMainSha)
+  assert.equal(o.runtimeFileChangesBetweenProductionSourceAndObservedMain, 0)
+  assert.equal(o.sourceDispatchCanApplyRemoteD1Migrations, true)
+  assert.equal(o.sourceWorkflowDisabledVerified, false)
+  assert.equal(o.releaseGoApproved, false)
+  assert.equal(o.targetProductionCredentialsVerified, false)
+  assert.equal(o.rollbackTestedAgainstProduction, false)
+  assert.equal(o.runtimeCutoverPerformed, false)
+  assert.equal(o.observationIsApproval, false)
+  assert.equal(contract.migration.sourceWriterDisabled, false)
+  assert.equal(contract.migration.releaseAuthorized, false)
+  assert.equal(contract.migration.targetWorkerReleaseEnabled, false)
+  assert.equal(contract.migration.targetD1MigrationEnabled, false)
 });
 
 test('the canonical plan is discoverable and supersedes the old transfer proposal', () => {
