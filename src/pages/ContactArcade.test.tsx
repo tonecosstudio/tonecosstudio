@@ -12,6 +12,7 @@ const submission = vi.hoisted(() => ({
   onSuccess: null as null | (() => void),
   onRequiresAuth: null as null | (() => void),
 }));
+vi.mock("@/config/constants", () => ({ CONTACT: { CONTACT_EMAIL: "tonecosstudio@gmail.com" } }));
 vi.mock("@/lib/auth", () => ({
   useAuth: () => ({ user: auth.user }),
 }));
@@ -72,6 +73,18 @@ afterEach(() => {
 });
 
 describe("Tonecos public contact entry", () => {
+  it("shows public email without exposing the old account support form", () => {
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
+    mount();
+    expect(screen.getByRole("heading", { name: "FALE COM A TONECOS" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "ENVIAR E-MAIL" })).toHaveAttribute(
+      "href", expect.stringContaining("mailto:tonecosstudio%40gmail.com"),
+    );
+    expect(screen.queryByRole("button", { name: "Enviar Transmissao" })).not.toBeInTheDocument();
+    expect(submission.submit).not.toHaveBeenCalled();
+  });
+
   it("provides model discovery rather than a broken login in read-only preview", () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
     mount();

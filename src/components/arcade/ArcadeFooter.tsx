@@ -18,6 +18,7 @@ import {
   PUBLIC_ROUTES,
 } from "@/config/routes";
 import { CONTACT } from "@/config/constants";
+import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
   buildSafeMailtoHref,
   buildSafeWhatsAppHref,
@@ -162,9 +163,15 @@ export function ArcadeFooter() {
               Contato
             </h4>
             {previewReadOnly ? (
-              <p className="max-w-[16rem] font-mono text-xs leading-relaxed text-[hsl(0,0%,50%)]">
-                Atendimento em preparação. Esta prévia não recebe solicitações.
-              </p>
+              isCatalogPublicMvpEnabled() && contactEmailHref ? (
+                <a href={contactEmailHref} className="flex items-center gap-2 font-mono text-xs text-[hsl(var(--gold-accent))]">
+                  <Mail className="h-3.5 w-3.5" /> {contactEmail}
+                </a>
+              ) : (
+                <p className="max-w-[16rem] font-mono text-xs leading-relaxed text-[hsl(0,0%,50%)]">
+                  Atendimento em preparação. Esta prévia não recebe solicitações.
+                </p>
+              )
             ) : (
             <ul className="space-y-3">
               {contactEmailHref && (

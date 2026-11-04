@@ -29,6 +29,8 @@ import {
   profileSectionPath,
 } from "@/config/routes";
 import { CONTACT } from "@/config/constants";
+import { buildSafeMailtoHref } from "@/lib/security/safe-open";
+import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 
 // The authenticated contact service uses account identity; it does not
 // accept or persist an arbitrary email field from this public page.
@@ -37,6 +39,8 @@ type ContactFormData = z.infer<typeof authenticatedContactFormSchema>;
 
 export default function ContactArcade() {
   const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  const PUBLIC_MVP = PREVIEW_READ_ONLY && isCatalogPublicMvpEnabled();
+  const emailHref = PUBLIC_MVP ? buildSafeMailtoHref(CONTACT.CONTACT_EMAIL) : null;
   const navigate = useNavigate();
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -100,19 +104,29 @@ export default function ContactArcade() {
             {PREVIEW_READ_ONLY || !user ? (
               <div className="relative z-10 space-y-4 text-center" role="status">
                 <h2 className="text-lg font-medium text-[hsl(0,0%,94%)]">
-                  {PREVIEW_READ_ONLY ? "CONTATO EM PREPARAÇÃO" : "Atendimento pela sua conta"}
+                  {PUBLIC_MVP ? (emailHref ? "FALE COM A TONECOS" : "CATÁLOGO DE REFERÊNCIAS") : (PREVIEW_READ_ONLY ? "CONTATO EM PREPARAÇÃO" : "Atendimento pela sua conta")}
                 </h2>
                 <p className="text-sm text-[hsl(0,0%,65%)]">
-                  {PREVIEW_READ_ONLY
-                    ? "Esta prévia é somente leitura e não recebe mensagens. Explore o catálogo enquanto o atendimento é homologado."
-                    : "Para enviar uma mensagem ao suporte, entre na sua conta. Assim a equipe poderá acompanhar sua solicitação pelo perfil."}
+                  {PUBLIC_MVP
+                    ? (emailHref
+                        ? "Para falar sobre um modelo, escreva por e-mail. Este catálogo é informativo e não recebe pedidos pelo site."
+                        : "Explore os modelos publicados. O atendimento pelo site ainda não recebe mensagens ou pedidos.")
+                    : PREVIEW_READ_ONLY
+                      ? "Esta prévia é somente leitura e não recebe mensagens. Explore o catálogo enquanto o atendimento é homologado."
+                      : "Para enviar uma mensagem ao suporte, entre na sua conta. Assim a equipe poderá acompanhar sua solicitação pelo perfil."}
                 </p>
-                <Link
-                  to={PREVIEW_READ_ONLY ? PUBLIC_ROUTES.catalogModels : loginReturnToPath(PUBLIC_ROUTES.contact)}
-                  className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))]"
-                >
-                  {PREVIEW_READ_ONLY ? "EXPLORAR MODELOS" : "Entrar para enviar mensagem"}
-                </Link>
+                {emailHref ? (
+                  <a href={emailHref} className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))]">
+                    ENVIAR E-MAIL
+                  </a>
+                ) : (
+                  <Link
+                    to={PREVIEW_READ_ONLY ? PUBLIC_ROUTES.catalogModels : loginReturnToPath(PUBLIC_ROUTES.contact)}
+                    className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))]"
+                  >
+                    {PREVIEW_READ_ONLY ? "EXPLORAR MODELOS" : "Entrar para enviar mensagem"}
+                  </Link>
+                )}
               </div>
             ) : (
               <form
