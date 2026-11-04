@@ -164,11 +164,13 @@ interface ArcadeHeroProps {
   title: string;
   subtitle: string;
   stats?: { value: string | number; label: string }[];
+  /** Reduce the promotional hero height on dense, browse-first pages. */
+  compact?: boolean;
 }
 
-export function ArcadeHero({ badge, title, subtitle, stats }: ArcadeHeroProps) {
+export function ArcadeHero({ badge, title, subtitle, stats, compact = false }: ArcadeHeroProps) {
   return (
-    <section className="relative py-16 md:py-24 px-6 overflow-hidden">
+    <section className={`relative overflow-hidden px-6 ${compact ? "py-9 md:py-12" : "py-16 md:py-24"}`}>
       <FloatingParticles />
 
       <div
@@ -180,7 +182,7 @@ export function ArcadeHero({ badge, title, subtitle, stats }: ArcadeHeroProps) {
       />
 
       <div className="relative max-w-5xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 border border-[hsl(var(--gold-accent)/0.4)] bg-[hsl(var(--gold-accent)/0.05)] animate-fade-in">
+        <div className={`inline-flex items-center gap-2 px-4 py-1.5 border border-[hsl(var(--gold-accent)/0.4)] bg-[hsl(var(--gold-accent)/0.05)] animate-fade-in ${compact ? "mb-4" : "mb-6"}`}>
           <div className="w-2 h-2 bg-[hsl(var(--gold-accent))] rounded-full animate-pulse" />
           <span
             className="text-[9px] text-[hsl(var(--gold-accent))] tracking-[0.3em] uppercase"
@@ -191,7 +193,7 @@ export function ArcadeHero({ badge, title, subtitle, stats }: ArcadeHeroProps) {
         </div>
 
         <h1
-          className="text-5xl md:text-7xl lg:text-8xl font-black tracking-[0.15em] mb-4 leading-none"
+          className={`font-black tracking-[0.15em] mb-4 leading-none ${compact ? "text-5xl md:text-6xl lg:text-7xl" : "text-5xl md:text-7xl lg:text-8xl"}`}
           style={{
             fontFamily: "'Bebas Neue', Impact, sans-serif",
             textShadow: "0 0 40px hsl(var(--gold-accent) / 0.15)",
@@ -201,7 +203,7 @@ export function ArcadeHero({ badge, title, subtitle, stats }: ArcadeHeroProps) {
         </h1>
 
         <p
-          className="text-[hsl(0,0%,50%)] text-[10px] md:text-xs max-w-lg mx-auto tracking-[0.15em] mb-8"
+          className={`text-[hsl(0,0%,50%)] text-[10px] md:text-xs max-w-lg mx-auto tracking-[0.15em] ${compact ? "mb-4" : "mb-8"}`}
           style={{ fontFamily: "'Press Start 2P', monospace" }}
         >
           {subtitle}

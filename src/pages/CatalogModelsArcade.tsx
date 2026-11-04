@@ -207,7 +207,7 @@ export default function CatalogModelsArcade() {
           badge="ACERVO TONECOS"
           title="MODELOS"
           subtitle=">> BUSCA, CATEGORIAS E REFERÊNCIAS DO ACERVO."
-          stats={[{ value: activePage.index + 1, label: "Página" }]}
+          compact
         />
 
         <div className="relative z-10 mx-auto -mt-4 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">

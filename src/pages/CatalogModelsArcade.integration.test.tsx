@@ -15,12 +15,14 @@ vi.mock("@/components/arcade/ArcadeLayout", () => ({
     badge,
     title,
     subtitle,
+    compact,
   }: {
     badge: string;
     title: string;
     subtitle: string;
+    compact?: boolean;
   }) => (
-    <header>
+    <header data-compact={String(Boolean(compact))}>
       <p>{badge}</p>
       <h1>{title}</h1>
       <p>{subtitle}</p>
@@ -144,11 +146,13 @@ afterEach(() => {
 
 describe("Tonecos canonical model discovery UI", () => {
   it("shows six columns on wide screens and gives an obvious next-page action", async () => {
+
     const { calls } = setupFetch();
     await renderCatalog();
     const first = await screen.findByRole("link", {
       name: "Ver detalhes de Escultura original",
     });
+    expect(screen.getByRole("banner")).toHaveAttribute("data-compact", "true");
     const grid = first.closest(".grid");
     expect(grid).toHaveClass("2xl:grid-cols-6");
     expect(grid).toHaveClass("xl:grid-cols-5");
