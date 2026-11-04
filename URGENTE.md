@@ -107,3 +107,11 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - A barra de busca e filtros foi reorganizada para telas menores e agora exibe os filtros ativos e a opção de limpá-los. “Minha seleção” abre em painel lateral com miniaturas, links para fichas e rolagem da lista.
 - **Prova:** esbuild aceitou o TSX localmente. A homologação visual autenticada em desktop e celular, o build de preview deste SHA e os gates de release estão pendentes.
 - **NEXT_ACTION:** validar o painel e os filtros em preview protegido antes de promover qualquer versão. **DO_NOT_REPEAT:** não reconstruir por este checkpoint documental nem consultar D1/R2 para validar layout.
+
+
+## 04/11/2026 — Responsividade de /universo (preview pendente)
+
+- PR #4, branch `integration/tonecosstudio-canonical-20261101`. O commit `1aa61962ad1f4f021c9e095f4590b76e9a0cba24` reaproveita em `/universo` a prop `compact` já implementada em `ArcadeHero`, reduzindo a área do hero em telas de navegação do acervo. Evidência antes do ajuste: 321 px de altura em viewport 320×780; 420 px em 1440×900.
+- No preview privado anterior, a primeira consulta do acervo falhou transitoriamente; a ação visível “Tentar novamente” recuperou a página, exibindo 2.575 modelos e seis categorias. Nenhum código da API/Worker foi alterado.
+- **Validação deste commit:** pendente de build e QA visual em preview privado em celular e desktop. Produção segue inalterada.
+- **NEXT_ACTION:** criar preview ad hoc do HEAD de integração, confirmar build/deploy, verificar a hierarquia do hero e os links/categorias. Sem alterar a configuração de produção nem habilitar previews automáticos.
