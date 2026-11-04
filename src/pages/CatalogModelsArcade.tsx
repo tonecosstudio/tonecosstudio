@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
@@ -30,7 +30,7 @@ import {
   type PublicCatalogModel,
 } from "@/services/catalog/public-catalog-gateway";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 36;
 const API_BASE = CANONICAL_CATALOG_API_BASE;
 
 function ModelCover({
@@ -66,6 +66,7 @@ export default function CatalogModelsArcade() {
   const { selectedModels, setSelectedModels, paging, setPaging } =
     useCatalogBrowsing();
   const [selectionOpen, setSelectionOpen] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setDraft(search), [search]);
 
@@ -174,8 +175,10 @@ export default function CatalogModelsArcade() {
         .includes(models.data.nextCursor),
   );
 
+  const canGoNext = models.isSuccess && Boolean(models.data?.nextCursor) && !repeatedCursor;
+
   function goNext() {
-    if (!models.data?.nextCursor || repeatedCursor) return;
+    if (!canGoNext || !models.data?.nextCursor) return;
     setPaging({
       scope,
       cursors: [
@@ -184,11 +187,13 @@ export default function CatalogModelsArcade() {
       ],
       index: activePage.index + 1,
     });
+    resultsRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   }
 
   function goBack() {
     if (activePage.index === 0) return;
     setPaging({ ...activePage, index: activePage.index - 1 });
+    resultsRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   }
 
   return (
@@ -205,7 +210,7 @@ export default function CatalogModelsArcade() {
           stats={[{ value: activePage.index + 1, label: "Página" }]}
         />
 
-        <div className="relative z-10 mx-auto -mt-4 max-w-7xl px-4 md:px-6">
+        <div className="relative z-10 mx-auto -mt-4 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
           <form
             role="search"
             className="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_190px_190px_auto]"
@@ -384,14 +389,38 @@ export default function CatalogModelsArcade() {
             </div>
           )}
 
-          <div className="mb-5 mt-10 flex flex-wrap items-end justify-between gap-3">
+          <div ref={resultsRef} className="mb-5 mt-10 flex scroll-mt-24 flex-wrap items-end justify-between gap-3">
             <ArcadeSectionTitle>MODELOS DO ACERVO</ArcadeSectionTitle>
             <div className="flex flex-wrap items-center gap-3">
               {models.isSuccess && (
-                <p className="text-sm text-[hsl(0,0%,56%)]" aria-live="polite">
+                <p className="text-sm text-[hsl(0,0%,62%)]" aria-live="polite">
                   Página {activePage.index + 1} · {rows.length} modelos nesta
-                  página
+                  página{canGoNext ? " · Há mais modelos" : ""}
                 </p>
+              )}
+              {models.isSuccess && (activePage.index > 0 || canGoNext) && (
+                <nav aria-label="Navegação rápida do catálogo" className="flex flex-wrap items-center gap-2">
+                  {activePage.index > 0 && (
+                    <button
+                      type="button"
+                      onClick={goBack}
+                      className="inline-flex min-h-11 items-center gap-2 border border-[hsl(0,0%,28%)] px-3 text-xs font-semibold text-[hsl(0,0%,88%)] hover:border-[hsl(var(--gold-accent))]"
+                    >
+                      <ArrowLeft size={15} aria-hidden="true" />
+                      Voltar à página {activePage.index}
+                    </button>
+                  )}
+                  {canGoNext && (
+                    <button
+                      type="button"
+                      onClick={goNext}
+                      className="inline-flex min-h-11 items-center gap-2 border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-4 text-xs font-bold uppercase tracking-[0.08em] text-[hsl(0,0%,5%)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      Ver página {activePage.index + 2}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </button>
+                  )}
+                </nav>
               )}
               <button
                 type="button"
@@ -471,7 +500,7 @@ export default function CatalogModelsArcade() {
               Nenhum modelo publicado corresponde aos filtros utilizados.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-5 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-5 2xl:grid-cols-6 2xl:gap-5">
               {rows.map((model) => {
                 const isSelected = selectedModels.some(
                   (item) => item.id === model.id,
@@ -536,24 +565,24 @@ export default function CatalogModelsArcade() {
             (activePage.index > 0 || !!models.data.nextCursor) && (
               <nav
                 aria-label="Páginas do catálogo"
-                className="mt-10 flex items-center justify-center gap-4"
+                className="mt-10 flex flex-wrap items-center justify-center gap-3 border-t border-[hsl(0,0%,16%)] pt-7 sm:gap-5"
               >
                 <button
                   type="button"
                   onClick={goBack}
                   disabled={activePage.index === 0}
-                  className="inline-flex h-11 items-center gap-2 rounded-none border border-[hsl(0,0%,15%)] px-4 text-sm disabled:opacity-40"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-none border border-[hsl(0,0%,36%)] px-5 text-sm font-semibold text-[hsl(0,0%,90%)] hover:border-[hsl(var(--gold-accent))] disabled:cursor-not-allowed disabled:opacity-35"
                 >
                   <ArrowLeft size={16} aria-hidden="true" /> Anterior
                 </button>
-                <span className="text-sm text-[hsl(0,0%,56%)]">
-                  {activePage.index + 1}
+                <span className="min-w-24 text-center font-mono text-sm font-semibold text-[hsl(var(--gold-accent))]">
+                  Página {activePage.index + 1}
                 </span>
                 <button
                   type="button"
                   onClick={goNext}
-                  disabled={!models.data.nextCursor || repeatedCursor}
-                  className="inline-flex h-11 items-center gap-2 rounded-none border border-[hsl(0,0%,15%)] px-4 text-sm disabled:opacity-40"
+                  disabled={!canGoNext}
+                  className="inline-flex min-h-12 items-center gap-2 rounded-none border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-5 text-sm font-bold text-[hsl(0,0%,5%)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35"
                 >
                   Próxima <ArrowRight size={16} aria-hidden="true" />
                 </button>

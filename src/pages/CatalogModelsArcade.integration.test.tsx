@@ -143,6 +143,31 @@ afterEach(() => {
 });
 
 describe("Tonecos canonical model discovery UI", () => {
+  it("shows six columns on wide screens and gives an obvious next-page action", async () => {
+    const { calls } = setupFetch();
+    await renderCatalog();
+    const first = await screen.findByRole("link", {
+      name: "Ver detalhes de Escultura original",
+    });
+    const grid = first.closest(".grid");
+    expect(grid).toHaveClass("2xl:grid-cols-6");
+    expect(grid).toHaveClass("xl:grid-cols-5");
+    expect(grid).toHaveClass("grid-cols-2");
+    expect(calls[0].url.searchParams.get("limit")).toBe("36");
+    expect(screen.getByText(/Há mais modelos/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ver página 2" }));
+    await screen.findByRole("link", {
+      name: "Ver detalhes de Escultura seguinte",
+    });
+    expect(screen.getByRole("button", { name: "Voltar à página 1" })).toBeEnabled();
+    expect(screen.getByText("Página 2 · 1 modelos nesta página")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Voltar à página 1" }));
+    await screen.findByRole("link", {
+      name: "Ver detalhes de Escultura original",
+    });
+    expect(calls.filter(x => x.url.pathname.endsWith("/api/catalog"))).toHaveLength(2);
+  });
+
   it("preserves selected IDs across cursor pages without creating a commercial order", async () => {
     const { calls } = setupFetch();
     await renderCatalog();
