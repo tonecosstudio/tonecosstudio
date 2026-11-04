@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { proxyCatalogRequest } from "../../functions/catalogo-api/[[path]].js";
+import { onRequest, proxyCatalogRequest } from "../../functions/catalogo-api/[[path]].js";
 
 const SITE = "https://tonecosstudio.pages.dev";
 const WORKER = "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
@@ -135,4 +135,48 @@ test("oversized request is rejected before contacting Worker", async () => {
   const response = await proxyCatalogRequest(request, io.fetcher);
   assert.equal(response.status, 404);
   assert.equal(io.calls.length, 0);
+});
+
+test("onRequest forwards public reads via native Pages Service Binding", async () => {
+  const calls = [];
+  const service = {
+    fetch(url, options) {
+      assert.equal(this, service, "the Fetcher method keeps its binding context");
+      calls.push({ url, options });
+      return Promise.resolve(Response.json({ items: [], nextCursor: null }));
+    },
+  };
+  const request = new Request(SITE + "/catalogo-api/api/catalog?limit=1");
+  const response = await onRequest({ request, env: { CATALOG_WORKER: service } });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { items: [], nextCursor: null });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, WORKER + "/api/catalog?limit=1");
+  assert.equal(calls[0].options.method, "GET");
+  assert.equal(calls[0].options.redirect, "manual");
+});
+
+test("onRequest rejects an absent service binding without an outbound fetch", async () => {
+  const request = new Request(SITE + "/catalogo-api/api/catalog?limit=1");
+  for (const env of [undefined, {}, { CATALOG_WORKER: {} }]) {
+    const response = await onRequest({ request, env });
+    assert.equal(response.status, 502);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+  }
+});
+
+test("onRequest preserves allowlist on bound service", async () => {
+  let calls = 0;
+  const env = { CATALOG_WORKER: { fetch() { calls++; return Promise.resolve(new Response("wrong")); } } };
+  const mutation = await onRequest({
+    request: new Request(SITE + "/catalogo-api/api/catalog", { method: "POST" }),
+    env,
+  });
+  const unknown = await onRequest({
+    request: new Request(SITE + "/catalogo-api/api/admin"),
+    env,
+  });
+  assert.equal(mutation.status, 405);
+  assert.equal(unknown.status, 404);
+  assert.equal(calls, 0);
 });

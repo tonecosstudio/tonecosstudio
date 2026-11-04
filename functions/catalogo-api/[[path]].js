@@ -100,6 +100,13 @@ export async function proxyCatalogRequest(request, fetcher) {
 }
 
 /** Pages Functions entrypoint. */
-export function onRequest({ request }) {
-  return proxyCatalogRequest(request, fetch);
+export function onRequest({ request, env }) {
+  // A Pages Function and its catalog Worker share one Cloudflare account.
+  // Require the native binding; never fall back to the public workers.dev URL.
+  return proxyCatalogRequest(request, (url, options) => {
+    if (typeof env?.CATALOG_WORKER?.fetch !== "function") {
+      throw new Error("catalog_service_binding_unavailable");
+    }
+    return env.CATALOG_WORKER.fetch(String(url), options);
+  });
 }

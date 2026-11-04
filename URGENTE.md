@@ -1,5 +1,16 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## Pages → Worker — Service Binding nativa — 03/11/2026
+
+- **Causa estrutural:** a Pages Function do catálogo fazia `fetch()` ao endereço público do Worker, o que pode falhar em comunicação entre Workers da mesma conta Cloudflare. Migração para **Service Binding** interna, preservando o Worker `tonecos-catalogo-api` como única autoridade do catálogo e mantendo o proxy de leitura pública.
+- **Configuração Cloudflare real:** em `tonecosstudio`, `deployment_configs.preview.services.CATALOG_WORKER.service=tonecos-catalogo-api`, sem D1/R2 vinculados à Pages Function. Todas as variáveis de preview foram preservadas; `production_deployments_enabled=false`, previews automáticos `none`. A produção permanece sem ligação/publicação.
+- **Código:** `functions/catalogo-api/[[path]].js` acessa exclusivamente `env.CATALOG_WORKER.fetch()`, sem fallback a `fetch` global, e falha fechado se a Service Binding estiver ausente. `scripts/cloudflare/catalog-pages-proxy.test.mjs` passou de 9 para **12 testes**, cobrindo encaminhamento real via Fetcher mock, falta de binding e proibição de rotas de escrita/administrativas. Executado no desktop físico `DESKTOP-4UFL03B` em Node.js, **12/12 PASS**.
+- **Homologação pendente:** a alteração precisa de um único novo deploy de preview protegido e verificação HTTP autenticada; os testes não comprovam a saúde do catálogo/D1. Não habilitar produção, cadastro, pedidos ou pagamentos.
+- **next_action:** homologar deploy controlado com binding efetivamente presente e Access ativo; não iniciar builds concorrentes; executar QA autenticado sem varreduras D1.
+- **do_not_repeat:** não criar Worker/banco/proxy paralelo, não consultar D1/R2, não alterar `main`, DNS, Vercel ou OrdaX.
+
+---
+
 ## Pages — deploy aprovado e pendências reais — 03/11/2026 (Bahia)
 
 - **Último deploy manual comprovadamente aprovado:** Cloudflare Pages `5ebcbc98-352e-4f61-8aba-b85a5b370a8b` do commit `9ad335568330189608ce15ca7355384d727993dd`, URL privada `https://5ebcbc98.tonecosstudio.pages.dev`. Todos os estágios `queued`, `initialize`, `clone_repo`, `build` e `deploy` retornaram `success` (finalizado 03/11/2026 23:59 UTC). O comando `npm ci ... && npm run release:verify` retornou sucesso; Vite, Pages Functions e publicação dos 218 assets aprovados, `npm audit` com zero vulnerabilidades reportadas.
