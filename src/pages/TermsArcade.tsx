@@ -9,11 +9,22 @@ import {
 import { FileText, Shield, AlertTriangle, Scale } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { CONTACT } from "@/config/constants";
+import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 
 export default function TermsArcade() {
-  const { data: settings } = useSystemSettings();
+  const readOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  const publicMvp = readOnly && isCatalogPublicMvpEnabled();
+  const { data: settings } = useSystemSettings({ enabled: !readOnly });
 
-  const sections = [
+  const sections = publicMvp ? [
+    { num: "01", title: "Uso do catálogo", icon: <Shield className="w-4 h-4" />, content: "O site apresenta um acervo público de modelos, categorias e imagens para consulta e referência. A navegação não representa reserva, contratação ou pedido." },
+    { num: "02", title: "Modelos e disponibilidade", icon: <FileText className="w-4 h-4" />, content: "Imagens, nomes e descrições são referências do catálogo e podem ser atualizados. A presença de um modelo não garante disponibilidade de produção ou preço." },
+    { num: "03", title: "Sem transações no site", icon: <AlertTriangle className="w-4 h-4" />, content: "Nesta fase o catálogo não oferece cadastro, compras, pagamentos, assinaturas ou moedas virtuais. Nenhuma ação na página confirma encomenda.", highlight: true },
+    { num: "04", title: "Contato", icon: <FileText className="w-4 h-4" />, content: "A página Contato oferece comunicação por e-mail. O site não recebe formulários de orçamento nem registra pedidos nesta versão." },
+    { num: "05", title: "Marcas e personagens", icon: <Scale className="w-4 h-4" />, content: "Marcas, nomes e personagens de franquias podem pertencer a seus respectivos titulares. O uso como referência no catálogo não transfere direitos sobre essas obras." },
+    { num: "06", title: "Uso responsável", icon: <Shield className="w-4 h-4" />, content: "Não são permitidos acesso não autorizado, exploração abusiva do serviço, envio de conteúdo malicioso ou violação de direitos de terceiros." },
+    { num: "07", title: "Mudanças", icon: <FileText className="w-4 h-4" />, content: "Estes termos descrevem o catálogo público somente leitura. Funcionalidades comerciais só serão disponibilizadas após sua homologação e comunicação apropriada." },
+  ] : [
     {
       num: "01",
       title: "Aceitação dos Termos",
@@ -86,11 +97,11 @@ export default function TermsArcade() {
       <ArcadeHero
         badge="Documento Oficial"
         title="TERMOS DE USO"
-        subtitle="Última atualização: 03/02/2026"
+        subtitle={publicMvp ? "Catálogo público somente leitura" : "Última atualização: 03/02/2026"}
       />
 
       <section className="max-w-4xl mx-auto px-6 pb-16">
-        <ArcadeSectionTitle>Cláusulas</ArcadeSectionTitle>
+        <ArcadeSectionTitle>{publicMvp ? "Regras do catálogo" : "Cláusulas"}</ArcadeSectionTitle>
 
         <div className="space-y-4">
           {sections.map((s) => (

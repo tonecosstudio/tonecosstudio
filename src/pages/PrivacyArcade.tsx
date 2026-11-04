@@ -9,11 +9,23 @@ import {
 import { Eye, Database, Lock, Users, UserCheck, Cookie, Baby, RefreshCw, Building } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { CONTACT } from "@/config/constants";
+import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 
 export default function PrivacyArcade() {
-  const { data: settings } = useSystemSettings();
+  const readOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  const publicMvp = readOnly && isCatalogPublicMvpEnabled();
+  const { data: settings } = useSystemSettings({ enabled: !readOnly });
+  const contactEmail = settings?.privacy_email || CONTACT.PRIVACY_EMAIL || CONTACT.CONTACT_EMAIL;
 
-  const sections = [
+  const sections = publicMvp ? [
+    { num: "01", title: "Escopo do catálogo", icon: <Database className="w-4 h-4" />, content: "O catálogo público permite consultar modelos, categorias e imagens. Nesta versão não há cadastro, pedidos ou pagamentos pelo site." },
+    { num: "02", title: "Dados técnicos", icon: <Eye className="w-4 h-4" />, content: "A navegação pode gerar registros técnicos de acesso, como endereço IP, horário e páginas solicitadas, necessários para operação e segurança da hospedagem." },
+    { num: "03", title: "Contato por e-mail", icon: <Users className="w-4 h-4" />, content: "O contato abre seu aplicativo de e-mail. O endereço do remetente e o conteúdo enviado são tratados pelos respectivos serviços de correio eletrônico; não há formulário de envio pelo catálogo." },
+    { num: "04", title: "Cookies e proteção", icon: <Cookie className="w-4 h-4" />, content: "Recursos de segurança e funcionamento podem utilizar cookies técnicos. O catálogo não exige uma conta de cliente para navegar." },
+    { num: "05", title: "Provedores", icon: <Lock className="w-4 h-4" />, content: "A infraestrutura de hospedagem e entrega das imagens utiliza serviços Cloudflare. A comunicação por e-mail depende do provedor escolhido pelo remetente e pelo estúdio." },
+    { num: "06", title: "Direitos sobre dados", icon: <UserCheck className="w-4 h-4" />, content: "Você pode solicitar informações e exercer os direitos aplicáveis pela LGPD por meio do contato de privacidade informado abaixo.", highlight: true },
+    { num: "07", title: "Atualizações", icon: <RefreshCw className="w-4 h-4" />, content: "Esta descrição cobre o catálogo público somente leitura. Recursos futuros de cadastro ou compra exigirão informações e controles próprios antes de serem disponibilizados." },
+  ] : [
     { num: "01", title: "Dados Coletados", icon: <Database className="w-4 h-4" />, content: "Cadastro (nome, email, CPF, telefone) • Endereço • Pagamento (criptografado) • Uso (preferências, histórico, cookies)" },
     { num: "02", title: "Finalidade", icon: <Eye className="w-4 h-4" />, content: "Processar pedidos • Comunicar status • Personalizar experiência • Processar pagamentos • Melhorar serviços • Cumprir obrigações legais" },
     { num: "03", title: "Base Legal", icon: <UserCheck className="w-4 h-4" />, content: "Consentimento expresso • Execução de contrato • Obrigação legal • Legítimo interesse para melhorias e segurança" },
@@ -35,11 +47,11 @@ export default function PrivacyArcade() {
       <ArcadeHero
         badge="Arquivo Confidencial"
         title="PRIVACIDADE"
-        subtitle="Seus dados estão protegidos"
+        subtitle={publicMvp ? "Informações sobre a navegação no catálogo" : "Seus dados estão protegidos"}
       />
 
       <section className="max-w-4xl mx-auto px-6 pb-16">
-        <ArcadeSectionTitle>Protocolo de Dados</ArcadeSectionTitle>
+        <ArcadeSectionTitle>{publicMvp ? "Privacidade do catálogo" : "Protocolo de Dados"}</ArcadeSectionTitle>
 
         <div className="space-y-4">
           {sections.map((s) => (
@@ -65,8 +77,8 @@ export default function PrivacyArcade() {
         <div className="mt-10">
           <ArcadeCard>
             <div className="p-6 text-center">
-              <p className="text-[hsl(0,0%,40%)] font-mono text-[10px] tracking-wider uppercase mb-2">Conformidade LGPD</p>
-              <p className="text-[hsl(var(--gold-accent))] font-mono text-sm">{settings?.privacy_email || CONTACT.PRIVACY_EMAIL}</p>
+              <p className="text-[hsl(0,0%,40%)] font-mono text-[10px] tracking-wider uppercase mb-2">{publicMvp ? "Contato de privacidade" : "Conformidade LGPD"}</p>
+              <p className="text-[hsl(var(--gold-accent))] font-mono text-sm">{contactEmail}</p>
               <p className="text-[hsl(0,0%,25%)] font-mono text-[9px] mt-3">© {new Date().getFullYear()} Tonecos Studios</p>
             </div>
           </ArcadeCard>

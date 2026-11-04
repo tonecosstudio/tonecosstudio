@@ -1,5 +1,15 @@
 # URGENTE — Tonecos Studio / Estado operacional
 
+## MVP — textos legais coerentes com catálogo somente leitura — 04/11/2026
+
+- Identificada divergência entre as páginas `/privacidade` e `/termos` e o modo MVP público: apresentavam coleta de CPF, processamento de pagamento, assinatura e Coins, indisponíveis nesta fase. As páginas agora apresentam textos próprios apenas quando `VITE_PUBLIC_CATALOG_MVP=true` e `VITE_PREVIEW_READ_ONLY=true`; conteúdo comercial anterior permanece para etapa posterior.
+- No modo de leitura, ambas deixam de solicitar configurações de contato ao Supabase (`useSystemSettings({enabled:false})`) e usam o e-mail institucional público já configurado. Política descreve dados técnicos de hospedagem, contato via e-mail e direitos aplicáveis de forma cuidadosa, sem afirmar que a infraestrutura não coleta IP/cookies técnicos; termos não apresentam compras ou cadastros.
+- Novos testes `src/pages/LegalArcade.mvp.test.tsx` comprovam conteúdo coerente nos dois modos e ausência de consultas ao Supabase nas páginas legais do preview.
+- **Atenção:** esta é correção de coerência funcional, **não parecer jurídico**. Revisão final de privacidade e termos por responsável competente permanece gate antes de liberação ampla.
+- **next_action:** rodar testes relevantes, realizar um único release:verify protegido deste SHA e QA autenticado. Produção Pages continua desativada. A PR #4 segue draft; não mesclar antes de checar Supabase Tonecos, SEO/robots e QA.
+
+---
+
 ## MVP público somente leitura — gate de lançamento — 03/11/2026 (Bahia)
 
 - **Meta de lançamento fase 1:** catálogo público sem login, cadastro, pedidos, pagamentos ou funções administrativas. Páginas liberadas: Home, Universo, Modelos, ficha pública por slug, Sobre, Contato e legais. Aplicação existente reutilizada; Worker `tonecos-catalogo-api` e D1/R2 seguem SSOT.
