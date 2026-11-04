@@ -1,31 +1,55 @@
-/** Assert that a readonly MVP's reachable JS chunks exclude commercial/Supabase runtime. */
+/** Assert a public MVP's reachable Vite chunks exclude every commercial runtime. */
 import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-if (process.env.VITE_PUBLIC_CATALOG_MVP === "true") {
-  if (process.env.VITE_PREVIEW_READ_ONLY !== "true") throw Error("public MVP is not readonly");
-  const manifestPath = join("dist", ".vite", "manifest.json");
-  if (!existsSync(manifestPath)) throw Error("Vite manifest not emitted");
-  const m = JSON.parse(readFileSync(manifestPath, "utf8"));
-  const entry = Object.keys(m).find(k => m[k].src === "src/main.tsx" || k === "src/main.tsx");
-  if (!entry) throw Error("main entry missing in Vite manifest");
+export function assertPublicMvpManifest(manifest) {
+  if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) {
+    throw new Error("invalid Vite manifest");
+  }
+  // Vite's normal SPA entry is index.html, not src/main.tsx.
+  const entrypoints = Object.keys(manifest).filter(key => {
+    const item = manifest[key];
+    return item?.isEntry === true && (key === "index.html" || item.src === "index.html" ||
+      key === "src/main.tsx" || item.src === "src/main.tsx");
+  });
+  if (entrypoints.length !== 1) {
+    throw new Error("expected exactly one Vite HTML or main entry, got " + entrypoints.length);
+  }
+
   const visited = new Set();
-  const explore = (k) => {
-    if (visited.has(k)) return;
-    visited.add(k);
-    const item = m[k];
-    if (!item) throw Error("unresolved Vite import "+k);
-    for (const dependency of [...(item.imports||[]), ...(item.dynamicImports||[])]) explore(dependency);
-  };
-  explore(entry);
-  const suspects = [...visited].filter(k =>
-    /(^|[/\\])App\.tsx$|supabase|admin|LoginArcade|ProfileArcade|ContactArcade\.tsx|requireauth/i.test(
-      k + " " + (m[k]?.file||"")
-    )
-  );
-  if (suspects.length) throw Error("Public MVP includes commercial runtime chunks: "+suspects.join(", "));
-  const files = [...visited].map(k=>m[k]?.file).filter(Boolean);
-  if (!files.some(s=>s.includes("PublicCatalogApp")))
-    throw Error("PublicCatalogApp not reachable from main entry");
-  console.log("MVP public bundle isolated from commercial and Supabase modules", {chunks:visited.size});
+  function visit(key) {
+    if (visited.has(key)) return;
+    const item = manifest[key];
+    if (!item || typeof item.file !== "string" || !item.file) {
+      throw new Error("missing or invalid Vite chunk " + key);
+    }
+    visited.add(key);
+    for (const dependency of [...(item.imports ?? []), ...(item.dynamicImports ?? [])]) {
+      visit(dependency);
+    }
+  }
+  visit(entrypoints[0]);
+  const suspicious = [...visited].filter(key => {
+    const chunk = manifest[key];
+    return /(^|[/\\])App\.tsx$|supabase|(?:^|[/\\])admin|LoginArcade|ProfileArcade|ContactArcade\.tsx|RequireAuth/i.test(
+      key + " " + (chunk.file || "") + " " + (chunk.src || "")
+    );
+  });
+  if (suspicious.length) throw new Error("Public MVP contains commercial chunks: " + suspicious.join(", "));
+  if (![...visited].some(key =>
+    /(?:^|[/\\])PublicCatalogApp(?:\.tsx)?$/.test(key) ||
+    /PublicCatalogApp/.test(manifest[key].file)
+  )) throw new Error("PublicCatalogApp not reachable from Vite entry");
+  return { entry: entrypoints[0], chunks: visited.size };
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (process.env.VITE_PUBLIC_CATALOG_MVP === "true") {
+    if (process.env.VITE_PREVIEW_READ_ONLY !== "true") throw new Error("public MVP is not readonly");
+    const path = join("dist", ".vite", "manifest.json");
+    if (!existsSync(path)) throw new Error("Vite manifest not emitted");
+    const result = assertPublicMvpManifest(JSON.parse(readFileSync(path, "utf8")));
+    console.log("Public catalog excludes commercial and Supabase runtime", result);
+  }
 }
