@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import legacy from "../../vercel.json";
 import {
@@ -6,12 +7,13 @@ import {
   resolveCanonicalCatalogApiBase,
 } from "./canonical-catalog-endpoint";
 
+// Vitest runs UI tests in jsdom; import.meta.url can use an http scheme.
 const pagesFunction = readFileSync(
-  new URL("../../functions/catalogo-api/[[path]].js", import.meta.url),
+  resolve(process.cwd(), "functions/catalogo-api/[[path]].js"),
   "utf8",
 );
 const pagesHeaders = readFileSync(
-  new URL("../../public/_headers", import.meta.url),
+  resolve(process.cwd(), "public/_headers"),
   "utf8",
 );
 
