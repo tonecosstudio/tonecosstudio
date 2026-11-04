@@ -38,6 +38,20 @@ test('source inventory has immutable blob identities and no missing migration se
   assert.equal(contract.origin.fileCounts.totalTrackedBlobs, 652);
 });
 
+test('M1 import graph distinguishes public Worker from disconnected commercial modules', () => {
+  const workerPaths = new Set(Object.keys(contract.origin.workerFiles));
+  const graph = contract.origin.staticImportGraph;
+  assert.equal(graph.entrypoint, 'worker/entry.ts');
+  assert.equal(graph.observedAtSha, contract.origin.observedMainSha);
+  assert.equal(graph.reachableWorkerPaths.length, 9);
+  assert.equal(graph.notImportedByEntrypoint.length, 3);
+  assert.deepEqual(graph.nonWorkerImportPaths, ['config/catalog-schema-contract.json']);
+  const union = [...graph.reachableWorkerPaths, ...graph.notImportedByEntrypoint];
+  assert.equal(new Set(union).size, 12);
+  assert.deepEqual([...union].sort(), [...workerPaths].sort());
+  for (const path of graph.notImportedByEntrypoint) assert.match(path, /quote(Admin|Workflow)/);
+});
+
 test('only the existing Cloudflare resources may serve requests', () => {
   assert.equal(contract.runtime.cloudflarePages, 'tonecosstudio');
   assert.equal(contract.runtime.worker, 'tonecos-catalogo-api');

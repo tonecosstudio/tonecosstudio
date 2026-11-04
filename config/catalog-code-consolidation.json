@@ -61,6 +61,30 @@
       "migrations/0020_gallery_member_explicit_approvals.sql": "449fbb85c45acd4ad641607133943d9e514dfb25",
       "migrations/0021_quote_admin_audit_events.sql": "027af727eb1220f0f9a288d5245e696efc7737b5",
       "migrations/0022_catalog_height_filter_index.sql": "35e91a6533777acd6220fe692a84107456cde09f"
+    },
+    "staticImportGraph": {
+      "entrypoint": "worker/entry.ts",
+      "observedAtSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+      "reachableWorkerPaths": [
+        "worker/entry.ts",
+        "worker/galleryAggregation.ts",
+        "worker/galleryValidation.ts",
+        "worker/index.ts",
+        "worker/media.ts",
+        "worker/modelAliases.ts",
+        "worker/schemaContract.ts",
+        "worker/sharedCollections.ts",
+        "worker/turnstile.ts"
+      ],
+      "notImportedByEntrypoint": [
+        "worker/quoteAdminAccess.ts",
+        "worker/quoteAdminApi.ts",
+        "worker/quoteWorkflow.ts"
+      ],
+      "nonWorkerImportPaths": [
+        "config/catalog-schema-contract.json"
+      ],
+      "note": "Static import closure only; not proof of dynamic wiring or production release. Quote/admin modules require separate commercial ownership review."
     }
   },
   "runtime": {
