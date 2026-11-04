@@ -149,4 +149,17 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - Preview privado [Contato](https://02462383.tonecosstudio.pages.dev/contato), deployment `02462383-a2f9-48b1-8226-43bc605f92b6`, build/deploy SUCCESS no código `35e7d3fe614f0558c82192def5e904ff3997268a`.
 - QA em 320, 360, 390, 430, 640, 768, 1024, 1280, 1440 e 1920 px: sem overflow horizontal; os links de e-mail têm altura de 44 px. A página explica que o catálogo é informativo e não recebe cadastro, pedidos ou pagamentos.
 - Sem mudança de código: o layout e os links existentes funcionaram no preview atualizado. Typecheck e gates de build já passaram no mesmo deployment, registrados na Rodada 5. Produção inalterada.
-- **NEXT_ACTION:** validar Termos e Privacidade no mesmo preview.
+- **NEXT_ACTION concluída:** Termos e Privacidade validados na Rodada 7.
+
+## Rodada 7 — hero compacto em Contato e páginas legais (04/11/2026)
+
+- Contato, Termos e Privacidade usam o hero compacto do `ArcadeHero`. Alturas (320 → 1440 px): Contato 291/404 → 211/260 px; Termos 354/404 → 274/260 px; Privacidade 319/420 → 239/276 px.
+- Preview privado [abrir a Home atualizada](https://6b759de1.tonecosstudio.pages.dev/) — deployment `6b759de1-763c-4145-aa45-29fd6c3a6422`, código `3963059a1ab5b38723cf210f58526af723791f0d`, build/deploy SUCCESS. As rotas `/contato`, `/termos` e `/privacidade` estão no mesmo preview.
+- QA nas dez larguras (320–1920 px): sem overflow. Links de e-mail permanecem com 44 px. Typecheck, `catalog:mvp:test` (78/78), check monorepo (9/9), gates de segurança/proxy/SEO (28/28) e Vite build passaram; robots/noindex preservados, sem runtime comercial/Supabase.
+- Apenas preview manual; produção e Worker inalterados.
+
+## Rodada 8 — QA responsivo da Home (04/11/2026)
+
+- QA visual em 320, 360, 390, 430, 640, 768, 1024, 1280, 1440 e 1920 px: sem overflow; o hero acompanha 88svh, as grades se ajustam à largura e os modelos em destaque carregam.
+- Ações principais medem 56 px; ações de navegação secundária, 44 px. Nenhuma alteração de código na Home.
+- **NEXT_ACTION:** continuar QA das interações de busca, paginação e seleção do catálogo no mesmo preview privado.
