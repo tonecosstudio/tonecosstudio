@@ -78,10 +78,10 @@
 
 **Saída M3:** relatório verificável de testes e SHA da origem/candidato, nenhuma alegação de equivalência sem logs.
 
-### M4 — CI por impacto, SEM publicação (IMPLEMENTADO; RESULTADO CI PENDENTE)
+### M4 — CI por impacto, SEM publicação (CI VERDE, CUTOVER AINDA BLOQUEADO)
 
 - [x] Integração ao **workflow existente** `.github/workflows/quality.yml`: evento `pull_request` filtrado por paths, único job `catalog-offline` com npm cache e apenas guard/typecheck/testes do Worker/busca/proxy. Jobs comerciais originais ficam restritos ao push/dispatch; nenhum segundo workflow criado.
-- [ ] Confirmar resultado do job `catalog-offline` no HEAD após o push; não afirmar CI verde antes.
+- [x] **GitHub Actions Quality Gate run #41789856366**, para código HEAD `90503aa58803fcaa467db1a8d6c2e8ad4aecde04`: `status=completed`, `conclusion=success`. Job `Catalog Worker offline / no deploy`: checkout, Node 24, `npm ci`, hashes, typecheck, runtime, busca SQLite e proxy **todos success**. Jobs comerciais foram **skipped** como esperado. [Execução](https://github.com/tonecosstudio/tonecosstudio/actions/runs/41789856366).
 - [x] CI offline de PR não recebe secrets, não executa Wrangler deploy nem migrations D1. Manifesto permanece `releaseAuthorized=false`, `targetWorkerReleaseEnabled=false`, `targetD1MigrationEnabled=false`; não altera o publicador Washington.
 - [ ] Conferir diffs, checks verdes e readiness do rollback; preparar plano para impedir que o GitHub Washington continue publicando Worker depois do cutover.
 - [ ] Preservar deploy Cloudflare Pages produção/preview automáticos **OFF** e manter Cloudflare Access/noindex até autorização de lançamento.
@@ -119,10 +119,10 @@
 
 ## 5. Checkpoint para qualquer conversa/agente
 
-**ESTADO AGORA: M0/M1 rastreados; M2 `staged-offline` com **46 blobs Git**, sem UI antiga nem serviço duplicado; M3 **82/82 testes locais PASS** e typecheck TS 5.8.3 PASS; M4 job `catalog-offline` integrado ao workflow existente, **CI remoto ainda a confirmar**; M5/M6 bloqueadas por GO de cutover, QA visual e revisão jurídica.**
+**ESTADO AGORA: M0/M1 rastreados; M2 `staged-offline` com **46 blobs Git**, sem UI antiga nem serviço duplicado; M3 **82/82 testes locais PASS** e typecheck TS 5.8.3 PASS; M4 job `catalog-offline` no workflow existente, **CI sucesso no HEAD de código 90503aa, run #41789856366**; M5/M6 bloqueadas por GO de cutover, QA visual e revisão jurídica.**
 **HEAD de observação do frontend:** 7e70ec68a4ac0338be5ddc4a8df9ad47957191c8 (antes deste plano; nunca presumir que continua atual).
 **MAIN origem observada:** a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c.
 **PRs origem abertas na auditoria:** #266 (prioritária), #264, #263.
 **DO_NOT_REPEAT:** não rodar D1/R2 para investigar Git, não criar tonecosstudio/catalogo, não replicar UI, não construir novo Worker, não criar PR/branch, não reiniciar builds só por docs.
-**NEXT_ACTION:** inspecionar job `catalog-offline` da PR #4 no SHA atual e corrigir exclusivamente falhas reais; revalidar #266 antes de cutover. Não reexecutar auditorias de produção, nem instalar recursos em Cloudflare, nem criar outra PR/branch.
+**NEXT_ACTION:** CI offline M4 aprovado no código candidato; manter único writer em Washington. Para M5: antes de qualquer cutover, obter GO específico, reconciliar status da PR #266 na origem, demonstrar controle dos workflows/credenciais e rollback real sem tocar D1 desnecessariamente. M6 demanda QA visual autenticado, legal e proteção de URLs legadas. Não iniciar deployments por esta documentação.
 **BLOQUEIOS:** API publisher ainda em Washington; QA legal/visual, Vercel desconectada e release aprovados ainda pendentes.

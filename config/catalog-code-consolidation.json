@@ -258,13 +258,20 @@
       }
     },
     "ci": {
-      "status": "configured-not-yet-verified",
+      "status": "pass",
       "workflow": ".github/workflows/quality.yml",
       "scope": "PRs to main affecting services/catalogo or catalog proxy/config/dependencies",
       "job": "catalog-offline",
       "productionSecrets": false,
       "deploy": false,
-      "d1Migrations": false
+      "d1Migrations": false,
+      "verifiedAtDate": "2026-11-04",
+      "workflowRunId": 41789856366,
+      "workflowHeadSha": "90503aa58803fcaa467db1a8d6c2e8ad4aecde04",
+      "conclusion": "success",
+      "runUrl": "https://github.com/tonecosstudio/tonecosstudio/actions/runs/41789856366",
+      "generalJobs": "skipped-on-pull-request",
+      "catalogSteps": "all-success"
     }
   }
 }
