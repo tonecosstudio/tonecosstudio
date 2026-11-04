@@ -60,6 +60,7 @@ export default function AboutArcade() {
         badge="TONECOS STUDIO"
         title="SOBRE"
         subtitle=">> CONHEÇA O ESTÚDIO E COMO UMA PEÇA GANHA FORMA."
+        compact
       />
 
       {/* ═══ MISSION ═══ */}
