@@ -1,7 +1,7 @@
 /** Catalog-only entry of the existing Tonecos app: no auth, Supabase, purchases or admin imports. */
 import { Suspense, lazy, useLayoutEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
+import { BrowserRouter, Link, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ArcadeFrame } from "@/components/layouts/ArcadeFrame";
 import { ArcadeNavView } from "@/components/arcade/ArcadeNavView";
@@ -36,11 +36,29 @@ function PublicRouteScrollReset() {
 
 function NotFound() {
   return (
-    <main className="mx-auto max-w-4xl p-12 text-center" role="status">
-      <h1 className="text-3xl font-bold text-[hsl(var(--gold-accent))]">Página não encontrada</h1>
-      <p className="mt-4 text-sm text-[hsl(0,0%,65%)]">Esta página não faz parte do catálogo público.</p>
-      <a className="mt-6 inline-flex border border-[hsl(var(--gold-accent))] p-3" href={PUBLIC_ROUTES.catalogModels}>Ver modelos</a>
-    </main>
+    <section
+      aria-labelledby="public-not-found-title"
+      className="mx-auto flex min-h-[50vh] w-full max-w-4xl flex-col items-center justify-center gap-4 px-4 py-12 text-center sm:px-6 sm:py-16"
+    >
+      <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-[hsl(var(--gold-accent))]">
+        ERRO 404
+      </span>
+      <h1
+        id="public-not-found-title"
+        className="text-2xl font-bold leading-tight text-[hsl(var(--gold-accent))] sm:text-3xl"
+      >
+        Página não encontrada
+      </h1>
+      <p className="max-w-prose text-sm leading-relaxed text-[hsl(0,0%,65%)]">
+        Esta página não faz parte do catálogo público.
+      </p>
+      <Link
+        className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 py-3 font-mono text-xs uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
+        to={PUBLIC_ROUTES.catalogModels}
+      >
+        Ver modelos
+      </Link>
+    </section>
   );
 }
 
