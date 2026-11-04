@@ -177,3 +177,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - **HEAD funcional validado:** `a0312bb91b533d6830a85e0f5b7524d7ed4c33c2`. PR #4 segue draft; preview manual; produção automática e previews automáticos permanecem desativados.
 - **NEXT_ACTION:** seguir por `/universo/filmes-series`, auditar a categoria em larguras móveis e desktop e corrigir somente achados concretos. Não repetir as páginas já aprovadas nem gerar build só por alterações documentais.
 - **DO_NOT_REPEAT:** não publicar produção, alterar Worker/D1/R2/DNS, varrer catálogo integral ou criar branch/PR adicional.
+
+
+## Rodada 11 — categorias restantes e pastas aninhadas (04/11/2026)
+
+- QA das seis categorias do Universo no preview `9201bcb6`: Games, Filmes & Séries, Marvel & DC, Tokusatsu & Cultura Japonesa, Pessoas e Animes & Desenhos. Em cada página, dez larguras (320–1920 px) sem overflow; breadcrumb 44 px, campo e botão de busca 48 px.
+- Busca testada na UI: `star` → Star Wars (37 modelos), `batman` → Batman (77), `jaspion` → Jaspion (2), `elvis` → Elvis Presley (1) e `dragon` → Dragon Ball (517). Limpar recupera as contagens completas da listagem.
+- Franquias representativas abertas: Star Wars (18 pastas/8 referências), Batman (21/8), Jaspion (2 referências, sem pastas), Elvis Presley (1 referência) e Dragon Ball (14/8). A pasta Batman mostra 8 de 23 modelos e mantém `category=marvel-dc&franchise=batman&folder=batman` ao explorar o catálogo.
+- Em Dragon Ball, raiz → Androides → Androide 17 mostrou 2 referências; os três breadcrumbs medem 44 px, os retornos para pai e raiz funcionam e não há overflow nas dez larguras. Imagens carregaram após a consulta completar.
+- Sem nova alteração de código: permanece a prévia manual aprovada da Rodada 9, commit funcional `a0312bb91b533d6830a85e0f5b7524d7ed4c33c2`. Produção, Worker, D1 e R2 inalterados.
+- **NEXT_ACTION:** revisar uma ficha e galeria com sessão do preview atual, incluindo retorno ao caminho de franquia/pasta e dimensões de miniaturas. Não rebuildar para este registro documental.
