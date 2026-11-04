@@ -311,11 +311,11 @@ export default function LandingPage() {
                 return (
                   <Link key={model.id} to={catalogModelDetailsPath(model.slug)} className="group block" aria-label={"Ver detalhes de " + model.name}>
                     <ArcadeCard>
-                      <div className="aspect-[3/4] overflow-hidden bg-[hsl(0,0%,8%)]">
+                      <div className="aspect-[2/3] overflow-hidden bg-[hsl(0,0%,8%)]">
                         <CanonicalCatalogImage
                           src={imageUrl}
                           alt={"Referência visual de " + model.name}
-                          imageClassName="h-full w-full object-contain p-2 opacity-85 transition-transform duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
+                          imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
                         />
                       </div>
                       <div className="p-2.5">
