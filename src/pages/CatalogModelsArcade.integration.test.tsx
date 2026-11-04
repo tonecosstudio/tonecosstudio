@@ -237,7 +237,7 @@ describe("Tonecos canonical model discovery UI", () => {
     expect(calls).toHaveLength(0);
 
     fireEvent.change(
-      screen.getByPlaceholderText("Buscar modelos ou personagens"),
+      screen.getByPlaceholderText("Buscar modelos"),
       {
         target: { value: "escultura" },
       },
