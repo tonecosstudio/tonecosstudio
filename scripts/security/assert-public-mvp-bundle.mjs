@@ -32,8 +32,11 @@ export function assertPublicMvpManifest(manifest) {
   visit(entrypoints[0]);
   const suspicious = [...visited].filter(key => {
     const chunk = manifest[key];
-    return /(^|[/\\])App\.tsx$|supabase|(?:^|[/\\])admin|LoginArcade|ProfileArcade|ContactArcade\.tsx|RequireAuth/i.test(
-      key + " " + (chunk.file || "") + " " + (chunk.src || "")
+    // Match each source/asset path individually: anchored patterns fail on
+    // a concatenated string and can silently miss the commercial App.tsx.
+    const paths = [key, chunk.file, chunk.src ?? ""];
+    return paths.some(path =>
+      /(^|[/\\])App\.tsx$|supabase|(?:^|[/\\])admin|LoginArcade|ProfileArcade|ContactArcade\.tsx|RequireAuth/i.test(path)
     );
   });
   if (suspicious.length) throw new Error("Public MVP contains commercial chunks: " + suspicious.join(", "));
