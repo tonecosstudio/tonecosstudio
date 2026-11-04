@@ -21,3 +21,7 @@ Documentação junto aos módulos em src/ e supabase/functions/ é específica d
 ## Regra de manutenção
 
 Status mutável vai para URGENTE.md; decisão arquitetural, para o contrato vigente; operações, para o runbook existente. **Não abrir SSOT paralelo** por ocasião de um novo chat. Verificar ambiente remoto antes de afirmar estados. Documentação não é teste visual nem gate de segurança.
+
+## Verificação de documentação junto ao código — 04/11/2026
+
+Foram lidos **48 Markdown** existentes em `src/` e `supabase/`: são descrições técnicas dos componentes comerciais e funções Supabase futuras, **não runbooks de operação do MVP público**. Nenhum deles configurava Vercel como hosting; **seis** continham termos da OrdaX ou URLs/caminhos antigos e receberam avisos explícitos, correções de caminhos e instruções de configuração sem domínios de terceiros. Um arquivo vazio (`src/hooks/admin/STATUS_PERSISTENCE_README.md`) foi removido. Os demais documentos locais permanecem associados ao código para preservar a rastreabilidade da fase comercial; afirmações neles não equivalem a validação de produção.
