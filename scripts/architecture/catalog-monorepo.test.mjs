@@ -82,41 +82,54 @@ test('only the existing Cloudflare resources may serve requests', () => {
   assert.ok(!existsSync(join(root,'migrations')), 'D1 must not overlap with root migrations');
 });
 
-test('an unapproved or incomplete migration cannot switch publishers or enable writes', () => {
-  const m = contract.migration;
-  assert.ok(['inventoried','staged-offline','cutover-approved','cutover-complete'].includes(m.phase));
-  assert.equal(typeof m.releaseAuthorized, 'boolean');
-  assert.equal(typeof m.sourceWriterDisabled, 'boolean');
-  assert.equal(typeof m.targetWorkerReleaseEnabled, 'boolean');
-  assert.equal(typeof m.targetD1MigrationEnabled, 'boolean');
-  assert.equal(typeof m.legacySiteRetired, 'boolean');
-  assert.equal(typeof m.sourceRepoArchived, 'boolean');
-  const servicePresent = existsSync(join(root,contract.target.serviceRoot));
+test('M5 ownership transition is possible only after source disablement and explicit GO', () => {
+  const m = contract.migration
+  const o = contract.productionObservation
+  assert.ok(['inventoried', 'staged-offline', 'cutover-approved', 'cutover-complete'].includes(m.phase))
+  for (const key of [
+    'releaseAuthorized', 'sourceWriterDisabled', 'targetWorkerReleaseEnabled',
+    'targetD1MigrationEnabled', 'legacySiteRetired', 'sourceRepoArchived',
+  ]) assert.equal(typeof m[key], 'boolean', key)
+  assert.equal(m.targetD1MigrationEnabled, false, 'A runtime-only cutover must not apply D1 migrations')
+
+  const servicePresent = existsSync(join(root, contract.target.serviceRoot))
   if (m.phase === 'inventoried') {
-    assert.equal(servicePresent, false, 'No speculative shadow copy before source PR reconciliation');
-    assert.equal(m.releaseAuthorized, false);
-    assert.equal(m.targetWorkerReleaseEnabled, false);
-    assert.equal(m.targetD1MigrationEnabled, false);
+    assert.equal(servicePresent, false)
   } else {
-    assert.equal(servicePresent, true, 'Source must be physically migrated and verified first');
+    assert.equal(servicePresent, true, 'Worker code must be staged before ownership changes')
   }
+
+  if (['inventoried', 'staged-offline'].includes(m.phase)) {
+    assert.equal(contract.activeWorkerPublisher, contract.origin.repository)
+    assert.equal(m.releaseAuthorized, false)
+    assert.equal(m.sourceWriterDisabled, false)
+    assert.equal(m.targetWorkerReleaseEnabled, false)
+    assert.equal(o.releaseGoApproved, false)
+    assert.equal(o.sourceWorkflowDisabledVerified, false)
+    assert.equal(o.targetProductionCredentialsVerified, false)
+    assert.equal(o.runtimeCutoverPerformed, false)
+  } else {
+    // This state is intentionally unreachable until the live, read-only
+    // release gate also confirms the source workflow disabled with zero runs.
+    assert.equal(contract.activeWorkerPublisher, contract.target.repository)
+    assert.equal(m.releaseAuthorized, true)
+    assert.equal(m.sourceWriterDisabled, true)
+    assert.equal(m.targetWorkerReleaseEnabled, true)
+    assert.equal(o.releaseGoApproved, true)
+    assert.equal(o.sourceWorkflowDisabledVerified, true)
+    assert.equal(o.targetProductionCredentialsVerified, true)
+    assert.equal(o.runtimeCutoverPerformed, m.phase === 'cutover-complete')
+  }
+
+  // Legacy sites and the historical source repo survive until M6 is verified.
   if (m.phase !== 'cutover-complete') {
-    assert.equal(contract.activeWorkerPublisher, contract.origin.repository);
-    assert.equal(m.targetWorkerReleaseEnabled, false);
-    assert.equal(m.targetD1MigrationEnabled, false);
-    assert.equal(m.sourceWriterDisabled, false);
-    assert.equal(m.legacySiteRetired, false);
-    assert.equal(m.sourceRepoArchived, false);
-  } else {
-    assert.equal(contract.activeWorkerPublisher, contract.target.repository);
-    assert.equal(m.releaseAuthorized, true);
-    assert.equal(m.sourceWriterDisabled, true);
-    assert.equal(m.targetWorkerReleaseEnabled, true);
+    assert.equal(m.legacySiteRetired, false)
+    assert.equal(m.sourceRepoArchived, false)
   }
-});
+})
 
 test('the staged Worker is byte-identical to the audited Git blobs, with no commercial code', () => {
-  assert.equal(contract.migration.phase, 'staged-offline');
+  assert.ok(['staged-offline', 'cutover-approved', 'cutover-complete'].includes(contract.migration.phase));
   assert.equal(contract.staging.sourceMain, contract.origin.observedMainSha);
   assert.equal(contract.staging.sourceFixPullRequest, 266);
   assert.match(contract.staging.sourceFixHead, sha);
@@ -142,10 +155,8 @@ test('the staged Worker is byte-identical to the audited Git blobs, with no comm
   assert.equal(contract.staging.tests.entryBundle.pass, 3);
   assert.equal(contract.staging.tests.totalPassed, 85);
   assert.ok(existsSync(join(root, contract.target.serviceRoot, 'tools/test_worker_entry_integration.mjs')));
-  assert.equal(contract.migration.releaseAuthorized, false);
-  assert.equal(contract.migration.targetWorkerReleaseEnabled, false);
   assert.equal(contract.migration.targetD1MigrationEnabled, false);
-  assert.equal(contract.activeWorkerPublisher, 'washingtonmsdj/catalogo');
+  // Publisher ownership is phase-dependent and validated in the M5 gate above.
 });
 
 test('M5 snapshot is a pinned observation, not production approval', () => {
@@ -157,21 +168,18 @@ test('M5 snapshot is a pinned observation, not production approval', () => {
     assert.match(o[key], uuid)
   }
   assert.equal(o.currentTrafficPercent, 100)
-  assert.equal(o.currentVersionNumber, 28)
-  assert.equal(o.previousVersionNumber, 27)
+  assert.ok(Number.isInteger(o.currentVersionNumber) && o.currentVersionNumber >= 1)
+  assert.ok(Number.isInteger(o.previousVersionNumber) && o.previousVersionNumber >= 1)
   assert.match(o.currentVersionSourceCommit, sha)
   assert.equal(o.observedSourceMainSha, contract.origin.observedMainSha)
   assert.equal(o.runtimeFileChangesBetweenProductionSourceAndObservedMain, 0)
   assert.equal(o.sourceDispatchCanApplyRemoteD1Migrations, true)
-  assert.equal(o.sourceWorkflowDisabledVerified, false)
-  assert.equal(o.releaseGoApproved, false)
-  assert.equal(o.targetProductionCredentialsVerified, false)
-  assert.equal(o.rollbackTestedAgainstProduction, false)
-  assert.equal(o.runtimeCutoverPerformed, false)
-  assert.equal(o.observationIsApproval, false)
-  assert.equal(contract.migration.sourceWriterDisabled, false)
-  assert.equal(contract.migration.releaseAuthorized, false)
-  assert.equal(contract.migration.targetWorkerReleaseEnabled, false)
+  for (const key of [
+    'sourceWorkflowDisabledVerified', 'releaseGoApproved',
+    'targetProductionCredentialsVerified', 'rollbackTestedAgainstProduction',
+    'runtimeCutoverPerformed', 'observationIsApproval',
+  ]) assert.equal(typeof o[key], 'boolean', key)
+  assert.equal(o.observationIsApproval, false, 'A snapshot cannot be an authorization')
   assert.equal(contract.migration.targetD1MigrationEnabled, false)
 });
 
