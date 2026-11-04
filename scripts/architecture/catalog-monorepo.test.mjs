@@ -127,7 +127,7 @@ test('the staged Worker is byte-identical to the audited Git blobs, with no comm
   for (const [path, expectedBlob] of Object.entries(stage)) {
     assert.match(expectedBlob, sha, path);
     const buf = readFileSync(join(root, contract.target.serviceRoot, path));
-    const actual = createHash('sha1').update('blob ' + buf.byteLength + '\\0').update(buf).digest('hex');
+    const actual = createHash('sha1').update('blob ' + buf.byteLength).update(Buffer.from([0])).update(buf).digest('hex');
     assert.equal(actual, expectedBlob, 'Unexpected content drift in ' + path);
   }
   for (const excluded of contract.staging.excludedModules) {
