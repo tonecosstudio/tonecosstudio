@@ -779,3 +779,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar `/universo/animes-desenhos/ataque-de-tita` no preview `494e0ae6`, em 280/320/390/768/1024/1440 px; conferir pastas, miniaturas e retorno à ficha.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não solicitar build manual para atualizações somente de documentação; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
+
+## Rodada 56 — Universo mobile: títulos e grade responsiva (05/11/2026)
+
+- Em `src/pages/CatalogArcade.tsx`, a grade de categorias fica em uma coluna até 359 px e passa a duas a partir de 360 px. “Animes e Desenhos” fica em uma linha: 14 px até 359 px e tipografia fluida a partir de 360 px.
+- Preview publicado: [abrir Universo](https://e368e665.tonecosstudio.pages.dev/universo), deployment `e368e665-1e72-415b-9fa7-08837d2aa780`, branch `integration/tonecosstudio-canonical-20261101`, HEAD do deployment `f01c628c1cd77da827c0e5a43ba286101b3d363b`; build e deploy SUCCESS.
+- QA visual em 280/320/359/360/390/640/768/1024/1440 px: sem overflow horizontal; grade de categorias 1/1/1/2/2/3/3/4/4 colunas; seis categorias, sem card “Todos”, CTA “Ver todos os modelos” com 44 px. Em 320 px o rótulo mede 14 px; em 360 px, 11,52 px e permanece em uma linha.
+- A primeira tentativa de build encontrou uma expectativa antiga de breakpoint no teste de integração da página. Atualizei a expectativa para 360 px e repeti o fluxo; a segunda execução passou no typecheck, em 18 suites/161 testes, nos scripts de build (9/9 e 33/33), no Vite build e na publicação.
+- Produção, Worker, D1, R2, DNS e migrations inalterados. A PR #4 continua draft.
+
+**NEXT_ACTION:** revisar `/universo/animes-desenhos/ataque-de-tita` na prévia `e368e665`, incluindo miniaturas, pastas, retorno às fichas e larguras móveis/desktop.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; para a página Universo, usar `e368e665`; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
