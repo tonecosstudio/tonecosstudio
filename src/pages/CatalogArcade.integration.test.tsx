@@ -99,10 +99,13 @@ describe("Tonecos canonical Universe discovery", () => {
     expect(screen.queryByText("Todos", { exact: true })).not.toBeInTheDocument();
     const animeTitle = await screen.findByText("Animes e Desenhos", { exact: true });
     expect(animeTitle).toHaveClass(
+      "block",
+      "max-w-full",
+      "min-w-0",
       "whitespace-nowrap",
       "tracking-tight",
       "text-sm",
-      "min-[360px]:text-[clamp(0.625rem,3.2vw,0.875rem)]",
+      "min-[360px]:text-[clamp(0.625rem,2.8vw,0.875rem)]",
     );
     expect(animeTitle.closest("a")).toHaveAttribute("href", "/universo/animes-desenhos");
   });
