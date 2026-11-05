@@ -108,7 +108,7 @@ function StatCounter({
 export function landingCopyForMode(publicReadOnly: boolean) {
   return publicReadOnly
     ? {
-        description: "Explore modelos, personagens e referências de esculturas da Tonecos Studio. Catálogo para consulta, sem compras ou cadastro.",
+        description: "Explore modelos, personagens e referências de esculturas da TONART Studio. Catálogo para consulta, sem compras ou cadastro.",
         ctaTitle: "CONHEÇA O ACERVO",
         ctaDescription: "Explore modelos e referências. Para conversar sobre uma peça, entre em contato com o estúdio por e-mail.",
       }
@@ -173,7 +173,7 @@ export default function LandingPage() {
         "artesanal",
         "figuras",
         "estátuas",
-        "tonecos",
+        "tonart",
       ]}
     >
       {/* ═══ HERO ═══ */}
@@ -338,7 +338,7 @@ export default function LandingPage() {
 
       {/* ═══ CTA ═══ */}
       <ArcadeCTA
-        badge="ACERVO TONECOS"
+        badge="ACERVO TONART"
         title={landingCopy.ctaTitle}
         description={landingCopy.ctaDescription}
         primaryAction={{

@@ -53,11 +53,11 @@ export default function AboutArcade() {
   return (
     <Page
       title="Sobre"
-      description="Conheça a Tonecos Studio, seu catálogo de referências e o processo de avaliação de esculturas sob encomenda."
-      keywords={["sobre", "tonecos", "colecionáveis", "esculturas sob encomenda"]}
+      description="Conheça a TONART Studio, seu catálogo de referências e o processo de avaliação de esculturas sob encomenda."
+      keywords={["sobre", "tonart", "colecionáveis", "esculturas sob encomenda"]}
     >
       <ArcadeHero
-        badge="TONECOS STUDIO"
+        badge="TONART STUDIO"
         title="SOBRE"
         subtitle=">> CONHEÇA O ESTÚDIO E COMO UMA PEÇA GANHA FORMA."
         compact
@@ -72,7 +72,7 @@ export default function AboutArcade() {
             <FloatingParticles />
             <div className="relative z-10">
               <p className="font-mono text-sm md:text-base text-[hsl(0,0%,60%)] leading-relaxed tracking-wider max-w-3xl mx-auto">
-                A Tonecos Studio reúne referências de personagens, universos e esculturas
+                A TONART Studio reúne referências de personagens, universos e esculturas
                 para ajudar você a encontrar ideias para sua próxima peça. Cada solicitação
                 é avaliada conforme escala, acabamento e possibilidades de produção.
               </p>
@@ -93,7 +93,7 @@ export default function AboutArcade() {
                   <Zap className="w-5 h-5 text-[hsl(var(--gold-accent))]" />
                 </div>
                 <h3 className="text-xl font-black tracking-[0.1em]" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
-                  EXPERIÊNCIA TONECOS
+                  EXPERIÊNCIA TONART
                 </h3>
               </div>
               <ul className="space-y-3">

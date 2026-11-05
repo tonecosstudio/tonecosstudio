@@ -28,7 +28,7 @@ export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
       num: "01",
       title: "Aceitação dos Termos",
       icon: <Shield className="w-4 h-4" />,
-      content: "Ao acessar e usar o site Tonecos Studio, você concorda com os seguintes termos e condições de uso.",
+      content: "Ao acessar e usar o site TONART Studio, você concorda com os seguintes termos e condições de uso.",
     },
     {
       num: "02",
@@ -90,7 +90,7 @@ export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
   return (
     <Page
       title="Termos de Uso"
-      description="Termos e condições de uso do Tonecos Studio"
+      description="Termos e condições de uso do TONART Studio"
       keywords={["termos", "condições", "uso", "legal"]}
     >
       <ArcadeHero
@@ -139,7 +139,7 @@ export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
                 {settings?.contact_email || CONTACT.CONTACT_EMAIL}
               </p>
               <p className="text-[hsl(0,0%,25%)] font-mono text-[9px] mt-3">
-                © {new Date().getFullYear()} {settings?.company_name || "Tonecos Studios"}
+                © {new Date().getFullYear()} {settings?.company_name || "TONART Studio"}
               </p>
             </div>
           </ArcadeCard>

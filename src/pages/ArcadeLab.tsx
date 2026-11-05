@@ -271,7 +271,7 @@ function CharacterSelect({
                   <Crosshair size={13} /> EM DESTAQUE
                 </span>
                 <span>
-                  TONECOS /{" "}
+                  TONART /{" "}
                   {String(fighters.indexOf(selected) + 1).padStart(2, "0")}
                 </span>
               </div>
@@ -315,7 +315,7 @@ function CharacterSelect({
           )}
         </div>
         <div className="al-machine-bottom">
-          <span>TONECOS ARCADE EXPERIENCE</span>
+          <span>TONART ARCADE EXPERIENCE</span>
           <span>
             ESCOLHA. COLECIONE. RECOMECE.{" "}
             <span className="al-tiny-cross">+</span>
@@ -515,7 +515,7 @@ export default function ArcadeLab() {
     >
       <SEOHead
         title="Arcade Lab — Escolha seu personagem"
-        description="Uma experiência visual Tonecos Studio inspirada nas telas de seleção dos fliperamas. Explore modelos publicados e universos no Arcade Lab."
+        description="Uma experiência visual TONART Studio inspirada nas telas de seleção dos fliperamas. Explore modelos publicados e universos no Arcade Lab."
         noindex
       />
       <a className="al-skip" href="#al-main">
@@ -525,7 +525,7 @@ export default function ArcadeLab() {
         <Link
           to={PUBLIC_ROUTES.home}
           className="al-logo"
-          aria-label="Tonecos Studio — página inicial"
+          aria-label="TONART Studio — página inicial"
         >
           TONE<span>COS</span>
           <small>STUDIO</small>
@@ -589,7 +589,7 @@ export default function ArcadeLab() {
           <div className="al-coin-art" aria-hidden="true">
             <div className="al-coin al-coin--back">X</div>
             <div className="al-coin al-coin--front">
-              X<small>TONECOS</small>
+              X<small>TONART</small>
             </div>
             <span>
               INSERT COIN
@@ -618,7 +618,7 @@ export default function ArcadeLab() {
             </button>
           </div>
           <div className="al-coin-side" aria-hidden="true">
-            CREDIT SYSTEM / TONECOS
+            CREDIT SYSTEM / TONART
           </div>
         </section>
         <section className="al-journey" aria-labelledby="al-journey-title">
@@ -659,7 +659,7 @@ export default function ArcadeLab() {
       </main>
       <footer className="al-footer">
         <div>
-          <strong>TONECOS</strong>
+          <strong>TONART</strong>
           <span>ESCULTURAS E COLECIONÁVEIS.</span>
         </div>
         <p>Arcade Lab · Artes e coleções demonstrativas.</p>
@@ -672,7 +672,7 @@ export default function ArcadeLab() {
           <DialogHeader>
             <DialogTitle>Uma ficha para a sua próxima escolha.</DialogTitle>
             <DialogDescription>
-              Coins são créditos ilustrativos no conceito Arcade da Tonecos Studio.
+              Coins são créditos ilustrativos no conceito Arcade da TONART Studio.
             </DialogDescription>
           </DialogHeader>
           <ol>

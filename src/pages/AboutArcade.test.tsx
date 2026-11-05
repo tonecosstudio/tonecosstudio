@@ -37,12 +37,12 @@ vi.mock("@/components/arcade/ArcadeLayout", () => ({
 
 import AboutArcade from "./AboutArcade";
 
-describe("public Tonecos Studio about page", () => {
+describe("public TONART Studio about page", () => {
   it("uses the canonical brand and avoids legacy OrdaX and unsupported fixed deadlines", () => {
     const view = render(<AboutArcade />);
     expect(view.container.querySelector("[data-page-title]")).toHaveAttribute("data-page-title", "Sobre");
-    expect(screen.getByText("TONECOS STUDIO")).toBeInTheDocument();
-    expect(screen.getByText("EXPERIÊNCIA TONECOS")).toBeInTheDocument();
+    expect(screen.getByText("TONART STUDIO")).toBeInTheDocument();
+    expect(screen.getByText("EXPERIÊNCIA TONART")).toBeInTheDocument();
     expect(screen.getByText(/Prazos de produção e entrega são informados/)).toBeInTheDocument();
     expect(view.container.textContent).not.toMatch(/ORDAX|30 dias|Envio a partir do dia 15|Intel FAQ/i);
   });

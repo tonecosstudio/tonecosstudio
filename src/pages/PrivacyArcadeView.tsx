@@ -40,7 +40,7 @@ export function PrivacyArcadeView({ settings }: { settings?: SystemSettings }) {
   return (
     <Page
       title="Política de Privacidade"
-      description="Política de privacidade e proteção de dados do Tonecos Studio"
+      description="Política de privacidade e proteção de dados do TONART Studio"
       keywords={["privacidade", "dados", "lgpd", "proteção"]}
     >
       <ArcadeHero
@@ -79,7 +79,7 @@ export function PrivacyArcadeView({ settings }: { settings?: SystemSettings }) {
             <div className="p-4 sm:p-6 text-center">
               <p className="text-[hsl(0,0%,40%)] font-mono text-[10px] tracking-wider uppercase mb-2">{publicMvp ? "Contato de privacidade" : "Conformidade LGPD"}</p>
               <p className="text-[hsl(var(--gold-accent))] font-mono text-sm">{contactEmail}</p>
-              <p className="text-[hsl(0,0%,25%)] font-mono text-[9px] mt-3">© {new Date().getFullYear()} Tonecos Studios</p>
+              <p className="text-[hsl(0,0%,25%)] font-mono text-[9px] mt-3">© {new Date().getFullYear()} TONART Studio</p>
             </div>
           </ArcadeCard>
         </div>

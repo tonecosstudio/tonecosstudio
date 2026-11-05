@@ -10,11 +10,11 @@ import { buildSafeMailtoHref } from "@/lib/security/safe-open";
 export default function PublicCatalogContact() {
   const emailHref = buildSafeMailtoHref(CONTACT.CONTACT_EMAIL);
   return (
-    <Page title="Contato" description="Fale com a Tonecos sobre modelos e referências.">
+    <Page title="Contato" description="Fale com a TONART Studio sobre modelos e referências.">
       <ArcadeHero
         badge="Canal Aberto"
         title="CONTATO"
-        subtitle=">> FALE COM A TONECOS."
+        subtitle=">> FALE COM A TONART."
         compact
       />
       <section className="relative z-10 mx-auto max-w-2xl px-4 pb-16 md:px-6">
@@ -22,7 +22,7 @@ export default function PublicCatalogContact() {
         <ArcadeCard hover={false}>
           <div className="space-y-5 p-6 text-center md:p-8" role="status">
             <Mail className="mx-auto h-7 w-7 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
-            <h2 className="text-lg font-medium text-[hsl(0,0%,94%)]">FALE COM A TONECOS</h2>
+            <h2 className="text-lg font-medium text-[hsl(0,0%,94%)]">FALE COM A TONART</h2>
             <p className="text-sm text-[hsl(0,0%,65%)]">
               Para conversar sobre uma referência ou modelo, envie um e-mail.
               Este catálogo é informativo e não recebe cadastro, pedidos ou pagamentos.
@@ -41,7 +41,7 @@ export default function PublicCatalogContact() {
           </div>
         </ArcadeCard>
       </section>
-      <ArcadeCTA badge="Explorar" title="MODELOS TONECOS"
+      <ArcadeCTA badge="Explorar" title="MODELOS TONART"
         description="Navegue pelo acervo de referências."
         primaryAction={{label:"VER MODELOS",href:PUBLIC_ROUTES.catalogModels}}
         secondaryAction={{label:"INÍCIO",href:PUBLIC_ROUTES.home}} />

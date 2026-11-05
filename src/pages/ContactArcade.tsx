@@ -104,7 +104,7 @@ export default function ContactArcade() {
             {PREVIEW_READ_ONLY || !user ? (
               <div className="relative z-10 space-y-4 text-center" role="status">
                 <h2 className="text-lg font-medium text-[hsl(0,0%,94%)]">
-                  {PUBLIC_MVP ? (emailHref ? "FALE COM A TONECOS" : "CATÁLOGO DE REFERÊNCIAS") : (PREVIEW_READ_ONLY ? "CONTATO EM PREPARAÇÃO" : "Atendimento pela sua conta")}
+                  {PUBLIC_MVP ? (emailHref ? "FALE COM A TONART" : "CATÁLOGO DE REFERÊNCIAS") : (PREVIEW_READ_ONLY ? "CONTATO EM PREPARAÇÃO" : "Atendimento pela sua conta")}
                 </h2>
                 <p className="text-sm text-[hsl(0,0%,65%)]">
                   {PUBLIC_MVP

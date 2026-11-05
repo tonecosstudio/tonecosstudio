@@ -212,13 +212,13 @@ export default function CatalogModelsArcade() {
   return (
     <Page
       title="Catálogo de modelos"
-      description="Explore referências de esculturas e modelos do acervo Tonecos Studio, com busca por categoria e navegação paginada."
-      keywords={["tonecos", "esculturas", "modelos", "catálogo"]}
+      description="Explore referências de esculturas e modelos do acervo TONART Studio, com busca por categoria e navegação paginada."
+      keywords={["tonart", "esculturas", "modelos", "catálogo"]}
     >
       <Sheet>
         <section className="min-h-[80vh] bg-[hsl(0,0%,4%)] pb-20 text-[hsl(0,0%,94%)]">
           <ArcadeHero
-            badge="ACERVO TONECOS"
+            badge="ACERVO TONART"
             title="MODELOS"
             subtitle=">> BUSCA, CATEGORIAS E REFERÊNCIAS DO ACERVO."
             compact
@@ -640,7 +640,7 @@ export default function CatalogModelsArcade() {
         >
           <SheetHeader className="shrink-0 border-b border-[hsl(0,0%,18%)] px-5 py-5 pr-12 text-left sm:px-6 sm:pr-12">
             <span className="font-mono text-xs uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))]">
-              Acervo Tonecos
+              Acervo TONART
             </span>
             <SheetTitle className="text-2xl text-[hsl(0,0%,94%)]">Minha seleção</SheetTitle>
             <SheetDescription className="text-[hsl(0,0%,66%)]">
