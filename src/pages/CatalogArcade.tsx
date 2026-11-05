@@ -310,7 +310,7 @@ export default function CatalogArcade() {
                           className={
                             isAnimeCategory
                               ? "whitespace-nowrap tracking-tight text-[clamp(0.5rem,3vw,0.875rem)] font-semibold uppercase"
-                              : "break-words font-semibold uppercase"
+                              : "break-normal text-[clamp(0.75rem,4vw,1rem)] font-semibold uppercase"
                           }
                         >
                           {displayLabel}
