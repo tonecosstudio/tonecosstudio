@@ -538,3 +538,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar `/universo/animes-desenhos/naruto` em mobile, tablet e desktop; conferir pastas, miniaturas e retorno à ficha. Depois avançar pela categoria sem carregar páginas completas além do limite publicado.
 
 **DO_NOT_REPEAT:** preview funcional é `35dace08`; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
+
+## Rodada 44 — Universo: categorias e título mobile (05/11/2026)
+
+- **Correção:** em `src/pages/CatalogArcade.tsx`, o filtro da raiz do Universo exclui a categoria agregada por ID e rótulo (“Todos” / “Todos os modelos”); a ação “Ver todos os modelos” continua como acesso à listagem. “Animes e Desenhos” mantém uma linha com tipografia fluida.
+- **Preview privado final:** [abrir Universo](https://494e0ae6.tonecosstudio.pages.dev/universo), Cloudflare Pages deployment `494e0ae6-5dea-4b19-9487-37a80f9daa6d`, ambiente `preview`, source `fe13cf80fd41248dcaf7dbdef391e91d49f2bbc0`; build/deploy **SUCCESS** pelo comando configurado (`typecheck`, `catalog:mvp:test`, `build`). O commit de código final é `fe13cf80`.
+- **QA visual:** 280/320/360/390/640/768/1024/1440 px, sem overflow horizontal. Seis categorias, card “Todos” ausente, uma ação “Ver todos os modelos”. Título “Animes e Desenhos” com `white-space: nowrap`; em 280 px a caixa mede 89/89 px, em 320 px 109/109 px, e segue em uma linha nos demais tamanhos.
+- A primeira tentativa de build no commit `7736a146` revelou uma expectativa antiga de classe CSS; mantive o estilo responsivo já validado e publiquei a versão final no commit acima.
+- O preview antigo `ef8ab5fb` serve conteúdo anterior; usar a URL `494e0ae6` para esta revisão. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** revisar `/universo/animes-desenhos/naruto` no preview em telas móveis e desktop, incluindo miniaturas, pastas e retorno às fichas; seguir na mesma PR.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview atual; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
