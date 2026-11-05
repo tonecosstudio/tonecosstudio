@@ -111,23 +111,26 @@ describe("Tonecos canonical Universe discovery", () => {
     await renderUniverse("/universo/originais");
     await screen.findByText("Franquia 24");
     expect(screen.getByText(/Exibindo parte das franquias/)).toBeInTheDocument();
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
     fireEvent.change(screen.getByRole("searchbox", { name: "Nome da franquia" }), {
       target: { value: "dragon" },
     });
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
     fireEvent.click(screen.getByRole("button", { name: "Buscar franquias" }));
     expect(await screen.findByRole("link", { name: /Dragon/ })).toHaveAttribute(
       "href",
       "/universo/originais/dragon",
     );
-    await waitFor(() => expect(calls).toHaveLength(2));
-    expect(calls[1].searchParams.get("q")).toBe("dragon");
-    expect(calls[1].searchParams.get("limit")).toBe("24");
-    expect(calls.every(call => call.pathname.endsWith("/api/franchises"))).toBe(true);
+    await waitFor(() =>
+      expect(calls.filter((call) => call.pathname.endsWith("/api/franchises"))).toHaveLength(2),
+    );
+    const franchiseCalls = calls.filter((call) => call.pathname.endsWith("/api/franchises"));
+    expect(franchiseCalls[1].searchParams.get("q")).toBe("dragon");
+    expect(franchiseCalls[1].searchParams.get("limit")).toBe("24");
+    expect(calls.filter((call) => call.pathname.endsWith("/api/categories"))).toHaveLength(1);
     fireEvent.click(screen.getByRole("link", { name: "Limpar busca" }));
     await screen.findByText("Franquia 24");
-    expect(calls).toHaveLength(2); // React Query reuses the first page.
+    expect(franchiseCalls).toHaveLength(2); // React Query reuses the first page.
   });
 
   it("keeps a category navigable after its published cover fails", async () => {
@@ -151,7 +154,7 @@ describe("Tonecos canonical Universe discovery", () => {
       "href",
       "/universo/originais/franquia-1",
     );
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
   });
 
   it("formats a singular model count for a canonical franchise", async () => {
@@ -165,11 +168,12 @@ describe("Tonecos canonical Universe discovery", () => {
     expect(screen.queryByText("1 modelos", { exact: true })).not.toBeInTheDocument();
   });
 
-  it("blocks short direct-link searches before any Worker request", async () => {
+  it("blocks short direct-link searches before any franchise request", async () => {
     const calls = setupFetch();
     await renderUniverse("/universo/originais?q=ab");
     expect(await screen.findByText(/Pesquise franquias usando de 3 a 80 caracteres/)).toBeInTheDocument();
-    expect(calls).toHaveLength(0);
+    expect(calls.filter((call) => call.pathname.endsWith("/api/franchises"))).toHaveLength(0);
+    expect(calls.filter((call) => call.pathname.endsWith("/api/categories"))).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Buscar franquias" })).toBeDisabled();
   });
 });
