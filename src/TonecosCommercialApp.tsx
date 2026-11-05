@@ -19,11 +19,13 @@ const commercialRoutes: ReactNode = (
     <Route path={TONECOS_COMMERCIAL_ROUTES.login} element={<Account />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.account} element={<Account />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.recovery} element={<Recovery />} />
-    <Route path={TONECOS_COMMERCIAL_ROUTES.request} element={<Request />} />
-    <Route path={TONECOS_COMMERCIAL_ROUTES.history} element={<Quotes />} />
+    {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" && <>
+      <Route path={TONECOS_COMMERCIAL_ROUTES.request} element={<Request />} />
+      <Route path={TONECOS_COMMERCIAL_ROUTES.history} element={<Quotes />} />
+      <Route path={TONECOS_COMMERCIAL_ROUTES.adminQuotes} element={<AdminQuotes />} />
+    </>}
     {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
       <Route path={TONECOS_COMMERCIAL_ROUTES.coins} element={<Coins />} />}
-    <Route path={TONECOS_COMMERCIAL_ROUTES.adminQuotes} element={<AdminQuotes />} />
     {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
       <Route path={TONECOS_COMMERCIAL_ROUTES.adminCoins} element={<AdminCoins />} />}
   </>

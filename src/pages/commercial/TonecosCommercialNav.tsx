@@ -7,8 +7,10 @@ import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context"
 const links = [
   { href: "/", label: "Início" },
   { href: "/modelos", label: "Modelos" },
-  { href: TONECOS_COMMERCIAL_ROUTES.request, label: "Solicitar orçamento" },
-  { href: TONECOS_COMMERCIAL_ROUTES.history, label: "Meus orçamentos" },
+  ...(import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" ? [
+    { href: TONECOS_COMMERCIAL_ROUTES.request, label: "Solicitar orçamento" },
+    { href: TONECOS_COMMERCIAL_ROUTES.history, label: "Meus orçamentos" },
+  ] : []),
   { href: TONECOS_COMMERCIAL_ROUTES.account, label: "Minha conta" },
 ];
 if (import.meta.env.VITE_TONECOS_COINS_ENABLED === "true") {

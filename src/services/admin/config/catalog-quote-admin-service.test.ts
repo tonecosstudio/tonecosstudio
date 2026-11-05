@@ -17,6 +17,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("VITE_SUPABASE_URL", "https://icmtmaakjucmuzxnofkd.supabase.co");
   vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
+  vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+  vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
   vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
   mocks.requireAuthenticatedUserId.mockResolvedValue("admin-1");
   mocks.rpc.mockImplementation(async (name: string) =>

@@ -8,7 +8,13 @@ import {
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
 
 type Identity = { id: string; email: string | null };
-const safeNext = new Set<string>([TONECOS_COMMERCIAL_ROUTES.account, TONECOS_COMMERCIAL_ROUTES.request, TONECOS_COMMERCIAL_ROUTES.history]);
+const safeNext = new Set<string>([
+  TONECOS_COMMERCIAL_ROUTES.account,
+  ...(import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true"
+    ? [TONECOS_COMMERCIAL_ROUTES.request, TONECOS_COMMERCIAL_ROUTES.history] : []),
+  ...(import.meta.env.VITE_TONECOS_COINS_ENABLED === "true"
+    ? [TONECOS_COMMERCIAL_ROUTES.coins] : []),
+]);
 
 function errorText(value: unknown) {
   return value instanceof Error ? value.message : "Não foi possível completar a operação.";
@@ -130,11 +136,13 @@ export default function TonecosAccountPage() {
               <button type="submit" disabled={busy || profileLoading} className={actionClass}>Salvar dados</button>
             </form>
             <div className="mt-7 flex flex-wrap gap-3 border-t border-white/15 pt-6">
-              <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.history}>Meus orçamentos</Link>
+              {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" &&
+                <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.history}>Meus orçamentos</Link>}
               {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
                 <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.coins}>Minhas moedas</Link>}
               <Link className={secondaryClass} to="/modelos">Explorar modelos</Link>
-              {identity.email?.trim().toLowerCase() === "tonecosstudio@gmail.com" &&
+              {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" &&
+                identity.email?.trim().toLowerCase() === "tonecosstudio@gmail.com" &&
                 <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}>
                   Atendimento Tonecos
                 </Link>

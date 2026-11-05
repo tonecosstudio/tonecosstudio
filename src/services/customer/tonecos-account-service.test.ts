@@ -27,6 +27,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("VITE_SUPABASE_URL", "https://icmtmaakjucmuzxnofkd.supabase.co");
   vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
+  vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+  vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
   vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
 });
 afterEach(() => vi.unstubAllEnvs());
@@ -89,6 +91,13 @@ describe("Tonecos authenticated MVP account", () => {
       .rejects.toThrow("tonecos_account_credentials_invalid");
   });
 
+  it("allows private accounts without enabling quotes, using the same Auth SSOT", async () => {
+    vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "false");
+    mocks.signInWithPasswordCredentials.mockResolvedValue(USER);
+    await expect(signInTonecosAccount("client@example.com", "StrongPass123!")).resolves.toBe(USER);
+    expect(mocks.signInWithPasswordCredentials).toHaveBeenCalledTimes(1);
+  });
+
   it("blocks commercial requests when configured for the OrdaX Supabase project", async () => {
     vi.stubEnv("VITE_SUPABASE_URL", "https://jhfphsjptrpmtnzkpwud.supabase.co");
     await expect(registerTonecosAccount({
@@ -101,8 +110,8 @@ describe("Tonecos authenticated MVP account", () => {
   it("blocks account access in public read-only previews", async () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
     await expect(signInTonecosAccount("client@example.com", "StrongPass123!"))
-      .rejects.toThrow("catalog_quotes_not_enabled");
-    await expect(getMyTonecosProfile()).rejects.toThrow("catalog_quotes_not_enabled");
+      .rejects.toThrow("tonecos_commercial_mvp_disabled");
+    await expect(getMyTonecosProfile()).rejects.toThrow("tonecos_commercial_mvp_disabled");
     expect(mocks.getUser).not.toHaveBeenCalled();
   });
 

@@ -17,6 +17,8 @@ vi.mock("@/services/customer/tonecos-account-service", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+  vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
   vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
   vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
   vi.stubEnv("VITE_TONECOS_COINS_ENABLED", "true");
@@ -26,6 +28,15 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("Tonecos Coins ledger authority", () => {
+  it("reads private coins with quotes disabled, without reactivating quotes", async () => {
+    vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "false");
+    mocks.rpc.mockResolvedValue({ data: {
+      balance: 0, total_earned: 0, total_spent: 0, entry_count: 0, updated_at: null,
+    }, error: null });
+    await expect(getMyTonecosCoinBalance()).resolves.toMatchObject({ balance: 0 });
+    expect(mocks.rpc).toHaveBeenCalledWith("get_my_tonecos_coin_balance");
+  });
+
   it("returns only server-computed ledger values; empty means a real empty ledger", async () => {
     mocks.rpc.mockResolvedValue({ data: {
       balance: 0, total_earned: 0, total_spent: 0, entry_count: 0, updated_at: null,
@@ -47,7 +58,7 @@ describe("Tonecos Coins ledger authority", () => {
 
   it("never contacts Supabase in public preview or before coins activation", async () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
-    await expect(getMyTonecosCoinBalance()).rejects.toThrow("catalog_quotes_not_enabled");
+    await expect(getMyTonecosCoinBalance()).rejects.toThrow("tonecos_commercial_mvp_disabled");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
     vi.stubEnv("VITE_TONECOS_COINS_ENABLED", "false");
     await expect(listMyTonecosCoinEntries()).rejects.toThrow("tonecos_coins_not_enabled");

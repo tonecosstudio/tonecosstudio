@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
+import { assertTonecosCommercialEnabled, assertTonecosQuotesEnabled } from "@/config/tonecos-commercial-authority";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
@@ -28,7 +28,7 @@ async function requireTonecosAdmin(): Promise<void> {
   if (data !== true) throw new Error("Admin access required");
 }
 
-const assertCommercialMode = assertTonecosCommercialEnabled;
+const assertCommercialMode = assertTonecosQuotesEnabled;
 
 function decodeItems(value: unknown): CatalogQuoteItem[] {
   if (!Array.isArray(value) || value.length < 1 ||
@@ -122,7 +122,7 @@ export async function answerCatalogQuoteRequest(quoteId: string, amount: number)
 
 /** Only the verified Tonecos mailbox can explicitly initialize the first admin. */
 export async function bootstrapTonecosOwnerAdmin(): Promise<void> {
-  assertCommercialMode();
+  assertTonecosCommercialEnabled();
   await requireAuthenticatedUserId();
   const { data, error } = await tonecos.rpc("bootstrap_tonecos_owner_admin");
   if (error) throw error;
