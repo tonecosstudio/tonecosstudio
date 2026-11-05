@@ -80,8 +80,8 @@ describe("Tonecos canonical Universe discovery", () => {
     await renderUniverse("/universo");
     expect(await screen.findByRole("link", { name: /Originais/ })).toHaveAttribute("href", "/universo/originais");
     const categoryCard = screen.getByRole("link", { name: /Originais/ });
-    expect(categoryCard).toHaveTextContent(/\b1 modelo\b/);
-    expect(categoryCard).not.toHaveTextContent(/\b1 modelos\b/);
+    expect(screen.getByText("1 modelo", { exact: true })).toBeInTheDocument();
+    expect(screen.queryByText("1 modelos", { exact: true })).not.toBeInTheDocument();
     expect(calls.map(call => call.pathname)).toEqual(["/catalogo-api/api/categories"]);
   });
 
@@ -140,8 +140,8 @@ describe("Tonecos canonical Universe discovery", () => {
 
     const franchiseCard = screen.getByText("Franquia 1").closest("a");
     expect(franchiseCard).toHaveAttribute("href", "/universo/originais/franquia-1");
-    expect(franchiseCard).toHaveTextContent(/\b1 modelo\b/);
-    expect(franchiseCard).not.toHaveTextContent(/\b1 modelos\b/);
+    expect(screen.getByText("1 modelo", { exact: true })).toBeInTheDocument();
+    expect(screen.queryByText("1 modelos", { exact: true })).not.toBeInTheDocument();
   });
 
   it("blocks short direct-link searches before any Worker request", async () => {
