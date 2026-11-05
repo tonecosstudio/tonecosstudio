@@ -42,8 +42,8 @@ describe("canonical Universe folder navigation", () => {
           current: { id: "heroes", label: "Heroes", count: 1 },
           trail: [{ id: "heroes", label: "Heroes" }],
           items: [
-            { id: "single", label: "Item único", count: 1 },
-            { id: "multiple", label: "Vários itens", count: 3 },
+            { id: "heroes/single-item", label: "Item único", count: 1, hasChildren: false },
+            { id: "heroes/multiple-items", label: "Vários itens", count: 3, hasChildren: false },
           ],
         });
       }
@@ -80,11 +80,11 @@ describe("canonical Universe folder navigation", () => {
     );
     expect(await screen.findByRole("link", { name: "Item único 1 modelo" })).toHaveAttribute(
       "href",
-      "/universo/games/nier?folder=single",
+      "/universo/games/nier?folder=heroes%2Fsingle-item",
     );
     expect(await screen.findByRole("link", { name: "Vários itens 3 modelos" })).toHaveAttribute(
       "href",
-      "/universo/games/nier?folder=multiple",
+      "/universo/games/nier?folder=heroes%2Fmultiple-items",
     );
     const link = await screen.findByRole("link", { name: "Ver detalhes de 10H" });
     expect(link).toHaveAttribute("href", "/modelos/nier-10h-nier");
