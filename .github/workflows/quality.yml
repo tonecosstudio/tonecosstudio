@@ -11,6 +11,7 @@ on:
       - 'services/catalogo/**'
       - 'config/catalog-code-consolidation.json'
       - 'scripts/architecture/catalog-monorepo.test.mjs'
+      - 'scripts/catalog/cutover-readiness*.mjs'
       - 'scripts/cloudflare/catalog-pages-proxy.test.mjs'
       - 'functions/catalogo-api/**'
       - 'src/PublicCatalogApp.tsx'
