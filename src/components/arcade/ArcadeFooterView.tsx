@@ -62,10 +62,9 @@ export function ArcadeFooterView({ settings }: { settings?: SystemSettings }) {
           <div>
             <Link to="/" className="inline-block mb-5">
               <h3
-                className="text-2xl font-black tracking-[0.3em] text-[hsl(var(--gold-accent))]"
+                className="text-2xl font-semibold tracking-[0.12em] text-white"
                 style={{
-                  fontFamily: "'Bebas Neue', Impact, sans-serif",
-                  textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)",
+                  fontFamily: "Georgia, 'Times New Roman', serif",
                 }}
               >
                 {BRAND_SHORT_NAME}

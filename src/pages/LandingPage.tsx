@@ -219,7 +219,7 @@ export default function LandingPage() {
               className="block text-[clamp(3.5rem,14vw,9rem)] lg:text-[9rem] font-black tracking-[clamp(0.08em,2vw,0.15em)] leading-none"
               style={{
                 fontFamily: "'Bebas Neue', Impact, sans-serif",
-                textShadow: "0 0 60px hsl(var(--gold-accent) / 0.15)",
+                textShadow: "none",
               }}
             >
               <span>{BRAND_SHORT_NAME}</span>
@@ -354,7 +354,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span
-              className="text-2xl tracking-[0.2em] text-[hsl(var(--gold-accent))]"
+              className="text-2xl tracking-[0.2em] text-white"
               style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
             >
               {BRAND_SHORT_NAME}

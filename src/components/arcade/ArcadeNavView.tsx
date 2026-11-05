@@ -62,10 +62,9 @@ export function ArcadeNavView({
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-6">
         <Link
           to={PUBLIC_ROUTES.home}
-          className="inline-flex min-h-11 shrink-0 items-center text-xl font-black tracking-[0.3em] text-[hsl(var(--gold-accent))]"
+          className="inline-flex min-h-11 shrink-0 items-center text-xl font-semibold tracking-[0.12em] text-white"
           style={{
-            fontFamily: "'Bebas Neue', Impact, sans-serif",
-            textShadow: "0 0 20px hsl(var(--gold-accent) / 0.3)",
+            fontFamily: "Georgia, 'Times New Roman', serif",
           }}
         >
           {BRAND_SHORT_NAME}
