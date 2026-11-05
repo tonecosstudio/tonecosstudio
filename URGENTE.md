@@ -2,6 +2,20 @@
 
 **Auditado em 05/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
 
+## Frontend — busca de franquias e responsividade pública (05/11/2026)
+
+- **Correção:** `src/pages/CatalogArcade.tsx` usa o placeholder compacto “Buscar franquia (3+ letras)”. A regra mínima de três caracteres, o rótulo acessível e a busca não mudaram.
+- **QA autenticado do preview:** `/universo/animes-desenhos` validada em 280, 320, 375, 414, 768 e 1024 px. Sem overflow horizontal; grade com 2, 3 e 4 colunas conforme a largura; os 24 cards permanecem dentro da página; campo e botão de busca medem 48 px e cabem na tela. Captura em 280 px confirmou o placeholder inteiro visível.
+- **QA adicional:** `/sobre` conferida em 280, 320, 375, 414, 768, 1024, 1280 e 1920 px. Sem overflow, alvos interativos com pelo menos 44 px e grades refluindo de uma coluna no mobile para layouts maiores. FAQ expandida em 280 px sem ampliar a largura do documento.
+- **Build do preview:** Cloudflare executou `npm run typecheck`, `npm run catalog:mvp:test` (18 suites, 161 testes) e `npm run build`; todos concluíram com sucesso no SHA `676ed90cdebadd2fa9eac8c363987ee879324abe`. A publicação continua em homologação; os gates de release seguem pendentes no estado NO-GO.
+- **Preview privado:** https://integration-tonecosstudio-ca.tonecosstudio.pages.dev/universo/animes-desenhos — deployment `03b1f0ff-89cb-453a-bec3-d5d8fc5a8541`, ambiente `preview`, source SHA `676ed90cdebadd2fa9eac8c363987ee879324abe`, SUCCESS.
+- **Cloudflare:** produção permanece desativada; `preview_deployment_setting=none` preservado. A prévia foi criada manualmente para a branch e segue protegida por Access. Worker, D1 e R2 não foram alterados.
+- **PR/base/HEAD:** PR #4 permanece aberta e draft; base `main` em `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; HEAD de código validado `676ed90cdebadd2fa9eac8c363987ee879324abe` na branch `integration/tonecosstudio-canonical-20261101`.
+- **NEXT_ACTION:** revisar `/modelos` no preview atual, começando por busca, filtros, paginação e ficha em 280–414 px.
+- **DO_NOT_REPEAT:** manter o placeholder compacto e a validação de 3 caracteres; preservar alvos de toque de 44 px ou mais; não alterar `main`, produção, DNS, Worker, D1, R2 ou migrations; não reativar deploy automático nem reconstruir por mudança somente documental.
+
+---
+
 ## Frontend — Contato público responsivo (05/11/2026)
 
 - **Ajuste:** em `src/pages/PublicCatalogContact.tsx`, a seção agora se chama “Contato direto”, evitando repetir o título do hero; os links de e-mail/modelos têm hover e foco visível para navegação por teclado. Mantidos alvos de toque de 44 px.
