@@ -447,3 +447,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - PR #4 permanece open/draft. Produção, Worker, D1, R2, DNS e migrations Supabase inalterados.
 
 **NEXT_ACTION:** continuar a revisão do frontend pela Home (`/`) e fluxo responsivo de navegação para modelos; usar SSOT e os componentes compartilhados, corrigindo diferenças reproduzíveis e registrar a próxima prévia privada somente após mudança funcional.
+
+## Rodada 38 — “Todos” removido e título responsivo em /universo (05/11/2026)
+
+- Em `src/pages/CatalogArcade.tsx`, a grade da raiz omite apenas a categoria sentinela `id=all`; categorias, IDs, contagens e capas continuam vindos da SSOT pelo Worker. O CTA **Ver todos os modelos** permanece apontando para `/modelos`.
+- O rótulo exibido **Animes e Desenhos** fica em uma linha com `white-space: nowrap`, fonte fluida de 10–14 px e espaçamento compacto no mobile. A regressão cobre a ausência do card, a presença do CTA e a rota correta.
+- O teste de integração agora espera o carregamento assíncrono da categoria. Um ajuste separado, somente no setup de teste comercial, define `VITE_CATALOG_QUOTES_ENABLED` antes da importação do módulo; nenhum fluxo/runtime comercial mudou.
+- QA no preview final em 320/390/768/1024/1440 px: sem overflow horizontal; largura do documento 314/384/762/1018/1434 px; grade 2/2/3/4/4; seis cards e título em uma linha. Também conferi 360/430/639/640 px sem overflow. A captura final no navegador confirma o CTA e a remoção do card “Todos”.
+- GitHub Actions [Quality Gate #41998212637](https://github.com/tonecosstudio/tonecosstudio/actions/runs/41998212637): **17/17 arquivos e 156/156 testes** aprovados, com os demais gates do workflow concluídos.
+- Preview privado final: [abrir Universo](https://7e955bb9.tonecosstudio.pages.dev/universo), Cloudflare Pages deployment `7e955bb9-95d2-4f62-9b16-99e83be40a4e`, fonte exata `8f7935495819841e2e77702270165f1108d21798`, build/deploy SUCCESS e `VITE_PREVIEW_READ_ONLY=true`. Home também passou por QA nas larguras 320/390/768/1024/1440 sem overflow; a ficha 10H abriu pelo catálogo e exibiu conteúdo e imagem.
+- Produção, Worker, D1, R2, DNS e migrations Supabase inalterados; a PR #4 continua draft.
+
+**NEXT_ACTION:** finalizar QA responsivo de uma ficha de modelo no preview final em 320/390/768/1024/1440 px e então seguir pela listagem do catálogo. Reutilizar componentes e SSOT; criar nova prévia apenas após mudança funcional.
