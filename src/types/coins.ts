@@ -397,19 +397,3 @@ export interface CoinsPackagesResponse {
   /** Total de pacotes ativos */
   total: number;
 }
-
-/**
- * Resposta de compra com coins
- */
-export interface PurchaseWithCoinsResponse {
-  /** Compra foi bem-sucedida? */
-  success: boolean;
-  /** Mensagem de resultado */
-  message: string;
-  /** Novo saldo após compra */
-  new_balance: CoinsAmount;
-  /** ID do item adquirido */
-  item_id: string;
-  /** ID da transação */
-  transaction_id: TransactionId;
-}
