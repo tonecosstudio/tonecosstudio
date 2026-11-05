@@ -1,6 +1,16 @@
 # Tonecos Studio — checkpoint operacional
 
-**Auditado em 04/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
+**Auditado em 05/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
+
+
+## Frontend — hero responsivo e QA por página (05/11/2026)
+
+- **Ajuste no código:** `src/components/arcade/ArcadeLayout.tsx` agora usa tracking fluido em `ArcadeHero` (`clamp(0.08em, 2vw, 0.15em)`). A medição em `/privacidade` achou o H1 2 px maior que a caixa em 320 px; agora o texto mede 266/266 px. Em 360 px o tracking volta a 7.2 px; em 1280 px, 10.8 px e tamanho desktop preservado.
+- **QA autenticado no preview:** `/` sem overflow em 320, 360, 768 e 1280 px; `/sobre` e `/privacidade` em 320 px; árvore Dragon Ball em 320, 360 e 768 px; ficha de modelo em 320 px. Grades observadas: uma, duas e três colunas de pastas conforme o viewport. A rota do título de privacidade não apresenta rolagem horizontal após o ajuste.
+- **Código:** commit `b9f0af1f1ae22d9a104848b2f5b71d8dbac6ce67`, mesma branch e PR #4 draft.
+- **Preview privado:** [https://8563636a.tonecosstudio.pages.dev/privacidade](https://8563636a.tonecosstudio.pages.dev/privacidade), deployment `8563636a-ddc2-4c6a-b23f-c4aca8296c30`, ambiente preview, source SHA `b9f0af1`; Cloudflare Pages build e deploy SUCCESS. A configuração de build executou typecheck, `catalog:mvp:test` e build. Produção e Worker/D1/R2 não foram alterados.
+- **NEXT_ACTION:** continuar a revisão das rotas públicas em larguras mobile/tablet/desktop; próxima rota `/contato`, depois termos e detalhes ainda sem QA visual nesta versão.
+- **DO_NOT_REPEAT:** não gerar build por atualização só documental, não criar branch/PR extra, não publicar em produção e não tocar em Worker, D1 ou R2.
 
 ## Backend — SSOT, remoção de legado e preflight de cutover (05/11/2026)
 
