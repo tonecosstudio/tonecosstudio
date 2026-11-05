@@ -232,7 +232,7 @@ export default function CatalogArcade() {
                           />
                         </div>
                         <div className="flex flex-1 flex-col gap-2 p-4">
-                          <span className="line-clamp-2 font-semibold uppercase">{franchise.label}</span>
+                          <span className="line-clamp-2 break-words font-semibold uppercase">{franchise.label}</span>
                           <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
                             {formatModelCountLabel(franchise.count)} <ArrowRight size={16} aria-hidden="true" />
                           </span>
