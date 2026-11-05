@@ -2,6 +2,20 @@
 
 **Auditado em 05/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
 
+## Frontend — Universo responsivo em mobile estreito (05/11/2026)
+
+- Em `src/pages/CatalogArcade.tsx`, a grade de categorias passa para uma coluna abaixo de 320 px e volta a duas colunas em 320 px; cresce para três em `sm` e quatro em `lg`. “Animes e Desenhos” continua em uma linha, com 14 px abaixo de 320 px e tamanho fluido de 10–14 px a partir de 320 px.
+- O filtro mantém “Todos” fora da grade; “Ver todos os modelos” permanece como a única CTA de catálogo na navegação.
+- QA visual autenticado em `/universo`, em 280, 320, 390 e 768 px (e visualização padrão de 810 px): sem overflow horizontal; grade de 1/2/2/3 colunas; título cabe no card em uma linha; zero cards “Todos” e uma CTA “Ver todos os modelos”.
+- **Preview privado:** [abrir Universo](https://integration-tonecosstudio-ca.tonecosstudio.pages.dev/universo) — deployment `3dfb44e2-608d-4b1c-a48a-1f828b1d50fa`, source `ee4626adbd820ea4f9945cdc5798fb105888cb35`, ambiente `preview`, build e deploy SUCCESS.
+- Build do Pages: `typecheck`, `catalog:mvp:test` (**18 suítes, 161 testes**) e `build` concluídos. A expectativa existente em `CatalogArcade.integration.test.tsx` foi atualizada para as classes responsivas.
+- Cloudflare: `preview_deployment_setting=none` e produção desativada; preview criado manualmente. Worker, D1, R2 e DNS inalterados.
+- PR #4 segue aberta e draft na branch `integration/tonecosstudio-canonical-20261101`.
+- **NEXT_ACTION:** revisar `/universo/animes-desenhos/dragon-ball` em mobile e larguras maiores, incluindo pastas e miniaturas.
+- **DO_NOT_REPEAT:** preservar o card “Todos” ausente, a CTA única e o título em uma linha; não publicar em produção, criar branch/PR adicional, alterar Worker/D1/R2/DNS ou reconstruir por mudança somente documental.
+
+---
+
 ## Frontend — busca de franquias e responsividade pública (05/11/2026)
 
 - **Correção:** `src/pages/CatalogArcade.tsx` usa o placeholder compacto “Buscar franquia (3+ letras)”. A regra mínima de três caracteres, o rótulo acessível e a busca não mudaram.
