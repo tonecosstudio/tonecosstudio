@@ -233,3 +233,12 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - O texto explicativo quebra sem ultrapassar o card. Navegação por teclado mostrou contorno dourado de foco com 2 px no link de e-mail.
 - Preview privado: [Contato](https://3bc09d16.tonecosstudio.pages.dev/contato), deployment `3bc09d16-0dff-41bf-91ae-e65712e95eb2`, build e deploy SUCCESS no SHA de código `446ab60396c96e64f31892d9bbf14253d0b96c57`. Nenhuma mensagem foi enviada; produção e Worker inalterados.
 - **NEXT_ACTION:** revisar a rota 404 responsiva no preview atual. Manter a PR #4 draft e não gerar build por atualização documental.
+
+
+## Rodada 17 — rota 404 pública responsiva (04/11/2026)
+
+- A rota pública agora usa uma seção nomeada dentro do `main` de `ArcadeFrame`, removendo o `main` aninhado e o papel de status aplicado à página inteira. O conteúdo preserva a identidade arcade.
+- O layout usa 16 px de margem interna em telas estreitas, cresce a partir de `sm`, tipografia responsiva e link SPA com alvo mínimo de 44 px e foco visível de 2 px.
+- Preview privado: [abrir a rota 404](https://7f927529.tonecosstudio.pages.dev/__qa-not-found), deployment `7f927529-577e-43f8-95d4-f2a6cb24df03`, ambiente `preview`, commit de código `a05ed4cfa180092cf74964f563c64115edba8b34`; Pages build/deploy SUCCESS. Logs confirmam typecheck, catálogo MVP 4 arquivos/78 testes, verificações do catálogo 9 PASS, segurança/proxy/SEO 28 PASS, Vite build e compilação da Pages Function.
+- **QA visual responsivo pendente:** as chamadas ao navegador desta sessão expiraram; não há captura nem medições de runtime para esta rota ainda. O link acima está pronto para validação autenticada; não marcar esta rodada como visualmente homologada.
+- Produção, Worker, D1, R2 e DNS inalterados. **NEXT_ACTION:** validar a rota em 320/390/768/1440 px e testar foco por teclado; depois seguir à próxima página ainda sem revisão atual.
