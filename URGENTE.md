@@ -1,6 +1,16 @@
 # Tonecos Studio — checkpoint operacional
 
-**Auditado em 04/11/2026 (Bahia). Estado: NO-GO para publicação pública.** O enorme checkpoint cumulativo anterior foi preservado integralmente em [docs-archive/historico-2026-11-04/URGENTE.md](docs-archive/historico-2026-11-04/URGENTE.md). Use [docs/README.md](docs/README.md) como índice dos documentos atuais.
+**Auditado em 04/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
+
+## Backend — SSOT, remoção de legado e preflight de cutover (05/11/2026)
+
+- **Owner isolado do layout local:** somente `config/catalog-code-consolidation.json`, `services/catalogo/README.md`, testes/guarda offline, preflight de cutover e documentação existente; não alterar componentes React, Pages Function, Worker ativo nem dados.
+- **SSOT corrigida:** `origin.apiDeployWorkflowId` passa a residir no manifesto; preflight lê IDs de repositórios/conta/Worker de `config/catalog-code-consolidation.json` e D1/R2 de `services/catalogo/wrangler.jsonc`. O guard independente verifica a identidade aprovada e impede drift; flags M5 não foram liberadas.
+- **Obsoletos removidos do repositório ativo:** `scripts/catalog/legacy/baixar-imagens-telegram.cmd` (launcher de caminho inválido) e `scripts/catalog/legacy/leia-pc-auxiliar.txt` (fluxo auxiliar abandonado). Conteúdo permanece no histórico Git. Ferramentas editoriais restantes preservadas.
+- **Prova anterior:** [Quality Gate #41969104125](https://github.com/tonecosstudio/tonecosstudio/actions/runs/41969104125) aprovado para o preflight anterior; o novo conjunto de mudanças requer CI do HEAD vigente. Nenhum D1, R2, Worker deploy ou migração foi realizado.
+- **NEXT_ACTION:** verificar Quality Gate da última revisão, corrigir falha real se houver; manter M5 BLOCKED até GO, fonte Washington desativada, rollout/rollback provados e credenciais verificadas.
+- **DO_NOT_REPEAT:** não criar outra branch/PR, não rodar scans D1/R2, não apagar scripts editoriais sem prova de desuso, não tocar layout nem gerar build de frontend por documentação.
+ O enorme checkpoint cumulativo anterior foi preservado integralmente em [docs-archive/historico-2026-11-04/URGENTE.md](docs-archive/historico-2026-11-04/URGENTE.md). Use [docs/README.md](docs/README.md) como índice dos documentos atuais.
 
 ## Frontend — rodada 1 de responsividade (04/11/2026)
 
