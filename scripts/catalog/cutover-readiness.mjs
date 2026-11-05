@@ -7,13 +7,19 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { join } from 'node:path'
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url))
-const SOURCE_WORKFLOW_ID = 371358484
-const SOURCE_WORKFLOW_PATH = '.github/workflows/cloudflare.yml'
-const SOURCE_REPO = 'washingtonmsdj/catalogo'
-const TARGET_REPO = 'tonecosstudio/tonecosstudio'
-const TARGET_REPO_ID = 1163825583
-const CLOUDFLARE_ACCOUNT_ID = '8827c547d6def5ee5b9ca550fdd5680a'
-const WORKER_NAME = 'tonecos-catalogo-api'
+// The manifest owns source/target identities; staged Wrangler owns Worker resources.
+// The offline monorepo guard pins these identities to the approved repository.
+const CANONICAL = JSON.parse(readFileSync(join(ROOT, 'config/catalog-code-consolidation.json'), 'utf8'))
+const WORKER_CONFIG = JSON.parse(readFileSync(join(ROOT, 'services/catalogo/wrangler.jsonc'), 'utf8'))
+const SOURCE_WORKFLOW_ID = CANONICAL.origin.apiDeployWorkflowId
+const SOURCE_WORKFLOW_PATH = CANONICAL.origin.apiDeployPipeline
+const SOURCE_REPO = CANONICAL.origin.repository
+const TARGET_REPO = CANONICAL.target.repository
+const TARGET_REPO_ID = CANONICAL.target.repositoryId
+const CLOUDFLARE_ACCOUNT_ID = CANONICAL.runtime.cloudflareAccountId
+const WORKER_NAME = CANONICAL.runtime.worker
+const WORKER_D1 = WORKER_CONFIG.d1_databases?.find(binding => binding.binding === 'DB')
+const WORKER_MEDIA = WORKER_CONFIG.r2_buckets?.find(binding => binding.binding === 'MEDIA')
 
 export function assessCutoverReadiness(contract, state) {
   const blockers = []
@@ -26,6 +32,13 @@ export function assessCutoverReadiness(contract, state) {
   add(contract?.origin?.repository === SOURCE_REPO, 'origin_repository_mismatch')
   add(contract?.target?.repository === TARGET_REPO && contract?.target?.repositoryId === TARGET_REPO_ID, 'target_repository_mismatch')
   add(contract?.runtime?.worker === WORKER_NAME && contract?.runtime?.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID && o.worker === WORKER_NAME && o.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID, 'worker_authority_mismatch')
+  add(
+    WORKER_CONFIG.name === WORKER_NAME &&
+      WORKER_D1?.database_name === contract?.runtime?.d1 &&
+      WORKER_MEDIA?.bucket_name === contract?.runtime?.r2 &&
+      WORKER_CONFIG.main === 'worker/entry.ts',
+    'staged_worker_config_mismatch',
+  )
   add(m.phase === 'cutover-approved', 'cutover_not_approved')
   add(m.releaseAuthorized === true && o.releaseGoApproved === true, 'explicit_release_go_missing')
   add(m.sourceWriterDisabled === true && o.sourceWorkflowDisabledVerified === true, 'source_writer_not_confirmed_disabled')
@@ -57,11 +70,11 @@ export function assessCutoverReadiness(contract, state) {
   const media = findBinding('MEDIA')
   const turnstile = findBinding('TURNSTILE_SECRET_KEY')
   add(
-    db?.type === 'd1' && db.id === '87006366-60f3-4937-af73-2ef5a5f901fb',
+    db?.type === 'd1' && WORKER_D1?.database_id && db.id === WORKER_D1.database_id,
     'existing_d1_binding_unverified',
   )
   add(
-    media?.type === 'r2_bucket' && media.bucket_name === contract?.runtime?.r2,
+    media?.type === 'r2_bucket' && WORKER_MEDIA?.bucket_name && media.bucket_name === WORKER_MEDIA.bucket_name,
     'existing_r2_binding_unverified',
   )
   add(turnstile?.type === 'secret_text', 'turnstile_secret_presence_unverified')
@@ -80,10 +93,11 @@ async function getJSON(url, headers = {}) {
 }
 
 export async function inspectLiveReadOnly(env = process.env) {
-  const prefix = 'https://api.github.com/repos/' + SOURCE_REPO + '/actions/workflows/cloudflare.yml'
+  const workflowName = SOURCE_WORKFLOW_PATH.split('/').at(-1)
+  const prefix = 'https://api.github.com/repos/' + SOURCE_REPO + '/actions/workflows/' + workflowName
   const ghHeaders = { 'User-Agent': 'tonecos-readonly-cutover-check' }
   const [workflow, active, queued, requested, waiting, pending] = await Promise.all([
-    getJSON('https://api.github.com/repos/' + SOURCE_REPO + '/actions/workflows/cloudflare.yml', ghHeaders),
+    getJSON(prefix, ghHeaders),
     getJSON(prefix + '/runs?status=in_progress&per_page=1', ghHeaders),
     getJSON(prefix + '/runs?status=queued&per_page=1', ghHeaders),
     getJSON(prefix + '/runs?status=requested&per_page=1', ghHeaders),
