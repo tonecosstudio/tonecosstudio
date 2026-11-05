@@ -24,7 +24,7 @@ export default function HowItWorks() {
   const benefits = [
     "Personagem surpresa a cada 2 meses",
     "Embalagem premium em MDF",
-    "Produção artesanal Tonecos Studios",
+    "Produção artesanal TONART Studio",
     "Revelação antecipada do próximo personagem",
     "Prioridade na produção",
     "Plano anual com 10% de desconto",

@@ -61,7 +61,7 @@ export default function AdminQuotesPage() {
             </Badge>
           </div>
           <p className="text-muted-foreground">
-            Pedidos registrados no sistema Ordax. A avaliação e produção são conduzidas pela Tonecos Studios.
+            Pedidos registrados no sistema Ordax. A avaliação e produção são conduzidas pela TONART Studio.
           </p>
         </div>
 

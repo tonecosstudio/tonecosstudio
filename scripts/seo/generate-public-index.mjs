@@ -1,5 +1,5 @@
 /**
- * Cloudflare Pages release-gated robots/sitemap for the existing Tonecos SPA.
+ * Cloudflare Pages release-gated robots/sitemap for the existing TONART SPA.
  * Does not query the catalog, D1, R2 or any remote network.
  */
 import { readFile, writeFile, rm } from "node:fs/promises";
@@ -47,7 +47,7 @@ export function renderSitemap(origin) {
 export function renderRobots(release) {
   return release.enabled
     ? 'User-agent: *\nAllow: /\nSitemap: ' + release.origin + '/sitemap.xml\n'
-    : '# Tonecos Studio: staging/pre-release is not indexable.\nUser-agent: *\nDisallow: /\n';
+    : '# TONART Studio: staging/pre-release is not indexable.\nUser-agent: *\nDisallow: /\n';
 }
 
 export function applyIndexHold(html) {

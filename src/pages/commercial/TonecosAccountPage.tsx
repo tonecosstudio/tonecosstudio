@@ -157,7 +157,7 @@ export default function TonecosAccountPage() {
               {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" &&
                 isAdmin &&
                 <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}>
-                  Atendimento Tonecos
+                  Atendimento TONART
                 </Link>
               }
               {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
