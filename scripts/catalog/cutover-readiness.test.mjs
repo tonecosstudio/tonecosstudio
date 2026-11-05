@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { assessCutoverReadiness } from './cutover-readiness.mjs'
+import { assessCutoverReadiness, inspectLiveReadOnly } from './cutover-readiness.mjs'
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url))
 const original = JSON.parse(readFileSync(new URL('../../config/catalog-code-consolidation.json', import.meta.url), 'utf8'))
@@ -25,10 +25,12 @@ function approvedContract() {
   v.productionObservation.releaseGoApproved = true
   v.productionObservation.sourceWorkflowDisabledVerified = true
   v.productionObservation.targetProductionCredentialsVerified = true
+  v.productionObservation.rollbackTestedAgainstProduction = true
   return v
 }
 const fullState = () => ({
-  workflow: { ...workflow }, running: 0, queued: 0,
+  workflow: { ...workflow }, running: 0, queued: 0, requested: 0, waiting: 0, pending: 0,
+  cloudflareAccountId: original.runtime.cloudflareAccountId,
   deployment: structuredClone(deployment), bindings: structuredClone(bindings),
 })
 
@@ -71,4 +73,61 @@ test('D1 migration enabling remains a blocker even with all other checks passing
   const result = assessCutoverReadiness(c, fullState())
   assert.equal(result.ready, false)
   assert.ok(result.blockers.includes('remote_d1_migrations_must_remain_disabled'))
+})
+
+
+test('all non-terminal GitHub workflow states fail closed', () => {
+  for (const status of ['requested', 'waiting', 'pending']) {
+    const state = fullState()
+    state[status] = 1
+    const result = assessCutoverReadiness(approvedContract(), state)
+    assert.equal(result.ready, false, 'unexpected READY for ' + status)
+    assert.ok(result.blockers.includes('source_workflow_runs_' + status + '_or_unverified'))
+    delete state[status]
+    const unknown = assessCutoverReadiness(approvedContract(), state)
+    assert.equal(unknown.ready, false, 'missing status must fail closed: ' + status)
+  }
+})
+
+test('mismatched authority or rollback without proof blocks promotion', () => {
+  const c = approvedContract()
+  c.target.repository = 'unexpected/other-repository'
+  c.productionObservation.rollbackTestedAgainstProduction = false
+  const state = fullState()
+  state.cloudflareAccountId = 'another-account'
+  const result = assessCutoverReadiness(c, state)
+  assert.equal(result.ready, false)
+  assert.ok(result.blockers.includes('target_repository_mismatch'))
+  assert.ok(result.blockers.includes('rollback_not_verified'))
+  assert.ok(result.blockers.includes('cloudflare_account_unverified'))
+})
+
+test('read-only inspection queries every non-terminal GitHub status without Cloudflare credentials', async () => {
+  const originalFetch = globalThis.fetch
+  const requests = []
+  globalThis.fetch = async (url, options) => {
+    assert.equal(options.method, 'GET')
+    requests.push(String(url))
+    if (String(url).includes('/runs?status=')) {
+      return Response.json({ total_count: 0 })
+    }
+    return Response.json(workflow)
+  }
+  try {
+    const state = await inspectLiveReadOnly({})
+    assert.equal(state.running, 0)
+    assert.equal(state.queued, 0)
+    assert.equal(state.requested, 0)
+    assert.equal(state.waiting, 0)
+    assert.equal(state.pending, 0)
+    assert.equal(state.deployment, undefined)
+    assert.equal(state.cloudflareAccountId, undefined)
+    assert.equal(requests.length, 6)
+    for (const status of ['in_progress', 'queued', 'requested', 'waiting', 'pending']) {
+      assert.ok(requests.some(url => url.includes('/runs?status=' + status + '&')))
+    }
+    assert.ok(requests.every(url => url.startsWith('https://api.github.com/')))
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })
