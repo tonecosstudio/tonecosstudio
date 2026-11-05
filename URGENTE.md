@@ -636,3 +636,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar `/universo/animes-desenhos/boku-no-hero` no mesmo preview em 280/320/390/768/1024/1440 px; conferir pastas, miniaturas, texto longo e retorno à ficha.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
+
+## Rodada 53 — Boku no Hero responsivo (05/11/2026)
+
+- Preview reutilizado: [Universo](https://494e0ae6.tonecosstudio.pages.dev/universo), deployment `494e0ae6-5dea-4b19-9487-37a80f9daa6d`, código `fe13cf80fd41248dcaf7dbdef391e91d49f2bbc0`. Nenhum build manual.
+- `/universo/animes-desenhos/boku-no-hero`: 12 pastas e 8 referências no recorte exibido. Em 280/320/390/768/1024/1440 px, sem overflow; pastas em 1/1/2/3/4/4 colunas, referências em 2/2/2/3/4/4, 8/8 imagens carregadas. “Camie Utsushimi” ocupa no máximo duas linhas (em 390 px) sem clipping.
+- `folder=all-might`: 5 referências, grade 2/2/2/3/4/4 e 5/5 miniaturas carregadas nas seis larguras; sem overflow. Breadcrumbs e CTA têm alvo de 44 px.
+- Ficha All Might: imagem carregada (924 px), sem overflow nas seis larguras, seleção vazia. “Voltar à pasta” restaurou o filtro exato `?folder=all-might`; console sem erros.
+- Sem defeito reproduzível; sem mudança de frontend. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** revisar `/universo/animes-desenhos/fantasy` no mesmo preview em 280/320/390/768/1024/1440 px; conferir nomes longos, pastas, miniaturas e retorno à ficha.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não solicitar deploy manual para documentação isolada; não alterar `main`, produção ou Worker.
