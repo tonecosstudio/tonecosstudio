@@ -78,11 +78,11 @@ describe("canonical Universe folder navigation", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    expect(screen.getByRole("link", { name: "Item único 1 modelo" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "Item único 1 modelo" })).toHaveAttribute(
       "href",
       "/universo/games/nier?folder=single",
     );
-    expect(screen.getByRole("link", { name: "Vários itens 3 modelos" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "Vários itens 3 modelos" })).toHaveAttribute(
       "href",
       "/universo/games/nier?folder=multiple",
     );
