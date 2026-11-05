@@ -3,6 +3,17 @@
 **Auditado em 05/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
 
 
+## Frontend — hero móvel da página inicial (05/11/2026)
+
+- **Ajuste em `src/pages/LandingPage.tsx`:** o bloco do typewriter agora cresce além do mínimo de 32 px quando o texto quebra em várias linhas. As duas CTAs usam largura móvel fluida até 20rem, espaçamento e tipografia menores em telas estreitas; a partir de `sm` recuperam a largura e escala anteriores.
+- **Preview privado:** https://0ae5a15b.tonecosstudio.pages.dev/ — deployment `0ae5a15b-baed-4951-ab64-dc29bb5f871e`, ambiente `preview`, source SHA `604c49d59c7efa3958eff3433e31cbf5149fc02f`; Cloudflare Pages build e deploy SUCCESS. O build executou `npm ci`, `typecheck`, `catalog:mvp:test` e `build`. Produção e Worker/D1/R2 não foram alterados.
+- **Evidência visual:** home carregada no preview, animação completa, contadores e seis modelos destacados visíveis; largura do navegador nesta sessão ~803 px, com CTAs preservadas em linha. **Mobile 280/320/390 px ainda não foi emulado nesta rodada**, então não está marcado como validado.
+- **Base/HEAD:** base da PR `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; commit de código `604c49d59c7efa3958eff3433e31cbf5149fc02f`; branch `integration/tonecosstudio-canonical-20261101`; PR #4 permanece draft.
+- **NEXT_ACTION:** emular 280, 320 e 390 px na home para confirmar a quebra do typewriter e o encaixe das CTAs; ajustar se houver divergência; depois avançar para a próxima rota pública ainda sem checkpoint visual recente.
+- **DO_NOT_REPEAT:** não prender o texto animado a uma altura fixa; não usar padding lateral fixo de 40 px nas CTAs móveis; não publicar em produção, criar outra branch/PR ou alterar Worker/D1/R2; não gerar build por atualização apenas documental.
+
+---
+
 ## Frontend — nomes completos nos cards do Universo (05/11/2026)
 
 - **Correção:** `src/pages/CatalogArcade.tsx` mantém “Animes e Desenhos” em uma linha e usa tamanho fluido com quebra entre palavras nos demais nomes, sem reticências. Em 280 px, “Tokusatsu & Cultura Japonesa” aparece completo em 3 linhas; em 320 e 390 px também está completo. Em 1280 px o rótulo fica completo em 2 linhas. Sem overflow horizontal.
