@@ -371,9 +371,11 @@ export default function CatalogModelsArcade() {
                     (franchiseDraft.trim().length > 0 &&
                       Array.from(franchiseDraft.trim()).length < 3)
                   }
-                  className="h-11 border border-[hsl(var(--gold-accent)/0.5)] px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] disabled:opacity-40"
+                  aria-label="Buscar franquias"
+                  className="h-11 border border-[hsl(var(--gold-accent)/0.5)] px-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] disabled:opacity-40 sm:px-4"
                 >
-                  Buscar franquias
+                  <span className="sm:hidden">Buscar</span>
+                  <span className="hidden sm:inline">Buscar franquias</span>
                 </button>
                 {franchises.data?.truncated ? (
                   <p
