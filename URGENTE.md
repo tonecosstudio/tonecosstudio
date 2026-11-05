@@ -420,3 +420,17 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - PR #4 segue open/draft. HEAD observado `7076feb13968ae25795b634b5afc65901b614c02`; os commits posteriores ao código desta prévia tratam do fluxo administrativo/comercial e de uma migration Supabase ainda não aplicada. Nenhuma alteração em produção, Worker, D1, R2 ou DNS.
 
 **NEXT_ACTION:** criar uma checagem de viewport automatizada por padrão compartilhado (início, universo/franquia/pasta, listagem filtrada e detalhes) com larguras 320/390/768/1024/1440 px e rotas selecionadas da SSOT; então revisar Batman (77 modelos) e seguir pelos próximos recortes.
+
+## Rodada 36 — Universo, capas e contagens (05/11/2026)
+
+**Meta contínua:** manter o frontend público responsivo por padrão compartilhado, usar o catálogo canônico/SSOT e corrigir somente problemas reproduzíveis. Próximo foco: categoria Games e uma navegação de franquia/pasta; não revisar manualmente cada URL quando o mesmo componente atende várias rotas.
+
+- **Melhoria visual em `src/pages/CatalogArcade.tsx`:** capas de categorias e franquias agora ocupam toda a largura do card em quadro 4:3, com `object-cover` e zoom sutil no hover; título e contagem ficam em faixa própria. O layout preserva o estilo Arcade e melhora a leitura das miniaturas em mobile.
+- **Defeito corrigido:** `formatModelCountLabel` é compartilhado entre categoria, franquia e pasta, removendo “1 modelos”. Na categoria Marvel & DC, Caçador de Marte e Constantine aparecem como “1 modelo”; os demais mantêm o plural. A busca por Caçador de Marte retorna o recorte canônico com a contagem correta.
+- **Responsividade no preview final:** /universo e /universo/marvel-dc conferidos em 320, 390, 768, 1024 e 1440 px. Sem overflow horizontal; grades 2/2/3/4/4. Documento mediu 314/384/762/1018/1434 px. Alvos visíveis de interação com pelo menos 44 px.
+- **Imagens:** 6/6 capas da raiz e 24/24 capas de Marvel & DC carregadas após percorrer a lista; zero imagens quebradas. Inspeção visual mobile confirma que o recorte preenche o card e mantém a figura principal legível.
+- **CI no commit de código `566dd0733f6a3a37cb8b8811acd8d7f8ac47410c`:** GitHub Actions [Quality Gate #41991679782](https://github.com/tonecosstudio/tonecosstudio/actions/runs/41991679782) concluído com sucesso; teste público MVP: 12 arquivos e 125 testes aprovados. A verificação monorepo, Worker offline, SQLite e Pages proxy também passaram.
+- **Preview privado atualizado:** [abrir Universo](https://ef8ab5fb.tonecosstudio.pages.dev/universo), deployment `ef8ab5fb-b6af-4e07-b42b-b08fc5833439`, ambiente `preview`, código exato `566dd0733f6a3a37cb8b8811acd8d7f8ac47410c`, build e deploy SUCCESS. A prévia segue readonly.
+- PR #4 continua open/draft. Nenhum deploy de produção, alteração no Worker, D1, R2, DNS ou migration Supabase nesta rodada. A autoridade do catálogo continua no Worker via `public-catalog-gateway`; não foi criada fonte paralela.
+
+**NEXT_ACTION:** revisar `/universo/games`, testar busca por franquia e abrir uma pasta representativa em 320/390/768/1024/1440 px; reutilizar os mesmos padrões e corrigir somente diferenças observadas. Produção, Worker, D1, R2, DNS e migrations seguem fora do escopo.
