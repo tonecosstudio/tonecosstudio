@@ -564,3 +564,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar `/universo/animes-desenhos/as-tartarugas-ninja` no mesmo preview em 280/320/390/768/1024/1440 px; conferir nomes, pastas, miniaturas e retorno às fichas.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
+## Rodada 46 — franquias de Animes e Desenhos: Tartarugas, Caverna e ThunderCats (05/11/2026)
+
+- Preview reutilizado: [Universo](https://494e0ae6.tonecosstudio.pages.dev/universo), deployment `494e0ae6-5dea-4b19-9487-37a80f9daa6d`, código `fe13cf80fd41248dcaf7dbdef391e91d49f2bbc0`. Nenhum build/deploy novo.
+- `As Tartarugas Ninja`: 14 pastas e 8 referências; em 280/320/390/768/1024/1440 px sem overflow. Pastas em 1/1/2/3/4/4 colunas e referências em 2/2/2/3/4/4; 8/8 imagens carregadas.
+- `folder=viloes`: 5 subpastas e 8 referências, sem overflow nas seis larguras; grade de pastas 1/1/2/3/4/4 e referências 2/2/2/3/4/4. `folder=viloes/destruidor`: 4 referências e 3 breadcrumbs; breadcrumbs e CTA com 44 px, filtro preservado. A ficha de Destruidor retornou à subpasta exata; imagem carregada (1079 px), sem overflow nas seis larguras e seleção vazia.
+- `Caverna do Dragão`: 8 pastas e 8 referências; sem overflow nas seis larguras, pastas 1/1/2/3/4/4 colunas e referências 2/2/2/3/4/4. As 8 imagens carregaram. A pasta `mestre-dos-magos` tem uma referência; breadcrumbs/CTA têm 44 px e a ficha retorna ao caminho exato; imagem carregada (738 px), sem overflow nas seis larguras.
+- `ThunderCats`: 12 pastas e 8 referências; em 280/320/390/768/1024/1440 px sem overflow. Pastas em 1/1/2/3/4/4 colunas, referências em 2/2/2/3/4/4; as 8 imagens carregaram. “Wilykit e Wilykat” permanece dentro do limite de duas linhas.
+- Nenhum defeito reproduzível nesta rodada; sem mudanças de frontend. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** revisar `/universo/animes-desenhos/jujutsu-kaisen` no preview em 280/320/390/768/1024/1440 px; conferir pastas, miniaturas e retorno à ficha. Continuar sem carregar páginas além do limite canônico publicado.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
