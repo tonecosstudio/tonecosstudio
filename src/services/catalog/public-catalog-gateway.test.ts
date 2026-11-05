@@ -561,9 +561,12 @@ describe("read-only catalog discovery and detail", () => {
     expect(gateway.mediaUrl("media/" + "a".repeat(257))).toBeNull();
     expect(gateway.mediaUrl("media/" + "x/".repeat(17) + "cover.webp")).toBeNull();
     expect(gateway.mediaUrl("media/images/" + String.fromCharCode(0) + "bad.webp")).toBeNull();
-    expect(gateway.mediaUrl("media/images/" + "\\uD800")).toBeNull();
+    expect(gateway.mediaUrl("media/images/" + String.fromCharCode(0xD800))).toBeNull();
     expect(gateway.mediaUrl("media/cards/café.webp")).toBe(
       "https://example.test/catalogo-api/media/cards/caf%C3%A9.webp",
+    );
+    expect(gateway.mediaUrl("media/cards/Hero (Edition 2)!.webp")).toBe(
+      "https://example.test/catalogo-api/media/cards/Hero%20%28Edition%202%29%21.webp",
     );
     expect(() =>
       createPublicCatalogGateway("https://ordax.com.br", fetch),

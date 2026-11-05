@@ -269,7 +269,13 @@ export function createPublicCatalogGateway(
         )
       ) return null;
       try {
-        const encoded = segments.map(encodeURIComponent);
+        // encodeURIComponent leaves !'()* raw; Pages media paths permit only
+        // unreserved characters and valid percent-escaped bytes.
+        const encoded = segments.map((part) =>
+          encodeURIComponent(part).replace(/[!'()*]/g, (char) =>
+            "%" + char.charCodeAt(0).toString(16).toUpperCase(),
+          ),
+        );
         if (encoded.some((part) => part.length > 256)) return null;
         const route = encoded.join("/");
         if (base.pathname.length + route.length > 4096) return null;
