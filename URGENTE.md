@@ -480,3 +480,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - Nenhum defeito reproduzível nesta família compartilhada; sem alterações de código. Produção, Worker, D1, R2, DNS e migrations permanecem inalterados.
 
 **NEXT_ACTION:** revisar a raiz `/universo/marvel-dc` no preview em 320/390/768/1024/1440 px, conferindo a primeira leva de franquias, imagens e busca parcial; aplicar os mesmos componentes/SSOT.
+
+## Frontend — raiz do Universo e prévia mobile (05/11/2026)
+
+- **Estado confirmado na branch** `integration/tonecosstudio-canonical-20261101`, PR #4 draft, código HEAD `6713e97cba3a1431cff97fb0bca01484c08c3dc9` (base main observada `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`). A versão que mostrava o card agregado “Todos” era a prévia antiga `ef8ab5fb`; o código publicado exclui a categoria geral e exibe “Animes e Desenhos” em uma linha com tamanho responsivo.
+- **Prévia privada atualizada:** https://121a9a7b.tonecosstudio.pages.dev/universo — Cloudflare Pages deployment `121a9a7b-9b5f-463f-b5ec-85748ca1e59a`, commit `6713e97`, ambiente `preview`; build e deploy **SUCCESS**. O build executou `typecheck`, `catalog:mvp:test` e `build` pela configuração existente.
+- **QA mobile a 320 px:** `innerWidth=320`, documento com 314 px, sem overflow horizontal; título ocupa 109/109 px, `white-space: nowrap`; card “Todos” ausente e há uma ação “Ver todos os modelos”. Captura: `outputs/universo-preview-mobile-320.png`.
+- Produção, Worker, D1, R2 e DNS inalterados. Configuração de deploy automático de previews segue `none`.
+
+**NEXT_ACTION:** continuar na rota `/universo/animes-desenhos`, revisar a listagem de franquias em larguras mobile/desktop e corrigir somente defeitos reproduzíveis.
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview atual; não publicar documentação isolada; não tocar na `main`, produção ou Worker.
