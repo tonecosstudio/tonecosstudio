@@ -311,7 +311,7 @@ export default function CanonicalModelDetails() {
                     <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-[hsl(var(--gold-accent))]">
                       {model.category} · {model.franchise}
                     </p>
-                    <h1 className="mt-3 text-3xl font-black uppercase tracking-[0.08em] leading-tight md:text-4xl">
+                    <h1 className="mt-3 text-2xl font-black uppercase tracking-[0.08em] leading-tight sm:text-3xl md:text-4xl">
                       {model.name}
                     </h1>
                     {model.variantName ? (
