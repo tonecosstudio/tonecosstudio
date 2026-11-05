@@ -256,7 +256,7 @@ export default function CatalogModelsArcade() {
                         setDraft("");
                         changeParams("", category);
                       }}
-                      className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-none hover:bg-[hsl(0,0%,9%)]"
+                      className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-none hover:bg-[hsl(0,0%,9%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                     >
                       <X size={17} aria-hidden="true" />
                     </button>
