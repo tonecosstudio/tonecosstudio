@@ -288,7 +288,7 @@ export default function CatalogArcade() {
               Nenhuma categoria publicada no momento.
             </p>
           ) : (
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="mt-6 grid grid-cols-1 gap-3 min-[320px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
               {visibleCategories.map((category) => {
                 const displayLabel = categoryDisplayLabel(category.id, category.label);
                 const isAnimeCategory = category.id === "animes-desenhos";
@@ -309,7 +309,7 @@ export default function CatalogArcade() {
                         <span
                           className={
                             isAnimeCategory
-                              ? "whitespace-nowrap tracking-tight text-[clamp(0.5rem,3vw,0.875rem)] font-semibold uppercase"
+                              ? "whitespace-nowrap tracking-tight text-sm min-[320px]:text-[clamp(0.625rem,3.2vw,0.875rem)] font-semibold uppercase"
                               : "break-normal text-[clamp(0.75rem,4vw,1rem)] font-semibold uppercase"
                           }
                         >
