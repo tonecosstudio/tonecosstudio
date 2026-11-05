@@ -470,3 +470,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - Nenhuma falha reproduzível nesta inspeção; sem alteração de código ou novo build/deploy. Produção, Worker, D1, R2, DNS e migrations inalterados.
 
 **NEXT_ACTION:** revisar `/universo/marvel-dc/equipes-e-grupos` no mesmo preview em 320/390/768/1024/1440 px, observando títulos longos, imagens e navegação de retorno; reutilizar o componente e a SSOT.
+
+## Rodada 40 — Equipes e Grupos / X-Men responsivos (05/11/2026)
+
+- QA no preview privado vigente [em Equipes e Grupos](https://7e955bb9.tonecosstudio.pages.dev/universo/marvel-dc/equipes-e-grupos), source de código `8f7935495819841e2e77702270165f1108d21798`. A CI [#41998212637](https://github.com/tonecosstudio/tonecosstudio/actions/runs/41998212637) segue verde para esse código; PR #4 draft, HEAD documental `f3dcf1a940181db20156d5087c9f919fd24b5409`. Sem novo build.
+- A raiz da franquia tem 4 pastas e 8 referências; em 320/390/768/1024/1440 px não houve overflow. As grades mudam progressivamente para 1/2/3/4/4 colunas nas pastas e 2/2/3/4/4 nas referências. O breadcrumb e as ações medem 44 px; “Explorar todos os modelos” preserva categoria e franquia.
+- A pasta X-Men lista 26 subpastas e 8 referências; os nomes maiores incluem Charles Xavier, Homem de Gelo e Confrontos. Sem overflow nas cinco larguras; as grades ficam em 1/2/3/4/4 e 2/2/3/4/4 colunas. Breadcrumbs de raiz/franquia e CTA têm 44 px; filtros incluem `folder=x-men`.
+- Na pasta X-Men/Vilões, 10 subpastas e 8 referências se mantêm sem overflow nas mesmas larguras. Grade de pastas 1/2/3/4/4, grade de referências 2/2/3/4/4, três breadcrumbs com 44 px e CTA com categoria/franquia/pasta preservadas. As 8 imagens de referência carregaram, sem falhas.
+- Nenhum defeito reproduzível nesta família compartilhada; sem alterações de código. Produção, Worker, D1, R2, DNS e migrations permanecem inalterados.
+
+**NEXT_ACTION:** revisar a raiz `/universo/marvel-dc` no preview em 320/390/768/1024/1440 px, conferindo a primeira leva de franquias, imagens e busca parcial; aplicar os mesmos componentes/SSOT.
