@@ -6,7 +6,7 @@ import AdminCoins from "./TonecosAdminCoinsPage";
 const USER = "11111111-1111-4111-8111-111111111111";
 const REF = "22222222-2222-4222-8222-222222222222";
 const mocks = vi.hoisted(() => ({ lookup: vi.fn(), credit: vi.fn() }));
-vi.mock("@/services/customer/tonecos-coins-service", () => ({
+vi.mock("@/services/coins/tonecos-coins-service", () => ({
   findTonecosCoinRecipient: mocks.lookup,
   creditTonecosCoins: mocks.credit,
 }));

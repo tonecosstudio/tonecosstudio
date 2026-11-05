@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.getUser,
 }));
-vi.mock("@/services/customer/tonecos-coins-service", () => ({
+vi.mock("@/services/coins/tonecos-coins-service", () => ({
   getMyTonecosCoinBalance: mocks.balance,
   listMyTonecosCoinEntries: mocks.entries,
 }));
