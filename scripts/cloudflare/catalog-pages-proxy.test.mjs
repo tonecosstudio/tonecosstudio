@@ -131,8 +131,9 @@ test("the Worker cannot inject first-party cookie, navigation or site-policy hea
   assert.equal(response.headers.get("ETag"), '"catalog-v2"');
   assert.equal(response.headers.get("Access-Control-Allow-Origin"), "*");
   assert.equal(response.headers.get("X-Content-Type-Options"), "nosniff");
+  assert.equal(response.headers.get("Content-Security-Policy"), "sandbox");
   for (const name of [
-    "Set-Cookie", "Clear-Site-Data", "Refresh", "Content-Security-Policy",
+    "Set-Cookie", "Clear-Site-Data", "Refresh",
     "Content-Disposition", "Location", "Access-Control-Allow-Credentials", "Link",
   ]) {
     assert.equal(response.headers.has(name), false, "unsafe header: " + name);
@@ -159,7 +160,23 @@ test("range responses preserve essential public media headers", async () => {
   assert.equal(response.headers.get("Accept-Ranges"), "bytes");
   assert.equal(response.headers.get("ETag"), '"media-v2"');
   assert.equal(response.headers.get("Cross-Origin-Resource-Policy"), "cross-origin");
+  assert.equal(response.headers.get("Content-Security-Policy"), "sandbox");
   assert.equal(response.headers.has("Content-Disposition"), false);
+});
+
+test("unexpected active HTML from the Worker is sandboxed on the site origin", async () => {
+  for (const path of ["api/catalog", "media/images/example.webp"]) {
+    const io = mockFetch("<script>window.evil = 1</script>", 200, {
+      "Content-Type": "text/html",
+      "Content-Security-Policy": "sandbox allow-scripts allow-same-origin",
+      "Cache-Control": "public, max-age=60",
+    });
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/" + path), io.fetcher,
+    );
+    assert.equal(response.headers.get("Content-Security-Policy"), "sandbox");
+    assert.equal(response.headers.get("X-Content-Type-Options"), "nosniff");
+  }
 });
 
 test("redirects are rejected instead of followed", async () => {

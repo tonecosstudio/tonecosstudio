@@ -101,6 +101,10 @@ export async function proxyCatalogRequest(request, fetcher) {
       if (value !== null) safeHeaders.set(name, value);
     }
     safeHeaders.set("X-Content-Type-Options", "nosniff");
+    // API/media live on our first-party origin. Even if the other publisher
+    // returns text/html or an active image format, navigation must not execute
+    // that response as a privileged same-origin document.
+    safeHeaders.set("Content-Security-Policy", "sandbox");
     // The source Worker must not make failed public requests cacheable on Pages.
     if (response.status >= 400) safeHeaders.set("Cache-Control", "no-store");
     return new Response(response.body, {
