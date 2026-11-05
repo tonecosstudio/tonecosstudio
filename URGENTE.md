@@ -2,16 +2,29 @@
 
 **Auditado em 05/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
 
+## Frontend — página Universo responsiva (05/11/2026)
+
+- **Correção confirmada:** a grade não renderiza a categoria “Todos”; há uma única CTA “Ver todos os modelos”. “Animes e Desenhos” permanece em uma linha e cabe dentro do card, inclusive em 280 px.
+- **QA do preview atual:** rota `/universo` conferida em 280, 320, 390, 768, 1280 e 1920 px. Em todas: sem overflow horizontal, CTA visível, card “Todos” ausente e título em uma linha.
+- **Prévia:** https://c50d9c50.tonecosstudio.pages.dev/universo — deployment `c50d9c50-aad2-4d06-bf02-40954937bbd1`, ambiente `preview`, source SHA `c3f8bda24808df7842ae43ce097c1658988821f4`. Build e deploy Cloudflare Pages SUCCESS.
+- **Quality Gate:** [#42060730907](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42060730907) SUCCESS no source SHA `c3f8bda24808df7842ae43ce097c1658988821f4`.
+- **Base/HEAD:** PR #4 draft, branch `integration/tonecosstudio-canonical-20261101`; o commit atual inclui o ajuste responsivo do rodapé `fac80d6b5990931207f8f22af3c4abab32cccd98`.
+- **NEXT_ACTION:** avançar para `/contato` e continuar a auditoria das rotas públicas nas larguras móveis e desktop.
+- **DO_NOT_REPEAT:** manter “Animes e Desenhos” em uma linha, não restaurar o card “Todos”, não criar nova branch/PR, não publicar em produção e não alterar Worker/D1/R2.
+
+---
+
 ## Frontend — navegação do rodapé da Home em telas estreitas (05/11/2026)
 
-- **Correção no código:** `src/pages/LandingPage.tsx` agora limita a navegação do rodapé à largura interna em mobile e permite que os quatro links quebrem em linhas; em `sm`, restaura a navegação em uma linha. Cada botão mantém alvo mínimo de 44 px.
+- **Correção no código:** `src/pages/LandingPage.tsx` limita a navegação do rodapé à largura interna em mobile e permite que os quatro links quebrem em linhas; em `sm`, restaura a navegação em uma linha. Cada botão mantém alvo mínimo de 44 px.
 - **Evidência antes do ajuste:** em 280 px, a navegação media 316 px, começava em x=-21 e terminava em x=295, recortando links; o documento escondia a rolagem e mascarava o problema.
-- **Quality Gate:** GitHub Actions [#42058621321](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42058621321) SUCCESS no código `fac80d6b5990931207f8f22af3c4abab32cccd98`.
-- **Prévia em processamento:** build Cloudflare limitado ao branch `integration/tonecosstudio-canonical-20261101`; produção continua desativada. O app Cloudflare Access `*.tonecosstudio.pages.dev` mantém a proteção das prévias. A configuração de preview será restaurada para `none` após confirmar o deployment.
-- **Base/HEAD:** base `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; código `fac80d6b5990931207f8f22af3c4abab32cccd98`; branch e PR #4 draft.
-- **NEXT_ACTION:** confirmar build/deploy, validar o rodapé em 280/320/390/768/1280/1920 px e restaurar `preview_deployment_setting=none`; então atualizar este checkpoint com o resultado.
+- **QA no preview atual:** Home validada em 280, 320, 390, 768, 1280 e 1920 px. Em 280 e 320 os links ocupam duas linhas dentro do rodapé; a partir de 390 cabem em uma linha. Todos permanecem dentro da navegação, sem overflow horizontal.
+- **Quality Gate:** [#42058621321](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42058621321) SUCCESS para o commit de código `fac80d6b5990931207f8f22af3c4abab32cccd98`; o source mais recente `c3f8bda24808df7842ae43ce097c1658988821f4` também passou no Quality Gate [#42060730907](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42060730907).
+- **Prévia atual:** https://c50d9c50.tonecosstudio.pages.dev/ — deployment `c50d9c50-aad2-4d06-bf02-40954937bbd1`, source SHA `c3f8bda24808df7842ae43ce097c1658988821f4`; Cloudflare Pages build e deploy SUCCESS.
+- **Cloudflare:** `preview_deployment_setting=none` e branch include `*` restaurados; produção continua desativada. O Access das prévias segue ativo. Worker/D1/R2 não foram alterados.
+- **Base/HEAD:** base `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; PR #4 draft, branch `integration/tonecosstudio-canonical-20261101`.
+- **NEXT_ACTION:** continuar a revisão das demais rotas públicas, iniciando por `/contato`.
 - **DO_NOT_REPEAT:** não deixar preview automático habilitado, não liberar produção, não tocar em Worker/D1/R2, não ocultar conteúdo móvel com overflow e não criar branch/PR nova.
-
 ---
 
 
