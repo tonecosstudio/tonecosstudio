@@ -2,6 +2,20 @@
 
 **Auditado em 05/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
 
+## Frontend — Contato público responsivo (05/11/2026)
+
+- **Ajuste:** em `src/pages/PublicCatalogContact.tsx`, a seção agora se chama “Contato direto”, evitando repetir o título do hero; os links de e-mail/modelos têm hover e foco visível para navegação por teclado. Mantidos alvos de toque de 44 px.
+- **QA no preview:** `/contato` validada em 280, 320, 390, 768, 1280 e 1920 px. Sem overflow horizontal; “Contato direto” permanece em uma linha; CTA de e-mail mede 143 × 44 px e cabe na tela; rodapé dentro da largura do documento.
+- **Preview privado:** https://d693906d.tonecosstudio.pages.dev/contato — deployment `d693906d-bbac-4418-b533-72cf3a590bd8`, source SHA `e28c8dae7359ae9f82374814d201eb5ede878f61`, build e deploy Cloudflare Pages SUCCESS.
+- **Quality Gate:** [#42063498322](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42063498322) SUCCESS no mesmo commit.
+- **Cloudflare:** `preview_deployment_setting=none`, include `*`, produção desativada e Access das prévias mantido. Worker/D1/R2 não foram alterados.
+- **PR:** #4 permanece aberta e draft na branch `integration/tonecosstudio-canonical-20261101`.
+- **NEXT_ACTION:** conferir `/sobre` no preview atual e continuar a revisão das rotas públicas.
+- **DO_NOT_REPEAT:** preservar o shell público somente leitura; manter navegação por teclado visível, sem publicar em produção, criar outra PR ou alterar Worker/D1/R2.
+
+---
+
+
 ## Frontend — página Universo responsiva (05/11/2026)
 
 - **Correção confirmada:** a grade não renderiza a categoria “Todos”; há uma única CTA “Ver todos os modelos”. “Animes e Desenhos” permanece em uma linha e cabe dentro do card, inclusive em 280 px.
@@ -9,7 +23,7 @@
 - **Prévia:** https://c50d9c50.tonecosstudio.pages.dev/universo — deployment `c50d9c50-aad2-4d06-bf02-40954937bbd1`, ambiente `preview`, source SHA `c3f8bda24808df7842ae43ce097c1658988821f4`. Build e deploy Cloudflare Pages SUCCESS.
 - **Quality Gate:** [#42060730907](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42060730907) SUCCESS no source SHA `c3f8bda24808df7842ae43ce097c1658988821f4`.
 - **Base/HEAD:** PR #4 draft, branch `integration/tonecosstudio-canonical-20261101`; o commit atual inclui o ajuste responsivo do rodapé `fac80d6b5990931207f8f22af3c4abab32cccd98`.
-- **NEXT_ACTION:** avançar para `/contato` e continuar a auditoria das rotas públicas nas larguras móveis e desktop.
+- **NEXT_ACTION:** avançar para `/sobre` e conferir conteúdo, links e breakpoints no preview atual.
 - **DO_NOT_REPEAT:** manter “Animes e Desenhos” em uma linha, não restaurar o card “Todos”, não criar nova branch/PR, não publicar em produção e não alterar Worker/D1/R2.
 
 ---
@@ -23,7 +37,7 @@
 - **Prévia atual:** https://c50d9c50.tonecosstudio.pages.dev/ — deployment `c50d9c50-aad2-4d06-bf02-40954937bbd1`, source SHA `c3f8bda24808df7842ae43ce097c1658988821f4`; Cloudflare Pages build e deploy SUCCESS.
 - **Cloudflare:** `preview_deployment_setting=none` e branch include `*` restaurados; produção continua desativada. O Access das prévias segue ativo. Worker/D1/R2 não foram alterados.
 - **Base/HEAD:** base `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; PR #4 draft, branch `integration/tonecosstudio-canonical-20261101`.
-- **NEXT_ACTION:** continuar a revisão das demais rotas públicas, iniciando por `/contato`.
+- **NEXT_ACTION:** conferir `/sobre`, depois seguir para as demais rotas conforme o checkpoint mais recente.
 - **DO_NOT_REPEAT:** não deixar preview automático habilitado, não liberar produção, não tocar em Worker/D1/R2, não ocultar conteúdo móvel com overflow e não criar branch/PR nova.
 ---
 
