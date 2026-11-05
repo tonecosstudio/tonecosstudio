@@ -371,7 +371,7 @@ export default function LandingPage() {
               <button
                 key={link.href}
                 onClick={() => navigate(link.href)}
-                className="text-[8px] text-[hsl(0,0%,35%)] hover:text-[hsl(var(--gold-accent))] tracking-wider transition-colors uppercase"
+                className="inline-flex min-h-11 items-center text-[8px] text-[hsl(0,0%,35%)] hover:text-[hsl(var(--gold-accent))] tracking-wider transition-colors uppercase"
                 style={{ fontFamily: "'Press Start 2P', monospace" }}
               >
                 {link.label}
