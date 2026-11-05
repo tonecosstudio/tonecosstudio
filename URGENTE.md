@@ -550,3 +550,17 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar `/universo/animes-desenhos/naruto` no preview em telas móveis e desktop, incluindo miniaturas, pastas e retorno às fichas; seguir na mesma PR.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview atual; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
+
+## Rodada 45 — franquias de Animes e Desenhos no mobile e desktop (05/11/2026)
+
+- Preview usado: [Universo](https://494e0ae6.tonecosstudio.pages.dev/universo), deployment `494e0ae6-5dea-4b19-9487-37a80f9daa6d`, código `fe13cf80fd41248dcaf7dbdef391e91d49f2bbc0`; build/deploy já aprovados. Sem novo build nesta rodada.
+- `/universo/animes-desenhos` confirmou 24 franquias na primeira leva, duas colunas em 320 px, documento e scroll com 314 px; CTA “Ver todos os modelos” presente.
+- `Cavaleiros do Zodíaco`: 23 pastas e 8 referências; em 280/320/390/768/1024/1440 px não houve overflow. Pastas em 1/1/2/3/4/4 colunas e referências em 2/2/2/3/4/4. O maior nome de pasta, “Shura de Capricórnio”, fica dentro do limite de duas linhas. As 8 imagens de referência carregaram.
+- A pasta `folder=afrodite` lista 2 modelos. Raiz, pasta e CTA medem 44 px; o CTA preserva categoria, franquia e pasta. A ficha de Afrodite retorna ao caminho exato; imagem carregada (1600 px) e seleção permaneceu vazia. Pasta e ficha sem overflow nas seis larguras.
+- `Demon Slayer`: 17 pastas e 8 referências; em 280/320/390/768/1024/1440 px sem overflow. Pastas em 1/1/2/3/4/4 colunas e referências em 2/2/2/3/4/4. O maior nome de pasta, “Sanemi Shinazugawa”, permanece dentro de duas linhas.
+- `folder=sanemi-shinazugawa` lista 1 referência; breadcrumbs e CTA medem 44 px e preservam o caminho. A ficha retorna à pasta exata, sem overflow nas seis larguras; imagem carregada (794 px) e seleção permaneceu vazia.
+- Sem defeito reproduzível nesta família; não foi necessária mudança de código. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** revisar `/universo/animes-desenhos/as-tartarugas-ninja` no mesmo preview em 280/320/390/768/1024/1440 px; conferir nomes, pastas, miniaturas e retorno às fichas.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
