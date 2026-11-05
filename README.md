@@ -1,6 +1,6 @@
-# Tonecos Studio
+# TONART Studio
 
-O site oficial Tonecos Studio usa **GitHub Tonecos + Cloudflare Pages da conta Tonecos**. **Vercel não é a hospedagem escolhida**; existe apenas como projeto legado da conta Washington. Estado em 04/11/2026: **MVP do catálogo somente leitura em homologação; NO-GO para lançamento público**.
+O site oficial TONART Studio usa **GitHub Tonecos + Cloudflare Pages da conta Tonecos**. **Vercel não é a hospedagem escolhida**; existe apenas como projeto legado da conta Washington. Estado em 04/11/2026: **MVP do catálogo somente leitura em homologação; NO-GO para lançamento público**.
 
 ## Quem é dono de quê
 
