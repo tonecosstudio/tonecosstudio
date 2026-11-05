@@ -256,4 +256,21 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - Preview privado: [abrir Privacidade](https://3c28acd5.tonecosstudio.pages.dev/privacidade), deployment `3c28acd5-66b2-47e0-acc4-3faebea77313`, ambiente `preview`, commit de código `4a51b38cfaac14c5bdff6d987e25f6e6d306a9aa`; build/deploy SUCCESS.
 - QA em 320/390/768/1440 px: sem overflow; documento com 314/384/762/1434 px; parágrafos dos cards com 196/266/608/742 px e no máximo 9/6/3/2 linhas, respectivamente. Ações medem 198×48 px (“Ver Universo”) e 116×44 px (“Início”); console sem erros.
 - Captura automática de tela indisponível por timeout no navegador desta sessão; árvore acessível, conteúdo e medidas de layout foram conferidos. Produção, Worker, D1, R2 e DNS inalterados. PR #4 segue draft.
-- **NEXT_ACTION:** continuar a revisão da próxima superfície do catálogo na mesma PR, sem abrir branches/PRs ou gerar build por atualização documental.
+- **NEXT_ACTION concluída:** `/modelos` e o painel Minha seleção foram revisados nas Rodadas 20–21; seguir pela próxima área com pendência concreta no catálogo, sem build só por documentação.
+
+
+## Rodada 20 — grade, filtros e capas em /modelos (04/11/2026)
+
+- QA na página do catálogo: 36 cards na primeira página, paginação mantida e seleção vazia por padrão. Em 320/390/768/1440 px: sem overflow e grade de 2/2/4/5 colunas.
+- As imagens das capas carregam em `cover` no quadro 2:3. Busca e selects medem 48 px; o campo de busca por franquia mede 44 px.
+- Os filtros são carregados sob demanda quando abertos. O select apresentou as seis categorias publicadas; “Marvel & DC” atualizou o parâmetro da URL e os resultados, e limpar restaurou `/modelos`.
+- Preview privado de QA: [Modelos](https://3c28acd5.tonecosstudio.pages.dev/modelos), deployment `3c28acd5-66b2-47e0-acc4-3faebea77313`, build/deploy SUCCESS. Console sem erros; nenhuma seleção foi deixada salva.
+
+## Rodada 21 — alvo de toque do painel Minha seleção (04/11/2026)
+
+- O botão de fechar do componente compartilhado `SheetContent` media 16×16 px. `src/components/ui/sheet.tsx` agora oferece alvo de 44×44 px, preserva o foco visível e expõe o rótulo acessível “Fechar”.
+- Preview privado: [abrir Modelos](https://6fa8ce1b.tonecosstudio.pages.dev/modelos), deployment `6fa8ce1b-6995-41b3-a2a8-b10c2bb88a70`, ambiente `preview`, commit de código `77856cba0e971948d2b2ee2d142139ccdf3b60a5`; build/deploy SUCCESS.
+- Pipeline do Pages: typecheck, catálogo MVP `78/78`, verificação monorepo `9/9`, segurança/proxy/SEO `28/28`, Vite build e compilação da Pages Function concluídos.
+- QA com o painel aberto em 320/390/768/1440 px: botão “Fechar” 44×44 px, com offset de 16 px do topo e da direita; painel sem overflow e com 320/390 px em mobile e 448 px em desktop. Fechar encerra o painel; seleção permaneceu vazia; console sem erros.
+- Produção, Worker, D1, R2 e DNS inalterados. PR #4 segue draft.
+- **NEXT_ACTION:** continuar a inspeção da próxima área pública do catálogo na mesma PR e só gerar nova prévia para alterações de código.
