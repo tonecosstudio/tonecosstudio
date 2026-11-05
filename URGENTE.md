@@ -2,6 +2,18 @@
 
 **Auditado em 05/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
 
+## Frontend — navegação do rodapé da Home em telas estreitas (05/11/2026)
+
+- **Correção no código:** `src/pages/LandingPage.tsx` agora limita a navegação do rodapé à largura interna em mobile e permite que os quatro links quebrem em linhas; em `sm`, restaura a navegação em uma linha. Cada botão mantém alvo mínimo de 44 px.
+- **Evidência antes do ajuste:** em 280 px, a navegação media 316 px, começava em x=-21 e terminava em x=295, recortando links; o documento escondia a rolagem e mascarava o problema.
+- **Quality Gate:** GitHub Actions [#42058621321](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42058621321) SUCCESS no código `fac80d6b5990931207f8f22af3c4abab32cccd98`.
+- **Prévia em processamento:** build Cloudflare limitado ao branch `integration/tonecosstudio-canonical-20261101`; produção continua desativada. O app Cloudflare Access `*.tonecosstudio.pages.dev` mantém a proteção das prévias. A configuração de preview será restaurada para `none` após confirmar o deployment.
+- **Base/HEAD:** base `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; código `fac80d6b5990931207f8f22af3c4abab32cccd98`; branch e PR #4 draft.
+- **NEXT_ACTION:** confirmar build/deploy, validar o rodapé em 280/320/390/768/1280/1920 px e restaurar `preview_deployment_setting=none`; então atualizar este checkpoint com o resultado.
+- **DO_NOT_REPEAT:** não deixar preview automático habilitado, não liberar produção, não tocar em Worker/D1/R2, não ocultar conteúdo móvel com overflow e não criar branch/PR nova.
+
+---
+
 
 ## Frontend — título fluido e conferência mobile da home (05/11/2026)
 
