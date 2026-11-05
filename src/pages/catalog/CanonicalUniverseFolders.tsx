@@ -5,6 +5,7 @@ import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImag
 import { ArcadeCard } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
+import { formatModelCountLabel } from "@/lib/catalog-model-count";
 
 type Gateway = ReturnType<typeof createPublicCatalogGateway>;
 
@@ -88,7 +89,7 @@ export function CanonicalUniverseFolders({
                 <Folder className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
                 <span className="line-clamp-2 font-semibold uppercase">{folder.label}</span>
                 <span className="mt-auto flex items-center justify-between text-xs text-[hsl(0,0%,56%)]">
-                  {folder.count} {folder.count === 1 ? "modelo" : "modelos"} <ArrowRight size={16} aria-hidden="true" />
+                  {formatModelCountLabel(folder.count)} <ArrowRight size={16} aria-hidden="true" />
                 </span>
               </Link>
             </ArcadeCard>
