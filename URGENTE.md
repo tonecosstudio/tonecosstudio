@@ -303,3 +303,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - **Commits:** `3ba44a0` (preflight), `aab4f4d` (testes), `230623e` (acionamento do CI existente). PR #4 segue open/draft, base `fdd2992`. O gate na revisão `230623e` foi iniciado em [GitHub Actions #41969042567](https://github.com/tonecosstudio/tonecosstudio/actions/runs/41969042567); **resultado ainda pendente no momento deste registro**.
 - **NEXT_ACTION:** verificar os testes offline desse SHA. M5 segue BLOCKED até GO específico, controle exclusivo do writer Washington, evidência real de rollback e credenciais autorizadas; nenhuma promoção antecipada.
 - **DO_NOT_REPEAT:** não abrir PR/branch extra, não refazer build frontend só por docs, não consultar D1/R2, não implantar Worker nem alterar main ou produção.
+
+## Rodada 24 — paginação e alvos de busca em /modelos (05/11/2026)
+
+- **Achado e correção:** o botão “Limpar busca” media 36×36 px. Em `src/pages/CatalogModelsArcade.tsx`, agora mede 44×44 px e tem contorno dourado de foco por teclado, com 2 px.
+- **Commit de código:** `411088b71232221acac59014491667e9ed95cfbd` (`fix: enlarge mobile clear-search target`).
+- **Preview privado:** [Modelos filtrado](https://ea55cd12.tonecosstudio.pages.dev/modelos?q=batman&category=marvel-dc), deployment `ea55cd12-7a7a-4ae6-93b2-469b91b8cad9`, ambiente `preview`; build e deploy SUCCESS no SHA do código. O build configurado executou typecheck, `catalog:mvp:test` e `npm run build`.
+- **QA da página 1 e da página 2:** em 320/390/768/1024/1440 px, documento sem overflow (314/384/762/1018/1434 px), grade 2/2/4/4/5 colunas e 36 modelos por página. Limpar busca mede 44 px; paginação inferior mede 48 px. Não foram encontrados alvos abaixo de 44 px.
+- **Fluxo conferido:** busca “batman” + categoria Marvel & DC chegaram à página 2 sem perder os parâmetros; limpar a busca por Enter removeu `q` e preservou `category=marvel-dc`, voltando à página 1. O foco do teclado no botão mostrou contorno dourado sólido de 2 px.
+- Produção, Worker, D1, R2 e DNS inalterados. PR #4 segue open/draft; preview manual permanece privado.
+- **NEXT_ACTION:** revisar os estados vazio e inválido da busca em 320–768 px; corrigir somente problemas reproduzíveis e manter o próximo passo na mesma PR.
