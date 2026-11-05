@@ -28,26 +28,6 @@ export interface TransactionStats {
   last_transaction?: CoinsTransaction;
 }
 
-export type LegacyTransactionType =
-  | "purchase"
-  | "spend"
-  | "refund"
-  | "bonus"
-  | "subscription_credit"
-  | "adjustment";
-
-export interface LegacyCoinTransaction {
-  id: string;
-  user_id: UserId;
-  amount: number;
-  transaction_type: LegacyTransactionType;
-  reference_id?: string | null;
-  reference_type?: string | null;
-  description: string;
-  metadata?: Record<string, unknown> | null;
-  created_at: string;
-}
-
 type CoinTransactionDbType = "purchase" | "spend" | "refund" | "bonus" | "adjustment";
 
 type CoinTransactionRow = {
@@ -244,22 +224,3 @@ export async function listRecentCoinTransactions(
   return ((data || []) as CoinTransactionRow[]).map(toCoinsTransaction);
 }
 
-export async function listLegacyCoinTransactions(
-  userId?: UserId | null,
-  limit = 50,
-): Promise<LegacyCoinTransaction[]> {
-  if (!userId) return [];
-
-  await assertCurrentUserId(userId);
-
-  const { data, error } = await supabase
-    .from("coin_transactions")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) throw error;
-
-  return (data || []) as LegacyCoinTransaction[];
-}
