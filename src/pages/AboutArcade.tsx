@@ -87,12 +87,12 @@ export default function AboutArcade() {
 
         <div className="grid md:grid-cols-2 gap-5">
           <ArcadeCard>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 flex items-center justify-center border border-[hsl(var(--gold-accent)/0.4)] bg-[hsl(var(--gold-accent)/0.1)]">
                   <Zap className="w-5 h-5 text-[hsl(var(--gold-accent))]" />
                 </div>
-                <h3 className="text-[clamp(1.125rem,5vw,1.25rem)] font-black tracking-[0.1em] leading-tight" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
+                <h3 className="text-[clamp(0.9375rem,5vw,1.25rem)] font-black tracking-[0.1em] leading-tight" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
                   EXPERIÊNCIA TONART
                 </h3>
               </div>
@@ -108,12 +108,12 @@ export default function AboutArcade() {
           </ArcadeCard>
 
           <ArcadeCard>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 flex items-center justify-center border border-[hsl(280,80%,55%)/0.4] bg-[hsl(280,80%,55%)/0.1]">
                   <Palette className="w-5 h-5 text-[hsl(280,80%,65%)]" />
                 </div>
-                <h3 className="text-[clamp(1.125rem,5vw,1.25rem)] font-black tracking-[0.1em] leading-tight" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
+                <h3 className="text-[clamp(0.9375rem,5vw,1.25rem)] font-black tracking-[0.1em] leading-tight" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
                   CRIAÇÃO SOB ENCOMENDA
                 </h3>
               </div>
