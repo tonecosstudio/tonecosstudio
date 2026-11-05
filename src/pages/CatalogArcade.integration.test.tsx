@@ -97,14 +97,12 @@ describe("Tonecos canonical Universe discovery", () => {
 
     expect(await screen.findByRole("link", { name: "Ver todos os modelos" })).toHaveAttribute("href", "/modelos");
     expect(screen.queryByText("Todos", { exact: true })).not.toBeInTheDocument();
-    expect(screen.getByText("Animes e Desenhos", { exact: true })).toHaveClass(
+    const animeTitle = await screen.findByText("Animes e Desenhos", { exact: true });
+    expect(animeTitle).toHaveClass(
       "whitespace-nowrap",
       "text-[clamp(0.5625rem,2.8vw,0.75rem)]",
     );
-    expect(screen.getByText("Animes e Desenhos").closest("a")).toHaveAttribute(
-      "href",
-      "/universo/animes-desenhos",
-    );
+    expect(animeTitle.closest("a")).toHaveAttribute("href", "/universo/animes-desenhos");
   });
 
   it("searches beyond the first 24 franchises only on explicit submit", async () => {
