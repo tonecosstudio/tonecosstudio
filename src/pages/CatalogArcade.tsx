@@ -237,7 +237,7 @@ export default function CatalogArcade() {
               gateway={gateway}
             />
           ) : activeQuery.isPending ? (
-            <p role="status" className="mt-6 p-8 text-sm">Carregando categorias publicadas…</p>
+            <p role="status" className="mt-6 p-8 text-sm">{themeKey ? "Carregando franquias publicadas…" : "Carregando categorias publicadas…"}</p>
           ) : activeQuery.isError ? (
             <div role="alert" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
               Não foi possível consultar o acervo oficial.
