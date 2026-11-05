@@ -11,7 +11,9 @@
 - **Preview privado:** https://integration-tonecosstudio-ca.tonecosstudio.pages.dev/universo/animes-desenhos — deployment `03b1f0ff-89cb-453a-bec3-d5d8fc5a8541`, ambiente `preview`, source SHA `676ed90cdebadd2fa9eac8c363987ee879324abe`, SUCCESS.
 - **Cloudflare:** produção permanece desativada; `preview_deployment_setting=none` preservado. A prévia foi criada manualmente para a branch e segue protegida por Access. Worker, D1 e R2 não foram alterados.
 - **PR/base/HEAD:** PR #4 permanece aberta e draft; base `main` em `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; HEAD de código validado `676ed90cdebadd2fa9eac8c363987ee879324abe` na branch `integration/tonecosstudio-canonical-20261101`.
-- **NEXT_ACTION:** revisar `/modelos` no preview atual, começando por busca, filtros, paginação e ficha em 280–414 px.
+- **QA do catálogo:** `/modelos` conferido em 280, 320, 375, 414, 768, 1024, 1280 e 1920 px. Sem overflow; 36 cards; grade de duas colunas no mobile e progressão até seis no desktop; controles de busca/filtro e paginação permanecem dentro da viewport.
+- **QA da ficha:** `/modelos/nier-10h-nier` validada nas mesmas larguras. A imagem carregou em `object-fit: contain`, permaneceu dentro do quadro e a página não teve overflow; controles mediram ao menos 44 px.
+- **NEXT_ACTION:** revisar `/universo/animes-desenhos/dragon-ball` em mobile e larguras maiores, incluindo pastas e miniaturas.
 - **DO_NOT_REPEAT:** manter o placeholder compacto e a validação de 3 caracteres; preservar alvos de toque de 44 px ou mais; não alterar `main`, produção, DNS, Worker, D1, R2 ou migrations; não reativar deploy automático nem reconstruir por mudança somente documental.
 
 ---
