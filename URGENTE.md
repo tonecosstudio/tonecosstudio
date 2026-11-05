@@ -502,3 +502,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 
 **NEXT_ACTION:** continuar em `/universo/animes-desenhos/dragon-ball`, revisar pastas e modelos no mobile/desktop e seguir pelas próximas franquias.
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview atual; não gerar build para documentação isolada; não tocar na `main`, produção ou Worker.
+
+## Rodada 41 — título de categoria em telas estreitas (05/11/2026)
+
+- **Correção de frontend:** em `src/pages/CatalogArcade.tsx`, a fonte de “Animes e Desenhos” agora escala de 8 px a 14 px conforme a largura, mantendo `white-space: nowrap`. O card agregado “Todos” segue filtrado; a ação “Ver todos os modelos” permanece única. O teste de integração existente acompanha a classe responsiva.
+- **Código publicado em preview:** commit `4009d3aee8a22d4dc7bdfc0b9202cf03b1259c1d`, branch `integration/tonecosstudio-canonical-20261101`, PR #4 draft, base `main` `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`.
+- **Preview privado novo:** [abrir Universo](https://28272bc2.tonecosstudio.pages.dev/universo), Cloudflare Pages deployment `28272bc2-4a5f-48ea-b2e4-1c045ef90251`, ambiente `preview`, build e deploy **SUCCESS**. O build usa `typecheck`, `catalog:mvp:test` e `build`.
+- **QA visual:** 280/320/360/390/768/1280 px, sem overflow horizontal. O título cabe integralmente no espaço interno do cartão em 280 px (`scrollWidth=clientWidth=89)); em 320–1280 px também permanece numa linha. Card “Todos” ausente e uma CTA “Ver todos os modelos”.
+- A URL antiga `ef8ab5fb` servia conteúdo anterior; usar a nova URL de preview para esta revisão. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** continuar a revisão responsiva em `/universo/animes-desenhos/dragon-ball`, conferir pastas/modelos e navegação nos breakpoints móveis e desktop; seguir página por página na mesma PR.
+
+**DO_NOT_REPEAT:** não apresentar `ef8ab5fb` como preview atual; não criar novo preview para documentação isolada; não alterar `main`, produção ou Worker.
