@@ -3,6 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import { isPasswordPolicyCompliant } from "@/config/auth";
+import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import { sendPasswordResetEmail } from "@/services/auth/auth-session-service";
 
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 type AccountProfile = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Row"];
@@ -39,6 +41,15 @@ function validateSignInCredentials(email: string, password: string) {
   return { email: normalizedEmail, password };
 }
 
+function originRedirect(path: string): string {
+  if (typeof window === "undefined" || !window.location.origin ||
+      (window.location.protocol !== "https:" &&
+       !(import.meta.env.DEV && window.location.hostname === "localhost"))) {
+    throw new Error("tonecos_auth_redirect_unavailable");
+  }
+  return new URL(path, window.location.origin).toString();
+}
+
 /** The only identity provider for Tonecos is Supabase Auth in the Tonecos project. */
 export async function registerTonecosAccount(input: {
   email: string; password: string; fullName: string;
@@ -47,7 +58,10 @@ export async function registerTonecosAccount(input: {
   const credentials = validateRegistrationCredentials(input.email, input.password);
   const fullName = cleanText(input.fullName, 160, true)!;
   const { data, error } = await tonecos.auth.signUp({
-    ...credentials, options: { data: { full_name: fullName } },
+    ...credentials, options: {
+      data: { full_name: fullName },
+      emailRedirectTo: originRedirect(TONECOS_COMMERCIAL_ROUTES.login),
+    },
   });
   if (error) throw error;
   return {
@@ -110,4 +124,30 @@ export async function updateMyTonecosProfile(input: {
     .select("id,email,full_name,phone,created_at,updated_at").single();
   if (error) throw error;
   return data;
+}
+
+/** Delegates rate-limiting to the existing canonical Supabase Auth service. */
+export async function requestTonecosPasswordReset(email: string): Promise<void> {
+  assertTonecosCommercialEnabled();
+  const normalized = validateEmail(email);
+  await sendPasswordResetEmail({
+    email: normalized,
+    redirectTo: originRedirect(TONECOS_COMMERCIAL_ROUTES.recovery + "?action=update"),
+  });
+}
+
+/** Recovered sessions are verified by Supabase Auth, never by browser query params. */
+export async function completeTonecosPasswordRecovery(password: string): Promise<void> {
+  assertTonecosCommercialEnabled();
+  if (typeof password !== "string" || password.length > 1024 ||
+      !isPasswordPolicyCompliant(password)) {
+    throw new Error("tonecos_recovery_password_invalid");
+  }
+  const { data, error } = await tonecos.auth.getUser();
+  if (error) throw error;
+  if (!data.user) throw new Error("tonecos_recovery_session_required");
+  const result = await tonecos.auth.updateUser({ password });
+  if (result.error) throw result.error;
+  const signedOut = await tonecos.auth.signOut();
+  if (signedOut.error) throw signedOut.error;
 }

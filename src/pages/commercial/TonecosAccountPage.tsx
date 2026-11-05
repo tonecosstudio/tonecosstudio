@@ -168,6 +168,10 @@ export default function TonecosAccountPage() {
                   autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   value={password} onChange={(e) => setPassword(e.target.value)} />
               </label>
+              {mode === "login" && <div className="text-right">
+                <Link className="text-xs text-[hsl(var(--gold-accent))] underline underline-offset-4"
+                  to={TONECOS_COMMERCIAL_ROUTES.recovery}>Esqueci minha senha</Link>
+              </div>}
               {mode === "signup" && <p className="text-xs text-white/55">
                 Use pelo menos 12 caracteres, incluindo maiúscula, minúscula, número e símbolo.
               </p>}

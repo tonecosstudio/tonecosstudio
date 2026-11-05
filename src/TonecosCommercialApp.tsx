@@ -7,6 +7,7 @@ import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-auth
 import TonecosCommercialNav from "@/pages/commercial/TonecosCommercialNav";
 
 const Account = lazy(() => import("@/pages/commercial/TonecosAccountPage"));
+const Recovery = lazy(() => import("@/pages/commercial/TonecosPasswordRecoveryPage"));
 const Request = lazy(() => import("@/pages/commercial/TonecosQuoteRequestPage"));
 const Quotes = lazy(() => import("@/pages/commercial/TonecosMyQuotesPage"));
 const AdminQuotes = lazy(() => import("@/pages/commercial/TonecosAdminQuotesPage"));
@@ -16,6 +17,7 @@ const commercialRoutes: ReactNode = (
   <>
     <Route path={TONECOS_COMMERCIAL_ROUTES.login} element={<Account />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.account} element={<Account />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.recovery} element={<Recovery />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.request} element={<Request />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.history} element={<Quotes />} />
     {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&

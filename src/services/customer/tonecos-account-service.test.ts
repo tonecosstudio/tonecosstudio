@@ -2,11 +2,13 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import {
   registerTonecosAccount, signInTonecosAccount, signOutTonecosAccount,
   getMyTonecosProfile, updateMyTonecosProfile,
+  requestTonecosPasswordReset, completeTonecosPasswordRecovery,
 } from "./tonecos-account-service";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const mocks = vi.hoisted(() => ({
   signUp: vi.fn(), signInWithPassword: vi.fn(), signOut: vi.fn(), getUser: vi.fn(), from: vi.fn(),
+  updateUser: vi.fn(), sendPasswordResetEmail: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { auth: {
@@ -14,7 +16,11 @@ vi.mock("@/integrations/supabase/client", () => ({
     signInWithPassword: mocks.signInWithPassword,
     signOut: mocks.signOut,
     getUser: mocks.getUser,
+    updateUser: mocks.updateUser,
   }, from: mocks.from },
+}));
+vi.mock("@/services/auth/auth-session-service", () => ({
+  sendPasswordResetEmail: mocks.sendPasswordResetEmail,
 }));
 beforeEach(() => {
   vi.clearAllMocks();
@@ -25,6 +31,33 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("Tonecos authenticated MVP account", () => {
+
+  it("sends password reset through existing rate-limited service to current Tonecos origin", async () => {
+    mocks.sendPasswordResetEmail.mockResolvedValue(undefined);
+    await expect(requestTonecosPasswordReset("  CLIENT@EXAMPLE.COM ")).resolves.toBeUndefined();
+    expect(mocks.sendPasswordResetEmail).toHaveBeenCalledWith({
+      email: "client@example.com",
+      redirectTo: expect.stringMatching(/\/recuperar-senha\?action=update$/),
+    });
+  });
+
+  it("rejects password recovery without a verified Supabase session", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    await expect(completeTonecosPasswordRecovery("StrongPass123!"))
+      .rejects.toThrow("tonecos_recovery_session_required");
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+    await expect(completeTonecosPasswordRecovery("weak"))
+      .rejects.toThrow("tonecos_recovery_password_invalid");
+  });
+
+  it("updates the password after token verification and signs out to require fresh login", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
+    mocks.updateUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
+    mocks.signOut.mockResolvedValue({ error: null });
+    await expect(completeTonecosPasswordRecovery("StrongPass123!")).resolves.toBeUndefined();
+    expect(mocks.updateUser).toHaveBeenCalledExactlyOnceWith({ password: "StrongPass123!" });
+    expect(mocks.signOut).toHaveBeenCalledTimes(1);
+  });
   it("registers with Supabase Auth only; confirmation is explicit", async () => {
     mocks.signUp.mockResolvedValue({ data: { user: { id: USER }, session: null }, error: null });
     await expect(registerTonecosAccount({
@@ -32,7 +65,7 @@ describe("Tonecos authenticated MVP account", () => {
     })).resolves.toEqual({ userId: USER, emailConfirmationRequired: true });
     expect(mocks.signUp).toHaveBeenCalledWith({
       email: "client@example.com", password: "StrongPass123!",
-      options: { data: { full_name: "Cliente" } },
+      options: { data: { full_name: "Cliente" }, emailRedirectTo: expect.stringMatching(/\/login$/) },
     });
     expect(mocks.from).not.toHaveBeenCalled();
   });
