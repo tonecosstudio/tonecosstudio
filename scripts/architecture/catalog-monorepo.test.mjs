@@ -67,15 +67,29 @@ test('M1 deploy tooling inventory is pinned without authorizing a second pipelin
     ['config/catalog-schema-contract.json','tsconfig.worker.json','wrangler.jsonc']);
   assert.ok(Object.values(origin.apiBuildConfigBlobs).every(v => sha.test(v)));
   assert.equal(origin.apiDeployPipeline, '.github/workflows/cloudflare.yml');
+  assert.equal(origin.apiDeployWorkflowId, 371358484, 'Source publisher workflow identity is pinned');
   assert.equal(contract.migration.targetWorkerReleaseEnabled, false);
 });
 
 test('only the existing Cloudflare resources may serve requests', () => {
   assert.equal(contract.runtime.cloudflarePages, 'tonecosstudio');
+  assert.equal(contract.runtime.cloudflareAccountId, '8827c547d6def5ee5b9ca550fdd5680a');
   assert.equal(contract.runtime.worker, 'tonecos-catalogo-api');
   assert.equal(contract.runtime.pagesServiceBinding, 'CATALOG_WORKER');
   assert.equal(contract.runtime.d1, 'tonecos-catalogo');
   assert.equal(contract.runtime.r2, 'tonecos-catalogo-media');
+  const worker = JSON.parse(source('services/catalogo/wrangler.jsonc'));
+  assert.equal(worker.name, contract.runtime.worker);
+  assert.equal(worker.main, 'worker/entry.ts');
+  assert.equal(worker.d1_databases?.length, 1);
+  assert.equal(worker.d1_databases[0].binding, 'DB');
+  assert.equal(worker.d1_databases[0].database_name, contract.runtime.d1);
+  assert.equal(worker.d1_databases[0].database_id, '87006366-60f3-4937-af73-2ef5a5f901fb');
+  assert.equal(worker.d1_databases[0].migrations_dir, 'migrations');
+  assert.equal(worker.r2_buckets?.length, 1);
+  assert.equal(worker.r2_buckets[0].binding, 'MEDIA');
+  assert.equal(worker.r2_buckets[0].bucket_name, contract.runtime.r2);
+  assert.ok(worker.secrets?.required?.includes('TURNSTILE_SECRET_KEY'));
   assert.match(source('functions/catalogo-api/[[path]].js'), /CATALOG_WORKER/);
   assert.ok(!existsSync(join(root,'wrangler.jsonc')), 'No active root Wrangler config for a second Worker');
   assert.ok(!existsSync(join(root,'worker')), 'Legacy Worker should not be copied into the site root');
