@@ -1,5 +1,14 @@
 # Tonecos Studio — checkpoint operacional
 
+## Backend — proteção de identidade e SHA da origem (05/11/2026)
+
+- **Concluído na PR #4:** commit [`f3ce693`](https://github.com/tonecosstudio/tonecosstudio/commit/f3ce693ad094d2478bd45c52ff1671dfd2930b50) aprimorou o preflight M5 existente, que agora confirma via GitHub GET o ID/nome da origem e `refs/heads/main` contra os três pins do manifesto, bloqueando alterações não reconciliadas; foram adicionados testes offline de drift e ausência de comprovação.
+- **Prova:** [Quality Gate #42102350407](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42102350407) **completed/success** no mesmo SHA. `washingtonmsdj/catalogo/main` observado em `a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c`; PR #266 ainda draft. Nenhuma consulta SQL, deploy, D1, R2, migração, mudança em Worker vivo ou Cloudflare.
+- **Estado:** M5 continua **BLOCKED**, sem autorização, publicador antigo desativado ou rollback de produção comprovado. Manifesto de autorização e ambiente remoto permanecem intactos.
+- **NEXT_ACTION:** na janela de cutover explicitamente autorizada, revalidar o workflow publicador da origem e bindings/versão Worker por metadados somente leitura; comprovar rollback e publicação única antes de mudar flags.
+- **DO_NOT_REPEAT:** não rodar varreduras D1/R2, replicar backend, mudar Pages/Surface/frontend, criar branch/PR ou refazer suites offline aprovadas.
+
+
 **Auditado em 05/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
 
 ## Frontend — Universo responsivo em mobile estreito (05/11/2026)
