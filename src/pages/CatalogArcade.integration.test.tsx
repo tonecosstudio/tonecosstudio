@@ -101,7 +101,8 @@ describe("Tonecos canonical Universe discovery", () => {
     expect(animeTitle).toHaveClass(
       "whitespace-nowrap",
       "tracking-tight",
-      "text-[clamp(0.5rem,3vw,0.875rem)]",
+      "text-sm",
+      "min-[320px]:text-[clamp(0.625rem,3.2vw,0.875rem)]",
     );
     expect(animeTitle.closest("a")).toHaveAttribute("href", "/universo/animes-desenhos");
   });
