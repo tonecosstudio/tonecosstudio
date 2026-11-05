@@ -30,6 +30,7 @@ export function assessCutoverReadiness(contract, state) {
   const add = (condition, reason) => { if (!condition) blockers.push(reason) }
 
   add(contract?.origin?.repository === SOURCE_REPO, 'origin_repository_mismatch')
+  add(contract?.origin?.apiDeployWorkflowId === SOURCE_WORKFLOW_ID && contract?.origin?.apiDeployPipeline === SOURCE_WORKFLOW_PATH, 'github_workflow_identity_unverified')
   add(contract?.target?.repository === TARGET_REPO && contract?.target?.repositoryId === TARGET_REPO_ID, 'target_repository_mismatch')
   add(contract?.runtime?.worker === WORKER_NAME && contract?.runtime?.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID && o.worker === WORKER_NAME && o.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID, 'worker_authority_mismatch')
   add(
