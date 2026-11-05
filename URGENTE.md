@@ -648,3 +648,22 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar `/universo/animes-desenhos/fantasy` no mesmo preview em 280/320/390/768/1024/1440 px; conferir nomes longos, pastas, miniaturas e retorno à ficha.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não solicitar deploy manual para documentação isolada; não alterar `main`, produção ou Worker.
+
+## Rodada 54 — Universo e ficha Fantasy responsivos (05/11/2026)
+
+- `/universo` revalidado na prévia [494e0ae6](https://494e0ae6.tonecosstudio.pages.dev/universo), deployment `494e0ae6-5dea-4b19-9487-37a80f9daa6d`, código `fe13cf80fd41248dcaf7dbdef391e91d49f2bbc0`: seis categorias, sem card “Todos”, CTA “Ver todos os modelos” com 44 px e “Animes e Desenhos” em uma linha em 280/320/390/768/1024/1440 px; sem overflow horizontal.
+- `/universo/animes-desenhos/fantasy`: 24 pastas e 8 referências; em 280/320/390/768/1024/1440 px sem overflow. Pastas em 1/1/2/3/4/4 colunas, referências em 2/2/2/3/4/4; 8/8 imagens carregadas. Nomes longos permanecem dentro de duas linhas.
+- `folder=wish-mystic-spirit`: 1 referência, CTA e breadcrumb com alvo de 44 px; caminho preservado. A ficha carrega imagem de 1024 px, mantém seleção vazia e não apresenta overflow nas seis larguras.
+- A ficha longa recebeu ajuste tipográfico móvel em `src/pages/catalog/CanonicalModelDetails.tsx` (commit `279a3f62faf91f89c6b7fae7d3ea0b9ae2267638`): 24 px no celular, 30 px no breakpoint `sm` e 36 px a partir de `md`. A prévia ad hoc `23424c97` falhou antes de publicar: o job de testes registrou 5 falhas em 156, nas áreas comerciais de moedas/admin, com erro `tonecos_commercial_mvp_disabled` (151 passaram). Essa alteração ainda não tem validação visual em preview; a versão utilizável segue sendo `494e0ae6`. Sem alterações em produção, Worker, D1, R2 ou DNS.
+
+## Rodada 55 — Frieren e Overlord responsivos (05/11/2026)
+
+- Preview reutilizado: [Universo](https://494e0ae6.tonecosstudio.pages.dev/universo), deployment `494e0ae6-5dea-4b19-9487-37a80f9daa6d`, código `fe13cf80fd41248dcaf7dbdef391e91d49f2bbc0`.
+- `Frieren`: 4 pastas e 6 referências; sem overflow nas seis larguras. Pastas em 1/1/2/3/4/4 colunas, referências em 2/2/2/3/4/4, com 6/6 imagens carregadas.
+- `folder=fern`: 3 referências, grade 2/2/2/3/4/4 e 3/3 imagens carregadas. Raiz, pasta atual e CTA têm 44 px e preservam `?folder=fern`. Ficha Fern: imagem carregada (1280 px), seleção vazia, sem overflow e retorno à pasta exata.
+- `Overlord`: 3 pastas e 6 referências; sem overflow nas seis larguras. Pastas em 1/1/2/3/4/4 colunas, referências em 2/2/2/3/4/4, com 6/6 imagens carregadas.
+- `folder=albedo`: 4 referências, grade 2/2/2/3/4/4 e 4/4 imagens carregadas. Breadcrumbs e CTA têm alvos de 44 px e preservam `?folder=albedo`. Ficha Albedo: imagem carregada (1280 px), seleção vazia, sem overflow e retorno à pasta exata.
+
+**NEXT_ACTION:** revisar `/universo/animes-desenhos/ataque-de-tita` no preview `494e0ae6`, em 280/320/390/768/1024/1440 px; conferir pastas, miniaturas e retorno à ficha.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não solicitar build manual para atualizações somente de documentação; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
