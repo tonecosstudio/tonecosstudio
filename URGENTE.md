@@ -237,8 +237,23 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 
 ## Rodada 17 — rota 404 pública responsiva (04/11/2026)
 
-- A rota pública agora usa uma seção nomeada dentro do `main` de `ArcadeFrame`, removendo o `main` aninhado e o papel de status aplicado à página inteira. O conteúdo preserva a identidade arcade.
-- O layout usa 16 px de margem interna em telas estreitas, cresce a partir de `sm`, tipografia responsiva e link SPA com alvo mínimo de 44 px e foco visível de 2 px.
-- Preview privado: [abrir a rota 404](https://7f927529.tonecosstudio.pages.dev/__qa-not-found), deployment `7f927529-577e-43f8-95d4-f2a6cb24df03`, ambiente `preview`, commit de código `a05ed4cfa180092cf74964f563c64115edba8b34`; Pages build/deploy SUCCESS. Logs confirmam typecheck, catálogo MVP 4 arquivos/78 testes, verificações do catálogo 9 PASS, segurança/proxy/SEO 28 PASS, Vite build e compilação da Pages Function.
-- **QA visual responsivo pendente:** as chamadas ao navegador desta sessão expiraram; não há captura nem medições de runtime para esta rota ainda. O link acima está pronto para validação autenticada; não marcar esta rodada como visualmente homologada.
-- Produção, Worker, D1, R2 e DNS inalterados. **NEXT_ACTION:** validar a rota em 320/390/768/1440 px e testar foco por teclado; depois seguir à próxima página ainda sem revisão atual.
+- A rota pública usa uma seção nomeada dentro do `main` de `ArcadeFrame`, sem `main` aninhado nem papel de status aplicado à página inteira. O conteúdo preserva a identidade arcade.
+- Layout com 16 px de margem em telas estreitas, tipografia responsiva e link SPA com alvo mínimo de 44 px e foco visível.
+- Preview privado: [abrir a rota 404](https://7f927529.tonecosstudio.pages.dev/__qa-not-found), deployment `7f927529-577e-43f8-95d4-f2a6cb24df03`, ambiente `preview`, commit de código `a05ed4cfa180092cf74964f563c64115edba8b34`; Pages build/deploy SUCCESS. Pipeline de preview executou typecheck, catálogo MVP (78 testes), verificações de segurança/proxy/SEO e Vite build.
+- QA no navegador em 320/390/768/1440 px: sem overflow; larguras do documento 314/384/762/1434 px; exatamente um `main`; CTA “Ver modelos” com 130×44 px em todas as larguras. Foco de teclado confirmado com contorno dourado sólido de 2 px e offset de 2 px; console sem erros.
+- Produção, Worker, D1, R2 e DNS inalterados. **Rodada concluída.**
+
+## Rodada 18 — espaçamento responsivo em Termos (04/11/2026)
+
+- Em `TermsArcadeView`, abaixo do breakpoint `sm`, a seção usa 16 px de margem interna, os cards 16 px de padding e a linha entre numeração e texto 12 px de gap. Em telas maiores permanecem os espaçamentos anteriores; texto legal preservado.
+- Preview privado: [abrir Termos](https://cde8393a.tonecosstudio.pages.dev/termos), deployment `cde8393a-0488-4f07-98e0-f3097ee2db17`, ambiente `preview`, commit de código `f690bb237bdba91ab07bf143ca89fa82ed1b7acc`; Pages build/deploy SUCCESS.
+- QA em 320/390/768/1440 px: sem overflow; largura do parágrafo 196/266/608/742 px e primeira regra em 7/5/2/2 linhas. CTA mede 198×48 px; console sem erros. A página mantém os sete tópicos e o contato legal.
+- A captura automática de tela não ficou disponível nesta sessão; medições do layout e conteúdo foram conferidos no navegador. Produção e serviços do catálogo inalterados.
+
+## Rodada 19 — espaçamento responsivo em Privacidade (04/11/2026)
+
+- `PrivacyArcadeView` agora usa os mesmos espaçamentos responsivos de Termos: seção com `px-4 sm:px-6`, cards e contato com `p-4 sm:p-6`, linha com `gap-3 sm:gap-4`. Nenhum texto da política foi alterado.
+- Preview privado: [abrir Privacidade](https://3c28acd5.tonecosstudio.pages.dev/privacidade), deployment `3c28acd5-66b2-47e0-acc4-3faebea77313`, ambiente `preview`, commit de código `4a51b38cfaac14c5bdff6d987e25f6e6d306a9aa`; build/deploy SUCCESS.
+- QA em 320/390/768/1440 px: sem overflow; documento com 314/384/762/1434 px; parágrafos dos cards com 196/266/608/742 px e no máximo 9/6/3/2 linhas, respectivamente. Ações medem 198×48 px (“Ver Universo”) e 116×44 px (“Início”); console sem erros.
+- Captura automática de tela indisponível por timeout no navegador desta sessão; árvore acessível, conteúdo e medidas de layout foram conferidos. Produção, Worker, D1, R2 e DNS inalterados. PR #4 segue draft.
+- **NEXT_ACTION:** continuar a revisão da próxima superfície do catálogo na mesma PR, sem abrir branches/PRs ou gerar build por atualização documental.
