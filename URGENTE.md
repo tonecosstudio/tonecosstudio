@@ -618,3 +618,21 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar `/universo/animes-desenhos/solo-leveling` no mesmo preview em 280/320/390/768/1024/1440 px; conferir pastas, miniaturas e retorno à ficha.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
+
+## Rodada 51 — Solo Leveling responsivo (05/11/2026)
+
+- Preview reutilizado: [Universo](https://494e0ae6.tonecosstudio.pages.dev/universo), deployment `494e0ae6-5dea-4b19-9487-37a80f9daa6d`, código `fe13cf80fd41248dcaf7dbdef391e91d49f2bbc0`. Sem novo build/deploy manual.
+- `/universo/animes-desenhos/solo-leveling`: 7 pastas e 8 referências expostas pelo recorte canônico. Em 280/320/390/768/1024/1440 px, sem overflow; pastas em 1/1/2/3/4/4 colunas e referências em 2/2/2/3/4/4. As 8/8 miniaturas carregaram.
+- `folder=beru`: 3 referências, grade 2/2/2/3/4/4 nas mesmas larguras, sem overflow e 3/3 miniaturas carregadas. Breadcrumbs e CTA medem pelo menos 44 px.
+- A ficha Beru carrega a imagem de 794 px, não apresenta overflow nas seis larguras e mantém a seleção vazia. O link “Voltar à pasta” abre novamente a URL exata `?folder=beru`. Console sem erros.
+- Sem defeito reproduzível; sem mudança de frontend. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+## Rodada 52 — Universo: card agregado e título responsivo (05/11/2026)
+
+- Na página `/universo` da mesma prévia, o recorte exibe 6 categorias, sem card “Todos”, e mantém o CTA “Ver todos os modelos”.
+- “Animes e Desenhos” aparece em uma linha nas seis larguras 280/320/390/768/1024/1440 px (`white-space: nowrap`, uma linha medida em cada largura); sem overflow horizontal. O CTA mede 44 px.
+- O código já presente em `src/pages/CatalogArcade.tsx` corresponde ao preview; não foi criado commit funcional redundante nem novo deployment manual.
+
+**NEXT_ACTION:** revisar `/universo/animes-desenhos/boku-no-hero` no mesmo preview em 280/320/390/768/1024/1440 px; conferir pastas, miniaturas, texto longo e retorno à ficha.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
