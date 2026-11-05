@@ -1,5 +1,0 @@
-Leia TELEGRAM_CATALOG_TWO_PC_WORKFLOW.md e siga somente o papel de PC Auxiliar.
-Nao rode pending, nao rode apply final, nao edite catalog_manifest.jsonl,
-catalog_hash_index.json, duplicados.csv ou pendentes.csv.
-Sua funcao e apenas analisar visualmente os previews e preencher os CSVs
-reservados em catalogo/_controle/workers/pc-auxiliar/.
