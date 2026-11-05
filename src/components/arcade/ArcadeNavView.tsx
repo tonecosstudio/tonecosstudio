@@ -51,7 +51,7 @@ export function ArcadeNavView({
   };
 
   const linkClass = (path: string) =>
-    `text-[10px] tracking-[0.2em] uppercase transition-colors font-mono ${
+    `inline-flex min-h-11 items-center text-[10px] tracking-[0.2em] uppercase transition-colors font-mono ${
       isActive(path)
         ? "text-[hsl(var(--gold-accent))]"
         : "text-[hsl(0,0%,55%)] hover:text-[hsl(var(--gold-accent))]"
