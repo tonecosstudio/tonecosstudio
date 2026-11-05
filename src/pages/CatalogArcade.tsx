@@ -36,7 +36,7 @@ function readableSlugLabel(slug: string): string {
 function normalizeUniverseLabel(value: string): string {
   return value
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/&/g, " e ")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
