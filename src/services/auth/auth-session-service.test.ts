@@ -59,6 +59,21 @@ describe("auth-session-service rate limits", () => {
     });
   });
 
+  it("returns a verified session identity rather than trusting an incomplete sign-in", async () => {
+    authMock.signInWithPassword.mockResolvedValueOnce({
+      data: { user: { id: "user-1" }, session: { access_token: "ok" } }, error: null,
+    });
+    await expect(signInWithPasswordCredentials({
+      email: " USER@EXAMPLE.COM ", password: "ExistingPass1",
+    })).resolves.toBe("user-1");
+    authMock.signInWithPassword.mockResolvedValueOnce({
+      data: { user: { id: "user-1" }, session: null }, error: null,
+    });
+    await expect(signInWithPasswordCredentials({
+      email: "user@example.com", password: "ExistingPass1",
+    })).rejects.toThrow("tonecos_login_incomplete");
+  });
+
   it("keeps email-confirmation pending separate from an authenticated session", async () => {
     authMock.signUp.mockResolvedValue({
       data: { user: { id: "pending-user" }, session: null },
@@ -72,7 +87,7 @@ describe("auth-session-service rate limits", () => {
         fullName: "Cliente Tonecos",
         emailRedirectTo: "https://tonecos.example/login",
       }),
-    ).resolves.toEqual({ emailConfirmationRequired: true });
+    ).resolves.toEqual({ userId: "pending-user", emailConfirmationRequired: true });
 
     expect(authMock.signUp).toHaveBeenCalledWith({
       email: "new@example.com",
@@ -100,7 +115,7 @@ describe("auth-session-service rate limits", () => {
         fullName: "Cliente Tonecos",
         emailRedirectTo: "https://tonecos.example/login",
       }),
-    ).resolves.toEqual({ emailConfirmationRequired: false });
+    ).resolves.toEqual({ userId: "user-1", emailConfirmationRequired: false });
     expect(authMock.signUp).toHaveBeenCalledTimes(1);
   });
 

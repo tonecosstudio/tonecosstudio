@@ -4,7 +4,10 @@ import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/ton
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import { isPasswordPolicyCompliant } from "@/config/auth";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
-import { sendPasswordResetEmail } from "@/services/auth/auth-session-service";
+import {
+  sendPasswordResetEmail, signInWithPasswordCredentials, signOutCurrentSession,
+  signUpWithPasswordCredentials,
+} from "@/services/auth/auth-session-service";
 
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 type AccountProfile = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Row"];
@@ -57,31 +60,20 @@ export async function registerTonecosAccount(input: {
   assertTonecosCommercialEnabled();
   const credentials = validateRegistrationCredentials(input.email, input.password);
   const fullName = cleanText(input.fullName, 160, true)!;
-  const { data, error } = await tonecos.auth.signUp({
-    ...credentials, options: {
-      data: { full_name: fullName },
-      emailRedirectTo: originRedirect(TONECOS_COMMERCIAL_ROUTES.login),
-    },
+  return signUpWithPasswordCredentials({
+    ...credentials, fullName,
+    emailRedirectTo: originRedirect(TONECOS_COMMERCIAL_ROUTES.login),
   });
-  if (error) throw error;
-  return {
-    userId: data.user?.id ?? null,
-    emailConfirmationRequired: data.session === null,
-  };
 }
 
 export async function signInTonecosAccount(email: string, password: string): Promise<string> {
   assertTonecosCommercialEnabled();
-  const { data, error } = await tonecos.auth.signInWithPassword(validateSignInCredentials(email, password));
-  if (error) throw error;
-  if (!data.user || !data.session) throw new Error("tonecos_login_incomplete");
-  return data.user.id;
+  return signInWithPasswordCredentials(validateSignInCredentials(email, password));
 }
 
 export async function signOutTonecosAccount(): Promise<void> {
   assertTonecosCommercialEnabled();
-  const { error } = await tonecos.auth.signOut();
-  if (error) throw error;
+  await signOutCurrentSession();
 }
 
 export async function getTonecosCurrentUser(): Promise<{ id: string; email: string | null } | null> {
@@ -148,6 +140,5 @@ export async function completeTonecosPasswordRecovery(password: string): Promise
   if (!data.user) throw new Error("tonecos_recovery_session_required");
   const result = await tonecos.auth.updateUser({ password });
   if (result.error) throw result.error;
-  const signedOut = await tonecos.auth.signOut();
-  if (signedOut.error) throw signedOut.error;
+  await signOutCurrentSession();
 }
