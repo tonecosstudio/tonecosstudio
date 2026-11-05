@@ -164,7 +164,7 @@ describe("Tonecos canonical model discovery UI", () => {
       name: "Ver detalhes de Escultura seguinte",
     });
     expect(screen.getByRole("button", { name: "Voltar à página 1" })).toBeEnabled();
-    expect(screen.getByText("Página 2 · 1 modelos nesta página")).toBeInTheDocument();
+    expect(screen.getByText("Página 2 · 1 modelo nesta página")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Voltar à página 1" }));
     await screen.findByRole("link", {
       name: "Ver detalhes de Escultura original",
@@ -559,7 +559,7 @@ describe("Tonecos canonical model discovery UI", () => {
     expect(back).toHaveAttribute("href", "/modelos");
     fireEvent.click(back);
     await screen.findByRole("link", { name: "Ver detalhes de Escultura seguinte" });
-    expect(screen.getByText("Página 2 · 1 modelos nesta página")).toBeInTheDocument();
+    expect(screen.getByText("Página 2 · 1 modelo nesta página")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Anterior" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Remover da seleção" }))
       .toHaveAttribute("aria-pressed", "true");
