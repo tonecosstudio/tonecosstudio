@@ -14,3 +14,10 @@ if (process.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
   console.error("MVP comercial bloqueado: configuração explícita Tonecos requerida.");
   process.exit(1);
 }
+
+if (process.env.VITE_TONECOS_COINS_ENABLED === "true" &&
+    (process.env.VITE_PUBLIC_CATALOG_MVP === "true" ||
+     process.env.VITE_TONECOS_COMMERCIAL_MVP !== "true")) {
+  console.error("Moedas só podem ser ativadas na versão comercial privada.");
+  process.exit(1);
+}

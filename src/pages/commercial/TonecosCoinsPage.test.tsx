@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import TonecosCoinsPage from "./TonecosCoinsPage";
 
@@ -29,16 +29,16 @@ describe("commercial coins account UI", () => {
   it("shows an actual empty ledger as 0 only after successful Supabase read", async () => {
     renderPage();
     expect(await screen.findByText("Nenhuma movimentação registrada.")).toBeInTheDocument();
-    expect(screen.getByText("0", { selector: "p" })).toBeInTheDocument();
+    expect(screen.getAllByText("0", { selector: "p" })).toHaveLength(3);
     expect(mocks.entries).toHaveBeenCalledWith(25);
   });
   it("never displays a fake zero balance when Supabase is offline", async () => {
-    mocks.balance.mockRejectedValue({ message: "offline" });
+    mocks.balance.mockRejectedValue(new Error("offline"));
     renderPage();
     expect(await screen.findByRole("alert")).toHaveTextContent("offline");
     expect(screen.queryByText("Saldo disponível")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
-    expect(mocks.balance).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mocks.balance).toHaveBeenCalledTimes(2));
   });
   it("prompts guests to log in without calling the ledger", async () => {
     mocks.getUser.mockResolvedValue(null);
