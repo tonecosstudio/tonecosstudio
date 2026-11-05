@@ -11,12 +11,15 @@ import TonecosAdminQuotesPage from "./TonecosAdminQuotesPage";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const QUOTE = "22222222-2222-4222-8222-222222222222";
-const mocks = vi.hoisted(() => ({
-  getUser: vi.fn(), signIn: vi.fn(), signUp: vi.fn(), signOut: vi.fn(),
-  getProfile: vi.fn(), updateProfile: vi.fn(),
-  quoteItems: vi.fn(), submit: vi.fn(), listMine: vi.fn(),
-  listAdmin: vi.fn(), answerAdmin: vi.fn(), bootstrapAdmin: vi.fn(),
-}));
+const mocks = vi.hoisted(() => {
+  vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
+  return {
+    getUser: vi.fn(), signIn: vi.fn(), signUp: vi.fn(), signOut: vi.fn(),
+    getProfile: vi.fn(), updateProfile: vi.fn(),
+    quoteItems: vi.fn(), submit: vi.fn(), listMine: vi.fn(),
+    listAdmin: vi.fn(), answerAdmin: vi.fn(), bootstrapAdmin: vi.fn(),
+  };
+});
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.getUser,
   signInTonecosAccount: mocks.signIn,
