@@ -22,16 +22,18 @@ const rootFranchises = Array.from({ length: 24 }, (_, i) => ({
   ...(i === 0 ? { cover_storage_key: "media/franquia-1/card.webp" } : {}),
 }));
 
-function setupFetch() {
+function setupFetch(
+  categoryItems: Array<{ id: string; label: string; count: number; cover_storage_key?: string }> = [
+    { id: "originais", label: "Originais", count: 1, cover_storage_key: "media/originais/card.webp" },
+  ],
+) {
   const calls: URL[] = [];
   vi.stubGlobal("fetch", vi.fn(async (input: string, init: RequestInit) => {
     expect(init.method).toBe("GET");
     const url = new URL(input);
     calls.push(url);
     if (url.pathname.endsWith("/api/categories")) {
-      return Response.json({
-        items: [{ id: "originais", label: "Originais", count: 1, cover_storage_key: "media/originais/card.webp" }],
-      });
+      return Response.json({ items: categoryItems });
     }
     if (url.pathname.endsWith("/api/franchises")) {
       return Response.json(
@@ -83,6 +85,26 @@ describe("Tonecos canonical Universe discovery", () => {
     expect(screen.getByText("1 modelo", { exact: true })).toBeInTheDocument();
     expect(screen.queryByText("1 modelos", { exact: true })).not.toBeInTheDocument();
     expect(calls.map(call => call.pathname)).toEqual(["/catalogo-api/api/categories"]);
+  });
+
+  it("omits the all card and keeps the Anime category title on one line", async () => {
+    setupFetch([
+      { id: "all", label: "Todos", count: 2575 },
+      { id: "animes-desenhos", label: "Animes & Desenhos", count: 640 },
+      { id: "originais", label: "Originais", count: 1 },
+    ]);
+    await renderUniverse("/universo");
+
+    expect(await screen.findByRole("link", { name: "Ver todos os modelos" })).toHaveAttribute("href", "/modelos");
+    expect(screen.queryByText("Todos", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByText("Animes e Desenhos", { exact: true })).toHaveClass(
+      "whitespace-nowrap",
+      "text-[clamp(0.5625rem,2.8vw,0.75rem)]",
+    );
+    expect(screen.getByText("Animes e Desenhos").closest("a")).toHaveAttribute(
+      "href",
+      "/universo/animes-desenhos",
+    );
   });
 
   it("searches beyond the first 24 franchises only on explicit submit", async () => {

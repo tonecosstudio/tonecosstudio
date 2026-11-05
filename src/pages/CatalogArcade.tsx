@@ -104,6 +104,7 @@ export default function CatalogArcade() {
 
   const activeQuery = themeKey ? franchisesQuery : categoriesQuery;
   const categories = categoriesQuery.data ?? [];
+  const visibleCategories = categories.filter((category) => category.id !== "all");
   const franchises = franchisesQuery.data?.items ?? [];
 
   return (
@@ -247,34 +248,46 @@ export default function CatalogArcade() {
                 )}
               </>
             )
-          ) : categories.length === 0 ? (
+          ) : visibleCategories.length === 0 ? (
             <p role="status" className="mt-6 p-8 text-sm">
               Nenhuma categoria publicada no momento.
             </p>
           ) : (
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {categories.map((category) => (
-                <ArcadeCard key={category.id}>
-                  <Link className="group flex min-h-44 flex-col focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={category.id === "all" ? modelsPath() : PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(category.id)}>
-                    <div className="aspect-[4/3] w-full overflow-hidden bg-[hsl(0,0%,8%)]">
-                      <CanonicalCatalogImage
-                        src={gateway.mediaUrl(category.coverStorageKey ?? null)}
-                        alt={"Prévia de " + category.label}
-                        imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
-                        fallbackClassName="flex h-full w-full items-center justify-center"
-                        fallbackIcon={<ImageOff className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />}
-                        fallbackLabel=""
-                      />
-                    </div>
-                    <div className="flex flex-1 flex-col gap-2 p-4">
-                      <span className="line-clamp-2 font-semibold uppercase">{category.label}</span>
-                      <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
-                        {formatModelCountLabel(category.count)} <ArrowRight size={16} aria-hidden="true" />
-                      </span>
-                    </div>
-                  </Link>
-                </ArcadeCard>
-              ))}
+              {visibleCategories.map((category) => {
+                const displayLabel = category.id === "animes-desenhos" ? "Animes e Desenhos" : category.label;
+                const isAnimeCategory = category.id === "animes-desenhos";
+                return (
+                  <ArcadeCard key={category.id}>
+                    <Link className="group flex min-h-44 flex-col focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(category.id)}>
+                      <div className="aspect-[4/3] w-full overflow-hidden bg-[hsl(0,0%,8%)]">
+                        <CanonicalCatalogImage
+                          src={gateway.mediaUrl(category.coverStorageKey ?? null)}
+                          alt={"Prévia de " + displayLabel}
+                          imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+                          fallbackClassName="flex h-full w-full items-center justify-center"
+                          fallbackIcon={<ImageOff className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />}
+                          fallbackLabel=""
+                        />
+                      </div>
+                      <div className="flex flex-1 flex-col gap-2 p-4">
+                        <span
+                          className={
+                            isAnimeCategory
+                              ? "whitespace-nowrap text-[clamp(0.5625rem,2.8vw,0.75rem)] font-semibold uppercase"
+                              : "line-clamp-2 font-semibold uppercase"
+                          }
+                        >
+                          {displayLabel}
+                        </span>
+                        <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
+                          {formatModelCountLabel(category.count)} <ArrowRight size={16} aria-hidden="true" />
+                        </span>
+                      </div>
+                    </Link>
+                  </ArcadeCard>
+                );
+              })}
             </div>
           )}
           {themeKey && !franchiseKey && !invalidScope && (
