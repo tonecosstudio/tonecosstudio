@@ -78,7 +78,7 @@ export default function TonecosMyQuotesPage() {
                 {row.items.map((item) => (
                   <li key={item.slug}>
                     <Link to={"/modelos/" + encodeURIComponent(item.slug)} className="underline-offset-2 hover:underline">
-                      {item.slug.replaceAll("-", " ")}
+                      {item.slug.replace(/-/g, " ")}
                     </Link> · {item.quantity} {item.quantity === 1 ? "unidade" : "unidades"}
                   </li>
                 ))}
