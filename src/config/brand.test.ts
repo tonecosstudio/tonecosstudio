@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { BRAND_NAME, BRAND_SHORT_NAME, BRAND_STUDIO_LABEL } from "./brand";
 
-describe("Tonecos public identity", () => {
+describe("TONART public identity", () => {
   it("keeps one canonical consumer-facing name independent of the former OrdaX project", () => {
     expect(BRAND_NAME).toBe("TONART Studio");
     expect(BRAND_SHORT_NAME).toBe("TONART");
@@ -92,7 +92,7 @@ it("keeps preview footer free of unavailable account and checkout promises", () 
   expect(footer).not.toContain('label: "Wishlist"');
 });
 
-it("uses only Tonecos visual assets for public pages and browser notifications", () => {
+it("uses only TONART visual assets for public pages and browser notifications", () => {
   const html = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
   const icon = readFileSync(resolve(process.cwd(), "public/favicon.svg"), "utf8");
   const fallback = readFileSync(resolve(process.cwd(), "public/image-fallback.svg"), "utf8");
@@ -164,7 +164,7 @@ it("never bootstraps OrdaX Cloudflare resources from the Tonecos repo", () => {
   expect(planner).not.toContain('"https://ordax.com.br"');
 });
 
-it("builds a single deterministic social image from Tonecos-owned sources", () => {
+it("builds a single deterministic social image from TONART-owned sources", () => {
   const packageJson = JSON.parse(
     readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
   ) as { scripts: { build: string } };
@@ -247,4 +247,31 @@ it("uses Pages native SPA routing without a circular fallback rewrite", () => {
   }
   expect(existsSync(resolve(process.cwd(), "public/404.html"))).toBe(false);
   expect(existsSync(resolve(process.cwd(), "functions/catalogo-api/[[path]].js"))).toBe(true);
+});
+
+it("keeps the previous brand out of customer-visible pages", () => {
+  const publicFiles = [
+    "index.html",
+    "src/pages/LandingPage.tsx",
+    "src/pages/AboutArcade.tsx",
+    "src/pages/CatalogArcade.tsx",
+    "src/pages/CatalogModelsArcade.tsx",
+    "src/pages/PublicCatalogContact.tsx",
+    "src/pages/ContactArcade.tsx",
+    "src/pages/catalog/CanonicalModelDetails.tsx",
+    "src/pages/catalog/ModelDetails.tsx",
+    "src/pages/ArcadeLab.tsx",
+    "src/components/collections/CollectionHero.tsx",
+    "src/components/collections/HowItWorks.tsx",
+    "src/pages/admin/quotes/AdminQuotesPage.tsx",
+    "src/pages/commercial/TonecosAccountPage.tsx",
+    "src/components/SEOHead.tsx",
+    "scripts/seo/generate-public-index.mjs",
+    "public/image-fallback.svg",
+    "public/favicon.svg",
+  ];
+  for (const path of publicFiles) {
+    const source = readFileSync(resolve(process.cwd(), path), "utf8");
+    expect(source, path).not.toMatch(/Tonecos Studios?|ACERVO TONECOS|FALE COM A TONECOS|Atendimento Tonecos/i);
+  }
 });
