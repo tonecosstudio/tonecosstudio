@@ -33,8 +33,48 @@ function readableSlugLabel(slug: string): string {
     .join(" ");
 }
 
+function normalizeUniverseLabel(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/&/g, " e ")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+const ALL_MODELS_CATEGORY_KEYS = new Set([
+  "all",
+  "all-categories",
+  "all-items",
+  "all-models",
+  "acervo-completo",
+  "catalogo-completo",
+  "todas",
+  "todas-as-categorias",
+  "todas-categorias",
+  "todos",
+  "todos-modelos",
+  "todos-os-modelos",
+]);
+
+function isAllModelsCategory(category: { id: string; label: string }): boolean {
+  return (
+    ALL_MODELS_CATEGORY_KEYS.has(normalizeUniverseLabel(category.id)) ||
+    ALL_MODELS_CATEGORY_KEYS.has(normalizeUniverseLabel(category.label))
+  );
+}
+
+function isAnimesAndDrawingsCategory(id: string, label?: string): boolean {
+  const animeKeys = new Set(["animes-desenhos", "animes-e-desenhos"]);
+  return (
+    animeKeys.has(normalizeUniverseLabel(id)) ||
+    animeKeys.has(normalizeUniverseLabel(label ?? ""))
+  );
+}
+
 function categoryDisplayLabel(id: string, label?: string): string {
-  if (id === "animes-desenhos") return "Animes e Desenhos";
+  if (isAnimesAndDrawingsCategory(id, label)) return "Animes e Desenhos";
   return label ?? readableSlugLabel(id);
 }
 
@@ -122,12 +162,10 @@ export default function CatalogArcade() {
 
   const activeQuery = themeKey ? franchisesQuery : categoriesQuery;
   const categories = categoriesQuery.data ?? [];
-  const visibleCategories = categories.filter((category) => {
-    const id = category.id.trim().toLowerCase();
-    const label = category.label.trim().toLowerCase();
-    return id !== "all" && id !== "todos" && id !== "todos-os-modelos" &&
-      label !== "todos" && label !== "todos os modelos";
-  });
+  // The API's aggregate "Todos" points to the same catalog as the CTA above.
+  const visibleCategories = categories.filter(
+    (category) => !isAllModelsCategory(category),
+  );
   const franchises = franchisesQuery.data?.items ?? [];
   const categoryLabel = themeKey
     ? categoryDisplayLabel(
@@ -291,7 +329,7 @@ export default function CatalogArcade() {
             <div className="mt-6 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
               {visibleCategories.map((category) => {
                 const displayLabel = categoryDisplayLabel(category.id, category.label);
-                const isAnimeCategory = category.id === "animes-desenhos";
+                const isAnimeCategory = isAnimesAndDrawingsCategory(category.id, category.label);
                 return (
                   <ArcadeCard key={category.id}>
                     <Link className="group flex min-h-44 flex-col focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(category.id)}>
@@ -309,7 +347,7 @@ export default function CatalogArcade() {
                         <span
                           className={
                             isAnimeCategory
-                              ? "whitespace-nowrap tracking-tight text-sm min-[360px]:text-[clamp(0.625rem,3.2vw,0.875rem)] font-semibold uppercase"
+                              ? "block max-w-full min-w-0 whitespace-nowrap tracking-tight text-sm min-[360px]:text-[clamp(0.625rem,2.8vw,0.875rem)] font-semibold uppercase"
                               : "break-normal text-[clamp(0.75rem,4vw,1rem)] font-semibold uppercase"
                           }
                         >
