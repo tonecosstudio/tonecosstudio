@@ -481,12 +481,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 
 **NEXT_ACTION:** revisar a raiz `/universo/marvel-dc` no preview em 320/390/768/1024/1440 px, conferindo a primeira leva de franquias, imagens e busca parcial; aplicar os mesmos componentes/SSOT.
 
-## Frontend — raiz do Universo e prévia mobile (05/11/2026)
+## Frontend — Universo e franquias responsivas (05/11/2026)
 
-- **Estado confirmado na branch** `integration/tonecosstudio-canonical-20261101`, PR #4 draft, código HEAD `6713e97cba3a1431cff97fb0bca01484c08c3dc9` (base main observada `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`). A versão que mostrava o card agregado “Todos” era a prévia antiga `ef8ab5fb`; o código publicado exclui a categoria geral e exibe “Animes e Desenhos” em uma linha com tamanho responsivo.
-- **Prévia privada atualizada:** https://121a9a7b.tonecosstudio.pages.dev/universo — Cloudflare Pages deployment `121a9a7b-9b5f-463f-b5ec-85748ca1e59a`, commit `6713e97`, ambiente `preview`; build e deploy **SUCCESS**. O build executou `typecheck`, `catalog:mvp:test` e `build` pela configuração existente.
-- **QA mobile a 320 px:** `innerWidth=320`, documento com 314 px, sem overflow horizontal; título ocupa 109/109 px, `white-space: nowrap`; card “Todos” ausente e há uma ação “Ver todos os modelos”. Captura: `outputs/universo-preview-mobile-320.png`.
-- Produção, Worker, D1, R2 e DNS inalterados. Configuração de deploy automático de previews segue `none`.
+- **Branch/PR:** `integration/tonecosstudio-canonical-20261101`, PR #4 draft; código HEAD `3623980eb4fc8084d3d82cdf8541feb756ee4f98`, base `main` em `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`.
+- **Ajustes confirmados:** na raiz `/universo`, a categoria agregada “Todos” não vira card, o botão “Ver todos os modelos” permanece e “Animes e Desenhos” fica em uma linha com tipografia responsiva. Nas franquias, títulos usam escala fluida e limite de duas linhas; “Exterminador” e “Constantine” cabem inteiros no mobile.
+- **Preview privado atual:** https://f2ef62e9.tonecosstudio.pages.dev/universo — Cloudflare Pages deployment `f2ef62e9-7185-4665-ae33-0ea406d5bfd4`, commit de código `3623980`, ambiente `preview`; build e deploy **SUCCESS**. A configuração existente executou `typecheck`, `catalog:mvp:test` e `build`.
+- **QA a 320 px:** documento com 314 px, sem overflow; título Anime ocupa 109/109 px com `white-space: nowrap`; card “Todos” ausente e uma ação “Ver todos os modelos”. Na categoria Marvel & DC, 24 franquias em duas colunas, sem título excedendo a caixa; “Exterminador” e “Constantine” em uma linha.
+- **QA a 1280 px:** 24 franquias em quatro colunas; documento com 1274 px; nenhum título excede a caixa e os nomes usam tamanho máximo de 14 px.
+- Captura da raiz mobile: `outputs/universo-preview-mobile-320.png`. Produção, Worker, D1, R2 e DNS inalterados; previews automáticos continuam desativados.
 
-**NEXT_ACTION:** continuar na rota `/universo/animes-desenhos`, revisar a listagem de franquias em larguras mobile/desktop e corrigir somente defeitos reproduzíveis.
-**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview atual; não publicar documentação isolada; não tocar na `main`, produção ou Worker.
+**NEXT_ACTION:** seguir para `/universo/animes-desenhos`, revisar franquias e manter o padrão responsivo em celular e desktop.
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview atual; não gerar build para documentação isolada; não tocar na `main`, produção ou Worker.
