@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { requireCurrentUserAdminAccess } from "@/services/auth/current-user";
+import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 import type { CatalogQuoteItem } from "@/services/customer/catalog-quote-service";
 import { MAX_CANONICAL_SELECTION } from "@/services/catalog/public-catalog-selection";
 import { validCatalogSlug } from "@/services/catalog/public-catalog-gateway";
@@ -14,6 +14,16 @@ export type AdminCatalogQuote = {
   /** Pending records are unpriced; zero is never displayed as an offer. */
   quotedAmount: number | null;
 };
+
+async function requireTonecosAdmin(): Promise<void> {
+  await requireAuthenticatedUserId();
+  const client = supabase as unknown as {
+    rpc(name: "is_tonecos_admin"): Promise<{ data: boolean | null; error: { message: string } | null }>;
+  };
+  const { data, error } = await client.rpc("is_tonecos_admin");
+  if (error) throw error;
+  if (data !== true) throw new Error("Admin access required");
+}
 
 function assertCommercialMode() {
   if (import.meta.env.VITE_PREVIEW_READ_ONLY === "true" ||
@@ -59,7 +69,7 @@ export async function listAdminCatalogQuotes(limit = 50): Promise<AdminCatalogQu
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
     throw new Error("admin_catalog_quote_limit_invalid");
   }
-  await requireCurrentUserAdminAccess();
+  await requireTonecosAdmin();
   const { data, error } = await supabase
     .from("quotes")
     .select("id,user_id,status,created_at,notes,total_amount,requested_catalog_models,catalog_requested_at")
@@ -94,7 +104,7 @@ export async function answerCatalogQuoteRequest(quoteId: string, amount: number)
       Math.abs(amount * 100 - Math.round(amount * 100)) > 0.00001) {
     throw new Error("admin_catalog_quote_response_invalid");
   }
-  await requireCurrentUserAdminAccess();
+  await requireTonecosAdmin();
   const rpc = supabase as unknown as AdminAnswerRpcClient;
   const { data, error } = await rpc.rpc("answer_catalog_quote_request", {
     p_quote_id: quoteId,
