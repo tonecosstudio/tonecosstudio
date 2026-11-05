@@ -274,3 +274,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - QA com o painel aberto em 320/390/768/1440 px: botão “Fechar” 44×44 px, com offset de 16 px do topo e da direita; painel sem overflow e com 320/390 px em mobile e 448 px em desktop. Fechar encerra o painel; seleção permaneceu vazia; console sem erros.
 - Produção, Worker, D1, R2 e DNS inalterados. PR #4 segue draft.
 - **NEXT_ACTION:** continuar a inspeção da próxima área pública do catálogo na mesma PR e só gerar nova prévia para alterações de código.
+
+## Rodada 22 — alvos de toque em mobile e tablet (04/11/2026)
+
+- **Branch/base:** PR #4 permanece open/draft em `integration/tonecosstudio-canonical-20261101`; base observada `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`. Código validado no SHA `6994e2d095eeed53cb6a09b6f6751a20c6ae6a16`.
+- **Achado e correção:** no mobile, o link de marca do cabeçalho tinha 28 px de altura e os quatro links de navegação do rodapé próprio da Home tinham 12 px. Em 1024 px, a navegação desktop tinha links de 15 px. O logo, os links do menu desktop e os quatro links da Home agora têm área mínima de 44 px; rótulos e aparência visual foram preservados.
+- **QA responsivo no preview:** Home, Modelos, Universo, Marvel & DC, Equipes e Grupos, ficha de Anjo, Sobre, Contato, Termos e Privacidade verificados em 320, 360, 390, 640, 768, 1024, 1440 e 1920 px. Nenhuma das 80 combinações apresentou rolagem horizontal. Em 320 px, marca/menu/links da navegação móvel têm 44 px; o botão de seleção da ficha tem 46 px e a miniatura da galeria 62 px. Em 1024 px, links da navegação desktop têm 44 px. O menu móvel abre com links de 44 px e fecha corretamente.
+- **Fluxo de conteúdo:** a ficha de Anjo carregou e exibiu uma imagem publicada; console sem erros. A Home exibiu seis cards e nenhuma imagem quebrada entre as imagens carregadas.
+- **Preview privado atual:** [abrir Home](https://693d03d5.tonecosstudio.pages.dev/), deployment `693d03d5-cf70-410f-b7fc-db95267e4c10`, ambiente `preview`, fonte SHA `6994e2d095eeed53cb6a09b6f6751a20c6ae6a16`; Cloudflare Pages build/deploy SUCCESS. O build configurado executa typecheck, `catalog:mvp:test` e `npm run build`.
+- Produção, main, Worker, D1, R2 e DNS inalterados. A PR continua draft; sem merge/publicação.
+- **next_action:** continuar QA visual página por página, incluindo filtros e galeria em diferentes larguras, e gerar nova prévia apenas após outra alteração de código.
+- **do_not_repeat:** não gerar outra build por atualização documental; não ativar previews automáticos, alterar a main, Worker/D1/R2/DNS, SEO público ou produção; não misturar QA visual pendente de capas com a checagem responsiva de layout já concluída nesta rodada.
