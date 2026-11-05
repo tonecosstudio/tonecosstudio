@@ -361,7 +361,7 @@ export default function LandingPage() {
             </span>
           </div>
 
-          <nav className="flex items-center gap-6">
+          <nav className="flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:w-auto sm:flex-nowrap sm:justify-start sm:gap-6">
             {[
               { label: "Sobre", href: PUBLIC_ROUTES.about },
               { label: "Contato", href: PUBLIC_ROUTES.contact },
