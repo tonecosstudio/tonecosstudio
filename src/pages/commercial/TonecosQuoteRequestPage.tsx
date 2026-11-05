@@ -48,7 +48,7 @@ export default function TonecosQuoteRequestPage() {
         {user === undefined ? <p role="status">Verificando sua conta...</p> : null}
         {user === null ? (
           <div className={panelClass}>
-            <p className="mb-5 text-sm leading-relaxed text-white/70">Entre ou crie uma conta para enviar a seleção e acompanhar a resposta da Tonecos.</p>
+            <p className="mb-5 text-sm leading-relaxed text-white/70">Entre ou crie uma conta para enviar a seleção e acompanhar a resposta da TONART Studio.</p>
             <Link className={actionClass} to={TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)}>Entrar ou criar conta</Link>
           </div>
         ) : null}

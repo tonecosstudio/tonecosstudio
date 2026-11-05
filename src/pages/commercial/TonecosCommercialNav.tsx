@@ -20,7 +20,7 @@ if (import.meta.env.VITE_TONECOS_COINS_ENABLED === "true") {
 export default function TonecosCommercialNav() {
   const { selectedModels } = useCatalogBrowsing();
   return (
-    <nav aria-label="Navegação Tonecos Studio" className="relative z-40 border-b border-white/10 bg-[hsl(0,0%,5%)]/95 backdrop-blur-md">
+    <nav aria-label="Navegação TONART Studio" className="relative z-40 border-b border-white/10 bg-[hsl(0,0%,5%)]/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 px-4 py-3 sm:px-6">
         <Link to="/" className="min-h-11 py-1 text-2xl font-black tracking-widest text-[hsl(var(--gold-accent))]">
           {BRAND_SHORT_NAME}

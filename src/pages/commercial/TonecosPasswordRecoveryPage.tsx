@@ -57,7 +57,7 @@ export default function TonecosPasswordRecoveryPage() {
     <CommercialPage
       title={update ? "Criar nova senha" : "Recuperar acesso"}
       intro={update
-        ? "Após validar o link recebido por e-mail, escolha uma nova senha para sua conta Tonecos."
+        ? "Após validar o link recebido por e-mail, escolha uma nova senha para sua conta TONART Studio."
         : "Informe o e-mail cadastrado para receber as instruções de recuperação de senha."}
     >
       <div className={panelClass + " max-w-lg"}>

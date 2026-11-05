@@ -8,7 +8,7 @@ export const panelClass = "rounded-sm border border-white/15 bg-[hsl(0,0%,8%)] p
 export function CommercialPage({ title, intro, children }: PropsWithChildren<{title: string; intro: string}>) {
   return (
     <section className="mx-auto min-h-[65vh] w-full max-w-5xl px-4 pb-20 pt-12 sm:px-6 sm:pt-16">
-      <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.25em] text-[hsl(var(--gold-accent))]">Tonecos Studio · Atendimento</p>
+      <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.25em] text-[hsl(var(--gold-accent))]">TONART Studio · Atendimento</p>
       <h1 className="mb-3 text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
       <p className="mb-8 max-w-2xl text-sm leading-relaxed text-white/60">{intro}</p>
       {children}

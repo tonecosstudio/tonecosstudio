@@ -46,7 +46,7 @@ export default function TonecosMyQuotesPage() {
     "sent" in location.state && typeof location.state.sent === "string");
 
   return (
-    <CommercialPage title="Meus orçamentos" intro="Acompanhe as solicitações enviadas e os valores respondidos pela Tonecos. Orçamento não é confirmação de compra.">
+    <CommercialPage title="Meus orçamentos" intro="Acompanhe as solicitações enviadas e os valores respondidos pela TONART Studio. Orçamento não é confirmação de compra.">
       {justSent && <p role="status" className="mb-5 max-w-3xl border border-white/20 p-4 text-sm text-white/80">Solicitação enviada. Você poderá acompanhar a resposta aqui.</p>}
       {userId === undefined || loading ? <p role="status">Carregando seus orçamentos...</p> : null}
       {userId === null ? (

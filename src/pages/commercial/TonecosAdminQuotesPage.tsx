@@ -40,7 +40,7 @@ export default function TonecosAdminQuotesPage() {
   }
 
   return (
-    <CommercialPage title="Atendimento de orçamentos" intro="Área restrita da Tonecos Studio. Verifique os modelos no catálogo antes de informar um valor. Nenhuma cobrança é iniciada automaticamente.">
+    <CommercialPage title="Atendimento de orçamentos" intro="Área restrita da TONART Studio. Verifique os modelos no catálogo antes de informar um valor. Nenhuma cobrança é iniciada automaticamente.">
       {notice && <p role="status" className="mb-5 max-w-3xl border border-white/20 p-4 text-sm">{notice}</p>}
       {error && <div role="alert" className="mb-5 max-w-3xl border border-red-500/40 p-4 text-sm text-red-200">
         <p>{error}</p>

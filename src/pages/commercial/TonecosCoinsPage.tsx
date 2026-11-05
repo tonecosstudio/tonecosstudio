@@ -41,7 +41,7 @@ export default function TonecosCoinsPage() {
   }, [reload]);
 
   return (
-    <CommercialPage title="Minhas moedas" intro="Acompanhe suas moedas virtuais e o histórico de movimentações da conta Tonecos. Moedas não representam saldo em reais e não há compra ou conversão habilitada.">
+    <CommercialPage title="Minhas moedas" intro="Acompanhe suas moedas virtuais e o histórico de movimentações da conta TONART Studio. Moedas não representam saldo em reais e não há compra ou conversão habilitada.">
       {busy && <p role="status">Consultando histórico de moedas...</p>}
       {guest === true && !busy && <div className={panelClass}>
         <p className="mb-4 text-white/70">Entre para consultar suas moedas.</p>
