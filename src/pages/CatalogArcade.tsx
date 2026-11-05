@@ -10,6 +10,7 @@ import {
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES } from "@/config/routes";
+import { formatModelCountLabel } from "@/lib/catalog-model-count";
 import { CanonicalUniverseFolders } from "@/pages/catalog/CanonicalUniverseFolders";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
@@ -229,7 +230,7 @@ export default function CatalogArcade() {
                         />
                         <span className="line-clamp-2 font-semibold uppercase">{franchise.label}</span>
                         <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
-                          {franchise.count} modelos <ArrowRight size={16} aria-hidden="true" />
+                          {formatModelCountLabel(franchise.count)} <ArrowRight size={16} aria-hidden="true" />
                         </span>
                       </Link>
                     </ArcadeCard>
@@ -261,7 +262,7 @@ export default function CatalogArcade() {
                     />
                     <span className="line-clamp-2 font-semibold uppercase">{category.label}</span>
                     <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
-                      {category.count} modelos <ArrowRight size={16} aria-hidden="true" />
+                      {formatModelCountLabel(category.count)} <ArrowRight size={16} aria-hidden="true" />
                     </span>
                   </Link>
                 </ArcadeCard>
