@@ -189,12 +189,12 @@ it("builds a single deterministic social image from TONART-owned sources", () =>
   );
   expect(generator).toContain("dist/og-image.png");
   expect(generator).not.toContain("public/og-image.png");
-  expect(generator).toContain("TONART STUDIO");
-  expect(generator).toContain('xmlns="http://www.w3.org/2000/svg"');
-  const svgMarkup = generator.split("const svg = `")[1]?.split("`;")[0] || "";
-  expect(svgMarkup.replaceAll("http://www.w3.org/2000/svg", "")).not.toMatch(
-    /ordax|fetch\(|https?:\/\//i,
-  );
+  const light = readFileSync(resolve(process.cwd(), "public/tonart-logo-white.svg"), "utf8");
+  const dark = readFileSync(resolve(process.cwd(), "public/tonart-logo-black.svg"), "utf8");
+  expect(light).toContain(">TONART</text>");
+  expect(light.replaceAll("#FFFFFF", "#111111").replaceAll("versão branca", "versão preta")).toBe(dark);
+  expect(generator).toContain("public/tonart-logo-white.svg");
+  expect(generator).not.toContain("const svg =");
   expect(generator).not.toMatch(/fetch\(/i);
   expect(generator).toContain("dist/index.html");
   expect(generator).toContain("TONECOS_PUBLIC_ORIGIN");

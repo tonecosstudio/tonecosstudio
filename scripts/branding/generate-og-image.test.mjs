@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { injectSocialMeta, resolveSocialOrigin } from "./generate-og-image.mjs";
 
@@ -97,4 +98,13 @@ test("Cloudflare Pages main requires explicit production origin", () => {
     CF_PAGES_URL: "https://tonecosstudio.pages.dev",
     TONECOS_PUBLIC_ORIGIN: "https://tonecos.example",
   }), "https://tonecos.example");
+});
+
+test("black and white TONART logos share the same scalable geometry", () => {
+  const light = readFileSync(new URL("../../public/tonart-logo-white.svg", import.meta.url), "utf8");
+  const dark = readFileSync(new URL("../../public/tonart-logo-black.svg", import.meta.url), "utf8");
+  assert.match(light, /<title id="logo-title">TONART Studio<\/title>/);
+  assert.match(dark, /<title id="logo-title">TONART Studio<\/title>/);
+  assert.equal(light.replaceAll("#FFFFFF", "#111111").replaceAll("versão branca", "versão preta"), dark);
+  assert.doesNotMatch(light + dark, /#(?:c99b45|c49a4e|b68b3b|f3cf78)/i);
 });
