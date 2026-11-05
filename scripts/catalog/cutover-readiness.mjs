@@ -10,6 +10,10 @@ const ROOT = fileURLToPath(new URL('../../', import.meta.url))
 const SOURCE_WORKFLOW_ID = 371358484
 const SOURCE_WORKFLOW_PATH = '.github/workflows/cloudflare.yml'
 const SOURCE_REPO = 'washingtonmsdj/catalogo'
+const TARGET_REPO = 'tonecosstudio/tonecosstudio'
+const TARGET_REPO_ID = 1163825583
+const CLOUDFLARE_ACCOUNT_ID = '8827c547d6def5ee5b9ca550fdd5680a'
+const WORKER_NAME = 'tonecos-catalogo-api'
 
 export function assessCutoverReadiness(contract, state) {
   const blockers = []
@@ -20,16 +24,23 @@ export function assessCutoverReadiness(contract, state) {
   const add = (condition, reason) => { if (!condition) blockers.push(reason) }
 
   add(contract?.origin?.repository === SOURCE_REPO, 'origin_repository_mismatch')
+  add(contract?.target?.repository === TARGET_REPO && contract?.target?.repositoryId === TARGET_REPO_ID, 'target_repository_mismatch')
+  add(contract?.runtime?.worker === WORKER_NAME && contract?.runtime?.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID && o.worker === WORKER_NAME && o.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID, 'worker_authority_mismatch')
   add(m.phase === 'cutover-approved', 'cutover_not_approved')
   add(m.releaseAuthorized === true && o.releaseGoApproved === true, 'explicit_release_go_missing')
   add(m.sourceWriterDisabled === true && o.sourceWorkflowDisabledVerified === true, 'source_writer_not_confirmed_disabled')
   add(m.targetWorkerReleaseEnabled === true && contract.activeWorkerPublisher === contract.target?.repository, 'target_not_unique_publisher')
   add(m.targetD1MigrationEnabled === false, 'remote_d1_migrations_must_remain_disabled')
   add(o.targetProductionCredentialsVerified === true, 'target_credentials_unverified')
+  add(o.rollbackTestedAgainstProduction === true, 'rollback_not_verified')
   add(workflow?.id === SOURCE_WORKFLOW_ID && workflow?.path === SOURCE_WORKFLOW_PATH, 'github_workflow_identity_unverified')
   add(workflow?.state === 'disabled_manually', 'source_github_workflow_still_enabled')
   add(Number.isInteger(observed.running) && observed.running === 0, 'source_workflow_runs_in_progress_or_unverified')
   add(Number.isInteger(observed.queued) && observed.queued === 0, 'source_workflow_runs_queued_or_unverified')
+  add(Number.isInteger(observed.requested) && observed.requested === 0, 'source_workflow_runs_requested_or_unverified')
+  add(Number.isInteger(observed.waiting) && observed.waiting === 0, 'source_workflow_runs_waiting_or_unverified')
+  add(Number.isInteger(observed.pending) && observed.pending === 0, 'source_workflow_runs_pending_or_unverified')
+  add(observed.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID, 'cloudflare_account_unverified')
 
   const deployment = observed.deployment
   const traffic = deployment?.versions
@@ -71,17 +82,24 @@ async function getJSON(url, headers = {}) {
 export async function inspectLiveReadOnly(env = process.env) {
   const prefix = 'https://api.github.com/repos/' + SOURCE_REPO + '/actions/workflows/cloudflare.yml'
   const ghHeaders = { 'User-Agent': 'tonecos-readonly-cutover-check' }
-  const [workflow, active, queued] = await Promise.all([
+  const [workflow, active, queued, requested, waiting, pending] = await Promise.all([
     getJSON('https://api.github.com/repos/' + SOURCE_REPO + '/actions/workflows/cloudflare.yml', ghHeaders),
     getJSON(prefix + '/runs?status=in_progress&per_page=1', ghHeaders),
     getJSON(prefix + '/runs?status=queued&per_page=1', ghHeaders),
+    getJSON(prefix + '/runs?status=requested&per_page=1', ghHeaders),
+    getJSON(prefix + '/runs?status=waiting&per_page=1', ghHeaders),
+    getJSON(prefix + '/runs?status=pending&per_page=1', ghHeaders),
   ])
-  const state = { workflow, running: active.total_count, queued: queued.total_count }
+  const state = {
+    workflow, running: active.total_count, queued: queued.total_count,
+    requested: requested.total_count, waiting: waiting.total_count, pending: pending.total_count,
+  }
   // No token: still report actual GitHub state, but never infer Cloudflare readiness.
   if (!env.CLOUDFLARE_API_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) return state
   const account = env.CLOUDFLARE_ACCOUNT_ID
+  if (account !== CLOUDFLARE_ACCOUNT_ID) throw new Error('cloudflare_account_mismatch')
   const host = 'https://api.cloudflare.com/client/v4/accounts/' + encodeURIComponent(account) +
-    '/workers/scripts/tonecos-catalogo-api'
+    '/workers/scripts/' + WORKER_NAME
   const headers = { Authorization: 'Bearer ' + env.CLOUDFLARE_API_TOKEN }
   const [deploy, settings] = await Promise.all([
     getJSON(host + '/deployments', headers),
@@ -90,6 +108,7 @@ export async function inspectLiveReadOnly(env = process.env) {
   if (deploy.success !== true || settings.success !== true) {
     throw new Error('cloudflare_metadata_not_verified')
   }
+  state.cloudflareAccountId = account
   state.deployment = (deploy.result?.deployments ?? [])[0]
   state.bindings = settings.result?.bindings
   return state
@@ -110,6 +129,9 @@ async function main() {
       sourceWorkflow: state.workflow?.state ?? 'unverified',
       sourceInProgress: state.running ?? null,
       sourceQueued: state.queued ?? null,
+      sourceRequested: state.requested ?? null,
+      sourceWaiting: state.waiting ?? null,
+      sourcePending: state.pending ?? null,
       liveWorkerVersionId: state.deployment?.versions?.[0]?.version_id ?? null,
       blockers: verdict.blockers,
     }, null, 2))
