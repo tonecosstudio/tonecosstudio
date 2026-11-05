@@ -527,3 +527,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar `/universo/animes-desenhos/one-piece` em mobile, tablet e desktop; verificar pastas, imagens e retorno às fichas. Depois avançar para outra categoria do Universo na mesma PR.
 
 **DO_NOT_REPEAT:** usar `35dace08` como preview funcional mais recente; não gerar novo preview só por documentação; não alterar `main`, produção ou Worker.
+
+## Rodada 43 — franquia One Piece responsiva (05/11/2026)
+
+- QA em [One Piece no Universo](https://35dace08.tonecosstudio.pages.dev/universo/animes-desenhos/one-piece), preview privado build/deploy **SUCCESS** no código `037325392483cf1eeb2d92cff601b6666e415a37`. Breadcrumb usa “Animes e Desenhos / One Piece”.
+- A raiz exibe 22 pastas e 8 modelos de referência. As 8 miniaturas carregaram; CTA de modelos tem 44 px.
+- Em 280/320/359/360/390/639/640/768/1023/1024/1280/1440 px não houve overflow. Pastas refluem em 1/2/3/4 colunas e referências em 2/3/4 colunas. O título longo “Akainu x Kizaru x Aokiji” fica dentro de duas linhas.
+- Sem alteração de código nesta rodada. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** revisar `/universo/animes-desenhos/naruto` em mobile, tablet e desktop; conferir pastas, miniaturas e retorno à ficha. Depois avançar pela categoria sem carregar páginas completas além do limite publicado.
+
+**DO_NOT_REPEAT:** preview funcional é `35dace08`; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
