@@ -295,3 +295,11 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - **Contato:** conferência adicional a 320 px sem overflow e sem alvos de toque abaixo de 44 px; nenhum link de e-mail foi acionado.
 - Não houve correção de código necessária, novo build ou novo deployment. Produção, Worker, D1, R2 e DNS inalterados; PR #4 segue open/draft.
 - **NEXT_ACTION:** auditar a página 2 de /modelos em 320/390/768/1024/1440 px, incluindo paginação, preservação de busca/filtros e tamanho dos alvos; alterar código e gerar preview novo apenas diante de um problema reproduzível.
+
+## Backend — preflight M5 mais seguro (05/11/2026)
+
+- **Escopo isolado do layout:** apenas `scripts/catalog/cutover-readiness.mjs`, respectivo teste e filtro por path do workflow Quality existente; nenhuma alteração na UI, no Worker staged, em Pages Function, D1/R2 ou segredos.
+- **Correção:** o preflight agora exige ausência comprovada de runs `requested`, `waiting`, `pending`, `queued` e `in_progress` do publicador Washington; verifica repositório de destino, conta/Worker Cloudflare e evidência explícita de rollback. Estado desconhecido permanece bloqueado. A verificação só lê metadados GitHub/Cloudflare; nenhum deploy ou SQL.
+- **Commits:** `3ba44a0` (preflight), `aab4f4d` (testes), `230623e` (acionamento do CI existente). PR #4 segue open/draft, base `fdd2992`. O gate na revisão `230623e` foi iniciado em [GitHub Actions #41969042567](https://github.com/tonecosstudio/tonecosstudio/actions/runs/41969042567); **resultado ainda pendente no momento deste registro**.
+- **NEXT_ACTION:** verificar os testes offline desse SHA. M5 segue BLOCKED até GO específico, controle exclusivo do writer Washington, evidência real de rollback e credenciais autorizadas; nenhuma promoção antecipada.
+- **DO_NOT_REPEAT:** não abrir PR/branch extra, não refazer build frontend só por docs, não consultar D1/R2, não implantar Worker nem alterar main ou produção.
