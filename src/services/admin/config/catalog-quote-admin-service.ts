@@ -91,7 +91,7 @@ export async function answerCatalogQuoteRequest(quoteId: string, amount: number)
   assertCommercialMode();
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(quoteId) ||
       !Number.isFinite(amount) || amount <= 0 || amount > 99999999.99 ||
-      Math.round(amount * 100) !== amount * 100) {
+      Math.abs(amount * 100 - Math.round(amount * 100)) > 0.00001) {
     throw new Error("admin_catalog_quote_response_invalid");
   }
   await requireCurrentUserAdminAccess();
