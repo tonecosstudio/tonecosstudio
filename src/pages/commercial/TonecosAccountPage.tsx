@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import { hasTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
 import {
   getTonecosCurrentUser, getMyTonecosProfile, registerTonecosAccount,
   signInTonecosAccount, signOutTonecosAccount, updateMyTonecosProfile,
@@ -26,6 +27,7 @@ export default function TonecosAccountPage() {
   const next = safeNext.has(params.get("next") ?? "") ? params.get("next")! : TONECOS_COMMERCIAL_ROUTES.account;
   const [mode, setMode] = useState(params.get("mode") === "signup" ? "signup" : "login");
   const [identity, setIdentity] = useState<Identity | null | undefined>(undefined);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -44,6 +46,17 @@ export default function TonecosAccountPage() {
       });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!identity) { setIsAdmin(false); return; }
+    let active = true;
+    hasTonecosAdminAccess().then((allowed) => {
+      if (active) setIsAdmin(allowed);
+    }).catch(() => {
+      if (active) setIsAdmin(false);
+    });
+    return () => { active = false; };
+  }, [identity?.id]);
 
   useEffect(() => {
     if (!identity) return;
@@ -105,7 +118,7 @@ export default function TonecosAccountPage() {
     setBusy(true); setError(""); setNotice("");
     try {
       await signOutTonecosAccount();
-      setIdentity(null); setPassword("");
+      setIdentity(null); setIsAdmin(false); setPassword("");
       navigate(TONECOS_COMMERCIAL_ROUTES.login, { replace: true });
     } catch (err) { setError(errorText(err)); }
     finally { setBusy(false); }
@@ -142,13 +155,13 @@ export default function TonecosAccountPage() {
                 <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.coins}>Minhas moedas</Link>}
               <Link className={secondaryClass} to="/modelos">Explorar modelos</Link>
               {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" &&
-                identity.email?.trim().toLowerCase() === "tonecosstudio@gmail.com" &&
+                isAdmin &&
                 <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}>
                   Atendimento Tonecos
                 </Link>
               }
               {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
-                identity.email?.trim().toLowerCase() === "tonecosstudio@gmail.com" &&
+                isAdmin &&
                 <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminCoins}>
                   Administração de moedas
                 </Link>

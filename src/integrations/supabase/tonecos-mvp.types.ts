@@ -1,4 +1,4 @@
-// Generated from Tonecos Supabase icmtmaakjucmuzxnofkd.
+// Generated from Tonecos commercial Supabase after deprecating guessed-owner bootstrap.
 export type Json =
   | string
   | number
@@ -148,7 +148,6 @@ export type Database = {
         Args: { p_amount: number; p_quote_id: string }
         Returns: string
       }
-      bootstrap_tonecos_owner_admin: { Args: never; Returns: boolean }
       find_tonecos_coin_recipient: { Args: { p_email: string }; Returns: Json }
       get_my_tonecos_coin_balance: { Args: never; Returns: Json }
       is_tonecos_admin: { Args: never; Returns: boolean }

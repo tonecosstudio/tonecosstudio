@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { answerCatalogQuoteRequest, bootstrapTonecosOwnerAdmin, listAdminCatalogQuotes, type AdminCatalogQuote } from "@/services/admin/config/catalog-quote-admin-service";
+import { answerCatalogQuoteRequest, listAdminCatalogQuotes, type AdminCatalogQuote } from "@/services/admin/config/catalog-quote-admin-service";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -10,7 +10,6 @@ export default function TonecosAdminQuotesPage() {
   const [attempt, setAttempt] = useState(0);
   const [price, setPrice] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [activating, setActivating] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -25,18 +24,6 @@ export default function TonecosAdminQuotesPage() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [attempt]);
-
-  async function activateOwner() {
-    if (activating) return;
-    setActivating(true); setError(""); setNotice("");
-    try {
-      await bootstrapTonecosOwnerAdmin();
-      setNotice("Administração ativada para a conta oficial confirmada.");
-      setAttempt((n) => n + 1);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Ativação não autorizada.");
-    } finally { setActivating(false); }
-  }
 
   async function reply(event: FormEvent<HTMLFormElement>, id: string) {
     event.preventDefault();
@@ -58,16 +45,11 @@ export default function TonecosAdminQuotesPage() {
       {error && <div role="alert" className="mb-5 max-w-3xl border border-red-500/40 p-4 text-sm text-red-200">
         <p>{error}</p>
         {error === "Admin access required" && <p className="mt-3 text-xs text-white/70">
-          A primeira ativação exige a conta oficial Tonecos com e-mail confirmado.
+          Acesso administrativo restrito. A autorização deve ser provisionada
+          pela equipe após verificar a titularidade da conta.
         </p>}
-        <div className="mt-3 flex flex-wrap gap-3">
-          {error === "Admin access required" && <button type="button"
-            disabled={activating} className={actionClass} onClick={() => { void activateOwner(); }}>
-            {activating ? "Verificando..." : "Ativar administração"}
-          </button>}
-          <button type="button" className={secondaryClass}
-            onClick={() => setAttempt((n) => n + 1)}>Tentar novamente</button>
-        </div>
+        <button type="button" className={secondaryClass + " mt-3"}
+          onClick={() => setAttempt((n) => n + 1)}>Tentar novamente</button>
       </div>}
       {loading ? <p role="status">Verificando autorização e orçamentos...</p> : null}
       {!loading && !error && quotes.length === 0 ? <p className={panelClass}>Nenhuma solicitação recebida.</p> : null}

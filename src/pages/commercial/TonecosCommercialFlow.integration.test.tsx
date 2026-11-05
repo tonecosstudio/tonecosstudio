@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => {
     getUser: vi.fn(), signIn: vi.fn(), signUp: vi.fn(), signOut: vi.fn(),
     getProfile: vi.fn(), updateProfile: vi.fn(),
     quoteItems: vi.fn(), submit: vi.fn(), listMine: vi.fn(),
-    listAdmin: vi.fn(), answerAdmin: vi.fn(), bootstrapAdmin: vi.fn(),
+    listAdmin: vi.fn(), answerAdmin: vi.fn(), hasAdmin: vi.fn(),
   };
 });
 vi.mock("@/services/customer/tonecos-account-service", () => ({
@@ -28,6 +28,9 @@ vi.mock("@/services/customer/tonecos-account-service", () => ({
   getMyTonecosProfile: mocks.getProfile,
   updateMyTonecosProfile: mocks.updateProfile,
 }));
+vi.mock("@/services/auth/tonecos-admin-access", () => ({
+  hasTonecosAdminAccess: mocks.hasAdmin,
+}));
 vi.mock("@/services/customer/catalog-quote-service", () => ({
   quoteItemsFromSelection: mocks.quoteItems,
   submitCatalogQuoteRequest: mocks.submit,
@@ -36,7 +39,6 @@ vi.mock("@/services/customer/catalog-quote-service", () => ({
 vi.mock("@/services/admin/config/catalog-quote-admin-service", () => ({
   listAdminCatalogQuotes: mocks.listAdmin,
   answerCatalogQuoteRequest: mocks.answerAdmin,
-  bootstrapTonecosOwnerAdmin: mocks.bootstrapAdmin,
 }));
 
 const model = {
@@ -54,6 +56,7 @@ function renderApp(entry: string, seed = false) {
         {seed && <SelectModel />}
         <Routes>
           <Route path="/login" element={<TonecosAccountPage />} />
+          <Route path="/perfil" element={<TonecosAccountPage />} />
           <Route path="/orcamento" element={<TonecosQuoteRequestPage />} />
           <Route path="/meus-orcamentos" element={<TonecosMyQuotesPage />} />
           <Route path="/admin/orcamentos" element={<TonecosAdminQuotesPage />} />
@@ -67,6 +70,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
   mocks.getUser.mockResolvedValue({ id: USER, email: "cliente@example.com" });
+  mocks.hasAdmin.mockResolvedValue(false);
   mocks.getProfile.mockResolvedValue({
     id: USER, email: "cliente@example.com", full_name: "Cliente",
     phone: null, created_at: "2026-11-05T00:00:00Z", updated_at: "2026-11-05T00:00:00Z",
@@ -159,21 +163,33 @@ describe("Tonecos commercial screens: account → request → history → respon
     });
   });
 
+  it("shows admin navigation only after the server verifies membership", async () => {
+    mocks.hasAdmin.mockResolvedValue(false);
+    renderApp("/perfil");
+    await screen.findByText(/Conectado como cliente@example.com/);
+    expect(screen.queryByRole("link", { name: "Atendimento Tonecos" })).not.toBeInTheDocument();
+  });
+
+  it("never permits admin self-promotion through a browser button", async () => {
+    mocks.listAdmin.mockRejectedValue(new Error("Admin access required"));
+    renderApp("/admin/orcamentos");
+    expect(await screen.findByText(/Acesso administrativo restrito/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ativar administração" })).not.toBeInTheDocument();
+    expect(mocks.answerAdmin).not.toHaveBeenCalled();
+  });
+
+  it("shows only a real administrator's console link", async () => {
+    mocks.hasAdmin.mockResolvedValue(true);
+    renderApp("/perfil");
+    expect(await screen.findByRole("link", { name: "Atendimento Tonecos" }))
+      .toHaveAttribute("href", "/admin/orcamentos");
+  });
+
   it("admin page uses the restricted service and does not submit prices for unauthorized users", async () => {
     mocks.listAdmin.mockRejectedValue(new Error("Admin access required"));
     renderApp("/admin/orcamentos");
     expect(await screen.findByText("Admin access required")).toBeInTheDocument();
     expect(mocks.answerAdmin).not.toHaveBeenCalled();
-  });
-
-  it("offers deliberate owner activation and refreshes the admin view on success", async () => {
-    mocks.listAdmin.mockRejectedValueOnce(new Error("Admin access required")).mockResolvedValueOnce([]);
-    mocks.bootstrapAdmin.mockResolvedValue(undefined);
-    renderApp("/admin/orcamentos");
-    fireEvent.click(await screen.findByRole("button", { name: "Ativar administração" }));
-    await waitFor(() => expect(mocks.bootstrapAdmin).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(mocks.listAdmin).toHaveBeenCalledTimes(2));
-    expect(await screen.findByText("Nenhuma solicitação recebida.")).toBeInTheDocument();
   });
 
   it("admin page answers with a validated quote price through its service", async () => {
