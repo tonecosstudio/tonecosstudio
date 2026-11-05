@@ -156,5 +156,71 @@ COMMENT ON COLUMN public.quotes.requested_catalog_models IS
   'Customer-requested published-catalog slug/quantity references, not verified prices or replicated catalog records.';
 COMMENT ON COLUMN public.quotes.catalog_requested_at IS
   'Set only by the authenticated quote intake RPC; null on earlier quotes.';
+
+-- A quote is priced only by an authenticated administrator, never by a visitor.
+-- Pricing a request is not payment, payment-link creation, or order acceptance.
+CREATE OR REPLACE FUNCTION private_api.answer_catalog_quote_request(
+  p_quote_id uuid,
+  p_amount numeric
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $function$
+DECLARE
+  v_user_id uuid := (SELECT auth.uid());
+  v_updated uuid;
+BEGIN
+  IF v_user_id IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = v_user_id AND role IN ('admin', 'super_admin')
+  ) THEN
+    RAISE EXCEPTION 'Admin access required' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_quote_id IS NULL OR p_amount IS NULL
+    OR p_amount <= 0 OR p_amount > 99999999.99
+    OR p_amount <> round(p_amount, 2) THEN
+    RAISE EXCEPTION 'Invalid quote amount' USING ERRCODE = '22023';
+  END IF;
+
+  UPDATE public.quotes
+  SET total_amount = p_amount, status = 'answered'
+  WHERE id = p_quote_id
+    AND catalog_requested_at IS NOT NULL
+    AND status IN ('pending', 'reviewing')
+  RETURNING id INTO v_updated;
+
+  IF v_updated IS NULL THEN
+    RAISE EXCEPTION 'Catalog quote not found or already answered'
+      USING ERRCODE = 'P0002';
+  END IF;
+  RETURN v_updated;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION private_api.answer_catalog_quote_request(uuid, numeric)
+  FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private_api.answer_catalog_quote_request(uuid, numeric)
+  TO authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.answer_catalog_quote_request(
+  p_quote_id uuid,
+  p_amount numeric
+)
+RETURNS uuid
+LANGUAGE sql
+SECURITY INVOKER
+SET search_path = ''
+AS $function$
+  SELECT private_api.answer_catalog_quote_request(p_quote_id, p_amount);
+$function$;
+
+REVOKE ALL ON FUNCTION public.answer_catalog_quote_request(uuid, numeric)
+  FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.answer_catalog_quote_request(uuid, numeric)
+  TO authenticated, service_role;
+
 NOTIFY pgrst, 'reload schema';
 COMMIT;
