@@ -196,7 +196,7 @@ export default function CatalogArcade() {
                   value={franchiseDraft}
                   onChange={(event) => setFranchiseDraft(event.target.value)}
                   maxLength={80}
-                  placeholder="Pesquisar franquia (mínimo 3 letras)"
+                  placeholder="Buscar franquia (3+ letras)"
                   className="h-12 w-full border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,7%)] px-4 text-sm text-[hsl(0,0%,94%)] focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                 />
               </label>
