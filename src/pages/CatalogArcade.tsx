@@ -189,7 +189,7 @@ export default function CatalogArcade() {
               }}
               className="mt-6 flex flex-wrap items-center gap-3"
             >
-              <label className="min-w-56 flex-1">
+              <label className="w-full min-w-0 flex-1 sm:w-auto sm:min-w-56">
                 <span className="sr-only">Nome da franquia</span>
                 <input
                   type="search"
@@ -203,7 +203,7 @@ export default function CatalogArcade() {
               <button
                 type="submit"
                 disabled={Boolean(franchiseDraft.trim()) && Array.from(franchiseDraft.trim()).length < 3}
-                className="h-12 border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] disabled:opacity-40"
+                className="h-12 w-full border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] disabled:opacity-40 sm:w-auto"
               >
                 Buscar franquias
               </button>
