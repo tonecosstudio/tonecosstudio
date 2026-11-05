@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-labelledby="title description">
   <title id="title">Imagem indisponível</title>
-  <desc id="description">Fallback visual da Tonecos Studio para modelos sem imagem publicada.</desc>
+  <desc id="description">Fallback visual da TONART Studio para modelos sem imagem publicada.</desc>
   <defs>
     <radialGradient id="glow" cx="50%" cy="42%" r="70%">
       <stop offset="0" stop-color="#c99b45" stop-opacity=".16"/>
@@ -19,6 +19,6 @@
     <circle cx="-70" cy="-45" r="32"/>
     <path d="M-145 105l105-100 72 68 55-50 92 82"/>
   </g>
-  <text x="600" y="790" text-anchor="middle" fill="#d7ab4e" font-family="Arial, sans-serif" font-size="68" font-weight="700" letter-spacing="14">TONECOS</text>
+  <text x="600" y="790" text-anchor="middle" fill="#d7ab4e" font-family="Arial, sans-serif" font-size="68" font-weight="700" letter-spacing="14">TONART</text>
   <text x="600" y="860" text-anchor="middle" fill="#777" font-family="Arial, sans-serif" font-size="28" letter-spacing="5">IMAGEM INDISPONÍVEL</text>
 </svg>

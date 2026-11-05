@@ -28,13 +28,13 @@ function formatBrandTitle(title?: string): string {
 
 export default function SEOHead({
   title,
-  description = "Tonecos Studio — modelos para referência, esculturas sob encomenda e acompanhamento de pedidos.",
+  description = "TONART Studio — modelos para referência, esculturas sob encomenda e acompanhamento de pedidos.",
   keywords = [
     "estatuetas",
     "colecionáveis",
     "premium",
     "artesanal",
-    "tonecos",
+    "tonart",
     "collectibles",
   ],
   image = "/og-image.png",

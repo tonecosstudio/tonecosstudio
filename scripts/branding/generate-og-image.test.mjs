@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { injectSocialMeta, resolveSocialOrigin } from "./generate-og-image.mjs";
 
-const html = '<!doctype html><head>\n    <meta property="og:site_name" content="Tonecos Studio" />\n</head>';
+const html = '<!doctype html><head>\n    <meta property="og:site_name" content="TONART Studio" />\n</head>';
 
 test("preview metadata uses only the Tonecos deployment host", () => {
   const origin = resolveSocialOrigin({

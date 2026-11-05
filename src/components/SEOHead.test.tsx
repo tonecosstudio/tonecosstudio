@@ -7,16 +7,16 @@ describe("Tonecos public document titles", () => {
   it("does not duplicate the brand for the Home or published model", async () => {
     const { rerender } = render(
       <HelmetProvider>
-        <SEOHead title="Tonecos Studio" />
+        <SEOHead title="TONART Studio" />
       </HelmetProvider>,
     );
-    await waitFor(() => expect(document.title).toBe("Tonecos Studio"));
+    await waitFor(() => expect(document.title).toBe("TONART Studio"));
     rerender(
       <HelmetProvider>
-        <SEOHead title="10H — Tonecos Studio" />
+        <SEOHead title="10H — TONART Studio" />
       </HelmetProvider>,
     );
-    await waitFor(() => expect(document.title).toBe("10H — Tonecos Studio"));
+    await waitFor(() => expect(document.title).toBe("10H — TONART Studio"));
   });
 
   it("adds the brand once to an unbranded catalog title", async () => {
@@ -26,7 +26,7 @@ describe("Tonecos public document titles", () => {
       </HelmetProvider>,
     );
     await waitFor(() =>
-      expect(document.title).toBe("Catálogo de modelos | Tonecos Studio"),
+      expect(document.title).toBe("Catálogo de modelos | TONART Studio"),
     );
   });
 });

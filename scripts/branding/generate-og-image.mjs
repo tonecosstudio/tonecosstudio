@@ -10,8 +10,8 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" v
   <path d="M50 56H1150V574H50Z" fill="none" stroke="#b68b3b" stroke-width="2"/>
   <path d="M84 95H1116M84 535H1116" stroke="#b68b3b" stroke-width="1" opacity=".5"/>
   <path d="M86 94H260M940 94H1114" stroke="#f5c766" stroke-width="4"/>
-  <text x="92" y="156" fill="#c49a4e" font-family="Arial,sans-serif" font-size="25" font-weight="700" letter-spacing="11">TONECOS STUDIO</text>
-  <text x="88" y="342" fill="#f7f5ef" font-family="Arial,sans-serif" font-size="128" font-weight="800" letter-spacing="13">TONECOS</text>
+  <text x="92" y="156" fill="#c49a4e" font-family="Arial,sans-serif" font-size="25" font-weight="700" letter-spacing="11">TONART STUDIO</text>
+  <text x="88" y="342" fill="#f7f5ef" font-family="Arial,sans-serif" font-size="128" font-weight="800" letter-spacing="13">TONART</text>
   <rect x="89" y="373" width="700" height="3" fill="#c49a4e"/>
   <text x="92" y="437" fill="#d3a958" font-family="Arial,sans-serif" font-size="36" font-weight="700" letter-spacing="4">ESCULTURAS SOB ENCOMENDA</text>
   <text x="92" y="496" fill="#aba49b" font-family="Arial,sans-serif" font-size="25" letter-spacing="3">PERSONAGENS  ·  MODELOS  ·  COLECIONÁVEIS</text>
@@ -71,7 +71,7 @@ export function resolveSocialOrigin(env = process.env) {
 
 export function injectSocialMeta(html, origin) {
   if (!origin) return html;
-  const anchor = '    <meta property="og:site_name" content="Tonecos Studio" />';
+  const anchor = '    <meta property="og:site_name" content="TONART Studio" />';
   if (html.split(anchor).length !== 2 || html.includes('property="og:image"') || html.includes('name="twitter:image"')) {
     throw new Error("Unexpected Tonecos social metadata template; refusing to generate duplicates.");
   }
@@ -82,9 +82,9 @@ export function injectSocialMeta(html, origin) {
     '<meta property="og:image:type" content="image/png" />',
     '<meta property="og:image:width" content="1200" />',
     '<meta property="og:image:height" content="630" />',
-    '<meta property="og:image:alt" content="Tonecos Studio — esculturas sob encomenda" />',
+    '<meta property="og:image:alt" content="TONART Studio — esculturas sob encomenda" />',
     `<meta name="twitter:image" content="${imageUrl}" />`,
-    '<meta name="twitter:image:alt" content="Tonecos Studio — esculturas sob encomenda" />',
+    '<meta name="twitter:image:alt" content="TONART Studio — esculturas sob encomenda" />',
   ];
   return html.replace(anchor, `${anchor}\n    ${tags.join("\n    ")}`);
 }

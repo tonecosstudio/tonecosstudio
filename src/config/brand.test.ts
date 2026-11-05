@@ -5,8 +5,8 @@ import { BRAND_NAME, BRAND_SHORT_NAME, BRAND_STUDIO_LABEL } from "./brand";
 
 describe("Tonecos public identity", () => {
   it("keeps one canonical consumer-facing name independent of the former OrdaX project", () => {
-    expect(BRAND_NAME).toBe("Tonecos Studio");
-    expect(BRAND_SHORT_NAME).toBe("Tonecos");
+    expect(BRAND_NAME).toBe("TONART Studio");
+    expect(BRAND_SHORT_NAME).toBe("TONART");
     expect(BRAND_STUDIO_LABEL).toBe("Studio");
     expect(BRAND_NAME).not.toMatch(/ordax/i);
   });
@@ -102,9 +102,9 @@ it("uses only Tonecos visual assets for public pages and browser notifications",
     "utf8",
   );
   expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/favicon.svg" />');
-  expect(icon).toContain(">Tonecos Studio</title>");
+  expect(icon).toContain(">TONART Studio</title>");
   expect(icon).not.toMatch(/ordax|lovable/i);
-  expect(fallback).toContain(">TONECOS</text>");
+  expect(fallback).toContain(">TONART</text>");
   expect(fallback).not.toMatch(/ordax/i);
   expect(constants).toContain('DEFAULT_ICON_URL: "/favicon.svg"');
   expect(alerts).toContain("icon: icon || ASSETS.DEFAULT_ICON_URL");
@@ -189,7 +189,7 @@ it("builds a single deterministic social image from Tonecos-owned sources", () =
   );
   expect(generator).toContain("dist/og-image.png");
   expect(generator).not.toContain("public/og-image.png");
-  expect(generator).toContain("TONECOS STUDIO");
+  expect(generator).toContain("TONART STUDIO");
   expect(generator).toContain('xmlns="http://www.w3.org/2000/svg"');
   const svgMarkup = generator.split("const svg = `")[1]?.split("`;")[0] || "";
   expect(svgMarkup.replaceAll("http://www.w3.org/2000/svg", "")).not.toMatch(
