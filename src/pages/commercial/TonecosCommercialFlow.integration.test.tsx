@@ -83,7 +83,7 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
-describe("Tonecos commercial screens: account → request → history → response", () => {
+describe("TONART commercial screens: account → request → history → response", () => {
   it("keeps logged-out quote selection and sends visitors to sign in", async () => {
     mocks.getUser.mockResolvedValue(null);
     renderApp("/orcamento", true);
@@ -167,7 +167,7 @@ describe("Tonecos commercial screens: account → request → history → respon
     mocks.hasAdmin.mockResolvedValue(false);
     renderApp("/perfil");
     await screen.findByText(/Conectado como cliente@example.com/);
-    expect(screen.queryByRole("link", { name: "Atendimento Tonecos" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Atendimento TONART" })).not.toBeInTheDocument();
   });
 
   it("never permits admin self-promotion through a browser button", async () => {
@@ -181,7 +181,7 @@ describe("Tonecos commercial screens: account → request → history → respon
   it("shows only a real administrator's console link", async () => {
     mocks.hasAdmin.mockResolvedValue(true);
     renderApp("/perfil");
-    expect(await screen.findByRole("link", { name: "Atendimento Tonecos" }))
+    expect(await screen.findByRole("link", { name: "Atendimento TONART" }))
       .toHaveAttribute("href", "/admin/orcamentos");
   });
 
