@@ -94,8 +94,12 @@ export function ArcadeSectionTitle({ children }: { children: string }) {
     <div className="flex items-center gap-4 mb-8">
       <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[hsl(var(--gold-accent)/0.3)]" />
       <h2
-        className="text-sm tracking-[0.3em] text-[hsl(var(--gold-accent))] uppercase"
-        style={{ fontFamily: "'Press Start 2P', monospace", fontSize: "10px" }}
+        className="text-center text-[hsl(var(--gold-accent))] uppercase"
+        style={{
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: "clamp(9px, 2.5vw, 10px)",
+          letterSpacing: "clamp(1.2px, 0.39vw, 3px)",
+        }}
       >
         {children}
       </h2>
