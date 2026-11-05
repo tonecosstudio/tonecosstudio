@@ -814,3 +814,20 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** validar a busca de franquias e a rota `/universo/games/street-fighter?folder=chun-li` em 280/320/360/390/640/768/1024/1440 px; conferir overflow, quantidade de colunas, miniaturas e retorno ao caminho anterior.
 
 **DO_NOT_REPEAT:** usar `b5ce69e4` como preview atual; não usar `ef8ab5fb`; não gerar build para documentação isolada; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
+
+
+## Rodada 59 — Games, Filmes e Séries, Home e Sobre (05/11/2026)
+
+- Base verificada: PR #4, branch `integration/tonecosstudio-canonical-20261101`, HEAD atual `1adc0a107e91778d3d98919221e7dc13cb0ac5d2`. A prévia ainda ativa é `440db22e`, deployment `440db22e-9ac3-4574-be7a-eea1341eeae4`, source SHA `6291ced2710b1dcb9a7dd655c8175e1a86c36a7d`.
+- **Games / rodada 58 concluída:** em `/universo/games`, busca por “Street Fighter” retorna a franquia correta e o botão Limpar busca. Em 280/320/360/390/640/768/1024/1440 px, sem overflow; 24 cards, grade 2/2/2/2/3/3/4/4 colunas. Campo e botão ocupam a largura disponível no mobile.
+- `/universo/games/street-fighter?folder=chun-li`: 8 referências e 8/8 miniaturas carregadas. Sem overflow em 280/320/360/390/640/768/1024/1440 px; grade 2/2/2/2/3/3/4/4. A ficha Chun Li carregou imagens de 1500 e 360 px; “Voltar à pasta” restaura a URL com `?folder=chun-li`.
+- **Filmes e Séries:** `/universo/filmes-series` mostra 24 franquias em grade 2/2/2/2/3/3/4/4 nos mesmos breakpoints, sem overflow ou títulos cortados. No preview, 16 imagens lazy estavam carregadas no mobile e as 24 em 1440 px.
+- `/universo/filmes-series/o-senhor-dos-aneis` apresenta 24 pastas; o caminho longo `folder=diorama-legolas-e-troll` cabe em 280/320/360/390/640/768/1024/1440 px sem overflow. A imagem do folder (600 px) e a ficha Legolas e Troll (1200 px) carregam; o retorno preserva a URL exata da pasta.
+- **Home:** em 280/320/360/390/640/768/1024/1440 px, sem overflow; destaques e métricas mantêm grades responsivas e 6/6 imagens de destaque carregaram.
+- **Sobre:** no preview atual, o cartão “Missão” usa 32 px de padding até no mobile; em 280 px a caixa tem 240 px, o parágrafo fica com 176 px e 319 px de altura (14 linhas). Commit [1adc0a1](https://github.com/tonecosstudio/tonecosstudio/commit/1adc0a107e91778d3d98919221e7dc13cb0ac5d2) ajusta o padding para `p-4 sm:p-6 md:p-12`; a fonte de página foi conferida no branch. Esta melhoria **ainda não aparece na prévia**.
+- GitHub Actions [Quality Gate #42127675138](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42127675138) terminou SUCCESS; apenas `Catalog Worker offline / no deploy` executou, e os jobs de build/teste do frontend foram pulados pelas condições do workflow. Nenhum teste foi executado manualmente.
+- **Preview pendente:** o conector Cloudflare retornou `Unknown tool` para search/execute/whoami. O painel Cloudflare redirecionou para login Google SSO e a aba não tem sessão. Não inserir senha nem alterar produção; aguardar autenticação do proprietário ou restabelecimento do conector. Código permanece na PR #4 draft.
+
+**NEXT_ACTION:** após restaurar o acesso Cloudflare, criar/repetir uma implantação **preview** para SHA `1adc0a107e91778d3d98919221e7dc13cb0ac5d2`; verificar o cartão Missão em 280/320/360/390/640/768/1024/1440 px, registrar largura/altura/linhas antes e depois, e então seguir pela página Contato.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não chamar produção, Worker, D1, R2, DNS ou migrations; não gerar build para atualização documental isolada.
