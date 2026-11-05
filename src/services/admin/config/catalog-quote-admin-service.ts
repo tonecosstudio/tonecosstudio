@@ -11,6 +11,8 @@ import { validCatalogSlug } from "@/services/catalog/public-catalog-gateway";
 export type AdminCatalogQuote = {
   id: string;
   userId: string;
+  customerName: string | null;
+  customerEmail: string;
   status: string;
   createdAt: string;
   notes: string | null;
@@ -73,16 +75,31 @@ export async function listAdminCatalogQuotes(limit = 50): Promise<AdminCatalogQu
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return ((data ?? []) as unknown as QuoteRow[]).map((row) => ({
-    id: row.id,
-    userId: row.user_id,
-    status: row.status,
-    createdAt: row.created_at,
-    notes: row.notes,
-    items: decodeItems(row.requested_catalog_models),
-    quotedAmount: row.status === "answered" && row.total_amount !== null && row.total_amount > 0
-      ? row.total_amount : null,
+  const rows = ((data ?? []) as unknown as QuoteRow[]).map((row) => ({
+    ...row, items: decodeItems(row.requested_catalog_models),
   }));
+  if (rows.length === 0) return [];
+  const ids = [...new Set(rows.map((row) => row.user_id))];
+  const { data: contacts, error: contactError } = await tonecos
+    .from("profiles").select("id,email,full_name").in("id", ids);
+  if (contactError) throw contactError;
+  const byId = new Map((contacts ?? []).map((person) => [person.id, person]));
+  return rows.map((row) => {
+    const contact = byId.get(row.user_id);
+    if (!contact?.email) throw new Error("admin_catalog_quote_contact_missing");
+    return {
+      id: row.id,
+      userId: row.user_id,
+      customerName: contact.full_name,
+      customerEmail: contact.email,
+      status: row.status,
+      createdAt: row.created_at,
+      notes: row.notes,
+      items: row.items,
+      quotedAmount: row.status === "answered" && row.total_amount !== null && row.total_amount > 0
+        ? row.total_amount : null,
+    };
+  });
 }
 
 /** Only the privileged server RPC may change the quote's monetary amount. */

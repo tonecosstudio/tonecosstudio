@@ -55,7 +55,13 @@ export default function TonecosAdminQuotesPage() {
               <h2 className="font-semibold">Solicitação #{quote.id.slice(0, 8)}</h2>
               <span className="border border-white/20 px-3 py-1 text-xs">{quote.status}</span>
             </div>
-            <p className="mb-3 text-xs text-white/55">Cliente {quote.userId.slice(0, 8)} · {new Date(quote.createdAt).toLocaleDateString("pt-BR")}</p>
+            <p className="mb-1 text-sm text-white/80">{quote.customerName || "Cliente"}</p>
+            <p className="mb-3 text-xs text-white/65">
+              <a href={"mailto:" + encodeURIComponent(quote.customerEmail)} className="underline underline-offset-2 hover:text-white">
+                {quote.customerEmail}
+              </a>
+              {" · "}{new Date(quote.createdAt).toLocaleDateString("pt-BR")}
+            </p>
             <ul className="space-y-2 text-sm">
               {quote.items.map((item) => (
                 <li key={item.slug}>

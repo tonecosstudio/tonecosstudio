@@ -91,13 +91,22 @@ describe("admin catalog quote response boundary", () => {
       notes: "1/5", total_amount: null,
       requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
     }], error: null });
-    mocks.from.mockReturnValue(query);
+    const contacts = { select: vi.fn(), in: vi.fn() };
+    contacts.select.mockReturnValue(contacts);
+    contacts.in.mockResolvedValue({ data: [
+      { id: "client-1", email: "client@example.test", full_name: "Cliente Exemplo" },
+    ], error: null });
+    mocks.from.mockImplementation((table: string) =>
+      table === "quotes" ? query : contacts);
     const rows = await listAdminCatalogQuotes(10);
+    expect(mocks.from).toHaveBeenCalledWith("profiles");
+    expect(contacts.in).toHaveBeenCalledWith("id", ["client-1"]);
     expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("is_tonecos_admin");
     expect(query.not).toHaveBeenCalledWith("catalog_requested_at", "is", null);
     expect(query.limit).toHaveBeenCalledWith(10);
     expect(rows).toMatchObject([{
       id: QUOTE, status: "pending", quotedAmount: null,
+      customerEmail: "client@example.test", customerName: "Cliente Exemplo",
       items: [{ slug: "naruto", quantity: 1 }],
     }]);
   });
