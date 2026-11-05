@@ -50,14 +50,14 @@ export function PrivacyArcadeView({ settings }: { settings?: SystemSettings }) {
         compact
       />
 
-      <section className="max-w-4xl mx-auto px-6 pb-16">
+      <section className="mx-auto max-w-4xl px-4 pb-16 sm:px-6">
         <ArcadeSectionTitle>{publicMvp ? "Privacidade do catálogo" : "Protocolo de Dados"}</ArcadeSectionTitle>
 
         <div className="space-y-4">
           {sections.map((s) => (
             <ArcadeCard key={s.num}>
-              <div className={`p-6 ${s.highlight ? "border-l-2 border-l-[hsl(120,60%,40%)]" : ""}`}>
-                <div className="flex items-start gap-4">
+              <div className={`p-4 sm:p-6 ${s.highlight ? "border-l-2 border-l-[hsl(120,60%,40%)]" : ""}`}>
+                <div className="flex items-start gap-3 sm:gap-4">
                   <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)]">
                     <span className="font-mono text-xs text-[hsl(var(--gold-accent))] font-bold">{s.num}</span>
                   </div>
@@ -76,7 +76,7 @@ export function PrivacyArcadeView({ settings }: { settings?: SystemSettings }) {
 
         <div className="mt-10">
           <ArcadeCard>
-            <div className="p-6 text-center">
+            <div className="p-4 sm:p-6 text-center">
               <p className="text-[hsl(0,0%,40%)] font-mono text-[10px] tracking-wider uppercase mb-2">{publicMvp ? "Contato de privacidade" : "Conformidade LGPD"}</p>
               <p className="text-[hsl(var(--gold-accent))] font-mono text-sm">{contactEmail}</p>
               <p className="text-[hsl(0,0%,25%)] font-mono text-[9px] mt-3">© {new Date().getFullYear()} Tonecos Studios</p>
