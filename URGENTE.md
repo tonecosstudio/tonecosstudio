@@ -803,3 +803,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar /universo/animes-desenhos em 280/320/360/390/640/768/1024/1440 px; conferir busca de franquias, nomes longos, capas e navegação para uma franquia.
 
 **DO_NOT_REPEAT:** usar c9c7835f como preview atual; não gerar build para documentação isolada; não alterar main, produção, Worker, D1, R2, DNS ou migrations.
+
+## Rodada 58 — Busca mobile em Games (05/11/2026)
+
+- Base da PR #4: `main` @ `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; HEAD: `c08a29f13560dbe24c701d94efb6a5d69f00bb4a` na branch `integration/tonecosstudio-canonical-20261101`.
+- Em `src/pages/CatalogArcade.tsx`, o campo de busca e o botão passam a ocupar a largura da tela abaixo de 640 px; o formulário volta à linha a partir de `sm` e remove o mínimo fixo de 224 px do campo. O estado de carregamento agora diz “franquias” em rotas de categoria e “categorias” na raiz.
+- Preview [Games](https://b5ce69e4.tonecosstudio.pages.dev/universo/games), deployment `b5ce69e4-c8bf-4c1f-acba-cb9336a65c03`, build e deploy SUCCESS no SHA `c08a29f13560dbe24c701d94efb6a5d69f00bb4a`. A busca por “Street Fighter” devolve a franquia correta e mantém “Limpar busca”.
+- Conferência visual no preview em 1274 px; ainda falta captura em viewport móvel para esta busca. A classe mobile empilha campo e botão. PR #4 permanece draft. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** validar a busca de franquias e a rota `/universo/games/street-fighter?folder=chun-li` em 280/320/360/390/640/768/1024/1440 px; conferir overflow, quantidade de colunas, miniaturas e retorno ao caminho anterior.
+
+**DO_NOT_REPEAT:** usar `b5ce69e4` como preview atual; não usar `ef8ab5fb`; não gerar build para documentação isolada; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
