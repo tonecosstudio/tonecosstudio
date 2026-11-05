@@ -274,7 +274,7 @@ export default function CatalogArcade() {
                         <span
                           className={
                             isAnimeCategory
-                              ? "whitespace-nowrap tracking-tight text-[clamp(0.625rem,3vw,0.875rem)] font-semibold uppercase"
+                              ? "whitespace-nowrap tracking-tight text-[clamp(0.5rem,3vw,0.875rem)] font-semibold uppercase"
                               : "line-clamp-2 font-semibold uppercase"
                           }
                         >
