@@ -18,7 +18,7 @@ export default function PublicCatalogContact() {
         compact
       />
       <section className="relative z-10 mx-auto max-w-2xl px-4 pb-16 md:px-6">
-        <ArcadeSectionTitle>Contato</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Contato direto</ArcadeSectionTitle>
         <ArcadeCard hover={false}>
           <div className="space-y-5 p-6 text-center md:p-8" role="status">
             <Mail className="mx-auto h-7 w-7 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
@@ -29,12 +29,12 @@ export default function PublicCatalogContact() {
             </p>
             {emailHref ? (
               <a href={emailHref}
-                className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))]">
+                className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]">
                 ENVIAR E-MAIL
               </a>
             ) : (
               <Link to={PUBLIC_ROUTES.catalogModels}
-                className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))]">
+                className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]">
                 EXPLORAR MODELOS
               </Link>
             )}
