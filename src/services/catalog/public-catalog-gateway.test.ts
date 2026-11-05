@@ -18,7 +18,7 @@ const row = {
   folder_path: null,
   image_count: 3,
   gallery_version: 1,
-  cover_storage_key: "covers/mdl-123.webp",
+  cover_storage_key: "media/covers/mdl-123.webp",
 };
 
 describe("canonical catalog read boundary", () => {
@@ -60,7 +60,7 @@ describe("canonical catalog read boundary", () => {
           folderPath: null,
           imageCount: 3,
           galleryVersion: 1,
-          coverStorageKey: "covers/mdl-123.webp",
+          coverStorageKey: "media/covers/mdl-123.webp",
         },
       ],
       nextCursor: "next",
@@ -247,9 +247,9 @@ describe("canonical catalog read boundary", () => {
       qualityScore: 92,
       sourceSha256: "a".repeat(64),
       variantKeys: {
-        thumb: "gallery/thumb.webp",
-        card: "gallery/card.webp",
-        detail: "gallery/detail.webp",
+        thumb: "media/gallery/thumb.webp",
+        card: "media/gallery/card.webp",
+        detail: "media/gallery/detail.webp",
         original: null,
       },
     };
@@ -273,7 +273,7 @@ describe("canonical catalog read boundary", () => {
     expect(io.mock.calls[0]?.[0]).toBe(
       "https://example.test/catalogo-api/api/models/animal-original/images?limit=12&v=1",
     );
-    expect(page.items[0]?.variantKeys.detail).toBe("gallery/detail.webp");
+    expect(page.items[0]?.variantKeys.detail).toBe("media/gallery/detail.webp");
     expect(page).toMatchObject({ nextCursor: "page-2", total: 25, version: 1 });
   });
 

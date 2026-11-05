@@ -69,7 +69,7 @@ const original = {
   folder_path: null,
   image_count: 2,
   gallery_version: 1,
-  cover_storage_key: "covers/escultura.webp",
+  cover_storage_key: "media/covers/escultura.webp",
 };
 const second = {
   ...original,
@@ -587,9 +587,9 @@ describe("Tonecos shareable model detail UI", () => {
       qualityScore: 95,
       sourceSha256: "sha-" + id,
       variantKeys: {
-        thumb: "thumb/" + id + ".webp",
-        card: "card/" + id + ".webp",
-        detail: "detail/" + id + ".webp",
+        thumb: "media/thumb/" + id + ".webp",
+        card: "media/card/" + id + ".webp",
+        detail: "media/detail/" + id + ".webp",
         original: null,
       },
     });
@@ -601,7 +601,7 @@ describe("Tonecos shareable model detail UI", () => {
           ...original,
           // The Worker detail and first gallery cover must describe the same
           // published photograph; unrelated cover keys are now fail-closed.
-          cover_storage_key: "card/img-one.webp",
+          cover_storage_key: "media/card/img-one.webp",
           description: "Modelo publicado e revisado",
           height_cm: 28,
           material: "Resina",
@@ -654,7 +654,7 @@ describe("Tonecos shareable model detail UI", () => {
       screen.getByRole("img", {
         name: "Referência visual de Escultura original",
       }),
-    ).toHaveAttribute("src", BASE + "/detail/img-one.webp");
+    ).toHaveAttribute("src", BASE + "/media/detail/img-one.webp");
     fireEvent.click(
       screen.getByRole("button", { name: "Carregar mais imagens" }),
     );
@@ -666,7 +666,7 @@ describe("Tonecos shareable model detail UI", () => {
       screen.getByRole("img", {
         name: "Referência visual de Escultura original",
       }),
-    ).toHaveAttribute("src", BASE + "/detail/img-two.webp");
+    ).toHaveAttribute("src", BASE + "/media/detail/img-two.webp");
     expect(
       screen.getByText(/Disponibilidade e preço são confirmados pela equipe/),
     ).toBeInTheDocument();
