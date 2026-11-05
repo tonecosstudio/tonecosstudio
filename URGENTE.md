@@ -354,3 +354,12 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - **Naruto:** raiz com 18 pastas e 8 referências; Akatsuki com 11 subpastas e 8 referências visíveis. Nas duas rotas, 320/390/768 px sem overflow; grades de pastas 1/2/3 e de modelos 2/2/3. Breadcrumbs medem 44 px. “Explorar todos os modelos” preserva `category=animes-desenhos&franchise=naruto&folder=akatsuki`; a listagem apresenta 13 modelos e, em 320/390/768 px, grade 2/2/4 sem overflow. Console sem erros.
 - Nenhum defeito de layout reproduzível encontrado nessas rotas; não houve mudança de UI nesta rodada. Preview é readonly. Produção, Worker, D1, R2 e DNS não foram alterados. PR #4 permanece open/draft.
 - **NEXT_ACTION:** revisar `/universo/animes-desenhos/one-piece` e a listagem filtrada de One Piece em 320/390/768 px; continuar pelas próximas rotas com dados e navegação aninhada, corrigindo apenas problemas confirmados.
+
+## Rodada 29 — franquia One Piece e modelos filtrados (05/11/2026)
+
+- QA no preview privado atualizado [One Piece](https://d6f94b5d.tonecosstudio.pages.dev/universo/animes-desenhos/one-piece), deployment `d6f94b5d-2c43-431d-a05b-944e3cc17a23`, ambiente `preview`, código funcional `758f0fc465bb78ce04b64bb4d66f1cbfc528ae0f`. A PR #4 segue open/draft; o HEAD atual `2e6e074` acrescenta apenas este checkpoint documental. Não foi necessário novo build.
+- Raiz de One Piece: **22 pastas e 8 referências**. Em 320/390/768 px, documentos de 314/384/762 px, sem overflow. Grade de pastas 1/2/3 colunas e referências 2/2/3. O rótulo longo “Akainu x Kizaru x Aokiji” cabe sem corte ou overflow; alvo da pasta é maior que 44 px.
+- Pasta Luffy: 4 referências; dois breadcrumbs com 44 px; grade 2/2/3 sem overflow nas mesmas larguras. “Explorar todos os modelos” preserva `category=animes-desenhos&franchise=one-piece&folder=luffy`; a lista mostra 4 modelos e grade 2/2/4.
+- Da raiz, “Explorar todos os modelos” preserva `category=animes-desenhos&franchise=one-piece` e exibe 27 modelos na página 1. Em 320/390/768 px, sem overflow, grade 2/2/4; as imagens visíveis carregaram. Console sem erros.
+- Não encontrei problema de UI reproduzível; não houve alteração de código nesta rodada. Preview permanece readonly. Produção, Worker, D1, R2 e DNS inalterados.
+- **NEXT_ACTION:** revisar a franquia de Animes & Desenhos com mais de 36 modelos (Tartarugas Ninja) a partir da busca/lista da categoria, conferindo pasta, busca e paginação responsiva em 320/390/768 px.
