@@ -44,6 +44,19 @@ describe("Tonecos authenticated MVP account", () => {
     await expect(signInTonecosAccount("client@example.com", "StrongPass123!")).rejects.toThrow("tonecos_login_incomplete");
   });
 
+  it("allows existing valid accounts to log in even when their original password predates the signup policy", async () => {
+    mocks.signInWithPassword.mockResolvedValue({
+      data: { user: { id: USER }, session: { access_token: "x" } }, error: null,
+    });
+    await expect(signInTonecosAccount("client@example.com", "OldPassword1"))
+      .resolves.toBe(USER);
+    expect(mocks.signInWithPassword).toHaveBeenCalledWith({
+      email: "client@example.com", password: "OldPassword1",
+    });
+    await expect(signInTonecosAccount("client@example.com", ""))
+      .rejects.toThrow("tonecos_account_credentials_invalid");
+  });
+
   it("blocks commercial requests when configured for the OrdaX Supabase project", async () => {
     vi.stubEnv("VITE_SUPABASE_URL", "https://jhfphsjptrpmtnzkpwud.supabase.co");
     await expect(registerTonecosAccount({

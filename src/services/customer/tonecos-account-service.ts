@@ -14,13 +14,29 @@ function cleanText(input: unknown, limit: number, required = false): string | nu
   return value || null;
 }
 
-function validateCredentials(email: string, password: string): { email: string; password: string } {
+function validateEmail(email: string): string {
   const cleaned = cleanText(email, 320, true)!;
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleaned) ||
-      typeof password !== "string" || !isPasswordPolicyCompliant(password) || password.length > 1024) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleaned)) {
     throw new Error("tonecos_account_credentials_invalid");
   }
-  return { email: cleaned.toLowerCase(), password };
+  return cleaned.toLowerCase();
+}
+
+/** Strict policy for NEW passwords, never retroactive to an existing sign-in. */
+function validateRegistrationCredentials(email: string, password: string) {
+  const normalizedEmail = validateEmail(email);
+  if (typeof password !== "string" || !isPasswordPolicyCompliant(password) || password.length > 1024) {
+    throw new Error("tonecos_account_credentials_invalid");
+  }
+  return { email: normalizedEmail, password };
+}
+
+function validateSignInCredentials(email: string, password: string) {
+  const normalizedEmail = validateEmail(email);
+  if (typeof password !== "string" || password.length === 0 || password.length > 1024) {
+    throw new Error("tonecos_account_credentials_invalid");
+  }
+  return { email: normalizedEmail, password };
 }
 
 /** The only identity provider for Tonecos is Supabase Auth in the Tonecos project. */
@@ -28,7 +44,7 @@ export async function registerTonecosAccount(input: {
   email: string; password: string; fullName: string;
 }): Promise<{ userId: string | null; emailConfirmationRequired: boolean }> {
   assertTonecosCommercialEnabled();
-  const credentials = validateCredentials(input.email, input.password);
+  const credentials = validateRegistrationCredentials(input.email, input.password);
   const fullName = cleanText(input.fullName, 160, true)!;
   const { data, error } = await tonecos.auth.signUp({
     ...credentials, options: { data: { full_name: fullName } },
@@ -42,7 +58,7 @@ export async function registerTonecosAccount(input: {
 
 export async function signInTonecosAccount(email: string, password: string): Promise<string> {
   assertTonecosCommercialEnabled();
-  const { data, error } = await tonecos.auth.signInWithPassword(validateCredentials(email, password));
+  const { data, error } = await tonecos.auth.signInWithPassword(validateSignInCredentials(email, password));
   if (error) throw error;
   if (!data.user || !data.session) throw new Error("tonecos_login_incomplete");
   return data.user.id;
