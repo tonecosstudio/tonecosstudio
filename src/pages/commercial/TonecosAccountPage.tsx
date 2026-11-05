@@ -139,9 +139,9 @@ export default function TonecosAccountPage() {
           <div className={panelClass}>
             <div className="mb-6 flex gap-3" aria-label="Acesso à conta">
               <button className={mode === "login" ? actionClass : secondaryClass} type="button"
-                onClick={() => { setMode("login"); setError(""); setNotice(""); }}>Entrar</button>
+                onClick={() => { setMode("login"); setError(""); setNotice(""); }}>Acessar conta</button>
               <button className={mode === "signup" ? actionClass : secondaryClass} type="button"
-                onClick={() => { setMode("signup"); setError(""); setNotice(""); }}>Criar conta</button>
+                onClick={() => { setMode("signup"); setError(""); setNotice(""); }}>Cadastrar</button>
             </div>
             <form onSubmit={(event) => { void submitAccess(event); }} className="space-y-5">
               {mode === "signup" && <label className="block space-y-2 text-sm">
