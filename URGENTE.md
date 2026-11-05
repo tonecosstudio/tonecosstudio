@@ -3,6 +3,18 @@
 **Auditado em 05/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
 
 
+## Frontend — nomes completos nos cards do Universo (05/11/2026)
+
+- **Correção:** `src/pages/CatalogArcade.tsx` mantém “Animes e Desenhos” em uma linha e usa tamanho fluido com quebra entre palavras nos demais nomes, sem reticências. Em 280 px, “Tokusatsu & Cultura Japonesa” aparece completo em 3 linhas; em 320 e 390 px também está completo. Em 1280 px o rótulo fica completo em 2 linhas. Sem overflow horizontal.
+- **Prévia privada:** https://544d3c9c.tonecosstudio.pages.dev/universo — deployment `544d3c9c-3456-48f8-ac9c-c11c5a3f6005`, ambiente preview, source commit `910e96ba329cfdb7db515eecdfa2eaa7618cfd84`; Cloudflare Pages build e deploy SUCCESS. Nenhuma alteração em produção, Worker, D1 ou R2.
+- **QA relacionado:** categoria Marvel/DC e rota aninhada de equipes/grupos verificadas em 280, 320, 390, 768, 1024, 1280 e 1920 px, sem overflow; rota profunda preserva a pasta selecionada após reload. `/modelos` também foi validada em larguras de 280 a 1920 px na rodada anterior.
+- **Base/HEAD:** base da PR `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; commit de código `910e96ba329cfdb7db515eecdfa2eaa7618cfd84`; branch `integration/tonecosstudio-canonical-20261101`, PR #4 permanece draft.
+- **NEXT_ACTION:** continuar QA responsivo nas próximas rotas e estados públicos, usando o preview deste commit; corrigir somente problemas confirmados.
+- **DO_NOT_REPEAT:** não truncar rótulos de categoria, manter “Animes e Desenhos” em uma linha, não criar branch/PR, não fazer deploy público nem tocar no Worker/D1/R2; não gerar build por atualização apenas documental.
+
+---
+
+
 ## Frontend — hero responsivo e QA por página (05/11/2026)
 
 - **Ajuste no código:** `src/components/arcade/ArcadeLayout.tsx` agora usa tracking fluido em `ArcadeHero` (`clamp(0.08em, 2vw, 0.15em)`). A medição em `/privacidade` achou o H1 2 px maior que a caixa em 320 px; agora o texto mede 266/266 px. Em 360 px o tracking volta a 7.2 px; em 1280 px, 10.8 px e tamanho desktop preservado.
