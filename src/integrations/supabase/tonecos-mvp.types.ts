@@ -1,4 +1,4 @@
-// Types generated from Tonecos Supabase icmtmaakjucmuzxnofkd.
+// Generated from Tonecos Supabase icmtmaakjucmuzxnofkd.
 export type Json =
   | string
   | number
@@ -149,6 +149,7 @@ export type Database = {
         Returns: string
       }
       bootstrap_tonecos_owner_admin: { Args: never; Returns: boolean }
+      find_tonecos_coin_recipient: { Args: { p_email: string }; Returns: Json }
       get_my_tonecos_coin_balance: { Args: never; Returns: Json }
       is_tonecos_admin: { Args: never; Returns: boolean }
       submit_catalog_quote_request: {

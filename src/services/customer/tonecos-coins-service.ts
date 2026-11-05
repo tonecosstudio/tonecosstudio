@@ -137,3 +137,31 @@ export async function creditTonecosCoins(input: {
     transactionId: o.transaction_id, idempotent: o.idempotent,
   };
 }
+
+export type TonecosCoinRecipient = {
+  id: string;
+  email: string;
+  fullName: string | null;
+};
+
+/** One exact-email lookup authorized and executed by the database, never a directory list. */
+export async function findTonecosCoinRecipient(email: string): Promise<TonecosCoinRecipient | null> {
+  assertTonecosCoinsEnabled();
+  const normalized = typeof email === "string" ? email.trim().toLowerCase() : "";
+  if (normalized.length > 320 || !/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(normalized)) {
+    throw new Error("tonecos_coin_recipient_email_invalid");
+  }
+  await requireOwnAccount();
+  const { data, error } = await tonecos.rpc("find_tonecos_coin_recipient", {
+    p_email: normalized,
+  });
+  if (error) throw error;
+  if (data === null) return null;
+  const o = object(data);
+  if (typeof o.id !== "string" || !uuidPattern.test(o.id) ||
+      typeof o.email !== "string" || o.email.toLowerCase() !== normalized ||
+      !(o.full_name === null || typeof o.full_name === "string")) {
+    throw new Error("tonecos_coin_recipient_invalid");
+  }
+  return { id: o.id, email: o.email, fullName: o.full_name };
+}

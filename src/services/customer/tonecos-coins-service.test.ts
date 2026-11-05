@@ -1,6 +1,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import {
   getMyTonecosCoinBalance, listMyTonecosCoinEntries, creditTonecosCoins,
+  findTonecosCoinRecipient,
 } from "./tonecos-coins-service";
 
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -91,6 +92,29 @@ describe("Tonecos Coins ledger authority", () => {
     }], error: null });
     mocks.from.mockReturnValue(q);
     await expect(listMyTonecosCoinEntries()).rejects.toThrow("tonecos_coin_entry_invalid");
+  });
+
+  it("looks up a single exact customer by e-mail only through restricted admin RPC", async () => {
+    mocks.rpc.mockResolvedValue({ data: {
+      id: USER, email: "client@example.test", full_name: "Cliente",
+    }, error: null });
+    await expect(findTonecosCoinRecipient(" CLIENT@EXAMPLE.TEST ")).resolves.toEqual({
+      id: USER, email: "client@example.test", fullName: "Cliente",
+    });
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("find_tonecos_coin_recipient", {
+      p_email: "client@example.test",
+    });
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "Admin access required" } });
+    await expect(findTonecosCoinRecipient("client@example.test"))
+      .rejects.toMatchObject({ message: "Admin access required" });
+  });
+
+  it("does not expose directory results to invalid or missing e-mails", async () => {
+    await expect(findTonecosCoinRecipient("../admin"))
+      .rejects.toThrow("tonecos_coin_recipient_email_invalid");
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    mocks.rpc.mockResolvedValue({ data: null, error: null });
+    await expect(findTonecosCoinRecipient("other@example.test")).resolves.toBeNull();
   });
 
   it("issues only an authenticated admin RPC with explicit idempotency reference", async () => {

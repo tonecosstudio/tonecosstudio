@@ -139,6 +139,12 @@ export default function TonecosAccountPage() {
                   Atendimento Tonecos
                 </Link>
               }
+              {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
+                identity.email?.trim().toLowerCase() === "tonecosstudio@gmail.com" &&
+                <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminCoins}>
+                  Administração de moedas
+                </Link>
+              }
               <button type="button" onClick={() => { void signOut(); }} disabled={busy}
                 className={secondaryClass}>Sair da conta</button>
             </div>
