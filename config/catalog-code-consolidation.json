@@ -114,6 +114,7 @@
       "config/catalog-schema-contract.json": "084ca978a3d2352221a4c9cd606c6376697a8c9d",
       "tsconfig.worker.json": "7c5455357b873f9514fa5cfae9f88f9d652140e0"
     },
+    "apiDeployWorkflowId": 371358484,
     "apiDeployPipeline": ".github/workflows/cloudflare.yml",
     "toolingAnalysisNote": "18 direct references from API deploy workflow, one additional transitive import from worker_release_smoke. Tooling selection is provisional, not a copied/activated pipeline. Other scripts and tests must still be classified; CORS and Wrangler path relocation must be tested offline."
   },
