@@ -270,11 +270,11 @@ export default function CatalogArcade() {
                           fallbackLabel=""
                         />
                       </div>
-                      <div className="flex flex-1 flex-col gap-2 p-4">
+                      <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
                         <span
                           className={
                             isAnimeCategory
-                              ? "whitespace-nowrap text-[clamp(0.5625rem,2.8vw,0.75rem)] font-semibold uppercase"
+                              ? "whitespace-nowrap tracking-tight text-[clamp(0.625rem,3vw,0.875rem)] font-semibold uppercase"
                               : "line-clamp-2 font-semibold uppercase"
                           }
                         >
