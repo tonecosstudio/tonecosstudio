@@ -363,3 +363,12 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - Da raiz, “Explorar todos os modelos” preserva `category=animes-desenhos&franchise=one-piece` e exibe 27 modelos na página 1. Em 320/390/768 px, sem overflow, grade 2/2/4; as imagens visíveis carregaram. Console sem erros.
 - Não encontrei problema de UI reproduzível; não houve alteração de código nesta rodada. Preview permanece readonly. Produção, Worker, D1, R2 e DNS inalterados.
 - **NEXT_ACTION:** revisar a franquia de Animes & Desenhos com mais de 36 modelos (Tartarugas Ninja) a partir da busca/lista da categoria, conferindo pasta, busca e paginação responsiva em 320/390/768 px.
+
+## Rodada 30 — Tartarugas Ninja, busca e página 2 (05/11/2026)
+
+- QA no [preview privado do catálogo](https://d6f94b5d.tonecosstudio.pages.dev/universo/animes-desenhos/as-tartarugas-ninja), deployment `d6f94b5d-2c43-431d-a05b-944e3cc17a23`, código funcional `758f0fc465bb78ce04b64bb4d66f1cbfc528ae0f`. PR #4 continua open/draft; o HEAD `9fdf82c` contém apenas checkpoints documentais além desse código. Preview readonly; sem novo build.
+- **Categoria e busca:** `/universo/animes-desenhos` lista 24 franquias. Em 320/390/768 px, documentos 314/384/762 px, grade 2/2/3, busca com 48 px e sem overflow; 24 imagens carregaram. A busca “Tartarugas Ninja” retorna a franquia correta com 44 modelos, e a abertura do resultado leva à rota canônica.
+- **Franquia e pasta:** raiz de As Tartarugas Ninja com 14 pastas e 8 referências; sem overflow em 320/390/768 px, grades 1/2/3 e 2/2/3. Breadcrumb mede 44 px. A pasta Michelangelo abre 6 referências e preserva o contexto ao explorar Modelos; os breadcrumbs medem 44 px e a grade fica em 2/2/3 na pasta e 2/2/4 na listagem filtrada.
+- **Paginação:** filtro `category=animes-desenhos&franchise=as-tartarugas-ninja` mostra 36 modelos na página 1 e 8 na página 2. A página 2 começa em Slash, mantém os filtros e carrega as 8 imagens. Em 320/390/768 px, as duas páginas não têm overflow (documento 314/384/762 px), com grade 2/2/4. O retorno à página 1 restaura os 36 itens. Console sem erros.
+- Nenhum defeito de UI reproduzível; sem alteração de código nesta rodada. Produção, Worker, D1, R2 e DNS inalterados.
+- **NEXT_ACTION:** revisar Star Wars na categoria `/universo/filmes-series` e no catálogo filtrado, incluindo a página 2 de 37 modelos, folders, busca e retorno em 320/390/768 px.
