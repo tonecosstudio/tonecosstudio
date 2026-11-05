@@ -43,17 +43,6 @@ export function quoteItemsFromSelection(models: readonly PublicCatalogModel[]): 
   return validateItems(models.map((model) => ({ slug: model.slug, quantity: 1 })));
 }
 
-type QuoteRpcResult = Promise<{
-  data: string | null;
-  error: { message: string } | null;
-}>;
-type QuoteRpcClient = {
-  rpc(name: "submit_catalog_quote_request", args: {
-    p_models: CatalogQuoteItem[];
-    p_notes: string | null;
-  }): QuoteRpcResult;
-};
-
 /** Requires a real authenticated customer; the DB derives owner from auth.uid(). */
 export async function submitCatalogQuoteRequest(
   userId: string,
@@ -73,7 +62,7 @@ export async function submitCatalogQuoteRequest(
   const client = tonecos;
   const { data, error } = await client.rpc("submit_catalog_quote_request", {
     p_models: safeItems,
-    p_notes: safeNotes,
+    p_notes: safeNotes ?? undefined,
   });
   if (error) throw error;
   if (!data || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data)) {
