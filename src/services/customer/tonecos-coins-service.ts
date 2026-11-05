@@ -148,7 +148,7 @@ export type TonecosCoinRecipient = {
 export async function findTonecosCoinRecipient(email: string): Promise<TonecosCoinRecipient | null> {
   assertTonecosCoinsEnabled();
   const normalized = typeof email === "string" ? email.trim().toLowerCase() : "";
-  if (normalized.length > 320 || !/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(normalized)) {
+  if (normalized.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
     throw new Error("tonecos_coin_recipient_email_invalid");
   }
   await requireOwnAccount();
