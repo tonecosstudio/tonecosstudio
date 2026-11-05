@@ -1,4 +1,4 @@
-// Types generated from the Tonecos Studio Supabase commercial database.
+// Types generated from Tonecos Supabase icmtmaakjucmuzxnofkd.
 export type Json =
   | string
   | number
@@ -89,16 +89,67 @@ export type Database = {
           },
         ]
       }
+      tonecos_coin_entries: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delta: number
+          entry_type: string
+          id: string
+          reason: string
+          reference_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delta: number
+          entry_type: string
+          id?: string
+          reason: string
+          reference_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delta?: number
+          entry_type?: string
+          id?: string
+          reason?: string
+          reference_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tonecos_coin_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_credit_tonecos_coins: {
+        Args: {
+          p_amount: number
+          p_reason: string
+          p_reference_key: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       answer_catalog_quote_request: {
         Args: { p_amount: number; p_quote_id: string }
         Returns: string
       }
       bootstrap_tonecos_owner_admin: { Args: never; Returns: boolean }
+      get_my_tonecos_coin_balance: { Args: never; Returns: Json }
       is_tonecos_admin: { Args: never; Returns: boolean }
       submit_catalog_quote_request: {
         Args: { p_models: Json; p_notes?: string }
