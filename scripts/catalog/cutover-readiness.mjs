@@ -14,6 +14,8 @@ const WORKER_CONFIG = JSON.parse(readFileSync(join(ROOT, 'services/catalogo/wran
 const SOURCE_WORKFLOW_ID = CANONICAL.origin.apiDeployWorkflowId
 const SOURCE_WORKFLOW_PATH = CANONICAL.origin.apiDeployPipeline
 const SOURCE_REPO = CANONICAL.origin.repository
+const SOURCE_REPO_ID = CANONICAL.origin.repositoryId
+const SOURCE_MAIN_SHA = CANONICAL.origin.observedMainSha
 const TARGET_REPO = CANONICAL.target.repository
 const TARGET_REPO_ID = CANONICAL.target.repositoryId
 const CLOUDFLARE_ACCOUNT_ID = CANONICAL.runtime.cloudflareAccountId
@@ -30,6 +32,23 @@ export function assessCutoverReadiness(contract, state) {
   const add = (condition, reason) => { if (!condition) blockers.push(reason) }
 
   add(contract?.origin?.repository === SOURCE_REPO, 'origin_repository_mismatch')
+  // GitHub repository identity and exact source HEAD must be observed, not inferred
+  // from a stale import manifest. No D1/R2 request is made by these checks.
+  add(
+    contract?.origin?.repositoryId === SOURCE_REPO_ID &&
+      observed.sourceRepositoryId === SOURCE_REPO_ID &&
+      observed.sourceRepositoryName === SOURCE_REPO,
+    'source_repository_identity_unverified',
+  )
+  add(
+    typeof SOURCE_MAIN_SHA === 'string' && /^[0-9a-f]{40}$/.test(SOURCE_MAIN_SHA) &&
+      contract?.origin?.observedMainSha === SOURCE_MAIN_SHA &&
+      contract?.staging?.sourceMain === SOURCE_MAIN_SHA &&
+      o.observedSourceMainSha === SOURCE_MAIN_SHA &&
+      observed.sourceMainRef === 'refs/heads/main' &&
+      observed.sourceMainSha === SOURCE_MAIN_SHA,
+    'source_main_drift_or_unverified',
+  )
   add(contract?.origin?.apiDeployWorkflowId === SOURCE_WORKFLOW_ID && contract?.origin?.apiDeployPipeline === SOURCE_WORKFLOW_PATH, 'github_workflow_identity_unverified')
   add(contract?.target?.repository === TARGET_REPO && contract?.target?.repositoryId === TARGET_REPO_ID, 'target_repository_mismatch')
   add(contract?.runtime?.worker === WORKER_NAME && contract?.runtime?.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID && o.worker === WORKER_NAME && o.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID, 'worker_authority_mismatch')
@@ -95,9 +114,12 @@ async function getJSON(url, headers = {}) {
 
 export async function inspectLiveReadOnly(env = process.env) {
   const workflowName = SOURCE_WORKFLOW_PATH.split('/').at(-1)
-  const prefix = 'https://api.github.com/repos/' + SOURCE_REPO + '/actions/workflows/' + workflowName
+  const sourceUrl = 'https://api.github.com/repos/' + SOURCE_REPO
+  const prefix = sourceUrl + '/actions/workflows/' + workflowName
   const ghHeaders = { 'User-Agent': 'tonecos-readonly-cutover-check' }
-  const [workflow, active, queued, requested, waiting, pending] = await Promise.all([
+  const [sourceRepo, sourceMain, workflow, active, queued, requested, waiting, pending] = await Promise.all([
+    getJSON(sourceUrl, ghHeaders),
+    getJSON(sourceUrl + '/git/ref/heads/main', ghHeaders),
     getJSON(prefix, ghHeaders),
     getJSON(prefix + '/runs?status=in_progress&per_page=1', ghHeaders),
     getJSON(prefix + '/runs?status=queued&per_page=1', ghHeaders),
@@ -106,6 +128,8 @@ export async function inspectLiveReadOnly(env = process.env) {
     getJSON(prefix + '/runs?status=pending&per_page=1', ghHeaders),
   ])
   const state = {
+    sourceRepositoryId: sourceRepo.id, sourceRepositoryName: sourceRepo.full_name,
+    sourceMainRef: sourceMain.ref, sourceMainSha: sourceMain.object?.sha,
     workflow, running: active.total_count, queued: queued.total_count,
     requested: requested.total_count, waiting: waiting.total_count, pending: pending.total_count,
   }
@@ -142,6 +166,7 @@ async function main() {
     console.log(JSON.stringify({
       status: verdict.ready ? 'READY_FOR_SEPARATELY_AUTHORIZED_CUTOVER' : 'BLOCKED',
       sourceWorkflow: state.workflow?.state ?? 'unverified',
+      sourceMainSha: state.sourceMainSha ?? null,
       sourceInProgress: state.running ?? null,
       sourceQueued: state.queued ?? null,
       sourceRequested: state.requested ?? null,

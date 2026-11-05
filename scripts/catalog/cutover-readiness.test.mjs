@@ -28,6 +28,10 @@ function approvedContract() {
 }
 const fullState = () => ({
   workflow: { ...workflow }, running: 0, queued: 0, requested: 0, waiting: 0, pending: 0,
+  sourceRepositoryId: original.origin.repositoryId,
+  sourceRepositoryName: original.origin.repository,
+  sourceMainRef: 'refs/heads/main',
+  sourceMainSha: original.origin.observedMainSha,
   cloudflareAccountId: original.runtime.cloudflareAccountId,
   deployment: structuredClone(deployment), bindings: structuredClone(bindings),
 })
@@ -109,6 +113,12 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
     if (String(url).includes('/runs?status=')) {
       return Response.json({ total_count: 0 })
     }
+    if (String(url).endsWith('/git/ref/heads/main')) {
+      return Response.json({ ref: 'refs/heads/main', object: { sha: original.origin.observedMainSha } })
+    }
+    if (String(url).endsWith('/repos/' + original.origin.repository)) {
+      return Response.json({ id: original.origin.repositoryId, full_name: original.origin.repository })
+    }
     return Response.json(workflow)
   }
   try {
@@ -120,7 +130,10 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
     assert.equal(state.pending, 0)
     assert.equal(state.deployment, undefined)
     assert.equal(state.cloudflareAccountId, undefined)
-    assert.equal(requests.length, 6)
+    assert.equal(requests.length, 8)
+    assert.equal(state.sourceMainSha, original.origin.observedMainSha)
+    assert.equal(state.sourceRepositoryId, original.origin.repositoryId)
+    assert.ok(requests.some(url => url.endsWith('/git/ref/heads/main')))
     for (const status of ['in_progress', 'queued', 'requested', 'waiting', 'pending']) {
       assert.ok(requests.some(url => url.includes('/runs?status=' + status + '&')))
     }
@@ -145,4 +158,31 @@ test('the source workflow ID must match the single canonical manifest', () => {
   const result = assessCutoverReadiness(changed, fullState())
   assert.equal(result.ready, false)
   assert.ok(result.blockers.includes('github_workflow_identity_unverified'))
+})
+
+test('source main drift and missing or inconsistent pinned SHAs fail closed', () => {
+  const state = fullState()
+  state.sourceMainSha = '0000000000000000000000000000000000000000'
+  const drift = assessCutoverReadiness(approvedContract(), state)
+  assert.equal(drift.ready, false)
+  assert.ok(drift.blockers.includes('source_main_drift_or_unverified'))
+
+  const contract = approvedContract()
+  contract.staging.sourceMain = '0000000000000000000000000000000000000000'
+  const staleManifest = assessCutoverReadiness(contract, fullState())
+  assert.equal(staleManifest.ready, false)
+  assert.ok(staleManifest.blockers.includes('source_main_drift_or_unverified'))
+
+  const withoutObservation = fullState()
+  delete withoutObservation.sourceMainSha
+  assert.ok(assessCutoverReadiness(approvedContract(), withoutObservation).blockers.includes('source_main_drift_or_unverified'))
+})
+
+test('source repository ID and canonical name must match GitHub metadata', () => {
+  const state = fullState()
+  state.sourceRepositoryId += 1
+  assert.ok(assessCutoverReadiness(approvedContract(), state).blockers.includes('source_repository_identity_unverified'))
+  const renamed = fullState()
+  renamed.sourceRepositoryName = 'unverified/catalogo'
+  assert.ok(assessCutoverReadiness(approvedContract(), renamed).blockers.includes('source_repository_identity_unverified'))
 })
