@@ -433,7 +433,7 @@ export default function CatalogModelsArcade() {
               <div className="flex flex-wrap items-center gap-3">
                 {models.isSuccess && (
                   <p className="text-sm text-[hsl(0,0%,62%)]" aria-live="polite">
-                    Página {activePage.index + 1} · {rows.length} modelos nesta
+                    Página {activePage.index + 1} · {rows.length} {rows.length === 1 ? "modelo" : "modelos"} nesta
                     página{canGoNext ? " · Há mais modelos" : ""}
                   </p>
                 )}
