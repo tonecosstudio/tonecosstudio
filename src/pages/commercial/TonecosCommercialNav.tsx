@@ -1,14 +1,15 @@
 /** Commercial navigation is isolated from the public catalog's read-only bundle. */
 import { Link } from "react-router-dom";
 import { BRAND_SHORT_NAME } from "@/config/brand";
+import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 
 const links = [
   { href: "/", label: "Início" },
   { href: "/modelos", label: "Modelos" },
-  { href: "/orcamento", label: "Solicitar orçamento" },
-  { href: "/meus-orcamentos", label: "Meus orçamentos" },
-  { href: "/perfil", label: "Minha conta" },
+  { href: TONECOS_COMMERCIAL_ROUTES.request, label: "Solicitar orçamento" },
+  { href: TONECOS_COMMERCIAL_ROUTES.history, label: "Meus orçamentos" },
+  { href: TONECOS_COMMERCIAL_ROUTES.account, label: "Minha conta" },
 ];
 
 export default function TonecosCommercialNav() {
@@ -23,7 +24,7 @@ export default function TonecosCommercialNav() {
           {links.map((item) => (
             <Link key={item.href} to={item.href} className="inline-flex min-h-11 items-center font-mono text-[10px] uppercase tracking-wider text-white/70 hover:text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
               {item.label}
-              {item.href === "/orcamento" && selectedModels.length > 0 ? " (" + selectedModels.length + ")" : ""}
+              {item.href === TONECOS_COMMERCIAL_ROUTES.request && selectedModels.length > 0 ? " (" + selectedModels.length + ")" : ""}
             </Link>
           ))}
         </div>

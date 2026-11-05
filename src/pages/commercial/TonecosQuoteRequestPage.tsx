@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import { quoteItemsFromSelection, submitCatalogQuoteRequest } from "@/services/customer/catalog-quote-service";
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
@@ -34,7 +35,7 @@ export default function TonecosQuoteRequestPage() {
       }));
       const quoteId = await submitCatalogQuoteRequest(user.id, items, notes);
       setSelectedModels([]);
-      navigate("/meus-orcamentos", { replace: true, state: { sent: quoteId } });
+      navigate(TONECOS_COMMERCIAL_ROUTES.history, { replace: true, state: { sent: quoteId } });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível enviar o orçamento.");
     } finally { setBusy(false); }
@@ -48,7 +49,7 @@ export default function TonecosQuoteRequestPage() {
         {user === null ? (
           <div className={panelClass}>
             <p className="mb-5 text-sm leading-relaxed text-white/70">Entre ou crie uma conta para enviar a seleção e acompanhar a resposta da Tonecos.</p>
-            <Link className={actionClass} to="/login?next=%2Forcamento">Entrar ou criar conta</Link>
+            <Link className={actionClass} to={TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)}>Entrar ou criar conta</Link>
           </div>
         ) : null}
         {selectedModels.length === 0 ? (

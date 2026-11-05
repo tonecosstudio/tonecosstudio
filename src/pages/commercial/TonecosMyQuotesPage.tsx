@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { listMyCatalogQuotes, type CustomerCatalogQuote } from "@/services/customer/catalog-quote-service";
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
 import { CommercialPage, panelClass, secondaryClass } from "./CommercialPage";
@@ -51,7 +52,7 @@ export default function TonecosMyQuotesPage() {
       {userId === null ? (
         <div className={panelClass}>
           <p className="mb-4 text-sm text-white/70">Entre na sua conta para consultar suas solicitações.</p>
-          <Link className={secondaryClass} to="/login?next=%2Fmeus-orcamentos">Entrar</Link>
+          <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.history)}>Entrar</Link>
         </div>
       ) : null}
       {error && <div role="alert" className="mb-5 max-w-3xl border border-red-500/30 p-4 text-sm text-red-200">

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import {
   getTonecosCurrentUser, getMyTonecosProfile, registerTonecosAccount,
   signInTonecosAccount, signOutTonecosAccount, updateMyTonecosProfile,
@@ -7,7 +8,7 @@ import {
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
 
 type Identity = { id: string; email: string | null };
-const safeNext = new Set(["/perfil", "/orcamento", "/meus-orcamentos"]);
+const safeNext = new Set<string>([TONECOS_COMMERCIAL_ROUTES.account, TONECOS_COMMERCIAL_ROUTES.request, TONECOS_COMMERCIAL_ROUTES.history]);
 
 function errorText(value: unknown) {
   return value instanceof Error ? value.message : "Não foi possível completar a operação.";
@@ -16,7 +17,7 @@ function errorText(value: unknown) {
 export default function TonecosAccountPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const next = safeNext.has(params.get("next") ?? "") ? params.get("next")! : "/perfil";
+  const next = safeNext.has(params.get("next") ?? "") ? params.get("next")! : TONECOS_COMMERCIAL_ROUTES.account;
   const [mode, setMode] = useState(params.get("mode") === "signup" ? "signup" : "login");
   const [identity, setIdentity] = useState<Identity | null | undefined>(undefined);
   const [email, setEmail] = useState("");
@@ -99,7 +100,7 @@ export default function TonecosAccountPage() {
     try {
       await signOutTonecosAccount();
       setIdentity(null); setPassword("");
-      navigate("/login", { replace: true });
+      navigate(TONECOS_COMMERCIAL_ROUTES.login, { replace: true });
     } catch (err) { setError(errorText(err)); }
     finally { setBusy(false); }
   }
@@ -129,7 +130,7 @@ export default function TonecosAccountPage() {
               <button type="submit" disabled={busy || profileLoading} className={actionClass}>Salvar dados</button>
             </form>
             <div className="mt-7 flex flex-wrap gap-3 border-t border-white/15 pt-6">
-              <Link className={secondaryClass} to="/meus-orcamentos">Meus orçamentos</Link>
+              <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.history}>Meus orçamentos</Link>
               <Link className={secondaryClass} to="/modelos">Explorar modelos</Link>
               <button type="button" onClick={() => { void signOut(); }} disabled={busy}
                 className={secondaryClass}>Sair da conta</button>

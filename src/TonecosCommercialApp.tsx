@@ -2,6 +2,7 @@
 import { lazy, type ReactNode } from "react";
 import { Route } from "react-router-dom";
 import { CatalogMvpShell } from "@/CatalogMvpShell";
+import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import TonecosCommercialNav from "@/pages/commercial/TonecosCommercialNav";
 
@@ -12,11 +13,11 @@ const AdminQuotes = lazy(() => import("@/pages/commercial/TonecosAdminQuotesPage
 
 const commercialRoutes: ReactNode = (
   <>
-    <Route path="/login" element={<Account />} />
-    <Route path="/perfil" element={<Account />} />
-    <Route path="/orcamento" element={<Request />} />
-    <Route path="/meus-orcamentos" element={<Quotes />} />
-    <Route path="/admin/orcamentos" element={<AdminQuotes />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.login} element={<Account />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.account} element={<Account />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.request} element={<Request />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.history} element={<Quotes />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.adminQuotes} element={<AdminQuotes />} />
   </>
 );
 

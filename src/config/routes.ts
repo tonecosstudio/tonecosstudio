@@ -26,6 +26,14 @@ export const PUBLIC_ROUTES = {
   preLaunch: "/pre-lancamento",
 } as const;
 
+export const TONECOS_COMMERCIAL_ROUTES = {
+  login: PUBLIC_ROUTES.login,
+  account: "/perfil",
+  request: "/orcamento",
+  history: "/meus-orcamentos",
+  adminQuotes: "/admin/orcamentos",
+} as const;
+
 export const PUBLIC_COLLECTIONS_ENABLED = false;
 
 export const AUTH_ROUTES = {
