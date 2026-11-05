@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
+import { isPasswordPolicyCompliant } from "@/config/auth";
 
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 type AccountProfile = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Row"];
@@ -16,7 +17,7 @@ function cleanText(input: unknown, limit: number, required = false): string | nu
 function validateCredentials(email: string, password: string): { email: string; password: string } {
   const cleaned = cleanText(email, 320, true)!;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleaned) ||
-      typeof password !== "string" || password.length < 12 || password.length > 1024) {
+      typeof password !== "string" || !isPasswordPolicyCompliant(password) || password.length > 1024) {
     throw new Error("tonecos_account_credentials_invalid");
   }
   return { email: cleaned.toLowerCase(), password };
@@ -51,6 +52,13 @@ export async function signOutTonecosAccount(): Promise<void> {
   assertTonecosCommercialEnabled();
   const { error } = await tonecos.auth.signOut();
   if (error) throw error;
+}
+
+export async function getTonecosCurrentUser(): Promise<{ id: string; email: string | null } | null> {
+  assertTonecosCommercialEnabled();
+  const { data, error } = await tonecos.auth.getUser();
+  if (error) throw error;
+  return data.user ? { id: data.user.id, email: data.user.email ?? null } : null;
 }
 
 async function currentAccountId(): Promise<string> {
