@@ -1,5 +1,4 @@
-// Generated from Tonecos Supabase icmtmaakjucmuzxnofkd (2026-11-05).
-// This schema is the commercial MVP; the legacy types.ts belongs to the pre-cutover app.
+// Types generated from the Tonecos Studio Supabase commercial database.
 export type Json =
   | string
   | number
@@ -99,6 +98,7 @@ export type Database = {
         Args: { p_amount: number; p_quote_id: string }
         Returns: string
       }
+      bootstrap_tonecos_owner_admin: { Args: never; Returns: boolean }
       is_tonecos_admin: { Args: never; Returns: boolean }
       submit_catalog_quote_request: {
         Args: { p_models: Json; p_notes?: string }

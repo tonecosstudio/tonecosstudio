@@ -119,3 +119,12 @@ export async function answerCatalogQuoteRequest(quoteId: string, amount: number)
   if (data !== quoteId) throw new Error("admin_catalog_quote_result_invalid");
   return data;
 }
+
+/** Only the verified Tonecos mailbox can explicitly initialize the first admin. */
+export async function bootstrapTonecosOwnerAdmin(): Promise<void> {
+  assertCommercialMode();
+  await requireAuthenticatedUserId();
+  const { data, error } = await tonecos.rpc("bootstrap_tonecos_owner_admin");
+  if (error) throw error;
+  if (data !== true) throw new Error("tonecos_admin_bootstrap_denied");
+}
