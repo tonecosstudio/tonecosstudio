@@ -384,3 +384,27 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - PR #4 permanece open/draft. O preview `c292ea1c` representa o frontend público validado no commit `dfe7479`; os commits posteriores observados nesta rodada tocaram documentação, serviço administrativo de orçamento e migrations Supabase, sem alterar as telas públicas. Nenhuma migration foi executada; produção, Worker, D1, R2 e DNS inalterados.
 
 - **NEXT_ACTION:** revisar O Senhor dos Anéis (`/universo/filmes-series/o-senhor-dos-aneis`, 44 modelos), incluindo busca da categoria, pastas, listagem filtrada, página 2 e retorno em 320/390/768 px.
+
+## Rodada 32 — O Senhor dos Anéis, pastas e paginação responsiva (05/11/2026)
+
+- **Rotas conferidas:** raiz de O Senhor dos Anéis com 44 modelos, 24 pastas e 8 referências; Aragorn com 4 referências. Breadcrumbs medem 44 px. “Explorar todos os modelos” preserva categoria, franquia e pasta.
+- **QA no preview anterior:** em 320/390/768 px, documentos de 314/384/762 px, sem overflow; grade de pastas 1/2/3 colunas e referências 2/2/3. A listagem filtrada mostra 36 modelos na página 1 e 8 na página 2. A página 2 preserva os filtros, carrega as 8 miniaturas e mantém a grade 2/2/4; voltar restaura a página 1.
+- **Revalidação no preview final:** O Senhor dos Anéis foi conferido novamente em `7071d9e9`: as 24 pastas exibem as contagens no singular/plural corretos, inclusive “1 modelo”; raiz responsiva em 320/390/768 px, sem overflow. Na listagem, as páginas 1 e 2 preservam `category=filmes-series&franchise=o-senhor-dos-aneis`; página 2 tem 8 modelos e 8 imagens carregadas, sem overflow nas três larguras.
+
+## Rodada 33 — contagem de pastas e prévia atualizada (05/11/2026)
+
+**Meta contínua atualizada:** avançar pelos recortes do acervo com maior volume, conferindo navegação, subpastas, imagens, filtros, paginação e retorno em 320/390/768/1024/1440 px; corrigir apenas defeitos reproduzíveis na mesma PR; criar uma prévia privada para mudanças funcionais e registrar aqui o próximo foco. Produção, Worker, D1, R2 e DNS seguem fora de escopo; migrations Supabase continuam sem execução.
+
+- **Defeito reproduzível corrigido:** pastas com uma peça mostravam “1 modelos”. `CanonicalUniverseFolders.tsx` agora pluraliza conforme a contagem. O teste de integração cobre “1 modelo” e “3 modelos”.
+- **Build recuperado:** duas prévias iniciais revelaram falhas de TypeScript existentes na branch (entrada comercial ainda ausente, tipo de nota do RPC e uso de `replaceAll` incompatível com o alvo configurado). Ajustes mantiveram o caminho comercial desativado até existir uma entrada compilável e alinharam os tipos/formatação; nenhuma migration ou ação em produção.
+- **Prévia final:** [Tonecos Studio — Equipes e Grupos](https://7071d9e9.tonecosstudio.pages.dev/universo/marvel-dc/equipes-e-grupos?folder=x-men/viloes), deployment `7071d9e9-64f7-4cb3-88ec-45fd42a60e69`, ambiente preview, commit de código `7fa188512e33d64254889525ff0ef0edaa97cda1`. Build e deploy SUCCESS; pipeline passou por typecheck, catálogo MVP **8/8 arquivos e 108/108 testes**, verificações existentes da Pages Function e build Vite. Preview permanece readonly.
+- **Marvel & DC / Equipes e Grupos:** raiz com 4 pastas e 354 modelos. Guardiões da Galáxia tem 6 subpastas e 15 modelos; “Explorar todos os modelos” preserva `category=marvel-dc&franchise=equipes-e-grupos&folder=guardioes-da-galaxia`. Corrigi e confirmei “1 modelo”, “6 modelos” e demais plurais. Raiz, pasta e listagem filtrada sem overflow entre 320 e 1440 px; a listagem de Guardiões exibe 15 modelos.
+- PR #4 continua open/draft. A branch recebeu depois do commit do preview `9c61145`, que só centraliza rotas comerciais e atualiza testes comerciais; não altera o frontend público conferido neste preview. Produção, Worker, D1, R2 e DNS inalterados.
+
+## Rodada 34 — X-Men e subpasta Vilões (05/11/2026)
+
+- **X-Men:** raiz de 208 modelos com 26 subpastas e 8 referências de prévia. A contagem singular funciona nas pastas com um item. Sem overflow em 320/390/768/1024/1440 px; breadcrumbs com 44 px. A listagem mantém categoria/franquia/pasta e mostra 36 modelos em cada uma das páginas 1 e 2; todas as 36 miniaturas da página 2 carregaram, sem falhas. Página 1 foi conferida em 320/390/768 px e página 2 nas cinco larguras.
+- **Vilões:** 46 modelos, 10 subpastas e 8 referências. Os três breadcrumbs medem 44 px. Em 320/390/768 px, sem overflow; grades de pastas 1/2/3 e referências 2/2/3. A listagem mantém `folder=x-men/viloes`, com 36 modelos na página 1 e 10 na página 2; as 10 imagens da página 2 carregaram sem falhas e a grade ficou em 2/2/4 nas três larguras.
+- Sem alteração adicional de layout necessária. O preview validado é readonly; nenhum dado comercial, banco ou serviço de produção foi alterado.
+
+**NEXT_ACTION:** revisar Magneto (`/universo/marvel-dc/equipes-e-grupos?folder=x-men%2Fviloes%2Fmagneto`, 11 modelos), conferir navegação dos breadcrumbs e a lista filtrada em 320/390/768 px; depois continuar pelos recortes de maior volume em Marvel & DC.
