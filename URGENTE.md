@@ -459,3 +459,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - Produção, Worker, D1, R2, DNS e migrations Supabase inalterados; a PR #4 continua draft.
 
 **NEXT_ACTION:** finalizar QA responsivo de uma ficha de modelo no preview final em 320/390/768/1024/1440 px e então seguir pela listagem do catálogo. Reutilizar componentes e SSOT; criar nova prévia apenas após mudança funcional.
+
+## Rodada 39 — ficha, listagem e pasta responsivas no preview (05/11/2026)
+
+- Preview privado vigente: [abrir Universo](https://7e955bb9.tonecosstudio.pages.dev/universo), deployment `7e955bb9-95d2-4f62-9b16-99e83be40a4e`, fonte de código `8f7935495819841e2e77702270165f1108d21798`; `VITE_PREVIEW_READ_ONLY=true`. O Quality Gate [#41998212637](https://github.com/tonecosstudio/tonecosstudio/actions/runs/41998212637) está concluído com sucesso para esse SHA (17 arquivos/156 testes). PR #4 continua draft; o HEAD atual `e4f86c221c4a3d16cace89518328640accd8bb71` contém o checkpoint documental, sem código novo.
+- Ficha `/modelos/nier-10h-nier`: em 320/390/768/1024/1440 px, larguras do documento 314/384/762/1018/1434 px e nenhum overflow horizontal. A grade passa de uma coluna até 768 px para duas em 1024/1440 px. A imagem carregou (largura natural 1600 px); retorno 44 px e botão de seleção 46 px. Seleção permaneceu em 0/50.
+- Listagem `/modelos`: 36 itens na primeira página; grade em 2/2/4/4/5 colunas nas cinco larguras, sem overflow. As seis primeiras imagens carregaram e não havia imagens quebradas; busca e botão 48 px, busca de franquias 44 px, paginação e acesso à seleção 44 px.
+- Categoria `/universo/animes-desenhos`: 24 franquias na primeira leva, com aviso de lista parcial; grade 2/2/3/4/4 colunas, sem overflow. Campo e botão de busca têm 48 px, seis primeiras capas carregaram e o CTA mantém `/modelos?category=animes-desenhos`.
+- Dragon Ball e `?folder=androides`: raiz com 14 pastas e 8 referências; Androides com 6 subpastas e 8 referências. Sem overflow nas cinco larguras. A grade de subpastas fica em 1/2/3/4/4 colunas e a de referências em 2/2/3/4/4. Breadcrumbs, “Explorar todos os modelos” e “Ver mais modelos” têm alvo de 44 px; o CTA preserva categoria, franquia e pasta em `/modelos`. As oito imagens de referência carregaram.
+- Nenhuma falha reproduzível nesta inspeção; sem alteração de código ou novo build/deploy. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** revisar `/universo/marvel-dc/equipes-e-grupos` no mesmo preview em 320/390/768/1024/1440 px, observando títulos longos, imagens e navegação de retorno; reutilizar o componente e a SSOT.
