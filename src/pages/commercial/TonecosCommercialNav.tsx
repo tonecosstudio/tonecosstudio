@@ -11,6 +11,9 @@ const links = [
   { href: TONECOS_COMMERCIAL_ROUTES.history, label: "Meus orçamentos" },
   { href: TONECOS_COMMERCIAL_ROUTES.account, label: "Minha conta" },
 ];
+if (import.meta.env.VITE_TONECOS_COINS_ENABLED === "true") {
+  links.push({ href: TONECOS_COMMERCIAL_ROUTES.coins, label: "Minhas moedas" });
+}
 
 export default function TonecosCommercialNav() {
   const { selectedModels } = useCatalogBrowsing();

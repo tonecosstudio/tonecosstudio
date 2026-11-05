@@ -131,6 +131,8 @@ export default function TonecosAccountPage() {
             </form>
             <div className="mt-7 flex flex-wrap gap-3 border-t border-white/15 pt-6">
               <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.history}>Meus orçamentos</Link>
+              {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
+                <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.coins}>Minhas moedas</Link>}
               <Link className={secondaryClass} to="/modelos">Explorar modelos</Link>
               {identity.email?.trim().toLowerCase() === "tonecosstudio@gmail.com" &&
                 <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}>

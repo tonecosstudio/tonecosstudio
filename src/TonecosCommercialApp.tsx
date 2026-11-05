@@ -10,6 +10,7 @@ const Account = lazy(() => import("@/pages/commercial/TonecosAccountPage"));
 const Request = lazy(() => import("@/pages/commercial/TonecosQuoteRequestPage"));
 const Quotes = lazy(() => import("@/pages/commercial/TonecosMyQuotesPage"));
 const AdminQuotes = lazy(() => import("@/pages/commercial/TonecosAdminQuotesPage"));
+const Coins = lazy(() => import("@/pages/commercial/TonecosCoinsPage"));
 
 const commercialRoutes: ReactNode = (
   <>
@@ -17,6 +18,8 @@ const commercialRoutes: ReactNode = (
     <Route path={TONECOS_COMMERCIAL_ROUTES.account} element={<Account />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.request} element={<Request />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.history} element={<Quotes />} />
+    {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
+      <Route path={TONECOS_COMMERCIAL_ROUTES.coins} element={<Coins />} />}
     <Route path={TONECOS_COMMERCIAL_ROUTES.adminQuotes} element={<AdminQuotes />} />
   </>
 );
