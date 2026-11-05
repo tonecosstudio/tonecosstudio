@@ -514,3 +514,16 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** continuar a revisão responsiva em `/universo/animes-desenhos/dragon-ball`, conferir pastas/modelos e navegação nos breakpoints móveis e desktop; seguir página por página na mesma PR.
 
 **DO_NOT_REPEAT:** não apresentar `ef8ab5fb` como preview atual; não criar novo preview para documentação isolada; não alterar `main`, produção ou Worker.
+
+## Rodada 42 — breadcrumbs canônicos e navegação Dragon Ball (05/11/2026)
+
+- **Frontend:** `src/pages/CatalogArcade.tsx` obtém o nome da categoria pela lista canônica e resolve o nome da franquia por uma busca limitada à categoria/slug. Os breadcrumbs exibem os nomes publicados sem uma tabela local de franquias. O rótulo “Animes e Desenhos” continua consistente com o card da categoria.
+- **Testes existentes:** atualizadas as expectativas de chamadas para refletir a leitura das categorias e preservar a busca de franquias; nenhum teste novo foi adicionado.
+- **Preview privado:** [Dragon Ball](https://35dace08.tonecosstudio.pages.dev/universo/animes-desenhos/dragon-ball), deployment `35dace08-d3f3-4d43-b8b5-46d0a56990e9`, commit de código `037325392483cf1eeb2d92cff601b6666e415a37`, ambiente `preview`; build/deploy **SUCCESS** com o comando configurado (`typecheck`, `catalog:mvp:test`, `build`).
+- **QA em /universo/animes-desenhos/dragon-ball:** 280/320/360/390/640/768/1024/1280/1440 px, sem overflow. 14 pastas e 8 referências; grades responsivas de pastas 1/2/3/4 colunas e referências 2/2/3/4 colunas. As 8 miniaturas carregaram. Em 320 px, documento 314 px.
+- **Navegação:** pasta Androides tem 6 subpastas e 8 referências; Androide 18 tem 8 referências e trilha “Raiz da franquia / Androides / Androide 18”. “Voltar à pasta” da ficha preserva `folder=androides/androide-18`. Ficha do modelo sem overflow em 280/320/360/390/768/1024/1440 px.
+- **Categoria:** `/universo/animes-desenhos` apresenta 24 franquias e busca; `dragon ball` encontra Dragon Ball e limpar restaura a listagem. O breadcrumb exibe “Animes e Desenhos”. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** revisar `/universo/animes-desenhos/one-piece` em mobile, tablet e desktop; verificar pastas, imagens e retorno às fichas. Depois avançar para outra categoria do Universo na mesma PR.
+
+**DO_NOT_REPEAT:** usar `35dace08` como preview funcional mais recente; não gerar novo preview só por documentação; não alterar `main`, produção ou Worker.
