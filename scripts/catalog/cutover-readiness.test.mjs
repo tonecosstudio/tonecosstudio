@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { assessCutoverReadiness, inspectLiveReadOnly } from './cutover-readiness.mjs'
 
-const ROOT = fileURLToPath(new URL('../../', import.meta.url))
 const original = JSON.parse(readFileSync(new URL('../../config/catalog-code-consolidation.json', import.meta.url), 'utf8'))
 const workflow = { id: 371358484, path: '.github/workflows/cloudflare.yml', state: 'disabled_manually' }
 const deployment = { versions: [{ version_id: original.productionObservation.currentVersionId, percentage: 100 }] }
@@ -130,4 +128,21 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
   } finally {
     globalThis.fetch = originalFetch
   }
+})
+
+test('staged Wrangler and runtime manifest must name the same D1, R2 and Worker', () => {
+  const changed = approvedContract()
+  changed.runtime.d1 = 'unexpected-database'
+  changed.runtime.r2 = 'unexpected-bucket'
+  const result = assessCutoverReadiness(changed, fullState())
+  assert.equal(result.ready, false)
+  assert.ok(result.blockers.includes('staged_worker_config_mismatch'))
+})
+
+test('the source workflow ID must match the single canonical manifest', () => {
+  const changed = approvedContract()
+  changed.origin.apiDeployWorkflowId = 0
+  const result = assessCutoverReadiness(changed, fullState())
+  assert.equal(result.ready, false)
+  assert.ok(result.blockers.includes('github_workflow_identity_unverified'))
 })
