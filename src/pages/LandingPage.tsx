@@ -233,7 +233,7 @@ export default function LandingPage() {
           </h1>
 
           {/* Typewriter */}
-          <div className="h-8 mb-8">
+          <div className="min-h-8 mb-8">
             <p
               className="text-[9px] sm:text-[10px] text-[hsl(0,0%,45%)] tracking-wider"
               style={{ fontFamily: "'Press Start 2P', monospace" }}
@@ -249,7 +249,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <button
               onClick={() => navigate(PUBLIC_ROUTES.catalogModels)}
-              className="group inline-flex items-center gap-3 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all"
+              className="group inline-flex w-full max-w-[20rem] items-center justify-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.08em] text-xs h-14 px-3 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all sm:w-auto sm:max-w-none sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.15em]"
             >
               <Crosshair
                 className="w-5 h-5 group-hover:animate-spin"
@@ -261,7 +261,7 @@ export default function LandingPage() {
 
             <button
               onClick={() => navigate(PUBLIC_ROUTES.catalogModels)}
-              className="inline-flex items-center gap-3 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent)/0.6)] font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 transition-all"
+              className="inline-flex w-full max-w-[20rem] items-center justify-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent)/0.6)] font-mono uppercase tracking-[0.08em] text-xs h-14 px-3 transition-all sm:w-auto sm:max-w-none sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.15em]"
             >
               <Eye className="w-5 h-5" />
               VER CATÁLOGO
