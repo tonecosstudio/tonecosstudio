@@ -130,7 +130,7 @@ describe("Tonecos canonical Universe discovery", () => {
     expect(calls.filter((call) => call.pathname.endsWith("/api/categories"))).toHaveLength(1);
     fireEvent.click(screen.getByRole("link", { name: "Limpar busca" }));
     await screen.findByText("Franquia 24");
-    expect(franchiseCalls).toHaveLength(2); // React Query reuses the first page.
+    expect(calls.filter((call) => call.pathname.endsWith("/api/franchises"))).toHaveLength(2); // React Query reuses the first page.
   });
 
   it("keeps a category navigable after its published cover fails", async () => {
