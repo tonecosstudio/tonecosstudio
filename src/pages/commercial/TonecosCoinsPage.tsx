@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   getMyTonecosCoinBalance, listMyTonecosCoinEntries,
   type TonecosCoinBalance, type TonecosCoinEntry,
-} from "@/services/customer/tonecos-coins-service";
+} from "@/services/coins/tonecos-coins-service";
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { CommercialPage, panelClass, secondaryClass } from "./CommercialPage";

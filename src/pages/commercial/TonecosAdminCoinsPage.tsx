@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import {
   creditTonecosCoins, findTonecosCoinRecipient,
   type TonecosCoinRecipient,
-} from "@/services/customer/tonecos-coins-service";
+} from "@/services/coins/tonecos-coins-service";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
 
 const formatted = new Intl.NumberFormat("pt-BR");
