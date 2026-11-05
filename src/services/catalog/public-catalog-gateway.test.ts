@@ -554,6 +554,17 @@ describe("read-only catalog discovery and detail", () => {
     expect(gateway.mediaUrl("../admin")).toBeNull();
     expect(gateway.mediaUrl("https://evil.example/image")).toBeNull();
     expect(gateway.mediaUrl("media/%2e%2e/path")).toBeNull();
+    expect(gateway.mediaUrl("api/catalog")).toBeNull();
+    expect(gateway.mediaUrl("api/quotes")).toBeNull();
+    expect(gateway.mediaUrl("media/")).toBeNull();
+    expect(gateway.mediaUrl("media/a//image.webp")).toBeNull();
+    expect(gateway.mediaUrl("media/" + "a".repeat(257))).toBeNull();
+    expect(gateway.mediaUrl("media/" + "x/".repeat(17) + "cover.webp")).toBeNull();
+    expect(gateway.mediaUrl("media/images/" + String.fromCharCode(0) + "bad.webp")).toBeNull();
+    expect(gateway.mediaUrl("media/images/" + "\\uD800")).toBeNull();
+    expect(gateway.mediaUrl("media/cards/café.webp")).toBe(
+      "https://example.test/catalogo-api/media/cards/caf%C3%A9.webp",
+    );
     expect(() =>
       createPublicCatalogGateway("https://ordax.com.br", fetch),
     ).toThrow("catalog_endpoint_not_configured");

@@ -239,7 +239,7 @@ export function createPublicCatalogGateway(
     typeof window === "undefined" ? undefined : window.location.origin,
   );
 
-  async function read(path: string, signal?: AbortSignal): Promise<unknown> {
+  async function read(path: string | URL, signal?: AbortSignal): Promise<unknown> {
     const response = await fetcher(new URL(path, base).toString(), {
       method: "GET",
       credentials,
@@ -253,28 +253,31 @@ export function createPublicCatalogGateway(
 
   return {
     mediaUrl(key: string | null): string | null {
-      if (!key) return null;
+      // The Worker and Pages proxy expose only /media/*, never arbitrary
+      // catalog API routes. Validate before turning untrusted keys into URLs.
+      if (!key?.startsWith("media/")) return null;
       const segments = key.split("/");
       if (
-        segments.length > 16 ||
-        segments.some(
+        segments.length < 2 ||
+        segments.length > 17 ||
+        segments.slice(1).some(
           (part) =>
             !part ||
             part === "." ||
             part === ".." ||
-            part.includes(":") ||
-            part.includes("?") ||
-            part.includes("#") ||
-            part.includes("%") ||
-            part.includes("\\"),
+            /[:?#%\\\x00-\x1f\x7f]/.test(part),
         )
-      ) {
+      ) return null;
+      try {
+        const encoded = segments.map(encodeURIComponent);
+        if (encoded.some((part) => part.length > 256)) return null;
+        const route = encoded.join("/");
+        if (base.pathname.length + route.length > 4096) return null;
+        return new URL(route, base).toString();
+      } catch {
+        // URI encoding rejects malformed Unicode rather than crashing a view.
         return null;
       }
-      return new URL(
-        segments.map(encodeURIComponent).join("/"),
-        base,
-      ).toString();
     },
 
     async listCategories(
@@ -535,15 +538,7 @@ export function createPublicCatalogGateway(
       url.searchParams.set("limit", String(limit));
       url.searchParams.set("v", String(filters.version));
       if (filters.cursor) url.searchParams.set("cursor", filters.cursor);
-      const response = await fetcher(url.toString(), {
-        method: "GET",
-        credentials,
-        headers: { Accept: "application/json" },
-        signal,
-      });
-      if (!response.ok)
-        throw new Error("catalog_request_failed_" + response.status);
-      const payload: unknown = await response.json();
+      const payload = await read(url, signal);
       if (!payload || typeof payload !== "object" || Array.isArray(payload))
         throw new Error("invalid_catalog_gallery");
       const row = payload as {
@@ -703,15 +698,7 @@ export function createPublicCatalogGateway(
       if (query) url.searchParams.set("q", query);
       if (filters.cursor) url.searchParams.set("cursor", filters.cursor);
 
-      const response = await fetcher(url.toString(), {
-        method: "GET",
-        credentials,
-        headers: { Accept: "application/json" },
-        signal,
-      });
-      if (!response.ok)
-        throw new Error(`catalog_request_failed_${response.status}`);
-      const payload: unknown = await response.json();
+      const payload = await read(url, signal);
       if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
         throw new Error("invalid_catalog_page");
       }
