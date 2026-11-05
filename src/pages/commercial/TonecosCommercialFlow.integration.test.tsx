@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   getUser: vi.fn(), signIn: vi.fn(), signUp: vi.fn(), signOut: vi.fn(),
   getProfile: vi.fn(), updateProfile: vi.fn(),
   quoteItems: vi.fn(), submit: vi.fn(), listMine: vi.fn(),
-  listAdmin: vi.fn(), answerAdmin: vi.fn(),
+  listAdmin: vi.fn(), answerAdmin: vi.fn(), bootstrapAdmin: vi.fn(),
 }));
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.getUser,
@@ -33,6 +33,7 @@ vi.mock("@/services/customer/catalog-quote-service", () => ({
 vi.mock("@/services/admin/config/catalog-quote-admin-service", () => ({
   listAdminCatalogQuotes: mocks.listAdmin,
   answerCatalogQuoteRequest: mocks.answerAdmin,
+  bootstrapTonecosOwnerAdmin: mocks.bootstrapAdmin,
 }));
 
 const model = {
@@ -159,6 +160,16 @@ describe("Tonecos commercial screens: account → request → history → respon
     renderApp("/admin/orcamentos");
     expect(await screen.findByText("Admin access required")).toBeInTheDocument();
     expect(mocks.answerAdmin).not.toHaveBeenCalled();
+  });
+
+  it("offers deliberate owner activation and refreshes the admin view on success", async () => {
+    mocks.listAdmin.mockRejectedValueOnce(new Error("Admin access required")).mockResolvedValueOnce([]);
+    mocks.bootstrapAdmin.mockResolvedValue(undefined);
+    renderApp("/admin/orcamentos");
+    fireEvent.click(await screen.findByRole("button", { name: "Ativar administração" }));
+    await waitFor(() => expect(mocks.bootstrapAdmin).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.listAdmin).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Nenhuma solicitação recebida.")).toBeInTheDocument();
   });
 
   it("admin page answers with a validated quote price through its service", async () => {

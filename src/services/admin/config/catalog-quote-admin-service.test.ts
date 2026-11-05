@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { answerCatalogQuoteRequest, listAdminCatalogQuotes } from "./catalog-quote-admin-service";
+import { answerCatalogQuoteRequest, bootstrapTonecosOwnerAdmin, listAdminCatalogQuotes } from "./catalog-quote-admin-service";
 
 const QUOTE = "22222222-2222-4222-8222-222222222222";
 const mocks = vi.hoisted(() => ({
@@ -28,6 +28,20 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("admin catalog quote response boundary", () => {
+  it("uses only the verified-owner server RPC to activate the first administrator", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: true, error: null });
+    await expect(bootstrapTonecosOwnerAdmin()).resolves.toBeUndefined();
+    expect(mocks.requireAuthenticatedUserId).toHaveBeenCalledTimes(1);
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("bootstrap_tonecos_owner_admin");
+  });
+
+  it("refuses first admin bootstrap when the database denies owner verification", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "Verified Tonecos owner email required" } });
+    await expect(bootstrapTonecosOwnerAdmin()).rejects.toMatchObject({
+      message: "Verified Tonecos owner email required",
+    });
+  });
+
   it("checks the Tonecos-specific role before invoking the pricing RPC", async () => {
     await expect(answerCatalogQuoteRequest(QUOTE, 279.9)).resolves.toBe(QUOTE);
     expect(mocks.requireAuthenticatedUserId).toHaveBeenCalledTimes(1);

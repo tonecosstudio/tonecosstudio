@@ -132,6 +132,11 @@ export default function TonecosAccountPage() {
             <div className="mt-7 flex flex-wrap gap-3 border-t border-white/15 pt-6">
               <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.history}>Meus orçamentos</Link>
               <Link className={secondaryClass} to="/modelos">Explorar modelos</Link>
+              {identity.email?.trim().toLowerCase() === "tonecosstudio@gmail.com" &&
+                <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}>
+                  Atendimento Tonecos
+                </Link>
+              }
               <button type="button" onClick={() => { void signOut(); }} disabled={busy}
                 className={secondaryClass}>Sair da conta</button>
             </div>
@@ -157,7 +162,7 @@ export default function TonecosAccountPage() {
               </label>
               <label className="block space-y-2 text-sm">
                 <span>Senha</span>
-                <input className={fieldClass} type="password" required minLength={12}
+                <input className={fieldClass} type="password" required minLength={mode === "signup" ? 12 : 1}
                   autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   value={password} onChange={(e) => setPassword(e.target.value)} />
               </label>
