@@ -831,3 +831,18 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** após restaurar o acesso Cloudflare, criar/repetir uma implantação **preview** para SHA `1adc0a107e91778d3d98919221e7dc13cb0ac5d2`; verificar o cartão Missão em 280/320/360/390/640/768/1024/1440 px, registrar largura/altura/linhas antes e depois, e então seguir pela página Contato.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não chamar produção, Worker, D1, R2, DNS ou migrations; não gerar build para atualização documental isolada.
+
+
+## Rodada 60 — Contato e páginas legais revalidadas (05/11/2026)
+
+- Base atual: PR #4 aberta/draft, branch `integration/tonecosstudio-canonical-20261101`, HEAD `7004549d0b4058f2edf76604c2260379fe27d31a`, base `main` @ `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`.
+- Prévia reutilizada: [440db22e](https://440db22e.tonecosstudio.pages.dev), source SHA `6291ced2710b1dcb9a7dd655c8175e1a86c36a7d`. Os blobs de `PublicCatalogContact.tsx`, `TermsArcadeView.tsx` e `PrivacyArcadeView.tsx` são iguais no source da prévia e no HEAD da PR.
+- `/contato`: QA em 280/320/360/390/640/768/1024/1440 px, sem overflow horizontal. Link de e-mail 143×44 px; ações “Ver modelos” 188×48 px e “Início” 116×44 px. O link de e-mail não foi acionado.
+- `/termos`: QA em 280/320/390/768/1024/1440 px, sete tópicos e sem overflow horizontal. Ações “Ver Universo” 198×48 px e “Início” 116×44 px.
+- `/privacidade`: QA em 280/320/390/768/1440 px, sete tópicos e sem overflow horizontal. Ações “Ver Universo” 198×48 px e “Início” 116×44 px.
+- Sem defeito reproduzível nessas três páginas; não foi necessário alterar frontend nem rodar testes.
+- A diferença funcional do HEAD para a prévia continua na página Sobre: o patch de padding mobile de `AboutArcade.tsx` ainda não foi publicado. O conector Cloudflare permanece indisponível (“Unknown tool”); sem sessão autenticada para criar preview nesta rodada. Produção e Worker permanecem inalterados.
+
+**NEXT_ACTION:** quando o acesso Cloudflare do proprietário ou o conector estiver disponível, criar preview do HEAD `7004549d0b4058f2edf76604c2260379fe27d31a` e verificar o cartão Missão em 280/320/360/390/640/768/1024/1440 px; depois continuar a inspeção da rota pública seguinte.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` (preview antigo); reutilizar `440db22e` apenas para páginas cujos blobs foram confirmados iguais ao HEAD; não criar build somente por documentação; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
