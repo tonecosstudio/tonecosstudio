@@ -17,7 +17,7 @@ const BASE = "https://catalog.example.test/catalogo-api";
 const rootFranchises = Array.from({ length: 24 }, (_, i) => ({
   id: "franquia-" + (i + 1),
   label: "Franquia " + (i + 1),
-  count: 6,
+  count: i === 0 ? 1 : 6,
   category: "originais",
   ...(i === 0 ? { cover_storage_key: "media/franquia-1/card.webp" } : {}),
 }));
@@ -30,7 +30,7 @@ function setupFetch() {
     calls.push(url);
     if (url.pathname.endsWith("/api/categories")) {
       return Response.json({
-        items: [{ id: "originais", label: "Originais", count: 150, cover_storage_key: "media/originais/card.webp" }],
+        items: [{ id: "originais", label: "Originais", count: 1, cover_storage_key: "media/originais/card.webp" }],
       });
     }
     if (url.pathname.endsWith("/api/franchises")) {
@@ -79,6 +79,9 @@ describe("Tonecos canonical Universe discovery", () => {
     const calls = setupFetch();
     await renderUniverse("/universo");
     expect(await screen.findByRole("link", { name: /Originais/ })).toHaveAttribute("href", "/universo/originais");
+    const categoryCard = screen.getByRole("link", { name: /Originais/ });
+    expect(categoryCard).toHaveTextContent(/\\b1 modelo\\b/);
+    expect(categoryCard).not.toHaveTextContent(/\\b1 modelos\\b/);
     expect(calls.map(call => call.pathname)).toEqual(["/catalogo-api/api/categories"]);
   });
 
@@ -128,6 +131,17 @@ describe("Tonecos canonical Universe discovery", () => {
       "/universo/originais/franquia-1",
     );
     expect(calls).toHaveLength(1);
+  });
+
+  it("formats a singular model count for a canonical franchise", async () => {
+    setupFetch();
+    await renderUniverse("/universo/originais");
+    await screen.findByText("Franquia 24");
+
+    const franchiseCard = screen.getByText("Franquia 1").closest("a");
+    expect(franchiseCard).toHaveAttribute("href", "/universo/originais/franquia-1");
+    expect(franchiseCard).toHaveTextContent(/\\b1 modelo\\b/);
+    expect(franchiseCard).not.toHaveTextContent(/\\b1 modelos\\b/);
   });
 
   it("blocks short direct-link searches before any Worker request", async () => {
