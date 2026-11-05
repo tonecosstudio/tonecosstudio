@@ -121,7 +121,7 @@ interface ArcadeHeroProps {
 
 export function ArcadeHero({ badge, title, subtitle, stats, compact = false }: ArcadeHeroProps) {
   return (
-    <section className={`relative overflow-hidden px-6 ${compact ? "py-9 md:py-12" : "py-16 md:py-24"}`}>
+    <section className={`relative overflow-hidden px-6 ${compact ? "py-6 sm:py-9 md:py-12" : "py-16 md:py-24"}`}>
       <FloatingParticles />
 
       <div
