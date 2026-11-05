@@ -1,6 +1,6 @@
 # Documentação operacional — Tonecos Studio
 
-**Hospedagem oficial: Cloudflare Pages da conta Tonecos.** Vercel Washington é legado. Estado 04/11/2026: MVP somente leitura sob Cloudflare Access, sem produção pública; PR #4 draft.
+**Hospedagem oficial: Cloudflare Pages da conta Tonecos.** Vercel Washington é legado. O MVP público segue somente leitura, com preview sob Cloudflare Access e PR #4 draft; estado mutável e bloqueios de publicação estão em [URGENTE.md](../URGENTE.md).
 
 ## Ordem de leitura
 
@@ -17,6 +17,7 @@
 - **[MIGRACAO_CATALOGO_MONOREPO.md](MIGRACAO_CATALOGO_MONOREPO.md)** — plano M0–M6, SSOT de etapas, critérios de GO, ownership, dependências, rollback e checkpoint; prevalece sobre a proposta anterior de transferir o repo do catálogo.
 - **[Manifesto de migração](../config/catalog-code-consolidation.json)** — fonte verificável dos blobs Worker/D1 da origem; é snapshot auditado, não autorização de release.
 - **[Guard offline](../scripts/architecture/catalog-monorepo.test.mjs)** — executado por npm run catalog:monorepo:check e pelo build, sem rede, D1 ou R2.
+- **[Configuração do Worker staged](../services/catalogo/wrangler.jsonc)** — fonte dos recursos Worker/D1/R2 já existentes; o preflight M5 a consulta junto do manifesto, nunca substitui aprovação humana ou o publicador ativo.
 
 ## Documentos históricos
 
