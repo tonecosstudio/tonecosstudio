@@ -25,6 +25,19 @@ function modelsPath(category?: string, franchise?: string): string {
   return PUBLIC_ROUTES.catalogModels + (search ? "?" + search : "");
 }
 
+function readableSlugLabel(slug: string): string {
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function categoryDisplayLabel(id: string, label?: string): string {
+  if (id === "animes-desenhos") return "Animes e Desenhos";
+  return label ?? readableSlugLabel(id);
+}
+
 /**
  * Public Universe is only a navigation layer over the canonical D1/R2 catalog.
  * Do not build a second catalog from Supabase models or fetch every page to
@@ -41,6 +54,9 @@ export default function CatalogArcade() {
     (franchiseKey !== undefined && !VALID_SLUG.test(franchiseKey));
   const [searchParams, setSearchParams] = useSearchParams();
   const franchiseSearch = searchParams.get("q")?.trim() ?? "";
+  const franchiseLabelSearch = franchiseKey
+    ? franchiseKey.replace(/-/g, " ")
+    : franchiseSearch;
   const [franchiseDraft, setFranchiseDraft] = useState(franchiseSearch);
   const invalidFranchiseSearch =
     franchiseSearch.length > 0 &&
@@ -73,25 +89,27 @@ export default function CatalogArcade() {
   const categoriesQuery = useQuery({
     queryKey: ["tonecos-universe-canonical-categories"],
     queryFn: ({ signal }) => gateway!.listCategories(signal),
-    enabled: gateway !== null && !themeKey && !invalidScope,
+    enabled: gateway !== null && !invalidScope,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
 
   const franchisesQuery = useQuery({
-    queryKey: ["tonecos-universe-canonical-franchises", themeKey, franchiseSearch],
+    queryKey: ["tonecos-universe-canonical-franchises", themeKey, franchiseLabelSearch],
     queryFn: ({ signal }) =>
       gateway!.listFranchises({
         category: themeKey,
-        search: franchiseSearch || undefined,
+        search: franchiseLabelSearch || undefined,
         limit: 24,
       }, signal),
     enabled:
       gateway !== null &&
       Boolean(themeKey) &&
-      !franchiseKey &&
       !invalidScope &&
-      !invalidFranchiseSearch,
+      (franchiseKey
+        ? Array.from(franchiseLabelSearch).length >= 3 &&
+          Array.from(franchiseLabelSearch).length <= 80
+        : !invalidFranchiseSearch),
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -106,6 +124,18 @@ export default function CatalogArcade() {
   const categories = categoriesQuery.data ?? [];
   const visibleCategories = categories.filter((category) => category.id !== "all");
   const franchises = franchisesQuery.data?.items ?? [];
+  const categoryLabel = themeKey
+    ? categoryDisplayLabel(
+        themeKey,
+        categories.find((category) => category.id === themeKey)?.label,
+      )
+    : "";
+  const franchiseLabel = franchiseKey
+    ? franchises.find(
+        (franchise) =>
+          franchise.id === franchiseKey && franchise.category === themeKey,
+      )?.label ?? readableSlugLabel(franchiseKey)
+    : "";
 
   return (
     <Page
@@ -128,12 +158,12 @@ export default function CatalogArcade() {
             </Link>
             {themeKey && (
               <Link className="inline-flex min-h-11 items-center text-[hsl(0,0%,56%)] hover:text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(themeKey)}>
-                / {themeKey}
+                / {categoryLabel}
               </Link>
             )}
             {franchiseKey && (
               <span className="text-[hsl(0,0%,56%)]">
-                / {franchiseKey}
+                / {franchiseLabel}
               </span>
             )}
             <Link className="ml-auto inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent)/0.4)] px-4 py-3 font-mono uppercase text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={modelsPath()}>
@@ -255,7 +285,7 @@ export default function CatalogArcade() {
           ) : (
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {visibleCategories.map((category) => {
-                const displayLabel = category.id === "animes-desenhos" ? "Animes e Desenhos" : category.label;
+                const displayLabel = categoryDisplayLabel(category.id, category.label);
                 const isAnimeCategory = category.id === "animes-desenhos";
                 return (
                   <ArcadeCard key={category.id}>
