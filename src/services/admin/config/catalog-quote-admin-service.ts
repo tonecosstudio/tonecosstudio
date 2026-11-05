@@ -1,4 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
+const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 import type { CatalogQuoteItem } from "@/services/customer/catalog-quote-service";
 import { MAX_CANONICAL_SELECTION } from "@/services/catalog/public-catalog-selection";
@@ -17,10 +20,7 @@ export type AdminCatalogQuote = {
 
 async function requireTonecosAdmin(): Promise<void> {
   await requireAuthenticatedUserId();
-  const client = supabase as unknown as {
-    rpc(name: "is_tonecos_admin"): Promise<{ data: boolean | null; error: { message: string } | null }>;
-  };
-  const { data, error } = await client.rpc("is_tonecos_admin");
+  const { data, error } = await tonecos.rpc("is_tonecos_admin");
   if (error) throw error;
   if (data !== true) throw new Error("Admin access required");
 }
@@ -59,7 +59,7 @@ type QuoteRow = {
   status: string;
   created_at: string;
   notes: string | null;
-  total_amount: number;
+  total_amount: number | null;
   requested_catalog_models: unknown;
 };
 
@@ -70,7 +70,7 @@ export async function listAdminCatalogQuotes(limit = 50): Promise<AdminCatalogQu
     throw new Error("admin_catalog_quote_limit_invalid");
   }
   await requireTonecosAdmin();
-  const { data, error } = await supabase
+  const { data, error } = await tonecos
     .from("quotes")
     .select("id,user_id,status,created_at,notes,total_amount,requested_catalog_models,catalog_requested_at")
     .not("catalog_requested_at", "is", null)
@@ -84,17 +84,10 @@ export async function listAdminCatalogQuotes(limit = 50): Promise<AdminCatalogQu
     createdAt: row.created_at,
     notes: row.notes,
     items: decodeItems(row.requested_catalog_models),
-    quotedAmount: row.status === "answered" && row.total_amount > 0
+    quotedAmount: row.status === "answered" && row.total_amount !== null && row.total_amount > 0
       ? row.total_amount : null,
   }));
 }
-
-type AdminAnswerRpcClient = {
-  rpc(name: "answer_catalog_quote_request", args: {
-    p_quote_id: string;
-    p_amount: number;
-  }): Promise<{ data: string | null; error: { message: string } | null }>;
-};
 
 /** Only the privileged server RPC may change the quote's monetary amount. */
 export async function answerCatalogQuoteRequest(quoteId: string, amount: number): Promise<string> {
@@ -105,8 +98,7 @@ export async function answerCatalogQuoteRequest(quoteId: string, amount: number)
     throw new Error("admin_catalog_quote_response_invalid");
   }
   await requireTonecosAdmin();
-  const rpc = supabase as unknown as AdminAnswerRpcClient;
-  const { data, error } = await rpc.rpc("answer_catalog_quote_request", {
+  const { data, error } = await tonecos.rpc("answer_catalog_quote_request", {
     p_quote_id: quoteId,
     p_amount: amount,
   });

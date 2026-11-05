@@ -1,4 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
+const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 import { assertCurrentUserId } from "@/services/auth/current-user";
 import { validCatalogSlug, type PublicCatalogModel } from "@/services/catalog/public-catalog-gateway";
 import { MAX_CANONICAL_SELECTION } from "@/services/catalog/public-catalog-selection";
@@ -71,7 +74,7 @@ export async function submitCatalogQuoteRequest(
     throw new Error("catalog_quote_notes_invalid");
   }
   await assertCurrentUserId(userId);
-  const client = supabase as unknown as QuoteRpcClient;
+  const client = tonecos;
   const { data, error } = await client.rpc("submit_catalog_quote_request", {
     p_models: safeItems,
     p_notes: safeNotes,
@@ -89,7 +92,7 @@ type QuoteDbRow = {
   created_at: string;
   deadline: string | null;
   notes: string | null;
-  total_amount: number;
+  total_amount: number | null;
   requested_catalog_models: unknown;
   catalog_requested_at: string | null;
 };
@@ -104,14 +107,14 @@ export async function listMyCatalogQuotes(
     throw new Error("catalog_quote_list_limit_invalid");
   }
   await assertCurrentUserId(userId);
-  const { data, error } = await supabase
+  const { data, error } = await tonecos
     .from("quotes")
     .select("id,status,created_at,deadline,notes,total_amount,requested_catalog_models,catalog_requested_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  const rows = (data ?? []) as unknown as QuoteDbRow[];
+  const rows = (data ?? []) as QuoteDbRow[];
   return rows.map((row) => {
     const items = row.requested_catalog_models === null
       ? []
@@ -127,7 +130,7 @@ export async function listMyCatalogQuotes(
       deadline: row.deadline,
       notes: row.notes,
       items,
-      quotedAmount: row.status === "answered" && row.total_amount > 0
+      quotedAmount: row.status === "answered" && row.total_amount !== null && row.total_amount > 0
         ? row.total_amount : null,
     };
   });
