@@ -68,7 +68,7 @@ export default function AboutArcade() {
         <ArcadeSectionTitle>Missão</ArcadeSectionTitle>
 
         <ArcadeCard>
-          <div className="p-8 md:p-12 text-center relative overflow-hidden">
+          <div className="p-4 sm:p-6 md:p-12 text-center relative overflow-hidden">
             <FloatingParticles />
             <div className="relative z-10">
               <p className="font-mono text-sm md:text-base text-[hsl(0,0%,60%)] leading-relaxed tracking-wider max-w-3xl mx-auto">
