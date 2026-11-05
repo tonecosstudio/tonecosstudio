@@ -576,3 +576,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar `/universo/animes-desenhos/jujutsu-kaisen` no preview em 280/320/390/768/1024/1440 px; conferir pastas, miniaturas e retorno à ficha. Continuar sem carregar páginas além do limite canônico publicado.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
+## Rodada 47 — Jujutsu Kaisen e Fullmetal Alchemist responsivos (05/11/2026)
+
+- Preview reutilizado: [Universo](https://494e0ae6.tonecosstudio.pages.dev/universo), deployment `494e0ae6-5dea-4b19-9487-37a80f9daa6d`, código `fe13cf80fd41248dcaf7dbdef391e91d49f2bbc0`. Sem novo build/deploy.
+- `Jujutsu Kaisen`: 13 pastas e 8 referências; em 280/320/390/768/1024/1440 px sem overflow. Pastas em 1/1/2/3/4/4 colunas e referências em 2/2/2/3/4/4; 8/8 imagens carregadas. “Sukuna e Feiticeiros” cabe no limite de duas linhas.
+- `folder=yuta-okkotsu` lista 2 referências. Breadcrumbs e CTA medem 44 px e mantêm categoria, franquia e pasta. A ficha retorna ao caminho exato, sem overflow nas seis larguras; imagem carregada (800 px) e seleção permaneceu vazia.
+- `Fullmetal Alchemist`: 4 pastas e 7 referências; em 280/320/390/768/1024/1440 px sem overflow. Pastas em 1/1/2/3/4/4 colunas e referências em 2/2/2/3/4/4; 7/7 imagens carregadas.
+- `folder=lust` lista 2 referências. Breadcrumbs e CTA têm alvos de 44 px; a ficha de Lust retorna ao caminho exato. Ficha sem overflow nas seis larguras, imagem carregada (1600 px) e seleção permaneceu vazia.
+- Sem defeito reproduzível nas duas franquias; sem mudança de frontend. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** revisar `/universo/animes-desenhos/pokemon` no mesmo preview em 280/320/390/768/1024/1440 px; conferir pastas, miniaturas e retorno à ficha.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
