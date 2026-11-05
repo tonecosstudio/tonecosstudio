@@ -216,7 +216,7 @@ export default function LandingPage() {
           {/* Title */}
           <h1 className="mb-5">
             <span
-              className="block text-6xl sm:text-8xl md:text-9xl lg:text-[9rem] font-black tracking-[0.15em] leading-none"
+              className="block text-[clamp(3.5rem,14vw,9rem)] lg:text-[9rem] font-black tracking-[clamp(0.08em,2vw,0.15em)] leading-none"
               style={{
                 fontFamily: "'Bebas Neue', Impact, sans-serif",
                 textShadow: "0 0 60px hsl(var(--gold-accent) / 0.15)",
