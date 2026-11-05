@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
@@ -25,12 +26,7 @@ async function requireTonecosAdmin(): Promise<void> {
   if (data !== true) throw new Error("Admin access required");
 }
 
-function assertCommercialMode() {
-  if (import.meta.env.VITE_PREVIEW_READ_ONLY === "true" ||
-      import.meta.env.VITE_CATALOG_QUOTES_ENABLED !== "true") {
-    throw new Error("catalog_quotes_not_enabled");
-  }
-}
+const assertCommercialMode = assertTonecosCommercialEnabled;
 
 function decodeItems(value: unknown): CatalogQuoteItem[] {
   if (!Array.isArray(value) || value.length < 1 ||

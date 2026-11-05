@@ -20,6 +20,7 @@ vi.mock("@/services/auth/current-user", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv("VITE_SUPABASE_URL", "https://icmtmaakjucmuzxnofkd.supabase.co");
   vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
   vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
   mocks.assertCurrentUserId.mockResolvedValue(USER);

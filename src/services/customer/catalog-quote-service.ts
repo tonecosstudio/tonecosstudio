@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
@@ -19,12 +20,7 @@ export type CustomerCatalogQuote = {
   quotedAmount: number | null;
 };
 
-function requireCommercialQuoteMode(): void {
-  if (import.meta.env.VITE_PREVIEW_READ_ONLY === "true" ||
-      import.meta.env.VITE_CATALOG_QUOTES_ENABLED !== "true") {
-    throw new Error("catalog_quotes_not_enabled");
-  }
-}
+const requireCommercialQuoteMode = assertTonecosCommercialEnabled;
 
 function validateItems(items: readonly CatalogQuoteItem[]): CatalogQuoteItem[] {
   if (!Array.isArray(items) || items.length < 1 || items.length > MAX_CANONICAL_SELECTION) {

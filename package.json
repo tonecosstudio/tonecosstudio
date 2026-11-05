@@ -78,7 +78,7 @@
     "catalog:worker:typecheck": "tsc -p services/catalogo/tsconfig.worker.json --noEmit",
     "catalog:worker:search:test": "cd services/catalogo && node --test tools/test_worker_catalog_facets.mjs tools/test_worker_catalog_scale_sqlite.mjs",
     "catalog:cutover:check": "node scripts/catalog/cutover-readiness.mjs --live",
-    "catalog:mvp:test": "vitest run src/config/canonical-catalog-endpoint.test.ts src/services/catalog/public-catalog-gateway.test.ts src/pages/CatalogModelsArcade.integration.test.tsx src/pages/catalog/CanonicalModelDetails.integration.test.tsx src/services/customer/catalog-quote-service.test.ts src/services/admin/config/catalog-quote-admin-service.test.ts"
+    "catalog:mvp:test": "vitest run src/config/canonical-catalog-endpoint.test.ts src/services/catalog/public-catalog-gateway.test.ts src/pages/CatalogModelsArcade.integration.test.tsx src/pages/catalog/CanonicalModelDetails.integration.test.tsx src/services/customer/catalog-quote-service.test.ts src/services/admin/config/catalog-quote-admin-service.test.ts src/services/customer/tonecos-account-service.test.ts"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
