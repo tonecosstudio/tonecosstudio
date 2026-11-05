@@ -219,19 +219,23 @@ export default function CatalogArcade() {
                 <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {franchises.map((franchise) => (
                     <ArcadeCard key={franchise.category + "/" + franchise.id}>
-                      <Link className="group flex min-h-44 flex-col gap-4 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + themeKey + "/" + franchise.id}>
-                        <CanonicalCatalogImage
-                          src={gateway.mediaUrl(franchise.coverStorageKey ?? null)}
-                          alt={"Prévia de " + franchise.label}
-                          imageClassName="h-24 w-full object-contain"
-                          fallbackClassName="flex items-start"
-                          fallbackIcon={<FolderOpen className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />}
-                          fallbackLabel=""
-                        />
-                        <span className="line-clamp-2 font-semibold uppercase">{franchise.label}</span>
-                        <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
-                          {formatModelCountLabel(franchise.count)} <ArrowRight size={16} aria-hidden="true" />
-                        </span>
+                      <Link className="group flex min-h-44 flex-col focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + themeKey + "/" + franchise.id}>
+                        <div className="aspect-[4/3] w-full overflow-hidden bg-[hsl(0,0%,8%)]">
+                          <CanonicalCatalogImage
+                            src={gateway.mediaUrl(franchise.coverStorageKey ?? null)}
+                            alt={"Prévia de " + franchise.label}
+                            imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+                            fallbackClassName="flex h-full w-full items-center justify-center"
+                            fallbackIcon={<FolderOpen className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />}
+                            fallbackLabel=""
+                          />
+                        </div>
+                        <div className="flex flex-1 flex-col gap-2 p-4">
+                          <span className="line-clamp-2 font-semibold uppercase">{franchise.label}</span>
+                          <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
+                            {formatModelCountLabel(franchise.count)} <ArrowRight size={16} aria-hidden="true" />
+                          </span>
+                        </div>
                       </Link>
                     </ArcadeCard>
                   ))}
@@ -251,19 +255,23 @@ export default function CatalogArcade() {
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {categories.map((category) => (
                 <ArcadeCard key={category.id}>
-                  <Link className="group flex min-h-44 flex-col gap-4 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={category.id === "all" ? modelsPath() : PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(category.id)}>
-                    <CanonicalCatalogImage
-                      src={gateway.mediaUrl(category.coverStorageKey ?? null)}
-                      alt={"Prévia de " + category.label}
-                      imageClassName="h-24 w-full object-contain"
-                      fallbackClassName="flex items-start"
-                      fallbackIcon={<ImageOff className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />}
-                      fallbackLabel=""
-                    />
-                    <span className="line-clamp-2 font-semibold uppercase">{category.label}</span>
-                    <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
-                      {formatModelCountLabel(category.count)} <ArrowRight size={16} aria-hidden="true" />
-                    </span>
+                  <Link className="group flex min-h-44 flex-col focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={category.id === "all" ? modelsPath() : PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(category.id)}>
+                    <div className="aspect-[4/3] w-full overflow-hidden bg-[hsl(0,0%,8%)]">
+                      <CanonicalCatalogImage
+                        src={gateway.mediaUrl(category.coverStorageKey ?? null)}
+                        alt={"Prévia de " + category.label}
+                        imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+                        fallbackClassName="flex h-full w-full items-center justify-center"
+                        fallbackIcon={<ImageOff className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />}
+                        fallbackLabel=""
+                      />
+                    </div>
+                    <div className="flex flex-1 flex-col gap-2 p-4">
+                      <span className="line-clamp-2 font-semibold uppercase">{category.label}</span>
+                      <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
+                        {formatModelCountLabel(category.count)} <ArrowRight size={16} aria-hidden="true" />
+                      </span>
+                    </div>
                   </Link>
                 </ArcadeCard>
               ))}
