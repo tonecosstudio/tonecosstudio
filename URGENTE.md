@@ -285,3 +285,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - Produção, main, Worker, D1, R2 e DNS inalterados. A PR continua draft; sem merge/publicação.
 - **next_action:** continuar QA visual página por página, incluindo filtros e galeria em diferentes larguras, e gerar nova prévia apenas após outra alteração de código.
 - **do_not_repeat:** não gerar outra build por atualização documental; não ativar previews automáticos, alterar a main, Worker/D1/R2/DNS, SEO público ou produção; não misturar QA visual pendente de capas com a checagem responsiva de layout já concluída nesta rodada.
+
+## Rodada 23 — continuidade responsiva: ficha, contato e Universo (05/11/2026)
+
+- **Objetivo contínuo:** manter a revisão do frontend página por página na mesma PR #4 e no preview privado manual. O objetivo persistente já cobre essa continuidade; este checkpoint registra o próximo passo sem abrir meta duplicada.
+- **Preview usado:** [Tonecos Studio](https://693d03d5.tonecosstudio.pages.dev/), ambiente privado, source code SHA `6994e2d095eeed53cb6a09b6f6751a20c6ae6a16`. Nenhuma mudança de código nesta rodada.
+- **Ficha e galeria:** Aang, Appa & Momo abriu com a imagem publicada (1600 px de largura natural). Em 320/390/768/1024/1440 px, o documento não excedeu a viewport (larguras medidas: 314/384/762/1018/1434 px); imagem e ficha se ajustam, com duas colunas em 1024 px e acima. Botão de seleção, retorno e miniatura mantiveram alvos de pelo menos 44 px.
+- **Universo:** em 320/390/768/1024/1440 px, sem overflow horizontal. A grade de categorias passou de 2 colunas no celular para 3 em 768 px e 4 a partir de 1024 px. As seis imagens das categorias carregaram; botões/links medidos mantêm 44 px ou mais.
+- **Contato:** conferência adicional a 320 px sem overflow e sem alvos de toque abaixo de 44 px; nenhum link de e-mail foi acionado.
+- Não houve correção de código necessária, novo build ou novo deployment. Produção, Worker, D1, R2 e DNS inalterados; PR #4 segue open/draft.
+- **NEXT_ACTION:** auditar a página 2 de /modelos em 320/390/768/1024/1440 px, incluindo paginação, preservação de busca/filtros e tamanho dos alvos; alterar código e gerar preview novo apenas diante de um problema reproduzível.
