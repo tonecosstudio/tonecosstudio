@@ -239,7 +239,7 @@ export default function LandingPage() {
               style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
               <TypewriterText
-                text=">> PERSONAGENS, MODELOS E VARIACOES SOB ENCOMENDA."
+                text=">> PERSONAGENS, MODELOS E VARIAÇÕES SOB ENCOMENDA."
                 delay={800}
               />
             </p>
