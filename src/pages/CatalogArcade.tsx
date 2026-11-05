@@ -122,7 +122,12 @@ export default function CatalogArcade() {
 
   const activeQuery = themeKey ? franchisesQuery : categoriesQuery;
   const categories = categoriesQuery.data ?? [];
-  const visibleCategories = categories.filter((category) => category.id !== "all");
+  const visibleCategories = categories.filter((category) => {
+    const id = category.id.trim().toLowerCase();
+    const label = category.label.trim().toLowerCase();
+    return id !== "all" && id !== "todos" && id !== "todos-os-modelos" &&
+      label !== "todos" && label !== "todos os modelos";
+  });
   const franchises = franchisesQuery.data?.items ?? [];
   const categoryLabel = themeKey
     ? categoryDisplayLabel(
@@ -304,7 +309,7 @@ export default function CatalogArcade() {
                         <span
                           className={
                             isAnimeCategory
-                              ? "whitespace-nowrap tracking-tight text-[clamp(0.5rem,3vw,0.875rem)] font-semibold uppercase"
+                              ? "block max-w-full whitespace-nowrap tracking-[-0.035em] text-[clamp(0.5rem,2.8vw,0.875rem)] font-semibold uppercase"
                               : "line-clamp-2 font-semibold uppercase"
                           }
                         >
