@@ -791,3 +791,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar `/universo/animes-desenhos/ataque-de-tita` na prévia `e368e665`, incluindo miniaturas, pastas, retorno às fichas e larguras móveis/desktop.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; para a página Universo, usar `e368e665`; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
+
+## Rodada 57 — Ataque de Titã e quadro de imagem mobile (05/11/2026)
+
+- No preview [Ataque de Titã](https://c9c7835f.tonecosstudio.pages.dev/universo/animes-desenhos/ataque-de-tita), a rota carrega seis pastas e seis referências. QA visual em 280/320/360/390/640/768/1024/1440 px: grade de pastas em 1/1/2/2/3/3/4/4 colunas, breadcrumbs se ajustam às larguras menores e não há corte horizontal visível.
+- folder=eren mostra a miniatura e mantém o filtro na navegação à ficha; “Voltar à pasta” retorna a /universo/animes-desenhos/ataque-de-tita?folder=eren.
+- Commit [6cd0f2f](https://github.com/tonecosstudio/tonecosstudio/commit/6cd0f2fd155bbe6a8749ff885b95605a1a2c26eb) ajusta src/pages/catalog/CanonicalModelDetails.tsx: quadro da imagem com mínimo de 280 px em mobile, 360 px a partir de 640 px e 560 px a partir de 768 px. Na ficha Eren, a captura a 280 px reduziu o espaço vazio sem cortar a imagem; em desktop o quadro amplo foi preservado.
+- Preview c9c7835f-7b37-4669-97a3-3e4cb6131c5e, build e deploy SUCCESS no commit 6cd0f2fd155bbe6a8749ff885b95605a1a2c26eb; typecheck, 18 suítes/161 testes e verificações 9/9 e 33/33 passaram.
+- Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** revisar /universo/animes-desenhos em 280/320/360/390/640/768/1024/1440 px; conferir busca de franquias, nomes longos, capas e navegação para uma franquia.
+
+**DO_NOT_REPEAT:** usar c9c7835f como preview atual; não gerar build para documentação isolada; não alterar main, produção, Worker, D1, R2, DNS ou migrations.
