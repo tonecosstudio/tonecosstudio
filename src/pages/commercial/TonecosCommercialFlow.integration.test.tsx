@@ -62,6 +62,7 @@ function renderApp(entry: string, seed = false) {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
   mocks.getUser.mockResolvedValue({ id: USER, email: "cliente@example.com" });
   mocks.getProfile.mockResolvedValue({
     id: USER, email: "cliente@example.com", full_name: "Cliente",
@@ -73,7 +74,7 @@ beforeEach(() => {
   mocks.listMine.mockResolvedValue([]);
   mocks.listAdmin.mockResolvedValue([]);
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
 describe("Tonecos commercial screens: account → request → history → response", () => {
   it("keeps logged-out quote selection and sends visitors to sign in", async () => {
