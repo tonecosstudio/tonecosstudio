@@ -107,6 +107,61 @@ test("upstream cannot set cookies on Pages", async () => {
   assert.equal(response.headers.get("X-Content-Type-Options"), "nosniff");
 });
 
+test("the Worker cannot inject first-party cookie, navigation or site-policy headers", async () => {
+  const io = mockFetch("ok", 200, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "public, max-age=60",
+    "ETag": '"catalog-v2"',
+    "Access-Control-Allow-Origin": "*",
+    "Set-Cookie": "session=foreign",
+    "Clear-Site-Data": '"cookies", "storage"',
+    "Refresh": "0;url=https://external.invalid",
+    "Content-Security-Policy": "default-src *",
+    "Content-Disposition": "attachment; filename=foreign.html",
+    "Location": "https://external.invalid",
+    "Access-Control-Allow-Credentials": "true",
+    "Link": "<https://external.invalid/evil.js>; rel=preload; as=script",
+  });
+  const response = await proxyCatalogRequest(
+    new Request(SITE + "/catalogo-api/api/catalog"), io.fetcher,
+  );
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Content-Type"), "application/json; charset=utf-8");
+  assert.equal(response.headers.get("Cache-Control"), "public, max-age=60");
+  assert.equal(response.headers.get("ETag"), '"catalog-v2"');
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "*");
+  assert.equal(response.headers.get("X-Content-Type-Options"), "nosniff");
+  for (const name of [
+    "Set-Cookie", "Clear-Site-Data", "Refresh", "Content-Security-Policy",
+    "Content-Disposition", "Location", "Access-Control-Allow-Credentials", "Link",
+  ]) {
+    assert.equal(response.headers.has(name), false, "unsafe header: " + name);
+  }
+});
+
+test("range responses preserve essential public media headers", async () => {
+  const io = mockFetch("part", 206, {
+    "Content-Type": "image/webp",
+    "Content-Range": "bytes 0-3/300",
+    "Accept-Ranges": "bytes",
+    "ETag": '"media-v2"',
+    "Cross-Origin-Resource-Policy": "cross-origin",
+    "Content-Disposition": "attachment; filename=unsafe.webp",
+  });
+  const response = await proxyCatalogRequest(
+    new Request(SITE + "/catalogo-api/media/images/example.webp", {
+      headers: { Range: "bytes=0-3" },
+    }),
+    io.fetcher,
+  );
+  assert.equal(response.status, 206);
+  assert.equal(response.headers.get("Content-Range"), "bytes 0-3/300");
+  assert.equal(response.headers.get("Accept-Ranges"), "bytes");
+  assert.equal(response.headers.get("ETag"), '"media-v2"');
+  assert.equal(response.headers.get("Cross-Origin-Resource-Policy"), "cross-origin");
+  assert.equal(response.headers.has("Content-Disposition"), false);
+});
+
 test("redirects are rejected instead of followed", async () => {
   const io = mockFetch(null, 302, { Location: "https://external.invalid" });
   const response = await proxyCatalogRequest(

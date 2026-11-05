@@ -15,7 +15,7 @@ Rotas de leitura aceitas pela função:
 - /catalogo-api/api/models/:slug/images
 - /catalogo-api/media/:path* (segmentos validados)
 
-Método diferente de GET → 405; path fora da allowlist → 404; exceção no upstream → 502; redirecionamento inesperado é rejeitado. Encaminha Range de mídia e If-None-Match, mas não promove cookies de upstream. O contrato da **Pages Function** não é o mesmo que um HEAD direto no Worker, que pode ter suporte diferente.
+Método diferente de GET → 405; path fora da allowlist → 404; exceção no upstream → 502; redirecionamento inesperado é rejeitado. Encaminha Range de mídia e If-None-Match. A resposta é **construída por allowlist de cabeçalhos**: preserva somente semântica pública de JSON, cache, ETag, Range, codificação, CORS público e CORP de mídia; descarta cookies, Clear-Site-Data, políticas de segurança impostas pelo upstream, Refresh, Location, Link, Content-Disposition e credenciais CORS. O Worker não recebe autoridade para alterar a política do site por meio de cabeçalhos. O contrato da **Pages Function** não é o mesmo que um HEAD direto no Worker, que pode ter suporte diferente.
 
 **Resolver SSOT:** src/config/canonical-catalog-endpoint.ts. **Cliente:** src/services/catalog/public-catalog-gateway.ts. A variável VITE_CANONICAL_CATALOG_API_BASE é override explícito, não convite para fallback OrdaX. As rewrites no vercel.json são apenas compatibilidade histórica, não o caminho oficial Cloudflare.
 

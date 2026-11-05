@@ -12,6 +12,16 @@ const PUBLIC_LIST_ROUTES = new Set([
   "api/folders",
 ]);
 
+// The external publisher cannot set arbitrary headers on our first-party site.
+// Preserve only public API/media semantics. Never forward session, site-policy
+// or navigation headers from the upstream Worker.
+const SAFE_UPSTREAM_RESPONSE_HEADERS = [
+  "content-type", "content-length", "content-encoding", "content-language",
+  "content-range", "accept-ranges", "etag", "last-modified",
+  "cache-control", "vary", "access-control-allow-origin",
+  "cross-origin-resource-policy",
+];
+
 function isSafeMediaPath(path) {
   if (!path.startsWith("media/")) return false;
   const parts = path.slice("media/".length).split("/");
@@ -85,8 +95,11 @@ export async function proxyCatalogRequest(request, fetcher) {
         status: 502, headers: { "Cache-Control": "no-store" },
       });
     }
-    const safeHeaders = new Headers(response.headers);
-    safeHeaders.delete("set-cookie");
+    const safeHeaders = new Headers();
+    for (const name of SAFE_UPSTREAM_RESPONSE_HEADERS) {
+      const value = response.headers.get(name);
+      if (value !== null) safeHeaders.set(name, value);
+    }
     safeHeaders.set("X-Content-Type-Options", "nosniff");
     return new Response(response.body, {
       status: response.status,
