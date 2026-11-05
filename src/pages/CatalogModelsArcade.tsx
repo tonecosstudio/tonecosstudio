@@ -245,7 +245,7 @@ export default function CatalogModelsArcade() {
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                     maxLength={80}
-                    placeholder="Buscar modelos"
+                    placeholder="Buscar..."
                     className={`h-12 w-full rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] pl-12 ${draft ? "pr-12" : "pr-3"} text-sm outline-none transition-colors focus-visible:border-[hsl(var(--gold-accent))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)]`}
                   />
                   {draft && (
