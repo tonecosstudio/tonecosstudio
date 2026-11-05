@@ -598,3 +598,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar `/universo/animes-desenhos/bleach` no mesmo preview em 280/320/390/768/1024/1440 px; conferir pastas, miniaturas e retorno à ficha.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
+## Rodada 49 — Bleach responsivo (05/11/2026)
+
+- Preview reutilizado: [Universo](https://494e0ae6.tonecosstudio.pages.dev/universo), deployment `494e0ae6-5dea-4b19-9487-37a80f9daa6d`, código `fe13cf80fd41248dcaf7dbdef391e91d49f2bbc0`. Sem novo build/deploy.
+- `/universo/animes-desenhos/bleach`: 9 pastas e 8 referências; em 280/320/390/768/1024/1440 px sem overflow. Pastas em 1/1/2/3/4/4 colunas e referências em 2/2/2/3/4/4; 8/8 imagens carregadas. “Ichigo e Zangetsu - The Blade Is Me” fica em até duas linhas.
+- A pasta longa lista uma referência. Breadcrumb e CTA têm alvos de pelo menos 44 px (o breadcrumb mede 48 px em 280 px); o CTA preserva categoria, franquia e pasta. A ficha retorna ao caminho exato; imagem carregada (1600 px), sem overflow nas seis larguras e seleção vazia.
+- Sem defeito reproduzível; sem mudança no frontend. Produção, Worker, D1, R2, DNS e migrations inalterados.
+
+**NEXT_ACTION:** revisar `/universo/animes-desenhos/dandadan` no mesmo preview em 280/320/390/768/1024/1440 px; conferir nomes longos, pastas, imagens e retorno à ficha.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb` como preview; não gerar build para documentação isolada; não alterar `main`, produção ou Worker.
