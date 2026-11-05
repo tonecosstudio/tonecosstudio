@@ -193,7 +193,7 @@ export function ArcadeHero({ badge, title, subtitle, stats, compact = false }: A
         </div>
 
         <h1
-          className={`font-black tracking-[0.15em] mb-4 leading-none ${compact ? "text-5xl md:text-6xl lg:text-7xl" : "text-5xl md:text-7xl lg:text-8xl"}`}
+          className={`font-black tracking-[clamp(0.08em,2vw,0.15em)] mb-4 leading-none ${compact ? "text-5xl md:text-6xl lg:text-7xl" : "text-5xl md:text-7xl lg:text-8xl"}`}
           style={{
             fontFamily: "'Bebas Neue', Impact, sans-serif",
             textShadow: "0 0 40px hsl(var(--gold-accent) / 0.15)",
