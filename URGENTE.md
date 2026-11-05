@@ -3,6 +3,17 @@
 **Auditado em 05/11/2026 (Bahia). Estado: NO-GO para publicação pública.**
 
 
+## Frontend — título fluido e conferência mobile da home (05/11/2026)
+
+- **Ajuste em `src/pages/LandingPage.tsx`:** título usa `clamp(3.5rem,14vw,9rem)` e tracking fluido; em 639/640 px a regra calcula 89,46/89,6 px, removendo o salto de tamanho no breakpoint. O typewriter expande além do mínimo de 32 px e as CTAs usam largura/padding tipográficos móveis até 20rem; desktop retoma a escala via `sm`/`lg`.
+- **Prévia:** https://090dce0b.tonecosstudio.pages.dev/ — deployment `090dce0b-1feb-4081-8330-2d6c54240435`, ambiente `preview`, source SHA `e75f42da18482b1ceeadcd8d04afc7e29f6bd4f4`; Cloudflare Pages build e deploy SUCCESS. Build executou `npm ci`, `typecheck`, `catalog:mvp:test` e `build`. Produção e Worker/D1/R2 não foram alterados.
+- **QA visual:** home e dados carregados no preview padrão (~804 px). Em viewport 320 e 390 px, typewriter quebra sem cortar o texto e CTAs cabem na largura; a grade de destaques mantém duas colunas. O screenshot da emulação 280 px ficou inconsistente após reset de zoom, por isso essa largura segue pendente. A continuidade 639/640 foi conferida pela fórmula CSS; não há salto no cálculo.
+- **Base/HEAD:** base `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; código `e75f42da18482b1ceeadcd8d04afc7e29f6bd4f4`; branch `integration/tonecosstudio-canonical-20261101`; PR #4 segue draft.
+- **NEXT_ACTION:** repetir a captura 280 px com viewport confiável; conferir a home em 1280/1920 px e depois avançar para `/contato` e demais rotas públicas.
+- **DO_NOT_REPEAT:** não voltar a alturas fixas para o typewriter, padding lateral fixo de 40 px em CTA mobile ou tamanhos de título que saltam em breakpoint; não publicar em produção, abrir nova branch/PR ou alterar Worker/D1/R2; não gerar build por mudança apenas documental.
+
+---
+
 ## Frontend — hero móvel da página inicial (05/11/2026)
 
 - **Ajuste em `src/pages/LandingPage.tsx`:** o bloco do typewriter agora cresce além do mínimo de 32 px quando o texto quebra em várias linhas. As duas CTAs usam largura móvel fluida até 20rem, espaçamento e tipografia menores em telas estreitas; a partir de `sm` recuperam a largura e escala anteriores.
