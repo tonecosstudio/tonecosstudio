@@ -104,7 +104,7 @@ describe("canonical catalog read boundary", () => {
       );
     }
     for (const folder of [
-      "x".repeat(513),
+      "x".repeat(241),
       "games/../admin",
       "games" + String.fromCharCode(92) + ".." + String.fromCharCode(92) + "admin",
       "games" + String.fromCharCode(10) + "other",
@@ -113,6 +113,22 @@ describe("canonical catalog read boundary", () => {
         gateway.listPage({ category: "games", franchise: "autoral", folder }),
       ).rejects.toThrow("catalog_folder_invalid");
     }
+    expect(io).not.toHaveBeenCalled();
+  });
+
+  it("shares the Worker's 240-character folder limit in list and navigation", async () => {
+    const io = vi.fn(async () => Response.json({ items: [], nextCursor: null }));
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    const overlong = "x".repeat(241);
+    await expect(gateway.listPage({
+      category: "games", franchise: "resident-evil", folder: overlong,
+    })).rejects.toThrow("catalog_folder_invalid");
+    await expect(gateway.listFolders({
+      category: "games", franchise: "resident-evil", parent: overlong,
+    })).rejects.toThrow("catalog_folder_path_invalid");
     expect(io).not.toHaveBeenCalled();
   });
 

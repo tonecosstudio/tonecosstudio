@@ -101,6 +101,8 @@ export async function proxyCatalogRequest(request, fetcher) {
       if (value !== null) safeHeaders.set(name, value);
     }
     safeHeaders.set("X-Content-Type-Options", "nosniff");
+    // The source Worker must not make failed public requests cacheable on Pages.
+    if (response.status >= 400) safeHeaders.set("Cache-Control", "no-store");
     return new Response(response.body, {
       status: response.status,
       headers: safeHeaders,

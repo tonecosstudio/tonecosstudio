@@ -156,7 +156,8 @@ export function validCatalogSlug(value: string): boolean {
 
 export function validCatalogFolder(value: string): boolean {
   return (
-    value.length <= 512 &&
+    // The Worker rejects folder paths longer than 240 characters.
+    value.length <= 240 &&
     !Array.from(value).some(
       (part) => part.charCodeAt(0) < 32 || part.charCodeAt(0) === 127,
     ) &&
@@ -416,7 +417,7 @@ export function createPublicCatalogGateway(
         throw new Error("catalog_folder_scope_invalid");
       }
       const parent = filters.parent ?? "";
-      if (typeof parent !== "string" || parent.length > 240 || !validCatalogFolder(parent)) {
+      if (typeof parent !== "string" || !validCatalogFolder(parent)) {
         throw new Error("catalog_folder_path_invalid");
       }
       const params = new URLSearchParams();
@@ -434,7 +435,7 @@ export function createPublicCatalogGateway(
       }
       const decodePath = (input: unknown, field: string): string => {
         const value = requiredText(input, field);
-        if (value.length > 240 || !validCatalogFolder(value)) {
+        if (!validCatalogFolder(value)) {
           throw new Error("invalid_catalog_folder_path");
         }
         return value;

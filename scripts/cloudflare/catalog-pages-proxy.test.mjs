@@ -182,6 +182,21 @@ test("upstream errors propagate and offline Worker fails closed", async () => {
   assert.equal(failed.headers.get("Cache-Control"), "no-store");
 });
 
+test("upstream errors can never request public caching on the Pages origin", async () => {
+  for (const status of [400, 404, 429, 500, 503]) {
+    const io = mockFetch("unavailable", status, {
+      "Cache-Control": "public, max-age=604800",
+      ETag: '"stale"',
+    });
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/api/catalog"), io.fetcher,
+    );
+    assert.equal(response.status, status);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+    assert.equal(io.calls.length, 1);
+  }
+});
+
 test("oversized request is rejected before contacting Worker", async () => {
   const io = mockFetch();
   const request = new Request(
