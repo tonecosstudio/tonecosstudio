@@ -144,13 +144,13 @@ export default function CatalogArcade() {
 
   return (
     <Page
-      title="Universo de modelos — Tonecos Studio"
-      description="Explore categorias, franquias e modelos publicados no acervo canônico Tonecos Studio."
-      keywords={["tonecos", "universo", "modelos", "catálogo"]}
+      title="Universo de modelos — TONART Studio"
+      description="Explore categorias, franquias e modelos publicados no acervo canônico TONART Studio."
+      keywords={["tonart", "universo", "modelos", "catálogo"]}
     >
       <main className="min-h-[80vh] bg-[hsl(0,0%,4%)] pb-20 text-[hsl(0,0%,94%)]">
         <ArcadeHero
-          badge="ACERVO TONECOS"
+          badge="ACERVO TONART"
           title="UNIVERSO"
           subtitle=">> CATEGORIAS E FRANQUIAS DO ACERVO PUBLICADO."
           stats={[]}

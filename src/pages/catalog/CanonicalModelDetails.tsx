@@ -170,15 +170,15 @@ export default function CanonicalModelDetails() {
 
   return (
     <Page
-      title={model ? model.name + " — Tonecos Studio" : "Ficha do modelo"}
+      title={model ? model.name + " — TONART Studio" : "Ficha do modelo"}
       description={
         model?.description ??
-        "Ficha do modelo publicado no catálogo Tonecos Studio."
+        "Ficha do modelo publicado no catálogo TONART Studio."
       }
       keywords={
         model
-          ? [model.name, model.category, model.franchise, "Tonecos Studio"]
-          : ["Tonecos Studio", "modelo"]
+          ? [model.name, model.category, model.franchise, "TONART Studio"]
+          : ["TONART Studio", "modelo"]
       }
     >
       <main className="min-h-[80vh] bg-[hsl(0,0%,4%)] px-4 py-8 text-[hsl(0,0%,94%)] md:px-8 md:py-12">
@@ -197,7 +197,7 @@ export default function CanonicalModelDetails() {
             <section className="mt-8 rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-6">
               <h1 className="text-2xl font-medium">Ficha indisponível</h1>
               <p role="alert" className="mt-2 text-sm text-[hsl(0,0%,56%)]">
-                A origem do catálogo Tonecos ainda não está configurada para
+                A origem do catálogo TONART ainda não está configurada para
                 este ambiente.
               </p>
             </section>

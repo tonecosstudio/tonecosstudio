@@ -242,8 +242,8 @@ export default function ModelDetails() {
       : buildModelTitle(displayName, sourceTitle)
     : "Modelo";
   const seoDescription = model
-    ? `Veja detalhes do modelo ${title}. Referência do catálogo Tonecos.`
-    : "Veja detalhes do modelo. Referência do catálogo Tonecos.";
+    ? `Veja detalhes do modelo ${title}. Referência do catálogo TONART.`
+    : "Veja detalhes do modelo. Referência do catálogo TONART.";
   const headlineTitle = displayName;
   const subtitleParts = uniqueStrings([
     sourceTitle,
