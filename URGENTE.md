@@ -434,3 +434,16 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - PR #4 continua open/draft. Nenhum deploy de produção, alteração no Worker, D1, R2, DNS ou migration Supabase nesta rodada. A autoridade do catálogo continua no Worker via `public-catalog-gateway`; não foi criada fonte paralela.
 
 **NEXT_ACTION:** revisar `/universo/games`, testar busca por franquia e abrir uma pasta representativa em 320/390/768/1024/1440 px; reutilizar os mesmos padrões e corrigir somente diferenças observadas. Produção, Worker, D1, R2, DNS e migrations seguem fora do escopo.
+
+
+## Rodada 37 — categorias do Universo e responsividade mobile (05/11/2026)
+
+- **Alteração em `src/pages/CatalogArcade.tsx`:** a sentinela canônica `id=all` deixa de aparecer como card na raiz de `/universo`; o CTA **Ver todos os modelos** continua apontando para `/modelos`. A SSOT mantém categorias, contagens, IDs e capas. Para `animes-desenhos`, o rótulo de apresentação passa a “Animes e Desenhos” e usa `white-space: nowrap` com fonte fluida em telas estreitas.
+- **Regressão coberta:** `CatalogArcade.integration.test.tsx` verifica remoção do card, permanência do CTA, texto de uma linha e navegação para a categoria. A primeira execução revelou apenas uma asserção sem espera pelo carregamento; o teste passou a esperar o título. Nenhum comportamento de catálogo/Worker foi alterado.
+- **CI do HEAD visualizado `c413238f727e5ea59be1a41321f9df5b7c9f38f2`:** GitHub Actions [Quality Gate #41995982915](https://github.com/tonecosstudio/tonecosstudio/actions/runs/41995982915) success; MVP frontend **16/16 arquivos e 148/148 testes**, além de typecheck e verificações offline do Worker/Pages.
+- **Preview privado:** [abrir Universo](https://750f757a.tonecosstudio.pages.dev/universo), deployment `750f757a-ec1a-4aa0-af92-989b5d76138a`, ambiente preview, fonte exata `c413238f727e5ea59be1a41321f9df5b7c9f38f2`. Build e deploy Cloudflare Pages success; `VITE_PREVIEW_READ_ONLY=true`.
+- **QA da raiz:** em 320/390/768/1024/1440 px, documento 314/384/762/1018/1434 px, sem overflow; grade 2/2/3/4/4. O título ficou em uma linha (9/10,92/12/12/12 px) e os seis cards de categoria não incluem “Todos”. O CTA segue disponível.
+- **Continuidade no mesmo preview:** Games mostra 24 franquias com aviso de lista parcial e busca; grade 2/2/3/4/4, botão e campo de 48 px, sem overflow nas cinco larguras. Street Fighter mantém 24 pastas e oito referências de prévia; Akuma abre seis referências, breadcrumb mínimo de 44 px e filtros preservados em `/modelos?category=games&franchise=street-fighter&folder=akuma`. A pasta não teve overflow em 320/390/768/1024/1440 px.
+- PR #4 permanece open/draft. Produção, Worker, D1, R2, DNS e migrations Supabase inalterados.
+
+**NEXT_ACTION:** continuar a revisão do frontend pela Home (`/`) e fluxo responsivo de navegação para modelos; usar SSOT e os componentes compartilhados, corrigindo diferenças reproduzíveis e registrar a próxima prévia privada somente após mudança funcional.
