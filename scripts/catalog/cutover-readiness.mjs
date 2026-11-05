@@ -134,7 +134,7 @@ async function main() {
     process.exitCode = 2
     return
   }
-  const contract = JSON.parse(readFileSync(join(ROOT, 'config/catalog-code-consolidation.json'), 'utf8'))
+  const contract = CANONICAL
   try {
     const state = await inspectLiveReadOnly()
     const verdict = assessCutoverReadiness(contract, state)
