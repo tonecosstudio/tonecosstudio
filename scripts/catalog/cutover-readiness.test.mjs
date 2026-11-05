@@ -32,6 +32,13 @@ const fullState = () => ({
   sourceRepositoryName: original.origin.repository,
   sourceMainRef: 'refs/heads/main',
   sourceMainSha: original.origin.observedMainSha,
+  sourceFix: {
+    number: original.staging.sourceFixPullRequest,
+    state: 'open', draft: true, merged: false,
+    headSha: original.staging.sourceFixHead,
+    baseSha: original.origin.observedMainSha,
+    headRepo: original.origin.repository,
+  },
   cloudflareAccountId: original.runtime.cloudflareAccountId,
   deployment: structuredClone(deployment), bindings: structuredClone(bindings),
 })
@@ -116,6 +123,14 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
     if (String(url).endsWith('/git/ref/heads/main')) {
       return Response.json({ ref: 'refs/heads/main', object: { sha: original.origin.observedMainSha } })
     }
+    if (String(url).endsWith('/pulls/' + original.staging.sourceFixPullRequest)) {
+      return Response.json({
+        number: original.staging.sourceFixPullRequest,
+        state: 'open', draft: true, merged: false,
+        head: { sha: original.staging.sourceFixHead, repo: { full_name: original.origin.repository } },
+        base: { sha: original.origin.observedMainSha },
+      })
+    }
     if (String(url).endsWith('/repos/' + original.origin.repository)) {
       return Response.json({ id: original.origin.repositoryId, full_name: original.origin.repository })
     }
@@ -130,7 +145,9 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
     assert.equal(state.pending, 0)
     assert.equal(state.deployment, undefined)
     assert.equal(state.cloudflareAccountId, undefined)
-    assert.equal(requests.length, 8)
+    assert.equal(requests.length, 9)
+    assert.equal(state.sourceFix.headSha, original.staging.sourceFixHead)
+    assert.ok(requests.some(url => url.endsWith('/pulls/' + original.staging.sourceFixPullRequest)))
     assert.equal(state.sourceMainSha, original.origin.observedMainSha)
     assert.equal(state.sourceRepositoryId, original.origin.repositoryId)
     assert.ok(requests.some(url => url.endsWith('/git/ref/heads/main')))
@@ -185,4 +202,32 @@ test('source repository ID and canonical name must match GitHub metadata', () =>
   const renamed = fullState()
   renamed.sourceRepositoryName = 'unverified/catalogo'
   assert.ok(assessCutoverReadiness(approvedContract(), renamed).blockers.includes('source_repository_identity_unverified'))
+})
+
+test('unmerged source media fix PR must match imported head and original base', () => {
+  const changed = fullState()
+  changed.sourceFix.headSha = '0000000000000000000000000000000000000000'
+  assert.ok(assessCutoverReadiness(approvedContract(), changed).blockers.includes('source_media_patch_drift_or_unverified'))
+
+  const retargeted = fullState()
+  retargeted.sourceFix.baseSha = '1111111111111111111111111111111111111111'
+  assert.ok(assessCutoverReadiness(approvedContract(), retargeted).blockers.includes('source_media_patch_drift_or_unverified'))
+
+  const missing = fullState()
+  delete missing.sourceFix
+  assert.ok(assessCutoverReadiness(approvedContract(), missing).blockers.includes('source_media_patch_drift_or_unverified'))
+})
+
+test('merged, closed, or non-draft source patch requires explicit reconciliation', () => {
+  for (const mutation of [
+    { state: 'closed' }, { merged: true }, { draft: false },
+    { headRepo: 'someone-else/catalogo' },
+  ]) {
+    const observed = fullState()
+    Object.assign(observed.sourceFix, mutation)
+    assert.ok(
+      assessCutoverReadiness(approvedContract(), observed).blockers.includes('source_media_patch_drift_or_unverified'),
+      JSON.stringify(mutation),
+    )
+  }
 })

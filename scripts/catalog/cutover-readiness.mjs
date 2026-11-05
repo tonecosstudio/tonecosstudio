@@ -16,6 +16,8 @@ const SOURCE_WORKFLOW_PATH = CANONICAL.origin.apiDeployPipeline
 const SOURCE_REPO = CANONICAL.origin.repository
 const SOURCE_REPO_ID = CANONICAL.origin.repositoryId
 const SOURCE_MAIN_SHA = CANONICAL.origin.observedMainSha
+const SOURCE_FIX_PR = CANONICAL.staging.sourceFixPullRequest
+const SOURCE_FIX_HEAD = CANONICAL.staging.sourceFixHead
 const TARGET_REPO = CANONICAL.target.repository
 const TARGET_REPO_ID = CANONICAL.target.repositoryId
 const CLOUDFLARE_ACCOUNT_ID = CANONICAL.runtime.cloudflareAccountId
@@ -48,6 +50,21 @@ export function assessCutoverReadiness(contract, state) {
       observed.sourceMainRef === 'refs/heads/main' &&
       observed.sourceMainSha === SOURCE_MAIN_SHA,
     'source_main_drift_or_unverified',
+  )
+  // The staged R2 media fix came from a still-open source PR, not source main.
+  // Never accept an outdated or substituted patch as a promoted Worker candidate.
+  const patch = observed.sourceFix
+  add(
+    Number.isInteger(SOURCE_FIX_PR) && SOURCE_FIX_PR > 0 &&
+      typeof SOURCE_FIX_HEAD === 'string' && /^[0-9a-f]{40}$/.test(SOURCE_FIX_HEAD) &&
+      contract?.staging?.sourceFixPullRequest === SOURCE_FIX_PR &&
+      contract?.staging?.sourceFixHead === SOURCE_FIX_HEAD &&
+      contract?.staging?.sourceFixStatusAtImport === 'open-draft-not-merged' &&
+      patch?.number === SOURCE_FIX_PR && patch?.state === 'open' &&
+      patch?.draft === true && patch?.merged === false &&
+      patch?.headSha === SOURCE_FIX_HEAD &&
+      patch?.baseSha === SOURCE_MAIN_SHA && patch?.headRepo === SOURCE_REPO,
+    'source_media_patch_drift_or_unverified',
   )
   add(contract?.origin?.apiDeployWorkflowId === SOURCE_WORKFLOW_ID && contract?.origin?.apiDeployPipeline === SOURCE_WORKFLOW_PATH, 'github_workflow_identity_unverified')
   add(contract?.target?.repository === TARGET_REPO && contract?.target?.repositoryId === TARGET_REPO_ID, 'target_repository_mismatch')
@@ -117,9 +134,10 @@ export async function inspectLiveReadOnly(env = process.env) {
   const sourceUrl = 'https://api.github.com/repos/' + SOURCE_REPO
   const prefix = sourceUrl + '/actions/workflows/' + workflowName
   const ghHeaders = { 'User-Agent': 'tonecos-readonly-cutover-check' }
-  const [sourceRepo, sourceMain, workflow, active, queued, requested, waiting, pending] = await Promise.all([
+  const [sourceRepo, sourceMain, mediaPatch, workflow, active, queued, requested, waiting, pending] = await Promise.all([
     getJSON(sourceUrl, ghHeaders),
     getJSON(sourceUrl + '/git/ref/heads/main', ghHeaders),
+    getJSON(sourceUrl + '/pulls/' + SOURCE_FIX_PR, ghHeaders),
     getJSON(prefix, ghHeaders),
     getJSON(prefix + '/runs?status=in_progress&per_page=1', ghHeaders),
     getJSON(prefix + '/runs?status=queued&per_page=1', ghHeaders),
@@ -130,6 +148,11 @@ export async function inspectLiveReadOnly(env = process.env) {
   const state = {
     sourceRepositoryId: sourceRepo.id, sourceRepositoryName: sourceRepo.full_name,
     sourceMainRef: sourceMain.ref, sourceMainSha: sourceMain.object?.sha,
+    sourceFix: {
+      number: mediaPatch.number, state: mediaPatch.state, draft: mediaPatch.draft,
+      merged: mediaPatch.merged, headSha: mediaPatch.head?.sha,
+      baseSha: mediaPatch.base?.sha, headRepo: mediaPatch.head?.repo?.full_name,
+    },
     workflow, running: active.total_count, queued: queued.total_count,
     requested: requested.total_count, waiting: waiting.total_count, pending: pending.total_count,
   }
@@ -167,6 +190,7 @@ async function main() {
       status: verdict.ready ? 'READY_FOR_SEPARATELY_AUTHORIZED_CUTOVER' : 'BLOCKED',
       sourceWorkflow: state.workflow?.state ?? 'unverified',
       sourceMainSha: state.sourceMainSha ?? null,
+      sourceMediaPatchSha: state.sourceFix?.headSha ?? null,
       sourceInProgress: state.running ?? null,
       sourceQueued: state.queued ?? null,
       sourceRequested: state.requested ?? null,
