@@ -190,3 +190,45 @@ describe("canonical Universe folder navigation", () => {
     expect(io.mock.calls.filter(([url]) =>
       new URL(url).pathname.endsWith("/api/folders"))).toHaveLength(1);
   });
+
+it("uses folder-authoritative covers with only eight preview models and no extra requests", async () => {
+  const coverKey = "media/mdl-test/img-cover/card.webp";
+  const io = vi.fn(async (input: string, init: RequestInit) => {
+    expect(init.method).toBe("GET");
+    const url = new URL(input);
+    if (url.pathname.endsWith("/api/folders")) {
+      return Response.json({
+        current: null,
+        trail: [],
+        items: [
+          { id: "ada-wong", label: "Ada Wong", count: 7, hasChildren: false, cover_storage_key: coverKey },
+          { id: "no-image", label: "Sem imagem", count: 1, hasChildren: false, cover_storage_key: null },
+        ],
+      });
+    }
+    if (url.pathname.endsWith("/api/catalog")) {
+      expect(url.searchParams.get("limit")).toBe("8");
+      return Response.json({ items: [{ ...model, folder_path: "no-image" }], nextCursor: null });
+    }
+    throw new Error("unexpected_request: " + url.pathname);
+  });
+  const gateway = createPublicCatalogGateway("https://catalog.example.test/catalogo-api", io as typeof fetch);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <CatalogBrowsingProvider>
+        <MemoryRouter initialEntries={["/universo/games/resident-evil"]}>
+          <Routes>
+            <Route path="/universo/:category/:franchise" element={
+              <CanonicalUniverseFolders category="games" franchise="resident-evil" gateway={gateway} />
+            } />
+          </Routes>
+        </MemoryRouter>
+      </CatalogBrowsingProvider>
+    </QueryClientProvider>,
+  );
+  const ada = await screen.findByRole("link", { name: "Ada Wong 7 modelos" });
+  expect(ada.querySelector("img")).toHaveAttribute("src", "https://catalog.example.test/catalogo-api/" + coverKey);
+  expect(screen.getByRole("link", { name: "Sem imagem 1 modelo" }).querySelector("img")).toBeNull();
+  expect(io).toHaveBeenCalledTimes(2);
+});
