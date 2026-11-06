@@ -330,7 +330,7 @@ export default function CanonicalModelDetails() {
                   <dl className="grid grid-cols-2 gap-3 border-y border-[hsl(0,0%,15%)] py-5 text-sm">
                     <div>
                       <dt className="text-[hsl(0,0%,56%)]">Código</dt>
-                      <dd className="mt-1 font-medium">{model.code}</dd>
+                      <dd className="mt-1 min-w-0 break-all font-medium">{model.code}</dd>
                     </div>
                     {model.material ? (
                       <div>
