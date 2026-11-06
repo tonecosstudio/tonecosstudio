@@ -89,7 +89,7 @@ function StatCounter({
         <Icon className="h-6 w-6 text-[hsl(var(--gold-accent))]" />
       </div>
       <p
-        className="text-[clamp(1.125rem,5vw,1.5rem)] sm:text-3xl tracking-[0.04em] sm:tracking-[0.08em] leading-tight text-[hsl(0,0%,95%)] font-black"
+        className="text-[clamp(1.125rem,5vw,1.5rem)] sm:text-2xl md:text-3xl tracking-[0.04em] sm:tracking-[0.08em] leading-tight text-[hsl(0,0%,95%)] font-black"
         style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
       >
         {value}
