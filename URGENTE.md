@@ -856,3 +856,16 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - **Home:** `LandingPage.tsx` agora escala os valores dos indicadores de 18–24 px no mobile e usa rótulos de 8/9 px; a partir de 640 px os rótulos usam 10 px. Em 280–414 px, “Sob Encomenda” ocupa uma linha. A primeira medição revelou overflow interno de 4 px em 640 px; o breakpoint foi ajustado no commit `a3898a3`. QA final em 280/320/359/360/390/414/640/768/1024/1440/1920 px, sem overflow horizontal.
 - **NEXT_ACTION:** revisar `/modelos` e uma ficha do catálogo nas mesmas larguras móveis e de desktop; observar campo de busca, cards, paginação, galeria e retorno ao contexto anterior.
 - **DO_NOT_REPEAT:** não usar `ef8ab5fb` ou `440db22e` como preview atual; não gerar build para documentação isolada; preservar preview automático `none` e produção automática desativada; não alterar produção, Worker, D1, R2, DNS ou migrations.
+
+## Rodada 62 — Semântica do landmark Universo e categoria Marvel & DC (05/11/2026)
+
+- Base da PR #4: `main` @ `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; HEAD funcional `7c23435086a76602bc5ee0b707cbcf4fa9653d3b` na branch `integration/tonecosstudio-canonical-20261101`. PR segue aberta e draft.
+- Em `src/components/layouts/ArcadeFrame.tsx`, a aplicação já fornece o único marco `main`. A rota Universo criava outro `main` por dentro; no preview anterior, a árvore acessível confirmou dois marcos aninhados. O commit `7c23435` troca o contêiner interno em `src/pages/CatalogArcade.tsx` por `div`, preservando estilos e estrutura. O código do HEAD não possui mais elemento `main` nessa página.
+- QA visual da prévia anterior `0dfc5f86` (source `6634f267`, anterior à correção semântica): `/universo/marvel-dc/equipes-e-grupos` mostra 4 pastas e 8 referências; a pasta `x-men/viloes` mostra 10 subpastas e 8 referências, com 8/8 imagens carregadas. Raiz e pasta passaram em 280/320/359/360/390/414/640/768/1024/1440/1920 px sem overflow; grades de pastas 1/1/1/2/2/2/3/3/4/4/4 colunas, miniaturas 2/2/2/2/2/2/3/3/4/4/4; breadcrumbs e CTAs medem 44 px.
+- `/universo/marvel-dc`: 24 franquias em grade 2/2/2/2/2/2/3/3/4/4/4 nos mesmos breakpoints, sem overflow; busca e botão medem 48 px e ocupam a largura disponível no mobile. Em 320 px, “batman” retorna Batman e Limpar busca restaura as 24 franquias.
+- GitHub Actions Quality Gate [#42141423538](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42141423538) concluiu SUCCESS; o job offline concluiu suas etapas, incluindo “Test public MVP frontend and catalog navigation”. Os jobs de build frontend foram pulados. Não rodei testes manualmente.
+- A integração Cloudflare retornou `Unknown tool` ao buscar endpoints; ainda não há preview para o SHA `7c23435`. O preview `0dfc5f86` continua servindo o SHA anterior `6634f26`; produção, Worker, D1, R2, DNS e migrations não foram alterados.
+
+**NEXT_ACTION:** após o conector Cloudflare voltar, publicar uma prévia do HEAD funcional `7c23435` e confirmar um único marco main na rota Universo; depois continuar pela próxima rota pública do catálogo.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb`; não tratar `0dfc5f86` como prévia do HEAD atual; não gerar build apenas por mudanças documentais; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
