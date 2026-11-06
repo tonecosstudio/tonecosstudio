@@ -65,7 +65,10 @@ describe("canonical Universe folder navigation", () => {
         });
       }
       if (url.pathname.endsWith("/api/catalog")) {
-        return Response.json({ items: [model, neighboringModel], nextCursor: null });
+        return Response.json({ items: [
+          { ...model, folder_path: "heroes/single-item", cover_storage_key: "media/mdl_e8b7681b5258d694b9c4/img_0550030243349e652616/card.webp" },
+          neighboringModel,
+        ], nextCursor: null });
       }
       throw new Error("unexpected_worker_request: " + url.pathname);
     });
@@ -105,6 +108,11 @@ describe("canonical Universe folder navigation", () => {
       "href",
       "/universo/games/nier?folder=heroes%2Fmultiple-items",
     );
+    const coveredFolder = screen.getByRole("link", { name: "Item único 1 modelo" });
+    expect(coveredFolder.querySelector("img")).toHaveAttribute(
+      "src", "https://catalog.example.test/catalogo-api/media/mdl_e8b7681b5258d694b9c4/img_0550030243349e652616/card.webp",
+    );
+    expect(screen.getByRole("link", { name: "Vários itens 3 modelos" }).querySelector("img")).toBeNull();
     const link = await screen.findByRole("link", { name: "Ver detalhes de 10H" });
     expect(link).toHaveAttribute("href", "/modelos/nier-10h-nier");
     expect(io).toHaveBeenCalledTimes(2);
