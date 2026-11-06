@@ -45,12 +45,13 @@ export function CanonicalUniverseFolders({
     staleTime: 15 * 60 * 1000,
   });
 
-  // A bounded preview is read only after the folder's authority is verified.
+  // One bounded catalog page supplies both folder cover candidates and the
+  // eight existing preview cards. Never issue one request per folder.
   const modelsQuery = useQuery({
     queryKey: ["tonecos-universe-folder-models", category, franchise, parent],
     queryFn: ({ signal }) =>
       gateway.listPage(
-        { category, franchise, folder: parent || undefined, limit: 8 },
+        { category, franchise, folder: parent || undefined, limit: 60 },
         signal,
       ),
     enabled: foldersQuery.isSuccess,
@@ -92,7 +93,8 @@ export function CanonicalUniverseFolders({
   }
 
   const folders = foldersQuery.data.items;
-  const models = modelsQuery.data?.items ?? [];
+  const coverCandidates = modelsQuery.data?.items ?? [];
+  const models = coverCandidates.slice(0, 8);
   // Only the eight already published and fetched preview models may become
   // adjacent links. No pagination, new Worker queries or unverified slugs.
   const previewSlugs = models.length >= 2 && models.length <= 8 &&
@@ -114,17 +116,33 @@ export function CanonicalUniverseFolders({
       </nav>
       {folders.length > 0 && (
         <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {folders.map((folder) => (
-            <ArcadeCard key={folder.id}>
-              <Link to={folderPath(folder.id)} className="group flex min-h-36 flex-col gap-3 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]">
-                <Folder className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
-                <span className="line-clamp-2 font-semibold uppercase">{folder.label}</span>
-                <span className="mt-auto flex items-center justify-between text-xs text-[hsl(0,0%,56%)]">
-                  {formatModelCountLabel(folder.count)} <ArrowRight size={16} aria-hidden="true" />
-                </span>
-              </Link>
-            </ArcadeCard>
-          ))}
+          {folders.map((folder) => {
+            const representative = coverCandidates.find((model) =>
+              model.coverStorageKey && model.folderPath &&
+              (model.folderPath === folder.id || model.folderPath.startsWith(folder.id + "/")),
+            );
+            const cover = representative ? gateway.mediaUrl(representative.coverStorageKey) : null;
+            return (
+              <ArcadeCard key={folder.id}>
+                <Link to={folderPath(folder.id)} className="group relative flex min-h-44 flex-col justify-end overflow-hidden p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" aria-label={`${folder.label} ${formatModelCountLabel(folder.count)}`}>
+                  {cover ? (
+                    <>
+                      <div className="absolute inset-0 bg-[hsl(0,0%,8%)]" aria-hidden="true">
+                        <CanonicalCatalogImage src={cover} alt="" imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none" />
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/65 to-black/15" aria-hidden="true" />
+                    </>
+                  ) : (
+                    <Folder className="mb-5 h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                  )}
+                  <span className="relative z-10 line-clamp-2 font-semibold uppercase text-white drop-shadow-md">{folder.label}</span>
+                  <span className="relative z-10 mt-3 flex items-center justify-between text-xs text-white/75">
+                    {formatModelCountLabel(folder.count)} <ArrowRight size={16} aria-hidden="true" />
+                  </span>
+                </Link>
+              </ArcadeCard>
+            );
+          })}
         </div>
       )}
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
