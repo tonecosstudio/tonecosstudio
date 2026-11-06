@@ -136,6 +136,12 @@ export default function CatalogModelsArcade() {
   });
 
   const rows = models.data?.items ?? [];
+  // One already fetched, bounded page. Do not request adjacent model pages
+  // to build detail navigation; the current list is the only authority here.
+  const pageSlugs = rows.length > 1 && rows.length <= 36 &&
+    rows.every((item) => validCatalogSlug(item.slug))
+    ? rows.map((item) => item.slug)
+    : [];
   const categoryLabel =
     categories.data?.find((item) => item.id === category)?.label || category;
   const franchiseLabel =
@@ -555,7 +561,10 @@ export default function CatalogModelsArcade() {
                       <div className="flex h-full flex-col">
                         <Link
                           to={catalogModelDetailsPath(model.slug)}
-                          state={{ catalogReturnSearch: searchParams.toString() }}
+                          state={{
+                            catalogReturnSearch: searchParams.toString(),
+                            catalogSiblingSlugs: pageSlugs,
+                          }}
                           aria-label={"Ver detalhes de " + model.name}
                           className="block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                         >

@@ -230,6 +230,43 @@ describe("published model/gallery identity on the public detail page", () => {
     }
   });
 
+  it("links only to adjacent slugs from the loaded catalog page and preserves search scope", async () => {
+    const { io } = mountGallery({
+      total: 1,
+      returnState: {
+        catalogReturnSearch: "q=escultura&category=games",
+        catalogSiblingSlugs: ["outro-original", "animal-original", "terceiro-original"],
+      },
+    });
+    const prev = screen.getByRole("link", { name: "Modelo anterior" });
+    const next = screen.getByRole("link", { name: "Próximo modelo" });
+    expect(prev).toHaveAttribute("href", "/modelos/outro-original");
+    expect(next).toHaveAttribute("href", "/modelos/terceiro-original");
+    expect(screen.getByRole("link", { name: "Voltar ao catálogo" }))
+      .toHaveAttribute("href", "/modelos?q=escultura&category=games");
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    expect(io).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects untrusted or oversized adjacent-model navigation snapshots", async () => {
+    const unsafe = [
+      { catalogSiblingSlugs: ["animal-original", "../admin"] },
+      { catalogSiblingSlugs: ["animal-original", "animal-original"] },
+      { catalogSiblingSlugs: ["animal-original", ...Array.from({ length: 36 }, (_, i) => "other-" + i)] },
+      { catalogSiblingSlugs: ["other-one", "other-two"] },
+      { catalogSiblingSlugs: ["animal-original", "other-one"], catalogReturnUniverse: {
+        category: "games", franchise: "nier",
+      } },
+    ];
+    for (const returnState of unsafe) {
+      const view = mountGallery({ total: 1, returnState });
+      await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+      expect(screen.queryByRole("link", { name: "Modelo anterior" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "Próximo modelo" })).not.toBeInTheDocument();
+      view.unmount();
+    }
+  });
+
   it("returns to the exact canonical Universe folder when entered from a folder preview", async () => {
     mountGallery({
       total: 1,

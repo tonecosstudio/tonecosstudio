@@ -76,10 +76,36 @@ function catalogReturnPath(state: unknown): string {
 }
 
 
+/** Use only a bounded same-page snapshot for adjacent-model links. */
+function adjacentCatalogModels(state: unknown, current: string | undefined): {
+  previous: string | null;
+  next: string | null;
+} {
+  const absent = { previous: null, next: null };
+  if (!current || !validCatalogSlug(current) ||
+      !state || typeof state !== "object" || Array.isArray(state)) return absent;
+  const values = state as Record<string, unknown>;
+  // A Universe folder has a different discovery scope. Never mix its
+  // navigation with the catalog's page snapshot.
+  if (values.catalogReturnUniverse !== undefined) return absent;
+  const entries = values.catalogSiblingSlugs;
+  if (!Array.isArray(entries) || entries.length < 2 || entries.length > 36 ||
+      !entries.every((item): item is string =>
+        typeof item === "string" && validCatalogSlug(item))) return absent;
+  if (new Set(entries).size !== entries.length) return absent;
+  const index = entries.indexOf(current);
+  if (index < 0) return absent;
+  return {
+    previous: index > 0 ? entries[index - 1] : null,
+    next: index + 1 < entries.length ? entries[index + 1] : null,
+  };
+}
+
 export default function CanonicalModelDetails() {
   const { id: slug } = useParams<{ id: string }>();
   const location = useLocation();
   const catalogReturnTo = catalogReturnPath(location.state);
+  const adjacentModels = adjacentCatalogModels(location.state, slug);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const galleryKeyboardHelpId = useId();
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
@@ -261,6 +287,33 @@ export default function CanonicalModelDetails() {
               ? "Voltar à pasta"
               : "Voltar ao catálogo"}
           </Link>
+          {adjacentModels.previous || adjacentModels.next ? (
+            <nav
+              aria-label="Navegação entre modelos desta página do catálogo"
+              className="mt-3 flex flex-wrap gap-3 text-sm"
+            >
+              {adjacentModels.previous ? (
+                <Link
+                  to={PUBLIC_ROUTES.catalogModels + "/" + adjacentModels.previous}
+                  state={location.state}
+                  className="inline-flex min-h-11 items-center gap-2 border border-[hsl(0,0%,20%)] px-4 hover:bg-[hsl(0,0%,10%)]"
+                >
+                  <ArrowLeft size={16} aria-hidden="true" />
+                  Modelo anterior
+                </Link>
+              ) : null}
+              {adjacentModels.next ? (
+                <Link
+                  to={PUBLIC_ROUTES.catalogModels + "/" + adjacentModels.next}
+                  state={location.state}
+                  className="inline-flex min-h-11 items-center gap-2 border border-[hsl(0,0%,20%)] px-4 hover:bg-[hsl(0,0%,10%)]"
+                >
+                  Próximo modelo
+                  <ChevronRight size={16} aria-hidden="true" />
+                </Link>
+              ) : null}
+            </nav>
+          ) : null}
 
           {gateway === null || !slug ? (
             <section className="mt-8 rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-6">
