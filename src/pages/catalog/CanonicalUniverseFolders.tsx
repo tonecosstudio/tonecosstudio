@@ -133,7 +133,7 @@ export function CanonicalUniverseFolders({
                     />
                   </div>
                   <div className="p-3">
-                    <p className="line-clamp-2 font-semibold uppercase">{model.name}</p>
+                    <p className="line-clamp-3 sm:line-clamp-2 font-semibold uppercase">{model.name}</p>
                     <p className="mt-1 truncate text-xs text-[hsl(0,0%,56%)]">{model.variantName || model.franchise}</p>
                   </div>
                 </Link>
