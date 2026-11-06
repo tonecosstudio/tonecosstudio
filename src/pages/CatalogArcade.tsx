@@ -186,7 +186,7 @@ export default function CatalogArcade() {
       description="Explore categorias, franquias e modelos publicados no acervo canônico TONART Studio."
       keywords={["tonart", "universo", "modelos", "catálogo"]}
     >
-      <main className="min-h-[80vh] bg-[hsl(0,0%,4%)] pb-20 text-[hsl(0,0%,94%)]">
+      <div className="min-h-[80vh] bg-[hsl(0,0%,4%)] pb-20 text-[hsl(0,0%,94%)]">
         <ArcadeHero
           badge="ACERVO TONART"
           title="UNIVERSO"
@@ -369,7 +369,7 @@ export default function CatalogArcade() {
             </Link>
           )}
         </div>
-      </main>
+      </div>
     </Page>
   );
 }
