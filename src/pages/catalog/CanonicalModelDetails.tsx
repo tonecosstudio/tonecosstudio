@@ -108,7 +108,9 @@ export default function CanonicalModelDetails() {
   const adjacentModels = adjacentCatalogModels(location.state, slug);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const galleryKeyboardHelpId = useId();
-  const { selectedModels, setSelectedModels, setPaging } = useCatalogBrowsing();
+  const {
+    selectedModels, setSelectedModels, setPaging, setUniverseReturnFocus,
+  } = useCatalogBrowsing();
   // Record the return target AFTER navigation, not on the outgoing link:
   // otherwise a same-turn render can consume it before the list unmounts.
   // Catalog return filters were already validated by catalogReturnPath.
@@ -130,6 +132,21 @@ export default function CanonicalModelDetails() {
         : { scope, cursors: [undefined], index: 0, returnFocusSlug: slug };
     });
   }, [slug, location.state, catalogReturnTo, setPaging]);
+  // Preserve the visited Universe preview card in the SAME in-memory
+  // browsing context. Capture only a validated first-party folder route,
+  // after the detail has mounted (not on the outgoing preview Link).
+  useEffect(() => {
+    if (!slug || !validCatalogSlug(slug) ||
+        !catalogReturnTo.startsWith(PUBLIC_ROUTES.catalog + "/") ||
+        !location.state || typeof location.state !== "object" ||
+        Array.isArray(location.state) ||
+        !(location.state as Record<string, unknown>).catalogReturnUniverse) return;
+    setUniverseReturnFocus((current) =>
+      current?.path === catalogReturnTo && current.slug === slug
+        ? current
+        : { path: catalogReturnTo, slug },
+    );
+  }, [slug, location.state, catalogReturnTo, setUniverseReturnFocus]);
   const gateway = useMemo(() => {
     if (!API_BASE) return null;
     try {

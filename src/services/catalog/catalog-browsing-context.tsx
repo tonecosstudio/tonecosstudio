@@ -16,11 +16,16 @@ export type CatalogPagePosition = {
   returnFocusSlug?: string;
 };
 
+type UniverseReturnFocus = { path: string; slug: string };
+
 type CatalogBrowsingState = {
   selectedModels: PublicCatalogModel[];
   setSelectedModels: Dispatch<SetStateAction<PublicCatalogModel[]>>;
   paging: CatalogPagePosition;
   setPaging: Dispatch<SetStateAction<CatalogPagePosition>>;
+  /** One-shot visited card target for the currently verified Universe folder. */
+  universeReturnFocus: UniverseReturnFocus | null;
+  setUniverseReturnFocus: Dispatch<SetStateAction<UniverseReturnFocus | null>>;
 };
 
 const CatalogBrowsingContext = createContext<CatalogBrowsingState | null>(null);
@@ -30,9 +35,14 @@ export function CatalogBrowsingProvider({ children }: { children: ReactNode }) {
   const [paging, setPaging] = useState<CatalogPagePosition>({
     scope: "", cursors: [undefined], index: 0,
   });
+  const [universeReturnFocus, setUniverseReturnFocus] =
+    useState<UniverseReturnFocus | null>(null);
   return (
     <CatalogBrowsingContext.Provider
-      value={{ selectedModels, setSelectedModels, paging, setPaging }}
+      value={{
+        selectedModels, setSelectedModels, paging, setPaging,
+        universeReturnFocus, setUniverseReturnFocus,
+      }}
     >
       {children}
     </CatalogBrowsingContext.Provider>

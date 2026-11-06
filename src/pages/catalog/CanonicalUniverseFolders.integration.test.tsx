@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { CanonicalUniverseFolders } from "./CanonicalUniverseFolders";
 import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
+import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 
 vi.mock("@/components/arcade/ArcadeLayout", () => ({
   ArcadeCard: ({ children }: { children: ReactNode }) => <article>{children}</article>,
@@ -61,6 +62,7 @@ describe("canonical Universe folder navigation", () => {
     });
     render(
       <QueryClientProvider client={client}>
+        <CatalogBrowsingProvider>
         <MemoryRouter initialEntries={["/universo/games/nier?folder=heroes"]}>
           <Routes>
             <Route
@@ -76,6 +78,7 @@ describe("canonical Universe folder navigation", () => {
             <Route path="/modelos/:id" element={<Destination />} />
           </Routes>
         </MemoryRouter>
+        </CatalogBrowsingProvider>
       </QueryClientProvider>,
     );
     expect(await screen.findByRole("link", { name: "Item único 1 modelo" })).toHaveAttribute(
@@ -96,3 +99,62 @@ describe("canonical Universe folder navigation", () => {
     expect(io).toHaveBeenCalledTimes(2);
   });
 });
+
+  it("restores the visited preview card after returning from a real model detail", async () => {
+    const io = vi.fn(async (input: string, init: RequestInit) => {
+      expect(init.method).toBe("GET");
+      const url = new URL(input);
+      if (url.pathname.endsWith("/api/folders")) {
+        return Response.json({
+          current: { id: "heroes", label: "Heroes", count: 1 },
+          trail: [{ id: "heroes", label: "Heroes" }],
+          items: [],
+        });
+      }
+      if (url.pathname.endsWith("/api/catalog")) {
+        return Response.json({ items: [model], nextCursor: null });
+      }
+      if (url.pathname.endsWith("/api/models/nier-10h-nier")) {
+        return Response.json({
+          ...model, image_count: 0, gallery_version: 0,
+          description: null, material: null, height_cm: null,
+        });
+      }
+      throw new Error("unexpected_request: " + url.pathname);
+    });
+    vi.stubGlobal("fetch", io);
+    const gateway = createPublicCatalogGateway(
+      "https://catalog.example.test/catalogo-api", io as typeof fetch,
+    );
+    const { default: Details } = await import("./CanonicalModelDetails");
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <CatalogBrowsingProvider>
+          <MemoryRouter initialEntries={["/universo/games/nier?folder=heroes"]}>
+            <Routes>
+              <Route path="/universo/:category/:franchise" element={
+                <CanonicalUniverseFolders
+                  category="games" franchise="nier" gateway={gateway}
+                />
+              } />
+              <Route path="/modelos/:id" element={<Details />} />
+            </Routes>
+          </MemoryRouter>
+        </CatalogBrowsingProvider>
+      </QueryClientProvider>,
+    );
+    const preview = await screen.findByRole("link", { name: "Ver detalhes de 10H" });
+    fireEvent.click(preview);
+    const back = await screen.findByRole("link", { name: "Voltar à pasta" });
+    expect(back).toHaveAttribute("href", "/universo/games/nier?folder=heroes");
+    fireEvent.click(back);
+    const returned = await screen.findByRole("link", { name: "Ver detalhes de 10H" });
+    await waitFor(() => expect(returned).toHaveFocus());
+
+    // Reuse the React Query cache, never query the full acervo again.
+    expect(io.mock.calls.filter(([url]) =>
+      new URL(url).pathname.endsWith("/api/catalog"))).toHaveLength(1);
+    expect(io.mock.calls.filter(([url]) =>
+      new URL(url).pathname.endsWith("/api/folders"))).toHaveLength(1);
+  });

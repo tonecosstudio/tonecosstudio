@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { ArrowRight, Folder } from "lucide-react";
@@ -5,6 +6,7 @@ import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImag
 import { ArcadeCard } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
+import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import { formatModelCountLabel } from "@/lib/catalog-model-count";
 
 type Gateway = ReturnType<typeof createPublicCatalogGateway>;
@@ -21,6 +23,9 @@ export function CanonicalUniverseFolders({
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const parent = searchParams.get("folder")?.trim() ?? "";
+  const currentFolderPath = location.pathname + location.search;
+  const { universeReturnFocus, setUniverseReturnFocus } = useCatalogBrowsing();
+  const returnModelRef = useRef<HTMLAnchorElement>(null);
 
   function folderPath(path = "") {
     return location.pathname + (path ? "?folder=" + encodeURIComponent(path) : "");
@@ -52,6 +57,25 @@ export function CanonicalUniverseFolders({
     retry: false,
     staleTime: 60 * 1000,
   });
+
+  useEffect(() => {
+    const focus = universeReturnFocus;
+    if (!focus || focus.path !== currentFolderPath ||
+        !foldersQuery.isSuccess || !modelsQuery.isSuccess) return;
+    const modelLink = returnModelRef.current;
+    if (modelLink) {
+      modelLink.scrollIntoView?.({ behavior: "auto", block: "center" });
+      modelLink.focus({ preventScroll: true });
+    }
+    // Consume stale targets too: an unpublished card must not focus later.
+    setUniverseReturnFocus((current) =>
+      current?.path === currentFolderPath && current.slug === focus.slug
+        ? null : current,
+    );
+  }, [
+    universeReturnFocus, currentFolderPath, foldersQuery.isSuccess,
+    modelsQuery.isSuccess, setUniverseReturnFocus,
+  ]);
 
   if (foldersQuery.isPending) {
     return <p role="status" className="mt-6 p-8 text-sm">Carregando pastas publicadas…</p>;
@@ -121,6 +145,9 @@ export function CanonicalUniverseFolders({
               <ArcadeCard key={model.id}>
                 <Link
                   to={catalogModelDetailsPath(model.slug)}
+                  ref={universeReturnFocus?.path === currentFolderPath &&
+                    universeReturnFocus.slug === model.slug
+                    ? returnModelRef : undefined}
                   state={{ catalogReturnUniverse: { category, franchise, folder: parent } }}
                   className="group block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                   aria-label={"Ver detalhes de " + model.name}
