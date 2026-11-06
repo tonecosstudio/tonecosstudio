@@ -65,6 +65,7 @@ describe("canonical Universe folder navigation", () => {
         });
       }
       if (url.pathname.endsWith("/api/catalog")) {
+        expect(url.searchParams.get("limit")).toBe("60");
         return Response.json({ items: [
           { ...model, folder_path: "heroes/single-item", cover_storage_key: "media/mdl_e8b7681b5258d694b9c4/img_0550030243349e652616/card.webp" },
           neighboringModel,
@@ -113,6 +114,9 @@ describe("canonical Universe folder navigation", () => {
       "src", "https://catalog.example.test/catalogo-api/media/mdl_e8b7681b5258d694b9c4/img_0550030243349e652616/card.webp",
     );
     expect(screen.getByRole("link", { name: "Vários itens 3 modelos" }).querySelector("img")).toBeNull();
+    fireEvent.error(coveredFolder.querySelector("img")!);
+    expect(coveredFolder.querySelector("img")).toBeNull();
+    expect(coveredFolder.querySelector("svg")).not.toBeNull();
     const link = await screen.findByRole("link", { name: "Ver detalhes de 10H" });
     expect(link).toHaveAttribute("href", "/modelos/nier-10h-nier");
     expect(io).toHaveBeenCalledTimes(2);
@@ -139,6 +143,7 @@ describe("canonical Universe folder navigation", () => {
         });
       }
       if (url.pathname.endsWith("/api/catalog")) {
+        expect(url.searchParams.get("limit")).toBe("8");
         return Response.json({ items: [model], nextCursor: null });
       }
       if (url.pathname.endsWith("/api/models/nier-10h-nier")) {
