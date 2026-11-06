@@ -275,7 +275,11 @@ async function listFolders(request: Request, env: Env) {
       cf.path AS id,
       cf.name AS label,
       cf.subtree_model_count AS count,
-      EXISTS(SELECT 1 FROM catalog_folders child WHERE child.parent_id=cf.id) AS has_children
+      EXISTS(SELECT 1 FROM catalog_folders child WHERE child.parent_id=cf.id) AS has_children,
+      (SELECT m.cover_storage_key FROM models m
+       WHERE m.folder_id=cf.id AND m.published=1
+         AND m.cover_storage_key IS NOT NULL AND m.cover_storage_key<>''
+       ORDER BY m.name COLLATE NOCASE,m.id LIMIT 1) AS cover_storage_key
     FROM catalog_folders cf
     JOIN franchises f ON f.id=cf.franchise_id
     JOIN categories c ON c.id=f.category_id
@@ -284,7 +288,7 @@ async function listFolders(request: Request, env: Env) {
       (?<>'' AND cf.parent_id=(SELECT p.id FROM catalog_folders p WHERE p.franchise_id=f.id AND p.path=? LIMIT 1))
     )
     ORDER BY cf.name COLLATE NOCASE,cf.id`).bind(category, franchise, parent, parent, parent)
-    .all<{ id: string; label: string; count: number; has_children: number }>()
+    .all<{ id: string; label: string; count: number; has_children: number; cover_storage_key: string | null }>()
 
   const current = parent ? await env.DB.prepare(`SELECT
       cf.path AS id,
@@ -325,6 +329,7 @@ async function listFolders(request: Request, env: Env) {
       label: item.label,
       count: Number(item.count || 0),
       hasChildren: Boolean(item.has_children),
+      cover_storage_key: item.cover_storage_key,
     })),
   }, {}, 'public, max-age=300, s-maxage=1800')
 }
