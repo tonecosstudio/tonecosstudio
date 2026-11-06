@@ -45,9 +45,13 @@ export function CanonicalUniverseFolders({
     staleTime: 15 * 60 * 1000,
   });
 
-  // A bounded page supplies folder covers and eight preview cards. When there
-  // are no subfolders, avoid fetching 60 models for just eight preview cards.
-  const modelLimit = foldersQuery.data?.items.length ? 60 : 8;
+  // New Workers return indexed covers in the existing folder response, so
+  // only eight catalog cards are needed. Older Workers keep the bounded
+  // compatibility fallback until the canonical endpoint is deployed.
+  const needsLegacyCovers = foldersQuery.data?.items.some((folder) =>
+    folder.coverStorageKey === undefined,
+  ) ?? false;
+  const modelLimit = needsLegacyCovers ? 60 : 8;
   const modelsQuery = useQuery({
     queryKey: ["tonecos-universe-folder-models", category, franchise, parent, modelLimit],
     queryFn: ({ signal }) =>
@@ -122,7 +126,8 @@ export function CanonicalUniverseFolders({
               model.coverStorageKey && model.folderPath &&
               (model.folderPath === folder.id || model.folderPath.startsWith(folder.id + "/")),
             );
-            const cover = representative ? gateway.mediaUrl(representative.coverStorageKey) : null;
+            const coverKey = folder.coverStorageKey ?? representative?.coverStorageKey ?? null;
+            const cover = gateway.mediaUrl(coverKey);
             return (
               <ArcadeCard key={folder.id}>
                 <Link to={folderPath(folder.id)} className="group relative flex min-h-44 flex-col justify-end overflow-hidden p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" aria-label={`${folder.label} ${formatModelCountLabel(folder.count)}`}>
