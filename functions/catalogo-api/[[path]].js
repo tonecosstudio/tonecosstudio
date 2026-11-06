@@ -53,6 +53,21 @@ function isValidMediaRange(value) {
   return Boolean(suffix && Number(suffix[1]) > 0);
 }
 
+// Do not expose or cache a partial response with inconsistent metadata.
+function matchesRequestedMediaRange(range, contentRange) {
+  if (!range || !contentRange) return false;
+  const match = /^bytes (\d{1,15})-(\d{1,15})\/(\d{1,15})$/i.exec(contentRange);
+  if (!match) return false;
+  const [start, end, total] = match.slice(1).map(Number);
+  if (!Number.isSafeInteger(total) || total <= 0 || start > end || end >= total) return false;
+  const suffix = /^bytes=-(\d{1,15})$/i.exec(range);
+  if (suffix) return start === Math.max(0, total - Number(suffix[1])) && end === total - 1;
+  const absolute = /^bytes=(\d{1,15})-(\d{0,15})$/i.exec(range);
+  if (!absolute) return false;
+  return start === Number(absolute[1]) &&
+    end === (absolute[2] ? Math.min(Number(absolute[2]), total - 1) : total - 1);
+}
+
 function isPublicCatalogRoute(path) {
   return PUBLIC_LIST_ROUTES.has(path) ||
     /^api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?$/.test(path) ||
@@ -110,6 +125,15 @@ export async function proxyCatalogRequest(request, fetcher) {
       // Avoid unnecessary upstream work when navigation or an in-flight read stops.
       signal: request.signal,
     });
+    // A partial response is only meaningful for a requested media byte range.
+    // Reject missing or inconsistent Content-Range instead of serving broken images.
+    if (response.status === 206 &&
+        (!route.startsWith("media/") ||
+         !matchesRequestedMediaRange(headers.get("Range"), response.headers.get("Content-Range")))) {
+      return new Response("Invalid upstream media range", {
+        status: 502, headers: { "Cache-Control": "no-store" },
+      });
+    }
     // No arbitrary external redirect or upstream cookie is promoted to our site.
     if (response.status >= 300 && response.status < 400 && response.status !== 304) {
       return new Response("Upstream redirect rejected", {

@@ -35,7 +35,10 @@ test("only same-origin public catalog GET is forwarded", async () => {
 });
 
 test("public media preserves encoded filenames and range", async () => {
-  const io = mockFetch("file", 206, { "content-type": "image/webp" });
+  const io = mockFetch("file", 206, {
+    "content-type": "image/webp",
+    "content-range": "bytes 0-99/300",
+  });
   const request = new Request(SITE + "/catalogo-api/media/images/part%20one.webp", {
     headers: { Range: "bytes=0-99" },
   });
@@ -47,7 +50,11 @@ test("public media preserves encoded filenames and range", async () => {
 
 test("single-byte media ranges are accepted without changing their values", async () => {
   for (const range of ["bytes=0-99", "bytes=100-", "bytes=-512", "BYTES=1-3"]) {
-    const io = mockFetch("partial", 206);
+    const rangeHeader = range === "bytes=100-" ? "bytes 100-199/200"
+      : range === "bytes=-512" ? "bytes 0-199/200"
+      : range === "BYTES=1-3" ? "bytes 1-3/200"
+      : "bytes 0-99/200";
+    const io = mockFetch("partial", 206, { "content-range": rangeHeader });
     const response = await proxyCatalogRequest(
       new Request(SITE + "/catalogo-api/media/images/figure.webp", {
         headers: { Range: range },
@@ -57,6 +64,46 @@ test("single-byte media ranges are accepted without changing their values", asyn
     assert.equal(response.status, 206, range);
     assert.equal(io.calls.length, 1, range);
     assert.equal(io.calls[0].options.headers.get("Range"), range);
+  }
+});
+
+test("inconsistent upstream partial images are blocked without public caching", async () => {
+  const cases = [
+    { range: "bytes=0-99", contentRange: null },
+    { range: "bytes=0-99", contentRange: "bytes 20-99/200" },
+    { range: "bytes=0-99", contentRange: "bytes 0-120/200" },
+    { range: "bytes=0-99", contentRange: "bytes 0-99/90" },
+    { range: "bytes=-10", contentRange: "bytes 0-9/200" },
+    { range: "bytes=10-", contentRange: "bytes 10-11/*" },
+  ];
+  for (const item of cases) {
+    const io = mockFetch("broken", 206, item.contentRange
+      ? { "Content-Range": item.contentRange, "Cache-Control": "public, max-age=3600" }
+      : { "Cache-Control": "public, max-age=3600" });
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/media/images/figure.webp", {
+        headers: { Range: item.range },
+      }), io.fetcher,
+    );
+    assert.equal(response.status, 502, item.range);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+    assert.equal(response.headers.has("Content-Range"), false);
+    assert.equal(io.calls.length, 1);
+  }
+});
+
+test("unexpected partial JSON and unrequested partial media cannot reach Pages", async () => {
+  for (const path of ["api/catalog", "media/images/figure.webp"]) {
+    const io = mockFetch("partial", 206, {
+      "Content-Range": "bytes 0-3/100",
+      "Cache-Control": "public, max-age=3600",
+    });
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/" + path),
+      io.fetcher,
+    );
+    assert.equal(response.status, 502, path);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
   }
 });
 
