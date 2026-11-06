@@ -118,7 +118,11 @@ export default function CanonicalModelDetails() {
         signal,
       ),
     // Prevent a non-adjacent cursor cycle (A → B → A) without new state.
-    getNextPageParam: (lastPage, _pages, _lastParam, pageParams) => {
+    getNextPageParam: (lastPage, pages, _lastParam, pageParams) => {
+      // The published total is authoritative. A stale extra cursor must not
+      // trigger another Worker request once all images have been received.
+      const received = pages.reduce((sum, page) => sum + page.items.length, 0);
+      if (received >= lastPage.total) return undefined;
       const next = lastPage.nextCursor;
       return next && !pageParams.includes(next) ? next : undefined;
     },
@@ -141,7 +145,20 @@ export default function CanonicalModelDetails() {
       }),
     ),
   );
-  const images = duplicateGalleryIdentity
+  const receivedGalleryCount = galleryData?.pages.reduce(
+    (sum, page) => sum + page.items.length, 0,
+  ) ?? 0;
+  const publishedGalleryTotal = galleryData?.pages[0]?.total;
+  const lastGalleryPage = galleryData?.pages[galleryData.pages.length - 1];
+  const inconsistentGalleryCount = Boolean(
+    galleryData && publishedGalleryTotal !== undefined && (
+      receivedGalleryCount > publishedGalleryTotal ||
+      galleryData.pages.some((page) => page.total !== publishedGalleryTotal) ||
+      (receivedGalleryCount < publishedGalleryTotal &&
+        lastGalleryPage?.nextCursor === null)
+    ),
+  );
+  const images = duplicateGalleryIdentity || inconsistentGalleryCount
     ? []
     : galleryData?.pages.flatMap((page) => page.items) ?? [];
   const galleryCursorCycle = Boolean(
@@ -239,7 +256,7 @@ export default function CanonicalModelDetails() {
                   >
                     Carregando galeria…
                   </p>
-                ) : galleryQuery.isError || duplicateGalleryIdentity ? (
+                ) : galleryQuery.isError || duplicateGalleryIdentity || inconsistentGalleryCount ? (
                   <div className="mt-4 flex flex-wrap items-center gap-3">
                     <p role="alert" className="text-sm text-[hsl(0,0%,56%)]">
                       A galeria não pôde ser carregada.
@@ -353,7 +370,7 @@ export default function CanonicalModelDetails() {
                         Imagens publicadas
                       </dt>
                       <dd className="mt-1 font-medium">
-                        {galleryQuery.isError || duplicateGalleryIdentity
+                        {galleryQuery.isError || duplicateGalleryIdentity || inconsistentGalleryCount
                           ? "Indisponível"
                           : galleryQuery.data?.pages[0]?.total ??
                             (model.galleryVersion > 0

@@ -61,19 +61,46 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function mountGallery(options: { total: number; coverKey?: string; returnState?: unknown; cyclicPage?: boolean; repeatedImageAcrossPages?: boolean }) {
+function mountGallery(options: {
+  total: number;
+  coverKey?: string;
+  returnState?: unknown;
+  cyclicPage?: boolean;
+  repeatedImageAcrossPages?: boolean;
+  completeWithStrayCursor?: boolean;
+  incompleteWithoutCursor?: boolean;
+}) {
   const io = vi.fn(async (input: string, _init: RequestInit) => {
     const url = new URL(input);
     if (url.pathname.endsWith("/api/models/animal-original")) {
       return Response.json(
         options.cyclicPage
           ? { ...model, image_count: 3 }
-          : options.repeatedImageAcrossPages
+          : options.repeatedImageAcrossPages ||
+              options.completeWithStrayCursor || options.incompleteWithoutCursor
             ? { ...model, image_count: 2 }
             : model,
       );
     }
     if (url.pathname.endsWith("/api/models/animal-original/images")) {
+      if (options.completeWithStrayCursor) {
+        const cursor = url.searchParams.get("cursor");
+        if (cursor !== null && cursor !== "page-2") {
+          throw new Error("unexpected_extra_gallery_read");
+        }
+        return Response.json({
+          items: [{ ...image, id: cursor === null ? "img-1" : "img-2", role: cursor === null ? "cover" : "gallery" }],
+          total: 2,
+          // The Worker erroneously announces another page after all images arrived.
+          nextCursor: cursor === null ? "page-2" : "page-3",
+          version: 9,
+        });
+      }
+      if (options.incompleteWithoutCursor) {
+        return Response.json({
+          items: [image], total: 2, nextCursor: null, version: 9,
+        });
+      }
       if (options.repeatedImageAcrossPages) {
         const cursor = url.searchParams.get("cursor");
         if (cursor !== null && cursor !== "page-2") {
@@ -254,6 +281,32 @@ describe("published model/gallery identity on the public detail page", () => {
         .toHaveAttribute("href", "/modelos");
       view.unmount();
     }
+  });
+
+  it("stops gallery reads once the published total is received despite an extra cursor", async () => {
+    const { io } = mountGallery({ total: 2, completeWithStrayCursor: true });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
+    await screen.findByRole("button", { name: "Ver imagem 2 de Animal original" });
+
+    expect(screen.queryByRole("button", { name: "Carregar mais imagens" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"))
+      .toHaveTextContent("2");
+    // One detail request and two gallery pages, never the stale third cursor.
+    expect(io).toHaveBeenCalledTimes(3);
+  });
+
+  it("blocks a truncated gallery with no next cursor rather than showing a false total", async () => {
+    const { io } = mountGallery({ total: 2, incompleteWithoutCursor: true });
+    await screen.findByText("A galeria não pôde ser carregada.");
+    expect(screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"))
+      .toHaveTextContent("Indisponível");
+    expect(screen.queryByRole("button", { name: "Ver imagem 1 de Animal original" }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Carregar mais imagens" }))
+      .not.toBeInTheDocument();
+    expect(io).toHaveBeenCalledTimes(2);
   });
 
   it("fails closed on an image ID repeated across two valid gallery pages", async () => {
