@@ -67,7 +67,14 @@ export function assessCutoverReadiness(contract, state) {
     'source_media_patch_drift_or_unverified',
   )
   add(contract?.origin?.apiDeployWorkflowId === SOURCE_WORKFLOW_ID && contract?.origin?.apiDeployPipeline === SOURCE_WORKFLOW_PATH, 'github_workflow_identity_unverified')
-  add(contract?.target?.repository === TARGET_REPO && contract?.target?.repositoryId === TARGET_REPO_ID, 'target_repository_mismatch')
+  add(
+    contract?.target?.repository === TARGET_REPO &&
+      contract?.target?.repositoryId === TARGET_REPO_ID &&
+      observed.targetRepositoryName === TARGET_REPO &&
+      observed.targetRepositoryId === TARGET_REPO_ID &&
+      observed.targetDefaultBranch === 'main',
+    'target_repository_mismatch',
+  )
   add(contract?.runtime?.worker === WORKER_NAME && contract?.runtime?.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID && o.worker === WORKER_NAME && o.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID, 'worker_authority_mismatch')
   add(
     WORKER_CONFIG.name === WORKER_NAME &&
@@ -134,8 +141,13 @@ export async function inspectLiveReadOnly(env = process.env) {
   const sourceUrl = 'https://api.github.com/repos/' + SOURCE_REPO
   const prefix = sourceUrl + '/actions/workflows/' + workflowName
   const ghHeaders = { 'User-Agent': 'tonecos-readonly-cutover-check' }
-  const [sourceRepo, sourceMain, mediaPatch, workflow, active, queued, requested, waiting, pending] = await Promise.all([
+  // The target repository is private: read-only GitHub credentials are required
+  // for the live release preflight. Never use a Cloudflare token for GitHub.
+  const githubToken = env.GITHUB_TOKEN || env.GH_TOKEN
+  if (githubToken) ghHeaders.Authorization = 'Bearer ' + githubToken
+  const [sourceRepo, targetRepo, sourceMain, mediaPatch, workflow, active, queued, requested, waiting, pending] = await Promise.all([
     getJSON(sourceUrl, ghHeaders),
+    getJSON('https://api.github.com/repos/' + TARGET_REPO, ghHeaders),
     getJSON(sourceUrl + '/git/ref/heads/main', ghHeaders),
     getJSON(sourceUrl + '/pulls/' + SOURCE_FIX_PR, ghHeaders),
     getJSON(prefix, ghHeaders),
@@ -147,6 +159,8 @@ export async function inspectLiveReadOnly(env = process.env) {
   ])
   const state = {
     sourceRepositoryId: sourceRepo.id, sourceRepositoryName: sourceRepo.full_name,
+    targetRepositoryId: targetRepo.id, targetRepositoryName: targetRepo.full_name,
+    targetDefaultBranch: targetRepo.default_branch,
     sourceMainRef: sourceMain.ref, sourceMainSha: sourceMain.object?.sha,
     sourceFix: {
       number: mediaPatch.number, state: mediaPatch.state, draft: mediaPatch.draft,
@@ -190,6 +204,7 @@ async function main() {
       status: verdict.ready ? 'READY_FOR_SEPARATELY_AUTHORIZED_CUTOVER' : 'BLOCKED',
       sourceWorkflow: state.workflow?.state ?? 'unverified',
       sourceMainSha: state.sourceMainSha ?? null,
+      targetRepositoryId: state.targetRepositoryId ?? null,
       sourceMediaPatchSha: state.sourceFix?.headSha ?? null,
       sourceInProgress: state.running ?? null,
       sourceQueued: state.queued ?? null,
