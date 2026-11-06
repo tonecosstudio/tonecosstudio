@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { Page } from "@/components/layouts/Page";
 import {
@@ -170,6 +170,14 @@ export default function CanonicalModelDetails() {
   );
   const activeImage =
     images.find((image) => image.id === activeImageId) ?? images[0] ?? null;
+  const activeImageIndex = activeImage
+    ? images.findIndex((image) => image.id === activeImage.id)
+    : -1;
+  function moveGalleryImage(direction: -1 | 1) {
+    if (images.length < 2 || activeImageIndex < 0) return;
+    const nextIndex = (activeImageIndex + direction + images.length) % images.length;
+    setActiveImageId(images[nextIndex].id);
+  }
   const activeImageKey = activeImage
     ? (activeImage.variantKeys.detail ??
       activeImage.variantKeys.card ??
@@ -264,6 +272,31 @@ export default function CanonicalModelDetails() {
                     fetchPriority="high"
                   />
                 </ArcadeCard>
+                {images.length > 1 ? (
+                  <nav aria-label="Navegação das imagens carregadas" className="mt-3 flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => moveGalleryImage(-1)}
+                      aria-label="Imagem anterior"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 border border-[hsl(0,0%,20%)] px-3 text-sm hover:bg-[hsl(0,0%,10%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      <ChevronLeft aria-hidden="true" size={18} />
+                      <span className="hidden sm:inline">Anterior</span>
+                    </button>
+                    <span className="text-center text-xs text-[hsl(0,0%,65%)]" aria-live="polite">
+                      Imagem {activeImageIndex + 1} de {images.length} carregadas
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => moveGalleryImage(1)}
+                      aria-label="Próxima imagem"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 border border-[hsl(0,0%,20%)] px-3 text-sm hover:bg-[hsl(0,0%,10%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      <span className="hidden sm:inline">Próxima</span>
+                      <ChevronRight aria-hidden="true" size={18} />
+                    </button>
+                  </nav>
+                ) : null}
 
                 {model.galleryVersion > 0 && galleryQuery.isPending ? (
                   <p

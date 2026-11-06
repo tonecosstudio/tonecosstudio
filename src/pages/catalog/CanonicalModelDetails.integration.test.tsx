@@ -89,7 +89,17 @@ function mountGallery(options: {
           throw new Error("unexpected_extra_gallery_read");
         }
         return Response.json({
-          items: [{ ...image, id: cursor === null ? "img-1" : "img-2", role: cursor === null ? "cover" : "gallery" }],
+          items: [{
+            ...image,
+            id: cursor === null ? "img-1" : "img-2",
+            role: cursor === null ? "cover" : "gallery",
+            variantKeys: cursor === null ? image.variantKeys : {
+              thumb: "media/mdl-123/2/thumb.webp",
+              card: "media/mdl-123/2/card.webp",
+              detail: "media/mdl-123/2/detail.webp",
+              original: null,
+            },
+          }],
           total: 2,
           // The Worker erroneously announces another page after all images arrived.
           nextCursor: cursor === null ? "page-2" : "page-3",
@@ -313,6 +323,30 @@ describe("published model/gallery identity on the public detail page", () => {
     expect(screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"))
       .toHaveTextContent("2");
     // One detail request and two gallery pages, never the stale third cursor.
+    expect(io).toHaveBeenCalledTimes(3);
+  });
+
+  it("navigates previous and next among loaded approved images without extra API requests", async () => {
+    const { io } = mountGallery({ total: 2, completeWithStrayCursor: true });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    expect(screen.queryByRole("button", { name: "Próxima imagem" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
+    await screen.findByRole("button", { name: "Ver imagem 2 de Animal original" });
+    expect(screen.getByText("Imagem 1 de 2 carregadas")).toBeInTheDocument();
+    expect(io).toHaveBeenCalledTimes(3);
+
+    fireEvent.click(screen.getByRole("button", { name: "Próxima imagem" }));
+    expect(screen.getByRole("img", { name: "Referência visual de Animal original" }))
+      .toHaveAttribute("src", "https://catalog.example.test/catalogo-api/media/mdl-123/2/detail.webp");
+    expect(screen.getByText("Imagem 2 de 2 carregadas")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ver imagem 2 de Animal original" }))
+      .toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Próxima imagem" }));
+    expect(screen.getByText("Imagem 1 de 2 carregadas")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Imagem anterior" }));
+    expect(screen.getByText("Imagem 2 de 2 carregadas")).toBeInTheDocument();
     expect(io).toHaveBeenCalledTimes(3);
   });
 
