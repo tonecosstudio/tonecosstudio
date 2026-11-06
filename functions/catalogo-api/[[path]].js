@@ -42,6 +42,17 @@ function isSafeMediaPath(path) {
   });
 }
 
+// R2 serves a single byte range for public media. Reject malformed or
+// multi-range values before they can trigger an unnecessary upstream read.
+function isValidMediaRange(value) {
+  const absolute = /^bytes=(\d{1,15})-(\d{0,15})$/i.exec(value);
+  if (absolute) {
+    return !absolute[2] || Number(absolute[1]) <= Number(absolute[2]);
+  }
+  const suffix = /^bytes=-(\d{1,15})$/i.exec(value);
+  return Boolean(suffix && Number(suffix[1]) > 0);
+}
+
 function isPublicCatalogRoute(path) {
   return PUBLIC_LIST_ROUTES.has(path) ||
     /^api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?$/.test(path) ||
@@ -80,7 +91,14 @@ export async function proxyCatalogRequest(request, fetcher) {
     headers.set("If-None-Match", request.headers.get("If-None-Match"));
   }
   if (route.startsWith("media/") && request.headers.has("Range")) {
-    headers.set("Range", request.headers.get("Range"));
+    const range = request.headers.get("Range");
+    if (!isValidMediaRange(range)) {
+      return new Response("Invalid media range", {
+        status: 416,
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
+    headers.set("Range", range);
   }
 
   try {

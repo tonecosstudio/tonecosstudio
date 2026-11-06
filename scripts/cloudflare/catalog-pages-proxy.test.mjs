@@ -45,6 +45,53 @@ test("public media preserves encoded filenames and range", async () => {
   assert.equal(io.calls[0].options.headers.get("Range"), "bytes=0-99");
 });
 
+test("single-byte media ranges are accepted without changing their values", async () => {
+  for (const range of ["bytes=0-99", "bytes=100-", "bytes=-512", "BYTES=1-3"]) {
+    const io = mockFetch("partial", 206);
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/media/images/figure.webp", {
+        headers: { Range: range },
+      }),
+      io.fetcher,
+    );
+    assert.equal(response.status, 206, range);
+    assert.equal(io.calls.length, 1, range);
+    assert.equal(io.calls[0].options.headers.get("Range"), range);
+  }
+});
+
+test("invalid media ranges fail before any Worker or R2 read", async () => {
+  for (const range of [
+    "bytes=10-2", "bytes=-0", "bytes=-", "bytes=abc",
+    "bytes=0-1,3-4", "items=0-1", "bytes=1-9999999999999999",
+    "bytes=9999999999999999-", "bytes=0-1;unexpected",
+  ]) {
+    const io = mockFetch();
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/media/images/figure.webp", {
+        headers: { Range: range },
+      }),
+      io.fetcher,
+    );
+    assert.equal(response.status, 416, range);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+    assert.equal(io.calls.length, 0, range);
+  }
+});
+
+test("Range is not forwarded on catalog JSON reads", async () => {
+  const io = mockFetch();
+  const response = await proxyCatalogRequest(
+    new Request(SITE + "/catalogo-api/api/catalog", {
+      headers: { Range: "bytes=0-1" },
+    }),
+    io.fetcher,
+  );
+  assert.equal(response.status, 200);
+  assert.equal(io.calls.length, 1);
+  assert.equal(io.calls[0].options.headers.has("Range"), false);
+});
+
 test("mutations never reach the canonical Worker", async () => {
   for (const method of ["POST", "PUT", "PATCH", "DELETE", "HEAD"]) {
     const io = mockFetch();
