@@ -846,3 +846,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** quando o acesso Cloudflare do proprietário ou o conector estiver disponível, criar preview do HEAD `7004549d0b4058f2edf76604c2260379fe27d31a` e verificar o cartão Missão em 280/320/360/390/640/768/1024/1440 px; depois continuar a inspeção da rota pública seguinte.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb` (preview antigo); reutilizar `440db22e` apenas para páginas cujos blobs foram confirmados iguais ao HEAD; não criar build somente por documentação; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
+
+
+## Rodada 61 — Sobre e Home: revisão mobile (05/11/2026)
+
+- Base da PR #4: `main` @ `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`. HEAD do código validado: `a3898a387d0618ab64ff1cf0bb32dd129171c76e` na branch `integration/tonecosstudio-canonical-20261101`.
+- Prévia atual: [`a05fa1d7`](https://a05fa1d7.tonecosstudio.pages.dev), deployment `a05fa1d7-41c8-4e9c-a604-0a1b107c49ac`, source SHA exato `a3898a3`, build e deploy SUCCESS. Cloudflare Pages executou `typecheck`, `catalog:mvp:test` (18 suítes/161 testes), `build`; GitHub Quality Gate [#42135488076](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42135488076) SUCCESS. Produção, Worker e configuração de auto deploy inalterados.
+- **Sobre:** o ajuste já existente em `AboutArcade.tsx` reduz o cartão Missão para `p-4 sm:p-6 md:p-12`. Na prévia final, em 280 px o parágrafo mede 208×250 px (11 linhas), contra 176×319 px (14 linhas) na prévia antiga; em 320 px mede 248×182 px. QA em 280/320/359/360/390/414/640/768/1024/1440 px, sem overflow horizontal. Botões do FAQ têm alvos de 56–64 px.
+- **Home:** `LandingPage.tsx` agora escala os valores dos indicadores de 18–24 px no mobile e usa rótulos de 8/9 px; a partir de 640 px os rótulos usam 10 px. Em 280–414 px, “Sob Encomenda” ocupa uma linha. A primeira medição revelou overflow interno de 4 px em 640 px; o breakpoint foi ajustado no commit `a3898a3`. QA final em 280/320/359/360/390/414/640/768/1024/1440/1920 px, sem overflow horizontal.
+- **NEXT_ACTION:** revisar `/modelos` e uma ficha do catálogo nas mesmas larguras móveis e de desktop; observar campo de busca, cards, paginação, galeria e retorno ao contexto anterior.
+- **DO_NOT_REPEAT:** não usar `ef8ab5fb` ou `440db22e` como preview atual; não gerar build para documentação isolada; preservar preview automático `none` e produção automática desativada; não alterar produção, Worker, D1, R2, DNS ou migrations.
