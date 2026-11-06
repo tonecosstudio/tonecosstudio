@@ -68,6 +68,7 @@ export default function CatalogModelsArcade() {
   const { selectedModels, setSelectedModels, paging, setPaging } =
     useCatalogBrowsing();
   const resultsRef = useRef<HTMLDivElement>(null);
+  const returnCardRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => setDraft(search), [search]);
 
@@ -136,6 +137,24 @@ export default function CatalogModelsArcade() {
   });
 
   const rows = models.data?.items ?? [];
+  // Restore the selected card only when the original filtered page is ready.
+  // This one-shot field shares the existing paging state: no pixel storage,
+  // browser globals, repeated catalog reads or second navigation authority.
+  useEffect(() => {
+    const slug = paging.returnFocusSlug;
+    if (paging.scope !== scope || !slug || !models.isSuccess) return;
+    const card = returnCardRef.current;
+    if (card) {
+      card.scrollIntoView?.({ behavior: "auto", block: "center" });
+      card.focus({ preventScroll: true });
+    }
+    // Also discard a stale target (the result may have been unpublished).
+    setPaging((current) =>
+      current.scope === scope && current.returnFocusSlug === slug
+        ? { ...current, returnFocusSlug: undefined }
+        : current,
+    );
+  }, [models.isSuccess, paging.scope, paging.returnFocusSlug, scope, setPaging]);
   // One already fetched, bounded page. Do not request adjacent model pages
   // to build detail navigation; the current list is the only authority here.
   const pageSlugs = rows.length > 1 && rows.length <= 36 &&
@@ -561,6 +580,11 @@ export default function CatalogModelsArcade() {
                       <div className="flex h-full flex-col">
                         <Link
                           to={catalogModelDetailsPath(model.slug)}
+                          ref={paging.scope === scope && paging.returnFocusSlug === model.slug
+                            ? returnCardRef : undefined}
+                          onClick={() => setPaging({
+                            ...activePage, returnFocusSlug: model.slug,
+                          })}
                           state={{
                             catalogReturnSearch: searchParams.toString(),
                             catalogSiblingSlugs: pageSlugs,
@@ -681,6 +705,11 @@ export default function CatalogModelsArcade() {
                     <SheetClose asChild>
                       <Link
                         to={catalogModelDetailsPath(item.slug)}
+                        onClick={() => {
+                          if (rows.some((row) => row.slug === item.slug)) {
+                            setPaging({ ...activePage, returnFocusSlug: item.slug });
+                          }
+                        }}
                         state={{ catalogReturnSearch: searchParams.toString() }}
                         className="flex min-w-0 flex-1 basis-36 items-center gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                       >

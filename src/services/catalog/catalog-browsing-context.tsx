@@ -12,6 +12,8 @@ export type CatalogPagePosition = {
   scope: string;
   cursors: Array<string | undefined>;
   index: number;
+  /** One-shot focus target for returning to a visited card. */
+  returnFocusSlug?: string;
 };
 
 type CatalogBrowsingState = {
