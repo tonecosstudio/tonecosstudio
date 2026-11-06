@@ -11,8 +11,10 @@ export function resolveCanonicalCatalogApiBase(
   production: boolean,
 ): string {
   const explicit = configured?.trim();
-  if (explicit) return explicit;
-  if (!production || !pageOrigin) return "";
+  // Development may use a local/mock API. A production catalog must always
+  // use the exact same-origin Pages Function, never an external override.
+  if (!production) return explicit ?? "";
+  if (!pageOrigin) return "";
 
   try {
     const url = new URL(pageOrigin);
@@ -28,7 +30,11 @@ export function resolveCanonicalCatalogApiBase(
     ) {
       return "";
     }
-    return new URL(CANONICAL_CATALOG_PROXY_PATH, url.origin).toString();
+    const canonical = new URL(CANONICAL_CATALOG_PROXY_PATH, url.origin).toString();
+    // Reject rather than silently ignore a misconfigured production endpoint.
+    // Exact comparison also excludes query parameters, paths and credentials.
+    if (explicit && explicit !== canonical) return "";
+    return canonical;
   } catch {
     return "";
   }

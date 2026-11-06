@@ -27,12 +27,35 @@ describe("Cloudflare Pages canonical public catalog", () => {
     expect(CANONICAL_CATALOG_PROXY_PATH).toBe("/catalogo-api/");
   });
 
-  it("accepts an explicitly configured base without inferring another provider", () => {
+  it("permits mock endpoints only in development", () => {
     expect(resolveCanonicalCatalogApiBase(
       " https://catalog.example.test/api/ ",
       "https://tonecosstudio.pages.dev",
-      true,
+      false,
     )).toBe("https://catalog.example.test/api/");
+    expect(resolveCanonicalCatalogApiBase(
+      undefined, "https://tonecosstudio.pages.dev", false,
+    )).toBe("");
+  });
+
+  it("accepts only the exact first-party Pages endpoint in production", () => {
+    const origin = "https://tonecosstudio.pages.dev";
+    expect(resolveCanonicalCatalogApiBase(
+      " https://tonecosstudio.pages.dev/catalogo-api/ ", origin, true,
+    )).toBe("https://tonecosstudio.pages.dev/catalogo-api/");
+    for (const override of [
+      "https://catalog.example.test/api/",
+      "https://tonecosstudio.pages.dev/api/catalog",
+      "https://tonecosstudio.pages.dev/catalogo-api/?debug=1",
+      "https://tonecosstudio.pages.dev/catalogo-api/#other",
+      "http://tonecosstudio.pages.dev/catalogo-api/",
+      "https://tonecosstudio.pages.dev.evil.test/catalogo-api/",
+      "https://user:pass@tonecosstudio.pages.dev/catalogo-api/",
+      "//tonecosstudio.pages.dev/catalogo-api/",
+      "/catalogo-api/",
+    ]) {
+      expect(resolveCanonicalCatalogApiBase(override, origin, true)).toBe("");
+    }
   });
 
   it.each([

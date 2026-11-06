@@ -1,4 +1,11 @@
 // Prevent a public catalog build that accidentally enables commercial writes.
+// Public builds derive the API exclusively from the runtime origin via Pages
+// Service Binding; any fixed Vite override is a release configuration error.
+if (process.env.VITE_PUBLIC_CATALOG_MVP === "true" &&
+    process.env.VITE_CANONICAL_CATALOG_API_BASE?.trim()) {
+  console.error("MVP bloqueado: remova VITE_CANONICAL_CATALOG_API_BASE; use apenas o proxy Pages da própria origem.");
+  process.exit(1);
+}
 if (process.env.VITE_PUBLIC_CATALOG_MVP === "true" &&
     process.env.VITE_PREVIEW_READ_ONLY !== "true") {
   console.error("MVP bloqueado: VITE_PREVIEW_READ_ONLY=true é obrigatório.");
