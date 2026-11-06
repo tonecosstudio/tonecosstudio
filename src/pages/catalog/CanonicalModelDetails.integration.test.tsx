@@ -185,6 +185,25 @@ describe("published model/gallery identity on the public detail page", () => {
     }
   });
 
+  it("uses published card/thumbnail variants only if their image requests fail", async () => {
+    mountGallery({ total: 1 });
+    const thumbnail = await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    const main = screen.getByRole("img", { name: "Referência visual de Animal original" });
+    expect(main).toHaveAttribute("src", "https://catalog.example.test/catalogo-api/media/mdl-123/1/detail.webp");
+    expect(main).toHaveAttribute("fetchpriority", "high");
+
+    const thumbImage = thumbnail.querySelector("img")!;
+    expect(thumbImage).toHaveAttribute("src", "https://catalog.example.test/catalogo-api/media/mdl-123/1/thumb.webp");
+    expect(thumbImage).toHaveAttribute("fetchpriority", "low");
+    fireEvent.error(main);
+    expect(screen.getByRole("img", { name: "Referência visual de Animal original" }))
+      .toHaveAttribute("src", "https://catalog.example.test/catalogo-api/media/mdl-123/1/card.webp");
+    fireEvent.error(thumbImage);
+    expect(thumbnail.querySelector("img")).toHaveAttribute(
+      "src", "https://catalog.example.test/catalogo-api/media/mdl-123/1/card.webp",
+    );
+  });
+
   it("renders a single approved cover without inventing extra photographs", async () => {
     const { io } = mountGallery({ total: 1 });
     await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });

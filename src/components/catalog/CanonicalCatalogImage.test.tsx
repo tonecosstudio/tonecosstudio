@@ -72,6 +72,45 @@ describe("CanonicalCatalogImage", () => {
     expect(screen.queryByText("Imagem indisponível")).not.toBeInTheDocument();
   });
 
+  it("falls back to an approved alternate variant only after detail image fails", () => {
+    const { container } = render(
+      <CanonicalCatalogImage
+        src="/catalogo-api/media/model-1/detail.webp"
+        fallbackSrc="/catalogo-api/media/model-1/card.webp"
+        alt="Escultura"
+        loading="eager"
+        fetchPriority="high"
+      />,
+    );
+    const primary = screen.getByRole("img", { name: "Escultura" });
+    expect(primary).toHaveAttribute("src", "/catalogo-api/media/model-1/detail.webp");
+    expect(primary).toHaveAttribute("loading", "eager");
+    expect(primary).toHaveAttribute("fetchpriority", "high");
+    fireEvent.error(primary);
+    const fallback = screen.getByRole("img", { name: "Escultura" });
+    expect(fallback).toHaveAttribute("src", "/catalogo-api/media/model-1/card.webp");
+    expect(container.querySelectorAll("img")).toHaveLength(1);
+    fireEvent.error(fallback);
+    expect(screen.queryByRole("img", { name: "Escultura" })).not.toBeInTheDocument();
+    expect(screen.getByText("Imagem indisponível")).toBeInTheDocument();
+  });
+
+  it("does not retry the same failing variant twice", () => {
+    render(
+      <CanonicalCatalogImage
+        src="/catalogo-api/media/model-1/card.webp"
+        fallbackSrc="/catalogo-api/media/model-1/card.webp"
+        alt="Miniatura"
+        fetchPriority="low"
+      />,
+    );
+    const image = screen.getByRole("img", { name: "Miniatura" });
+    expect(image).toHaveAttribute("fetchpriority", "low");
+    fireEvent.error(image);
+    expect(screen.queryByRole("img", { name: "Miniatura" })).not.toBeInTheDocument();
+    expect(screen.getByText("Imagem indisponível")).toBeInTheDocument();
+  });
+
   it("does not render an empty image request when media is absent", () => {
     const { container } = render(
       <CanonicalCatalogImage src={null} alt="" fallbackLabel="Sem prévia" />,

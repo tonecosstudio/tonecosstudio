@@ -3,12 +3,15 @@ import { ImageOff } from "lucide-react";
 
 type CanonicalCatalogImageProps = {
   src: string | null;
+  /** A different approved variant of the same image, used only on failure. */
+  fallbackSrc?: string | null;
   alt: string;
   imageClassName?: string;
   fallbackClassName?: string;
   fallbackLabel?: string;
   fallbackIcon?: ReactNode;
   loading?: "eager" | "lazy";
+  fetchPriority?: "high" | "low" | "auto";
 };
 
 /**
@@ -22,28 +25,43 @@ type CanonicalCatalogImageProps = {
  * visit (e.g. after a transient network error).
  */
 export function CanonicalCatalogImage(props: CanonicalCatalogImageProps) {
-  return <CatalogImageSource key={props.src ?? "absent"} {...props} />;
+  return (
+    <CatalogImageSource
+      key={JSON.stringify([props.src, props.fallbackSrc])}
+      {...props}
+    />
+  );
 }
 
 function CatalogImageSource({
   src,
+  fallbackSrc = null,
   alt,
   imageClassName = "h-full w-full object-contain",
   fallbackClassName = "flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center text-xs text-[hsl(0,0%,56%)]",
   fallbackLabel = "Imagem indisponível",
   fallbackIcon,
   loading = "lazy",
+  fetchPriority,
 }: CanonicalCatalogImageProps) {
-  const [failed, setFailed] = useState(false);
-  if (src && !failed) {
+  const [failedVariant, setFailedVariant] = useState<"primary" | "fallback" | null>(null);
+  // Never invent an alternative media source: only a separately approved,
+  // provided variant may be used, and only after the primary image fails.
+  const currentSrc = failedVariant === null
+    ? src
+    : failedVariant === "primary" && fallbackSrc !== src
+      ? fallbackSrc
+      : null;
+  if (currentSrc) {
     return (
       <img
-        src={src}
+        src={currentSrc}
         alt={alt}
         loading={loading}
         decoding="async"
+        {...(fetchPriority ? { fetchpriority: fetchPriority } : {})}
         className={imageClassName}
-        onError={() => setFailed(true)}
+        onError={() => setFailedVariant((current) => current === null ? "primary" : "fallback")}
       />
     );
   }

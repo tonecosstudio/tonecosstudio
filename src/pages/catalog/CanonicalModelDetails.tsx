@@ -176,6 +176,20 @@ export default function CanonicalModelDetails() {
       activeImage.variantKeys.thumb)
     : (model?.coverStorageKey ?? null);
   const activeImageUrl = gateway?.mediaUrl(activeImageKey) ?? null;
+  const activeImageFallbackKey = activeImage
+    ? [activeImage.variantKeys.card, activeImage.variantKeys.thumb].find(
+        (key) => key && key !== activeImageKey,
+      ) ?? null
+    : null;
+  const activeImageFallbackUrl = gateway?.mediaUrl(activeImageFallbackKey) ?? null;
+
+  function thumbnailFallbackUrl(image: PublicCatalogImage): string | null {
+    // A missing thumbnail may use the published card variant. No unrelated
+    // fallback photos or remote storage probes are permitted.
+    return image.variantKeys.thumb
+      ? gateway?.mediaUrl(image.variantKeys.card ?? image.variantKeys.detail) ?? null
+      : null;
+  }
 
   function imageUrl(image: PublicCatalogImage): string | null {
     return gateway?.mediaUrl(
@@ -243,9 +257,11 @@ export default function CanonicalModelDetails() {
                 <ArcadeCard className="flex min-h-[280px] items-center justify-center sm:min-h-[360px] md:min-h-[560px]">
                   <CanonicalCatalogImage
                     src={activeImageUrl}
+                    fallbackSrc={activeImageFallbackUrl}
                     alt={"Referência visual de " + model.name}
                     imageClassName="max-h-[75vh] w-full object-contain p-4"
                     loading="eager"
+                    fetchPriority="high"
                   />
                 </ArcadeCard>
 
@@ -287,9 +303,11 @@ export default function CanonicalModelDetails() {
                           >
                             <CanonicalCatalogImage
                               src={src}
+                              fallbackSrc={thumbnailFallbackUrl(image)}
                               alt=""
                               imageClassName="h-full w-full object-cover"
                               fallbackLabel="Sem prévia"
+                              fetchPriority="low"
                             />
                           </button>
                         );
