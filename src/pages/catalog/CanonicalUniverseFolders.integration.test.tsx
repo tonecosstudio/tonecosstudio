@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -9,7 +9,15 @@ import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-con
 
 vi.mock("@/components/arcade/ArcadeLayout", () => ({
   ArcadeCard: ({ children }: { children: ReactNode }) => <article>{children}</article>,
+  ArcadeSectionTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
 }));
+vi.mock("@/components/layouts/Page", () => ({
+  Page: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
+vi.mock("@/config/canonical-catalog-endpoint", () => ({
+  CANONICAL_CATALOG_API_BASE: "https://catalog.example.test/catalogo-api",
+}));
+afterEach(() => vi.unstubAllGlobals());
 
 const model = {
   id: "mdl-10h",
