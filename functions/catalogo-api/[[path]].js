@@ -88,6 +88,9 @@ export async function proxyCatalogRequest(request, fetcher) {
       method: "GET",
       headers,
       redirect: "manual",
+      // Preserve client cancellation across the Pages -> Worker service binding.
+      // Avoid unnecessary upstream work when navigation or an in-flight read stops.
+      signal: request.signal,
     });
     // No arbitrary external redirect or upstream cookie is promoted to our site.
     if (response.status >= 300 && response.status < 400 && response.status !== 304) {

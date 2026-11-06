@@ -94,6 +94,51 @@ test("cookies and authorization are never forwarded", async () => {
   assert.equal(io.calls[0].options.redirect, "manual");
 });
 
+test("client cancellation propagates to the existing Worker binding", async () => {
+  const controller = new AbortController();
+  const request = new Request(SITE + "/catalogo-api/api/catalog", {
+    signal: controller.signal,
+  });
+  let forwarded;
+  const pending = proxyCatalogRequest(request, (_url, options) => {
+    forwarded = options;
+    return new Promise((_resolve, reject) => {
+      options.signal.addEventListener("abort", () => {
+        reject(new DOMException("Client cancelled request", "AbortError"));
+      }, { once: true });
+    });
+  });
+
+  assert.ok(forwarded, "upstream fetch begins before cancellation");
+  assert.equal(forwarded.signal, request.signal);
+  controller.abort();
+  assert.equal(forwarded.signal.aborted, true);
+  const response = await pending;
+  assert.equal(response.status, 502);
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
+});
+
+test("the native binding receives the original client AbortSignal", async () => {
+  const controller = new AbortController();
+  const request = new Request(SITE + "/catalogo-api/api/categories", {
+    signal: controller.signal,
+  });
+  let forwardedSignal;
+  const response = await onRequest({
+    request,
+    env: {
+      CATALOG_WORKER: {
+        async fetch(_url, options) {
+          forwardedSignal = options.signal;
+          return Response.json({ items: [] });
+        },
+      },
+    },
+  });
+  assert.equal(response.status, 200);
+  assert.equal(forwardedSignal, request.signal);
+});
+
 test("upstream cannot set cookies on Pages", async () => {
   const io = mockFetch("ok", 200, {
     "Set-Cookie": "session=foreign",
