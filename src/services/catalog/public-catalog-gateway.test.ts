@@ -814,3 +814,53 @@ describe("catalog preview credential isolation", () => {
     },
   );
 });
+
+describe("indexed recent catalog publications", () => {
+  it("loads a bounded set of recent published models using a single API read", async () => {
+    const io = vi.fn(async () => Response.json({ items: [row] }));
+    const api = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    const abort = new AbortController();
+    const models = await api.listRecent(6, abort.signal);
+    expect(models).toHaveLength(1);
+    expect(models[0]).toMatchObject({ id: "mdl-123", slug: "animal-original" });
+    expect(io).toHaveBeenCalledExactlyOnceWith(
+      "https://example.test/catalogo-api/api/recent?limit=6",
+      expect.objectContaining({
+        method: "GET", credentials: "omit", signal: abort.signal,
+      }),
+    );
+  });
+
+  it("rejects invalid limits locally without contacting the Worker", async () => {
+    const io = vi.fn(async () => Response.json({ items: [] }));
+    const api = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    for (const limit of [0, 25, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      await expect(api.listRecent(limit)).rejects.toThrow("catalog_recent_limit_invalid");
+    }
+    expect(io).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed, oversized or duplicate recent results", async () => {
+    const cases = [
+      [{}, "invalid_catalog_recent_items"],
+      [{ items: [row, row] }, "duplicate_catalog_recent_model"],
+      [{ items: [row, { ...row, slug: "../admin", id: "mdl-124" }] }, "invalid_catalog_recent_slug"],
+      [{ items: Array(25).fill(row) }, "invalid_catalog_recent_items"],
+    ];
+    for (const [payload, failure] of cases) {
+      const io = vi.fn(async () => Response.json(payload));
+      const api = createPublicCatalogGateway(
+        "https://example.test/catalogo-api",
+        io as typeof fetch,
+      );
+      await expect(api.listRecent(24)).rejects.toThrow(failure as string);
+      expect(io).toHaveBeenCalledTimes(1);
+    }
+  });
+});

@@ -10,6 +10,7 @@ const PUBLIC_LIST_ROUTES = new Set([
   "api/categories",
   "api/franchises",
   "api/folders",
+  "api/recent",
 ]);
 
 // The external publisher cannot set arbitrary headers on our first-party site.

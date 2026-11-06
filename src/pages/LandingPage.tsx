@@ -133,7 +133,8 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Use only the first indexed page of the canonical public catalog.
+  // Use the existing indexed recent-publications endpoint, not an
+  // alphabetical catalog page or a client-side full-acervo scan.
   const gateway = useMemo(() => {
     if (!CANONICAL_CATALOG_API_BASE) return null;
     try {
@@ -143,13 +144,13 @@ export default function LandingPage() {
     }
   }, []);
   const modelsQuery = useQuery({
-    queryKey: ["tonecos-landing-canonical-models"],
-    queryFn: ({ signal }) => gateway!.listPage({ limit: 6 }, signal),
+    queryKey: ["tonecos-landing-recent-models", 6],
+    queryFn: ({ signal }) => gateway!.listRecent(6, signal),
     enabled: gateway !== null,
     retry: false,
     staleTime: 60 * 1000,
   });
-  const models = modelsQuery.data?.items ?? [];
+  const models = modelsQuery.data ?? [];
   const isCatalogLoading = gateway !== null && modelsQuery.isPending;
   const hasCatalogError = gateway === null || modelsQuery.isError;
   const hasCatalogData = models.length > 0;
@@ -290,7 +291,7 @@ export default function LandingPage() {
       {/* ═══ MODELOS CANÔNICOS EM DESTAQUE ═══ */}
       <section className="relative border-t border-[hsl(var(--gold-accent)/0.08)] px-6 py-12">
         <div className="mx-auto max-w-6xl">
-          <ArcadeSectionTitle>MODELOS EM DESTAQUE</ArcadeSectionTitle>
+          <ArcadeSectionTitle>MODELOS RECENTES</ArcadeSectionTitle>
           {hasCatalogError ? (
             <div role="alert" className="mt-5 border border-[hsl(0,0%,18%)] p-6 text-sm text-[hsl(0,0%,70%)]">
               Não foi possível carregar as referências publicadas.

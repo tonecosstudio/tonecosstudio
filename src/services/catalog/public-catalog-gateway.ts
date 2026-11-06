@@ -663,6 +663,36 @@ export function createPublicCatalogGateway(
         version,
       };
     },
+    // Recent publications use the existing indexed Worker route, never a
+    // full catalog scan or a client-side sort over paginated pages.
+    async listRecent(
+      limit = 6,
+      signal?: AbortSignal,
+    ): Promise<PublicCatalogModel[]> {
+      if (!Number.isInteger(limit) || limit < 1 || limit > 24) {
+        throw new Error("catalog_recent_limit_invalid");
+      }
+      const result = await read("api/recent?limit=" + limit, signal);
+      if (!result || typeof result !== "object" || Array.isArray(result)) {
+        throw new Error("invalid_catalog_recent");
+      }
+      const { items } = result as { items?: unknown };
+      if (!Array.isArray(items) || items.length > limit) {
+        throw new Error("invalid_catalog_recent_items");
+      }
+      const seen = new Set<string>();
+      return items.map((value: unknown) => {
+        const model = decodeModel(value);
+        if (!validCatalogSlug(model.slug)) {
+          throw new Error("invalid_catalog_recent_slug");
+        }
+        if (seen.has(model.id)) {
+          throw new Error("duplicate_catalog_recent_model");
+        }
+        seen.add(model.id);
+        return model;
+      });
+    },
     async listPage(
       filters: PublicCatalogFilters = {},
       signal?: AbortSignal,
