@@ -5,7 +5,7 @@ import { ArrowRight, Folder } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { ArcadeCard } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
-import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
+import { createPublicCatalogGateway, validCatalogSlug } from "@/services/catalog/public-catalog-gateway";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import { formatModelCountLabel } from "@/lib/catalog-model-count";
 
@@ -93,6 +93,13 @@ export function CanonicalUniverseFolders({
 
   const folders = foldersQuery.data.items;
   const models = modelsQuery.data?.items ?? [];
+  // Only the eight already published and fetched preview models may become
+  // adjacent links. No pagination, new Worker queries or unverified slugs.
+  const previewSlugs = models.length >= 2 && models.length <= 8 &&
+    models.every((item) => validCatalogSlug(item.slug)) &&
+    new Set(models.map((item) => item.slug)).size === models.length
+    ? models.map((item) => item.slug)
+    : [];
 
   return (
     <div className="mt-6">
@@ -148,7 +155,10 @@ export function CanonicalUniverseFolders({
                   ref={universeReturnFocus?.path === currentFolderPath &&
                     universeReturnFocus.slug === model.slug
                     ? returnModelRef : undefined}
-                  state={{ catalogReturnUniverse: { category, franchise, folder: parent } }}
+                  state={{
+                    catalogReturnUniverse: { category, franchise, folder: parent },
+                    universeSiblingSlugs: previewSlugs,
+                  }}
                   className="group block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                   aria-label={"Ver detalhes de " + model.name}
                 >

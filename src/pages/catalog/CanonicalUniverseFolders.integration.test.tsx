@@ -36,6 +36,14 @@ const model = {
   cover_storage_key: null,
 };
 
+const neighboringModel = {
+  ...model,
+  id: "mdl-a2",
+  slug: "nier-a2-nier",
+  code: "TS-A2",
+  name: "A2",
+};
+
 function Destination() {
   const location = useLocation();
   return <output data-testid="source-state">{JSON.stringify(location.state)}</output>;
@@ -57,7 +65,7 @@ describe("canonical Universe folder navigation", () => {
         });
       }
       if (url.pathname.endsWith("/api/catalog")) {
-        return Response.json({ items: [model], nextCursor: null });
+        return Response.json({ items: [model, neighboringModel], nextCursor: null });
       }
       throw new Error("unexpected_worker_request: " + url.pathname);
     });
@@ -103,6 +111,9 @@ describe("canonical Universe folder navigation", () => {
     fireEvent.click(link);
     expect(screen.getByTestId("source-state")).toHaveTextContent(
       '"catalogReturnUniverse":{"category":"games","franchise":"nier","folder":"heroes"}',
+    );
+    expect(screen.getByTestId("source-state")).toHaveTextContent(
+      '"universeSiblingSlugs":["nier-10h-nier","nier-a2-nier"]',
     );
     expect(io).toHaveBeenCalledTimes(2);
   });

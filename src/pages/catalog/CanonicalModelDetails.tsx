@@ -77,7 +77,9 @@ function catalogReturnPath(state: unknown): string {
 
 
 /** Use only a bounded same-page snapshot for adjacent-model links. */
-function adjacentCatalogModels(state: unknown, current: string | undefined): {
+function adjacentCatalogModels(
+  state: unknown, current: string | undefined, returnPath: string,
+): {
   previous: string | null;
   next: string | null;
 } {
@@ -85,11 +87,16 @@ function adjacentCatalogModels(state: unknown, current: string | undefined): {
   if (!current || !validCatalogSlug(current) ||
       !state || typeof state !== "object" || Array.isArray(state)) return absent;
   const values = state as Record<string, unknown>;
-  // A Universe folder has a different discovery scope. Never mix its
-  // navigation with the catalog's page snapshot.
-  if (values.catalogReturnUniverse !== undefined) return absent;
-  const entries = values.catalogSiblingSlugs;
-  if (!Array.isArray(entries) || entries.length < 2 || entries.length > 36 ||
+  // Catalog pages and Universe folders have separate validated navigation
+  // scopes, but reuse the same algorithm and never fetch adjacent pages.
+  const fromUniverse = values.catalogReturnUniverse !== undefined;
+  if (fromUniverse) {
+    if (!returnPath.startsWith(PUBLIC_ROUTES.catalog + "/") ||
+        values.catalogSiblingSlugs !== undefined) return absent;
+  } else if (values.universeSiblingSlugs !== undefined) return absent;
+  const entries = fromUniverse ? values.universeSiblingSlugs : values.catalogSiblingSlugs;
+  const maximum = fromUniverse ? 8 : 36;
+  if (!Array.isArray(entries) || entries.length < 2 || entries.length > maximum ||
       !entries.every((item): item is string =>
         typeof item === "string" && validCatalogSlug(item))) return absent;
   if (new Set(entries).size !== entries.length) return absent;
@@ -105,7 +112,7 @@ export default function CanonicalModelDetails() {
   const { id: slug } = useParams<{ id: string }>();
   const location = useLocation();
   const catalogReturnTo = catalogReturnPath(location.state);
-  const adjacentModels = adjacentCatalogModels(location.state, slug);
+  const adjacentModels = adjacentCatalogModels(location.state, slug, catalogReturnTo);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const galleryKeyboardHelpId = useId();
   const {
@@ -327,7 +334,9 @@ export default function CanonicalModelDetails() {
           </Link>
           {adjacentModels.previous || adjacentModels.next ? (
             <nav
-              aria-label="Navegação entre modelos desta página do catálogo"
+              aria-label={catalogReturnTo.startsWith(PUBLIC_ROUTES.catalog + "/")
+                ? "Navegação entre modelos desta pasta do Universo"
+                : "Navegação entre modelos desta página do catálogo"}
               className="mt-3 flex flex-wrap gap-3 text-sm"
             >
               {adjacentModels.previous ? (

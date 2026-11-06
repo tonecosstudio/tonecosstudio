@@ -248,6 +248,49 @@ describe("published model/gallery identity on the public detail page", () => {
     expect(io).toHaveBeenCalledTimes(2);
   });
 
+  it("navigates only verified Universe preview siblings without another catalog read", async () => {
+    const { io } = mountGallery({
+      total: 1,
+      returnState: {
+        catalogReturnUniverse: { category: "games", franchise: "nier", folder: "heroes" },
+        universeSiblingSlugs: ["other-one", "animal-original", "other-two"],
+      },
+    });
+    expect(screen.getByRole("link", { name: "Voltar à pasta" }))
+      .toHaveAttribute("href", "/universo/games/nier?folder=heroes");
+    expect(screen.getByRole("navigation", {
+      name: "Navegação entre modelos desta pasta do Universo",
+    })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Modelo anterior" }))
+      .toHaveAttribute("href", "/modelos/other-one");
+    expect(screen.getByRole("link", { name: "Próximo modelo" }))
+      .toHaveAttribute("href", "/modelos/other-two");
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    expect(io).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects invalid and mixed Universe navigation snapshots", async () => {
+    const scope = { category: "games", franchise: "nier", folder: "heroes" };
+    const invalid = [
+      { catalogReturnUniverse: scope, universeSiblingSlugs: ["animal-original", "../admin"] },
+      { catalogReturnUniverse: scope, universeSiblingSlugs: ["animal-original", "animal-original"] },
+      { catalogReturnUniverse: scope, universeSiblingSlugs: [
+        "animal-original", ...Array.from({ length: 8 }, (_, i) => "other-" + i),
+      ] },
+      { catalogReturnUniverse: scope, universeSiblingSlugs: ["a-model", "b-model"] },
+      { catalogReturnUniverse: scope, universeSiblingSlugs: ["animal-original", "other-one"],
+        catalogSiblingSlugs: ["animal-original", "other-two"] },
+      { catalogReturnUniverse: { category: "https://outside.test", franchise: "nier" },
+        universeSiblingSlugs: ["animal-original", "other-one"] },
+    ];
+    for (const returnState of invalid) {
+      const view = mountGallery({ total: 1, returnState });
+      expect(screen.queryByRole("link", { name: "Modelo anterior" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "Próximo modelo" })).not.toBeInTheDocument();
+      view.unmount();
+    }
+  });
+
   it("rejects untrusted or oversized adjacent-model navigation snapshots", async () => {
     const unsafe = [
       { catalogSiblingSlugs: ["animal-original", "../admin"] },
