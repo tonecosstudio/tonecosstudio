@@ -582,9 +582,6 @@ export default function CatalogModelsArcade() {
                           to={catalogModelDetailsPath(model.slug)}
                           ref={paging.scope === scope && paging.returnFocusSlug === model.slug
                             ? returnCardRef : undefined}
-                          onClick={() => setPaging({
-                            ...activePage, returnFocusSlug: model.slug,
-                          })}
                           state={{
                             catalogReturnSearch: searchParams.toString(),
                             catalogSiblingSlugs: pageSlugs,
@@ -705,11 +702,6 @@ export default function CatalogModelsArcade() {
                     <SheetClose asChild>
                       <Link
                         to={catalogModelDetailsPath(item.slug)}
-                        onClick={() => {
-                          if (rows.some((row) => row.slug === item.slug)) {
-                            setPaging({ ...activePage, returnFocusSlug: item.slug });
-                          }
-                        }}
                         state={{ catalogReturnSearch: searchParams.toString() }}
                         className="flex min-w-0 flex-1 basis-36 items-center gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                       >

@@ -1,4 +1,4 @@
-import { useId, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useState, type KeyboardEvent } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
@@ -108,7 +108,28 @@ export default function CanonicalModelDetails() {
   const adjacentModels = adjacentCatalogModels(location.state, slug);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const galleryKeyboardHelpId = useId();
-  const { selectedModels, setSelectedModels } = useCatalogBrowsing();
+  const { selectedModels, setSelectedModels, setPaging } = useCatalogBrowsing();
+  // Record the return target AFTER navigation, not on the outgoing link:
+  // otherwise a same-turn render can consume it before the list unmounts.
+  // Catalog return filters were already validated by catalogReturnPath.
+  useEffect(() => {
+    if (!slug || !validCatalogSlug(slug) ||
+        !location.state || typeof location.state !== "object" ||
+        Array.isArray(location.state)) return;
+    const raw = (location.state as Record<string, unknown>).catalogReturnSearch;
+    if (typeof raw !== "string" || raw.length > 1024 ||
+        !catalogReturnTo.startsWith(PUBLIC_ROUTES.catalogModels)) return;
+    const params = new URLSearchParams(catalogReturnTo.split("?")[1] ?? "");
+    const scope = JSON.stringify(
+      ["q", "category", "franchise", "folder"].map((key) => params.get(key)?.trim() ?? ""),
+    );
+    setPaging((current) => {
+      if (current.scope === scope && current.returnFocusSlug === slug) return current;
+      return current.scope === scope
+        ? { ...current, returnFocusSlug: slug }
+        : { scope, cursors: [undefined], index: 0, returnFocusSlug: slug };
+    });
+  }, [slug, location.state, catalogReturnTo, setPaging]);
   const gateway = useMemo(() => {
     if (!API_BASE) return null;
     try {
