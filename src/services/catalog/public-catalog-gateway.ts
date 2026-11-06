@@ -33,6 +33,8 @@ export type PublicCatalogFolder = {
   label: string;
   count: number;
   hasChildren: boolean;
+  /** Missing on older Workers; null means the indexed lookup found no cover. */
+  coverStorageKey?: string | null;
 };
 export type PublicCatalogFolderPage = {
   current: { id: string; label: string; count: number } | null;
@@ -475,7 +477,7 @@ export function createPublicCatalogGateway(
         if (!value || typeof value !== "object" || Array.isArray(value)) {
           throw new Error("invalid_catalog_folder");
         }
-        const row = value as { id?: unknown; label?: unknown; count?: unknown; hasChildren?: unknown };
+        const row = value as { id?: unknown; label?: unknown; count?: unknown; hasChildren?: unknown; cover_storage_key?: unknown };
         const id = decodePath(row.id, "folder_id");
         if (seen.has(id)) throw new Error("duplicate_catalog_folder");
         seen.add(id);
@@ -490,6 +492,9 @@ export function createPublicCatalogGateway(
           label: requiredText(row.label, "folder_label"),
           count: wholeNumber(row.count, "folder_count"),
           hasChildren: row.hasChildren,
+          ...(row.cover_storage_key === undefined ? {} : {
+            coverStorageKey: optionalText(row.cover_storage_key, "folder_cover_key"),
+          }),
         };
       });
       return { current, trail, items };
