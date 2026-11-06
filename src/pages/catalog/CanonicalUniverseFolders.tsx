@@ -45,13 +45,14 @@ export function CanonicalUniverseFolders({
     staleTime: 15 * 60 * 1000,
   });
 
-  // One bounded catalog page supplies both folder cover candidates and the
-  // eight existing preview cards. Never issue one request per folder.
+  // A bounded page supplies folder covers and eight preview cards. When there
+  // are no subfolders, avoid fetching 60 models for just eight preview cards.
+  const modelLimit = foldersQuery.data?.items.length ? 60 : 8;
   const modelsQuery = useQuery({
-    queryKey: ["tonecos-universe-folder-models", category, franchise, parent],
+    queryKey: ["tonecos-universe-folder-models", category, franchise, parent, modelLimit],
     queryFn: ({ signal }) =>
       gateway.listPage(
-        { category, franchise, folder: parent || undefined, limit: 60 },
+        { category, franchise, folder: parent || undefined, limit: modelLimit },
         signal,
       ),
     enabled: foldersQuery.isSuccess,
@@ -128,7 +129,7 @@ export function CanonicalUniverseFolders({
                   {cover ? (
                     <>
                       <div className="absolute inset-0 bg-[hsl(0,0%,8%)]" aria-hidden="true">
-                        <CanonicalCatalogImage src={cover} alt="" imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none" />
+                        <CanonicalCatalogImage src={cover} alt="" imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none" fallbackIcon={<Folder className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />} fallbackLabel="" fallbackClassName="flex h-full w-full items-center justify-center" />
                       </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/65 to-black/15" aria-hidden="true" />
                     </>
