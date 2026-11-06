@@ -350,6 +350,50 @@ describe("published model/gallery identity on the public detail page", () => {
     expect(io).toHaveBeenCalledTimes(3);
   });
 
+  it("supports scoped keyboard arrows and Home/End with focus and live position updates", async () => {
+    const { io } = mountGallery({ total: 2, completeWithStrayCursor: true });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
+    const second = await screen.findByRole("button", { name: "Ver imagem 2 de Animal original" });
+    const first = screen.getByRole("button", { name: "Ver imagem 1 de Animal original" });
+    const counter = screen.getByText("Imagem 1 de 2 carregadas");
+    expect(counter).toHaveAttribute("aria-live", "polite");
+    expect(counter).toHaveAttribute("aria-atomic", "true");
+    expect(screen.getByRole("group", { name: "Miniaturas da galeria" }))
+      .toHaveAttribute("aria-describedby");
+    expect(io).toHaveBeenCalledTimes(3);
+
+    first.focus();
+    fireEvent.keyDown(first, { key: "ArrowRight" });
+    expect(second).toHaveFocus();
+    expect(second).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Imagem 2 de 2 carregadas")).toBeInTheDocument();
+
+    fireEvent.keyDown(second, { key: "Home" });
+    expect(first).toHaveFocus();
+    expect(first).toHaveAttribute("aria-pressed", "true");
+    fireEvent.keyDown(first, { key: "End" });
+    expect(second).toHaveFocus();
+    expect(second).toHaveAttribute("aria-pressed", "true");
+    fireEvent.keyDown(second, { key: "ArrowRight" });
+    expect(first).toHaveFocus();
+
+    // Navigation buttons support arrows while retaining their focus.
+    const next = screen.getByRole("button", { name: "Próxima imagem" });
+    next.focus();
+    fireEvent.keyDown(next, { key: "ArrowRight" });
+    expect(next).toHaveFocus();
+    expect(screen.getByText("Imagem 2 de 2 carregadas")).toBeInTheDocument();
+    fireEvent.keyDown(next, { key: "ArrowLeft", altKey: true });
+    expect(screen.getByText("Imagem 2 de 2 carregadas")).toBeInTheDocument();
+
+    // Arrow keys outside the gallery must not change the selected photograph.
+    const back = screen.getByRole("link", { name: "Voltar ao catálogo" });
+    fireEvent.keyDown(back, { key: "ArrowLeft" });
+    expect(screen.getByText("Imagem 2 de 2 carregadas")).toBeInTheDocument();
+    expect(io).toHaveBeenCalledTimes(3);
+  });
+
   it("blocks a truncated gallery with no next cursor rather than showing a false total", async () => {
     const { io } = mountGallery({ total: 2, incompleteWithoutCursor: true });
     await screen.findByText("A galeria não pôde ser carregada.");

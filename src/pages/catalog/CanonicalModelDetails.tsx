@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState, type KeyboardEvent } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
@@ -81,6 +81,7 @@ export default function CanonicalModelDetails() {
   const location = useLocation();
   const catalogReturnTo = catalogReturnPath(location.state);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
+  const galleryKeyboardHelpId = useId();
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
   const gateway = useMemo(() => {
     if (!API_BASE) return null;
@@ -178,6 +179,35 @@ export default function CanonicalModelDetails() {
     const nextIndex = (activeImageIndex + direction + images.length) % images.length;
     setActiveImageId(images[nextIndex].id);
   }
+  function handleGalleryKeyboard(event: KeyboardEvent<HTMLElement>) {
+    if (
+      images.length < 2 || event.altKey || event.ctrlKey ||
+      event.metaKey || event.shiftKey
+    ) return;
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+
+    // For focused thumbnails use their position; navigation controls use the
+    // selected image. The handler is attached only inside this gallery.
+    const focusedThumbnail = (event.target as HTMLElement)
+      .closest<HTMLButtonElement>("button[data-gallery-thumbnail]");
+    const fromIndex = focusedThumbnail
+      ? Number(focusedThumbnail.dataset.galleryIndex)
+      : activeImageIndex;
+    if (!Number.isInteger(fromIndex) || fromIndex < 0 || fromIndex >= images.length)
+      return;
+    const targetIndex = event.key === "Home" ? 0
+      : event.key === "End" ? images.length - 1
+      : (fromIndex + (event.key === "ArrowRight" ? 1 : -1) + images.length) % images.length;
+    event.preventDefault();
+    setActiveImageId(images[targetIndex].id);
+    // Roving focus within the thumbnail grid; no focus jumps when the user
+    // operates the previous/next buttons or other controls.
+    if (focusedThumbnail) {
+      event.currentTarget.querySelectorAll<HTMLButtonElement>(
+        "button[data-gallery-thumbnail]",
+      )[targetIndex]?.focus();
+    }
+  }
   const activeImageKey = activeImage
     ? (activeImage.variantKeys.detail ??
       activeImage.variantKeys.card ??
@@ -273,7 +303,16 @@ export default function CanonicalModelDetails() {
                   />
                 </ArcadeCard>
                 {images.length > 1 ? (
-                  <nav aria-label="Navegação das imagens carregadas" className="mt-3 flex items-center justify-between gap-3">
+                  <nav
+                    aria-label="Navegação das imagens carregadas"
+                    aria-describedby={galleryKeyboardHelpId}
+                    onKeyDown={handleGalleryKeyboard}
+                    className="mt-3 flex items-center justify-between gap-3"
+                  >
+                    <span id={galleryKeyboardHelpId} className="sr-only">
+                      Use as setas esquerda e direita para trocar a foto,
+                      Home para a primeira e End para a última foto carregada.
+                    </span>
                     <button
                       type="button"
                       onClick={() => moveGalleryImage(-1)}
@@ -283,7 +322,11 @@ export default function CanonicalModelDetails() {
                       <ChevronLeft aria-hidden="true" size={18} />
                       <span className="hidden sm:inline">Anterior</span>
                     </button>
-                    <span className="text-center text-xs text-[hsl(0,0%,65%)]" aria-live="polite">
+                    <span
+                      className="text-center text-xs text-[hsl(0,0%,65%)]"
+                      aria-live="polite"
+                      aria-atomic="true"
+                    >
                       Imagem {activeImageIndex + 1} de {images.length} carregadas
                     </span>
                     <button
@@ -320,13 +363,21 @@ export default function CanonicalModelDetails() {
                   </div>
                 ) : images.length > 0 ? (
                   <>
-                    <div className="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-6">
+                    <div
+                      role="group"
+                      aria-label="Miniaturas da galeria"
+                      aria-describedby={images.length > 1 ? galleryKeyboardHelpId : undefined}
+                      onKeyDown={handleGalleryKeyboard}
+                      className="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-6"
+                    >
                       {images.map((image, index) => {
                         const src = imageUrl(image);
                         return (
                           <button
                             key={image.id}
                             type="button"
+                            data-gallery-thumbnail
+                            data-gallery-index={index}
                             onClick={() => setActiveImageId(image.id)}
                             aria-label={
                               "Ver imagem " + (index + 1) + " de " + model.name
