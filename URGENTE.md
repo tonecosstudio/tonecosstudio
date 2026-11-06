@@ -869,3 +869,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** após o conector Cloudflare voltar, publicar uma prévia do HEAD funcional `7c23435` e confirmar um único marco main na rota Universo; depois continuar pela próxima rota pública do catálogo.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb`; não tratar `0dfc5f86` como prévia do HEAD atual; não gerar build apenas por mudanças documentais; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
+
+## Rodada 63 — Títulos completos nos cartões de referência (05/11/2026)
+
+- Base PR #4: `main` @ `fdd2992a7d20b4ca29163e9ec77e9f19f59d8f41`; HEAD funcional `834e86124afda276a4fda24e9b572b05443eea38` na branch `integration/tonecosstudio-canonical-20261101`. PR aberta/draft.
+- Na rota `/universo/animes-desenhos/cavaleiros-do-zodiaco`, a prévia visual anterior `0dfc5f86` (source `6634f26`) mostrou 23 pastas e 8 referências. QA em 280/320/359/360/390/414/640/768/1024/1440/1920 px: sem overflow; grades 1/1/1/2/2/2/3/3/4/4/4 para pastas e 2/2/2/2/2/2/3/3/4/4/4 para referências; breadcrumb e CTA de exploração com 44 px.
+- Achado reproduzível em 280 px: “Aspros de Gêmeos” tinha 72 px de altura de conteúdo, mas o cartão limitava o título a 48 px em duas linhas, escondendo a terceira linha. O commit `834e861` altera o componente compartilhado `src/pages/catalog/CanonicalUniverseFolders.tsx` para `line-clamp-3 sm:line-clamp-2` nos nomes dos modelos. Isso preserva o nome inteiro em cartões estreitos e volta a duas linhas com largura maior, sem edição manual por página.
+- GitHub Actions Quality Gate [#42143296058](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42143296058) concluiu SUCCESS. O job offline concluiu suas etapas, incluindo “Test public MVP frontend and catalog navigation”; os jobs dedicados ao build frontend foram pulados. Nenhum teste foi executado manualmente.
+- A integração Cloudflare retornou `Unknown tool`; ainda não há preview do SHA `834e861`. O preview `0dfc5f86` continua servindo o código anterior `6634f26`; produção, Worker, D1, R2, DNS e migrations permanecem inalterados.
+
+**NEXT_ACTION:** quando o conector Cloudflare voltar, criar uma prévia privada do HEAD `834e861` e confirmar em 280/320/360/390 px que “Aspros de Gêmeos” está inteiro; então seguir para a próxima franquia ou página de catálogo.
+
+**DO_NOT_REPEAT:** não usar `ef8ab5fb`; não tratar `0dfc5f86` como prévia do HEAD atual; não gerar build só por documentação; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
