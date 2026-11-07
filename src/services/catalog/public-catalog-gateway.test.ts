@@ -892,6 +892,51 @@ describe("external catalog media branding quarantine", () => {
     expect(io).toHaveBeenCalledTimes(2);
   });
 
+  it("hides all seven visually reviewed watermarked models across list, recent, detail and media", async () => {
+    // One bounded API page was visually reviewed. These exact IDs are the
+    // seven branded covers; A2 had no visible branding in its inspected cover.
+    const confirmedIds = [
+      "mdl_e8b7681b5258d694b9c4",
+      "mdl_027d30734c3c9227e9d5",
+      "mdl_0b1e74b6bb2af5eb9f40",
+      "mdl_2de23146ca8f98e21ac2",
+      "mdl_ed5c4dfc82890a6b34d3",
+      "mdl_0a45ae78a4b79c1998d7",
+      "mdl_af4a36b38f96100159cb",
+    ];
+    const excluded = confirmedIds.map((id, index) => ({
+      ...row,
+      id,
+      slug: "reviewed-model-" + index,
+      cover_storage_key: "media/" + id + "/img_original/card.webp",
+    }));
+    const bySlug = new Map(excluded.map((item) => [item.slug, item]));
+    const io = vi.fn(async (url: RequestInfo | URL) => {
+      const request = String(url);
+      if (request.includes("/api/recent?")) {
+        return Response.json({ items: [row, ...excluded] });
+      }
+      if (request.includes("/api/models/")) {
+        const slug = request.split("/api/models/")[1];
+        return Response.json(bySlug.get(slug));
+      }
+      return Response.json({ items: [row, ...excluded], nextCursor: "more-items" });
+    });
+    const api = createPublicCatalogGateway(
+      "https://example.test/catalogo-api", io as typeof fetch,
+    );
+    const page = await api.listPage({ limit: 8 });
+    expect(page.items.map((item) => item.slug)).toEqual([row.slug]);
+    expect(page.nextCursor).toBe("more-items");
+    expect((await api.listRecent(8)).map((item) => item.slug)).toEqual([row.slug]);
+    for (const item of excluded) {
+      expect(api.mediaUrl(item.cover_storage_key)).toBeNull();
+      await expect(api.getModel(item.slug)).rejects.toThrow("catalog_model_media_restricted");
+    }
+    expect(api.mediaUrl(row.cover_storage_key)).not.toBeNull();
+    expect(io).toHaveBeenCalledTimes(9);
+  });
+
   it("also quarantines publisher branding in collection and classification metadata", async () => {
     const collectionBranded = {
       ...row,
