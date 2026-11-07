@@ -212,6 +212,20 @@ function decodeModel(value: unknown): PublicCatalogModel {
 const EXTERNAL_MEDIA_BRAND = /(?:^|[^a-z0-9])special[\s._-]*stl(?:\.com)?(?=$|[^a-z0-9])/i;
 
 /**
+ * One image was matched visually, pixel-for-pixel by subject/composition,
+ * between the owner's SpecialSTL example and the actual public catalog cover
+ * of Ace Duck (TMNT), on 2026-11-06. The API does not identify the watermark
+ * in text metadata; quarantine by the model's exact published ID instead.
+ * A product's creator logo/Patreon credit alone never belongs in this list.
+ * Do not remove this entry without a verified replacement and permission.
+ */
+const CONFIRMED_SPECIALSTL_MODEL_IDS = new Set([
+  "mdl_ae8d28d2fa93b1367b0a", // as-tartarugas-ninja-ace-duck
+]);
+
+
+
+/**
  * A creator's own logo, signature or Patreon credit is not evidence of
  * unauthorized redistribution. Only explicitly identified redistribution
  * branding is blocked by the metadata rules below. Never quarantine a
@@ -222,7 +236,7 @@ function hasRestrictedExternalBrand(value: string | null | undefined): boolean {
 }
 
 function isPubliclyEligibleCatalogModel(model: PublicCatalogModel): boolean {
-  return ![
+  return !CONFIRMED_SPECIALSTL_MODEL_IDS.has(model.id) && ![
     model.slug, model.code, model.name, model.variantName,
     model.category, model.categorySlug, model.franchise, model.franchiseSlug,
     model.collection, model.folderPath, model.coverStorageKey,
@@ -288,6 +302,7 @@ export function createPublicCatalogGateway(
       // catalog API routes. Validate before turning untrusted keys into URLs.
       if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key)) return null;
       const segments = key.split("/");
+      if (CONFIRMED_SPECIALSTL_MODEL_IDS.has(segments[1] ?? "")) return null;
       if (
         segments.length < 2 ||
         segments.length > 17 ||
