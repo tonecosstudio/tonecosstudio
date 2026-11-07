@@ -35,6 +35,38 @@
       }
     },
     {
+      "modelId": "mdl_162e9d11b487cf173ecc",
+      "slug": "resident-evil-claire-redfield-modelo-anterior-01",
+      "coverStorageKey": "media/mdl_162e9d11b487cf173ecc/img_50c5cbfccea0958252cb/card.webp",
+      "evidence": "2026-11-07, original public cover inspected visually in enlarged contact sheet, catalog position #526 / lot 15: repeated 'STL by Specialstl.com' text across the image plus SpecialSTL logo at the bottom. Matched exact id, slug, cover_storage_key and reported image_count=1 from paginated public API snapshot; sculpture Claire Redfield.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_251df89eeba124ee1d85",
+      "slug": "final-fantasy-cloud-01",
+      "coverStorageKey": "media/mdl_251df89eeba124ee1d85/img_e1ee8da80e2476a75a33/card.webp",
+      "evidence": "2026-11-07, original public cover inspected visually in enlarged contact sheet, catalog position #533 / lot 15: repeated 'STL by Specialstl.com' text across the image plus SpecialSTL logo at the bottom. Matched exact id, slug, cover_storage_key and reported image_count=1 from paginated public API snapshot; sculpture Cloud 01.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_2f0f5af4db462c17aa78",
       "slug": "street-fighter-cammy-14",
       "coverStorageKey": "media/mdl_2f0f5af4db462c17aa78/img_5a16d7fc2bfe2de6daf7/card.webp",
@@ -99,6 +131,22 @@
       }
     },
     {
+      "modelId": "mdl_3ed9ae5d9f29642e9eb5",
+      "slug": "street-fighter-chun-li-04",
+      "coverStorageKey": "media/mdl_3ed9ae5d9f29642e9eb5/img_daf7a3618617bea6d23f/card.webp",
+      "evidence": "2026-11-07, original public cover inspected visually in enlarged contact sheet, catalog position #481 / lot 14: repeated 'STL by Specialstl.com' text across the image plus SpecialSTL logo at the bottom. Matched exact id, slug, cover_storage_key and reported image_count=1 from paginated public API snapshot; sculpture Chun-Li 04.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_40faaa1caefe3b42ca74",
       "slug": "street-fighter-cammy-11",
       "coverStorageKey": "media/mdl_40faaa1caefe3b42ca74/img_532871fa4b1057daf1a8/card.webp",
@@ -107,6 +155,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_4b780eac35abc084f80d",
+      "slug": "equipes-e-grupos-colossus-forca-fenix-diorama",
+      "coverStorageKey": "media/mdl_4b780eac35abc084f80d/img_f066040947461e8b340a/card.webp",
+      "evidence": "2026-11-07, original public cover inspected visually in enlarged contact sheet, catalog position #543 / lot 16: repeated 'STL by Specialstl.com' text across the image plus SpecialSTL logo at the bottom. Matched exact id, slug, cover_storage_key and reported image_count=1 from paginated public API snapshot; sculpture Colossus Força Fênix.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -291,6 +355,22 @@
       }
     },
     {
+      "modelId": "mdl_6c14d75f999df399818b",
+      "slug": "street-fighter-chun-li-17",
+      "coverStorageKey": "media/mdl_6c14d75f999df399818b/img_ed0186bdd9360e447166/card.webp",
+      "evidence": "2026-11-07, original public cover inspected visually in enlarged contact sheet, catalog position #488 / lot 14: repeated 'STL by Specialstl.com' text across the image plus SpecialSTL logo at the bottom. Matched exact id, slug, cover_storage_key and reported image_count=1 from paginated public API snapshot; sculpture Chun-Li 17.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_6cccea5deb539fc1b2ef",
       "slug": "as-tartarugas-ninja-casey-jones-02",
       "coverStorageKey": "media/mdl_6cccea5deb539fc1b2ef/img_c761738fc11277081b18/card.webp",
@@ -299,6 +379,38 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_7190a5575cc04b065459",
+      "slug": "street-fighter-chun-li-03",
+      "coverStorageKey": "media/mdl_7190a5575cc04b065459/img_3fd0610fac37a4519314/card.webp",
+      "evidence": "2026-11-07, original public cover inspected visually in enlarged contact sheet, catalog position #489 / lot 14: repeated 'STL by Specialstl.com' text across the image plus SpecialSTL logo at the bottom. Matched exact id, slug, cover_storage_key and reported image_count=1 from paginated public API snapshot; sculpture Chun-Li 03.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_7defd637cfc7b6663f16",
+      "slug": "street-fighter-chun-li-02",
+      "coverStorageKey": "media/mdl_7defd637cfc7b6663f16/img_1405f9a148d12af601a0/card.webp",
+      "evidence": "2026-11-07, original public cover inspected visually in enlarged contact sheet, catalog position #491 / lot 14: repeated 'STL by Specialstl.com' text across the image plus SpecialSTL logo at the bottom. Matched exact id, slug, cover_storage_key and reported image_count=1 from paginated public API snapshot; sculpture Chun-Li 02.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -387,6 +499,22 @@
       }
     },
     {
+      "modelId": "mdl_9e44ad425d7738222e26",
+      "slug": "final-fantasy-cloud-02",
+      "coverStorageKey": "media/mdl_9e44ad425d7738222e26/img_d37d5481d148932eae54/card.webp",
+      "evidence": "2026-11-07, original public cover inspected visually in enlarged contact sheet, catalog position #534 / lot 15: repeated 'STL by Specialstl.com' text across the image plus SpecialSTL logo at the bottom. Matched exact id, slug, cover_storage_key and reported image_count=1 from paginated public API snapshot; sculpture Cloud 02.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_a223603fde4b9d795a92",
       "slug": "street-fighter-cammy-06",
       "coverStorageKey": "media/mdl_a223603fde4b9d795a92/img_fcf602cb17f2f1284dc4/card.webp",
@@ -395,6 +523,38 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_a8a1fa881853f377c86c",
+      "slug": "equipes-e-grupos-ciclope-disparo-optico-sobre-destrocos",
+      "coverStorageKey": "media/mdl_a8a1fa881853f377c86c/img_777424729fdfbed87897/card.webp",
+      "evidence": "2026-11-07, original public cover inspected visually in enlarged contact sheet, catalog position #511 / lot 15: repeated 'STL by Specialstl.com' text across the image plus SpecialSTL logo at the bottom. Matched exact id, slug, cover_storage_key and reported image_count=1 from paginated public API snapshot; sculpture Ciclope.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_a8b9185fdc1ee0b247e5",
+      "slug": "street-fighter-chun-li-15",
+      "coverStorageKey": "media/mdl_a8b9185fdc1ee0b247e5/img_1fb9f6332d2d94c63a7d/card.webp",
+      "evidence": "2026-11-07, original public cover inspected visually in enlarged contact sheet, catalog position #495 / lot 14: repeated 'STL by Specialstl.com' text across the image plus SpecialSTL logo at the bottom. Matched exact id, slug, cover_storage_key and reported image_count=1 from paginated public API snapshot; sculpture Chun-Li 15.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -427,6 +587,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real authorized, unwatermarked photograph of the SAME sculpture and variant; preserve true sculptor credit; no cropping/erasing third-party marks or substituting a different sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_ad572268752760130d18",
+      "slug": "street-fighter-chun-li",
+      "coverStorageKey": "media/mdl_ad572268752760130d18/img_367bca6e42e58d2e347f/card.webp",
+      "evidence": "2026-11-07, original public cover inspected visually in enlarged contact sheet, catalog position #477 / lot 14: repeated 'STL by Specialstl.com' text across the image plus SpecialSTL logo at the bottom. Matched exact id, slug, cover_storage_key and reported image_count=1 from paginated public API snapshot; sculpture Chun Li.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,

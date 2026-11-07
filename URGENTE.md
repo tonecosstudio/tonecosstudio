@@ -1,5 +1,15 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 576 capas examinadas, 53 confirmações visuais (07/11/2026)
+
+- **Lotes 14, 15 e 16:** 108 capas de modelos 469–576 recuperadas em três consultas GET paginadas limitadas à API pública e armazenadas no cache local uma única vez. A verificação de IDs sobre os 16 snapshots comprovou **576 IDs únicos**. Foram geradas nove folhas de contato reais (12 capas cada), sem D1/R2 direto ou alterações de produção.
+- **11 novas imagens confirmadas visualmente, não apenas por texto de metadados:** Chun-Li/Chun Li 6 variantes (base, 04, 17, 03, 02, 15), Ciclope com disparo óptico, Claire Redfield (01), Cloud (01 e 02) e Colossus Força Fênix. Todas foram reexaminadas ampliadas, com `STL by Specialstl.com` repetido e logotipo SpecialSTL visível; ID, slug, `card.webp` e `image_count=1` verificados contra snapshots paginados. SSOT `src/services/catalog/specialstl-quarantine.json` agora totaliza **53 confirmações**, todas com `replacement.status=pending_authorized_clean_photo` e nenhuma substituição aprovada.
+- **Política de recuperação:** os modelos seguem preservados, só ficam ocultos no frontend desta PR Draft. Exigir fotografia real da MESMA escultura/variante sem marca SpecialSTL e com autorização de exibição, respeitando créditos de modeladores. Não apagar, recortar ou alterar marcas na imagem original. Ausência da marca nas demais capas não comprova licença nem valida galerias adicionais.
+- **NEXT_ACTION:** verificar resultado da suíte dinâmica do gateway (todos IDs), atualizar a prancha única offline para 576/16 lotes, prosseguir do cursor salvo em `catalog-snapshot-lote16.json` após Coringa `mdl_c6a96b072f4007bfd229`, sem nova infraestrutura nem novos PRs. **Produção NO-GO.**
+
+---
+
+
 ## SpecialSTL — 468 capas, 42 marcas confirmadas (07/11/2026)
 
 - **Lotes 11–13:** revisão visual de 108 capas (modelos 361 a 468) recuperadas uma vez pela API pública usando o cursor salvo do lote 10; **468 IDs únicos** acumulados. Contato real com 12 imagens por folha; fotos candidatas foram abertas em 576 px de altura, com logo roxo e texto repetido `STL by Specialstl.com` inspecionados diretamente. Créditos autorais legítimos não são prova de redistribuição.
