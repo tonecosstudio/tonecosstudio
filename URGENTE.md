@@ -1,5 +1,16 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 360 capas revisadas; 29 confirmadas (07/11/2026)
+
+- **Lotes 08–10 concluídos com cursor persistido:** 108 novas capas de modelos 253–360 via três GETs limitados da API pública de leitura; 360 IDs distintos nos dez lotes, fotografias reais mantidas em cache no Desktop, folhas de contato com 12 miniaturas para análise visual. Nenhuma varredura D1/R2 e nenhuma mutação do Worker ou de produção.
+- **9 novos casos visualmente comprovados:** Besta Alada, Bison, Blanka (2), Blue Mary (2), Bolg, Cable e Cable com Deadpool. Todas as nove capas foram reabertas no tamanho original; mostram assinatura repetida `STL by Specialstl.com` e logotipo roxo SpecialSTL. ID, slug e cover_storage_key exatos foram conferidos no inventário da API. Somando com os 20 anteriores, `src/services/catalog/specialstl-quarantine.json` contém agora **29 IDs confirmados**.
+- **Reposição, não apagamento:** cada entrada tem `replacement.status=pending_authorized_clean_photo` e `approvedImageStorageKey=null`; um novo arquivo somente será aceito quando for foto REAL, autorizada e sem marca de redistribuição da MESMA escultura/variante, preservando o crédito ao escultor. O gate frontend continua ocultando o modelo inteiro até a reposição e QA; não remover marca por recorte/edição da foto antiga.
+- **Regressão existente:** `public-catalog-gateway.test.ts` percorre dinamicamente todos os IDs em `confirmed`; verificar CI de integração da branch antes de qualquer merge. Ausência da marca nas 331 demais capas não atesta proveniência/uso licenciado, e as galerias além da capa não foram examinadas.
+- **NEXT_ACTION:** atualizar a prancha offline principal para 360 capas/10 lotes, inspecionar o cursor preservado para modelo 361 e continuar revisão incremental, com ênfase na substituição legal das fotos. Produção e Cloudflare Access permanecem intactos. Publicação pública **NO-GO**.
+
+---
+
+
 ## SpecialSTL — 252 capas examinadas; 20 bloqueios comprovados (07/11/2026)
 
 - **Execução:** pranchas reais 05–07 (108 capas novas) revisadas visualmente via cache local no desktop; 7 lotes de 36, **252 IDs únicos**, usando somente 3 consultas paginadas públicas novas ao catálogo e 108 downloads de capas, sem varredura direta D1/R2.
