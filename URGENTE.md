@@ -1,5 +1,15 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 1.008 capas revisadas / 82 casos confirmados (07/11/2026)
+
+- **Lotes 26–28 concluídos:** modelos 901–1.008, três consultas GET paginadas de 36 itens à API pública e 108 imagens originais salvas em cache. Verificados **1.008 IDs distintos** nos 28 snapshots, sem repetir os anteriores. Nove folhas de contato novas, inspeção somente das capas; sem acesso direto D1/R2, mutação do Worker ou produção.
+- **Apenas uma nova imagem com prova visual direta:** `Gohan e Piccolo` (`mdl_8537ae259a51875e9cd0`, modelo #929) exibiu repetidamente `STL by Specialstl.com` e logotipo roxo SpecialSTL na foto original ampliada. Chave exata e image_count=1 conferidos no snapshot. Outras 107 capas não foram adicionadas à quarentena; logos legítimos dos artistas e Patreon continuam preservados. Isso **não** atesta a licença das outras fotos.
+- **SSOT:** `src/services/catalog/specialstl-quarantine.json` agora tem **82 IDs confirmados**, todos `pending_authorized_clean_photo`; nenhuma foto limpa aprovada, nenhuma exclusão de modelo ou edição da fotografia original. Reposição somente por foto REAL da MESMA escultura/variante com direitos de exibição, preservando créditos do criador.
+- **NEXT_ACTION:** atualizar a prancha offline única no Desktop para 1.008/28 lotes, confirmar testes e CI existentes, e retomar pelo `catalog-snapshot-lote28.json`, após `Goku e Vegeta` (`mdl_2144b1cdb900cc99db1a`), posição **1.009**. Prancha para curadoria interna, sem deploy no site. Produção pública **NO-GO**.
+
+---
+
+
 ## SpecialSTL — 900 capas, 81 casos visualmente confirmados (07/11/2026)
 
 - **Lotes 23–25 concluídos:** 108 novas capas reais (modelos 793–900) obtidas da API pública em 3 consultas GET de 36, baixadas uma única vez para cache local e examinadas em nove folhas de contato. **900 IDs únicos**, sem repetição. Zero acesso direto/mutação D1/R2, Worker, produção.

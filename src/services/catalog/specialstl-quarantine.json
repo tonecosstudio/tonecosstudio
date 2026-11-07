@@ -739,6 +739,22 @@
       }
     },
     {
+      "modelId": "mdl_8537ae259a51875e9cd0",
+      "slug": "dragon-ball-gohan-e-piccolo",
+      "coverStorageKey": "media/mdl_8537ae259a51875e9cd0/img_890d6a9d327767b77842/card.webp",
+      "evidence": "2026-11-07: visually confirmed by direct examination of the original downloaded public card.webp, catalog item #929, lot 26, Gohan e Piccolo. Repeated 'STL by Specialstl.com' text appears throughout the image, plus purple SpecialSTL logo at the foot of the sculpture. Exact ID/slug/media key and image_count=1 checked against paginated public catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, genuinely unwatermarked photograph of this exact sculpture/variant, with documented permission for TONART public presentation, preserving original sculptor credits. Do not remove/crop third-party watermark or replace with a different sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_85cf94f803b39566a771",
       "slug": "street-fighter-blanka-chibi",
       "coverStorageKey": "media/mdl_85cf94f803b39566a771/img_1c560ec5b395a3dd05e2/card.webp",
