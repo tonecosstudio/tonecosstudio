@@ -1,5 +1,15 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 1.548 capas / 154 casos confirmados (07/11/2026)
+
+- **Lotes 38–43, somente leitura:** 216 novos modelos (#1.333–1.548) obtidos em seis GETs públicos de 36 com cursor salvo, 216 capas novas cacheadas e 18 folhas de contato. Checados os 216 IDs únicos nos novos snapshots, mais 1.332 únicos já verificados; nenhuma consulta direta D1/R2, nenhuma alteração no Worker/Pages/produção.
+- **33 marcas confirmadas na própria imagem ampliada:** Ken (2), Kimberly, King, Kintaro, Kitana, Kitty Pryde, Krang, Kratos (10), Kula Diamond, Kung Lao, Lara Croft (2), Gogeta, Goku (2), Vegeta, Legolas, Leon (2), Lily, Liu Kang (2), Logan. Em todas há repetição `STL by Specialstl.com` e logotipo roxo; IDs e chaves exatas da capa confrontados com os snapshots. O SSOT `src/services/catalog/specialstl-quarantine.json` passou de 121 para **154 casos**.
+- **Substituição sem intervenção na obra:** preservar arquivo original e modelo, manter `replacement.status=pending_authorized_clean_photo` e `approvedImageStorageKey=null`; somente foto real com direitos de publicação e da MESMA escultura pode liberar a apresentação. Logotipos de escultores/Patreon/estúdios distintos não foram classificados como SpecialSTL; a ausência da marca nas outras 1.394 capas não atesta licença. Galerias além das capas não foram revistas.
+- **NEXT_ACTION:** rodar testes dinâmicos existentes, atualizar prancha offline consolidada para 1.548/43 lotes e continuar pelo cursor de `catalog-snapshot-lote43.json`, após Lucy (`mdl_3adc179ddcf21c94b22f`), próximo modelo **1.549**. Manter a PR #4 Draft, nenhuma nova PR ou workflow, lançamento público **NO-GO**.
+
+---
+
+
 ## SpecialSTL — 1.332 capas, 121 casos confirmados (07/11/2026)
 
 - **Lotes 32–37 concluídos em rodada única:** 216 novos modelos (1.117 a 1.332) recuperados em seis GETs públicos paginados com cursor persistido; 216 capas novas cacheadas e 18 folhas de contato. Script validou **1.332 IDs únicos** incluindo lotes anteriores. Nenhum acesso direto D1/R2 ou atualização do Worker, Pages ou produção.
