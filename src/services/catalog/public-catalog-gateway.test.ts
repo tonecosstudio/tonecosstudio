@@ -892,6 +892,42 @@ describe("external catalog media branding quarantine", () => {
     expect(io).toHaveBeenCalledTimes(2);
   });
 
+  it("quarantines the exact Ace Duck SpecialSTL photo even without branded text metadata", async () => {
+    // Public catalog: Ace Duck is the actual photo supplied by the owner.
+    // All human-readable fields and storage paths lack SpecialSTL wording.
+    const aceDuck = {
+      ...row,
+      id: "mdl_ae8d28d2fa93b1367b0a",
+      slug: "as-tartarugas-ninja-ace-duck",
+      name: "Ace duck",
+      collection: "Ace Duck",
+      cover_storage_key:
+        "media/mdl_ae8d28d2fa93b1367b0a/img_1ccf2edb6736ca445dea/card.webp",
+    };
+    const io = vi.fn(async (request: RequestInfo | URL) => {
+      const uri = String(request);
+      if (uri.includes("/api/models/")) return Response.json(aceDuck);
+      if (uri.includes("/api/recent?")) return Response.json({ items: [row, aceDuck] });
+      return Response.json({ items: [row, aceDuck], nextCursor: "more-results" });
+    });
+    const api = createPublicCatalogGateway(
+      "https://example.test/catalogo-api", io as typeof fetch,
+    );
+    const listing = await api.listPage({ limit: 8 });
+    expect(listing.items.map((item) => item.id)).toEqual([row.id]);
+    expect(listing.nextCursor).toBe("more-results");
+    expect((await api.listRecent(6)).map((item) => item.id)).toEqual([row.id]);
+    await expect(api.getModel(aceDuck.slug)).rejects.toThrow(
+      "catalog_model_media_restricted",
+    );
+    expect(api.mediaUrl(aceDuck.cover_storage_key)).toBeNull();
+    expect(api.mediaUrl(
+      "media/mdl_ae8d28d2fa93b1367b0a/another-image/detail.webp",
+    )).toBeNull();
+    expect(api.mediaUrl(row.cover_storage_key)).not.toBeNull();
+    expect(io).toHaveBeenCalledTimes(3);
+  });
+
   it("keeps artist/studio credits visible; logos are not evidence of unauthorized redistribution", async () => {
     // These seven were previously incorrectly blocked solely because their
     // covers credit the sculptor or studio (including visible Patreon links).
