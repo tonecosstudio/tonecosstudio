@@ -892,6 +892,38 @@ describe("external catalog media branding quarantine", () => {
     expect(io).toHaveBeenCalledTimes(2);
   });
 
+  it("also quarantines publisher branding in collection and classification metadata", async () => {
+    const collectionBranded = {
+      ...row,
+      id: "mdl-collection-branded",
+      slug: "apparently-clean-model",
+      collection: "SpecialSTL.com releases",
+    };
+    const categoryBranded = {
+      ...row,
+      id: "mdl-category-branded",
+      slug: "another-clean-model",
+      category_slug: "special-stl",
+    };
+    const io = vi.fn(async (url: RequestInfo | URL) => {
+      const path = String(url);
+      if (path.includes("/api/recent?")) {
+        return Response.json({ items: [row, collectionBranded, categoryBranded] });
+      }
+      if (path.includes("/api/models/")) return Response.json(collectionBranded);
+      return Response.json({ items: [row, collectionBranded, categoryBranded], nextCursor: null });
+    });
+    const api = createPublicCatalogGateway(
+      "https://example.test/catalogo-api", io as typeof fetch,
+    );
+    expect((await api.listPage()).items.map((item) => item.id)).toEqual(["mdl-123"]);
+    expect((await api.listRecent()).map((item) => item.id)).toEqual(["mdl-123"]);
+    await expect(api.getModel("apparently-clean-model")).rejects.toThrow(
+      "catalog_model_media_restricted",
+    );
+    expect(io).toHaveBeenCalledTimes(3);
+  });
+
   it("does not expose identified branded models through a direct detail link", async () => {
     const io = vi.fn(async () => Response.json(branded));
     const api = createPublicCatalogGateway(
