@@ -1,5 +1,15 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 1.332 capas, 121 casos confirmados (07/11/2026)
+
+- **Lotes 32–37 concluídos em rodada única:** 216 novos modelos (1.117 a 1.332) recuperados em seis GETs públicos paginados com cursor persistido; 216 capas novas cacheadas e 18 folhas de contato. Script validou **1.332 IDs únicos** incluindo lotes anteriores. Nenhum acesso direto D1/R2 ou atualização do Worker, Pages ou produção.
+- **31 novas marcas SpecialSTL comprovadas em fotografias ampliadas:** Hobbiton bonsai, Homem-Aranha contra Doutor Octopus, Indiana Jones, Iori Yagami, Jackalman, Jade, Jax, Jean Grey (4), Jessie, Jill Valentine, Jinx, Jiraiya, Jiren, Johnny Cage, JP, Juggernaut (3, inclusive com Colossus), Juri (8) e Kabal (2). Todas as 31 capas exibem repetidamente `STL by Specialstl.com` e logotipo roxo, verificadas por ID, slug, `card.webp` e image_count=1 nos snapshots públicos. `src/services/catalog/specialstl-quarantine.json` agora tem **121 registros**.
+- **Quarentena temporária e reposição legal:** preservar cada modelo e arquivo original, ocultar somente na apresentação da PR Draft; `replacement.status=pending_authorized_clean_photo` sem imagem aprovada. Reativar apenas com foto real, autorizada e sem marca de redistribuição da **mesma escultura/variante**, mantendo crédito autoral original. Logos de estúdios, Patreon e outros criadores **não** foram confundidos com SpecialSTL. As outras 1.211 capas não foram certificadas como licenciadas ou limpas; galerias completas não foram inspecionadas.
+- **NEXT_ACTION:** validar a suíte dinâmica existente, atualizar prancha única offline para 1.332/37 lotes, retomar via `catalog-snapshot-lote37.json` após Kamen Rider Black `mdl_e3fad3ac20db0c5bb933`, próximo modelo **1.333**. Nada de PR, workflow ou deploy adicional. **NO-GO** público.
+
+---
+
+
 ## SpecialSTL — 1.116 capas revisadas, 90 confirmadas (07/11/2026)
 
 - **Lotes 29–31:** 108 capas reais dos modelos 1.009–1.116 recuperadas por três GETs públicos paginados, 108 fotos armazenadas uma única vez em cache no Desktop; verificados **1.116 IDs únicos**, 31 snapshots de 36. Nove folhas de contato novas, inspeção de capa sem acesso direto D1/R2, Worker ou produção.

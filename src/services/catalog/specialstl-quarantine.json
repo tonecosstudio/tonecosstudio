@@ -3,6 +3,22 @@
   "policy": "Confirmed SpecialSTL image only; creator logos and Patreon credits are not evidence.",
   "confirmed": [
     {
+      "modelId": "mdl_0103db191730eff9600b",
+      "slug": "equipes-e-grupos-juggernaut-estatua-cinza-tres-vistas",
+      "coverStorageKey": "media/mdl_0103db191730eff9600b/img_65787663652d88fe661d/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1284 (lot 36), Juggernaut. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_037e43a977c232cb4ded",
       "slug": "o-senhor-dos-aneis-gollum",
       "coverStorageKey": "media/mdl_037e43a977c232cb4ded/img_bf1a8b21d872bf7c65ec/card.webp",
@@ -67,6 +83,22 @@
       }
     },
     {
+      "modelId": "mdl_0fd1235276e31d1549f2",
+      "slug": "street-fighter-juri-03",
+      "coverStorageKey": "media/mdl_0fd1235276e31d1549f2/img_edb6f06979176a48e9b0/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1296 (lot 36), Juri. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_162e9d11b487cf173ecc",
       "slug": "resident-evil-claire-redfield-modelo-anterior-01",
       "coverStorageKey": "media/mdl_162e9d11b487cf173ecc/img_50c5cbfccea0958252cb/card.webp",
@@ -115,6 +147,22 @@
       }
     },
     {
+      "modelId": "mdl_1dfdb586b0a5d497b8bb",
+      "slug": "mortal-kombat-kabal",
+      "coverStorageKey": "media/mdl_1dfdb586b0a5d497b8bb/img_e2df05e3b050fa1a4540/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1320 (lot 37), Kabal. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_209e99cf0f6d2edfc188",
       "slug": "equipes-e-grupos-gambit-energia-rosa-e-cartas-diorama",
       "coverStorageKey": "media/mdl_209e99cf0f6d2edfc188/img_a11b14f5f3a0bc0470db/card.webp",
@@ -155,6 +203,38 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_278989a41cc8390c18a3",
+      "slug": "resident-evil-jill-valentine",
+      "coverStorageKey": "media/mdl_278989a41cc8390c18a3/img_573278317312ddb626f9/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1253 (lot 35), Jill Valentine. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_294355c7040c1f151b5e",
+      "slug": "dragon-ball-jiren-estatua-colorida-em-pe",
+      "coverStorageKey": "media/mdl_294355c7040c1f151b5e/img_56801ebba02d0b2a720f/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1266 (lot 36), Jiren. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -243,6 +323,22 @@
       }
     },
     {
+      "modelId": "mdl_391873f4643246b9fbab",
+      "slug": "the-king-of-fighters-iori-yagami",
+      "coverStorageKey": "media/mdl_391873f4643246b9fbab/img_4535c8d6ec2752293fb2/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1209 (lot 34), Iori Yagami. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_3d314541143114aa1927",
       "slug": "dragon-ball-freeza-com-esfera-de-energia-em-diorama",
       "coverStorageKey": "media/mdl_3d314541143114aa1927/img_860782f79acc6e6ce7d7/card.webp",
@@ -267,6 +363,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_3dc3334d332145a0d69c",
+      "slug": "equipes-e-grupos-jean-grey-estatua-cinza-com-chamas-na-base",
+      "coverStorageKey": "media/mdl_3dc3334d332145a0d69c/img_24484faa093e41ae1b7e/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1236 (lot 35), Jean Grey. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -435,6 +547,22 @@
       }
     },
     {
+      "modelId": "mdl_51579d15f98c56dab2c0",
+      "slug": "street-fighter-jp",
+      "coverStorageKey": "media/mdl_51579d15f98c56dab2c0/img_08b4aa51b4c2a11784c8/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1281 (lot 36), JP. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_5802e569799c36887156",
       "slug": "street-fighter-bison-02",
       "coverStorageKey": "media/mdl_5802e569799c36887156/img_990de42f410d8cab00ed/card.webp",
@@ -547,6 +675,22 @@
       }
     },
     {
+      "modelId": "mdl_606186469e9e63417669",
+      "slug": "equipes-e-grupos-juggernaut-em-pe-com-bracos-cruzados",
+      "coverStorageKey": "media/mdl_606186469e9e63417669/img_e9fe7f724bd2e24b920d/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1287 (lot 36), Juggernaut. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_658ed6136d83cd507d82",
       "slug": "equipes-e-grupos-dentes-de-sabre-agachado-sobre-neve",
       "coverStorageKey": "media/mdl_658ed6136d83cd507d82/img_01d23dfca9d550a840b0/card.webp",
@@ -555,6 +699,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_65a9058248df4ba971c9",
+      "slug": "street-fighter-juri-02",
+      "coverStorageKey": "media/mdl_65a9058248df4ba971c9/img_a4915375bdaa8937e9bc/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1300 (lot 37), Juri. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -659,6 +819,22 @@
       }
     },
     {
+      "modelId": "mdl_6f4b8079266e5b4bf72f",
+      "slug": "street-fighter-juri-07",
+      "coverStorageKey": "media/mdl_6f4b8079266e5b4bf72f/img_4e643e8b3b0c9d1a9d23/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1301 (lot 37), Juri. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_6ffd1ecee0345c7cedf9",
       "slug": "o-senhor-dos-aneis-gimli",
       "coverStorageKey": "media/mdl_6ffd1ecee0345c7cedf9/img_f08033f26ba302d290fc/card.webp",
@@ -755,6 +931,22 @@
       }
     },
     {
+      "modelId": "mdl_7ad57b284173f430ce73",
+      "slug": "equipes-e-grupos-juggernaut-e-colossus",
+      "coverStorageKey": "media/mdl_7ad57b284173f430ce73/img_9fd98c50c16a16122f1f/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1295 (lot 36), Juggernaut e colossus. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_7defd637cfc7b6663f16",
       "slug": "street-fighter-chun-li-02",
       "coverStorageKey": "media/mdl_7defd637cfc7b6663f16/img_1405f9a148d12af601a0/card.webp",
@@ -835,6 +1027,22 @@
       }
     },
     {
+      "modelId": "mdl_8629304b37c612d232ac",
+      "slug": "herois-individuais-homem-aranha-vs-doutor-octopus-01",
+      "coverStorageKey": "media/mdl_8629304b37c612d232ac/img_68b8967efad4e178a541/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1134 (lot 32), Homem aranha vs doutor octopus 01. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_86be0957cef65afe96f4",
       "slug": "street-fighter-crimson-viper",
       "coverStorageKey": "media/mdl_86be0957cef65afe96f4/img_bde2c3b57e1852835763/card.webp",
@@ -883,6 +1091,22 @@
       }
     },
     {
+      "modelId": "mdl_89274d3168723a7915da",
+      "slug": "mortal-kombat-johnny-cage",
+      "coverStorageKey": "media/mdl_89274d3168723a7915da/img_381420b0e0b827085bb2/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1277 (lot 36), Johnny Cage. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_8945c99aa56b6cf7b9f1",
       "slug": "mortal-kombat-baraka-chibi",
       "coverStorageKey": "media/mdl_8945c99aa56b6cf7b9f1/img_ddbd380199de4ee80c43/card.webp",
@@ -891,6 +1115,38 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real authorized, unwatermarked photograph of the SAME sculpture and variant; preserve true sculptor credit; no cropping/erasing third-party marks or substituting a different sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_8c5f0f18662de3c15090",
+      "slug": "equipes-e-grupos-jean-grey-fenix-diorama-azul",
+      "coverStorageKey": "media/mdl_8c5f0f18662de3c15090/img_6f97a0ffd5543ad7e845/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1238 (lot 35), Jean Grey. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_8c891c71df367dd97465",
+      "slug": "street-fighter-juri-08",
+      "coverStorageKey": "media/mdl_8c891c71df367dd97465/img_33e5639caca5e6e695f1/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1302 (lot 37), Juri. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -947,6 +1203,54 @@
       }
     },
     {
+      "modelId": "mdl_9a7b03712d0bcfa9bb86",
+      "slug": "final-fantasy-jessie-01",
+      "coverStorageKey": "media/mdl_9a7b03712d0bcfa9bb86/img_a7d5a916a5d1f45c72bb/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1250 (lot 35), Jessie. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_9ce0f8c37c0b9dc2d935",
+      "slug": "street-fighter-juri-05",
+      "coverStorageKey": "media/mdl_9ce0f8c37c0b9dc2d935/img_faffa100465d58c25592/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1303 (lot 37), Juri. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_9cec459a00aa4b2efd51",
+      "slug": "indiana-jones-franquia-indiana-jones-01",
+      "coverStorageKey": "media/mdl_9cec459a00aa4b2efd51/img_532d1501fef5a3fa314f/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1205 (lot 34), Indiana Jones. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_9e44ad425d7738222e26",
       "slug": "final-fantasy-cloud-02",
       "coverStorageKey": "media/mdl_9e44ad425d7738222e26/img_d37d5481d148932eae54/card.webp",
@@ -955,6 +1259,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_9f06c6d7f45840efb437",
+      "slug": "mortal-kombat-jade",
+      "coverStorageKey": "media/mdl_9f06c6d7f45840efb437/img_2738684525fd201f1ef8/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1220 (lot 34), Jade. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -1075,6 +1395,22 @@
       }
     },
     {
+      "modelId": "mdl_ae704dd472875555e47a",
+      "slug": "street-fighter-juri",
+      "coverStorageKey": "media/mdl_ae704dd472875555e47a/img_453b5eaf4fdb88894a10/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1304 (lot 37), Juri. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_ae8d28d2fa93b1367b0a",
       "slug": "as-tartarugas-ninja-ace-duck",
       "coverStorageKey": "media/mdl_ae8d28d2fa93b1367b0a/img_1ccf2edb6736ca445dea/card.webp",
@@ -1086,6 +1422,54 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "galleryTotal": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_b07e6f139bf40d77bdf5",
+      "slug": "equipes-e-grupos-jean-grey-estatua-cinza-sobre-destrocos",
+      "coverStorageKey": "media/mdl_b07e6f139bf40d77bdf5/img_8fa9f9db7308c08d988c/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1240 (lot 35), Jean Grey. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_b289e65c527ba4a199ba",
+      "slug": "street-fighter-juri-04",
+      "coverStorageKey": "media/mdl_b289e65c527ba4a199ba/img_288edeb9360642736b1a/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1305 (lot 37), Juri. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_b5c07ccddf961649cdb0",
+      "slug": "mortal-kombat-kabal-02",
+      "coverStorageKey": "media/mdl_b5c07ccddf961649cdb0/img_40b106f34563e8469b37/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1321 (lot 37), Kabal. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
           "cleanAlternativeInCurrentGallery": false
         }
       }
@@ -1131,6 +1515,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real, genuinely unwatermarked photograph of the SAME sculpture and variant with documented permission to publish; keep legitimate sculptor credit. Do not erase/crop third-party watermarks or use a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_c39bb637ee5c32c0225a",
+      "slug": "equipes-e-grupos-jean-grey-fenix-com-energia-rosa",
+      "coverStorageKey": "media/mdl_c39bb637ee5c32c0225a/img_336c6e8ba859918503cb/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1241 (lot 35), Jean Grey. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -1219,6 +1619,22 @@
       }
     },
     {
+      "modelId": "mdl_d99cd1211f0ee993b189",
+      "slug": "league-of-legends-jinx-01",
+      "coverStorageKey": "media/mdl_d99cd1211f0ee993b189/img_28cac9c24ab9ba1bcde8/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1263 (lot 36), Jinx. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_dd2c9c25923a2989f794",
       "slug": "o-senhor-dos-aneis-besta-alada-01",
       "coverStorageKey": "media/mdl_dd2c9c25923a2989f794/img_f5d5211aac43012b7cd5/card.webp",
@@ -1267,6 +1683,38 @@
       }
     },
     {
+      "modelId": "mdl_df2a245116f0bf8f045e",
+      "slug": "thundercats-jackalman",
+      "coverStorageKey": "media/mdl_df2a245116f0bf8f045e/img_85ab7ba24b0113df93fb/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1219 (lot 34), Jackalman. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_e109b1c7298fc4b7247f",
+      "slug": "mortal-kombat-jax",
+      "coverStorageKey": "media/mdl_e109b1c7298fc4b7247f/img_bdb4f2647070f511b1f3/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1230 (lot 35), Jax. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_e1d23c23d094d04b3996",
       "slug": "thundercats-cheetara-01",
       "coverStorageKey": "media/mdl_e1d23c23d094d04b3996/img_932ff0c8928bc29dd3eb/card.webp",
@@ -1299,6 +1747,22 @@
       }
     },
     {
+      "modelId": "mdl_e5bba6fc91a6fecdbb59",
+      "slug": "jiraya-jiraya",
+      "coverStorageKey": "media/mdl_e5bba6fc91a6fecdbb59/img_b424cbb8e22d00895b87/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1265 (lot 36), Jiraya. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_ea88a8f0f49efaebba3c",
       "slug": "street-fighter-cammy-05",
       "coverStorageKey": "media/mdl_ea88a8f0f49efaebba3c/img_9fb7dae3e819715d90a4/card.webp",
@@ -1307,6 +1771,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_f2484a1b3476d1dea9e4",
+      "slug": "street-fighter-juri-06",
+      "coverStorageKey": "media/mdl_f2484a1b3476d1dea9e4/img_ada185158b4e4d2e5c7d/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1306 (lot 37), Juri. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -1435,6 +1915,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Same exact sculpture and variant, genuinely unwatermarked real photograph with permission to publish; preserve original sculptor/studio credit. Never erase a third-party watermark or substitute a different sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_fd49915ed3e2c8138c46",
+      "slug": "o-senhor-dos-aneis-hobbiton-bonsai",
+      "coverStorageKey": "media/mdl_fd49915ed3e2c8138c46/img_f55bb364d6c9ffba7357/card.webp",
+      "evidence": "2026-11-07: original public cover examined in enlarged local contact sheet, catalog item #1120 (lot 32), Hobbiton bonsai. Visibly repeating \"STL by Specialstl.com\" text with purple SpecialSTL logo at base; exact ID, slug, public cover key and image_count=1 matched bounded paginated API snapshot. No assumption about the original sculptor.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real, unwatermarked photo of the SAME sculpture/variant with documented permission for TONART public display; retain legitimate sculptor credit. Never crop or erase third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
