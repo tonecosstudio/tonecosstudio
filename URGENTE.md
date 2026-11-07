@@ -1,5 +1,15 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — consolidação segura das decisões offline (07/11/2026)
+
+- `scripts/catalog/propose-specialstl-quarantine.mjs` transforma o export do revisor em **um candidato de quarentena**, em lote, comparando cada ID, slug e chave de mídia com um snapshot local. `creator` e `uncertain` jamais entram como bloqueios; fotos com chaves divergentes e IDs desconhecidos falham fechado.
+- A proposta preserva IDs já confirmados (Ace Duck), impede conflito com créditos legítimos e **não altera** o SSOT, o Worker ou o site. O arquivo candidato exige revisão explícita antes de ser copiado para `src/services/catalog/specialstl-quarantine.json`. Testes offline no mesmo diretório.
+- **Economia:** zero requests externos, nenhum refresh integral de D1/R2, sem novo cache ou duplicação. Um único arquivo candidato por conjunto de decisões revisadas evita commits/builds por imagem. Prosseguir quando houver snapshot e imagens locais disponibilizados.
+- **NEXT_ACTION:** executar o revisor sobre um cache local real, registrar e exportar classificações, gerar candidato e confirmar a prova de cada novo ID antes de um único update da PR #4. Preview Access e lançamento público continuam **NO-GO**.
+
+---
+
+
 ## SpecialSTL — curadoria local por lotes (06/11/2026)
 
 - **Evolução rápida para milhares de fotos:** a lista SSOT de IDs com marca SpecialSTL comprovada sai do código do gateway para `src/services/catalog/specialstl-quarantine.json`. Continua contendo **somente Ace Duck**, confirmado pela fotografia enviada. O filtro de metadados continua intacto; logotipos de escultores não são motivo de bloqueio.
