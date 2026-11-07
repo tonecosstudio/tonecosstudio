@@ -1,5 +1,17 @@
 # Tonecos Studio — checkpoint operacional
 
+
+## SpecialSTL — substituição futura obrigatória, sem apagar o modelo (07/11/2026)
+
+- **Identificação do caso confirmado:** Ace Duck, `mdl_ae8d28d2fa93b1367b0a`, segue oculto no frontend. Consulta GET pontual à ficha e galeria da API pública existente constatou `image_count=1`, `gallery_total=1`, `nextCursor=null`. A única imagem é a capa marcada; **não existe uma segunda imagem do mesmo modelo na galeria para trocar imediatamente**.
+- **Estado SSOT de reposição:** `src/services/catalog/specialstl-quarantine.json` registra `replacement.status=pending_authorized_clean_photo`, sem imagem aprovada (`approvedImageStorageKey=null`), preservando ID, slug e storage key originais. Novos casos SpecialSTL confirmados em lotes recebem o mesmo estado pendente pelo script `propose-specialstl-quarantine.mjs`; nenhuma foto é aprovada ou publicada automaticamente.
+- **Critério para substituir e recuperar o modelo:** verificar visualmente que a foto representa **a mesma escultura/variante real**, sem marca SpecialSTL, e comprovar permissão de exibição no site; preservar o crédito do modelador original. Depois de autorizado o novo arquivo, atualizar a referência canônica da capa/galeria pela via proprietária e retirar o ID da quarentena **somente após QA da nova foto**. Não recortar/apagar a marca da foto antiga, não trocar por outro modelo do mesmo personagem e não usar imagem de terceiros sem licença.
+- **Pesquisa pontual externa:** foram encontrados Ace Duck de esculturas diferentes em marketplaces; não são substitutos compatíveis. Não executar compras, uploads, Worker, R2, D1 ou novo deployment nesta etapa.
+- **NEXT_ACTION:** revisar as pranchas existentes para identificar novos casos SpecialSTL, confirmar IDs e acumular a fila de fotos substitutas; procurar/solicitar fotografia original autorizada da mesma escultura antes de retirar bloqueios. Publicação pública **NO-GO**.
+
+---
+
+
 ## MVP — reconciliação de proveniência 07/11/2026
 
 - **PR #4 draft, uma branch/repo:** correção funcional da falha recorrente do gate `catalog:monorepo:check` nos commits `7857af4` e `6654195`. Foram mantidos os 46 Git blobs originais de `staging.fileBlobs`; duas alterações locais posteriores (capa indexada da pasta em `worker/index.ts` e teste SQLite em `tools/test_worker_folder_counts.mjs`) receberam pins separados em `staging.localOverlays`. Nenhum hash de origem foi substituído, nenhuma verificação desabilitada.

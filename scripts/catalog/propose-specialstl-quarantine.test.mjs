@@ -19,6 +19,12 @@ test("candidate merges only confirmed images, retains existing and creator credi
   assert.equal(r.summary.confirmedNew,1);assert.equal(r.summary.legitimateCreatorCredits,1);
   assert.deepEqual(r.candidate.confirmed.map(x=>x.modelId).sort(),[ace,other].sort());
   assert.equal(r.summary.networkRequests,0);
+  const pending = r.candidate.confirmed.find(x=>x.modelId===other);
+  assert.deepEqual(pending.replacement,{
+    status:"pending_authorized_clean_photo",approvedImageStorageKey:null,
+  });
+  // Existing quarantined records are preserved, never auto-published.
+  assert.deepEqual(r.candidate.confirmed.find(x=>x.modelId===ace),base.confirmed[0]);
   assert.equal(base.confirmed.length,1);
 });
 test("rejects missing IDs, key mismatches, and conflicting creator decisions",()=>{

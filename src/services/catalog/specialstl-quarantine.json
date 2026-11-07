@@ -6,7 +6,17 @@
       "modelId": "mdl_ae8d28d2fa93b1367b0a",
       "slug": "as-tartarugas-ninja-ace-duck",
       "coverStorageKey": "media/mdl_ae8d28d2fa93b1367b0a/img_1ccf2edb6736ca445dea/card.webp",
-      "evidence": "Visual match to owner's SpecialSTL-marked photo, confirmed in public catalog cover 2026-11-06"
+      "evidence": "Visual match to owner's SpecialSTL-marked photo, confirmed in public catalog cover 2026-11-06",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Same exact sculpture and variant; unwatermarked real photograph; permission to use on TONART site; preserve genuine sculptor attribution",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "galleryTotal": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
     }
   ]
 }

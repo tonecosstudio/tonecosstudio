@@ -86,6 +86,7 @@ export function propose(snapshot, reviewed, current) {
         coverStorageKey:d.coverStorageKey,
         evidence:"Manual visual review marked SpecialSTL; verify exported decision and image before copying candidate into SSOT" +
           (typeof d.reviewedAt==="string"?" ("+d.reviewedAt.slice(0,32)+")":""),
+        replacement:{status:"pending_authorized_clean_photo",approvedImageStorageKey:null},
       });
       added++;
     }
