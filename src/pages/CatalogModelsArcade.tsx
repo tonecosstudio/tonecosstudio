@@ -567,7 +567,9 @@ export default function CatalogModelsArcade() {
                 role="status"
                 className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm"
               >
-                Nenhum modelo publicado corresponde aos filtros utilizados.
+                {canGoNext
+                  ? "Os modelos desta página estão em revisão de imagem. Existem mais resultados nas próximas páginas."
+                  : "Nenhum modelo publicado corresponde aos filtros utilizados."}
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-5 2xl:grid-cols-6 2xl:gap-5">
