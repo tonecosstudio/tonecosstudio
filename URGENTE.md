@@ -1,5 +1,15 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 684 capas e 63 casos confirmados (07/11/2026)
+
+- **Lotes 17–19 concluídos:** 108 fotos reais de modelos 577–684 em três páginas GET de 36 da API pública, com cache reutilizável e folhas de contato por grupos de 12. Validados **684 IDs únicos**, sem repetição dos lotes anteriores; sem varredura ou mutação D1/R2.
+- **10 casos visuais adicionais, prova nas próprias fotografias ampliadas:** Crimson Viper, Cyrax, D'Vorah, Deadpool, Dentes de Sabre, Destruidor (01 e Super), Dexter Morgan, Dhalsim (normal e chibi). Cada imagem traz o texto repetido `STL by Specialstl.com` e o logotipo roxo SpecialSTL. IDs, slugs, chaves exatas `card.webp` e `image_count=1` confrontados com snapshot público paginado. A quarentena canônica em `src/services/catalog/specialstl-quarantine.json` passa a **63 modelos**, todos com `replacement.status=pending_authorized_clean_photo`, nenhuma foto substituta aprovada.
+- **Diretriz de substituição, não exclusão:** preservar registros e imagens originais; ocultar frontend Draft até foto real autorizada da MESMA escultura/variante sem marca SpecialSTL e mantendo créditos legítimos do escultor. Não cortar/apagar watermark. As outras 621 capas não estão certificadas como livres de problemas ou licenciadas; galerias além das capas não foram revisadas.
+- **NEXT_ACTION:** validar o CI existente, atualizar arquivo offline único do Desktop para 684/19 lotes, continuar pelo cursor `catalog-snapshot-lote19.json` após DigiDestined Diorama `mdl_9813b8c1eb0a33cdf7f4` (modelo 685); não publicar site nem alterar Worker. **NO-GO** público.
+
+---
+
+
 ## SpecialSTL — 576 capas examinadas, 53 confirmações visuais (07/11/2026)
 
 - **Lotes 14, 15 e 16:** 108 capas de modelos 469–576 recuperadas em três consultas GET paginadas limitadas à API pública e armazenadas no cache local uma única vez. A verificação de IDs sobre os 16 snapshots comprovou **576 IDs únicos**. Foram geradas nove folhas de contato reais (12 capas cada), sem D1/R2 direto ou alterações de produção.

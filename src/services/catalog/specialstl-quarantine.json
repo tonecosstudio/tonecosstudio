@@ -99,6 +99,22 @@
       }
     },
     {
+      "modelId": "mdl_309568e0ea147527cb50",
+      "slug": "mortal-kombat-d-vorah",
+      "coverStorageKey": "media/mdl_309568e0ea147527cb50/img_df2005c6b41889022030/card.webp",
+      "evidence": "2026-11-07: visually confirmed original public cover in enlarged contact sheet #592 / lot 17. Repeating \"STL by Specialstl.com\" text across actual image plus purple SpecialSTL logo at bottom, model D'Vorah. Exact model ID, slug, storage key and image_count=1 matched to bounded paged public API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_36372f6a5bc3447b2c70",
       "slug": "resident-evil-ashley-graham",
       "coverStorageKey": "media/mdl_36372f6a5bc3447b2c70/img_6fa76b1a1ca3fe513f6a/card.webp",
@@ -323,6 +339,22 @@
       }
     },
     {
+      "modelId": "mdl_658ed6136d83cd507d82",
+      "slug": "equipes-e-grupos-dentes-de-sabre-agachado-sobre-neve",
+      "coverStorageKey": "media/mdl_658ed6136d83cd507d82/img_01d23dfca9d550a840b0/card.webp",
+      "evidence": "2026-11-07: visually confirmed original public cover in enlarged contact sheet #669 / lot 19. Repeating \"STL by Specialstl.com\" text across actual image plus purple SpecialSTL logo at bottom, model Dentes de Sabre. Exact model ID, slug, storage key and image_count=1 matched to bounded paged public API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_66589771e2050cf8ce06",
       "slug": "the-king-of-fighters-blue-mary-02",
       "coverStorageKey": "media/mdl_66589771e2050cf8ce06/img_2d051c02969db0711004/card.webp",
@@ -347,6 +379,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Same exact sculpture and variant, genuinely unwatermarked real photograph with permission to publish; preserve original sculptor/studio credit. Never erase a third-party watermark or substitute a different sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_681d6fefb3b43af8f017",
+      "slug": "as-tartarugas-ninja-destruidor-01",
+      "coverStorageKey": "media/mdl_681d6fefb3b43af8f017/img_07904b50536cdeabcc83/card.webp",
+      "evidence": "2026-11-07: visually confirmed original public cover in enlarged contact sheet #673 / lot 19. Repeating \"STL by Specialstl.com\" text across actual image plus purple SpecialSTL logo at bottom, model Destruidor 01. Exact model ID, slug, storage key and image_count=1 matched to bounded paged public API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -403,6 +451,54 @@
       }
     },
     {
+      "modelId": "mdl_71f337b8de112b3c07b7",
+      "slug": "dexter-morgan-dexter-morgan",
+      "coverStorageKey": "media/mdl_71f337b8de112b3c07b7/img_f06a044e06c7c3e6983b/card.webp",
+      "evidence": "2026-11-07: visually confirmed original public cover in enlarged contact sheet #676 / lot 19. Repeating \"STL by Specialstl.com\" text across actual image plus purple SpecialSTL logo at bottom, model Dexter Morgan. Exact model ID, slug, storage key and image_count=1 matched to bounded paged public API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_76a7515255a3163b30c1",
+      "slug": "equipes-e-grupos-deadpool-diorama-de-combate",
+      "coverStorageKey": "media/mdl_76a7515255a3163b30c1/img_d3660e8064aa07c9ce90/card.webp",
+      "evidence": "2026-11-07: visually confirmed original public cover in enlarged contact sheet #636 / lot 18. Repeating \"STL by Specialstl.com\" text across actual image plus purple SpecialSTL logo at bottom, model Deadpool. Exact model ID, slug, storage key and image_count=1 matched to bounded paged public API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_7a8b8d1d2a64bbfe69bf",
+      "slug": "street-fighter-dhalsim",
+      "coverStorageKey": "media/mdl_7a8b8d1d2a64bbfe69bf/img_4edd44313bd31132484e/card.webp",
+      "evidence": "2026-11-07: visually confirmed original public cover in enlarged contact sheet #678 / lot 19. Repeating \"STL by Specialstl.com\" text across actual image plus purple SpecialSTL logo at bottom, model Dhalsim. Exact model ID, slug, storage key and image_count=1 matched to bounded paged public API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_7defd637cfc7b6663f16",
       "slug": "street-fighter-chun-li-02",
       "coverStorageKey": "media/mdl_7defd637cfc7b6663f16/img_1405f9a148d12af601a0/card.webp",
@@ -427,6 +523,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real, genuinely unwatermarked photograph of the SAME sculpture and variant with documented permission to publish; keep legitimate sculptor credit. Do not erase/crop third-party watermarks or use a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_86be0957cef65afe96f4",
+      "slug": "street-fighter-crimson-viper",
+      "coverStorageKey": "media/mdl_86be0957cef65afe96f4/img_bde2c3b57e1852835763/card.webp",
+      "evidence": "2026-11-07: visually confirmed original public cover in enlarged contact sheet #586 / lot 17. Repeating \"STL by Specialstl.com\" text across actual image plus purple SpecialSTL logo at bottom, model Crimson Viper. Exact model ID, slug, storage key and image_count=1 matched to bounded paged public API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -491,6 +603,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_986a4d23d860da81a984",
+      "slug": "mortal-kombat-cyrax",
+      "coverStorageKey": "media/mdl_986a4d23d860da81a984/img_8f86aaec85f6d83be2f1/card.webp",
+      "evidence": "2026-11-07: visually confirmed original public cover in enlarged contact sheet #590 / lot 17. Repeating \"STL by Specialstl.com\" text across actual image plus purple SpecialSTL logo at bottom, model Cyrax. Exact model ID, slug, storage key and image_count=1 matched to bounded paged public API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -659,6 +787,22 @@
       }
     },
     {
+      "modelId": "mdl_c4171e3c79ddb7e794bc",
+      "slug": "street-fighter-dhalsim-chibi",
+      "coverStorageKey": "media/mdl_c4171e3c79ddb7e794bc/img_22a442a4d2a9aabe2b9d/card.webp",
+      "evidence": "2026-11-07: visually confirmed original public cover in enlarged contact sheet #680 / lot 19. Repeating \"STL by Specialstl.com\" text across actual image plus purple SpecialSTL logo at bottom, model Dhalsim chibi. Exact model ID, slug, storage key and image_count=1 matched to bounded paged public API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_c46b926489998c8dbea2",
       "slug": "o-senhor-dos-aneis-aragorn-04",
       "coverStorageKey": "media/mdl_c46b926489998c8dbea2/img_41ab8b50886ef32a5db2/card.webp",
@@ -795,6 +939,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_f55e3f817876b54956e7",
+      "slug": "as-tartarugas-ninja-destruidor-super",
+      "coverStorageKey": "media/mdl_f55e3f817876b54956e7/img_f2d9dd574ba03c84384b/card.webp",
+      "evidence": "2026-11-07: visually confirmed original public cover in enlarged contact sheet #675 / lot 19. Repeating \"STL by Specialstl.com\" text across actual image plus purple SpecialSTL logo at bottom, model Destruidor Super. Exact model ID, slug, storage key and image_count=1 matched to bounded paged public API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
