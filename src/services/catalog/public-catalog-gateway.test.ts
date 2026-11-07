@@ -864,3 +864,53 @@ describe("indexed recent catalog publications", () => {
     }
   });
 });
+
+
+describe("external catalog media branding quarantine", () => {
+  const branded = {
+    ...row,
+    id: "mdl-specialstl",
+    slug: "specialstl-figure",
+    name: "Escultura promocional",
+    variant_name: "SpecialSTL.com",
+    cover_storage_key: "media/covers/specialstl.com/figure.webp",
+  };
+
+  it("hides identified branded models from list and recent without changing cursor or reading more pages", async () => {
+    const io = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/api/recent?")) return Response.json({ items: [row, branded] });
+      return Response.json({ items: [row, branded], nextCursor: "page-two" });
+    });
+    const api = createPublicCatalogGateway(
+      "https://example.test/catalogo-api", io as typeof fetch,
+    );
+    const page = await api.listPage({ limit: 24 });
+    expect(page.items.map((model) => model.slug)).toEqual(["animal-original"]);
+    expect(page.nextCursor).toBe("page-two");
+    expect((await api.listRecent(6)).map((model) => model.slug)).toEqual(["animal-original"]);
+    expect(io).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not expose identified branded models through a direct detail link", async () => {
+    const io = vi.fn(async () => Response.json(branded));
+    const api = createPublicCatalogGateway(
+      "https://example.test/catalogo-api", io as typeof fetch,
+    );
+    await expect(api.getModel("specialstl-figure")).rejects.toThrow(
+      "catalog_model_media_restricted",
+    );
+    expect(io).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks branded media paths even on folder/category/gallery thumbnails without affecting clean keys", () => {
+    const api = createPublicCatalogGateway(
+      "https://example.test/catalogo-api", vi.fn() as typeof fetch,
+    );
+    expect(api.mediaUrl("media/covers/SpecialSTL.com/promo.webp")).toBeNull();
+    expect(api.mediaUrl("media/gallery/special-stl/photo.webp")).toBeNull();
+    expect(api.mediaUrl("media/covers/mdl-123.webp")).toBe(
+      "https://example.test/catalogo-api/media/covers/mdl-123.webp",
+    );
+  });
+});
