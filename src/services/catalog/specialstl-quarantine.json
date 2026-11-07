@@ -3,6 +3,22 @@
   "policy": "Confirmed SpecialSTL image only; creator logos and Patreon credits are not evidence.",
   "confirmed": [
     {
+      "modelId": "mdl_037e43a977c232cb4ded",
+      "slug": "o-senhor-dos-aneis-gollum",
+      "coverStorageKey": "media/mdl_037e43a977c232cb4ded/img_bf1a8b21d872bf7c65ec/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached public card.webp at catalog item #1029, lot 29, \"Gollum\". Repeating \"STL by Specialstl.com\" watermark visibly across the photo and purple SpecialSTL logo at foot. Exact ID, slug, storage key and image_count=1 cross-checked against bounded paginated API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized photograph of the SAME sculpture and variant naturally without third-party SpecialSTL watermark, with permission for public display and legitimate sculptor credit retained. Do not erase/crop watermark or substitute another sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_047cfdf8b0bd87f95577",
       "slug": "resident-evil-ada-wong-2-047cfdf8b0",
       "coverStorageKey": "media/mdl_047cfdf8b0bd87f95577/img_5f426e61462cf69664d4/card.webp",
@@ -107,6 +123,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real unwatermarked photograph of the SAME sculpture and variant, with permission to display on TONART site and genuine sculptor attribution preserved. Do not crop or erase redistribution watermark or use an unrelated sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_24ea7bfd8710cf9f24c6",
+      "slug": "mortal-kombat-havik",
+      "coverStorageKey": "media/mdl_24ea7bfd8710cf9f24c6/img_a4d4b0b25a7074a09da4/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached public card.webp at catalog item #1099, lot 31, \"Havik\". Repeating \"STL by Specialstl.com\" watermark visibly across the photo and purple SpecialSTL logo at foot. Exact ID, slug, storage key and image_count=1 cross-checked against bounded paginated API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized photograph of the SAME sculpture and variant naturally without third-party SpecialSTL watermark, with permission for public display and legitimate sculptor credit retained. Do not erase/crop watermark or substitute another sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -563,6 +595,22 @@
       }
     },
     {
+      "modelId": "mdl_67f8a46569b61d844aeb",
+      "slug": "harry-potter-franquia-hermione-granger-01",
+      "coverStorageKey": "media/mdl_67f8a46569b61d844aeb/img_8e4885d0c37178940e75/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached public card.webp at catalog item #1110, lot 31, \"Hermione Granger 01\". Repeating \"STL by Specialstl.com\" watermark visibly across the photo and purple SpecialSTL logo at foot. Exact ID, slug, storage key and image_count=1 cross-checked against bounded paginated API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized photograph of the SAME sculpture and variant naturally without third-party SpecialSTL watermark, with permission for public display and legitimate sculptor credit retained. Do not erase/crop watermark or substitute another sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_681d6fefb3b43af8f017",
       "slug": "as-tartarugas-ninja-destruidor-01",
       "coverStorageKey": "media/mdl_681d6fefb3b43af8f017/img_07904b50536cdeabcc83/card.webp",
@@ -739,6 +787,22 @@
       }
     },
     {
+      "modelId": "mdl_8283c8b6c7b75fa2c427",
+      "slug": "mortal-kombat-goro-03",
+      "coverStorageKey": "media/mdl_8283c8b6c7b75fa2c427/img_b1611eeccdd9e0bf8a26/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached public card.webp at catalog item #1032, lot 29, \"Goro 03\". Repeating \"STL by Specialstl.com\" watermark visibly across the photo and purple SpecialSTL logo at foot. Exact ID, slug, storage key and image_count=1 cross-checked against bounded paginated API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized photograph of the SAME sculpture and variant naturally without third-party SpecialSTL watermark, with permission for public display and legitimate sculptor credit retained. Do not erase/crop watermark or substitute another sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_8537ae259a51875e9cd0",
       "slug": "dragon-ball-gohan-e-piccolo",
       "coverStorageKey": "media/mdl_8537ae259a51875e9cd0/img_890d6a9d327767b77842/card.webp",
@@ -907,6 +971,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_a77e6a257c2f701cf632",
+      "slug": "harry-potter-franquia-hermione-granger-02",
+      "coverStorageKey": "media/mdl_a77e6a257c2f701cf632/img_4903f566e9f12bc7998c/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached public card.webp at catalog item #1111, lot 31, \"Hermione Granger 02\". Repeating \"STL by Specialstl.com\" watermark visibly across the photo and purple SpecialSTL logo at foot. Exact ID, slug, storage key and image_count=1 cross-checked against bounded paginated API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized photograph of the SAME sculpture and variant naturally without third-party SpecialSTL watermark, with permission for public display and legitimate sculptor credit retained. Do not erase/crop watermark or substitute another sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -1123,6 +1203,22 @@
       }
     },
     {
+      "modelId": "mdl_d0d03015bbf270335dee",
+      "slug": "mortal-kombat-goro-02",
+      "coverStorageKey": "media/mdl_d0d03015bbf270335dee/img_9464a18111c0fcc2aca0/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached public card.webp at catalog item #1034, lot 29, \"Goro 02\". Repeating \"STL by Specialstl.com\" watermark visibly across the photo and purple SpecialSTL logo at foot. Exact ID, slug, storage key and image_count=1 cross-checked against bounded paginated API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized photograph of the SAME sculpture and variant naturally without third-party SpecialSTL watermark, with permission for public display and legitimate sculptor credit retained. Do not erase/crop watermark or substitute another sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_dd2c9c25923a2989f794",
       "slug": "o-senhor-dos-aneis-besta-alada-01",
       "coverStorageKey": "media/mdl_dd2c9c25923a2989f794/img_f5d5211aac43012b7cd5/card.webp",
@@ -1179,6 +1275,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_e3ccba57c52c4183f2bd",
+      "slug": "street-fighter-gouken",
+      "coverStorageKey": "media/mdl_e3ccba57c52c4183f2bd/img_10a88ae57fa84f85c164/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached public card.webp at catalog item #1043, lot 29, \"Gouken\". Repeating \"STL by Specialstl.com\" watermark visibly across the photo and purple SpecialSTL logo at foot. Exact ID, slug, storage key and image_count=1 cross-checked against bounded paginated API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized photograph of the SAME sculpture and variant naturally without third-party SpecialSTL watermark, with permission for public display and legitimate sculptor credit retained. Do not erase/crop watermark or substitute another sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -1275,6 +1387,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_f9aca95e323157de8a11",
+      "slug": "mortal-kombat-goro-06",
+      "coverStorageKey": "media/mdl_f9aca95e323157de8a11/img_24892125b8ebbb3dd906/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached public card.webp at catalog item #1036, lot 29, \"Goro 06\". Repeating \"STL by Specialstl.com\" watermark visibly across the photo and purple SpecialSTL logo at foot. Exact ID, slug, storage key and image_count=1 cross-checked against bounded paginated API snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized photograph of the SAME sculpture and variant naturally without third-party SpecialSTL watermark, with permission for public display and legitimate sculptor credit retained. Do not erase/crop watermark or substitute another sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,

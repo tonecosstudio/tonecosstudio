@@ -1,5 +1,15 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 1.116 capas revisadas, 90 confirmadas (07/11/2026)
+
+- **Lotes 29–31:** 108 capas reais dos modelos 1.009–1.116 recuperadas por três GETs públicos paginados, 108 fotos armazenadas uma única vez em cache no Desktop; verificados **1.116 IDs únicos**, 31 snapshots de 36. Nove folhas de contato novas, inspeção de capa sem acesso direto D1/R2, Worker ou produção.
+- **8 provas visuais novas, em imagem original ampliada:** Gollum, Goro (02, 03 e 06), Gouken, Havik, Hermione Granger (01 e 02), todos com texto repetido `STL by Specialstl.com` e logotipo roxo SpecialSTL; IDs, slugs, caminhos `card.webp`, `image_count=1` conferidos contra snapshots de listagem. Total: **90 entradas** em `specialstl-quarantine.json`, com `pending_authorized_clean_photo`, sem reposição autorizada aprovada e sem excluir nenhum registro original.
+- **Distinção de autoria:** Guts #1.075 `mdl_97c75af1848b42f8e98f` apresenta marca do escultor `Cairos Sculpture Co. Digital Sculpting`, **não** a assinatura Specialstl.com; foi excluído dos novos bloqueios. Outros 1.026 modelos não estão certificados como imagens licenciadas/limpas só por não conterem essa marca na capa. Galerias além das capas não foram inspecionadas.
+- **Próximo passo:** testar a PR Draft, atualizar prancha offline única do Desktop para 1.116/31 lotes, continuar pelo `catalog-snapshot-lote31.json` após `Hinata` (modelo #1.116). Fotos para reposição devem representar a MESMA escultura, reais e com direitos de exibição, sem apagar marcas de terceiros. Site público **NO-GO**.
+
+---
+
+
 ## SpecialSTL — 1.008 capas revisadas / 82 casos confirmados (07/11/2026)
 
 - **Lotes 26–28 concluídos:** modelos 901–1.008, três consultas GET paginadas de 36 itens à API pública e 108 imagens originais salvas em cache. Verificados **1.008 IDs distintos** nos 28 snapshots, sem repetir os anteriores. Nove folhas de contato novas, inspeção somente das capas; sem acesso direto D1/R2, mutação do Worker ou produção.
