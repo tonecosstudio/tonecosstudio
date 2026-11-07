@@ -1,5 +1,16 @@
 # Tonecos Studio — checkpoint operacional
 
+## Frontend — quarentena de imagens identificáveis como SpecialSTL (06/11/2026)
+
+- **Correção funcional na mesma PR #4:** `bf1a64a3` bloqueia URLs de mídia cujos caminhos mencionem SpecialSTL, retira modelos assim identificados das listagens públicas e de recentes e nega ficha por link direto. `58a9f387` distingue página esvaziada pela revisão de imagens da inexistência de resultados, preservando o cursor de navegação. Testes direcionados adicionados em `6c5e0595`.
+- **Limite importante:** o frontend recebe texto/chaves, **não os pixels**. Uma marca d'água incorporada à fotografia com chave de armazenamento sem indicação da origem **não é detectada** por essa correção. A fotografia enviada pelo proprietário comprova a ocorrência, mas não identifica o slug/ID da ficha. Ainda NÃO foi homologada a ocultação de todos os modelos afetados; não declarar imagens limpas sem revisão real.
+- **CI:** run `42318922449` falhou **antes** do teste frontend no gate de identidade dos blobs do backend importado (`tools/test_worker_folder_counts.mjs`, esperado `dc3e68e`, encontrado `45303c8`). Desvio não causado pelos arquivos frontend desta entrega; não modificar Worker/M5 para mascarar a falha. Execução atual posterior ainda deve ser verificada.
+- **Sem publicação:** nenhuma modificação em Worker, D1, R2, conta/projeto Pages, Vercel, DNS ou `main`. A prévia do novo SHA ainda não foi comprovada; Cloudflare Access permanece obrigatório.
+- **NEXT_ACTION:** identificar por evidência visual e mapeamento exato dos IDs/chaves as imagens cuja marca está somente nos pixels; registrar bloqueios específicos ou encontrar fotografias reais autorizadas do mesmo produto, sem inventar substitutos. Testar o frontend na PR após o gate aplicável e solicitar QA autenticado, mantendo publicação pública **NO-GO**.
+
+---
+
+
 ## Backend — proteção de identidade e SHA da origem (05/11/2026)
 
 - **Concluído na PR #4:** commit [`f3ce693`](https://github.com/tonecosstudio/tonecosstudio/commit/f3ce693ad094d2478bd45c52ff1671dfd2930b50) aprimorou o preflight M5 existente, que agora confirma via GitHub GET o ID/nome da origem e `refs/heads/main` contra os três pins do manifesto, bloqueando alterações não reconciliadas; foram adicionados testes offline de drift e ausência de comprovação.
