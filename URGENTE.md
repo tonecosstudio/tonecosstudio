@@ -1,11 +1,22 @@
 # Tonecos Studio — checkpoint operacional
 
+
+## Especial SpecialSTL — Ace Duck confirmado e ocultado no frontend (06/11/2026)
+
+- **Foto real encontrada:** a capa de `Ace Duck` do universo `As Tartarugas Ninja` é a própria fotografia enviada pelo proprietário, com `STL by Specialstl.com` repetido e logotipo `SpecialSTL` na base. Identificação exata via GET público pontual, sem varredura: slug `as-tartarugas-ninja-ace-duck`, ID `mdl_ae8d28d2fa93b1367b0a`, chave `media/mdl_ae8d28d2fa93b1367b0a/img_1ccf2edb6736ca445dea/card.webp`.
+- **Correção de produto:** `db611885` introduz quarentena pelo ID confirmado (listagem, recentes, ficha direta e todas as variantes `media/<id>/...`), sem excluir o modelo no Worker/D1/R2. `4ec44f1a` acrescenta teste do caso real; o crédito legítimo `Neko Figurines` de 10H continua visível. Não esconder outros criadores, não apagar créditos nem gerar imagem substituta.
+- **Prova proporcional:** código exato do gateway no Node.js 24 físico, `SPECIALSTL_EXACT_MODEL_QA_SUCCESS`, 7/7 verificações PASS, exit 0; requisições simuladas em memória. GitHub Quality Gate `42329595017` falhou antes dos testes frontend em `Verify monorepo ownership and Git blobs` (desvio prévio do backend importado); não mexer no Worker/M5 para contornar.
+- **Próxima ação:** identificar outros IDs com marca SpecialSTL somente com foto e modelo vinculados, sem varredura integral nem inferir que logotipo de modelador é marca de redistribuição. Verificar prévia Cloudflare Pages realmente concluída e QA autenticado. Sem lançamento público: **NO-GO**.
+
+---
+
+
 ## Frontend — Política corrigida: crédito do modelador ≠ marca de redistribuição (06/11/2026)
 
 - **Decisão expressa do proprietário:** logotipo do escultor/estúdio, assinatura do artista e crédito Patreon NÃO são automaticamente marcas de pirataria. Preservar essas imagens como referência do produto; ainda se exige revisão de direitos/licença quando aplicável. Marca de redistribuição não autorizada ou site terceiro de origem duvidosa deve ser avaliada separadamente, por evidência, sem afirmar ilícito por mera presença de nome.
 - **Correção funcional:** `9f505854` removeu a quarentena genérica dos sete IDs de capa bloqueados em `ba1a0c39` por terem somente créditos/logotipos visíveis, e restaurou listagem, detalhes e imagens; `91fabce7` substituiu o teste que exigia o bloqueio por teste de preservação desses sete criadores. No exemplo "Abutre", a origem do padrão repetido não foi demonstrada como redistribuidor ilícito, portanto não é motivo suficiente para bloqueio.
 - **Evidência corrigida:** 8 capas foram inspecionadas via uma única página pública e 8 URLs de imagem; 7 continham algum texto/logo de terceiros, mas isso NÃO significa 7 imagens de pirataria. A correção anterior confundia crédito autoral com redistribuição e foi revertida; o modelo A2 segue sem marca observada na capa, sem afirmar inspeção completa de sua galeria.
-- **Regra de marca identificada:** o bloqueio por metadados/caminhos que contenham `SpecialSTL` permanece, por decisão de curadoria do exemplo enviado pelo proprietário. A imagem enviada ainda não tem slug ou ID associado à API. Não aplicar ocultação por suposições, e não retirar ou apagar créditos autorais das fotografias.
+- **Regra de marca identificada:** o bloqueio por metadados/caminhos que contenham `SpecialSTL` permanece, por decisão de curadoria do exemplo enviado pelo proprietário. A imagem SpecialSTL enviada foi posteriormente identificada como Ace Duck; consultar o checkpoint mais recente acima. Não aplicar ocultação por suposições, e não retirar ou apagar créditos autorais das fotografias.
 - **Validação física isolada:** Node.js 24 no desktop, fonte exata do gateway atualizado, `CREATOR_CREDIT_QA_SUCCESS`, 5/5 verificações PASS, código 0: sete autores preservados na listagem e recentes, mídia e fichas acessíveis, `SpecialSTL` bloqueado e cursor mantido. Dez GET simulados sem tráfego Worker/D1/R2 nesse teste. CI da PR e novo preview ainda precisam de validação independente.
 - **NEXT_ACTION:** separar três classes na curadoria: crédito legítimo de autor (manter), marca de redistribuição especificamente identificada (bloquear o item exato após confirmação) e origem inconclusiva (revisar, sem rotular automaticamente). Não gerar imagens substitutas. Produção Pages/main, Worker, D1/R2, Access, DNS e Vercel inalterados. Publicação pública **NO-GO**.
 
