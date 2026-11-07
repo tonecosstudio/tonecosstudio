@@ -1,5 +1,15 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 900 capas, 81 casos visualmente confirmados (07/11/2026)
+
+- **Lotes 23–25 concluídos:** 108 novas capas reais (modelos 793–900) obtidas da API pública em 3 consultas GET de 36, baixadas uma única vez para cache local e examinadas em nove folhas de contato. **900 IDs únicos**, sem repetição. Zero acesso direto/mutação D1/R2, Worker, produção.
+- **7 novas provas visuais** por inspeção ampliada da própria capa: Freeza (Namek busto, Mecha busto, esfera de energia), Galadriel, Gambit (cartas/energia rosa), Gandalf 02 e Gimli. Marca repetida `STL by Specialstl.com` e logotipo roxo SpecialSTL, exatamente ligados aos IDs, slugs, `card.webp` e image_count=1 do snapshot. `specialstl-quarantine.json` atualizado de 74 para **81 modelos**.
+- **Regra de reposição, não exclusão:** cada um dos 81 segue `pending_authorized_clean_photo`, sem imagem substituta aprovada. Preservar dados/foto original, recuperar só após foto real e autorizada da MESMA escultura e QA. Créditos de escultores, Patreon e logos de outros estúdios não foram usados para bloqueio. Os outros 819 registros não foram declarados licenciados/limpos por mera ausência dessa marca; somente capas, não galerias, foram inspecionadas.
+- **NEXT_ACTION:** validar CI dinâmico já existente, consolidar prancha offline única de 900/25 lotes e continuar pelo `nextCursor` em `catalog-snapshot-lote25.json` após Gogeta `mdl_72305314238b9a2c5d1a`, posição 901. Sem novos PRs/workflows, Cloudflare Access e produção inalterados. **NO-GO** público.
+
+---
+
+
 ## SpecialSTL — 792 capas, 74 casos confirmados (07/11/2026)
 
 - **Lotes 20–22 reais e paginados:** 108 fotos de modelos 685–792 recuperadas em apenas três consultas GET limitadas da API pública, armazenadas em cache local. A ferramenta confirmou **792 IDs únicos**, sem reprocessar os 684 anteriores; 9 folhas de contato adicionais, três por lote, conferidas visualmente.

@@ -35,6 +35,22 @@
       }
     },
     {
+      "modelId": "mdl_07bc7ece00971b655dbb",
+      "slug": "dragon-ball-freeza-batalha-namek-busto",
+      "coverStorageKey": "media/mdl_07bc7ece00971b655dbb/img_81cfb17d33fc0f80f2c2/card.webp",
+      "evidence": "2026-11-07: visually inspected original public card.webp in enlarged contact sheet, model #829, lot 24, Freeza (busto Namek). Repeating \"STL by Specialstl.com\" text across image AND purple SpecialSTL logo along bottom; exact id, slug, storage key, public API image_count=1 confirmed in paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real unwatermarked photograph of the SAME sculpture and variant, with permission to display on TONART site and genuine sculptor attribution preserved. Do not crop or erase redistribution watermark or use an unrelated sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_162e9d11b487cf173ecc",
       "slug": "resident-evil-claire-redfield-modelo-anterior-01",
       "coverStorageKey": "media/mdl_162e9d11b487cf173ecc/img_50c5cbfccea0958252cb/card.webp",
@@ -83,6 +99,22 @@
       }
     },
     {
+      "modelId": "mdl_209e99cf0f6d2edfc188",
+      "slug": "equipes-e-grupos-gambit-energia-rosa-e-cartas-diorama",
+      "coverStorageKey": "media/mdl_209e99cf0f6d2edfc188/img_a11b14f5f3a0bc0470db/card.webp",
+      "evidence": "2026-11-07: visually inspected original public card.webp in enlarged contact sheet, model #862, lot 24, Gambit. Repeating \"STL by Specialstl.com\" text across image AND purple SpecialSTL logo along bottom; exact id, slug, storage key, public API image_count=1 confirmed in paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real unwatermarked photograph of the SAME sculpture and variant, with permission to display on TONART site and genuine sculptor attribution preserved. Do not crop or erase redistribution watermark or use an unrelated sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_251df89eeba124ee1d85",
       "slug": "final-fantasy-cloud-01",
       "coverStorageKey": "media/mdl_251df89eeba124ee1d85/img_e1ee8da80e2476a75a33/card.webp",
@@ -91,6 +123,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of this exact sculpture/variant, genuinely free of third-party SpecialSTL watermark and with permission for TONART site display; preserve legitimate sculptor credit. Never remove a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_2f0cabe90f5f88d9efab",
+      "slug": "dragon-ball-freeza-mecha-busto",
+      "coverStorageKey": "media/mdl_2f0cabe90f5f88d9efab/img_4108b11dc0108410b5fc/card.webp",
+      "evidence": "2026-11-07: visually inspected original public card.webp in enlarged contact sheet, model #833, lot 24, Freeza (mecha busto). Repeating \"STL by Specialstl.com\" text across image AND purple SpecialSTL logo along bottom; exact id, slug, storage key, public API image_count=1 confirmed in paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real unwatermarked photograph of the SAME sculpture and variant, with permission to display on TONART site and genuine sculptor attribution preserved. Do not crop or erase redistribution watermark or use an unrelated sculpture.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -163,6 +211,22 @@
       }
     },
     {
+      "modelId": "mdl_3d314541143114aa1927",
+      "slug": "dragon-ball-freeza-com-esfera-de-energia-em-diorama",
+      "coverStorageKey": "media/mdl_3d314541143114aa1927/img_860782f79acc6e6ce7d7/card.webp",
+      "evidence": "2026-11-07: visually inspected original public card.webp in enlarged contact sheet, model #834, lot 24, Freeza (esfera de energia). Repeating \"STL by Specialstl.com\" text across image AND purple SpecialSTL logo along bottom; exact id, slug, storage key, public API image_count=1 confirmed in paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real unwatermarked photograph of the SAME sculpture and variant, with permission to display on TONART site and genuine sculptor attribution preserved. Do not crop or erase redistribution watermark or use an unrelated sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_3d63f7d37c90cafa0788",
       "slug": "thundercats-cheetara-02",
       "coverStorageKey": "media/mdl_3d63f7d37c90cafa0788/img_0011f98ad4c35bf60d47/card.webp",
@@ -219,6 +283,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_428b630878572282a493",
+      "slug": "o-senhor-dos-aneis-galadriel",
+      "coverStorageKey": "media/mdl_428b630878572282a493/img_5837261f7acaa6aae0ee/card.webp",
+      "evidence": "2026-11-07: visually inspected original public card.webp in enlarged contact sheet, model #860, lot 24, Galadriel. Repeating \"STL by Specialstl.com\" text across image AND purple SpecialSTL logo along bottom; exact id, slug, storage key, public API image_count=1 confirmed in paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real unwatermarked photograph of the SAME sculpture and variant, with permission to display on TONART site and genuine sculptor attribution preserved. Do not crop or erase redistribution watermark or use an unrelated sculpture.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -531,6 +611,22 @@
       }
     },
     {
+      "modelId": "mdl_6ffd1ecee0345c7cedf9",
+      "slug": "o-senhor-dos-aneis-gimli",
+      "coverStorageKey": "media/mdl_6ffd1ecee0345c7cedf9/img_f08033f26ba302d290fc/card.webp",
+      "evidence": "2026-11-07: visually inspected original public card.webp in enlarged contact sheet, model #890, lot 25, Gimli. Repeating \"STL by Specialstl.com\" text across image AND purple SpecialSTL logo along bottom; exact id, slug, storage key, public API image_count=1 confirmed in paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real unwatermarked photograph of the SAME sculpture and variant, with permission to display on TONART site and genuine sculptor attribution preserved. Do not crop or erase redistribution watermark or use an unrelated sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_7190a5575cc04b065459",
       "slug": "street-fighter-chun-li-03",
       "coverStorageKey": "media/mdl_7190a5575cc04b065459/img_3fd0610fac37a4519314/card.webp",
@@ -555,6 +651,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real photograph of this exact same sculpture/variant, genuinely without third-party SpecialSTL watermark, authorized to display on TONART site, retaining legitimate original sculptor credit. Do not erase/crop watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_7241b1cc00ce1ebf9e9d",
+      "slug": "o-senhor-dos-aneis-gandalf-02",
+      "coverStorageKey": "media/mdl_7241b1cc00ce1ebf9e9d/img_ca8c0904a04a1fd2d0ba/card.webp",
+      "evidence": "2026-11-07: visually inspected original public card.webp in enlarged contact sheet, model #872, lot 25, Gandalf 02. Repeating \"STL by Specialstl.com\" text across image AND purple SpecialSTL logo along bottom; exact id, slug, storage key, public API image_count=1 confirmed in paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real unwatermarked photograph of the SAME sculpture and variant, with permission to display on TONART site and genuine sculptor attribution preserved. Do not crop or erase redistribution watermark or use an unrelated sculpture.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
