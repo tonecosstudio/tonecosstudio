@@ -35,6 +35,22 @@
       }
     },
     {
+      "modelId": "mdl_2f0f5af4db462c17aa78",
+      "slug": "street-fighter-cammy-14",
+      "coverStorageKey": "media/mdl_2f0f5af4db462c17aa78/img_5a16d7fc2bfe2de6daf7/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 11, catalog model #363; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cammy 14, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_2fd3847242ff00dc6fa7",
       "slug": "o-senhor-dos-aneis-balrog-01",
       "coverStorageKey": "media/mdl_2fd3847242ff00dc6fa7/img_4ecbdb3a1e4bdad1ed13/card.webp",
@@ -67,6 +83,38 @@
       }
     },
     {
+      "modelId": "mdl_3d63f7d37c90cafa0788",
+      "slug": "thundercats-cheetara-02",
+      "coverStorageKey": "media/mdl_3d63f7d37c90cafa0788/img_0011f98ad4c35bf60d47/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 13, catalog model #465; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cheetara 02, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_40faaa1caefe3b42ca74",
+      "slug": "street-fighter-cammy-11",
+      "coverStorageKey": "media/mdl_40faaa1caefe3b42ca74/img_532871fa4b1057daf1a8/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 11, catalog model #364; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cammy 11, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_4cb2836284b173255900",
       "slug": "the-king-of-fighters-blue-mary",
       "coverStorageKey": "media/mdl_4cb2836284b173255900/img_a53bb5f98dc16665264f/card.webp",
@@ -75,6 +123,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real, genuinely unwatermarked photograph of the SAME sculpture and variant with documented permission to publish; keep legitimate sculptor credit. Do not erase/crop third-party watermarks or use a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_4e2e01998c46fa959ea2",
+      "slug": "street-fighter-cammy-09",
+      "coverStorageKey": "media/mdl_4e2e01998c46fa959ea2/img_72ef773fe600e0f8337e/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 11, catalog model #366; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cammy 09, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -227,6 +291,22 @@
       }
     },
     {
+      "modelId": "mdl_6cccea5deb539fc1b2ef",
+      "slug": "as-tartarugas-ninja-casey-jones-02",
+      "coverStorageKey": "media/mdl_6cccea5deb539fc1b2ef/img_c761738fc11277081b18/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 12, catalog model #420; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Casey Jones 02, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_85cf94f803b39566a771",
       "slug": "street-fighter-blanka-chibi",
       "coverStorageKey": "media/mdl_85cf94f803b39566a771/img_1c560ec5b395a3dd05e2/card.webp",
@@ -267,6 +347,54 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real authorized, unwatermarked photograph of the SAME sculpture and variant; preserve true sculptor credit; no cropping/erasing third-party marks or substituting a different sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_92b4575553ceaf34233b",
+      "slug": "street-fighter-cammy-12",
+      "coverStorageKey": "media/mdl_92b4575553ceaf34233b/img_e5642f2b75104bf034d0/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 11, catalog model #370; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cammy 12, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_9811361c6910a6aeea8d",
+      "slug": "street-fighter-cammy-10",
+      "coverStorageKey": "media/mdl_9811361c6910a6aeea8d/img_b54e27b7fbbfb1c693ae/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 11, catalog model #371; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cammy 10, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_a223603fde4b9d795a92",
+      "slug": "street-fighter-cammy-06",
+      "coverStorageKey": "media/mdl_a223603fde4b9d795a92/img_fcf602cb17f2f1284dc4/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 11, catalog model #372; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cammy 06, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -371,6 +499,38 @@
       }
     },
     {
+      "modelId": "mdl_c9bcb2e8eb1915f22e4d",
+      "slug": "street-fighter-cammy-13",
+      "coverStorageKey": "media/mdl_c9bcb2e8eb1915f22e4d/img_2d7e1bbcec6059add498/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 11, catalog model #374; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cammy 13, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_ccd115cee3323bcd5770",
+      "slug": "street-fighter-cammy-03",
+      "coverStorageKey": "media/mdl_ccd115cee3323bcd5770/img_f71e863a4249f6ca0a4e/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 11, catalog model #375; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cammy 03, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_dd2c9c25923a2989f794",
       "slug": "o-senhor-dos-aneis-besta-alada-01",
       "coverStorageKey": "media/mdl_dd2c9c25923a2989f794/img_f5d5211aac43012b7cd5/card.webp",
@@ -411,6 +571,54 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real, genuinely unwatermarked photograph of the SAME sculpture and variant with documented permission to publish; keep legitimate sculptor credit. Do not erase/crop third-party watermarks or use a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_e1d23c23d094d04b3996",
+      "slug": "thundercats-cheetara-01",
+      "coverStorageKey": "media/mdl_e1d23c23d094d04b3996/img_932ff0c8928bc29dd3eb/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 13, catalog model #467; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cheetara 01, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_ea88a8f0f49efaebba3c",
+      "slug": "street-fighter-cammy-05",
+      "coverStorageKey": "media/mdl_ea88a8f0f49efaebba3c/img_9fb7dae3e819715d90a4/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 11, catalog model #377; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cammy 05, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_f415703fe1778b6dc2d8",
+      "slug": "street-fighter-cammy-08",
+      "coverStorageKey": "media/mdl_f415703fe1778b6dc2d8/img_75730fa8298790115f36/card.webp",
+      "evidence": "2026-11-07: direct visual inspection of original cached card.webp in enlarged contact-sheet candidate view, page lot 11, catalog model #379; repeated 'STL by Specialstl.com' watermark across image plus purple SpecialSTL logo along bottom; matched to paginated public API model Cammy 08, exact ID, slug, media key.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,

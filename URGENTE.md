@@ -1,5 +1,15 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 468 capas, 42 marcas confirmadas (07/11/2026)
+
+- **Lotes 11–13:** revisão visual de 108 capas (modelos 361 a 468) recuperadas uma vez pela API pública usando o cursor salvo do lote 10; **468 IDs únicos** acumulados. Contato real com 12 imagens por folha; fotos candidatas foram abertas em 576 px de altura, com logo roxo e texto repetido `STL by Specialstl.com` inspecionados diretamente. Créditos autorais legítimos não são prova de redistribuição.
+- **13 novas confirmações:** Cammy (10 variantes exatas: 14, 11, 09, 12, 10, 06, 13, 03, 05, 08), Casey Jones 02 e Cheetara (02 e 01). Cada registro tem ID, slug e coverStorageKey provenientes do snapshot paginado e `image_count=1` na listagem. Somadas às 29 anteriores, **42 quarentenas** em `src/services/catalog/specialstl-quarantine.json`, todas pendentes de foto limpa autorizada da **mesma escultura**, sem excluir modelo ou apagar foto original.
+- **CI e controle:** usar a suíte dinâmica já existente do gateway para validar todos os registros, sem novas workflows/PRs. A ocultação permanece exclusivamente na PR #4 Draft, produção pública e D1/R2 não alterados. Os outros 426 modelos não são considerados licenciados ou definitivamente limpos por não exibirem essa marca na capa.
+- **Próximo cursor** registrado em `catalog-snapshot-lote13.json`, após Cheetara `mdl_f1ca4cbefa1cac173be2`. Atualizar a prancha offline do Desktop para 468/13 lotes, preservando histórico e sem rede ao abrir. Lançamento público **NO-GO**.
+
+---
+
+
 ## SpecialSTL — 360 capas revisadas; 29 confirmadas (07/11/2026)
 
 - **Lotes 08–10 concluídos com cursor persistido:** 108 novas capas de modelos 253–360 via três GETs limitados da API pública de leitura; 360 IDs distintos nos dez lotes, fotografias reais mantidas em cache no Desktop, folhas de contato com 12 miniaturas para análise visual. Nenhuma varredura D1/R2 e nenhuma mutação do Worker ou de produção.
