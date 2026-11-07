@@ -12,11 +12,13 @@ on:
       - 'config/catalog-code-consolidation.json'
       - 'scripts/architecture/catalog-monorepo.test.mjs'
       - 'scripts/catalog/cutover-readiness*.mjs'
+      - 'scripts/catalog/*specialstl*.mjs'
       - 'scripts/cloudflare/catalog-pages-proxy.test.mjs'
       - 'functions/catalogo-api/**'
       - 'src/PublicCatalogApp.tsx'
       - 'src/config/canonical-catalog-endpoint*'
       - 'src/services/catalog/public-catalog-gateway*'
+      - 'src/services/catalog/specialstl-quarantine.json'
       - 'src/pages/CatalogModelsArcade*'
       - 'src/pages/catalog/CanonicalModelDetails*'
       - 'src/pages/LandingPage*'
@@ -213,6 +215,13 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      # Validate the read-only MVP before the independent backend ownership
+      # gate; a stale backend pin must not suppress frontend test evidence.
+      - name: Test public MVP and SpecialSTL offline curation
+        run: |
+          npm run catalog:mvp:test
+          node --test scripts/catalog/build-specialstl-review-sheet.test.mjs scripts/catalog/propose-specialstl-quarantine.test.mjs
+
       - name: Verify monorepo ownership and Git blobs
         run: npm run catalog:monorepo:check
 
@@ -227,9 +236,6 @@ jobs:
 
       - name: Test Pages proxy offline
         run: node --test scripts/cloudflare/catalog-pages-proxy.test.mjs
-
-      - name: Test public MVP frontend and catalog navigation
-        run: npm run catalog:mvp:test
 
       - name: Validate cutover gate fail-closed without network
         run: node --test scripts/catalog/cutover-readiness.test.mjs
