@@ -1,5 +1,14 @@
 # Tonecos Studio — checkpoint operacional
 
+## MVP — reconciliação de proveniência 07/11/2026
+
+- **PR #4 draft, uma branch/repo:** correção funcional da falha recorrente do gate `catalog:monorepo:check` nos commits `7857af4` e `6654195`. Foram mantidos os 46 Git blobs originais de `staging.fileBlobs`; duas alterações locais posteriores (capa indexada da pasta em `worker/index.ts` e teste SQLite em `tools/test_worker_folder_counts.mjs`) receberam pins separados em `staging.localOverlays`. Nenhum hash de origem foi substituído, nenhuma verificação desabilitada.
+- **CI comprovado:** GitHub Actions [#42378151846](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42378151846) **COMPLETED/SUCCESS** no SHA `66541956ebca000411d5a63ad7826dc95a80e19b`: MVP/curadoria SpecialSTL, guard de blobs, TypeScript Worker, testes runtime, SQLite, Pages proxy e cutover bloqueado por desenho.
+- **Cloudflare Pages:** os objetos automáticos dos commits `7857af4` e `6654195` estavam `queued/idle` em 07/11 (não são build nem deploy). **Não** criar preview por essa correção sem mudanças no frontend. Produção automática e preview automático continuam desativados; Access permanece protegido.
+- **NEXT_ACTION:** priorizar QA legítimo do SPA no navegador autenticado (Home, Universo, /modelos, busca/filtros, ficha/galerias, capas, deep links e mobile), corrigindo somente bug real do frontend da PR #4. Uma sessão legítima do Cloudflare Access e uma preview de código frontend efetivamente concluída são pré-requisitos para aprovar QA visual. Se não disponíveis, não afirmar aprovação. Liberação pública **NO-GO**, sem alterar Worker, Washington, D1/R2, Vercel ou DNS.
+- **DO_NOT_REPEAT:** não reabrir hashes já reconciliados, não rodar D1/R2, não gerar preview para commit documental nem tocar em M5/cutover.
+
+
 ## SpecialSTL — consolidação segura das decisões offline (07/11/2026)
 
 - `scripts/catalog/propose-specialstl-quarantine.mjs` transforma o export do revisor em **um candidato de quarentena**, em lote, comparando cada ID, slug e chave de mídia com um snapshot local. `creator` e `uncertain` jamais entram como bloqueios; fotos com chaves divergentes e IDs desconhecidos falham fechado.
