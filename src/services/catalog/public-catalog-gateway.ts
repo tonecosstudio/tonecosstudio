@@ -212,29 +212,17 @@ function decodeModel(value: unknown): PublicCatalogModel {
 const EXTERNAL_MEDIA_BRAND = /(?:^|[^a-z0-9])special[\s._-]*stl(?:\.com)?(?=$|[^a-z0-9])/i;
 
 /**
- * Exact public catalog IDs confirmed by visual review of one bounded page
- * (eight covers) on 2026-11-06. The first-party API currently does not
- * encode pixel-only third-party watermarks in its media metadata.
- * Quarantining these IDs hides both cards/details and all their media keys,
- * including category/folder representative covers. No database mutation.
- * A clean replacement requires a separately reviewed, licensed real photo.
+ * A creator's own logo, signature or Patreon credit is not evidence of
+ * unauthorized redistribution. Only explicitly identified redistribution
+ * branding is blocked by the metadata rules below. Never quarantine a
+ * product merely because its artwork credits a sculptor or studio.
  */
-const VISUALLY_QUARANTINED_MODEL_IDS = new Set([
-  "mdl_e8b7681b5258d694b9c4", // 10H / Neko Figurines
-  "mdl_027d30734c3c9227e9d5", // 2B / Bulkamancer
-  "mdl_0b1e74b6bb2af5eb9f40", // 2B / Chuya Factory
-  "mdl_2de23146ca8f98e21ac2", // 2B / Tanuki Figures
-  "mdl_ed5c4dfc82890a6b34d3", // A mascara / Malix 3D
-  "mdl_0a45ae78a4b79c1998d7", // Aang, Appa & Momo / Kaidan 3D
-  "mdl_af4a36b38f96100159cb", // Abutre / logo repeated in background
-]);
-
 function hasRestrictedExternalBrand(value: string | null | undefined): boolean {
   return typeof value === "string" && EXTERNAL_MEDIA_BRAND.test(value);
 }
 
 function isPubliclyEligibleCatalogModel(model: PublicCatalogModel): boolean {
-  return !VISUALLY_QUARANTINED_MODEL_IDS.has(model.id) && ![
+  return ![
     model.slug, model.code, model.name, model.variantName,
     model.category, model.categorySlug, model.franchise, model.franchiseSlug,
     model.collection, model.folderPath, model.coverStorageKey,
@@ -300,7 +288,6 @@ export function createPublicCatalogGateway(
       // catalog API routes. Validate before turning untrusted keys into URLs.
       if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key)) return null;
       const segments = key.split("/");
-      if (VISUALLY_QUARANTINED_MODEL_IDS.has(segments[1] ?? "")) return null;
       if (
         segments.length < 2 ||
         segments.length > 17 ||
