@@ -3,6 +3,38 @@
   "policy": "Confirmed SpecialSTL image only; creator logos and Patreon credits are not evidence.",
   "confirmed": [
     {
+      "modelId": "mdl_047cfdf8b0bd87f95577",
+      "slug": "resident-evil-ada-wong-2-047cfdf8b0",
+      "coverStorageKey": "media/mdl_047cfdf8b0bd87f95577/img_5f426e61462cf69664d4/card.webp",
+      "evidence": "Visual inspection of downloaded public card.webp cover, 2026-11-07: repeated 'STL by Specialstl.com' text across image and purple SpecialSTL logo at bottom; Ada Wong (gray coat, front and back sculpt views). Exact model ID, slug and storage key verified by bounded catalog/model API requests.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real unwatermarked authorized photo of the SAME sculpture/variant; preserve original sculptor attribution; never fabricate or digitally erase third-party watermark",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "galleryTotal": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_5f0f3f740f67b0a060ec",
+      "slug": "resident-evil-adawong",
+      "coverStorageKey": "media/mdl_5f0f3f740f67b0a060ec/img_565d4eb2cec3f48c3326/card.webp",
+      "evidence": "Visual inspection of downloaded public card.webp cover, 2026-11-07: repeated 'STL by Specialstl.com' text across image and purple SpecialSTL logo at bottom; Adawong (red dress, sculpt on ruined pillar). Exact model ID, slug and storage key verified by bounded catalog/model API requests.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real unwatermarked authorized photo of the SAME sculpture/variant; preserve original sculptor attribution; never fabricate or digitally erase third-party watermark",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "galleryTotal": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_ae8d28d2fa93b1367b0a",
       "slug": "as-tartarugas-ninja-ace-duck",
       "coverStorageKey": "media/mdl_ae8d28d2fa93b1367b0a/img_1ccf2edb6736ca445dea/card.webp",
