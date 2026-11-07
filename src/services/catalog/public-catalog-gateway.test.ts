@@ -894,7 +894,8 @@ describe("external catalog media branding quarantine", () => {
   });
 
   it("protects all confirmed SpecialSTL IDs with a pending clean-photo replacement", async () => {
-    expect(specialstlQuarantine.confirmed.length).toBeGreaterThanOrEqual(11);
+    // Quarantine must shrink safely when verified clean replacement photos arrive.
+    expect(specialstlQuarantine.confirmed.length).toBeGreaterThan(0);
     for (const entry of specialstlQuarantine.confirmed) {
       expect(entry.replacement.status).toBe("pending_authorized_clean_photo");
       expect(entry.replacement.approvedImageStorageKey).toBeNull();

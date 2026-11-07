@@ -1,5 +1,16 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 252 capas examinadas; 20 bloqueios comprovados (07/11/2026)
+
+- **Execução:** pranchas reais 05–07 (108 capas novas) revisadas visualmente via cache local no desktop; 7 lotes de 36, **252 IDs únicos**, usando somente 3 consultas paginadas públicas novas ao catálogo e 108 downloads de capas, sem varredura direta D1/R2.
+- **9 fotos novas com prova direta:** Ashley Graham; Athena Asamiya (2 variantes); Bahamut; Balrog 01; Baraka (3 variantes); Barbárvore 01. Cada capa foi reaberta em resolução original e mostra a marca repetida `STL by Specialstl.com` **mais** logotipo roxo SpecialSTL. ID, slug e storage key foram confrontados com snapshots paginados. Somadas às 11 anteriores, **20 quarentenas confirmadas** no JSON SSOT. Todas as 9 novas entradas têm `replacement.status=pending_authorized_clean_photo` e `approvedImageStorageKey=null`; nenhum modelo foi apagado.
+- **Distinção rigorosa:** Batman `mdl_8e948f8b4e6e619bfa05` possui texto de base `SPECIAL STLS` em marca azul/cinza, mas **não** a marca repetida `Specialstl.com` usada como prova; **não entrou** na quarentena. Exige confirmação de identidade/proveniência específica antes de qualquer bloqueio. Logos originais dos modeladores permanecem visíveis.
+- **Regressão:** a suíte percorre todos os registros atualmente em `confirmed` para validar listas, recentes, detalhe, URLs de mídia e status de reposição. Removeu-se a exigência artificial de mínimo 11 IDs, que impediria retirar modelos legitimamente recuperados depois que suas fotos limpas fossem homologadas.
+- **Permanência:** bloqueio no frontend da PR Draft, não no Worker/produção. As outras 232 capas revisadas não são atestadas limpas/licenciadas por mera ausência da marca; galerias completas não foram examinadas. Próximo cursor armazenado para retomar no modelo 253; manter revisão em lotes e obter substituição autorizada da MESMA escultura antes de reativar cada modelo. **NO-GO** público.
+
+---
+
+
 ## SpecialSTL — 144 capas examinadas; 11 casos comprovados (07/11/2026)
 
 - **Revisão real de quatro lotes paginados, sem repetição:** 144 capas públicas baixadas uma vez e analisadas em folhas de contato reais, com cache reutilizável no Desktop. Corrigida a numeração: Lote 01 (10H–Aiolos), 02 (Aira–Alleria), 03 (Aloy–Anjo) e 04 (Anjo–Aranhaverso).
