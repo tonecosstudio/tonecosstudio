@@ -1,5 +1,15 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 792 capas, 74 casos confirmados (07/11/2026)
+
+- **Lotes 20–22 reais e paginados:** 108 fotos de modelos 685–792 recuperadas em apenas três consultas GET limitadas da API pública, armazenadas em cache local. A ferramenta confirmou **792 IDs únicos**, sem reprocessar os 684 anteriores; 9 folhas de contato adicionais, três por lote, conferidas visualmente.
+- **11 novos bloqueios com prova direta:** Doutor Octopus, Electro, Ellen Ripley (03, 01 e 02), Emma Frost (traje branco e Força Fênix), Escorpião e Exodia (sobre rochas, em pé, com espada). As fotos originais foram examinadas em ampliação: texto repetido `STL by Specialstl.com` e logotipo roxo SpecialSTL; IDs, slugs e chaves de capa conferidos no snapshot. Cada registro público informou `image_count=1`. A quarentena canônica passa de 63 a **74 modelos**, todos pendentes de nova fotografia real, autorizada, sem marca SpecialSTL, **da mesma escultura**.
+- **Créditos legítimos preservados:** logotipos de criadores e Patreon NÃO foram tratados como marca de redistribuição. Outros 718 modelos não estão atestados como licenciados/limpos só por ausência dessa marca; revisão compreendeu somente as capas.
+- **NEXT_ACTION:** validar CI da mesma PR #4, atualizar prancha offline única para 792 modelos/22 lotes, continuar do cursor salvo em `catalog-snapshot-lote22.json` (após Exodia `mdl_884e34dd9f55dbeb094d`; próxima posição 793). Não consultar D1/R2 em massa, não modificar Worker/prod/Cloudflare Access. **Publicação NO-GO**.
+
+---
+
+
 ## SpecialSTL — 684 capas e 63 casos confirmados (07/11/2026)
 
 - **Lotes 17–19 concluídos:** 108 fotos reais de modelos 577–684 em três páginas GET de 36 da API pública, com cache reutilizável e folhas de contato por grupos de 12. Validados **684 IDs únicos**, sem repetição dos lotes anteriores; sem varredura ou mutação D1/R2.

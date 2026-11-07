@@ -51,6 +51,38 @@
       }
     },
     {
+      "modelId": "mdl_1838ac54c9bc3f5ecd58",
+      "slug": "yu-gi-oh-exodia-sobre-rochas",
+      "coverStorageKey": "media/mdl_1838ac54c9bc3f5ecd58/img_25c879fa812c746f7b7a/card.webp",
+      "evidence": "2026-11-07: original card.webp visually examined in enlarged contact sheet for public catalog item #790, lot 22, model Exodia sobre rochas. Repeating \"STL by Specialstl.com\" watermark and purple SpecialSTL logo visible directly in image; exact ID/slug/cover key and reported image_count=1 matched paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_1da46123b31d520532a0",
+      "slug": "alien-ellen-ripley-03",
+      "coverStorageKey": "media/mdl_1da46123b31d520532a0/img_5dae7d69bf7dbc4a8843/card.webp",
+      "evidence": "2026-11-07: original card.webp visually examined in enlarged contact sheet for public catalog item #752, lot 21, model Ellen Ripley 03. Repeating \"STL by Specialstl.com\" watermark and purple SpecialSTL logo visible directly in image; exact ID/slug/cover key and reported image_count=1 matched paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_251df89eeba124ee1d85",
       "slug": "final-fantasy-cloud-01",
       "coverStorageKey": "media/mdl_251df89eeba124ee1d85/img_e1ee8da80e2476a75a33/card.webp",
@@ -163,6 +195,22 @@
       }
     },
     {
+      "modelId": "mdl_404edb22ca6967b73b57",
+      "slug": "equipes-e-grupos-emma-frost-traje-branco-com-capa",
+      "coverStorageKey": "media/mdl_404edb22ca6967b73b57/img_c2878bab1794fd2d8e64/card.webp",
+      "evidence": "2026-11-07: original card.webp visually examined in enlarged contact sheet for public catalog item #759, lot 22, model Emma Frost roupa branca. Repeating \"STL by Specialstl.com\" watermark and purple SpecialSTL logo visible directly in image; exact ID/slug/cover key and reported image_count=1 matched paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_40faaa1caefe3b42ca74",
       "slug": "street-fighter-cammy-11",
       "coverStorageKey": "media/mdl_40faaa1caefe3b42ca74/img_532871fa4b1057daf1a8/card.webp",
@@ -171,6 +219,38 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Photograph of the SAME sculpture/variant, naturally without SpecialSTL watermark and legally authorized for TONART public use; preserve true sculptor credit. No watermark removal, crop or substitution by different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_49473262897688213f8e",
+      "slug": "alien-ellen-ripley-01",
+      "coverStorageKey": "media/mdl_49473262897688213f8e/img_5df4a54da230558a5e0f/card.webp",
+      "evidence": "2026-11-07: original card.webp visually examined in enlarged contact sheet for public catalog item #753, lot 21, model Ellen Ripley 01. Repeating \"STL by Specialstl.com\" watermark and purple SpecialSTL logo visible directly in image; exact ID/slug/cover key and reported image_count=1 matched paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_494c48db754d22258e85",
+      "slug": "herois-individuais-doutor-octopus-estatua-cinza-com-tentaculos-erguidos",
+      "coverStorageKey": "media/mdl_494c48db754d22258e85/img_c7ded89d4e1c50195877/card.webp",
+      "evidence": "2026-11-07: original card.webp visually examined in enlarged contact sheet for public catalog item #716, lot 20, model Doutor Octopus. Repeating \"STL by Specialstl.com\" watermark and purple SpecialSTL logo visible directly in image; exact ID/slug/cover key and reported image_count=1 matched paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -318,6 +398,22 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "galleryTotal": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_5fda29f5b00277ce4b04",
+      "slug": "yu-gi-oh-exodia-estatua-em-pe",
+      "coverStorageKey": "media/mdl_5fda29f5b00277ce4b04/img_b9320999efd41535212d/card.webp",
+      "evidence": "2026-11-07: original card.webp visually examined in enlarged contact sheet for public catalog item #791, lot 22, model Exodia em pé. Repeating \"STL by Specialstl.com\" watermark and purple SpecialSTL logo visible directly in image; exact ID/slug/cover key and reported image_count=1 matched paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
           "cleanAlternativeInCurrentGallery": false
         }
       }
@@ -515,6 +611,22 @@
       }
     },
     {
+      "modelId": "mdl_81d60f280bc8f5d793fb",
+      "slug": "herois-individuais-electro-estatua-cinza-com-bobinas",
+      "coverStorageKey": "media/mdl_81d60f280bc8f5d793fb/img_b8611f86f22d52927a36/card.webp",
+      "evidence": "2026-11-07: original card.webp visually examined in enlarged contact sheet for public catalog item #748, lot 21, model Electro. Repeating \"STL by Specialstl.com\" watermark and purple SpecialSTL logo visible directly in image; exact ID/slug/cover key and reported image_count=1 matched paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_85cf94f803b39566a771",
       "slug": "street-fighter-blanka-chibi",
       "coverStorageKey": "media/mdl_85cf94f803b39566a771/img_1c560ec5b395a3dd05e2/card.webp",
@@ -555,6 +667,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Same exact sculpture and variant, genuinely unwatermarked real photograph with permission to publish; preserve original sculptor/studio credit. Never erase a third-party watermark or substitute a different sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_884e34dd9f55dbeb094d",
+      "slug": "yu-gi-oh-exodia-com-espada",
+      "coverStorageKey": "media/mdl_884e34dd9f55dbeb094d/img_f1207aebabcab9b0dd1c/card.webp",
+      "evidence": "2026-11-07: original card.webp visually examined in enlarged contact sheet for public catalog item #792, lot 22, model Exodia com espada. Repeating \"STL by Specialstl.com\" watermark and purple SpecialSTL logo visible directly in image; exact ID/slug/cover key and reported image_count=1 matched paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
@@ -755,6 +883,22 @@
       }
     },
     {
+      "modelId": "mdl_bbe0b39e832530f09731",
+      "slug": "equipes-e-grupos-emma-frost-forca-fenix-dourada",
+      "coverStorageKey": "media/mdl_bbe0b39e832530f09731/img_61ce6e9b1105179f784b/card.webp",
+      "evidence": "2026-11-07: original card.webp visually examined in enlarged contact sheet for public catalog item #761, lot 22, model Emma Frost Força Fênix. Repeating \"STL by Specialstl.com\" watermark and purple SpecialSTL logo visible directly in image; exact ID/slug/cover key and reported image_count=1 matched paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_bfda139ee63638b2cd44",
       "slug": "mortal-kombat-baraka-03",
       "coverStorageKey": "media/mdl_bfda139ee63638b2cd44/img_bb3565581bb2367a330e/card.webp",
@@ -931,6 +1075,22 @@
       }
     },
     {
+      "modelId": "mdl_f25c14c82409e250026d",
+      "slug": "alien-ellen-ripley-02",
+      "coverStorageKey": "media/mdl_f25c14c82409e250026d/img_b5c8208293ca45cf7996/card.webp",
+      "evidence": "2026-11-07: original card.webp visually examined in enlarged contact sheet for public catalog item #754, lot 21, model Ellen Ripley 02. Repeating \"STL by Specialstl.com\" watermark and purple SpecialSTL logo visible directly in image; exact ID/slug/cover key and reported image_count=1 matched paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
       "modelId": "mdl_f415703fe1778b6dc2d8",
       "slug": "street-fighter-cammy-08",
       "coverStorageKey": "media/mdl_f415703fe1778b6dc2d8/img_75730fa8298790115f36/card.webp",
@@ -971,6 +1131,22 @@
         "status": "pending_authorized_clean_photo",
         "approvedImageStorageKey": null,
         "photoRequirements": "Real authorized, unwatermarked photograph of the SAME sculpture and variant; preserve true sculptor credit; no cropping/erasing third-party marks or substituting a different sculpture.",
+        "inventoryEvidence": {
+          "checkedOn": "2026-11-07",
+          "catalogImageCount": 1,
+          "cleanAlternativeInCurrentGallery": false
+        }
+      }
+    },
+    {
+      "modelId": "mdl_f90e0aeb34799047ade0",
+      "slug": "as-tartarugas-ninja-escorpiao",
+      "coverStorageKey": "media/mdl_f90e0aeb34799047ade0/img_96cf26c26d025a0813b8/card.webp",
+      "evidence": "2026-11-07: original card.webp visually examined in enlarged contact sheet for public catalog item #768, lot 22, model Escorpião. Repeating \"STL by Specialstl.com\" watermark and purple SpecialSTL logo visible directly in image; exact ID/slug/cover key and reported image_count=1 matched paginated catalog snapshot.",
+      "replacement": {
+        "status": "pending_authorized_clean_photo",
+        "approvedImageStorageKey": null,
+        "photoRequirements": "Real authorized, genuinely unwatermarked photograph of the same exact sculpture/variant, preserving genuine sculptor credits; do not crop/erase a third-party watermark or substitute a different sculpt.",
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
