@@ -218,7 +218,8 @@ function hasRestrictedExternalBrand(value: string | null | undefined): boolean {
 function isPubliclyEligibleCatalogModel(model: PublicCatalogModel): boolean {
   return ![
     model.slug, model.code, model.name, model.variantName,
-    model.category, model.franchise, model.folderPath, model.coverStorageKey,
+    model.category, model.categorySlug, model.franchise, model.franchiseSlug,
+    model.collection, model.folderPath, model.coverStorageKey,
   ].some(hasRestrictedExternalBrand);
 }
 
