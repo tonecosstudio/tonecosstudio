@@ -1,5 +1,16 @@
 # Tonecos Studio — checkpoint operacional
 
+## Frontend — Visualização real: sete capas com marcas externas (06/11/2026)
+
+- **Identificação pontual e não destrutiva:** uma única página pública limitada a 8 modelos foi consultada pela rota GET já existente, e exatamente 8 capas foram inspecionadas visualmente via URLs GET da API. **7/8 tinham identificação visível de terceiros** (logos, endereços Patreon ou marcas repetidas); a oitava, A2, não apresentou marca visível na capa, mas sua galeria não foi examinada.
+- **IDs colocados em quarentena no frontend existente** (`ba1a0c39`): `mdl_e8b7681b5258d694b9c4` (10H / Neko Figurines), `mdl_027d30734c3c9227e9d5` (2B / Bulkamancer), `mdl_0b1e74b6bb2af5eb9f40` (2B / Chuya Factory), `mdl_2de23146ca8f98e21ac2` (2B / Tanuki Figures), `mdl_ed5c4dfc82890a6b34d3` (A Máscara / Malix 3D), `mdl_0a45ae78a4b79c1998d7` (Aang / Kaidan 3D) e `mdl_af4a36b38f96100159cb` (Abutre / padrão repetido de logotipos). As chaves `media/<id>/...` também são recusadas para não reutilizar essas capas em categorias e pastas. Modelos/arquivos originais não foram alterados.
+- **Teste versionado** `2ac865eb` garante bloqueio nas listagens, recentes, mídia e fichas por slug, mantendo cursor e um modelo não bloqueado. Execução independente do gateway exato no Node 24 físico: **5/5 PASS**, `VISUAL_QUARANTINE_QA_SUCCESS`, código de saída 0, solicitações GET simuladas em memória, sem tráfego D1/R2 nos testes.
+- **Limites:** ainda não foi feita curadoria visual do restante do acervo nem de todas as galerias dos sete modelos. A fotografia de exemplo SpecialSTL recebida não pôde ser vinculada a um ID do catálogo. Não declarar todo o catálogo livre de marcas e não gerar imagens fictícias para substituição. CI/preview do novo SHA exigem verificação independente; nenhuma publicação pública autorizada.
+- **NEXT_ACTION:** revisar imagens remanescentes em lotes pequenos, confirmar IDs exatos antes de bloquear, verificar gates aplicáveis e testar prévia realmente compilada com sessão Cloudflare Access. Preservar Worker, D1, R2, main e produção; **NO-GO** público.
+
+---
+
+
 ## Frontend — quarentena de imagens identificáveis como SpecialSTL (06/11/2026)
 
 - **Correção funcional na mesma PR #4:** `bf1a64a3` bloqueia URLs de mídia cujos caminhos mencionem SpecialSTL, retira modelos assim identificados das listagens públicas e de recentes e nega ficha por link direto. `58a9f387` distingue página esvaziada pela revisão de imagens da inexistência de resultados, preservando o cursor de navegação. Testes direcionados adicionados em `6c5e0595`.
