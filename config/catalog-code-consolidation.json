@@ -200,6 +200,18 @@
       "tools/test_worker_catalog_facets.mjs": "bd7ede29ce84a68fb26fb67a5aca02b696f85d0b",
       "tools/test_worker_catalog_scale_sqlite.mjs": "b4dca481759d53448f31aaaff879b01546c3c74f"
     },
+    "localOverlays": {
+      "tools/test_worker_folder_counts.mjs": {
+        "sourceBlob": "dc3e68ebc5f0cd73132fb55e4173c129c06ecb47",
+        "localBlob": "45303c880cb701457faeb9ac220783f9798f6fa9",
+        "reason": "Extended offline SQLite folder regression test in Tonecos; source pin remains immutable"
+      },
+      "worker/index.ts": {
+        "sourceBlob": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
+        "localBlob": "f78e3c2c6e023fbaa7341b15ac20b3c2a5deccec",
+        "reason": "Indexed folder cover lookup added only to staged Tonecos source; no production Worker deployment"
+      }
+    },
     "excludedModules": [
       "worker/quoteAdminAccess.ts",
       "worker/quoteAdminApi.ts",
