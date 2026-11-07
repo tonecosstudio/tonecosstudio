@@ -142,7 +142,7 @@ test('M5 ownership transition is possible only after source disablement and expl
   }
 })
 
-test('the staged Worker is byte-identical to the audited Git blobs, with no commercial code', () => {
+test('staged files preserve immutable import pins and explicit local overlays, without commercial code', () => {
   assert.ok(['staged-offline', 'cutover-approved', 'cutover-complete'].includes(contract.migration.phase));
   assert.equal(contract.staging.sourceMain, contract.origin.observedMainSha);
   assert.equal(contract.staging.sourceFixPullRequest, 266);
@@ -151,11 +151,29 @@ test('the staged Worker is byte-identical to the audited Git blobs, with no comm
   assert.equal(Object.keys(stage).length, 46);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 9);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('migrations/')).length, 22);
-  for (const [path, expectedBlob] of Object.entries(stage)) {
-    assert.match(expectedBlob, sha, path);
+  // Preserve the 46 immutable source Git pins; allow only two separately
+  // pinned, reviewed Tonecos-local changes while cutover remains blocked.
+  const overlays = contract.staging.localOverlays ?? {};
+  assert.deepEqual(Object.keys(overlays).sort(), [
+    'tools/test_worker_folder_counts.mjs',
+    'worker/index.ts',
+  ]);
+  assert.equal(contract.migration.phase, 'staged-offline',
+    'Reconcile local overlays before authorizing cutover');
+  assert.equal(contract.migration.releaseAuthorized, false);
+  for (const [path, local] of Object.entries(overlays)) {
+    assert.equal(local.sourceBlob, stage[path], 'Original import pin changed: ' + path);
+    assert.match(local.localBlob, sha, 'Invalid local Git blob: ' + path);
+    assert.notEqual(local.localBlob, local.sourceBlob, 'Unnecessary overlay: ' + path);
+    assert.ok(typeof local.reason === 'string' && local.reason.trim().length >= 20,
+      'Missing reviewed rationale: ' + path);
+  }
+  for (const [path, sourceBlob] of Object.entries(stage)) {
+    assert.match(sourceBlob, sha, path);
     const buf = readFileSync(join(root, contract.target.serviceRoot, path));
     const actual = createHash('sha1').update('blob ' + buf.byteLength).update(Buffer.from([0])).update(buf).digest('hex');
-    assert.equal(actual, expectedBlob, 'Unexpected content drift in ' + path);
+    assert.equal(actual, overlays[path]?.localBlob ?? sourceBlob,
+      'Unexpected content drift in ' + path);
   }
   for (const excluded of contract.staging.excludedModules) {
     assert.equal(existsSync(join(root, contract.target.serviceRoot, excluded)), false, excluded);
