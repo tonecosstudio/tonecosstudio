@@ -202,6 +202,27 @@ function decodeModel(value: unknown): PublicCatalogModel {
 }
 
 /**
+ * Quarantine externally branded catalog media when the public metadata
+ * itself identifies the source. No pixel scanning, hidden Worker calls,
+ * destructive data edits or replacement photos are implied.
+ *
+ * An image whose branding exists only inside its pixels must be reviewed
+ * separately before it can be called clean.
+ */
+const EXTERNAL_MEDIA_BRAND = /(?:^|[^a-z0-9])special[\s._-]*stl(?:\.com)?(?=$|[^a-z0-9])/i;
+
+function hasRestrictedExternalBrand(value: string | null | undefined): boolean {
+  return typeof value === "string" && EXTERNAL_MEDIA_BRAND.test(value);
+}
+
+function isPubliclyEligibleCatalogModel(model: PublicCatalogModel): boolean {
+  return ![
+    model.slug, model.code, model.name, model.variantName,
+    model.category, model.franchise, model.folderPath, model.coverStorageKey,
+  ].some(hasRestrictedExternalBrand);
+}
+
+/**
  * Same-origin Cloudflare Pages calls may carry the browser's own Access cookie.
  * Cross-origin catalog origins must never receive session credentials.
  */
@@ -258,7 +279,7 @@ export function createPublicCatalogGateway(
     mediaUrl(key: string | null): string | null {
       // The Worker and Pages proxy expose only /media/*, never arbitrary
       // catalog API routes. Validate before turning untrusted keys into URLs.
-      if (!key?.startsWith("media/")) return null;
+      if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key)) return null;
       const segments = key.split("/");
       if (
         segments.length < 2 ||
@@ -512,6 +533,9 @@ export function createPublicCatalogGateway(
       );
       const model = decodeModel(result);
       if (model.slug !== slug) throw new Error("invalid_catalog_model_slug");
+      if (!isPubliclyEligibleCatalogModel(model)) {
+        throw new Error("catalog_model_media_restricted");
+      }
       const row = result as CatalogWireModel;
       if (
         row.height_cm !== null &&
@@ -696,7 +720,7 @@ export function createPublicCatalogGateway(
         }
         seen.add(model.id);
         return model;
-      });
+      }).filter(isPubliclyEligibleCatalogModel);
     },
     async listPage(
       filters: PublicCatalogFilters = {},
@@ -769,7 +793,7 @@ export function createPublicCatalogGateway(
         return model;
       });
       return {
-        items: models,
+        items: models.filter(isPubliclyEligibleCatalogModel),
         nextCursor: (nextCursor as string | null | undefined) ?? null,
       };
     },
