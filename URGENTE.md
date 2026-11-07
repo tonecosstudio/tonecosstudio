@@ -1,5 +1,16 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — 144 capas examinadas; 11 casos comprovados (07/11/2026)
+
+- **Revisão real de quatro lotes paginados, sem repetição:** 144 capas públicas baixadas uma vez e analisadas em folhas de contato reais, com cache reutilizável no Desktop. Corrigida a numeração: Lote 01 (10H–Aiolos), 02 (Aira–Alleria), 03 (Aloy–Anjo) e 04 (Anjo–Aranhaverso).
+- **11 imagens visualmente confirmadas SpecialSTL:** Ace Duck (1), Ada Wong/Adawong (2), Akuma (1), Androide 8 (1), Anjo (2), April O'Neil (1), Apu (1), Aragorn (2). Repetem "STL by Specialstl.com" e logo SpecialSTL. Todas as oito adições desta rodada têm `image_count=1` na listagem pública; não há segunda capa cadastrada nesses modelos. Demais capas não foram declaradas limpas ou licenciadas por ausência dessa marca.
+- **SSOT:** `src/services/catalog/specialstl-quarantine.json` contém todos os 11 IDs confirmados, chave exata e `replacement.status=pending_authorized_clean_photo`. Ocultação é provisória, preservando o registro, até haver foto REAL da MESMA escultura com direito de exibição; créditos de autores legítimos não são motivo de bloqueio. Uma regressão na suíte do gateway verifica listagem/recentes/detalhe/mídias para **cada ID** sem rede.
+- **Preservação de quota:** somente consultas paginadas limitadas da API pública; nenhuma varredura D1/R2, mutação de Worker, produção ou publicação. Pranchas usadas são de revisão, não de fotos geradas ou editadas.
+- **NEXT_ACTION:** revisar os itens marcados para encontrar fotos substitutas exatas e autorizadas; confirmar que cada troca da origem remova o SpecialSTL, fazer QA do SPA sob Access e só então liberar cada modelo. Site público **NO-GO**.
+
+---
+
+
 
 ## SpecialSTL — substituição futura obrigatória, sem apagar o modelo (07/11/2026)
 

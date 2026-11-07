@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import specialstlQuarantine from "./specialstl-quarantine.json";
 import {
   createPublicCatalogGateway,
   resolveCatalogFetchCredentials,
@@ -890,6 +891,34 @@ describe("external catalog media branding quarantine", () => {
     expect(page.nextCursor).toBe("page-two");
     expect((await api.listRecent(6)).map((model) => model.slug)).toEqual(["animal-original"]);
     expect(io).toHaveBeenCalledTimes(2);
+  });
+
+  it("protects all confirmed SpecialSTL IDs with a pending clean-photo replacement", async () => {
+    expect(specialstlQuarantine.confirmed.length).toBeGreaterThanOrEqual(11);
+    for (const entry of specialstlQuarantine.confirmed) {
+      expect(entry.replacement.status).toBe("pending_authorized_clean_photo");
+      expect(entry.replacement.approvedImageStorageKey).toBeNull();
+      const branded = {
+        ...row,
+        id: entry.modelId,
+        slug: entry.slug,
+        name: "Verified branded model",
+        cover_storage_key: entry.coverStorageKey,
+      };
+      const io = vi.fn(async (request: RequestInfo | URL) => {
+        const uri = String(request);
+        if (uri.includes("/api/models/")) return Response.json(branded);
+        if (uri.includes("/api/recent?")) return Response.json({ items: [row, branded] });
+        return Response.json({ items: [row, branded], nextCursor: null });
+      });
+      const api = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
+      expect((await api.listPage({ limit: 8 })).items.map((item) => item.id)).toEqual([row.id]);
+      expect((await api.listRecent(8)).map((item) => item.id)).toEqual([row.id]);
+      await expect(api.getModel(entry.slug)).rejects.toThrow("catalog_model_media_restricted");
+      expect(api.mediaUrl(entry.coverStorageKey)).toBeNull();
+      expect(api.mediaUrl(`media/${entry.modelId}/another-image/detail.webp`)).toBeNull();
+      expect(io).toHaveBeenCalledTimes(3);
+    }
   });
 
   it("quarantines the exact Ace Duck SpecialSTL photo even without branded text metadata", async () => {
