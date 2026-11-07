@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "policy": "Confirmed SpecialSTL image only; creator logos and Patreon credits are not evidence.",
+  "confirmed": [
+    {
+      "modelId": "mdl_ae8d28d2fa93b1367b0a",
+      "slug": "as-tartarugas-ninja-ace-duck",
+      "coverStorageKey": "media/mdl_ae8d28d2fa93b1367b0a/img_1ccf2edb6736ca445dea/card.webp",
+      "evidence": "Visual match to owner's SpecialSTL-marked photo, confirmed in public catalog cover 2026-11-06"
+    }
+  ]
+}

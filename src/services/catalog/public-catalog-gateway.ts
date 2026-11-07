@@ -1,3 +1,5 @@
+import specialstlQuarantine from "./specialstl-quarantine.json";
+
 /**
  * Read-only boundary for the canonical Tonecos catalog.
  *
@@ -219,9 +221,11 @@ const EXTERNAL_MEDIA_BRAND = /(?:^|[^a-z0-9])special[\s._-]*stl(?:\.com)?(?=$|[^
  * A product's creator logo/Patreon credit alone never belongs in this list.
  * Do not remove this entry without a verified replacement and permission.
  */
-const CONFIRMED_SPECIALSTL_MODEL_IDS = new Set([
-  "mdl_ae8d28d2fa93b1367b0a", // as-tartarugas-ninja-ace-duck
-]);
+// A single, reviewable data file holds every confirmed SpecialSTL ID.
+// Batch decisions update data once, not application logic per photograph.
+const CONFIRMED_SPECIALSTL_MODEL_IDS = new Set(
+  specialstlQuarantine.confirmed.map((entry) => entry.modelId),
+);
 
 
 

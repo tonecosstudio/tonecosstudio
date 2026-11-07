@@ -1,5 +1,16 @@
 # Tonecos Studio — checkpoint operacional
 
+## SpecialSTL — curadoria local por lotes (06/11/2026)
+
+- **Evolução rápida para milhares de fotos:** a lista SSOT de IDs com marca SpecialSTL comprovada sai do código do gateway para `src/services/catalog/specialstl-quarantine.json`. Continua contendo **somente Ace Duck**, confirmado pela fotografia enviada. O filtro de metadados continua intacto; logotipos de escultores não são motivo de bloqueio.
+- **Revisão proporcional offline:** `scripts/catalog/build-specialstl-review-sheet.mjs` lê um snapshot **já local** e as imagens **já presentes no disco**, sem chamar Worker, D1 ou R2. Exibe somente 48 imagens por página (lazy load), aceita milhares de registros e exporta decisões por ID (SpecialSTL / crédito legítimo do modelador / inconclusivo); as decisões NÃO são aplicadas automaticamente ao site. Pode retomar revisões anteriores por `--decisions` sem reler fotos anteriores.
+- **Regra de economia:** revisar primeiro por lotes offline, confirmar imagem e ID, acumular entradas no JSON e publicar uma única atualização após revisão + testes. Não gerar novos deployments por item, nem percorrer todo o R2/D1.
+- **Limite real:** o snapshot local com mapeamento IDs → caminhos e as fotos já baixadas precisam existir para revisar milhares de imagens; não alegar classificação automática ou acervo inteiro limpo. O exemplo ace duck permanece a única confirmação visual registrada.
+- **NEXT_ACTION:** alimentar o revisor com o cache local canônico e uma lista de modelos obtida por exportação autorizada e já existente; revisar lotes, incorporar apenas casos comprovados à lista JSON, executar teste proporcional e QA autenticado quando o Pages preview do SHA certo concluir. Produção pública **NO-GO**.
+
+---
+
+
 
 ## Especial SpecialSTL — Ace Duck confirmado e ocultado no frontend (06/11/2026)
 
