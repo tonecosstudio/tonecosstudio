@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 vi.mock("@/components/layouts/Page", () => ({
@@ -37,7 +37,20 @@ vi.mock("@/components/arcade/ArcadeLayout", () => ({
 
 import AboutArcade from "./AboutArcade";
 
+afterEach(() => vi.unstubAllEnvs());
+
 describe("public TONART Studio about page", () => {
+  it("presents the read-only catalog without offering a quote or sale", () => {
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
+    render(<AboutArcade />);
+    expect(screen.getByText(/Este site é um catálogo para consulta/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "EXPLORE O ACERVO" })).toBeInTheDocument();
+    expect(screen.queryByText("Explore nosso catálogo e solicite um orçamento personalizado.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Este catálogo recebe pedidos ou pagamentos?" }));
+    expect(screen.getByText(/não há pedidos, cadastros, solicitações de orçamento ou pagamentos/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "FALAR COM O ESTÚDIO" })).toHaveAttribute("href", "/contato");
+  });
   it("uses the canonical brand and avoids legacy OrdaX and unsupported fixed deadlines", () => {
     const view = render(<AboutArcade />);
     expect(view.container.querySelector("[data-page-title]")).toHaveAttribute("data-page-title", "Sobre");
