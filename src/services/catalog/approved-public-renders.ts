@@ -48,13 +48,14 @@ export function isApprovedPublicMediaKey(key: string | null | undefined): boolea
 export function isApprovedPublicMediaUrl(
   src: string | null | undefined,
   catalogApiBase: string,
+  entries: readonly ApprovedPublicRender[] = approvedPublicRenders,
 ): boolean {
   if (!src || !catalogApiBase) return false;
   try {
     const base = new URL(catalogApiBase);
     if (base.protocol !== "https:" || !base.pathname.endsWith("/") ||
         base.search || base.hash || base.username || base.password) return false;
-    return approvedPublicRenders.some((entry) => {
+    return entries.some((entry) => {
       const path = entry.coverStorageKey.split("/").map((part) =>
         encodeURIComponent(part).replace(/[!'()*]/g, (char) =>
           "%" + char.charCodeAt(0).toString(16).toUpperCase(),
