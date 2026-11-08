@@ -16,6 +16,7 @@ import {
   toggleCanonicalSelection,
 } from "@/services/catalog/public-catalog-selection";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
+import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
 import {
   createPublicCatalogGateway,
   validCatalogFolder,
@@ -188,6 +189,7 @@ export default function CanonicalModelDetails() {
     staleTime: 5 * 60 * 1000,
   });
   const model = modelQuery.data;
+  const mediaUnderReview = isCatalogMediaUnderReview();
   // Navigation from a related card is a new detail view. Announce its
   // heading to keyboard/screen-reader users after the detail has loaded.
   // Do not steal focus on a normal catalog return or a data refetch.
@@ -227,7 +229,7 @@ export default function CanonicalModelDetails() {
       return next && !pageParams.includes(next) ? next : undefined;
     },
     enabled:
-      gateway !== null && model !== undefined && model.galleryVersion > 0,
+      !mediaUnderReview && gateway !== null && model !== undefined && model.galleryVersion > 0,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
@@ -436,6 +438,11 @@ export default function CanonicalModelDetails() {
             <>
             <article className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
               <section aria-label="Imagens do modelo">
+                {mediaUnderReview ? (
+                  <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] pl-4 text-sm text-[hsl(0,0%,72%)]">
+                    Fotografias em revisão para publicação. Os dados do modelo continuam disponíveis para consulta.
+                  </p>
+                ) : null}
                 <ArcadeCard className="flex min-h-[280px] items-center justify-center sm:min-h-[360px] md:min-h-[560px]">
                   <CanonicalCatalogImage
                     src={activeImageUrl}
@@ -485,7 +492,7 @@ export default function CanonicalModelDetails() {
                   </nav>
                 ) : null}
 
-                {model.galleryVersion > 0 && galleryQuery.isPending ? (
+                {mediaUnderReview ? null : model.galleryVersion > 0 && galleryQuery.isPending ? (
                   <p
                     role="status"
                     className="mt-4 text-sm text-[hsl(0,0%,56%)]"
@@ -616,7 +623,7 @@ export default function CanonicalModelDetails() {
                         Imagens publicadas
                       </dt>
                       <dd className="mt-1 font-medium">
-                        {galleryQuery.isError || duplicateGalleryIdentity || inconsistentGalleryCount
+                        {mediaUnderReview ? "Em revisão" : galleryQuery.isError || duplicateGalleryIdentity || inconsistentGalleryCount
                           ? "Indisponível"
                           : galleryQuery.data?.pages[0]?.total ??
                             (model.galleryVersion > 0
@@ -663,7 +670,9 @@ export default function CanonicalModelDetails() {
                 </div>
               </ArcadeCard>
             </article>
-            <RelatedModels model={model} gateway={gateway} returnPath={catalogReturnTo} />
+            {!mediaUnderReview ? (
+              <RelatedModels model={model} gateway={gateway} returnPath={catalogReturnTo} />
+            ) : null}
             </>
           )}
         </div>
