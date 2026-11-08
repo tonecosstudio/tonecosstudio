@@ -241,6 +241,8 @@ describe("published model/gallery identity on the public detail page", () => {
 
     const previous = await screen.findByRole("link", { name: "Voltar ao modelo anterior" });
     await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Animal original" }))
+        .toHaveFocus();
       expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "auto" });
     });
     expect(scrollTo).toHaveBeenCalledTimes(1);
