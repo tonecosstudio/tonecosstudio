@@ -77,6 +77,29 @@ afterEach(() => {
 });
 
 describe("Tonecos canonical Universe discovery", () => {
+  it("presents the rights-clearance notice on Universe without requesting categories", async () => {
+    vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
+    const calls = setupFetch();
+    await renderUniverse("/universo");
+    expect(screen.getByRole("heading", { name: "Universo em preparação" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Consultar modelos" }))
+      .toHaveAttribute("href", "/modelos");
+    expect(screen.getByRole("link", { name: "Falar com o estúdio" }))
+      .toHaveAttribute("href", "/contato");
+    expect(screen.queryByText("Carregando categorias publicadas…")).not.toBeInTheDocument();
+    expect(calls).toHaveLength(0);
+  });
+
+  it("does not query hidden franchises through a direct Universe category URL", async () => {
+    vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
+    const calls = setupFetch();
+    await renderUniverse("/universo/originais");
+    expect(screen.getByRole("heading", { name: "Universo em preparação" })).toBeInTheDocument();
+    expect(screen.queryByRole("searchbox", { name: "Nome da franquia" }))
+      .not.toBeInTheDocument();
+    expect(calls).toHaveLength(0);
+  });
+
   it("shows categories from the Worker without requesting the full model inventory", async () => {
     const calls = setupFetch();
     await renderUniverse("/universo");
