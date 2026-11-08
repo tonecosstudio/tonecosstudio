@@ -159,7 +159,7 @@ export default function LandingPage() {
     staleTime: 60 * 1000,
   });
   const models = modelsQuery.data?.slice(0, 6) ?? [];
-  const isCatalogLoading = gateway !== null && modelsQuery.isPending;
+  const isCatalogLoading = gateway !== null && !catalogMediaOnHold && modelsQuery.isPending;
   const hasCatalogError = !catalogMediaOnHold && (gateway === null || modelsQuery.isError);
   const hasCatalogData = models.length > 0;
   const catalogStatus = isCatalogLoading
