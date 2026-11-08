@@ -76,7 +76,9 @@ function mountGallery(options: {
   cachedFranchiseItems?: Array<typeof model>;
   characterItems?: Array<typeof model>;
   relatedSearchError?: boolean;
+  relatedPageFailsFirst?: boolean;
 }) {
+  let relatedPageAttempts = 0;
   const io = vi.fn(async (input: string, _init: RequestInit) => {
     const url = new URL(input);
     if (url.pathname.endsWith("/api/catalog")) {
@@ -85,6 +87,10 @@ function mountGallery(options: {
           return Response.json({ error: "search unavailable" }, { status: 503 });
         }
         return Response.json({ items: options.characterItems ?? [], nextCursor: null });
+      }
+      relatedPageAttempts += 1;
+      if (options.relatedPageFailsFirst && relatedPageAttempts === 1) {
+        return Response.json({ error: "catalog unavailable" }, { status: 503 });
       }
       return Response.json({ items: options.relatedItems ?? [], nextCursor: null });
     }
@@ -311,6 +317,32 @@ describe("published model/gallery identity on the public detail page", () => {
       name: "Outras versões de Animal original",
     })).toBeInTheDocument();
     expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(1);
+  });
+
+  it("offers one user-initiated retry when suggestions fail, with no automatic retry", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    const { io } = mountGallery({
+      total: 1,
+      relatedPageFailsFirst: true,
+      relatedItems: [
+        { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
+          variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
+      ],
+    });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+
+    const retry = await screen.findByRole("button", { name: "Tentar novamente" });
+    expect(screen.getByText("Não foi possível carregar sugestões agora.")).toBeInTheDocument();
+    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(1);
+
+    fireEvent.click(retry);
+    expect(await screen.findByRole("link", {
+      name: "Ver modelo Animal original — Nova pose",
+    })).toHaveAttribute("href", "/modelos/animal-nova-pose");
+    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "Tentar novamente" }))
+      .not.toBeInTheDocument();
   });
 
   it("hides the section when its single bounded response has no eligible related models", async () => {
