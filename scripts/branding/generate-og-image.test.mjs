@@ -21,6 +21,14 @@ test("preview metadata uses only the Tonecos deployment host", () => {
   assert.ok(result.includes('content="630"'));
 });
 
+test("official TONART Vercel preview uses only its own project hostname", () => {
+  const origin = resolveSocialOrigin({
+    VERCEL_ENV: "preview",
+    VERCEL_URL: "tonart-studio-public-gsy7ngw7i-jogo-brasils-projects.vercel.app",
+  });
+  assert.equal(origin, "https://tonart-studio-public-gsy7ngw7i-jogo-brasils-projects.vercel.app");
+});
+
 test("preview rejects a hostname from another project or a forged authority", () => {
   for (const host of [
     "ordax-three.vercel.app",
