@@ -171,6 +171,9 @@ export default function CanonicalModelDetails() {
     staleTime: 5 * 60 * 1000,
   });
   const model = modelQuery.data;
+  const imageUnderReview = modelQuery.isError &&
+    modelQuery.error instanceof Error &&
+    modelQuery.error.message === "catalog_model_media_restricted";
   const isSelected = Boolean(
     model && selectedModels.some((entry) => entry.id === model.id),
   );
@@ -376,18 +379,23 @@ export default function CanonicalModelDetails() {
             </p>
           ) : modelQuery.isError || !model ? (
             <section className="mt-8 rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-6">
-              <h1 className="text-2xl font-medium">Ficha indisponível</h1>
+              <h1 className="text-2xl font-medium">
+                {imageUnderReview ? "Modelo em revisão de imagem" : "Ficha indisponível"}
+              </h1>
               <p role="alert" className="mt-2 text-sm text-[hsl(0,0%,56%)]">
-                Não foi possível carregar este modelo publicado. Tente novamente
-                mais tarde.
+                {imageUnderReview
+                  ? "Este modelo está temporariamente indisponível no catálogo público enquanto sua imagem é revisada. Consulte os demais modelos publicados."
+                  : "Não foi possível carregar este modelo publicado. Tente novamente mais tarde."}
               </p>
-              <button
-                type="button"
-                onClick={() => void modelQuery.refetch()}
-                className="mt-4 min-h-11 rounded-none border border-[hsl(0,0%,15%)] px-4 text-sm font-medium hover:bg-[hsl(0,0%,9%)]"
-              >
-                Tentar novamente
-              </button>
+              {!imageUnderReview ? (
+                <button
+                  type="button"
+                  onClick={() => void modelQuery.refetch()}
+                  className="mt-4 min-h-11 rounded-none border border-[hsl(0,0%,15%)] px-4 text-sm font-medium hover:bg-[hsl(0,0%,9%)]"
+                >
+                  Tentar novamente
+                </button>
+              ) : null}
             </section>
           ) : (
             <article className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
