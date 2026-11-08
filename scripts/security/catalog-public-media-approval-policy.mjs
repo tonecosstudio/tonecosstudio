@@ -30,6 +30,8 @@ export function validatePublicRenderApprovals(data, restricted = quarantine) {
       typeof entry.rightsHolder !== "string" || entry.rightsHolder.trim().length < 3 ||
       typeof entry.creatorCredit !== "string" || entry.creatorCredit.trim().length < 2 ||
       !DRIVE_REF.test(entry.sourceFileRef) || !EVIDENCE_REF.test(entry.rightsEvidenceRef) ||
+      entry.sourceFileRef === entry.rightsEvidenceRef ||
+      typeof entry.sourceSha256 !== "string" || !/^[a-f0-9]{64}$/.test(entry.sourceSha256) ||
       entry.publicationScope !== "tonartstudio.com.br" ||
       entry.ownerApproved !== true ||
       typeof entry.approvedOn !== "string" ||
