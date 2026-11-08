@@ -181,6 +181,22 @@ function mountGallery(options: {
 }
 
 describe("published model/gallery identity on the public detail page", () => {
+  it("hides the section when its single bounded response has no eligible related models", async () => {
+    const { io } = mountGallery({ total: 1, relatedItems: [
+      { ...model, id: "mdl-other", slug: "outro-universo", code: "TS-other",
+        franchise_slug: "outra-franquia" },
+      { ...model, id: specialstlQuarantine.confirmed[0].modelId,
+        slug: "modelo-em-quarentena", code: "TS-quarentena" },
+    ] });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "Explore mais modelos" }))
+        .not.toBeInTheDocument();
+    });
+    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(1);
+  });
+
   it("loads bounded related suggestions only on demand and respects exact franchise/character matches", async () => {
     const { io } = mountGallery({
       total: 1,
@@ -205,6 +221,8 @@ describe("published model/gallery identity on the public detail page", () => {
     })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Explore Exemplo" }))
       .toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver todos de Exemplo" }))
+      .toHaveAttribute("href", "/modelos?category=games&franchise=exemplo");
     expect(screen.getByRole("link", { name: "Ver modelo Animal original — Nova pose" }))
       .toHaveAttribute("href", "/modelos/animal-nova-pose");
     expect(screen.queryByRole("link", { name: /Ver modelo Outro/ })).not.toBeInTheDocument();
