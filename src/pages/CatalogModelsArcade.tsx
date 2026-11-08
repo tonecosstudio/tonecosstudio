@@ -62,8 +62,12 @@ export default function CatalogModelsArcade() {
   const franchise = searchParams.get("franchise")?.trim() ?? "";
   const folder = searchParams.get("folder")?.trim() ?? "";
   const [draft, setDraft] = useState(search);
-  const [loadCategories, setLoadCategories] = useState(Boolean(category));
-  const [loadFranchises, setLoadFranchises] = useState(Boolean(franchise));
+  // Deep links already contain the selected IDs. In a public image-review
+  // build, avoid extra category/franchise reads just to populate closed selects.
+  // Opening either filter remains the explicit trigger for its indexed lookup.
+  const mediaUnderReview = isCatalogMediaUnderReview();
+  const [loadCategories, setLoadCategories] = useState(Boolean(category) && !mediaUnderReview);
+  const [loadFranchises, setLoadFranchises] = useState(Boolean(franchise) && !mediaUnderReview);
   const [franchiseDraft, setFranchiseDraft] = useState("");
   const [franchiseNeedle, setFranchiseNeedle] = useState("");
   const { selectedModels, setSelectedModels, paging, setPaging } =
@@ -251,7 +255,7 @@ export default function CatalogModelsArcade() {
           />
 
           <div className="relative z-10 mx-auto -mt-4 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
-             {isCatalogMediaUnderReview() ? (
+             {mediaUnderReview ? (
                <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(0,0%,7%)] px-4 py-3 text-sm text-[hsl(0,0%,72%)]">
                  As fotografias do acervo estão em revisão para publicação. A busca permanece disponível; fichas restritas só serão exibidas após aprovação.
                </p>
