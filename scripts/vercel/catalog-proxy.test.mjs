@@ -1,4 +1,6 @@
 import test from "node:test";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import handler from "../../api/catalogo-proxy.js";
 
@@ -87,4 +89,30 @@ test("Vercel catalog proxy forwards only a bounded read through the canonical pr
   } finally {
     globalThis.fetch = initialFetch;
   }
+});
+
+test("public catalog build fails closed if photo-review hold is absent or disabled", () => {
+  const script = fileURLToPath(new URL("../security/assert-catalog-mvp-build.mjs", import.meta.url));
+  const run = (env) => spawnSync(process.execPath, [script], { env, encoding: "utf8" });
+  const base = { VITE_PUBLIC_CATALOG_MVP: "true", VITE_PREVIEW_READ_ONLY: "true" };
+
+  for (const value of [undefined, "", "false", "TRUE"]) {
+    const env = { ...base };
+    if (value !== undefined) env.VITE_TONART_HIDE_CATALOG_MEDIA = value;
+    const result = run(env);
+    assert.equal(result.status, 1, "unapproved media setting " + String(value));
+    assert.match(result.stderr, /VITE_TONART_HIDE_CATALOG_MEDIA=true/);
+  }
+
+  const approvedConfiguration = run({ ...base, VITE_TONART_HIDE_CATALOG_MEDIA: "true" });
+  assert.equal(approvedConfiguration.status, 0, approvedConfiguration.stderr);
+
+  const privateMode = run({ VITE_PUBLIC_CATALOG_MVP: "false" });
+  assert.equal(privateMode.status, 0, privateMode.stderr);
+
+  const unsafeReadOnly = run({
+    ...base, VITE_PREVIEW_READ_ONLY: "false", VITE_TONART_HIDE_CATALOG_MEDIA: "true",
+  });
+  assert.equal(unsafeReadOnly.status, 1);
+  assert.match(unsafeReadOnly.stderr, /VITE_PREVIEW_READ_ONLY=true/);
 });
