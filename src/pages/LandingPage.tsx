@@ -23,6 +23,8 @@ import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImag
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
+import { approvedPublicRenders } from "@/services/catalog/approved-public-renders";
+import { ApprovedHomeHighlights } from "./catalog/ApprovedModelShowcase";
 
 // ─── TYPEWRITER ──────────────────────────────────────────────────────
 
@@ -137,6 +139,7 @@ export default function LandingPage() {
   // pointless Worker/D1 recent query on every Home visit while preserving
   // direct catalog browsing and the eventual release after approval.
   const catalogMediaOnHold = isCatalogMediaUnderReview();
+  const hasApprovedRenders = catalogMediaOnHold && approvedPublicRenders.length > 0;
 
   // Use the existing indexed recent-publications endpoint, not an
   // alphabetical catalog page or a client-side full-acervo scan.
@@ -162,7 +165,9 @@ export default function LandingPage() {
   const isCatalogLoading = gateway !== null && !catalogMediaOnHold && modelsQuery.isPending;
   const hasCatalogError = !catalogMediaOnHold && (gateway === null || modelsQuery.isError);
   const hasCatalogData = models.length > 0;
-  const catalogStatus = isCatalogLoading
+  const catalogStatus = hasApprovedRenders
+    ? "Renders autorizados"
+    : isCatalogLoading
     ? "Carregando referências"
     : hasCatalogError
       ? "Acervo temporariamente indisponível"
@@ -286,7 +291,7 @@ export default function LandingPage() {
               </div>
               <div className="flex items-center gap-3">
                 <Shield size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
-                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">Fotografias em revisão</span>
+                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">{hasApprovedRenders ? "Renders selecionados" : "Renders em revisão"}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
@@ -314,7 +319,7 @@ export default function LandingPage() {
       </section>
 
       {/* Do not render an empty "Recent models" showcase while no photographs are approved. */}
-      {catalogMediaOnHold ? (
+      {catalogMediaOnHold ? (hasApprovedRenders ? <ApprovedHomeHighlights gateway={gateway} /> : (
         <section aria-labelledby="catalog-curation-heading" className="relative border-y border-[hsl(var(--gold-accent)/0.12)] bg-[hsl(0,0%,5%)] px-6 py-14 sm:py-20">
           <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
             <div>
@@ -323,7 +328,7 @@ export default function LandingPage() {
                 Referências em curadoria
               </h2>
               <p className="mt-5 max-w-xl text-base leading-7 text-[hsl(0,0%,70%)]">
-                Estamos preparando a apresentação visual do acervo com atenção à origem e à autorização das fotografias.
+                Estamos preparando a apresentação visual do acervo com atenção à origem e à autorização dos renders digitais.
               </p>
               <p className="mt-4 max-w-xl text-sm leading-6 text-[hsl(0,0%,52%)]">
                 Novas referências serão publicadas em breve.
@@ -335,7 +340,7 @@ export default function LandingPage() {
                 <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-[hsl(0,0%,92%)]">Publicação responsável</h3>
               </div>
               <p className="mt-4 text-sm leading-7 text-[hsl(0,0%,70%)]">
-                Fotos em revisão para publicação. As imagens só serão exibidas após a verificação das permissões de uso.
+                Renders em revisão para publicação. As imagens só serão exibidas após a verificação das permissões de uso.
               </p>
               <Link to={PUBLIC_ROUTES.contact} className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--gold-accent))]">
                 Falar com o estúdio <ArrowRight size={16} aria-hidden="true" />
@@ -343,7 +348,7 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-      ) : (
+      )) : (
       <section className="relative border-t border-[hsl(var(--gold-accent)/0.08)] px-6 py-12">
         <div className="mx-auto max-w-6xl">
           <ArcadeSectionTitle>MODELOS RECENTES</ArcadeSectionTitle>
