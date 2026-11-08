@@ -226,6 +226,11 @@ export function RelatedModels({
     );
   }, [model, gateway, relatedQuery.data, characterQuery.data]);
   const waitingForCharacter = shouldSearchCharacter && characterQuery.isPending;
+  // A transient failure must not silently erase the recommendations.
+  // Existing verified groups remain usable if a background refetch fails.
+  const recoverableError = isRequested && groups.length === 0 && (
+    relatedQuery.isError || (shouldSearchCharacter && characterQuery.isError)
+  );
 
   if (!canQuery) return null;
   // Do not display an empty section while waiting for the viewport trigger.
@@ -236,9 +241,9 @@ export function RelatedModels({
   }
   // With automatic discovery, reveal the section only after eligible models
   // exist. Older browsers retain the explicit button and its loading status.
-  if (isRequested && observerAvailable && (!relatedQuery.isSuccess || waitingForCharacter)) return null;
-  if (isRequested && (relatedQuery.isError ||
-    (relatedQuery.isSuccess && !waitingForCharacter && groups.length === 0))) return null;
+  if (isRequested && observerAvailable && (relatedQuery.isPending || waitingForCharacter)) return null;
+  if (isRequested && !recoverableError && relatedQuery.isSuccess &&
+      !waitingForCharacter && groups.length === 0) return null;
 
   const franchisePath = PUBLIC_ROUTES.catalogModels + "?" +
     new URLSearchParams({
@@ -269,6 +274,20 @@ export function RelatedModels({
         >
           Ver sugestões relacionadas
         </button>
+      ) : recoverableError ? (
+        <div role="status" className="mt-4 flex flex-wrap items-center gap-4 text-sm text-[hsl(0,0%,70%)]">
+          <p>Não foi possível carregar sugestões agora.</p>
+          <button
+            type="button"
+            onClick={() => {
+              if (relatedQuery.isError) void relatedQuery.refetch();
+              else void characterQuery.refetch();
+            }}
+            className="min-h-11 border border-[hsl(var(--gold-accent)/0.5)] px-4 text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline-2"
+          >
+            Tentar novamente
+          </button>
+        </div>
       ) : relatedQuery.isPending || waitingForCharacter ? (
         <p role="status" className="mt-4 text-sm text-[hsl(0,0%,56%)]">
           Procurando modelos relacionados…
