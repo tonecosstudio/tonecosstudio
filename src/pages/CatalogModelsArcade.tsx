@@ -14,7 +14,7 @@ import {
   ArcadeHero,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
-import { catalogModelDetailsPath } from "@/config/routes";
+import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
   Sheet,
@@ -67,6 +67,7 @@ export default function CatalogModelsArcade() {
   // Opening either filter remains the explicit trigger for its indexed lookup.
   const mediaUnderReview = isCatalogMediaUnderReview();
   const publicReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true" && isCatalogPublicMvpEnabled();
+  const publicationBlocked = publicReadOnly && mediaUnderReview;
   const [loadCategories, setLoadCategories] = useState(Boolean(category) && !mediaUnderReview);
   const [loadFranchises, setLoadFranchises] = useState(Boolean(franchise) && !mediaUnderReview);
   const [franchiseDraft, setFranchiseDraft] = useState("");
@@ -102,7 +103,7 @@ export default function CatalogModelsArcade() {
   const categories = useQuery({
     queryKey: ["tonecos-catalog-categories"],
     queryFn: ({ signal }) => gateway!.listCategories(signal),
-    enabled: gateway !== null && loadCategories && !invalidCatalogScope && !invalidSearch,
+    enabled: gateway !== null && !publicationBlocked && loadCategories && !invalidCatalogScope && !invalidSearch,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -118,7 +119,7 @@ export default function CatalogModelsArcade() {
         },
         signal,
       ),
-    enabled: gateway !== null && loadFranchises && !invalidCatalogScope && !invalidSearch,
+    enabled: gateway !== null && !publicationBlocked && loadFranchises && !invalidCatalogScope && !invalidSearch,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -137,7 +138,7 @@ export default function CatalogModelsArcade() {
         },
         signal,
       ),
-    enabled: gateway !== null && !invalidSearch && !invalidFolderScope && !invalidCatalogScope,
+    enabled: gateway !== null && !publicationBlocked && !invalidSearch && !invalidFolderScope && !invalidCatalogScope,
     retry: false,
     staleTime: 60 * 1000,
   });
@@ -238,6 +239,36 @@ export default function CatalogModelsArcade() {
     if (activePage.index === 0) return;
     setPaging({ ...activePage, index: activePage.index - 1 });
     resultsRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  }
+
+  // A visual MVP must not expose an empty wall of image placeholders.
+  // Never query the Worker or present model cards during the media embargo.
+  // This pre-MVP holding page does not remove any model from the inventory.
+  if (publicationBlocked) {
+    return (
+      <Page
+        title="Acervo em preparação — TONART Studio"
+        description="A vitrine de renders da TONART Studio está em curadoria. Só publicaremos modelos com imagens de origem e uso autorizados."
+      >
+        <section className="min-h-[75svh] bg-[hsl(0,0%,4%)] pb-20 text-[hsl(0,0%,94%)]">
+          <ArcadeHero badge="ACERVO TONART" title="MODELOS" subtitle=">> UMA VITRINE VISUAL EM PREPARAÇÃO." compact />
+          <div role="status" className="relative z-10 mx-auto max-w-3xl border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] px-6 py-9 sm:px-10 sm:py-12">
+            <p className="font-mono text-xs uppercase tracking-[0.17em] text-[hsl(var(--gold-accent))]">MVP VISUAL EM CURADORIA</p>
+            <h2 className="mt-5 text-2xl font-semibold uppercase tracking-wide sm:text-3xl">Imagens em preparação</h2>
+            <p className="mt-5 text-sm leading-7 text-[hsl(0,0%,76%)]">
+              A TONART apresenta modelos por meio de renders digitais; eles não representam peças físicas já produzidas. Estamos revisando a origem e as permissões de cada imagem antes de liberar a vitrine.
+            </p>
+            <p className="mt-3 text-sm leading-7 text-[hsl(0,0%,64%)]">
+              Referências com mídia ainda não autorizada permanecem preservadas no acervo interno. Não exibimos cards sem imagem nem renders de procedência não verificada como modelos prontos para publicação.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link to={PUBLIC_ROUTES.about} className="inline-flex min-h-11 items-center border border-[hsl(var(--gold-accent))] px-5 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]">Conheça o estúdio</Link>
+              <Link to={PUBLIC_ROUTES.contact} className="inline-flex min-h-11 items-center border border-[hsl(0,0%,40%)] px-5 text-sm text-[hsl(0,0%,88%)] hover:border-[hsl(var(--gold-accent))]">Entre em contato</Link>
+            </div>
+          </div>
+        </section>
+      </Page>
+    );
   }
 
   return (
