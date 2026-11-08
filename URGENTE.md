@@ -1,5 +1,17 @@
 # Tonecos Studio — checkpoint operacional
 
+
+## MVP público — preview protegida validada em 07/11/2026
+
+- **Branch única / PR #4 Draft:** último commit funcional homologado `e3c501a7f1b6e7863d9a50f44e4e2bea8935078c`. A correção anterior do guard de proveniência continua preservada.
+- **CI no SHA:** [GitHub Actions #42432183093](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42432183093) **COMPLETED/SUCCESS** (gate aplicável). Nenhuma promoção de Worker, D1 ou R2.
+- **Cloudflare Pages PREVIEW MANUAL**, única execução criada nesta rodada: `116a1c6a-2e7b-4062-982c-04fef983df4b`, URL [Modelos — preview protegido](https://116a1c6a.tonecosstudio.pages.dev/modelos), SHA `e3c501a`, **BUILD SUCCESS + DEPLOY SUCCESS**. A publicação pública de produção segue desativada; `preview_deployment_setting=none`. O app Cloudflare Access `a38e89fd-3bce-4dc6-acdc-94a74a1bc49c` segue protegendo `*.tonecosstudio.pages.dev`.
+- **Consistência offline do SSOT:** `specialstl-quarantine.json` tem 264 IDs, 264 slugs e 264 chaves de capa únicas; 0 duplicados, 0 substituições aprovadas, todos `pending_authorized_clean_photo`. A revisão prévia registra o fim da paginação pública em 2.575 modelos, sem necessidade de novo scan.
+- **QA visual ainda PENDENTE:** ao abrir a prévia anterior no Chrome do Desktop autorizado, foi exibido “Sign in — Cloudflare Access”, não o SPA. Um build/deploy SUCCESS não substitui sessão autenticada e verificação visual no desktop/mobile.
+- **NEXT_ACTION:** autenticar legitimamente no Access para revisar a **nova prévia** de SHA `e3c501a` em Home, Universo, /modelos, busca/filtros/paginação, ficha, galeria, imagens, deep links, responsividade, estados vazios/erro e Contato. Corrigir somente problema real do frontend na mesma PR. Após QA, manter revisão jurídica, rollback, Vercel legado e autorização explícita para qualquer lançamento. **NO-GO** público.
+- **DO_NOT_REPEAT:** não percorrer novamente os 72 lotes de imagens/snapshots; não disparar builds por esta documentação, não alterar Worker/associação Washington, D1/R2, DNS, Vercel ou Cloudflare Access.
+
+---
 ## SpecialSTL — 1.548 capas / 154 casos confirmados (07/11/2026)
 
 - **Lotes 38–43, somente leitura:** 216 novos modelos (#1.333–1.548) obtidos em seis GETs públicos de 36 com cursor salvo, 216 capas novas cacheadas e 18 folhas de contato. Checados os 216 IDs únicos nos novos snapshots, mais 1.332 únicos já verificados; nenhuma consulta direta D1/R2, nenhuma alteração no Worker/Pages/produção.
