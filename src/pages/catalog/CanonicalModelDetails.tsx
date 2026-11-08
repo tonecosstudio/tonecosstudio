@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
@@ -129,6 +129,7 @@ export default function CanonicalModelDetails() {
     if (!backToRelatedModel) return;
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [backToRelatedModel, slug]);
+  const relatedModelTitleRef = useRef<HTMLHeadingElement>(null);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const galleryKeyboardHelpId = useId();
   const {
@@ -187,6 +188,14 @@ export default function CanonicalModelDetails() {
     staleTime: 5 * 60 * 1000,
   });
   const model = modelQuery.data;
+  // Navigation from a related card is a new detail view. Announce its
+  // heading to keyboard/screen-reader users after the detail has loaded.
+  // Do not steal focus on a normal catalog return or a data refetch.
+  useEffect(() => {
+    if (backToRelatedModel && model?.slug === slug) {
+      relatedModelTitleRef.current?.focus({ preventScroll: true });
+    }
+  }, [backToRelatedModel, model?.slug, slug]);
   const imageUnderReview = modelQuery.isError &&
     modelQuery.error instanceof Error &&
     modelQuery.error.message === "catalog_model_media_restricted";
@@ -565,7 +574,7 @@ export default function CanonicalModelDetails() {
                     <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-[hsl(var(--gold-accent))]">
                       {model.category} · {model.franchise}
                     </p>
-                    <h1 className="mt-3 text-2xl font-black uppercase tracking-[0.08em] leading-tight sm:text-3xl md:text-4xl">
+                    <h1 ref={relatedModelTitleRef} tabIndex={-1} className="mt-3 text-2xl font-black uppercase tracking-[0.08em] leading-tight sm:text-3xl md:text-4xl">
                       {model.name}
                     </h1>
                     {model.variantName ? (
