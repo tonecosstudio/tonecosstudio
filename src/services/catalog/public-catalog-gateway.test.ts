@@ -559,6 +559,22 @@ describe("read-only catalog discovery and detail", () => {
     );
   });
 
+  it("hides every catalog image in the Vercel public rights-review mode", () => {
+    vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
+    try {
+      const io = vi.fn();
+      const gateway = createPublicCatalogGateway(
+        "https://example.test/catalogo-api",
+        io as typeof fetch,
+      );
+      expect(gateway.mediaUrl("media/covers/mdl-123.webp")).toBeNull();
+      expect(gateway.mediaUrl("media/gallery/valid.webp")).toBeNull();
+      expect(io).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("derives media only from the explicit catalog origin and blocks traversal", () => {
     const gateway = createPublicCatalogGateway(
       "https://example.test/catalogo-api",
