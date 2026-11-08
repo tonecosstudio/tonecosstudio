@@ -72,10 +72,18 @@ function mountGallery(options: {
   incompleteWithoutCursor?: boolean;
   restricted?: boolean;
   relatedItems?: Array<typeof model>;
+  characterItems?: Array<typeof model>;
+  relatedSearchError?: boolean;
 }) {
   const io = vi.fn(async (input: string, _init: RequestInit) => {
     const url = new URL(input);
     if (url.pathname.endsWith("/api/catalog")) {
+      if (url.searchParams.has("q")) {
+        if (options.relatedSearchError) {
+          return Response.json({ error: "search unavailable" }, { status: 503 });
+        }
+        return Response.json({ items: options.characterItems ?? [], nextCursor: null });
+      }
       return Response.json({ items: options.relatedItems ?? [], nextCursor: null });
     }
     if (url.pathname.endsWith("/api/models/animal-original")) {
@@ -225,10 +233,75 @@ describe("published model/gallery identity on the public detail page", () => {
     await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
     fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
     await waitFor(() => {
-      expect(screen.queryByRole("heading", { name: "Explore mais modelos" }))
-        .not.toBeInTheDocument();
+      expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog")))
+        .toHaveLength(2);
     });
-    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(1);
+    expect(screen.queryByRole("heading", { name: "Explore mais modelos" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("finds an exact character beyond the first franchise page with one bounded fallback", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    const { io } = mountGallery({
+      total: 1,
+      relatedItems: [
+        { ...model, id: "mdl-125", code: "TS-125", slug: "robo-armadura",
+          name: "Robô", variant_name: "Armadura",
+          cover_storage_key: "media/mdl-125/card.webp" },
+      ],
+      characterItems: [
+        { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
+          variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
+        { ...model, id: "mdl-126", code: "TS-126", slug: "animal-parecido",
+          name: "Animal original preto", variant_name: "Escultura",
+          cover_storage_key: "media/mdl-126/card.webp" },
+      ],
+    });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    expect(io).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+
+    expect(await screen.findByRole("heading", {
+      name: "Outras versões de Animal original",
+    })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Explore Exemplo" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver modelo Animal original — Nova pose" }))
+      .toHaveAttribute("href", "/modelos/animal-nova-pose");
+    expect(screen.queryByRole("link", { name: /Animal original preto/ }))
+      .not.toBeInTheDocument();
+
+    const requests = io.mock.calls
+      .filter(([url]) => url.includes("/api/catalog"))
+      .map(([url]) => new URL(url));
+    expect(requests).toHaveLength(2);
+    expect(requests[0].searchParams.has("q")).toBe(false);
+    expect(requests[1].searchParams.get("q")).toBe("Animal original");
+    expect(requests[1].searchParams.get("category")).toBe("games");
+    expect(requests[1].searchParams.get("franchise")).toBe("exemplo");
+    expect(requests[1].searchParams.get("limit")).toBe("36");
+    expect(requests[1].searchParams.has("cursor")).toBe(false);
+    expect(io).toHaveBeenCalledTimes(4);
+  });
+
+  it("keeps verified franchise links when the optional character search fails", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    const { io } = mountGallery({
+      total: 1,
+      relatedItems: [
+        { ...model, id: "mdl-125", code: "TS-125", slug: "robo-armadura",
+          name: "Robô", variant_name: "Armadura",
+          cover_storage_key: "media/mdl-125/card.webp" },
+      ],
+      relatedSearchError: true,
+    });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+    expect(await screen.findByRole("heading", { name: "Explore Exemplo" }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("heading", {
+      name: "Outras versões de Animal original",
+    })).not.toBeInTheDocument();
+    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(2);
   });
 
   it("loads bounded related suggestions only on demand and respects exact franchise/character matches", async () => {
