@@ -12,6 +12,13 @@ if (process.env.VITE_PUBLIC_CATALOG_MVP === "true" &&
   process.exit(1);
 }
 
+// No public MVP build may omit the rights-review hold while no photos are approved.
+if (process.env.VITE_PUBLIC_CATALOG_MVP === "true" &&
+    process.env.VITE_TONART_HIDE_CATALOG_MEDIA !== "true") {
+  console.error("MVP bloqueado: VITE_TONART_HIDE_CATALOG_MEDIA=true é obrigatório durante a revisão das fotografias.");
+  process.exit(1);
+}
+
 if (process.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
     (process.env.VITE_PUBLIC_CATALOG_MVP === "true" ||
      process.env.VITE_PREVIEW_READ_ONLY !== "false" ||
