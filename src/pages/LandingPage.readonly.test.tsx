@@ -63,8 +63,17 @@ describe("TONART public Home during image review", () => {
     expect(screen.getByText(/Fotos em revisão para publicação/))
       .toBeInTheDocument();
     expect(screen.queryByText("Carregando referências")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /CONHEÇA O ESTÚDIO/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^VER CATÁLOGO$/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /EXPLORAR MODELOS/ }))
+      .toHaveAttribute("href", "/modelos");
+    expect(screen.getByRole("link", { name: /CONHEÇA O ESTÚDIO/ }))
+      .toHaveAttribute("href", "/sobre");
+    expect(screen.queryByRole("button", { name: /EXPLORAR MODELOS|CONHEÇA O ESTÚDIO/ }))
+      .not.toBeInTheDocument();
+    for (const [label, route] of [["Sobre", "/sobre"], ["Contato", "/contato"], ["Termos", "/termos"], ["Privacidade", "/privacidade"]]) {
+      const footerLink = screen.getByRole("link", { name: label, exact: true });
+      expect(footerLink).toHaveAttribute("href", route);
+      expect(footerLink).toHaveClass("text-[11px]", "text-[hsl(0,0%,68%)]");
+    }
     expect(fetcher).not.toHaveBeenCalled();
     view.unmount();
     client.clear();
