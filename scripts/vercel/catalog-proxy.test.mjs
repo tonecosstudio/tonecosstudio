@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import handler from "../../api/catalogo-proxy.js";
+import { approvedPublicMediaPaths, validatePublicRenderApprovals } from "../security/catalog-public-media-approval-policy.mjs";
 
 function responseSink() {
   return {
@@ -17,6 +18,50 @@ function responseSink() {
     },
   };
 }
+
+test("digital-render release register denies everything until rights are explicitly approved", () => {
+  assert.equal(approvedPublicMediaPaths.size, 0);
+  const modelId = "mdl_1234567890abcdef1234";
+  const key = "media/" + modelId + "/img_0123456789abcdef/card.webp";
+  const valid = {
+    modelId,
+    slug: "escultura-original",
+    coverStorageKey: key,
+    provenance: "tonart-original-render",
+    sourceFileRef: "drive:1SUG7jPnSBzSF1uzoIDLyUaLnUn8m4yDj",
+    rightsEvidenceRef: "drive:1SUG7jPnSBzSF1uzoIDLyUaLnUn8m4yDj",
+    rightsHolder: "TONART Studio",
+    creatorCredit: "Escultor responsável",
+    publicationScope: "tonartstudio.com.br",
+    ownerApproved: true,
+    approvedOn: "2026-11-08",
+  };
+  const restricted = { confirmed: [] };
+  const approved = validatePublicRenderApprovals({ version: 1, approved: [valid] }, restricted);
+  assert.deepEqual([...approved], [key]);
+  assert.throws(
+    () => validatePublicRenderApprovals({ version: 1, approved: [valid, valid] }, restricted),
+    /duplicate_public_render_approval/,
+  );
+  assert.throws(
+    () => validatePublicRenderApprovals({ version: 1, approved: [{ ...valid, ownerApproved: false }] }, restricted),
+    /invalid_public_render_approval_entry/,
+  );
+  assert.throws(
+    () => validatePublicRenderApprovals({ version: 1, approved: [{ ...valid, rightsEvidenceRef: "" }] }, restricted),
+    /invalid_public_render_approval_entry/,
+  );
+  assert.throws(
+    () => validatePublicRenderApprovals({ version: 1, approved: [valid] }, {
+      confirmed: [{ modelId, replacement: { status: "pending_authorized_clean_photo", approvedImageStorageKey: null } }],
+    }),
+    /specialstl_media_still_quarantined/,
+  );
+  assert.throws(
+    () => validatePublicRenderApprovals({ version: 1, approved: [{ ...valid, coverStorageKey: "media/" + modelId + "/img_0123456789abcdef/specialstl/card.webp" }] }, restricted),
+    /invalid_public_render_approval_entry/,
+  );
+});
 
 test("Vercel catalog proxy refuses media and writes before an upstream read", async () => {
   const initialFetch = globalThis.fetch;
