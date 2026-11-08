@@ -425,7 +425,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveCandidate": {
+            "source": "google_drive",
+            "fileId": "1_xenQlhLC0S2royrlYcq8CJyYFPhoBGP",
+            "fileName": "saint_seiya_regulus_leo_2924.jpg",
+            "inspectedOn": "2026-11-08",
+            "reviewStatus": "unverified_variant_and_permission",
+            "visibleSpecialstlWatermark": false,
+            "exactSculptureMatchVerified": false,
+            "authorizationVerified": false,
+            "notes": "No SpecialSTL watermark visible in the referenced image. Similar subject is not evidence of same sculpture or rights; public display prohibited until exact sculpt/variant and license verified."
+          }
         }
       }
     },
@@ -1865,7 +1876,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "13YnrbpaC5h9-JkXzHMdJarrLFouAB4rA",
+            "fileName": "JP.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2553,7 +2572,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReference": {
+            "source": "google_drive",
+            "fileId": "1pAXimXFzrxabpSKU0ZNs3sKbHC2GSGZl",
+            "fileName": "marvel_wolverine_omega_red_18462.jpg",
+            "inspectedOn": "2026-11-08",
+            "reviewStatus": "other_creator_mark_not_approved",
+            "creatorMarkVisible": "3Dfigureprints.com",
+            "exactSculptureMatchVerified": false,
+            "authorizationVerified": false,
+            "notes": "Third-party creator credit/brand is not proof of SpecialSTL infringement. Not an authorized replacement for the quarantined cover; requires independent identity and licensing evidence."
+          }
         }
       }
     },
@@ -3249,7 +3279,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReference": {
+            "source": "google_drive",
+            "fileId": "1EPkp247PV7XB0XnhlUEz7XAFQ-_UaNUw",
+            "fileName": "homem_aranha_doutor_octopus_40095.jpg",
+            "inspectedOn": "2026-11-08",
+            "reviewStatus": "other_creator_mark_not_approved",
+            "creatorMarkVisible": "Malix3Design.com and Patreon",
+            "exactSculptureMatchVerified": false,
+            "authorizationVerified": false,
+            "notes": "Third-party creator credit/brand is not proof of SpecialSTL infringement. Not an authorized replacement for the quarantined cover; requires independent identity and licensing evidence."
+          }
         }
       }
     },
@@ -5689,7 +5730,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReference": {
+            "source": "google_drive",
+            "fileId": "1z6Es_3cNtBvTU6-J5_oPr4ilX7XnAT08",
+            "fileName": "slash tmnt chibi figure 19022.jpg",
+            "inspectedOn": "2026-11-08",
+            "reviewStatus": "other_creator_mark_not_approved",
+            "creatorMarkVisible": "3DXM Patreon",
+            "exactSculptureMatchVerified": false,
+            "authorizationVerified": false,
+            "notes": "Third-party creator credit/brand is not proof of SpecialSTL infringement. Not an authorized replacement for the quarantined cover; requires independent identity and licensing evidence."
+          }
         }
       }
     },
@@ -6057,7 +6109,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1Kcy18F0tVVu11KavVmMry2ehzNrk4_kY",
+            "fileName": "escorpiao.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
