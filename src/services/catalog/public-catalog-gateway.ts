@@ -1,4 +1,5 @@
-import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
+import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
+import { findApprovedPublicRender, isApprovedPublicCover, isApprovedPublicMediaKey } from "./approved-public-renders";
 import specialstlQuarantine from "./specialstl-quarantine.json";
 
 /**
@@ -241,7 +242,7 @@ function hasRestrictedExternalBrand(value: string | null | undefined): boolean {
 }
 
 function isPubliclyEligibleCatalogModel(model: PublicCatalogModel): boolean {
-  return !CONFIRMED_SPECIALSTL_MODEL_IDS.has(model.id) && ![
+  return (!CONFIRMED_SPECIALSTL_MODEL_IDS.has(model.id) || isApprovedPublicCover(model)) && ![
     model.slug, model.code, model.name, model.variantName,
     model.category, model.categorySlug, model.franchise, model.franchiseSlug,
     model.collection, model.folderPath, model.coverStorageKey,
@@ -305,12 +306,12 @@ export function createPublicCatalogGateway(
     mediaUrl(key: string | null): string | null {
       // Public Vercel deployment must not render unverified third-party
       // photographs. The server-side adapter also blocks direct /media reads.
-      if (isCatalogMediaUnderReview()) return null;
+      if (isCatalogMediaUnderReview() && !isApprovedPublicMediaKey(key)) return null;
       // The Worker and Pages proxy expose only /media/*, never arbitrary
       // catalog API routes. Validate before turning untrusted keys into URLs.
       if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key)) return null;
       const segments = key.split("/");
-      if (CONFIRMED_SPECIALSTL_MODEL_IDS.has(segments[1] ?? "")) return null;
+      if (CONFIRMED_SPECIALSTL_MODEL_IDS.has(segments[1] ?? "") && !isApprovedPublicMediaKey(key)) return null;
       if (
         segments.length < 2 ||
         segments.length > 17 ||
@@ -557,12 +558,20 @@ export function createPublicCatalogGateway(
     ): Promise<PublicCatalogDetail> {
       if (!validCatalogSlug(slug))
         throw new Error("invalid_catalog_slug");
+      const publicMediaHold = isCatalogMediaUnderReview() && isCatalogPublicMvpEnabled() &&
+        import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+      if (publicMediaHold && !findApprovedPublicRender(slug)) {
+        throw new Error("catalog_model_not_approved_for_public_view");
+      }
       const result = await read(
         `api/models/${encodeURIComponent(slug)}`,
         signal,
       );
       const model = decodeModel(result);
       if (model.slug !== slug) throw new Error("invalid_catalog_model_slug");
+      if (publicMediaHold && !isApprovedPublicCover(model)) {
+        throw new Error("catalog_model_release_identity_mismatch");
+      }
       if (!isPubliclyEligibleCatalogModel(model)) {
         throw new Error("catalog_model_media_restricted");
       }
