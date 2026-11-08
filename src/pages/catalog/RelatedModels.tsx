@@ -142,14 +142,36 @@ export function RelatedModels({
     [model, gateway, relatedQuery.data],
   );
 
-  if (!canQuery || (isRequested && (relatedQuery.isError ||
-    (relatedQuery.isSuccess && groups.length === 0)))) return null;
+  if (!canQuery) return null;
+  // Do not display an empty section while waiting for the viewport trigger.
+  // Keep an invisible intersection target; older browsers retain a manual button.
+  if (!isRequested && typeof IntersectionObserver !== "undefined") {
+    return <section ref={sectionRef} aria-hidden="true" className="h-px" />;
+  }
+  if (isRequested && (relatedQuery.isError ||
+    (relatedQuery.isSuccess && groups.length === 0))) return null;
+
+  const franchisePath = PUBLIC_ROUTES.catalogModels + "?" +
+    new URLSearchParams({
+      category: model.categorySlug,
+      franchise: model.franchiseSlug,
+    }).toString();
 
   return (
     <section ref={sectionRef} aria-label="Explore mais modelos" className="mt-12 border-t border-[hsl(0,0%,20%)] pt-8">
-      <h2 className="text-xl font-semibold uppercase tracking-[0.08em] text-[hsl(0,0%,94%)]">
-        Explore mais modelos
-      </h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="text-xl font-semibold uppercase tracking-[0.08em] text-[hsl(0,0%,94%)]">
+          Explore mais modelos
+        </h2>
+        {relatedQuery.isSuccess && groups.length > 0 ? (
+          <Link
+            to={franchisePath}
+            className="inline-flex min-h-11 items-center text-sm text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline-2"
+          >
+            Ver todos de {model.franchise}
+          </Link>
+        ) : null}
+      </div>
       {!isRequested ? (
         <button
           type="button"
