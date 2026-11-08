@@ -248,7 +248,7 @@ export default function LandingPage() {
               style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
               <TypewriterText
-                text=">> PERSONAGENS, MODELOS E VARIAÇÕES SOB ENCOMENDA."
+                text={publicReadOnly ? ">> PERSONAGENS, MODELOS E REFERÊNCIAS PARA CONSULTA." : ">> PERSONAGENS, MODELOS E VARIAÇÕES SOB ENCOMENDA."}
                 delay={800}
               />
             </p>
@@ -269,11 +269,11 @@ export default function LandingPage() {
             </button>
 
             <button
-              onClick={() => navigate(PUBLIC_ROUTES.catalogModels)}
+              onClick={() => navigate(publicReadOnly ? PUBLIC_ROUTES.about : PUBLIC_ROUTES.catalogModels)}
               className="inline-flex w-full max-w-[20rem] items-center justify-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent)/0.6)] font-mono uppercase tracking-[0.08em] text-xs h-14 px-3 transition-all sm:w-auto sm:max-w-none sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.15em]"
             >
               <Eye className="w-5 h-5" />
-              VER CATÁLOGO
+              {publicReadOnly ? "CONHEÇA O ESTÚDIO" : "VER CATÁLOGO"}
             </button>
           </div>
 
@@ -290,7 +290,7 @@ export default function LandingPage() {
               icon={Shield}
             />
             <StatCounter value="100%" label="Artesanal" icon={Zap} />
-            <StatCounter value="Sob Encomenda" label="Atendimento" icon={Eye} />
+            <StatCounter value={publicReadOnly ? "Consulta" : "Sob Encomenda"} label="Atendimento" icon={Eye} />
           </div>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[hsl(var(--gold-accent)/0.3)] to-transparent" />
