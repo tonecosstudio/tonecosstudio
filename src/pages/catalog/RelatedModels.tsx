@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import {
   type PublicCatalogDetail,
   type PublicCatalogModel,
+  type PublicCatalogPage,
   createPublicCatalogGateway,
   validCatalogSlug,
 } from "@/services/catalog/public-catalog-gateway";
@@ -103,6 +104,7 @@ export function RelatedModels({
   model: PublicCatalogDetail;
   gateway: CatalogGateway;
 }) {
+  const queryClient = useQueryClient();
   const sectionRef = useRef<HTMLElement>(null);
   const [requestedSlug, setRequestedSlug] = useState<string | null>(null);
   const isRequested = requestedSlug === model.slug;
@@ -123,6 +125,10 @@ export function RelatedModels({
     return () => observer.disconnect();
   }, [model.slug, isRequested, canQuery]);
 
+  // Reuse the first gateway-validated catalog page when the visitor came
+  // from this exact category/franchise. No additional catalog read is needed.
+  const catalogScope = JSON.stringify(["", model.categorySlug, model.franchiseSlug, ""]);
+  const cachedCatalogKey = ["tonecos-catalog-list", catalogScope, undefined] as const;
   const relatedQuery = useQuery({
     queryKey: ["tonecos-catalog-related", model.categorySlug, model.franchiseSlug],
     queryFn: ({ signal }) => gateway.listPage({
@@ -131,6 +137,8 @@ export function RelatedModels({
       limit: RELATED_PAGE_LIMIT,
     }, signal),
     enabled: isRequested && canQuery,
+    initialData: () => queryClient.getQueryData<PublicCatalogPage>(cachedCatalogKey),
+    initialDataUpdatedAt: () => queryClient.getQueryState(cachedCatalogKey)?.dataUpdatedAt,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
