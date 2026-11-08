@@ -93,10 +93,13 @@ function ApprovedCardGrid({ cards }: { cards: readonly ApprovedCard[] }) {
 }
 
 /** Home: same verified IDs and image error policy, at most four indexed reads. */
-export function ApprovedHomeHighlights({ gateway }: { gateway: ApprovedGateway | null }) {
-  const releases = approvedPublicRenders.slice(0, 4);
-  const { models, cards } = useApprovedCards(gateway, releases);
-  if (releases.length === 0) return null;
+export function ApprovedHomeHighlights({
+  gateway,
+  releases = approvedPublicRenders,
+}: { gateway: ApprovedGateway | null; releases?: readonly ApprovedPublicRender[] }) {
+  const featuredReleases = releases.slice(0, 4);
+  const { models, cards } = useApprovedCards(gateway, featuredReleases);
+  if (featuredReleases.length === 0) return null;
   return (
     <section aria-labelledby="tonart-approved-highlights" className="border-y border-[hsl(var(--gold-accent)/0.12)] bg-[hsl(0,0%,5%)] px-6 py-12">
       <div className="mx-auto max-w-6xl">
