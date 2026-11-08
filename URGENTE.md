@@ -1,5 +1,18 @@
 # Tonecos Studio — checkpoint operacional
 
+## MVP — ficha de modelo em revisão (08/11/2026)
+
+- **Problema real do frontend corrigido:** quando um dos 264 IDs em quarentena era acessado por link direto, a ficha apresentava falha genérica e botão de retry inútil. `src/pages/catalog/CanonicalModelDetails.tsx` agora distingue `catalog_model_media_restricted`, exibe “Modelo em revisão de imagem” e não oferece retry/galeria para a restrição; outras falhas ainda permitem retry. Código `4d0ce1c`; regressão direcionada `567ece7`.
+- **CI:** [Quality Gate #42443686889](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42443686889) **COMPLETED/SUCCESS** no SHA `567ece7f4a65a30931229cf46e35ff52b39386c2`; testes do MVP/Worker offline sem deploy ou acesso D1/R2.
+- **Pages manual, preview protegido:** [https://bce9161e.tonecosstudio.pages.dev/modelos](https://bce9161e.tonecosstudio.pages.dev/modelos), deployment `bce9161e-4f17-4743-af4d-c7be82813627`, SHA `567ece7`, **BUILD SUCCESS + DEPLOY SUCCESS**. `production_deployments_enabled=false`, `preview_deployment_setting=none` e Cloudflare Access intactos. Único deployment manual para este SHA.
+- **Quarentena conferida no HEAD anterior de dados `2b8d7cf`:** 264 IDs, 264 slugs e 264 chaves distintos; 33 registros com evidências de revisão Drive, zero autorizações verificadas, zero fotos substitutas aprovadas. Não repetir varredura nem abrir M5/Worker Washington.
+- **QA visual pendente:** o Chrome autorizado ainda mostrava “Sign in — Cloudflare Access”; portanto não há prova de renderização SPA da nova prévia. Testar após login legítimo [ficha em revisão](https://bce9161e.tonecosstudio.pages.dev/modelos/street-fighter-zangief-02) (aviso, sem galeria/retry), [ficha liberada de referência](https://bce9161e.tonecosstudio.pages.dev/modelos/nier-10h-nier) e navegação desktop/mobile, busca/paginação/galeria.
+- **NEXT_ACTION:** concluir QA autenticado da preview atual. Prosseguir somente com correções reais no frontend da mesma PR Draft; depois revisão legal/identidade, Vercel legado isolado e GO expresso antes de qualquer publicação pública. **NO-GO**.
+- **DO_NOT_REPEAT:** não criar PR/branch nova, não rebuild por este checkpoint documental, não desabilitar Access, não tocar Worker, Washington, D1, R2, Vercel, DNS ou produção.
+
+---
+
+
 
 ## MVP público — preview protegida validada em 07/11/2026
 
