@@ -1,5 +1,18 @@
 # Tonecos Studio — checkpoint operacional
 
+## MVP visual — primeira seleção de renders e autorização (08/11/2026)
+
+- **Regra SSOT:** o MVP exige renders digitais com imagem utilizável e direitos registrados. SpecialSTL permanece oculto. O registro de liberação está em `src/services/catalog/public-render-approvals.json` (ainda `approved: []`), validado por `scripts/security/catalog-public-media-approval-policy.mjs` e aplicado no proxy Vercel; chaves não registradas não atravessam `/media`. Não basta desativar uma flag no frontend.
+- **Candidatos localizados no Google Drive, ainda NÃO aprovados:**
+  - `OK - 10H [1]/10h-nier.png` (Drive `1SUG7jPnSBzSF1uzoIDLyUaLnUn8m4yDj`);
+  - `OK - 2B [3]/2b-4-nier.jpg`, `2b-2-nier.jpg`, `2b-5-nier.webp` (Drive `1rVHI-hDBeeihxxY1EMx5HzAqyNpKkjqC`, `134sQSQDKNxd_Y1iiEzysfaMGR1UisbDL`, `1Tyw83dj_NRnRJ5N3-czOwn3konoLbOvR`);
+  - `OK - A Máscara [1]/a-mascara.jpg` (Drive `1YpQR0ST316ioSZ0IGBoJbnd1vtp-47U7`).
+- A pasta chamada `OK` **não comprova licença**. Nenhum candidato foi associado com segurança ao ID/chave exatos no Worker, nem possui prova de direitos de publicação validada; **não inserir em `approved` sem esse confronto**. Isso evita liberar renders de variantes diferentes ou origem desconhecida.
+- **NEXT_ACTION:** comparar esses cinco arquivos com os registros já capturados em snapshots offline (sem nova varredura D1/R2), identificar escultor/origem, obter evidência de permissão e confirmar ID, slug e chave exata; só então preencher o manifesto, testar frontend e rotas diretas de mídia e liberar a primeira vitrine. Preservar PR #4 Draft, Git auto deploy OFF e `noindex` até autorização de lançamento.
+
+---
+
+
 
 ## MVP — Home recente após quarentena (08/11/2026)
 
