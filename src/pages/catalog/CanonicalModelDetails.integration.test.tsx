@@ -214,6 +214,8 @@ describe("published model/gallery identity on the public detail page", () => {
   });
 
   it("hides the section when its single bounded response has no eligible related models", async () => {
+    // Exercise the manual fallback regardless of environment polyfills.
+    vi.stubGlobal("IntersectionObserver", undefined);
     const { io } = mountGallery({ total: 1, relatedItems: [
       { ...model, id: "mdl-other", slug: "outro-universo", code: "TS-other",
         franchise_slug: "outra-franquia" },
@@ -230,6 +232,8 @@ describe("published model/gallery identity on the public detail page", () => {
   });
 
   it("loads bounded related suggestions only on demand and respects exact franchise/character matches", async () => {
+    // Exercise the manual fallback regardless of environment polyfills.
+    vi.stubGlobal("IntersectionObserver", undefined);
     const { io } = mountGallery({
       total: 1,
       relatedItems: [
