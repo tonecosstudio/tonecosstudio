@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { ImageOff } from "lucide-react";
+import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
 
 type CanonicalCatalogImageProps = {
   src: string | null;
@@ -25,10 +26,12 @@ type CanonicalCatalogImageProps = {
  * visit (e.g. after a transient network error).
  */
 export function CanonicalCatalogImage(props: CanonicalCatalogImageProps) {
+  const mediaUnderReview = isCatalogMediaUnderReview();
   return (
     <CatalogImageSource
-      key={JSON.stringify([props.src, props.fallbackSrc])}
+      key={JSON.stringify([mediaUnderReview, props.src, props.fallbackSrc])}
       {...props}
+      mediaUnderReview={mediaUnderReview}
     />
   );
 }
@@ -43,7 +46,8 @@ function CatalogImageSource({
   fallbackIcon,
   loading = "lazy",
   fetchPriority,
-}: CanonicalCatalogImageProps) {
+  mediaUnderReview,
+}: CanonicalCatalogImageProps & { mediaUnderReview: boolean }) {
   const [failedVariant, setFailedVariant] = useState<"primary" | "fallback" | null>(null);
   // Never invent an alternative media source: only a separately approved,
   // provided variant may be used, and only after the primary image fails.
@@ -52,7 +56,8 @@ function CatalogImageSource({
     : failedVariant === "primary" && fallbackSrc !== src
       ? fallbackSrc
       : null;
-  if (currentSrc) {
+  // Defense in depth: block even an accidentally supplied direct image URL.
+  if (!mediaUnderReview && currentSrc) {
     return (
       <img
         src={currentSrc}
@@ -68,7 +73,7 @@ function CatalogImageSource({
   return (
     <span className={fallbackClassName}>
       {fallbackIcon ?? <ImageOff size={26} strokeWidth={1.4} aria-hidden="true" />}
-      {fallbackLabel ? <span>{fallbackLabel}</span> : null}
+      {mediaUnderReview ? <span>Imagem em revisão</span> : fallbackLabel ? <span>{fallbackLabel}</span> : null}
     </span>
   );
 }
