@@ -78,7 +78,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LG--1oslE_SH9Rua-2T-7QIcl4zeSHVm",
+            "fileName": "gollum.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -174,7 +182,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LlL_-amZRk_YbRuoAAU6BIPtzqnNd0rT",
+            "fileName": "lara-croft-01.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -222,7 +238,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "17LNGAquzkmpkhs5P6A4POwhWx70VyEVo",
+            "fileName": "Sakura 04.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -254,7 +278,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LlIepe_BF5CXg4WemldOCZyD5HKXlvvh",
+            "fileName": "lara-croft-02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -318,7 +350,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "18dcY4knj8iipP_ApCr47cdShAxMADlXK",
+            "fileName": "kratos-15.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -366,7 +406,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "12Ud6XXRyJAQpe9O-L8ZcJ7GUsAY3P1pP",
+            "fileName": "Scorpion - Chibi.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -526,7 +574,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1-RXYkbxaLJlGokG9iam5_KY2pYJ7HiqC",
+            "fileName": "Scorpion 04.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -606,7 +662,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LYbBw6mbihmp4-uoGJwq3b4HnqmQxgVQ",
+            "fileName": "thorin-01.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -782,7 +846,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LFktuDx_03wT6mDRU5co0GzJ9o_HCNCk",
+            "fileName": "wandinha-addams-01.jpg",
+            "inspectedOn": "2026-11-07",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1134,7 +1206,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "11Eo_qzcZ5MZNl75uYMFhfcSlxjMH97zo",
+            "fileName": "Shao Kahn e Goro.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1150,7 +1230,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "12_KPTmc3uCujofcgYLfiuCn5uHyvzkpx",
+            "fileName": "Kitana 02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1390,7 +1478,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "19Ol4BcRZwmTOYGP9mgIGoLaNeBYoaYZm",
+            "fileName": "kratos-19.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1422,7 +1518,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "10bafFHz71AJYRb0YHvqeSLDzXMFuUqG1",
+            "fileName": "Sub-Zero 02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1454,7 +1558,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LVxKfdBwZeCLFwWN5YpTMWMyCrDQVNkp",
+            "fileName": "thranduil.jpg",
+            "inspectedOn": "2026-11-07",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1582,7 +1694,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1L9uR2tXW6jOU-c4naLltROXF3oHDORiX",
+            "fileName": "kratos-05.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1598,7 +1718,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1-SyGusWDECxUMUHujZL-RLr4ONZnAKxj",
+            "fileName": "Scorpion 06.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1886,7 +2014,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "19P9GMom70eG3bX_x9gdS21GThymWYjGV",
+            "fileName": "kratos-01.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2030,7 +2166,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1leJnZV1yMMInhO1aAOCUZuCZXWTXL3uW",
+            "fileName": "Scorpion 02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2126,7 +2270,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "10HKuLuPQKXwtj4DFxrhlTa3gvMECL7AF",
+            "fileName": "Goro 03.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2158,7 +2310,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1Q21awzcZsROcM3m9FDzKRTyZ_tzpF54h",
+            "fileName": "gohan-e-piccolo.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2334,7 +2494,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "10qGtgg39beEX6fEQUdwjpsx44qSW_U0Q",
+            "fileName": "Sub-Zero 06.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2398,7 +2566,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "11CBfzOF1C11WEFZvqocSK0NVv6DMHeG-",
+            "fileName": "Shao Kahn 02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2782,7 +2958,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1-KPdo03lhEYjSIbLVa_oDrI7PtUeVPA5",
+            "fileName": "Reptile.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2990,7 +3174,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "12Wqb9yrkBLcOujGUXv0yt-5TttxiFzVj",
+            "fileName": "Shao Kahn - Chibi.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3102,7 +3294,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "18XCLq18OcOMFaR5hEvqT6989vxovd7JP",
+            "fileName": "kratos-13.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3118,7 +3318,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LB3_tumAV1hYZZ1QY9oCYuqnEJquhfF9",
+            "fileName": "wandinha-addams-03.jpg",
+            "inspectedOn": "2026-11-07",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3310,7 +3518,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1M5B_yn-Y6h9qR13vsZY8WCVR3iW7bDfI",
+            "fileName": "tauriel.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3422,7 +3638,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "11lse6x7CcqPGE57onmh_TGLwYChmZlyy",
+            "fileName": "Goro 02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3486,7 +3710,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LoL49XNTGEJKCj0rT5pR7RAyBulKSjDD",
+            "fileName": "mumm-ra-06.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3598,7 +3830,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LCBA1xBLN0EhOcvinJqYwc9lBg9pf8JM",
+            "fileName": "wandinha-addams-02.jpg",
+            "inspectedOn": "2026-11-07",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3694,7 +3934,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "15s9wogQZwQQkr24-JSSq88o63trpEovH",
+            "fileName": "Gouken.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4046,7 +4294,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "17D0FJwLIwufun99N-JowsfSpt81TcnMl",
+            "fileName": "Sakura 02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4142,7 +4398,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "102xkjzy-7KCq0TXKV-iaMmdh-YxKP2M2",
+            "fileName": "Goro 06.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
