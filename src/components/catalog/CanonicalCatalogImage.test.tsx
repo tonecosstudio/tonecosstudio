@@ -1,8 +1,24 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CanonicalCatalogImage } from "./CanonicalCatalogImage";
 
+afterEach(() => vi.unstubAllEnvs());
+
 describe("CanonicalCatalogImage", () => {
+  it("never creates primary or fallback image requests during public media review", () => {
+    vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
+    const { container } = render(
+      <CanonicalCatalogImage
+        src="/catalogo-api/media/model-one/detail.webp"
+        fallbackSrc="/catalogo-api/media/model-one/card.webp"
+        alt="Modelo em revisão"
+        fallbackLabel="Sem prévia"
+      />,
+    );
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByText("Imagem em revisão")).toBeInTheDocument();
+    expect(screen.queryByText("Sem prévia")).not.toBeInTheDocument();
+  });
   it("shows the official image and a readable placeholder when loading fails", () => {
     render(
       <CanonicalCatalogImage
