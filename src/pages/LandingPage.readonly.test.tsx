@@ -50,6 +50,16 @@ describe("TONART public Home during image review", () => {
     expect(screen.getByText("Novidades em preparação")).toBeInTheDocument();
     expect(screen.getByText("Novas referências serão publicadas em breve."))
       .toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Referências em curadoria" }))
+      .toBeInTheDocument();
+    expect(screen.getByText("Catálogo para consulta")).toBeInTheDocument();
+    expect(screen.getByText("Fotografias em revisão")).toBeInTheDocument();
+    expect(screen.getByText("Contato por e-mail")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Falar com o estúdio" }))
+      .toHaveAttribute("href", "/contato");
+    expect(screen.queryByText("MODELOS RECENTES")).not.toBeInTheDocument();
+    expect(screen.queryByText("100%")).not.toBeInTheDocument();
+    expect(screen.queryByText("EXPLORAR TODOS OS MODELOS")).not.toBeInTheDocument();
     expect(screen.getByText(/Fotos em revisão para publicação/))
       .toBeInTheDocument();
     expect(screen.queryByText("Carregando referências")).not.toBeInTheDocument();
