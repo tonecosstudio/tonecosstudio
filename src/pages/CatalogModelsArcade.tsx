@@ -15,7 +15,7 @@ import {
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { catalogModelDetailsPath } from "@/config/routes";
-import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
+import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
   Sheet,
   SheetClose,
@@ -66,6 +66,7 @@ export default function CatalogModelsArcade() {
   // build, avoid extra category/franchise reads just to populate closed selects.
   // Opening either filter remains the explicit trigger for its indexed lookup.
   const mediaUnderReview = isCatalogMediaUnderReview();
+  const publicReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true" && isCatalogPublicMvpEnabled();
   const [loadCategories, setLoadCategories] = useState(Boolean(category) && !mediaUnderReview);
   const [loadFranchises, setLoadFranchises] = useState(Boolean(franchise) && !mediaUnderReview);
   const [franchiseDraft, setFranchiseDraft] = useState("");
@@ -502,7 +503,7 @@ export default function CatalogModelsArcade() {
                   <button
                     type="button"
                     aria-label={
-                      "Abrir seleção para orçamento com " +
+                      (publicReadOnly ? "Abrir referências salvas com " : "Abrir seleção para orçamento com ") +
                       selectedModels.length +
                       (selectedModels.length === 1 ? " modelo" : " modelos")
                     }
@@ -690,7 +691,7 @@ export default function CatalogModelsArcade() {
             </span>
             <SheetTitle className="text-2xl text-[hsl(0,0%,94%)]">Minha seleção</SheetTitle>
             <SheetDescription className="text-[hsl(0,0%,66%)]">
-              Revise os modelos que você reuniu para um futuro orçamento.
+              {publicReadOnly ? "Salve referências para comparar durante esta visita. O catálogo não recebe pedidos ou orçamentos." : "Revise os modelos que você reuniu para um futuro orçamento."}
             </SheetDescription>
             <p role="status" className="text-sm text-[hsl(var(--gold-accent))]">
               {selectedModels.length} de {MAX_CANONICAL_SELECTION} modelos selecionados.
@@ -748,7 +749,7 @@ export default function CatalogModelsArcade() {
 
           <footer className="shrink-0 border-t border-[hsl(0,0%,18%)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 sm:px-6">
             <p className="mb-3 text-xs leading-relaxed text-[hsl(0,0%,66%)]">
-              A seleção fica disponível durante esta visita. Nenhum orçamento foi enviado.
+              {publicReadOnly ? "As referências ficam salvas somente nesta visita e não são enviadas ao estúdio." : "A seleção fica disponível durante esta visita. Nenhum orçamento foi enviado."}
             </p>
             <SheetClose asChild>
               <button
