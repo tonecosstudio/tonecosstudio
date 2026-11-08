@@ -61,6 +61,7 @@ const image = {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 function mountGallery(options: {
@@ -217,6 +218,25 @@ function mountGallery(options: {
 }
 
 describe("published model/gallery identity on the public detail page", () => {
+  it("skips gallery and recommendation reads when public photos are under review", async () => {
+    vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
+    vi.stubGlobal("IntersectionObserver", undefined);
+    const { io } = mountGallery({ total: 1 });
+    expect(await screen.findByRole("heading", { name: "Animal original" }))
+      .toBeInTheDocument();
+    await waitFor(() => expect(io).toHaveBeenCalledTimes(1));
+    await act(async () => Promise.resolve());
+    expect(new URL(io.mock.calls[0][0]).pathname)
+      .toBe("/catalogo-api/api/models/animal-original");
+    expect(screen.getByText("Imagem em revisão")).toBeInTheDocument();
+    expect(screen.getByText(/Fotografias em revisão para publicação/))
+      .toBeInTheDocument();
+    expect(screen.getByText("Em revisão")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Ver imagem/ }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ver sugestões relacionadas" }))
+      .not.toBeInTheDocument();
+  });
   it("preserves filtered catalog return and supports returning to prior suggested model", async () => {
     vi.stubGlobal("IntersectionObserver", undefined);
     const scrollTo = vi.fn();
