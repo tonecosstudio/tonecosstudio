@@ -30,7 +30,7 @@ test("digital-render release register denies everything until rights are explici
     provenance: "tonart-original-render",
     sourceFileRef: "drive:1234567890abcdefghijklmnopqr",
     sourceSha256: "a".repeat(64),
-    rightsEvidenceRef: "drive:1234567890abcdefghijklmnopqr",
+    rightsEvidenceRef: "drive:0987654321abcdefghijklmnopqr",
     rightsHolder: "TONART Studio",
     creatorCredit: "Escultor responsável",
     publicationScope: "tonartstudio.com.br",
