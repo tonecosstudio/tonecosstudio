@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import type { ApprovedPublicRender } from "@/services/catalog/approved-public-renders";
-import { ApprovedModelShowcase } from "./ApprovedModelShowcase";
+import { ApprovedHomeHighlights, ApprovedModelShowcase } from "./ApprovedModelShowcase";
 
 vi.mock("@/components/layouts/Page", () => ({
   Page: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -84,6 +84,54 @@ describe("TONART approved-only public showcase", () => {
     expect(screen.getByRole("link", { name: /Ver detalhes/ })).toHaveAttribute("href", "/modelos/escultura-original");
     expect(getModel).toHaveBeenCalledTimes(1);
     expect(getModel.mock.calls[0][0]).toBe("escultura-original");
+  });
+
+  it("removes a broken approved cover card instead of showing an empty photo placeholder", async () => {
+    const getModel = vi.fn(async (_slug: string) => model);
+    const mediaUrl = vi.fn((candidate: string | null) =>
+      candidate === key ? "https://catalog.example.test/catalogo-api/" + key : null,
+    );
+    show({ getModel, mediaUrl }, [release]);
+    const img = await screen.findByRole("img", { name: "Render digital de Escultura original" });
+    fireEvent.error(img);
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Ver detalhes/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/As imagens autorizadas não estão disponíveis agora/)).toBeInTheDocument();
+  });
+
+  it("reuses exactly the same approved selection for the Home without a catalog scan", async () => {
+    const getModel = vi.fn(async (_slug: string) => model);
+    const mediaUrl = vi.fn((candidate: string | null) =>
+      candidate === key ? "https://catalog.example.test/catalogo-api/" + key : null,
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <ApprovedHomeHighlights gateway={{ getModel, mediaUrl }} releases={[release]} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("heading", { name: "Renders autorizados" })).toBeInTheDocument();
+    await screen.findByRole("img", { name: "Render digital de Escultura original" });
+    expect(screen.getByRole("link", { name: "Ver todos os modelos" })).toHaveAttribute("href", "/modelos");
+    expect(getModel).toHaveBeenCalledTimes(1);
+    expect(getModel.mock.calls[0][0]).toBe("escultura-original");
+  });
+
+  it("does not call any model endpoint when the Home has no approved renders", () => {
+    const getModel = vi.fn();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <ApprovedHomeHighlights gateway={{ getModel, mediaUrl: () => null } as unknown as Parameters<typeof ApprovedHomeHighlights>[0]["gateway"]} releases={[]} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(getModel).not.toHaveBeenCalled();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Renders autorizados" })).not.toBeInTheDocument();
   });
 
   it("fails closed if the Worker returns another model or another cover", async () => {
