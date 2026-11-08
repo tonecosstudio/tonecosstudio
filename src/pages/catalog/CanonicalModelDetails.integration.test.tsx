@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import specialstlQuarantine from "@/services/catalog/specialstl-quarantine.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -181,6 +181,38 @@ function mountGallery(options: {
 }
 
 describe("published model/gallery identity on the public detail page", () => {
+  it("automatically loads exactly one related page when scrolled near the hidden section", async () => {
+    let onIntersect: ((entries: Array<{ isIntersecting: boolean }>) => void) | undefined;
+    class FakeIntersectionObserver {
+      constructor(callback: IntersectionObserverCallback) {
+        onIntersect = (entries) => callback(
+          entries as IntersectionObserverEntry[],
+          this as unknown as IntersectionObserver,
+        );
+      }
+      observe() {}
+      disconnect() {}
+    }
+    vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
+
+    const { io } = mountGallery({ total: 1, relatedItems: [
+      { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
+        variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
+    ] });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    expect(screen.queryByRole("heading", { name: "Explore mais modelos" }))
+      .not.toBeInTheDocument();
+    expect(io).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      onIntersect?.([{ isIntersecting: true }]);
+    });
+    expect(await screen.findByRole("heading", {
+      name: "Outras versões de Animal original",
+    })).toBeInTheDocument();
+    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(1);
+  });
+
   it("hides the section when its single bounded response has no eligible related models", async () => {
     const { io } = mountGallery({ total: 1, relatedItems: [
       { ...model, id: "mdl-other", slug: "outro-universo", code: "TS-other",
