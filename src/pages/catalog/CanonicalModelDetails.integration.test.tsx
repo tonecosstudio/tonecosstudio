@@ -88,6 +88,13 @@ function mountGallery(options: {
       }
       return Response.json({ items: options.relatedItems ?? [], nextCursor: null });
     }
+    if (url.pathname.endsWith("/api/models/animal-nova-pose")) {
+      return Response.json({
+        ...model, id: "mdl-124", slug: "animal-nova-pose",
+        code: "TS-124", variant_name: "Nova pose",
+        image_count: 0, gallery_version: 0, cover_storage_key: null,
+      });
+    }
     if (url.pathname.endsWith("/api/models/animal-original")) {
       if (options.restricted) {
         return Response.json({ ...model, id: specialstlQuarantine.confirmed[0].modelId });
@@ -204,6 +211,68 @@ function mountGallery(options: {
 }
 
 describe("published model/gallery identity on the public detail page", () => {
+  it("preserves filtered catalog return and supports returning to prior suggested model", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    const { io } = mountGallery({
+      total: 1,
+      returnState: {
+        catalogReturnSearch: "q=escultura&category=games&franchise=exemplo",
+        catalogSiblingSlugs: ["animal-original", "robo-armadura"],
+      },
+      relatedItems: [
+        { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
+          variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
+      ],
+    });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+    const suggestion = await screen.findByRole("link", {
+      name: "Ver modelo Animal original — Nova pose",
+    });
+    fireEvent.click(suggestion);
+
+    const previous = await screen.findByRole("link", { name: "Voltar ao modelo anterior" });
+    expect(previous).toHaveAttribute("href", "/modelos/animal-original");
+    expect(screen.getByRole("link", { name: "Voltar ao catálogo" }))
+      .toHaveAttribute("href", "/modelos?q=escultura&category=games&franchise=exemplo");
+    // Stale adjacent-sibling snapshots from the source page must not be reused.
+    expect(screen.queryByRole("link", { name: "Próximo modelo" })).not.toBeInTheDocument();
+
+    fireEvent.click(previous);
+    expect(await screen.findByRole("heading", { name: "Animal original" }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Voltar ao modelo anterior" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar ao catálogo" }))
+      .toHaveAttribute("href", "/modelos?q=escultura&category=games&franchise=exemplo");
+    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(1);
+  });
+
+  it("preserves Universe folder return on a recommended model", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    mountGallery({
+      total: 1,
+      returnState: {
+        catalogReturnUniverse: {
+          category: "games", franchise: "exemplo", folder: "heroes/figures",
+        },
+      },
+      relatedItems: [
+        { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
+          variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
+      ],
+    });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+    fireEvent.click(await screen.findByRole("link", {
+      name: "Ver modelo Animal original — Nova pose",
+    }));
+    expect(await screen.findByRole("link", { name: "Voltar à pasta" }))
+      .toHaveAttribute("href", "/universo/games/exemplo?folder=heroes%2Ffigures");
+    expect(screen.getByRole("link", { name: "Voltar ao modelo anterior" }))
+      .toHaveAttribute("href", "/modelos/animal-original");
+  });
+
   it("automatically loads exactly one related page when scrolled near the hidden section", async () => {
     let onIntersect: ((entries: Array<{ isIntersecting: boolean }>) => void) | undefined;
     class FakeIntersectionObserver {
