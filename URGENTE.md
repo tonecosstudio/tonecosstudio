@@ -1,5 +1,16 @@
 # Tonecos Studio — checkpoint operacional
 
+
+## MVP — Home recente após quarentena (08/11/2026)
+
+- **MVP frontend, PR #4 Draft:** `src/pages/LandingPage.tsx` agora usa **uma** leitura indexada `GET api/recent?limit=24` e apresenta apenas os **seis primeiros modelos elegíveis** depois da quarentena. Evita a Home com menos destaques/“sem novidades” falsos quando a API retorna modelos recentes bloqueados. Não varre D1, não anda cursores e não altera backend. Commit `eab4e1a`.
+- **Teste direcionado:** `src/services/catalog/public-catalog-gateway.test.ts` simula oito capas em quarentena seguidas de oito modelos elegíveis; comprova seis destaques válidos e **uma só requisição**. Commit `af9c12b`. [GitHub Actions #42446072181](https://github.com/tonecosstudio/tonecosstudio/actions/runs/42446072181): **COMPLETED/SUCCESS** no SHA `af9c12b7bd869238d910e88e279626353edbe385`.
+- **Uma prévia manual protegida:** [Home](https://562bd713.tonecosstudio.pages.dev/) e [Modelos](https://562bd713.tonecosstudio.pages.dev/modelos), Cloudflare deployment `562bd713-b95f-443b-b192-3b3a2dcc357a` no SHA `af9c12b`; **BUILD SUCCESS + DEPLOY SUCCESS**, ambiente `preview`. Cloudflare Access cobre `*.tonecosstudio.pages.dev`; produção automática OFF e preview automático `none`.
+- **QA visual ainda PENDENTE:** não existe sessão autenticada confirmada para homologar o SPA desktop/mobile. Sucesso de build/CI e tela de login Access não atestam renderização, navegação ou imagens.
+- **NEXT_ACTION:** autenticar legitimamente no Cloudflare Access e revisar **essa nova URL**: Home (até seis referências elegíveis), Universo, grade/paginação, busca/filtros, ficha/galeria, bloqueios de imagem e mobile. Corrigir somente defeito real no frontend da mesma PR. A curadoria e a revisão jurídica/licenças continuam pendentes para o GO público. Não repetir lotes SpecialSTL, Worker Washington, D1/R2, scans, Vercel ou builds por documentação. **NO-GO público**.
+
+---
+
 ## MVP — ficha de modelo em revisão (08/11/2026)
 
 - **Problema real do frontend corrigido:** quando um dos 264 IDs em quarentena era acessado por link direto, a ficha apresentava falha genérica e botão de retry inútil. `src/pages/catalog/CanonicalModelDetails.tsx` agora distingue `catalog_model_media_restricted`, exibe “Modelo em revisão de imagem” e não oferece retry/galeria para a restrição; outras falhas ainda permitem retry. Código `4d0ce1c`; regressão direcionada `567ece7`.
