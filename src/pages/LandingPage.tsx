@@ -8,6 +8,7 @@ import {
   Zap,
   Eye,
   Trophy,
+  Mail,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -277,7 +278,23 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Stats */}
+          {/* An editorial status instead of empty or invented metrics during curatorial review. */}
+          {catalogMediaOnHold ? (
+            <div aria-label="Estado do catálogo" className="mx-auto grid max-w-3xl grid-cols-1 gap-3 border-t border-[hsl(var(--gold-accent)/0.18)] pt-6 text-left sm:grid-cols-3 sm:gap-6">
+              <div className="flex items-center gap-3">
+                <Eye size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">Catálogo para consulta</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Shield size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">Fotografias em revisão</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Mail size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">Contato por e-mail</span>
+              </div>
+            </div>
+          ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 sm:gap-6 max-w-3xl mx-auto">
             <StatCounter
               value={hasCatalogData ? "ATIVO" : "—"}
@@ -292,11 +309,42 @@ export default function LandingPage() {
             <StatCounter value="100%" label="Artesanal" icon={Zap} />
             <StatCounter value={publicReadOnly ? "Consulta" : "Sob Encomenda"} label="Atendimento" icon={Eye} />
           </div>
+          )}
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[hsl(var(--gold-accent)/0.3)] to-transparent" />
       </section>
 
-      {/* ═══ MODELOS CANÔNICOS EM DESTAQUE ═══ */}
+      {/* Do not render an empty "Recent models" showcase while no photographs are approved. */}
+      {catalogMediaOnHold ? (
+        <section aria-labelledby="catalog-curation-heading" className="relative border-y border-[hsl(var(--gold-accent)/0.12)] bg-[hsl(0,0%,5%)] px-6 py-14 sm:py-20">
+          <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent))]">O ACERVO TONART</p>
+              <h2 id="catalog-curation-heading" className="mt-4 max-w-xl text-3xl font-semibold uppercase leading-tight tracking-[0.035em] text-white sm:text-4xl">
+                Referências em curadoria
+              </h2>
+              <p className="mt-5 max-w-xl text-base leading-7 text-[hsl(0,0%,70%)]">
+                Estamos preparando a apresentação visual do acervo com atenção à origem e à autorização das fotografias.
+              </p>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-[hsl(0,0%,52%)]">
+                Novas referências serão publicadas em breve.
+              </p>
+            </div>
+            <div className="border-l-2 border-[hsl(var(--gold-accent)/0.65)] bg-[hsl(0,0%,7%)] px-6 py-7 sm:px-8 sm:py-9">
+              <div className="flex items-center gap-3">
+                <Shield size={20} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-[hsl(0,0%,92%)]">Publicação responsável</h3>
+              </div>
+              <p className="mt-4 text-sm leading-7 text-[hsl(0,0%,70%)]">
+                Fotos em revisão para publicação. As imagens só serão exibidas após a verificação das permissões de uso.
+              </p>
+              <Link to={PUBLIC_ROUTES.contact} className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--gold-accent))]">
+                Falar com o estúdio <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      ) : (
       <section className="relative border-t border-[hsl(var(--gold-accent)/0.08)] px-6 py-12">
         <div className="mx-auto max-w-6xl">
           <ArcadeSectionTitle>MODELOS RECENTES</ArcadeSectionTitle>
@@ -349,9 +397,10 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ═══ CTA ═══ */}
-      <ArcadeCTA
+      {!catalogMediaOnHold ? <ArcadeCTA
         badge="ACERVO TONART"
         title={landingCopy.ctaTitle}
         description={landingCopy.ctaDescription}
@@ -361,7 +410,7 @@ export default function LandingPage() {
           icon: <Zap className="w-5 h-5" />,
         }}
         secondaryAction={{ label: "FALE CONOSCO", href: PUBLIC_ROUTES.contact }}
-      />
+      /> : null}
 
       {/* ═══ FOOTER ═══ */}
       <footer className="border-t border-[hsl(0,0%,10%)] py-8 px-6 bg-[hsl(0,0%,3%)]">
