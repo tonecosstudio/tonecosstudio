@@ -145,6 +145,31 @@ afterEach(() => {
 });
 
 describe("Tonecos canonical model discovery UI", () => {
+  it("reads only the selected models on a public filtered deep link until filters are opened", async () => {
+    vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
+    const { calls } = setupFetch();
+    await renderCatalog("/modelos?category=originais&franchise=autoral");
+    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+
+    const categorySelect = screen.getByRole("combobox", { name: "Filtrar por categoria" });
+    const franchiseSelect = screen.getByRole("combobox", { name: "Filtrar por franquia" });
+    expect(categorySelect).toHaveValue("originais");
+    expect(franchiseSelect).toHaveValue("autoral");
+    expect(calls.map(({ url }) => url.pathname)).toEqual(["/catalogo-api/api/catalog"]);
+
+    fireEvent.focus(categorySelect);
+    await waitFor(() =>
+      expect(calls.filter(({ url }) => url.pathname.endsWith("/api/categories"))).toHaveLength(1),
+    );
+    expect(calls.filter(({ url }) => url.pathname.endsWith("/api/franchises"))).toHaveLength(0);
+
+    fireEvent.focus(franchiseSelect);
+    await waitFor(() =>
+      expect(calls.filter(({ url }) => url.pathname.endsWith("/api/franchises"))).toHaveLength(1),
+    );
+    expect(calls.filter(({ url }) => url.pathname.endsWith("/api/catalog"))).toHaveLength(1);
+  });
+
   it("explains a withheld public catalog without claiming that no models exist", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     const fetcher = vi.fn(async (input: string) => {
