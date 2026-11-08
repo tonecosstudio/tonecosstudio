@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { BRAND_NAME, BRAND_SHORT_NAME } from "@/config/brand";
 import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
@@ -123,7 +123,6 @@ export function landingCopyForMode(publicReadOnly: boolean) {
 // ─── MAIN LANDING PAGE ───────────────────────────────────────────────
 
 export default function LandingPage() {
-  const navigate = useNavigate();
   const publicReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true" && isCatalogPublicMvpEnabled();
   const landingCopy = landingCopyForMode(publicReadOnly);
   const [scrollY, setScrollY] = useState(0);
@@ -257,8 +256,8 @@ export default function LandingPage() {
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <button
-              onClick={() => navigate(PUBLIC_ROUTES.catalogModels)}
+            <Link
+              to={PUBLIC_ROUTES.catalogModels}
               className="group inline-flex w-full max-w-[20rem] items-center justify-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.08em] text-xs h-14 px-3 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all sm:w-auto sm:max-w-none sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.15em]"
             >
               <Crosshair
@@ -266,16 +265,16 @@ export default function LandingPage() {
                 style={{ animationDuration: "3s" }}
               />
               EXPLORAR MODELOS
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
+            </Link>
 
-            <button
-              onClick={() => navigate(publicReadOnly ? PUBLIC_ROUTES.about : PUBLIC_ROUTES.catalogModels)}
+            <Link
+              to={publicReadOnly ? PUBLIC_ROUTES.about : PUBLIC_ROUTES.catalogModels}
               className="inline-flex w-full max-w-[20rem] items-center justify-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent)/0.6)] font-mono uppercase tracking-[0.08em] text-xs h-14 px-3 transition-all sm:w-auto sm:max-w-none sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.15em]"
             >
               <Eye className="w-5 h-5" />
               {publicReadOnly ? "CONHEÇA O ESTÚDIO" : "VER CATÁLOGO"}
-            </button>
+            </Link>
           </div>
 
           {/* An editorial status instead of empty or invented metrics during curatorial review. */}
@@ -431,19 +430,18 @@ export default function LandingPage() {
               { label: "Termos", href: PUBLIC_ROUTES.terms },
               { label: "Privacidade", href: PUBLIC_ROUTES.privacy },
             ].map((link) => (
-              <button
+              <Link
                 key={link.href}
-                onClick={() => navigate(link.href)}
-                className="inline-flex min-h-11 items-center text-[8px] text-[hsl(0,0%,35%)] hover:text-[hsl(var(--gold-accent))] tracking-wider transition-colors uppercase"
-                style={{ fontFamily: "'Press Start 2P', monospace" }}
+                to={link.href}
+                className="inline-flex min-h-11 items-center text-[11px] leading-6 text-[hsl(0,0%,68%)] hover:text-[hsl(var(--gold-accent))] tracking-[0.04em] transition-colors uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
               >
                 {link.label}
-              </button>
+              </Link>
             ))}
           </nav>
 
           <p
-            className="text-[7px] text-[hsl(0,0%,20%)] tracking-wider"
+            className="text-[11px] leading-5 text-[hsl(0,0%,57%)] tracking-[0.04em]"
             style={{ fontFamily: "'Press Start 2P', monospace" }}
           >
             © {new Date().getFullYear()} {BRAND_NAME}
