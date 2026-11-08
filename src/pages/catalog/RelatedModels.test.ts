@@ -3,7 +3,7 @@ import type {
   PublicCatalogDetail,
   PublicCatalogModel,
 } from "@/services/catalog/public-catalog-gateway";
-import { selectRelatedModelGroups } from "./RelatedModels";
+import { relatedCatalogReturnState, selectRelatedModelGroups } from "./RelatedModels";
 
 const current: PublicCatalogDetail = {
   id: "mdl-current",
@@ -42,6 +42,40 @@ function related(
     ...changes,
   };
 }
+
+describe("related-model navigation context", () => {
+  it("preserves the validated catalog query without sibling snapshots", () => {
+    expect(relatedCatalogReturnState(
+      "/modelos?q=escultura&category=games&franchise=nier",
+    )).toEqual({
+      catalogReturnSearch: "q=escultura&category=games&franchise=nier",
+    });
+    expect(relatedCatalogReturnState("/modelos")).toEqual({
+      catalogReturnSearch: "",
+    });
+  });
+
+  it("preserves the exact canonical Universe folder without external state", () => {
+    expect(relatedCatalogReturnState(
+      "/universo/games/nier?folder=heroes%2Ffigures",
+    )).toEqual({
+      catalogReturnUniverse: {
+        category: "games", franchise: "nier", folder: "heroes/figures",
+      },
+    });
+    expect(relatedCatalogReturnState("/universo/games/nier"))
+      .toEqual({
+        catalogReturnUniverse: { category: "games", franchise: "nier" },
+      });
+  });
+
+  it("fails closed on unexpected or unsafe return paths", () => {
+    expect(relatedCatalogReturnState("https://outside.test"))
+      .toEqual({ catalogReturnSearch: "" });
+    expect(relatedCatalogReturnState("/universo/../admin"))
+      .toEqual({ catalogReturnSearch: "" });
+  });
+});
 
 describe("TONART related model selection", () => {
   it("prioritizes exact same-character variants, collection and franchise without overlap", () => {
