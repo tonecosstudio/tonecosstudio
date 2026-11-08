@@ -54,7 +54,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "19u7GgwBs0XCqqr5f_RbFwSgYaHQThNlb",
+            "fileName": "wolverine-traje-marrom-em-diorama.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -142,7 +150,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "galleryTotal": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveCandidate": {
+            "source": "google_drive",
+            "fileId": "1KBff7oEAXTyF7l7bjjb54bs-DUpPYgL4",
+            "fileName": "Ada Wong 2.jpg",
+            "inspectedOn": "2026-11-08",
+            "reviewStatus": "unverified_variant_and_permission",
+            "visibleSpecialstlWatermark": false,
+            "exactSculptureMatchVerified": false,
+            "authorizationVerified": false,
+            "notes": "Visible image lacks the repeating SpecialSTL mark. This is NOT an approved replacement; exact sculpture/variant identity and documented public-display permission require independent confirmation."
+          }
         }
       }
     },
@@ -198,7 +217,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1N6LCoyq1tQ7wqi0zEo7OZ4r-RsUnBnO3",
+            "fileName": "freeza-batalha-namek-busto.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -374,7 +401,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1K0XpsUFf2JMPDG-WRTTfVjKMdG5B5Ivz",
+            "fileName": "Claire Redfield — modelo anterior — 01.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -814,7 +849,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1Lcq4ulou2SBImDKJSro4b95JC680SQ3a",
+            "fileName": "t-1000.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -854,7 +897,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1FkzqSCQDEFDAvUyb-8lpBmlPcHo-TFxz",
+            "fileName": "jiren-estatua-colorida-em-pe.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -910,7 +961,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1N7DrNFdvoGKZ9TJO6PARRNNJ0Cui0NRk",
+            "fileName": "freeza-mecha-busto.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -950,7 +1009,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1MBkjZn8AWFBh1g58ofvNAKvbb7Kp0tCy",
+            "fileName": "wolverine-arma-x-diorama.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1094,7 +1161,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1K0Y21FdXyM7mZSiCXfxnByaaclj7JI4H",
+            "fileName": "Ashley Graham.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1110,7 +1185,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1JzXwH4zVaz0Zkrazy8hsC_i4QrzHJNn8",
+            "fileName": "Leon Kennedy.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1150,7 +1233,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1N89qTCMAJMRcOs3N6LjWiADsDcitSVb_",
+            "fileName": "legacy-gogeta-Gogeta-3D.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1166,7 +1257,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1N4fE5Yvsv8LJ9il39hksZMF0D9YF7d3l",
+            "fileName": "freeza-com-esfera-de-energia-em-diorama.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1302,7 +1401,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LbvlfmuV6Ws3UDhf5gCxQBXmtqjkmeu1",
+            "fileName": "t-800.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1358,7 +1465,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "19llVnqT0EpDreXteCPivnbRI5IqeWg_3",
+            "fileName": "wolverine-agachado-modelo-cinza.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1390,7 +1505,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "10htfao6tfNT7RkS9V9cQSDerb-aRS5ye",
+            "fileName": "doutor-octopus-estatua-cinza-com-tentaculos-erguidos.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1830,7 +1953,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "galleryTotal": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1K17Jawj7HZkFd78BPLG_21XeENITxuwv",
+            "fileName": "Adawong.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1918,7 +2049,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1MEpxYTCz3CtogofCUfKeozZd3mYB861A",
+            "fileName": "logan-sem-camisa-com-garras.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2142,7 +2281,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LnS6hcflnlmLi3BjoHcQm5L8tIWteecX",
+            "fileName": "hermione-granger-01.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2190,7 +2337,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "10KaIVecwCLudUkSFxz5JIfNZLi2rIvVu",
+            "fileName": "Leon.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2702,7 +2857,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LbhdXkOWcXPNssuFRjFfPpNVtDoBNGDP",
+            "fileName": "sarah-connor.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3574,7 +3737,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1Llko6mhqmCAd7_Gg_z3cjgEaMx-yQLI8",
+            "fileName": "hermione-granger-02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4254,7 +4425,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "19f0iK9GPEtBBF37vQB0Ce8_wfegh9aQy",
+            "fileName": "wolverine-com-efeito-de-chamas.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4446,7 +4625,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LdMKUk9LD6wgmH3Nq1y0eFAD927qCQL_",
+            "fileName": "t-800-endoskeleton.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4478,7 +4665,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "19dQzZdVORmcMDh9DV5d0-W2kyvzsW7ZZ",
+            "fileName": "wolverine-azul-amarelo-com-motocicleta.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4726,7 +4921,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "19vqqo0ZpuqPl5wRPQhfiXih1xJgua7lH",
+            "fileName": "wolverine-classico-marrom-amarelo-em-pe-com-garras.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4806,7 +5009,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1KI0kOSwjQjeMxGqre46eaHNdWuQDKLWi",
+            "fileName": "wolverine-dinamico-modelo-cinza.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4862,7 +5073,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "19nosDeqKc22tP9DBmHEfCVE0dWg5x6iY",
+            "fileName": "wolverine-sobre-ninjas-derrotados.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
