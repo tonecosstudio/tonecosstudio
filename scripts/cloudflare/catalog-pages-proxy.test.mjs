@@ -407,3 +407,22 @@ test("onRequest preserves allowlist on bound service", async () => {
   assert.equal(unknown.status, 404);
   assert.equal(calls, 0);
 });
+
+test("Pages entrypoint embargoes direct media before reaching the Worker", async () => {
+  let workerCalls = 0;
+  const worker = { fetch() { workerCalls += 1; throw new Error("unexpected Worker read"); } };
+  for (const mediaReview of [undefined, "true", "false"]) {
+    const env = { CATALOG_WORKER: worker };
+    if (mediaReview !== undefined) env.VITE_TONART_HIDE_CATALOG_MEDIA = mediaReview;
+    for (const url of [
+      SITE + "/catalogo-api/media/mdl-123/card.webp",
+      SITE + "/catalogo-api/media/mdl-123/cover.webp",
+    ]) {
+      const response = await onRequest({ request: new Request(url), env });
+      assert.equal(response.status, 404, url);
+      assert.equal(response.headers.get("Cache-Control"), "no-store");
+      assert.equal(await response.text(), "Imagem em revisão");
+    }
+  }
+  assert.equal(workerCalls, 0);
+});
