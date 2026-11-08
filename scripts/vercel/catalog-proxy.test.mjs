@@ -53,6 +53,14 @@ test("digital-render release register denies everything until rights are explici
     /invalid_public_render_approval_entry/,
   );
   assert.throws(
+    () => validatePublicRenderApprovals({ version: 1, approved: [{ ...valid, rightsEvidenceRef: valid.sourceFileRef }] }, restricted),
+    /invalid_public_render_approval_entry/,
+  );
+  assert.throws(
+    () => validatePublicRenderApprovals({ version: 1, approved: [{ ...valid, sourceSha256: "" }] }, restricted),
+    /invalid_public_render_approval_entry/,
+  );
+  assert.throws(
     () => validatePublicRenderApprovals({ version: 1, approved: [valid] }, {
       confirmed: [{ modelId, replacement: { status: "pending_authorized_clean_photo", approvedImageStorageKey: null } }],
     }),
