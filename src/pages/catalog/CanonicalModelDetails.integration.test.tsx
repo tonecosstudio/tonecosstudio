@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
+import type { PublicCatalogModel } from "@/services/catalog/public-catalog-gateway";
 import specialstlQuarantine from "@/services/catalog/specialstl-quarantine.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -72,6 +73,7 @@ function mountGallery(options: {
   incompleteWithoutCursor?: boolean;
   restricted?: boolean;
   relatedItems?: Array<typeof model>;
+  cachedFranchiseItems?: Array<typeof model>;
   characterItems?: Array<typeof model>;
   relatedSearchError?: boolean;
 }) {
@@ -174,6 +176,19 @@ function mountGallery(options: {
   });
   vi.stubGlobal("fetch", io);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  if (options.cachedFranchiseItems) {
+    const decoded: PublicCatalogModel[] = options.cachedFranchiseItems.map((row) => ({
+      id: row.id, slug: row.slug, code: row.code, name: row.name,
+      variantName: row.variant_name, category: row.category,
+      categorySlug: row.category_slug, franchise: row.franchise,
+      franchiseSlug: row.franchise_slug, collection: row.collection,
+      folderPath: row.folder_path, imageCount: row.image_count,
+      galleryVersion: row.gallery_version, coverStorageKey: row.cover_storage_key,
+    }));
+    client.setQueryData([
+      "tonecos-catalog-list", JSON.stringify(["", "games", "exemplo", ""]), undefined,
+    ], { items: decoded, nextCursor: null });
+  }
   const view = render(
     <QueryClientProvider client={client}>
       <CatalogBrowsingProvider>
@@ -302,6 +317,27 @@ describe("published model/gallery identity on the public detail page", () => {
       name: "Outras versões de Animal original",
     })).not.toBeInTheDocument();
     expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(2);
+  });
+
+  it("reuses the validated first page from the franchise catalog without a second read", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    const { io } = mountGallery({
+      total: 1,
+      cachedFranchiseItems: [
+        { ...model, id: "mdl-124", code: "TS-124",
+          slug: "animal-nova-pose", variant_name: "Nova pose",
+          cover_storage_key: "media/mdl-124/card.webp" },
+      ],
+    });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    expect(io).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+    expect(await screen.findByRole("heading", { name: "Outras versões de Animal original" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver modelo Animal original — Nova pose" }))
+      .toHaveAttribute("href", "/modelos/animal-nova-pose");
+    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(0);
+    expect(io).toHaveBeenCalledTimes(2);
   });
 
   it("loads bounded related suggestions only on demand and respects exact franchise/character matches", async () => {
