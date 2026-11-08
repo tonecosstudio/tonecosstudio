@@ -145,6 +145,18 @@ afterEach(() => {
 });
 
 describe("Tonecos canonical model discovery UI", () => {
+  it("labels the read-only selection without implying quote submission", async () => {
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
+    setupFetch();
+    await renderCatalog();
+    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+    const saved = screen.getByRole("button", { name: "Abrir referências salvas com 0 modelos" });
+    fireEvent.click(saved);
+    expect(screen.getByText(/O catálogo não recebe pedidos ou orçamentos/)).toBeInTheDocument();
+    expect(screen.getByText(/não são enviadas ao estúdio/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Abrir seleção para orçamento/ })).not.toBeInTheDocument();
+  });
   it("reads only the selected models on a public filtered deep link until filters are opened", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     const { calls } = setupFetch();
