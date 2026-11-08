@@ -1,5 +1,5 @@
 /** Canonical visual navigation shared by public-readonly and commercial modes. No auth imports. */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Bell, Menu, X } from "lucide-react";
 import { CoinCounter } from "@/components/arcade/CoinCounter";
@@ -39,6 +39,12 @@ export function ArcadeNavView({
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Navigation may happen outside the menu (browser Back, catalog cards,
+  // footer links). Never leave an expanded mobile menu on the next page.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname, location.search]);
 
   const isActive = (path: string) => {
     if (path === PUBLIC_ROUTES.home) {
