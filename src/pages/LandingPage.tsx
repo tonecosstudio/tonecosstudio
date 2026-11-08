@@ -143,14 +143,17 @@ export default function LandingPage() {
       return null;
     }
   }, []);
+  // Fetch one bounded indexed window so quarantined recent covers do not
+  // leave the six-card Home showcase empty while eligible models follow.
+  // No full-catalog read, cursor walk or fallback catalog is involved.
   const modelsQuery = useQuery({
-    queryKey: ["tonecos-landing-recent-models", 6],
-    queryFn: ({ signal }) => gateway!.listRecent(6, signal),
+    queryKey: ["tonecos-landing-recent-models", 24],
+    queryFn: ({ signal }) => gateway!.listRecent(24, signal),
     enabled: gateway !== null,
     retry: false,
     staleTime: 60 * 1000,
   });
-  const models = modelsQuery.data ?? [];
+  const models = modelsQuery.data?.slice(0, 6) ?? [];
   const isCatalogLoading = gateway !== null && modelsQuery.isPending;
   const hasCatalogError = gateway === null || modelsQuery.isError;
   const hasCatalogData = models.length > 0;
