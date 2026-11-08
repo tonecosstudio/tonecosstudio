@@ -11,7 +11,7 @@ import {
 } from "@/services/catalog/public-catalog-gateway";
 
 type CatalogGateway = ReturnType<typeof createPublicCatalogGateway>;
-type RelatedGroup = { title: string; items: PublicCatalogModel[] };
+type RelatedGroup = { kind: "character" | "collection" | "franchise"; title: string; items: PublicCatalogModel[] };
 const RELATED_PAGE_LIMIT = 36;
 const GROUP_LIMIT = 4;
 
@@ -39,7 +39,7 @@ export function selectRelatedModelGroups(
   const byCollection: PublicCatalogModel[] = [];
   const byFranchise: PublicCatalogModel[] = [];
 
-  for (const candidate of candidates.slice(0, RELATED_PAGE_LIMIT)) {
+  for (const candidate of candidates.slice(0, RELATED_PAGE_LIMIT * 2)) {
     if (
       !candidate.coverStorageKey ||
       candidate.imageCount < 1 ||
@@ -74,14 +74,17 @@ export function selectRelatedModelGroups(
 
   const groups: RelatedGroup[] = [];
   if (byCharacter.length) groups.push({
+    kind: "character",
     title: "Outras versões de " + current.name,
     items: byCharacter.slice(0, GROUP_LIMIT),
   });
   if (byCollection.length) groups.push({
+    kind: "collection",
     title: "Da mesma coleção",
     items: byCollection.slice(0, GROUP_LIMIT),
   });
   if (byFranchise.length) groups.push({
+    kind: "franchise",
     title: "Explore " + current.franchise,
     items: byFranchise.slice(0, GROUP_LIMIT),
   });
@@ -132,12 +135,53 @@ export function RelatedModels({
     staleTime: 15 * 60 * 1000,
   });
 
-  const groups = useMemo(
+  const initialGroups = useMemo(
     () => selectRelatedModelGroups(model, (relatedQuery.data?.items ?? []).filter(
       (item) => gateway.mediaUrl(item.coverStorageKey) !== null,
     )),
     [model, gateway, relatedQuery.data],
   );
+
+  // A sorted franchise page may not contain the character at all. Only in
+  // that case, one additional indexed name search can recover exact matches.
+  // Never walk cursors or fetch every model in a large franchise.
+  const characterSearchLength = Array.from(model.name.trim()).length;
+  const shouldSearchCharacter =
+    isRequested && canQuery && relatedQuery.isSuccess &&
+    !initialGroups.some((group) => group.kind === "character") &&
+    characterSearchLength >= 3 && characterSearchLength <= 80;
+  const characterQuery = useQuery({
+    queryKey: [
+      "tonecos-catalog-related-character",
+      model.categorySlug,
+      model.franchiseSlug,
+      model.name.trim(),
+    ],
+    queryFn: ({ signal }) => gateway.listPage({
+      category: model.categorySlug,
+      franchise: model.franchiseSlug,
+      search: model.name.trim(),
+      limit: RELATED_PAGE_LIMIT,
+    }, signal),
+    enabled: shouldSearchCharacter,
+    retry: false,
+    staleTime: 15 * 60 * 1000,
+  });
+
+  const groups = useMemo(() => {
+    // Search results may contain partial-title matches; never mislabel them
+    // as related characters or add them to an unrelated franchise group.
+    const exactCharacterMatches = (characterQuery.data?.items ?? []).filter(
+      (item) => exactKey(item.name) === exactKey(model.name),
+    );
+    return selectRelatedModelGroups(
+      model,
+      [...exactCharacterMatches, ...(relatedQuery.data?.items ?? [])].filter(
+        (item) => gateway.mediaUrl(item.coverStorageKey) !== null,
+      ),
+    );
+  }, [model, gateway, relatedQuery.data, characterQuery.data]);
+  const waitingForCharacter = shouldSearchCharacter && characterQuery.isPending;
 
   if (!canQuery) return null;
   // Do not display an empty section while waiting for the viewport trigger.
@@ -148,9 +192,9 @@ export function RelatedModels({
   }
   // With automatic discovery, reveal the section only after eligible models
   // exist. Older browsers retain the explicit button and its loading status.
-  if (isRequested && observerAvailable && !relatedQuery.isSuccess) return null;
+  if (isRequested && observerAvailable && (!relatedQuery.isSuccess || waitingForCharacter)) return null;
   if (isRequested && (relatedQuery.isError ||
-    (relatedQuery.isSuccess && groups.length === 0))) return null;
+    (relatedQuery.isSuccess && !waitingForCharacter && groups.length === 0))) return null;
 
   const franchisePath = PUBLIC_ROUTES.catalogModels + "?" +
     new URLSearchParams({
@@ -181,7 +225,7 @@ export function RelatedModels({
         >
           Ver sugestões relacionadas
         </button>
-      ) : relatedQuery.isPending ? (
+      ) : relatedQuery.isPending || waitingForCharacter ? (
         <p role="status" className="mt-4 text-sm text-[hsl(0,0%,56%)]">
           Procurando modelos relacionados…
         </p>
