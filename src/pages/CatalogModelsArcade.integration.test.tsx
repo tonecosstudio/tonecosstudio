@@ -145,6 +145,21 @@ afterEach(() => {
 });
 
 describe("Tonecos canonical model discovery UI", () => {
+  it("does not publish image-less model cards or read Worker during a public media embargo", async () => {
+    vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
+    const { calls } = setupFetch();
+    await renderCatalog("/modelos?category=originais&franchise=autoral");
+    expect(screen.getByRole("heading", { name: "Imagens em preparação" })).toBeInTheDocument();
+    expect(screen.getByText(/A TONART apresenta modelos por meio de renders digitais/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Conheça o estúdio" })).toHaveAttribute("href", "/sobre");
+    expect(screen.getByRole("link", { name: "Entre em contato" })).toHaveAttribute("href", "/contato");
+    expect(screen.queryByText("Imagem em revisão")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Ver detalhes de/ })).not.toBeInTheDocument();
+    expect(calls).toHaveLength(0);
+  });
+
   it("labels the read-only selection without implying quote submission", async () => {
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
