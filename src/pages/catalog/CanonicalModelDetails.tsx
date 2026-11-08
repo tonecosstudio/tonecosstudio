@@ -3,6 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import { RelatedModels } from "./RelatedModels";
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeCard,
@@ -398,6 +399,7 @@ export default function CanonicalModelDetails() {
               ) : null}
             </section>
           ) : (
+            <>
             <article className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
               <section aria-label="Imagens do modelo">
                 <ArcadeCard className="flex min-h-[280px] items-center justify-center sm:min-h-[360px] md:min-h-[560px]">
@@ -627,6 +629,8 @@ export default function CanonicalModelDetails() {
                 </div>
               </ArcadeCard>
             </article>
+            <RelatedModels model={model} gateway={gateway} />
+            </>
           )}
         </div>
       </main>
