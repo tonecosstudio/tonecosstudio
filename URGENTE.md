@@ -8,6 +8,14 @@
   - `OK - 2B [3]/2b-4-nier.jpg`, `2b-2-nier.jpg`, `2b-5-nier.webp` (Drive `1rVHI-hDBeeihxxY1EMx5HzAqyNpKkjqC`, `134sQSQDKNxd_Y1iiEzysfaMGR1UisbDL`, `1Tyw83dj_NRnRJ5N3-czOwn3konoLbOvR`);
   - `OK - A Máscara [1]/a-mascara.jpg` (Drive `1YpQR0ST316ioSZ0IGBoJbnd1vtp-47U7`).
 - A pasta chamada `OK` **não comprova licença**. Nenhum candidato foi associado com segurança ao ID/chave exatos no Worker, nem possui prova de direitos de publicação validada; **não inserir em `approved` sem esse confronto**. Isso evita liberar renders de variantes diferentes ou origem desconhecida.
+- **Inspeção visual real, sem republicação (08/11):** cinco imagens do Drive foram abertas e vinculadas a SHA-256 para evitar trocas acidentais. Créditos/marcas visíveis, que NÃO equivalem a licença para a TONART:
+  - `10h-nier.png`: **Neko Figurines / Patreon**; SHA-256 `3de55f306e33c23171e71d391e6855806c17eeba05c933dda96b4514af4bef7d`;
+  - `2b-4-nier.jpg` (Drive MIME WebP): **Chuya Factory**; SHA-256 `04367cb9b8927d3985b3d538ec98ef26654f905ce7164a65928468c360e0569f`;
+  - `2b-2-nier.jpg` (Drive MIME WebP): **Bulkamancer / Patreon; crédito visível Guest Artist Alex Gray**; SHA-256 `5a7790257483f67adf20b588d584d02a4df01396dd70f17aa242db34c1fc4d83`;
+  - `2b-5-nier.webp`: **Tanuki Figures / Patreon**; SHA-256 `17fb5b4ff02228f7080e71795600f49a663020d04ef8ae261c6baf72f0681e05`;
+  - `a-mascara.jpg`: **Malix3Design**, marca repetida no próprio render; SHA-256 `1ee0c71addf5abf8e259ebe1fd89b5b0fb8f2d0f00b50ff214c152d7468c8319`.
+- **Resultado:** nenhuma das cinco apresenta a marca SpecialSTL de forma visível, mas todas têm créditos/marcas de outras origens. Não apagar marcas, não declarar autoria/redistribuição permitida sem prova e não liberar essas mídias por serem arquivos na conta Drive.
+
 - **NEXT_ACTION:** comparar esses cinco arquivos com os registros já capturados em snapshots offline (sem nova varredura D1/R2), identificar escultor/origem, obter evidência de permissão e confirmar ID, slug e chave exata; só então preencher o manifesto, testar frontend e rotas diretas de mídia e liberar a primeira vitrine. Preservar PR #4 Draft, Git auto deploy OFF e `noindex` até autorização de lançamento.
 
 ---
