@@ -71,9 +71,13 @@ function mountGallery(options: {
   completeWithStrayCursor?: boolean;
   incompleteWithoutCursor?: boolean;
   restricted?: boolean;
+  relatedItems?: Array<typeof model>;
 }) {
   const io = vi.fn(async (input: string, _init: RequestInit) => {
     const url = new URL(input);
+    if (url.pathname.endsWith("/api/catalog")) {
+      return Response.json({ items: options.relatedItems ?? [], nextCursor: null });
+    }
     if (url.pathname.endsWith("/api/models/animal-original")) {
       if (options.restricted) {
         return Response.json({ ...model, id: specialstlQuarantine.confirmed[0].modelId });
@@ -177,6 +181,45 @@ function mountGallery(options: {
 }
 
 describe("published model/gallery identity on the public detail page", () => {
+  it("loads bounded related suggestions only on demand and respects exact franchise/character matches", async () => {
+    const { io } = mountGallery({
+      total: 1,
+      relatedItems: [
+        { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
+          variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
+        { ...model, id: "mdl-125", code: "TS-125", slug: "robo-armadura",
+          name: "Robô", variant_name: "Armadura", cover_storage_key: "media/mdl-125/card.webp" },
+        { ...model, id: "mdl-126", code: "TS-126", slug: "outro-universo",
+          name: "Outro", variant_name: "Pose", franchise_slug: "outro",
+          cover_storage_key: "media/mdl-126/card.webp" },
+        { ...model, id: specialstlQuarantine.confirmed[0].modelId, code: "TS-127",
+          slug: "modelo-em-revisao", name: "Em revisão", variant_name: "Pose",
+          cover_storage_key: "media/mdl-127/card.webp" },
+      ],
+    });
+    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    expect(io).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+    expect(await screen.findByRole("heading", {
+      name: "Outras versões de Animal original",
+    })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Explore Exemplo" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver modelo Animal original — Nova pose" }))
+      .toHaveAttribute("href", "/modelos/animal-nova-pose");
+    expect(screen.queryByRole("link", { name: /Ver modelo Outro/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Em revisão/ })).not.toBeInTheDocument();
+
+    const catalogRequests = io.mock.calls.filter(([url]) => url.includes("/api/catalog"));
+    expect(catalogRequests).toHaveLength(1);
+    const request = new URL(catalogRequests[0][0]);
+    expect(request.searchParams.get("category")).toBe("games");
+    expect(request.searchParams.get("franchise")).toBe("exemplo");
+    expect(request.searchParams.get("limit")).toBe("36");
+    expect(request.searchParams.has("cursor")).toBe(false);
+    expect(io).toHaveBeenCalledTimes(3);
+  });
+
   it("explains intentionally quarantined image without offering a retry or gallery", async () => {
     const { io } = mountGallery({ total: 1, restricted: true });
     expect(await screen.findByRole("heading", { name: "Modelo em revisão de imagem" })).toBeInTheDocument();
