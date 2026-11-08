@@ -213,6 +213,8 @@ function mountGallery(options: {
 describe("published model/gallery identity on the public detail page", () => {
   it("preserves filtered catalog return and supports returning to prior suggested model", async () => {
     vi.stubGlobal("IntersectionObserver", undefined);
+    const scrollTo = vi.fn();
+    vi.stubGlobal("scrollTo", scrollTo);
     const { io } = mountGallery({
       total: 1,
       returnState: {
@@ -232,6 +234,10 @@ describe("published model/gallery identity on the public detail page", () => {
     fireEvent.click(suggestion);
 
     const previous = await screen.findByRole("link", { name: "Voltar ao modelo anterior" });
+    await waitFor(() => {
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "auto" });
+    });
+    expect(scrollTo).toHaveBeenCalledTimes(1);
     expect(previous).toHaveAttribute("href", "/modelos/animal-original");
     expect(screen.getByRole("link", { name: "Voltar ao catálogo" }))
       .toHaveAttribute("href", "/modelos?q=escultura&category=games&franchise=exemplo");
@@ -241,6 +247,8 @@ describe("published model/gallery identity on the public detail page", () => {
     fireEvent.click(previous);
     expect(await screen.findByRole("heading", { name: "Animal original" }))
       .toBeInTheDocument();
+    // This explicit return must not reset the reader's position again.
+    expect(scrollTo).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("link", { name: "Voltar ao modelo anterior" }))
       .not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Voltar ao catálogo" }))
