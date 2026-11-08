@@ -218,6 +218,18 @@ function mountGallery(options: {
 }
 
 describe("published model/gallery identity on the public detail page", () => {
+  it("does not query model metadata or render an image-less detail during the public media embargo", () => {
+    vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
+    const { io } = mountGallery({ total: 1 });
+    expect(screen.getByRole("heading", { name: "Ficha em preparação" })).toBeInTheDocument();
+    expect(screen.getByText(/Este render ainda não possui liberação registrada/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar ao acervo" })).toHaveAttribute("href", "/modelos");
+    expect(screen.queryByText("Imagem em revisão")).not.toBeInTheDocument();
+    expect(io).not.toHaveBeenCalled();
+  });
+
   it("skips gallery and recommendation reads when public photos are under review", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     vi.stubGlobal("IntersectionObserver", undefined);
