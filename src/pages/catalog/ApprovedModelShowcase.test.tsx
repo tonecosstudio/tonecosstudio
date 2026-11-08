@@ -73,7 +73,7 @@ describe("TONART approved-only public showcase", () => {
   });
 
   it("shows only an exact approved cover with creator credit and a real detail link", async () => {
-    const getModel = vi.fn(async () => model);
+    const getModel = vi.fn(async (_slug: string) => model);
     const mediaUrl = vi.fn((candidate: string | null) =>
       candidate === key ? "https://catalog.example.test/catalogo-api/" + key : null,
     );
