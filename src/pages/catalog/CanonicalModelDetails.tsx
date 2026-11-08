@@ -16,7 +16,7 @@ import {
   toggleCanonicalSelection,
 } from "@/services/catalog/public-catalog-selection";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
-import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
+import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
   createPublicCatalogGateway,
   validCatalogFolder,
@@ -181,15 +181,16 @@ export default function CanonicalModelDetails() {
     }
   }, []);
 
+  const mediaUnderReview = isCatalogMediaUnderReview();
+  const publicationBlocked = mediaUnderReview && isCatalogPublicMvpEnabled() && import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
   const modelQuery = useQuery({
     queryKey: ["tonecos-catalog-detail", slug],
     queryFn: ({ signal }) => gateway!.getModel(slug!, signal),
-    enabled: gateway !== null && Boolean(slug),
+    enabled: gateway !== null && Boolean(slug) && !publicationBlocked,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
   const model = modelQuery.data;
-  const mediaUnderReview = isCatalogMediaUnderReview();
   // Navigation from a related card is a new detail view. Announce its
   // heading to keyboard/screen-reader users after the detail has loaded.
   // Do not steal focus on a normal catalog return or a data refetch.
@@ -336,6 +337,28 @@ export default function CanonicalModelDetails() {
         image.variantKeys.card ??
         image.variantKeys.detail,
     ) ?? null;
+  }
+
+  // Direct links cannot bypass the public visual publication embargo.
+  if (publicationBlocked) {
+    return (
+      <Page
+        title="Ficha em preparação — TONART Studio"
+        description="Renders e referências desta ficha aguardam curadoria e autorização para publicação."
+      >
+        <section className="min-h-[70svh] bg-[hsl(0,0%,4%)] px-4 py-16 text-[hsl(0,0%,94%)] sm:px-8">
+          <div role="status" className="mx-auto max-w-2xl border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] p-7 sm:p-10">
+            <h1 className="text-2xl font-semibold uppercase tracking-wide">Ficha em preparação</h1>
+            <p className="mt-5 text-sm leading-7 text-[hsl(0,0%,73%)]">
+              Este render ainda não possui liberação registrada para exibição na vitrine pública. Nenhuma imagem de origem não verificada será exibida; o modelo permanece preservado no acervo.
+            </p>
+            <Link to={PUBLIC_ROUTES.catalogModels} className="mt-7 inline-flex min-h-11 items-center gap-2 border border-[hsl(var(--gold-accent))] px-5 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]">
+              <ArrowLeft size={16} aria-hidden="true" /> Voltar ao acervo
+            </Link>
+          </div>
+        </section>
+      </Page>
+    );
   }
 
   return (
