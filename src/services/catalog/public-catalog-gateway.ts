@@ -302,6 +302,9 @@ export function createPublicCatalogGateway(
 
   return {
     mediaUrl(key: string | null): string | null {
+      // Public Vercel deployment must not render unverified third-party
+      // photographs. The server-side adapter also blocks direct /media reads.
+      if (import.meta.env.VITE_TONART_HIDE_CATALOG_MEDIA === "true") return null;
       // The Worker and Pages proxy expose only /media/*, never arbitrary
       // catalog API routes. Validate before turning untrusted keys into URLs.
       if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key)) return null;
