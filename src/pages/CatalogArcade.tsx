@@ -13,6 +13,7 @@ import { PUBLIC_ROUTES } from "@/config/routes";
 import { formatModelCountLabel } from "@/lib/catalog-model-count";
 import { CanonicalUniverseFolders } from "@/pages/catalog/CanonicalUniverseFolders";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
+import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
 import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
 
 const VALID_SLUG = /^[a-z0-9][a-z0-9-]{0,239}$/;
@@ -89,6 +90,7 @@ export default function CatalogArcade() {
     franchiseKey?: string;
     characterSlug?: string;
   }>();
+  const mediaUnderReview = isCatalogMediaUnderReview();
   const invalidScope =
     (themeKey !== undefined && !VALID_SLUG.test(themeKey)) ||
     (franchiseKey !== undefined && !VALID_SLUG.test(franchiseKey));
@@ -129,7 +131,7 @@ export default function CatalogArcade() {
   const categoriesQuery = useQuery({
     queryKey: ["tonecos-universe-canonical-categories"],
     queryFn: ({ signal }) => gateway!.listCategories(signal),
-    enabled: gateway !== null && !invalidScope,
+    enabled: gateway !== null && !invalidScope && !mediaUnderReview,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -144,6 +146,7 @@ export default function CatalogArcade() {
       }, signal),
     enabled:
       gateway !== null &&
+      !mediaUnderReview &&
       Boolean(themeKey) &&
       !invalidScope &&
       (franchiseKey
@@ -217,7 +220,7 @@ export default function CatalogArcade() {
             {franchiseKey ? "PASTAS E MODELOS" : themeKey ? "FRANQUIAS DA CATEGORIA" : "CATEGORIAS"}
           </ArcadeSectionTitle>
 
-          {themeKey && !franchiseKey && !invalidScope && (
+          {themeKey && !franchiseKey && !invalidScope && !mediaUnderReview && (
             <form
               role="search"
               aria-label="Buscar franquias desta categoria"
@@ -264,6 +267,22 @@ export default function CatalogArcade() {
             <div role="status" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
               Categoria ou franquia inválida. Volte ao Universo para navegar pelas categorias publicadas.
             </div>
+          ) : mediaUnderReview ? (
+            <section role="status" aria-labelledby="universe-review-title" className="mt-6 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(0,0%,7%)] px-6 py-9 sm:px-9">
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))]">ACERVO EM CURADORIA</p>
+              <h3 id="universe-review-title" className="mt-4 text-2xl font-semibold uppercase tracking-wide sm:text-3xl">Universo em preparação</h3>
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[hsl(0,0%,70%)]">
+                Estamos verificando as autorizações das fotografias antes de apresentar categorias e franquias ao público. Os modelos não foram excluídos; as referências em revisão permanecem protegidas.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link to={PUBLIC_ROUTES.catalogModels} className="inline-flex min-h-11 items-center gap-2 border border-[hsl(var(--gold-accent))] px-5 py-3 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]">
+                  Consultar modelos <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+                <Link to={PUBLIC_ROUTES.contact} className="inline-flex min-h-11 items-center border border-[hsl(0,0%,30%)] px-5 py-3 text-sm text-[hsl(0,0%,85%)] hover:border-[hsl(var(--gold-accent))]">
+                  Falar com o estúdio
+                </Link>
+              </div>
+            </section>
           ) : themeKey && !franchiseKey && invalidFranchiseSearch ? (
             <p role="status" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
               Pesquise franquias usando de 3 a 80 caracteres ou limpe a busca.
@@ -363,7 +382,7 @@ export default function CatalogArcade() {
               })}
             </div>
           )}
-          {themeKey && !franchiseKey && !invalidScope && (
+          {themeKey && !franchiseKey && !invalidScope && !mediaUnderReview && (
             <Link className="mt-8 inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.4)] px-5 py-3 text-sm text-[hsl(var(--gold-accent))]" to={modelsPath(themeKey)}>
               Explorar modelos desta categoria <ArrowRight size={16} aria-hidden="true" />
             </Link>
