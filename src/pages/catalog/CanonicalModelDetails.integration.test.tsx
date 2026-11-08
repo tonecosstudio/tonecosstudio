@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
+import specialstlQuarantine from "@/services/catalog/specialstl-quarantine.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
@@ -69,10 +70,14 @@ function mountGallery(options: {
   repeatedImageAcrossPages?: boolean;
   completeWithStrayCursor?: boolean;
   incompleteWithoutCursor?: boolean;
+  restricted?: boolean;
 }) {
   const io = vi.fn(async (input: string, _init: RequestInit) => {
     const url = new URL(input);
     if (url.pathname.endsWith("/api/models/animal-original")) {
+      if (options.restricted) {
+        return Response.json({ ...model, id: specialstlQuarantine.confirmed[0].modelId });
+      }
       return Response.json(
         options.cyclicPage
           ? { ...model, image_count: 3 }
@@ -172,6 +177,15 @@ function mountGallery(options: {
 }
 
 describe("published model/gallery identity on the public detail page", () => {
+  it("explains intentionally quarantined image without offering a retry or gallery", async () => {
+    const { io } = mountGallery({ total: 1, restricted: true });
+    expect(await screen.findByRole("heading", { name: "Modelo em revisão de imagem" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("temporariamente indisponível");
+    expect(screen.queryByRole("button", { name: "Tentar novamente" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /Referência visual de/ })).not.toBeInTheDocument();
+    expect(io).toHaveBeenCalledTimes(1);
+  });
+
 
   it("allows provisional selection directly from the model detail without a write request", async () => {
     const { io } = mountGallery({ total: 1 });
