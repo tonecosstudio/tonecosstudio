@@ -596,7 +596,19 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveLookup": {
+            "source": "google_drive",
+            "searchedOn": "2026-11-08",
+            "searchedTerms": [
+              "Ellen Ripley",
+              "ellen-ripley-03.jpg",
+              "alien-ellen-ripley"
+            ],
+            "status": "unresolved_exact_authorized_photo",
+            "authorizationVerified": false,
+            "notes": "Drive's OK - Ellen Ripley [3] folder and separately named backup folder returned no files; exact-name search did not return this photo."
+          }
         }
       }
     },
@@ -1620,7 +1632,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveLookup": {
+            "source": "google_drive",
+            "searchedOn": "2026-11-08",
+            "searchedTerms": [
+              "Ellen Ripley",
+              "alien-ellen-ripley"
+            ],
+            "status": "unresolved_exact_authorized_photo",
+            "authorizationVerified": false,
+            "notes": "Identified OK - Ellen Ripley [3] folder is empty; no matching licensed replacement was confirmed."
+          }
         }
       }
     },
@@ -2959,7 +2982,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveLookup": {
+            "source": "google_drive",
+            "searchedOn": "2026-11-08",
+            "searchedTerms": [
+              "Deadpool",
+              "Deadpool diorama"
+            ],
+            "status": "unresolved_exact_authorized_photo",
+            "authorizationVerified": false,
+            "notes": "The Deadpool search is broad and may be truncated. A same-variant image has not been identified or inspected; do not infer that no file exists."
+          }
         }
       }
     },
@@ -2999,7 +3033,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveLookup": {
+            "source": "google_drive",
+            "searchedOn": "2026-11-08",
+            "searchedTerms": [
+              "Juggernaut Colossus",
+              "Juggernaut e Colossus"
+            ],
+            "status": "unresolved_exact_authorized_photo",
+            "authorizationVerified": false,
+            "notes": "Neither exact duo search yielded a verified matching image; single-character Juggernaut and Colossus folders are not substitutes for the duo."
+          }
         }
       }
     },
@@ -3594,7 +3639,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveLookup": {
+            "source": "google_drive",
+            "searchedOn": "2026-11-08",
+            "searchedTerms": [
+              "Motaro",
+              "motaro-02.jpg"
+            ],
+            "status": "unresolved_exact_authorized_photo",
+            "authorizationVerified": false,
+            "notes": "OK - Motaro [2] folder returned no files. Another Motaro folder has PENDENTE_IDENTIFICACAO__origem-Motaro.jpg; origin and variant not verified."
+          }
         }
       }
     },
@@ -4810,7 +4866,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveLookup": {
+            "source": "google_drive",
+            "searchedOn": "2026-11-08",
+            "searchedTerms": [
+              "Cable Deadpool",
+              "cable-e-deadpool.jpg"
+            ],
+            "status": "unresolved_exact_authorized_photo",
+            "authorizationVerified": false,
+            "notes": "Two cable-e-deadpool folders returned Wolverine-slash variant images, not Cable and Deadpool. No exact licensed photo confirmed."
+          }
         }
       }
     },
@@ -5210,7 +5277,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveLookup": {
+            "source": "google_drive",
+            "searchedOn": "2026-11-08",
+            "searchedTerms": [
+              "Xenomorfo",
+              "xenomorfo-04.jpg"
+            ],
+            "status": "unresolved_exact_authorized_photo",
+            "authorizationVerified": false,
+            "notes": "OK - Xenomorfo [6] folder returned no files, and exact filename search returned no result."
+          }
         }
       }
     },
@@ -5973,7 +6051,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveLookup": {
+            "source": "google_drive",
+            "searchedOn": "2026-11-08",
+            "searchedTerms": [
+              "Ellen Ripley",
+              "alien-ellen-ripley"
+            ],
+            "status": "unresolved_exact_authorized_photo",
+            "authorizationVerified": false,
+            "notes": "Identified OK - Ellen Ripley [3] folder is empty; no matching licensed replacement was confirmed."
+          }
         }
       }
     },
@@ -6253,7 +6342,18 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveLookup": {
+            "source": "google_drive",
+            "searchedOn": "2026-11-08",
+            "searchedTerms": [
+              "Hobbiton",
+              "hobbiton-bonsai.jpg"
+            ],
+            "status": "unresolved_exact_authorized_photo",
+            "authorizationVerified": false,
+            "notes": "Search by Hobbiton did not return a matching folder or file. This is not an exhaustive proof of absence in Drive."
+          }
         }
       }
     },
