@@ -638,7 +638,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LLKnzK3PvFp77aBhNgu0LmO3-zIzyRVA",
+            "fileName": "smaug-03.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -702,7 +710,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1MiqsBduMueQlo37pQ6QH4m2NLwm48nau",
+            "fileName": "cloud-01.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -806,7 +822,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1Kk5X42r69t96Xkp4STvn__GRDIEOnRzc",
+            "fileName": "michelangelo-04.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -854,7 +878,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1M6dIc4A87_H3vM_3UktJPkKUqW8qnTty",
+            "fileName": "pippin.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -926,7 +958,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LZgnF7FSByhEwtjv1MR9EzbJWxHKZY0k",
+            "fileName": "balrog-01.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1222,7 +1262,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LKNxoxpnsuZA0p3MAYigyV2-RdfbtXsF",
+            "fileName": "galadriel.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1486,7 +1534,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1M4_Vl2yfKFeGSqWBAOcGY6dzGPpXWNNM",
+            "fileName": "merry.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1590,7 +1646,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1KWrYSP3Egk9WPJFO_kw8ZJ_5vhUDeEQu",
+            "fileName": "michelangelo-05.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1622,7 +1686,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1KmAZC9XCZn6M_BOfhni5zxzbxWkTh_lR",
+            "fileName": "krang.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1686,7 +1758,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1KXvJYNCO9ru-BSVK8S_uYXZ-HHgRdTWK",
+            "fileName": "april-oneil-02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1990,7 +2070,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LXiGI3b1ZSf2HmmzOy7oWoF012wIXOuq",
+            "fileName": "aragorn-03.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2142,7 +2230,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1Mp9SD7u2BSznvi-jJTY6ZstbjvxkubJl",
+            "fileName": "tifa-03.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2198,7 +2294,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1oGVQuZivPx9f1hFm_vJWmMlOoykxxCOd",
+            "fileName": "gimli.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2470,7 +2574,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LH7ecvMHj0LGahXF-hIBDI91XDNDmUxn",
+            "fileName": "uruk-hai.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2582,7 +2694,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1MbjbxWp2eXSHok1jVMZ8snMOzcryf9Se",
+            "fileName": "tifa-04.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3166,7 +3286,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1MbZUEHzB7g8FtIyt8iVtC0OQwKKgUgVv",
+            "fileName": "cloud-02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3526,7 +3654,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1Mmf-E6OFAOTgAxY--Y4196WRMVOWyA2W",
+            "fileName": "yuna.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3574,7 +3710,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1Ku1vBpztfvBA_VhnDx6ZleGYEUM85mLb",
+            "fileName": "raphael-04.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3662,7 +3806,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LM8CGty9l-rdTTKPU-MvWfHngW3G5e10",
+            "fileName": "rei-bruxo-02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3814,7 +3966,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LUaDmo9_uPmCieEFXtYEiMiQ-OYUp-FC",
+            "fileName": "aragorn-04.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4382,7 +4542,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LMxgladCnMYJjm4PxKqM4dLYG3O6jLyB",
+            "fileName": "legolas-02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4398,7 +4566,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1LKGPDgHlDTo_pR_jcG_8lDOrPn5oVMPj",
+            "fileName": "lurtz.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4654,7 +4830,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1MmvkG7GkNCLEKSYEedtW_v-zgChwg0rY",
+            "fileName": "lulu.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4822,7 +5006,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1MmJZETERiroK2UjWyFS47jiMfFC7YZEW",
+            "fileName": "bahamut.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
