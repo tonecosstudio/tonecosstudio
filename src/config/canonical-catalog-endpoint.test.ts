@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import legacy from "../../vercel.json";
+import vercelConfig from "../../vercel.json";
 import {
   CANONICAL_CATALOG_PROXY_PATH,
   resolveCanonicalCatalogApiBase,
@@ -82,13 +82,24 @@ describe("Cloudflare Pages canonical public catalog", () => {
     // scripts/cloudflare/catalog-pages-proxy.test.mjs on the same CI job.
   });
 
-  it("keeps the first-party CSP and disables the obsolete Vercel publisher", () => {
+  it("keeps Cloudflare CSP and the Vercel site manually deployable through one read-only API", () => {
     expect(pagesHeaders).toContain("Content-Security-Policy:");
     expect(pagesHeaders).toContain("connect-src 'self'");
     expect(pagesHeaders).toContain("img-src 'self'");
     expect(pagesHeaders).not.toContain("workers.dev");
-    expect(legacy.git?.deploymentEnabled).toBe(false);
-    expect(legacy).not.toHaveProperty("rewrites");
-    expect(legacy).not.toHaveProperty("headers");
+    // Domain is served by Vercel, but source pushes never auto-publish.
+    expect(vercelConfig.git?.deploymentEnabled).toBe(false);
+    expect(vercelConfig.rewrites[0]).toEqual({
+      source: "/catalogo-api/:path*",
+      destination: "/api/catalogo-proxy?path=:path*",
+    });
+    expect(vercelConfig.rewrites[1]).toEqual({
+      source: "/(.*)",
+      destination: "/index.html",
+    });
+    expect(vercelConfig.headers.flatMap((rule) => rule.headers)).toContainEqual({
+      key: "X-Robots-Tag",
+      value: "noindex, nofollow, noarchive",
+    });
   });
 });
