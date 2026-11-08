@@ -15,6 +15,7 @@ import {
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { catalogModelDetailsPath } from "@/config/routes";
+import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
 import {
   Sheet,
   SheetClose,
@@ -250,6 +251,11 @@ export default function CatalogModelsArcade() {
           />
 
           <div className="relative z-10 mx-auto -mt-4 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
+             {isCatalogMediaUnderReview() ? (
+               <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(0,0%,7%)] px-4 py-3 text-sm text-[hsl(0,0%,72%)]">
+                 As fotografias do acervo estão em revisão para publicação. As fichas e os filtros continuam disponíveis para consulta.
+               </p>
+             ) : null}
             <div className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] p-3 sm:p-4">
               <form
                 role="search"
