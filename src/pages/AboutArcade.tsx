@@ -25,6 +25,7 @@ import { Page } from "@/components/layouts/Page";
 import { useState } from "react";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { BRAND_NAME } from "@/config/brand";
+import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 
 const VALUES = [
   { icon: Shield, title: "QUALIDADE", desc: "Cuidado com acabamentos e detalhes, com conferência antes da entrega." },
@@ -49,11 +50,19 @@ const FAQS = [
   { q: "Como é a entrega?", a: "Envio com embalagem e proteção adequada. Detalhes confirmados no retorno do orçamento." },
 ];
 
+const PUBLIC_FAQS = [
+  { q: "Este catálogo recebe pedidos ou pagamentos?", a: "Não. Nesta fase o site é somente para consulta: não há pedidos, cadastros, solicitações de orçamento ou pagamentos." },
+  { q: "Por que algumas fotografias não aparecem?", a: "As imagens permanecem ocultas até que a autorização de publicação seja verificada." },
+  { q: "Como falar com o estúdio?", a: "Use a página Contato para enviar um e-mail. A mensagem não cria pedidos nem pagamentos no site." },
+  { q: "Os modelos foram excluídos?", a: "Não. Referências em revisão podem ficar fora da exibição pública até a conclusão da curadoria." },
+];
+
 export default function AboutArcade() {
+  const publicReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true" && isCatalogPublicMvpEnabled();
   return (
     <Page
       title="Sobre"
-      description="Conheça a TONART Studio, seu catálogo de referências e o processo de avaliação de esculturas sob encomenda."
+      description={publicReadOnly ? "Conheça a TONART Studio e seu catálogo informativo de referências em curadoria." : "Conheça a TONART Studio, seu catálogo de referências e o processo de avaliação de esculturas sob encomenda."}
       keywords={["sobre", "tonart", "colecionáveis", "esculturas sob encomenda"]}
     >
       <ArcadeHero
@@ -62,6 +71,13 @@ export default function AboutArcade() {
         subtitle=">> CONHEÇA O ESTÚDIO E COMO UMA PEÇA GANHA FORMA."
         compact
       />
+      {publicReadOnly ? (
+        <section aria-label="Estado do catálogo" className="relative z-10 mx-auto mb-8 max-w-5xl px-4 md:px-6">
+          <p className="border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] p-5 text-sm leading-relaxed text-[hsl(0,0%,75%)]">
+            Este site é um catálogo para consulta. Não recebe cadastro, pedidos, orçamentos ou pagamentos. As fotografias permanecem em revisão até a autorização de publicação. Para dúvidas, use a página Contato.
+          </p>
+        </section>
+      ) : null}
 
       {/* ═══ MISSION ═══ */}
       <section className="max-w-5xl mx-auto px-4 md:px-6 pb-16 relative z-10">
@@ -204,16 +220,16 @@ export default function AboutArcade() {
         <ArcadeSectionTitle>Dúvidas frequentes</ArcadeSectionTitle>
 
         <div className="space-y-3">
-          {FAQS.map((faq, i) => (
+          {(publicReadOnly ? PUBLIC_FAQS : FAQS).map((faq, i) => (
             <FAQItem key={i} question={faq.q} answer={faq.a} index={i} />
           ))}
         </div>
       </section>
 
       <ArcadeCTA
-        badge="Pronto para começar?"
-        title="SUA PRÓXIMA PEÇA"
-        description="Explore nosso catálogo e solicite um orçamento personalizado."
+        badge={publicReadOnly ? "CATÁLOGO INFORMATIVO" : "Pronto para começar?"}
+        title={publicReadOnly ? "EXPLORE O ACERVO" : "SUA PRÓXIMA PEÇA"}
+        description={publicReadOnly ? "Consulte referências e entre em contato por e-mail para tirar dúvidas. Este site não recebe pedidos ou pagamentos." : "Explore nosso catálogo e solicite um orçamento personalizado."}
         primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog, icon: <ArrowRight className="w-4 h-4" /> }}
         secondaryAction={{ label: "FALAR COM O ESTÚDIO", href: PUBLIC_ROUTES.contact }}
       />
