@@ -11,6 +11,7 @@ export type ApprovedPublicRender = {
   coverStorageKey: string;
   provenance: "tonart-original-render" | "authorized-third-party-render";
   sourceFileRef: string;
+  sourceSha256: string;
   rightsEvidenceRef: string;
   rightsHolder: string;
   creatorCredit: string;
