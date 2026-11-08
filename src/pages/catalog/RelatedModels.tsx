@@ -136,8 +136,10 @@ export function RelatedModels({
   });
 
   const groups = useMemo(
-    () => selectRelatedModelGroups(model, relatedQuery.data?.items ?? []),
-    [model, relatedQuery.data],
+    () => selectRelatedModelGroups(model, (relatedQuery.data?.items ?? []).filter(
+      (item) => gateway.mediaUrl(item.coverStorageKey) !== null,
+    )),
+    [model, gateway, relatedQuery.data],
   );
 
   if (!canQuery || (isRequested && (relatedQuery.isError ||
