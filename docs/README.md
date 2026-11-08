@@ -1,6 +1,6 @@
 # Documentação operacional — Tonecos Studio
 
-**Hospedagem oficial: Cloudflare Pages da conta Tonecos.** Vercel Washington é legado. O MVP público segue somente leitura, com preview sob Cloudflare Access e PR #4 draft; estado mutável e bloqueios de publicação estão em [URGENTE.md](../URGENTE.md).
+**Hospedagem oficial atual: Vercel `tonart-studio-public` em https://tonartstudio.com.br.** Cloudflare mantém o Worker/D1/R2 e a prévia Pages protegida; não há segundo catálogo. O site está em pré-lançamento somente leitura/noindex, PR #4 Draft e **NO-GO do MVP visual sem renders aprovados**. A regra permanente está em [AGENTS.md](../AGENTS.md), e o checkpoint em [URGENTE.md](../URGENTE.md).
 
 ## Ordem de leitura
 
@@ -8,9 +8,9 @@
 2. [AGENTS](../AGENTS.md) — regras de autorização e implementação.
 3. [URGENTE](../URGENTE.md) — checkpoint verificável, próximos gates e do_not_repeat.
 4. [TONECOS-STUDIO-CONSOLIDACAO.md](TONECOS-STUDIO-CONSOLIDACAO.md) — autoridades do produto, das contas e das integrações.
-5. [TONECOS_CATALOG_FIRST_PARTY_PROXY.md](TONECOS_CATALOG_FIRST_PARTY_PROXY.md) — proxy Cloudflare/Worker e contrato GET.
+5. [TONECOS_CATALOG_FIRST_PARTY_PROXY.md](TONECOS_CATALOG_FIRST_PARTY_PROXY.md) — contrato GET do proxy e Worker canônico; frontend oficial usa o adaptador Vercel.
 6. [TONECOS_SAFE_PREVIEW.md](TONECOS_SAFE_PREVIEW.md) — preview protegido e isolamento de Supabase.
-7. [OPERACAO_CLOUDFLARE_PAGES.md](OPERACAO_CLOUDFLARE_PAGES.md) — release, rollback, SEO, QA e desativação do legado.
+7. [OPERACAO_CLOUDFLARE_PAGES.md](OPERACAO_CLOUDFLARE_PAGES.md) — runbook específico do Pages privado; publicação oficial Vercel segue `vercel.json` e [README](../README.md).
 
 ## Execução canônica da consolidação
 
