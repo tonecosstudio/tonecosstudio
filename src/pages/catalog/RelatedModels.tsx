@@ -145,9 +145,13 @@ export function RelatedModels({
   if (!canQuery) return null;
   // Do not display an empty section while waiting for the viewport trigger.
   // Keep an invisible intersection target; older browsers retain a manual button.
-  if (!isRequested && typeof IntersectionObserver !== "undefined") {
+  const observerAvailable = typeof IntersectionObserver !== "undefined";
+  if (!isRequested && observerAvailable) {
     return <section ref={sectionRef} aria-hidden="true" className="h-px" />;
   }
+  // With automatic discovery, reveal the section only after eligible models
+  // exist. Older browsers retain the explicit button and its loading status.
+  if (isRequested && observerAvailable && !relatedQuery.isSuccess) return null;
   if (isRequested && (relatedQuery.isError ||
     (relatedQuery.isSuccess && groups.length === 0))) return null;
 
