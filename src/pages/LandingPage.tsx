@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { BRAND_NAME, BRAND_SHORT_NAME } from "@/config/brand";
-import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
+import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
   ArrowRight,
   Crosshair,
@@ -295,6 +295,11 @@ export default function LandingPage() {
       <section className="relative border-t border-[hsl(var(--gold-accent)/0.08)] px-6 py-12">
         <div className="mx-auto max-w-6xl">
           <ArcadeSectionTitle>MODELOS RECENTES</ArcadeSectionTitle>
+           {isCatalogMediaUnderReview() ? (
+             <p className="mt-4 text-sm text-[hsl(0,0%,70%)]">
+               Fotos em revisão para publicação. Os modelos permanecem disponíveis para consulta.
+             </p>
+           ) : null}
           {hasCatalogError ? (
             <div role="alert" className="mt-5 border border-[hsl(0,0%,18%)] p-6 text-sm text-[hsl(0,0%,70%)]">
               Não foi possível carregar as referências publicadas.
