@@ -17,6 +17,7 @@ import {
 } from "@/services/catalog/public-catalog-selection";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
+import { findApprovedPublicRender, isApprovedPublicCover } from "@/services/catalog/approved-public-renders";
 import {
   createPublicCatalogGateway,
   validCatalogFolder,
@@ -182,7 +183,8 @@ export default function CanonicalModelDetails() {
   }, []);
 
   const mediaUnderReview = isCatalogMediaUnderReview();
-  const publicationBlocked = mediaUnderReview && isCatalogPublicMvpEnabled() && import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  const publicMediaHold = mediaUnderReview && isCatalogPublicMvpEnabled() && import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  const publicationBlocked = publicMediaHold && !findApprovedPublicRender(slug);
   const modelQuery = useQuery({
     queryKey: ["tonecos-catalog-detail", slug],
     queryFn: ({ signal }) => gateway!.getModel(slug!, signal),
@@ -191,6 +193,7 @@ export default function CanonicalModelDetails() {
     staleTime: 5 * 60 * 1000,
   });
   const model = modelQuery.data;
+  const coverReleased = Boolean(model && isApprovedPublicCover(model));
   // Navigation from a related card is a new detail view. Announce its
   // heading to keyboard/screen-reader users after the detail has loaded.
   // Do not steal focus on a normal catalog return or a data refetch.
@@ -461,7 +464,7 @@ export default function CanonicalModelDetails() {
             <>
             <article className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
               <section aria-label="Imagens do modelo">
-                {mediaUnderReview ? (
+                {mediaUnderReview && !coverReleased ? (
                   <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] pl-4 text-sm text-[hsl(0,0%,72%)]">
                     Fotografias em revisão para publicação. Os dados do modelo continuam disponíveis para consulta.
                   </p>
@@ -646,7 +649,7 @@ export default function CanonicalModelDetails() {
                         Imagens publicadas
                       </dt>
                       <dd className="mt-1 font-medium">
-                        {mediaUnderReview ? "Em revisão" : galleryQuery.isError || duplicateGalleryIdentity || inconsistentGalleryCount
+                        {mediaUnderReview ? (coverReleased ? "1 render autorizado" : "Em revisão") : galleryQuery.isError || duplicateGalleryIdentity || inconsistentGalleryCount
                           ? "Indisponível"
                           : galleryQuery.data?.pages[0]?.total ??
                             (model.galleryVersion > 0
@@ -657,9 +660,9 @@ export default function CanonicalModelDetails() {
                   </dl>
 
                   <p className="text-sm leading-relaxed text-[hsl(0,0%,56%)]">
-                    Disponibilidade e preço são confirmados pela equipe na etapa
-                    de orçamento. Esta ficha apresenta somente os dados
-                    publicados no catálogo.
+                    {publicMediaHold
+                      ? "Render digital com origem e direito de publicação registrados. Este catálogo é somente para consulta; não recebe pedidos ou pagamentos."
+                      : "Disponibilidade e preço são confirmados pela equipe na etapa de orçamento. Esta ficha apresenta somente os dados publicados no catálogo."}
                   </p>
                   <div className="space-y-3">
                     <button
