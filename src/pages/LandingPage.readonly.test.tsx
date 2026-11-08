@@ -53,6 +53,8 @@ describe("TONART public Home during image review", () => {
     expect(screen.getByText(/Fotos em revisão para publicação/))
       .toBeInTheDocument();
     expect(screen.queryByText("Carregando referências")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /CONHEÇA O ESTÚDIO/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^VER CATÁLOGO$/ })).not.toBeInTheDocument();
     expect(fetcher).not.toHaveBeenCalled();
     view.unmount();
     client.clear();
