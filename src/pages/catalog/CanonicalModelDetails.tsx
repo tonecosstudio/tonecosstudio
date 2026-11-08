@@ -122,6 +122,13 @@ export default function CanonicalModelDetails() {
   const backToRelatedModel = previousRelatedModel &&
     validCatalogSlug(previousRelatedModel) && previousRelatedModel !== slug
     ? previousRelatedModel : null;
+  // React Router retains the old scroll position between detail links.
+  // A recommendation is opened from near the foot of the previous page:
+  // start the new model at the top, without affecting normal back/catalog flow.
+  useEffect(() => {
+    if (!backToRelatedModel) return;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [backToRelatedModel, slug]);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const galleryKeyboardHelpId = useId();
   const {
