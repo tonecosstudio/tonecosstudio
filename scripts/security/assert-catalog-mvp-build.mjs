@@ -1,3 +1,7 @@
+// Verify exact media release records during every build; no network or D1 reads.
+import { approvedPublicMediaPaths } from "./catalog-public-media-approval-policy.mjs";
+void approvedPublicMediaPaths;
+
 // Prevent a public catalog build that accidentally enables commercial writes.
 // Public builds derive the API exclusively from the runtime origin via Pages
 // Service Binding; any fixed Vite override is a release configuration error.
