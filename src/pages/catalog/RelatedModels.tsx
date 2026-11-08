@@ -9,12 +9,46 @@ import {
   type PublicCatalogPage,
   createPublicCatalogGateway,
   validCatalogSlug,
+  validCatalogFolder,
 } from "@/services/catalog/public-catalog-gateway";
 
 type CatalogGateway = ReturnType<typeof createPublicCatalogGateway>;
 type RelatedGroup = { kind: "character" | "collection" | "franchise"; title: string; items: PublicCatalogModel[] };
 const RELATED_PAGE_LIMIT = 36;
 const GROUP_LIMIT = 4;
+
+/** Forward only the already-validated, first-party return URL. Never carry
+ * arbitrary route state or stale sibling-model snapshots to a recommendation.
+ */
+export function relatedCatalogReturnState(returnPath: string): {
+  catalogReturnSearch?: string;
+  catalogReturnUniverse?: { category: string; franchise: string; folder?: string };
+} {
+  const universePrefix = PUBLIC_ROUTES.catalog + "/";
+  if (returnPath.startsWith(universePrefix)) {
+    const [path, search = ""] = returnPath.split("?");
+    const segments = path.slice(universePrefix.length).split("/");
+    const folder = new URLSearchParams(search).get("folder");
+    if (segments.length === 2 && segments.every(validCatalogSlug) &&
+        (folder === null || validCatalogFolder(folder))) {
+      return {
+        catalogReturnUniverse: {
+          category: segments[0],
+          franchise: segments[1],
+          ...(folder ? { folder } : {}),
+        },
+      };
+    }
+  }
+  if (returnPath === PUBLIC_ROUTES.catalogModels) {
+    return { catalogReturnSearch: "" };
+  }
+  if (returnPath.startsWith(PUBLIC_ROUTES.catalogModels + "?")) {
+    // The parent detail already validated the complete filter query.
+    return { catalogReturnSearch: returnPath.slice(PUBLIC_ROUTES.catalogModels.length + 1) };
+  }
+  return { catalogReturnSearch: "" };
+}
 
 function exactKey(value: string | null | undefined): string {
   return (value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -100,9 +134,11 @@ export function selectRelatedModelGroups(
 export function RelatedModels({
   model,
   gateway,
+  returnPath,
 }: {
   model: PublicCatalogDetail;
   gateway: CatalogGateway;
+  returnPath: string;
 }) {
   const queryClient = useQueryClient();
   const sectionRef = useRef<HTMLElement>(null);
@@ -249,6 +285,10 @@ export function RelatedModels({
                   <Link
                     key={item.id}
                     to={PUBLIC_ROUTES.catalogModels + "/" + item.slug}
+                    state={{
+                      ...relatedCatalogReturnState(returnPath),
+                      catalogRelatedFrom: model.slug,
+                    }}
                     className="group min-w-0 border border-[hsl(0,0%,20%)] bg-[hsl(0,0%,7%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.6)] focus-visible:outline-2 focus-visible:outline-offset-2"
                     aria-label={"Ver modelo " + item.name +
                       (item.variantName ? " — " + item.variantName : "")}
