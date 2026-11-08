@@ -25,6 +25,7 @@ const release: ApprovedPublicRender = {
   coverStorageKey: key,
   provenance: "authorized-third-party-render",
   sourceFileRef: "drive:123456789012345678901234",
+  sourceSha256: "a".repeat(64),
   rightsEvidenceRef: "drive:234567890123456789012345",
   rightsHolder: "Estudio autor",
   creatorCredit: "Escultor autor",
