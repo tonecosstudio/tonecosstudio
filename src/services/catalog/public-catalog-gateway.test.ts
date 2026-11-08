@@ -835,6 +835,37 @@ describe("indexed recent catalog publications", () => {
     );
   });
 
+  it("provides enough approved recent models for Home after quarantine in one bounded read", async () => {
+    const blocked = specialstlQuarantine.confirmed.slice(0, 8).map((entry) => ({
+      ...row,
+      id: entry.modelId,
+      slug: entry.slug,
+      cover_storage_key: entry.coverStorageKey,
+    }));
+    const approved = Array.from({ length: 8 }, (_, index) => ({
+      ...row,
+      id: "mdl-approved-" + index,
+      slug: "animal-original-" + index,
+      cover_storage_key: "media/mdl-approved-" + index + "/cover.webp",
+    }));
+    const io = vi.fn(async () => Response.json({ items: [...blocked, ...approved] }));
+    const api = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    const publicRecent = await api.listRecent(24);
+    // The Home renders only the first six approved cards. It never invents
+    // replacement images or loads the whole catalog to fill the showcase.
+    expect(publicRecent.slice(0, 6).map((model) => model.slug)).toEqual(
+      approved.slice(0, 6).map((item) => item.slug),
+    );
+    expect(publicRecent).toHaveLength(8);
+    expect(io).toHaveBeenCalledExactlyOnceWith(
+      "https://example.test/catalogo-api/api/recent?limit=24",
+      expect.objectContaining({ method: "GET", credentials: "omit" }),
+    );
+  });
+
   it("rejects invalid limits locally without contacting the Worker", async () => {
     const io = vi.fn(async () => Response.json({ items: [] }));
     const api = createPublicCatalogGateway(
