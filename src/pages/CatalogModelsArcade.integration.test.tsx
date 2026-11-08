@@ -145,6 +145,23 @@ afterEach(() => {
 });
 
 describe("Tonecos canonical model discovery UI", () => {
+  it("explains a withheld public catalog without claiming that no models exist", async () => {
+    vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
+    const fetcher = vi.fn(async (input: string) => {
+      const url = new URL(input);
+      if (!url.pathname.endsWith("/api/catalog")) throw new Error("Unexpected request");
+      return Response.json({ items: [], nextCursor: null });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    await renderCatalog();
+    expect(await screen.findByText(/Nenhuma ficha aprovada para exibição pública/))
+      .toBeInTheDocument();
+    expect(screen.getByText(/fichas restritas só serão exibidas após aprovação/))
+      .toBeInTheDocument();
+    expect(screen.queryByText("Nenhum modelo publicado corresponde aos filtros utilizados."))
+      .not.toBeInTheDocument();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it("shows six columns on wide screens and gives an obvious next-page action", async () => {
 
     const { calls } = setupFetch();
