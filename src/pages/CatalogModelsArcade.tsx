@@ -253,7 +253,7 @@ export default function CatalogModelsArcade() {
           <div className="relative z-10 mx-auto -mt-4 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
              {isCatalogMediaUnderReview() ? (
                <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(0,0%,7%)] px-4 py-3 text-sm text-[hsl(0,0%,72%)]">
-                 As fotografias do acervo estão em revisão para publicação. As fichas e os filtros continuam disponíveis para consulta.
+                 As fotografias do acervo estão em revisão para publicação. A busca permanece disponível; fichas restritas só serão exibidas após aprovação.
                </p>
              ) : null}
             <div className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] p-3 sm:p-4">
@@ -575,7 +575,9 @@ export default function CatalogModelsArcade() {
               >
                 {canGoNext
                   ? "Os modelos desta página estão em revisão de imagem. Existem mais resultados nas próximas páginas."
-                  : "Nenhum modelo publicado corresponde aos filtros utilizados."}
+                  : isCatalogMediaUnderReview()
+                     ? "Nenhuma ficha aprovada para exibição pública foi encontrada nesta busca. Referências em revisão permanecem ocultas até a autorização."
+                     : "Nenhum modelo publicado corresponde aos filtros utilizados."}
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-5 2xl:grid-cols-6 2xl:gap-5">
