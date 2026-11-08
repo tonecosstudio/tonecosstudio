@@ -297,7 +297,7 @@ export default function LandingPage() {
           <ArcadeSectionTitle>MODELOS RECENTES</ArcadeSectionTitle>
            {isCatalogMediaUnderReview() ? (
              <p className="mt-4 text-sm text-[hsl(0,0%,70%)]">
-               Fotos em revisão para publicação. Os modelos permanecem disponíveis para consulta.
+               Fotos em revisão para publicação. Apenas referências autorizadas são exibidas no catálogo.
              </p>
            ) : null}
           {hasCatalogError ? (
