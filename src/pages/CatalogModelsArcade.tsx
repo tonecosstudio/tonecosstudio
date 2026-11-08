@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Bookmark, Search, X } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import { ApprovedModelShowcase } from "./catalog/ApprovedModelShowcase";
 import {
   MAX_CANONICAL_SELECTION,
   toggleCanonicalSelection,
@@ -241,35 +242,10 @@ export default function CatalogModelsArcade() {
     resultsRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   }
 
-  // A visual MVP must not expose an empty wall of image placeholders.
-  // Never query the Worker or present model cards during the media embargo.
-  // This pre-MVP holding page does not remove any model from the inventory.
-  if (publicationBlocked) {
-    return (
-      <Page
-        title="Acervo em preparação — TONART Studio"
-        description="A vitrine de renders da TONART Studio está em curadoria. Só publicaremos modelos com imagens de origem e uso autorizados."
-      >
-        <section className="min-h-[75svh] bg-[hsl(0,0%,4%)] pb-20 text-[hsl(0,0%,94%)]">
-          <ArcadeHero badge="ACERVO TONART" title="MODELOS" subtitle=">> UMA VITRINE VISUAL EM PREPARAÇÃO." compact />
-          <div role="status" className="relative z-10 mx-auto max-w-3xl border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] px-6 py-9 sm:px-10 sm:py-12">
-            <p className="font-mono text-xs uppercase tracking-[0.17em] text-[hsl(var(--gold-accent))]">MVP VISUAL EM CURADORIA</p>
-            <h2 className="mt-5 text-2xl font-semibold uppercase tracking-wide sm:text-3xl">Imagens em preparação</h2>
-            <p className="mt-5 text-sm leading-7 text-[hsl(0,0%,76%)]">
-              A TONART apresenta modelos por meio de renders digitais; eles não representam peças físicas já produzidas. Estamos revisando a origem e as permissões de cada imagem antes de liberar a vitrine.
-            </p>
-            <p className="mt-3 text-sm leading-7 text-[hsl(0,0%,64%)]">
-              Referências com mídia ainda não autorizada permanecem preservadas no acervo interno. Não exibimos cards sem imagem nem renders de procedência não verificada como modelos prontos para publicação.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link to={PUBLIC_ROUTES.about} className="inline-flex min-h-11 items-center border border-[hsl(var(--gold-accent))] px-5 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]">Conheça o estúdio</Link>
-              <Link to={PUBLIC_ROUTES.contact} className="inline-flex min-h-11 items-center border border-[hsl(0,0%,40%)] px-5 text-sm text-[hsl(0,0%,88%)] hover:border-[hsl(var(--gold-accent))]">Entre em contato</Link>
-            </div>
-          </div>
-        </section>
-      </Page>
-    );
-  }
+  // The public read-only gallery reads exclusively from reviewed cover IDs,
+  // never a page of unapproved Worker entries. An empty manifest still shows
+  // the editorial pre-MVP state with zero requests.
+  if (publicationBlocked) return <ApprovedModelShowcase gateway={gateway} />;
 
   return (
     <Page
