@@ -34,9 +34,7 @@ export function selectRelatedModelGroups(
   const currentCollection = exactKey(current.collection);
   const seenModels = new Set([current.id]);
   const seenSlugs = new Set([current.slug]);
-  const seenVariants = new Set([
-    [currentCharacter, exactKey(current.variantName)].join("|"),
-  ]);
+  const seenCodes = new Set([current.code]);
   const byCharacter: PublicCatalogModel[] = [];
   const byCollection: PublicCatalogModel[] = [];
   const byFranchise: PublicCatalogModel[] = [];
@@ -51,17 +49,16 @@ export function selectRelatedModelGroups(
       candidate.franchiseSlug !== current.franchiseSlug ||
       !validCatalogSlug(candidate.slug) ||
       seenModels.has(candidate.id) ||
-      seenSlugs.has(candidate.slug)
+      seenSlugs.has(candidate.slug) ||
+      seenCodes.has(candidate.code)
     ) continue;
 
     const character = exactKey(candidate.name);
-    const variantKey = [character, exactKey(candidate.variantName)].join("|");
-    // Do not advertise differently sized copies with identical title/variant
-    // as a separate sculpture. Distinct published variants remain eligible.
-    if (seenVariants.has(variantKey)) continue;
+    // Only stable published identities are safe for deduplication. Distinct
+    // sculptures may share the same character name and variant label.
     seenModels.add(candidate.id);
     seenSlugs.add(candidate.slug);
-    seenVariants.add(variantKey);
+    seenCodes.add(candidate.code);
 
     if (currentCharacter && character === currentCharacter) {
       byCharacter.push(candidate);
