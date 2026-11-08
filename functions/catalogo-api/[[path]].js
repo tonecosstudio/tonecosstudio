@@ -166,6 +166,15 @@ export async function proxyCatalogRequest(request, fetcher) {
 
 /** Pages Functions entrypoint. */
 export function onRequest({ request, env }) {
+  // Until all publication rights are approved, UI image hiding is not enough:
+  // direct Pages media URLs must never reach the canonical Worker.
+  // Releasing media requires an explicit, separately reviewed server change.
+  if (new URL(request.url).pathname.startsWith(PREFIX + "media/")) {
+    return new Response("Imagem em revisão", {
+      status: 404,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
   // A Pages Function and its catalog Worker share one Cloudflare account.
   // Require the native binding; never fall back to the public workers.dev URL.
   return proxyCatalogRequest(request, (url, options) => {
