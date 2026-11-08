@@ -133,6 +133,11 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // The publication-review build has no approved photographs. Avoid a
+  // pointless Worker/D1 recent query on every Home visit while preserving
+  // direct catalog browsing and the eventual release after approval.
+  const catalogMediaOnHold = isCatalogMediaUnderReview();
+
   // Use the existing indexed recent-publications endpoint, not an
   // alphabetical catalog page or a client-side full-acervo scan.
   const gateway = useMemo(() => {
@@ -149,13 +154,13 @@ export default function LandingPage() {
   const modelsQuery = useQuery({
     queryKey: ["tonecos-landing-recent-models", 24],
     queryFn: ({ signal }) => gateway!.listRecent(24, signal),
-    enabled: gateway !== null,
+    enabled: gateway !== null && !catalogMediaOnHold,
     retry: false,
     staleTime: 60 * 1000,
   });
   const models = modelsQuery.data?.slice(0, 6) ?? [];
   const isCatalogLoading = gateway !== null && modelsQuery.isPending;
-  const hasCatalogError = gateway === null || modelsQuery.isError;
+  const hasCatalogError = !catalogMediaOnHold && (gateway === null || modelsQuery.isError);
   const hasCatalogData = models.length > 0;
   const catalogStatus = isCatalogLoading
     ? "Carregando referências"
