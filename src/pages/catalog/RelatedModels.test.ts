@@ -61,7 +61,7 @@ describe("TONART related model selection", () => {
       "Outras versões de Goku", "Da mesma coleção", "Explore Dragon Ball",
     ]);
     expect(groups.map((group) => group.items.map((item) => item.id))).toEqual([
-      ["goku-ssj"], ["vegeta"], ["piccolo"],
+      ["goku-ssj", "goku-clone", "goku-current-copy"], ["vegeta"], ["piccolo"],
     ]);
   });
 
@@ -70,6 +70,7 @@ describe("TONART related model selection", () => {
       related("mdl-current", "Goku", "Outra", { slug: "goku-original" }),
       related("elsewhere", "Vegeta", "Pose", { franchiseSlug: "naruto" }),
       related("no-image", "Yamcha", "Pose", { coverStorageKey: null }),
+      related("same-code", "Goku", "Outra", { code: current.code }),
     ])).toEqual([]);
   });
 
