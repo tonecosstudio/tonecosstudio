@@ -886,7 +886,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "16QxEwXBMcG8tZLIioemad1PQze0A2q8r",
+            "fileName": "Cammy 14.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1062,7 +1070,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "18Geq4H0FuigfgcDY_hXaVMpDga6t8V5B",
+            "fileName": "Iori Yagami.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1142,7 +1158,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "17sykebJYT-W2yGu5yJjUaOmzVS47OCxQ",
+            "fileName": "Chun-Li 04.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1174,7 +1198,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "173NlTjzef1n8rozB0bMxgtpXSmn80RHw",
+            "fileName": "Cammy 11.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1222,7 +1254,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1L35V-YTKh7zFlELo_J00Ihesg0vhVsKf",
+            "fileName": "Kula Diamond.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1366,7 +1406,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "1L47930kp7UcTTvyMZcaCC_vDLJWsufAr",
+            "fileName": "Blue Mary.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1382,7 +1430,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "17G3W4uJh1KMUpDYoUcfUVMcjLSvSyUhR",
+            "fileName": "Cammy 09.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1446,7 +1502,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "146288lUBrw-W92jxKum4l1k1rdnxRX70",
+            "fileName": "Akuma.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1574,7 +1638,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "13Y1q3EUwS98qQVQC2NCtTDAtNY59r8co",
+            "fileName": "Blanka.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -1894,7 +1966,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "18H_fnR8Nz_WYsiyfJOqarLRCQm3y6ukc",
+            "fileName": "Blue Mary 02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2022,7 +2102,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "17Jg3hpkVZXaTteYRuYc4UnmOiSbyLK6e",
+            "fileName": "Chun-Li 17.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2182,7 +2270,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "17rALsPIeN7uHLGlmRdg_BRwpXTZR7Ymy",
+            "fileName": "Chun-Li 03.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2270,7 +2366,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "15qzmnYg9ziLzIXVIR2woUlGKQQvWZTse",
+            "fileName": "Dhalsim.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2326,7 +2430,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "16yS1Q7_k2sM1UTkoi7soJAfAFsHIt2Ux",
+            "fileName": "Chun-Li 02.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2486,7 +2598,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "15FpZGYRq1Kr6vNxPFa8ca3rkyy7RB3rO",
+            "fileName": "Blanka - Chibi.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2518,7 +2638,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "14a2qRMX3qwNRYR51lbAiw0l4qEhvv5m1",
+            "fileName": "Crimson Viper.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2830,7 +2958,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "17409sMznHZZQbaawD24AjcsOtLEBfKt8",
+            "fileName": "Cammy 12.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -2926,7 +3062,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "17ML7THww3ZbD9VlqKpWV7drdjRl4HQcH",
+            "fileName": "Cammy 10.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3086,7 +3230,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "14TkNrI8u1lE815OE7OPL-QhhfC1LtCLD",
+            "fileName": "Cammy 06.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3206,7 +3358,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "14Pt0YisAlBx8ovHZbkzcIXLdcZkcEnpw",
+            "fileName": "Chun-Li 15.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3254,7 +3414,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "17U-P6zu2r24CEhogqMVHJhs7HnNBXPkS",
+            "fileName": "Chun-Li.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3622,7 +3790,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "14z-ywuHUK-0nwSVYqXphg7IWZzbDuiu8",
+            "fileName": "Dhalsim - Chibi.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3694,7 +3870,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "16O347PW-dvz4cw6lrZl0wPZpu23JI0uB",
+            "fileName": "Cammy 13.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -3710,7 +3894,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "15yHDQi4vDW89nex3lwNVFAn3Zl7IuzrZ",
+            "fileName": "Cammy 03.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4254,7 +4446,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "14T5aq86JN11wFWM-d6DHgxM6P8OBiDRY",
+            "fileName": "Cammy 05.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
@@ -4494,7 +4694,15 @@
         "inventoryEvidence": {
           "checkedOn": "2026-11-07",
           "catalogImageCount": 1,
-          "cleanAlternativeInCurrentGallery": false
+          "cleanAlternativeInCurrentGallery": false,
+          "driveReview": {
+            "source": "google_drive",
+            "fileId": "16XfduVroQS1RpJL_4j97zV5zwTDKl9bU",
+            "fileName": "Cammy 08.jpg",
+            "inspectedOn": "2026-11-08",
+            "verdict": "rejected_specialstl_watermark",
+            "authorizationVerified": false
+          }
         }
       }
     },
