@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
-import { RelatedModels } from "./RelatedModels";
+import { RelatedModels, relatedCatalogReturnState } from "./RelatedModels";
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeCard,
@@ -114,6 +114,14 @@ export default function CanonicalModelDetails() {
   const location = useLocation();
   const catalogReturnTo = catalogReturnPath(location.state);
   const adjacentModels = adjacentCatalogModels(location.state, slug, catalogReturnTo);
+  const previousRelatedModel = (
+    location.state && typeof location.state === "object" &&
+    !Array.isArray(location.state) &&
+    typeof (location.state as Record<string, unknown>).catalogRelatedFrom === "string"
+  ) ? (location.state as Record<string, string>).catalogRelatedFrom : null;
+  const backToRelatedModel = previousRelatedModel &&
+    validCatalogSlug(previousRelatedModel) && previousRelatedModel !== slug
+    ? previousRelatedModel : null;
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const galleryKeyboardHelpId = useId();
   const {
@@ -336,6 +344,16 @@ export default function CanonicalModelDetails() {
               ? "Voltar à pasta"
               : "Voltar ao catálogo"}
           </Link>
+          {backToRelatedModel ? (
+            <Link
+              to={PUBLIC_ROUTES.catalogModels + "/" + backToRelatedModel}
+              state={relatedCatalogReturnState(catalogReturnTo)}
+              className="ml-4 inline-flex min-h-11 items-center gap-2 text-sm text-[hsl(0,0%,70%)] hover:text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+            >
+              <ArrowLeft aria-hidden="true" size={16} />
+              Voltar ao modelo anterior
+            </Link>
+          ) : null}
           {adjacentModels.previous || adjacentModels.next ? (
             <nav
               aria-label={catalogReturnTo.startsWith(PUBLIC_ROUTES.catalog + "/")
@@ -629,7 +647,7 @@ export default function CanonicalModelDetails() {
                 </div>
               </ArcadeCard>
             </article>
-            <RelatedModels model={model} gateway={gateway} />
+            <RelatedModels model={model} gateway={gateway} returnPath={catalogReturnTo} />
             </>
           )}
         </div>
