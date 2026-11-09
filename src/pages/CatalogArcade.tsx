@@ -14,7 +14,7 @@ import { formatModelCountLabel } from "@/lib/catalog-model-count";
 import { CanonicalUniverseFolders } from "@/pages/catalog/CanonicalUniverseFolders";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
-import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
+import { createPublicCatalogGateway, validCatalogFolder } from "@/services/catalog/public-catalog-gateway";
 
 const VALID_SLUG = /^[a-z0-9][a-z0-9-]{0,239}$/;
 
@@ -91,10 +91,13 @@ export default function CatalogArcade() {
     characterSlug?: string;
   }>();
   const mediaUnderReview = isCatalogMediaUnderReview();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const folderScope = searchParams.get("folder");
+  const invalidFolderScope = folderScope !== null && !validCatalogFolder(folderScope);
   const invalidScope =
     (themeKey !== undefined && !VALID_SLUG.test(themeKey)) ||
-    (franchiseKey !== undefined && !VALID_SLUG.test(franchiseKey));
-  const [searchParams, setSearchParams] = useSearchParams();
+    (franchiseKey !== undefined && !VALID_SLUG.test(franchiseKey)) ||
+    invalidFolderScope;
   const franchiseSearch = searchParams.get("q")?.trim() ?? "";
   const franchiseLabelSearch = franchiseKey
     ? franchiseKey.replace(/-/g, " ")
@@ -264,8 +267,10 @@ export default function CatalogArcade() {
               Acervo em integração neste ambiente. Não exibimos modelos de outra fonte.
             </div>
           ) : invalidScope ? (
-            <div role="status" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
-              Categoria ou franquia inválida. Volte ao Universo para navegar pelas categorias publicadas.
+            <div role={invalidFolderScope ? "alert" : "status"} className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
+              {invalidFolderScope
+                ? "Pasta indisponível ou inválida. Nenhuma consulta foi realizada."
+                : "Categoria ou franquia inválida. Volte ao Universo para navegar pelas categorias publicadas."}
             </div>
           ) : mediaUnderReview ? (
             <section role="status" aria-labelledby="universe-review-title" className="mt-6 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(0,0%,7%)] px-6 py-9 sm:px-9">
