@@ -171,7 +171,7 @@ describe("canonical public navigation without Supabase catalog", () => {
     expect(screen.getByRole("link", { name: /\/ games/i })).toHaveAttribute(
       "href", "/universo/games",
     );
-    expect(screen.getByText(/\/ resident-evil/i)).toBeInTheDocument();
+    expect(screen.getByText(/\/ Resident Evil/i)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Explorar modelos desta categoria/i })).not.toBeInTheDocument();
     expect(calls).toHaveLength(2);
     expect(calls[0].url.searchParams.get("parent")).toBe("personagens");
