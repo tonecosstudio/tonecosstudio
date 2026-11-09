@@ -145,19 +145,15 @@ afterEach(() => {
 });
 
 describe("Tonecos canonical model discovery UI", () => {
-  it("does not publish image-less model cards or read Worker during a public media embargo", async () => {
+  it("restores ordinary image cards in read-only public mode despite the old blanket flag", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
     const { calls } = setupFetch();
     await renderCatalog("/modelos?category=originais&franchise=autoral");
-    expect(screen.getByRole("heading", { name: "Imagens em preparação" })).toBeInTheDocument();
-    expect(screen.getByText(/A TONART apresenta modelos por meio de renders digitais/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Conheça o estúdio" })).toHaveAttribute("href", "/sobre");
-    expect(screen.getByRole("link", { name: "Entre em contato" })).toHaveAttribute("href", "/contato");
-    expect(screen.queryByText("Imagem em revisão")).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Ver detalhes de/ })).not.toBeInTheDocument();
-    expect(calls).toHaveLength(0);
+    expect(await screen.findByRole("link", { name: "Ver detalhes de Escultura original" })).toBeInTheDocument();
+    expect(calls.some(({ url }) => url.pathname.endsWith("/api/catalog"))).toBe(true);
+    expect(screen.queryByRole("heading", { name: "Imagens em preparação" })).not.toBeInTheDocument();
   });
 
   it("labels the read-only selection without implying quote submission", async () => {
@@ -172,32 +168,17 @@ describe("Tonecos canonical model discovery UI", () => {
     expect(screen.getByText(/não são enviadas ao estúdio/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Abrir seleção para orçamento/ })).not.toBeInTheDocument();
   });
-  it("reads only the selected models on a public filtered deep link until filters are opened", async () => {
+  it("loads filtered public models without blocking categories behind the retired flag", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     const { calls } = setupFetch();
     await renderCatalog("/modelos?category=originais&franchise=autoral");
     await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
-
-    const categorySelect = screen.getByRole("combobox", { name: "Filtrar por categoria" });
-    const franchiseSelect = screen.getByRole("combobox", { name: "Filtrar por franquia" });
-    expect(categorySelect).toHaveValue("originais");
-    expect(franchiseSelect).toHaveValue("autoral");
-    expect(calls.map(({ url }) => url.pathname)).toEqual(["/catalogo-api/api/catalog"]);
-
-    fireEvent.focus(categorySelect);
-    await waitFor(() =>
-      expect(calls.filter(({ url }) => url.pathname.endsWith("/api/categories"))).toHaveLength(1),
-    );
-    expect(calls.filter(({ url }) => url.pathname.endsWith("/api/franchises"))).toHaveLength(0);
-
-    fireEvent.focus(franchiseSelect);
-    await waitFor(() =>
-      expect(calls.filter(({ url }) => url.pathname.endsWith("/api/franchises"))).toHaveLength(1),
-    );
+    expect(screen.getByRole("combobox", { name: "Filtrar por categoria" })).toHaveValue("originais");
+    expect(screen.getByRole("combobox", { name: "Filtrar por franquia" })).toHaveValue("autoral");
     expect(calls.filter(({ url }) => url.pathname.endsWith("/api/catalog"))).toHaveLength(1);
   });
 
-  it("explains a withheld public catalog without claiming that no models exist", async () => {
+  it("shows the ordinary empty result when no non-quarantined models match", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     const fetcher = vi.fn(async (input: string) => {
       const url = new URL(input);
@@ -206,14 +187,10 @@ describe("Tonecos canonical model discovery UI", () => {
     });
     vi.stubGlobal("fetch", fetcher);
     await renderCatalog();
-    expect(await screen.findByText(/Nenhuma ficha aprovada para exibição pública/))
-      .toBeInTheDocument();
-    expect(screen.getByText(/fichas restritas só serão exibidas após aprovação/))
-      .toBeInTheDocument();
-    expect(screen.queryByText("Nenhum modelo publicado corresponde aos filtros utilizados."))
-      .not.toBeInTheDocument();
+    expect(await screen.findByText("Nenhum modelo publicado corresponde aos filtros utilizados.")).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
+
   it("shows six columns on wide screens and gives an obvious next-page action", async () => {
 
     const { calls } = setupFetch();
