@@ -72,7 +72,7 @@ test("digital-render release register denies everything until rights are explici
   );
 });
 
-test("Vercel catalog proxy refuses media and writes before an upstream read", async () => {
+test("Vercel catalog proxy refuses confirmed SpecialSTL media and writes before an upstream read", async () => {
   const initialFetch = globalThis.fetch;
   let attempts = 0;
   globalThis.fetch = async () => {
@@ -83,8 +83,8 @@ test("Vercel catalog proxy refuses media and writes before an upstream read", as
     const media = responseSink();
     await handler({
       method: "GET",
-      url: "/api/catalogo-proxy?path=media%2Fmodels%2Fcard.webp",
-      query: { path: "media/models/card.webp" },
+      url: "/api/catalogo-proxy?path=media%2Fmdl_ae8d28d2fa93b1367b0a%2Fcard.webp",
+      query: { path: "media/mdl_ae8d28d2fa93b1367b0a/card.webp" },
       headers: {},
     }, media);
     assert.equal(media.statusCode, 404);
@@ -145,28 +145,16 @@ test("Vercel catalog proxy forwards only a bounded read through the canonical pr
   }
 });
 
-test("public catalog build fails closed if photo-review hold is absent or disabled", () => {
+test("public catalog build keeps read-only gates without requiring blanket image hiding", () => {
   const script = fileURLToPath(new URL("../security/assert-catalog-mvp-build.mjs", import.meta.url));
   const run = (env) => spawnSync(process.execPath, [script], { env, encoding: "utf8" });
   const base = { VITE_PUBLIC_CATALOG_MVP: "true", VITE_PREVIEW_READ_ONLY: "true" };
-
-  for (const value of [undefined, "", "false", "TRUE"]) {
+  for (const value of [undefined, "", "false", "true"]) {
     const env = { ...base };
     if (value !== undefined) env.VITE_TONART_HIDE_CATALOG_MEDIA = value;
     const result = run(env);
-    assert.equal(result.status, 1, "unapproved media setting " + String(value));
-    assert.match(result.stderr, /VITE_TONART_HIDE_CATALOG_MEDIA=true/);
+    assert.equal(result.status, 0, result.stderr);
   }
-
-  const approvedConfiguration = run({ ...base, VITE_TONART_HIDE_CATALOG_MEDIA: "true" });
-  assert.equal(approvedConfiguration.status, 0, approvedConfiguration.stderr);
-
-  const privateMode = run({ VITE_PUBLIC_CATALOG_MVP: "false" });
-  assert.equal(privateMode.status, 0, privateMode.stderr);
-
-  const unsafeReadOnly = run({
-    ...base, VITE_PREVIEW_READ_ONLY: "false", VITE_TONART_HIDE_CATALOG_MEDIA: "true",
-  });
-  assert.equal(unsafeReadOnly.status, 1);
-  assert.match(unsafeReadOnly.stderr, /VITE_PREVIEW_READ_ONLY=true/);
+  assert.equal(run({ VITE_PUBLIC_CATALOG_MVP: "false" }).status, 0);
+  assert.equal(run({ ...base, VITE_PREVIEW_READ_ONLY: "false" }).status, 1);
 });
