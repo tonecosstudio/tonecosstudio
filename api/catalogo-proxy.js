@@ -47,6 +47,11 @@ export default async function handler(req, res) {
       new Request(url, { method: "GET", headers }),
       (upstreamUrl, options) => fetch(upstreamUrl, options),
     );
+    // Only report a failing media transport status. Do not log media keys,
+    // visitor headers, or model identity; ordinary successes stay silent.
+    if (path.startsWith("media/") && response.status !== 200 && response.status !== 206 && response.status !== 304) {
+      console.warn("[tonart-media] upstream rejected image", { status: response.status });
+    }
     res.statusCode = response.status;
     response.headers.forEach((value, name) => {
       // Node fetch transparently decompresses upstream bodies. Never carry
