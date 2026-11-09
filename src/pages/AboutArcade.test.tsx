@@ -47,7 +47,7 @@ describe("public TONART Studio about page", () => {
     expect(screen.getByText(/Este site é um catálogo para consulta/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "EXPLORE O ACERVO" })).toBeInTheDocument();
     expect(screen.queryByText("Explore nosso catálogo e solicite um orçamento personalizado.")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Este catálogo recebe pedidos ou pagamentos?" }));
+    fireEvent.click(screen.getByRole("button", { name: /Este catálogo recebe pedidos ou pagamentos\?/ }));
     expect(screen.getByText(/não há pedidos, cadastros, solicitações de orçamento ou pagamentos/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "FALAR COM O ESTÚDIO" })).toHaveAttribute("href", "/contato");
   });
