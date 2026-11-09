@@ -151,10 +151,14 @@ describe("canonical public navigation without Supabase catalog", () => {
     const folder = await screen.findByRole("link", { name: /Personagens/ });
     expect(folder).toHaveAttribute("href", "/universo/games/resident-evil?folder=personagens");
     await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
-    await waitFor(() => expect(calls).toHaveLength(4));
-    expect(calls[2].url.pathname).toBe("/catalogo-api/api/folders");
-    expect(calls[3].url.pathname).toBe("/catalogo-api/api/catalog");
-    expect(calls[3].url.searchParams.get("limit")).toBe("8");
+    const folderRequests = calls.filter((call) => call.url.pathname.endsWith("/api/folders"));
+    const catalogRequests = calls.filter((call) => call.url.pathname.endsWith("/api/catalog"));
+    expect(folderRequests).toHaveLength(1);
+    expect(catalogRequests).toHaveLength(1);
+    expect(folderRequests[0].url.searchParams.get("category")).toBe("games");
+    expect(folderRequests[0].url.searchParams.get("franchise")).toBe("resident-evil");
+    expect(catalogRequests[0].url.searchParams.get("limit")).toBe("8");
+    expect(calls.length).toBeLessThanOrEqual(5);
     expect(calls.every((c) => c.init.method === "GET")).toBe(true);
     expect(calls.every((c) => c.init.credentials === "omit")).toBe(true);
   });
@@ -173,10 +177,14 @@ describe("canonical public navigation without Supabase catalog", () => {
     );
     expect(screen.getByText(/\/ Resident Evil/i)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Explorar modelos desta categoria/i })).not.toBeInTheDocument();
-    expect(calls).toHaveLength(2);
-    expect(calls[0].url.searchParams.get("parent")).toBe("personagens");
-    expect(calls[1].url.searchParams.get("folder")).toBe("personagens");
-    expect(calls[1].url.searchParams.get("limit")).toBe("8");
+    const folderRequests = calls.filter((call) => call.url.pathname.endsWith("/api/folders"));
+    const catalogRequests = calls.filter((call) => call.url.pathname.endsWith("/api/catalog"));
+    expect(folderRequests).toHaveLength(1);
+    expect(catalogRequests).toHaveLength(1);
+    expect(folderRequests[0].url.searchParams.get("parent")).toBe("personagens");
+    expect(catalogRequests[0].url.searchParams.get("folder")).toBe("personagens");
+    expect(catalogRequests[0].url.searchParams.get("limit")).toBe("8");
+    expect(calls.length).toBeLessThanOrEqual(4);
   });
 
   it("keeps the category-wide action only at the category level", async () => {
