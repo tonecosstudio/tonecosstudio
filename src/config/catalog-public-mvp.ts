@@ -9,9 +9,9 @@ const SLUG = /^[a-z0-9][a-z0-9-]{0,239}$/;
 export function isCatalogPublicMvpEnabled(): boolean {
   return import.meta.env.VITE_PUBLIC_CATALOG_MVP === "true";
 }
-/** Public display hold: metadata remains readable, unapproved photos do not. */
+/** Legacy global media hold is retired. Only confirmed SpecialSTL models/paths are quarantined. */
 export function isCatalogMediaUnderReview(): boolean {
-  return import.meta.env.VITE_TONART_HIDE_CATALOG_MEDIA === "true";
+  return false;
 }
 export function isCatalogMvpReadOnlyConfigurationSafe(): boolean {
   return !isCatalogPublicMvpEnabled() || import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
