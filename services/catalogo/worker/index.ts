@@ -1,6 +1,6 @@
 import { createSharedCollection, getSharedCollection } from './sharedCollections'
 import { aggregateGallerySources, type GallerySourceState } from './galleryAggregation'
-import { validGalleryManifest, type GalleryModelState } from './galleryValidation'
+import { type GalleryModelState } from './galleryValidation'
 import { catalogSchemaStatus } from './schemaContract'
 import { configuredPublicOrigins, validateTurnstile } from './turnstile'
 import { RESOLVED_MODEL_BY_SLUG_CTE, resolvePublicModelIds } from './modelAliases'
