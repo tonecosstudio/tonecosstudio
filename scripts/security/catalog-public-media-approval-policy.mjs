@@ -77,7 +77,8 @@ export function isRestrictedCatalogMediaPath(path) {
   } catch {
     return true;
   }
-  if (decoded.includes("%") || /[\\\\?#\\x00-\\x1f\\x7f]/.test(decoded)) return true;
+  if (decoded.includes("%") || decoded.includes("\\") || decoded.includes("?") || decoded.includes("#") ||
+      Array.from(decoded).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) return true;
   const segments = decoded.split("/");
   if (segments.some((segment) => !segment || segment === "." || segment === "..")) return true;
   if (specialstlPathBrand.test(decoded)) return true;
