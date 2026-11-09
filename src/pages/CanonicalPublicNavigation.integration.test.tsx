@@ -36,7 +36,7 @@ const model = {
   folder_path: null,
   image_count: 1,
   gallery_version: 1,
-  cover_storage_key: "covers/escultura.webp",
+  cover_storage_key: "media/model-one/img_one/card.webp",
 };
 
 function Destination() {
@@ -78,6 +78,9 @@ function setupFetch() {
           items: [{ id: "personagens", label: "Personagens", count: 1, hasChildren: false }],
         });
       }
+      if (url.pathname.endsWith("/api/recent")) {
+        return Response.json({ items: [model] });
+      }
       if (url.pathname.endsWith("/api/catalog")) {
         return Response.json({ items: [model], nextCursor: "next-page" });
       }
@@ -90,11 +93,13 @@ function setupFetch() {
 async function renderRoute(path: string) {
   const { default: LandingPage } = await import("./LandingPage");
   const { default: CatalogArcade } = await import("./CatalogArcade");
+  const { CatalogBrowsingProvider } = await import("@/services/catalog/catalog-browsing-context");
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   return render(
     <QueryClientProvider client={client}>
+      <CatalogBrowsingProvider>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -106,6 +111,7 @@ async function renderRoute(path: string) {
           <Route path="/modelos/:id" element={<Destination />} />
         </Routes>
       </MemoryRouter>
+      </CatalogBrowsingProvider>
     </QueryClientProvider>,
   );
 }
@@ -127,7 +133,7 @@ describe("canonical public navigation without Supabase catalog", () => {
     await renderRoute("/universo");
     const games = await screen.findByRole("link", { name: /Games/ });
     expect(games).toHaveAttribute("href", "/universo/games");
-    expect(screen.getByRole("link", { name: /Todos/ })).toHaveAttribute("href", "/modelos");
+    expect(screen.queryByRole("link", { name: /^Todos/ })).not.toBeInTheDocument();
     expect(calls).toHaveLength(1);
     expect(calls[0].url.pathname).toBe("/catalogo-api/api/categories");
 
@@ -195,7 +201,7 @@ describe("canonical public navigation without Supabase catalog", () => {
     expect(
       await screen.findByText("destination: /modelos?category=games&franchise=resident-evil"),
     ).toBeInTheDocument();
-    expect(calls).toHaveLength(0);
+    expect(calls.every((c) => c.url.pathname !== "/catalogo-api/api/catalog")).toBe(true);
   });
 
   it("rejects malformed category links before fetching categories or franchises", async () => {
@@ -211,14 +217,14 @@ describe("canonical public navigation without Supabase catalog", () => {
     const link = await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
     expect(link).toHaveAttribute("href", "/modelos/escultura-original");
     const image = screen.getByRole("img", { name: "Referência visual de Escultura original" });
-    expect(image).toHaveAttribute("src", BASE + "/covers/escultura.webp");
+    expect(image).toHaveAttribute("src", BASE + "/media/model-one/img_one/card.webp");
     expect(screen.getByRole("link", { name: /EXPLORAR TODOS OS MODELOS/ })).toHaveAttribute(
       "href",
       "/modelos",
     );
     expect(calls).toHaveLength(1);
-    expect(calls[0].url.pathname).toBe("/catalogo-api/api/catalog");
-    expect(calls[0].url.searchParams.get("limit")).toBe("6");
+    expect(calls[0].url.pathname).toBe("/catalogo-api/api/recent");
+    expect(calls[0].url.searchParams.get("limit")).toBe("24");
     expect(calls[0].init.method).toBe("GET");
     expect(calls[0].init.credentials).toBe("omit");
   });
