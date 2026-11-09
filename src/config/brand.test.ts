@@ -177,7 +177,8 @@ it("builds a single deterministic social image from TONART-owned sources", () =>
     "utf8",
   );
   const buildStages = packageJson.scripts.build.split(" && ");
-  expect(buildStages[0]).toBe("node scripts/security/assert-catalog-mvp-build.mjs");
+  expect(buildStages[0]).toBe("npm run catalog:monorepo:check");
+  expect(buildStages[1]).toBe("node scripts/security/assert-catalog-mvp-build.mjs");
   const preflight = buildStages.find(stage => stage.includes("node --test")) ?? "";
   expect(preflight).toContain("node --test");
   expect(preflight).toContain("scripts/branding/generate-og-image.test.mjs");
