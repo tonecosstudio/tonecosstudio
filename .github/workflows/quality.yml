@@ -199,7 +199,7 @@ jobs:
     name: Catalog Worker offline / no deploy
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: read
 
@@ -242,3 +242,10 @@ jobs:
 
       - name: Validate cutover gate fail-closed without network
         run: node --test scripts/catalog/cutover-readiness.test.mjs
+
+      # The canonical TONART launch PR requires release:verify before a
+      # production promotion. Reuse this existing PR job instead of creating
+      # additional workflows or running the full suite on unrelated PRs.
+      - name: Verify canonical TONART release candidate
+        if: github.event.pull_request.number == 4 && github.head_ref == 'integration/tonecosstudio-canonical-20261101'
+        run: npm run release:verify
