@@ -52,7 +52,7 @@ const FAQS = [
 
 const PUBLIC_FAQS = [
   { q: "Este catálogo recebe pedidos ou pagamentos?", a: "Não. Nesta fase o site é somente para consulta: não há pedidos, cadastros, solicitações de orçamento ou pagamentos." },
-  { q: "Por que alguns renders não aparecem?", a: "Os renders dos modelos digitais permanecem ocultos até a verificação da origem e da autorização de uso." },
+  { q: "Por que alguns renders não aparecem?", a: "Somente os renders identificados como SpecialSTL permanecem ocultos enquanto são revisados e substituídos por imagens autorizadas. As demais imagens do catálogo digital continuam visíveis." },
   { q: "Como falar com o estúdio?", a: "Use a página Contato para enviar um e-mail. A mensagem não cria pedidos nem pagamentos no site." },
   { q: "Os modelos foram excluídos?", a: "Não. Referências em revisão podem ficar fora da exibição pública até a conclusão da curadoria." },
 ];
@@ -74,7 +74,7 @@ export default function AboutArcade() {
       {publicReadOnly ? (
         <section aria-label="Estado do catálogo" className="relative z-10 mx-auto mb-8 max-w-5xl px-4 md:px-6">
           <p className="border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] p-5 text-sm leading-relaxed text-[hsl(0,0%,75%)]">
-            Este site é um catálogo para consulta. Não recebe cadastro, pedidos, orçamentos ou pagamentos. Os renders digitais permanecem em revisão até a verificação da autorização de publicação; eles não representam peças físicas já produzidas. Para dúvidas, use a página Contato.
+            Este site é um catálogo para consulta. Não recebe cadastro, pedidos, orçamentos ou pagamentos. Os renders digitais são referências de modelos, não fotos de peças físicas já produzidas. Somente mídias identificadas como SpecialSTL são ocultadas para revisão e substituição. Para dúvidas, use a página Contato.
           </p>
         </section>
       ) : null}
