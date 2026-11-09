@@ -408,21 +408,21 @@ test("onRequest preserves allowlist on bound service", async () => {
   assert.equal(calls, 0);
 });
 
-test("Pages entrypoint embargoes direct media before reaching the Worker", async () => {
+test("Pages blocks confirmed SpecialSTL media but forwards unrelated images", async () => {
   let workerCalls = 0;
-  const worker = { fetch() { workerCalls += 1; throw new Error("unexpected Worker read"); } };
-  for (const mediaReview of [undefined, "true", "false"]) {
-    const env = { CATALOG_WORKER: worker };
-    if (mediaReview !== undefined) env.VITE_TONART_HIDE_CATALOG_MEDIA = mediaReview;
-    for (const url of [
-      SITE + "/catalogo-api/media/mdl-123/card.webp",
-      SITE + "/catalogo-api/media/mdl-123/cover.webp",
-    ]) {
-      const response = await onRequest({ request: new Request(url), env });
-      assert.equal(response.status, 404, url);
-      assert.equal(response.headers.get("Cache-Control"), "no-store");
-      assert.equal(await response.text(), "Imagem em revisão");
-    }
-  }
+  const worker = { fetch() {
+    workerCalls += 1;
+    return Promise.resolve(new Response("image", { status: 200, headers: { "content-type": "image/webp" } }));
+  } };
+  const env = { CATALOG_WORKER: worker };
+  const blocked = await onRequest({
+    request: new Request(SITE + "/catalogo-api/media/mdl_ae8d28d2fa93b1367b0a/card.webp"), env,
+  });
+  assert.equal(blocked.status, 404);
   assert.equal(workerCalls, 0);
+  const visible = await onRequest({
+    request: new Request(SITE + "/catalogo-api/media/mdl-unrelated/card.webp"), env,
+  });
+  assert.equal(visible.status, 200);
+  assert.equal(workerCalls, 1);
 });
