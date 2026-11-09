@@ -77,27 +77,21 @@ afterEach(() => {
 });
 
 describe("Tonecos canonical Universe discovery", () => {
-  it("presents the rights-clearance notice on Universe without requesting categories", async () => {
+  it("continues showing Universe categories when the retired blanket flag is set", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     const calls = setupFetch();
     await renderUniverse("/universo");
-    expect(screen.getByRole("heading", { name: "Universo em preparação" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Consultar modelos" }))
-      .toHaveAttribute("href", "/modelos");
-    expect(screen.getByRole("link", { name: "Falar com o estúdio" }))
-      .toHaveAttribute("href", "/contato");
-    expect(screen.queryByText("Carregando categorias publicadas…")).not.toBeInTheDocument();
-    expect(calls).toHaveLength(0);
+    expect(await screen.findByRole("link", { name: /Originais/ })).toBeInTheDocument();
+    expect(calls.map(call => call.pathname)).toContain("/catalogo-api/api/categories");
+    expect(screen.queryByRole("heading", { name: "Universo em preparação" })).not.toBeInTheDocument();
   });
 
-  it("does not query hidden franchises through a direct Universe category URL", async () => {
+  it("allows category navigation even when the retired blanket flag is set", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     const calls = setupFetch();
     await renderUniverse("/universo/originais");
-    expect(screen.getByRole("heading", { name: "Universo em preparação" })).toBeInTheDocument();
-    expect(screen.queryByRole("searchbox", { name: "Nome da franquia" }))
-      .not.toBeInTheDocument();
-    expect(calls).toHaveLength(0);
+    expect(await screen.findByText("Franquia 24")).toBeInTheDocument();
+    expect(calls.some(call => call.pathname.endsWith("/api/franchises"))).toBe(true);
   });
 
   it("shows categories from the Worker without requesting the full model inventory", async () => {
