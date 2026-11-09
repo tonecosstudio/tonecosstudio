@@ -70,6 +70,19 @@ function matchesRequestedMediaRange(range, contentRange) {
     end === (absolute[2] ? Math.min(Number(absolute[2]), total - 1) : total - 1);
 }
 
+// Some previously deployed Workers incorrectly mark a complete R2 object
+// as 206 without any Range request. Accept only a provably full byte span,
+// normalize it to 200 and retain strict rejection for genuine partial bodies.
+function isCompleteMediaRange(contentRange) {
+  if (typeof contentRange !== "string") return false;
+  const match = /^bytes 0-(\\d{1,15})\\/(\\d{1,15})$/i.exec(contentRange);
+  if (!match) return false;
+  const end = Number(match[1]);
+  const total = Number(match[2]);
+  return Number.isSafeInteger(end) && Number.isSafeInteger(total) &&
+    total > 0 && end === total - 1;
+}
+
 function isPublicCatalogRoute(path) {
   return PUBLIC_LIST_ROUTES.has(path) ||
     /^api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?$/.test(path) ||
@@ -127,9 +140,13 @@ export async function proxyCatalogRequest(request, fetcher) {
       // Avoid unnecessary upstream work when navigation or an in-flight read stops.
       signal: request.signal,
     });
-    // A partial response is only meaningful for a requested media byte range.
-    // Reject missing or inconsistent Content-Range instead of serving broken images.
+    // A complete R2 object from an older Worker may be incorrectly labelled
+    // 206. Normalize *only* an exact 0..size-1 span when no Range was sent.
+    const completeLegacyMedia = response.status === 206 &&
+      route.startsWith("media/") && !headers.has("Range") &&
+      isCompleteMediaRange(response.headers.get("Content-Range"));
     if (response.status === 206 &&
+        !completeLegacyMedia &&
         (!route.startsWith("media/") ||
          !matchesRequestedMediaRange(headers.get("Range"), response.headers.get("Content-Range")))) {
       return new Response("Invalid upstream media range", {
@@ -154,8 +171,9 @@ export async function proxyCatalogRequest(request, fetcher) {
     safeHeaders.set("Content-Security-Policy", "sandbox");
     // The source Worker must not make failed public requests cacheable on Pages.
     if (response.status >= 400) safeHeaders.set("Cache-Control", "no-store");
+    if (completeLegacyMedia) safeHeaders.delete("Content-Range");
     return new Response(response.body, {
-      status: response.status,
+      status: completeLegacyMedia ? 200 : response.status,
       headers: safeHeaders,
     });
   } catch {
