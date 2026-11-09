@@ -93,6 +93,35 @@ test("inconsistent upstream partial images are blocked without public caching", 
   }
 });
 
+test("complete legacy R2 206 response is normalized into a complete 200 image", async () => {
+  const io = mockFetch("RIFF-WEBP", 206, {
+    "Content-Type": "image/webp",
+    "Content-Range": "bytes 0-8/9",
+    "Content-Length": "9",
+  });
+  const response = await proxyCatalogRequest(
+    new Request(SITE + "/catalogo-api/media/images/figure.webp"),
+    io.fetcher,
+  );
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Content-Type"), "image/webp");
+  assert.equal(response.headers.get("Content-Range"), null);
+  assert.equal(await response.text(), "RIFF-WEBP");
+  assert.equal(io.calls.length, 1);
+  assert.equal(io.calls[0].options.headers.has("Range"), false);
+});
+
+test("only an exact complete legacy span may be normalized", async () => {
+  for (const range of ["bytes 0-8/10", "bytes 1-9/10", "bytes 0-9/*", "bytes 0-0/0"]) {
+    const io = mockFetch("partial", 206, { "Content-Range": range });
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/media/images/figure.webp"), io.fetcher,
+    );
+    assert.equal(response.status, 502, range);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+  }
+});
+
 test("unexpected partial JSON and unrequested partial media cannot reach Pages", async () => {
   for (const path of ["api/catalog", "media/images/figure.webp"]) {
     const io = mockFetch("partial", 206, {
