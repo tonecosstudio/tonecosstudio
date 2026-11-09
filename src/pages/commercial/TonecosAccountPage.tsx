@@ -56,7 +56,7 @@ export default function TonecosAccountPage() {
       if (active) setIsAdmin(false);
     });
     return () => { active = false; };
-  }, [identity?.id]);
+  }, [identity]);
 
   useEffect(() => {
     if (!identity) return;
@@ -71,7 +71,7 @@ export default function TonecosAccountPage() {
       .catch((err: unknown) => { if (active) setError(errorText(err)); })
       .finally(() => { if (active) setProfileLoading(false); });
     return () => { active = false; };
-  }, [identity?.id]);
+  }, [identity]);
 
   async function submitAccess(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
