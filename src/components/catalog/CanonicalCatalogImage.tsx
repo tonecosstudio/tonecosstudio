@@ -1,8 +1,5 @@
 import { useState, type ReactNode } from "react";
 import { ImageOff } from "lucide-react";
-import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
-import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
-import { isApprovedPublicMediaUrl } from "@/services/catalog/approved-public-renders";
 
 type CanonicalCatalogImageProps = {
   src: string | null;
@@ -28,14 +25,8 @@ type CanonicalCatalogImageProps = {
  * visit (e.g. after a transient network error).
  */
 export function CanonicalCatalogImage(props: CanonicalCatalogImageProps) {
-  const hold = isCatalogMediaUnderReview();
-  const mediaUnderReview = hold &&
-    !isApprovedPublicMediaUrl(props.src, CANONICAL_CATALOG_API_BASE);
-  // A failed released cover may not fall back to another, unapproved image.
-  const fallbackSrc = hold &&
-    !isApprovedPublicMediaUrl(props.fallbackSrc, CANONICAL_CATALOG_API_BASE)
-      ? null
-      : props.fallbackSrc;
+  const mediaUnderReview = false;
+  const fallbackSrc = props.fallbackSrc;
   return (
     <CatalogImageSource
       key={JSON.stringify([mediaUnderReview, props.src, fallbackSrc])}
