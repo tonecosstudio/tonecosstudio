@@ -208,8 +208,8 @@
       },
       "worker/index.ts": {
         "sourceBlob": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
-        "localBlob": "f78e3c2c6e023fbaa7341b15ac20b3c2a5deccec",
-        "reason": "Indexed folder cover lookup added only to staged Tonecos source; no production Worker deployment"
+        "localBlob": "bca4114e7b7aa61f58b3d2b48b87570a8817feb8",
+        "reason": "Staged Tonecos folder cover lookup plus removal of unused gallery import for full release lint; source blob remains immutable and production Worker stays untouched"
       }
     },
     "excludedModules": [
