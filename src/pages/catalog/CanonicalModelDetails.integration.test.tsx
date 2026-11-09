@@ -218,37 +218,27 @@ function mountGallery(options: {
 }
 
 describe("published model/gallery identity on the public detail page", () => {
-  it("does not query model metadata or render an image-less detail during the public media embargo", () => {
+  it("loads ordinary model details in public mode despite the retired blanket flag", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
     const { io } = mountGallery({ total: 1 });
-    expect(screen.getByRole("heading", { name: "Ficha em preparação" })).toBeInTheDocument();
-    expect(screen.getByText(/Este render ainda não possui liberação registrada/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Voltar ao acervo" })).toHaveAttribute("href", "/modelos");
-    expect(screen.queryByText("Imagem em revisão")).not.toBeInTheDocument();
-    expect(io).not.toHaveBeenCalled();
+    expect(await screen.findByRole("heading", { name: "Animal original" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" })).toBeInTheDocument();
+    expect(io).toHaveBeenCalled();
+    expect(screen.queryByRole("heading", { name: "Ficha em preparação" })).not.toBeInTheDocument();
   });
 
-  it("skips gallery and recommendation reads when public photos are under review", async () => {
+  it("keeps the gallery operational despite the retired media-review flag", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     vi.stubGlobal("IntersectionObserver", undefined);
     const { io } = mountGallery({ total: 1 });
-    expect(await screen.findByRole("heading", { name: "Animal original" }))
-      .toBeInTheDocument();
-    await waitFor(() => expect(io).toHaveBeenCalledTimes(1));
-    await act(async () => Promise.resolve());
-    expect(new URL(io.mock.calls[0][0]).pathname)
-      .toBe("/catalogo-api/api/models/animal-original");
-    expect(screen.getByText("Imagem em revisão")).toBeInTheDocument();
-    expect(screen.getByText(/Fotografias em revisão para publicação/))
-      .toBeInTheDocument();
-    expect(screen.getByText("Em revisão")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Ver imagem/ }))
-      .not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Ver sugestões relacionadas" }))
-      .not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Animal original" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" })).toBeInTheDocument();
+    await waitFor(() => expect(io.mock.calls.some(([url]) => String(url).includes("/images?"))).toBe(true));
+    expect(screen.queryByText("Imagem em revisão")).not.toBeInTheDocument();
   });
+
   it("preserves filtered catalog return and supports returning to prior suggested model", async () => {
     vi.stubGlobal("IntersectionObserver", undefined);
     const scrollTo = vi.fn();
