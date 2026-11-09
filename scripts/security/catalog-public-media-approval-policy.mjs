@@ -57,3 +57,18 @@ export function validatePublicRenderApprovals(data, restricted = quarantine) {
 
 // A build with zero approved images continues to serve NO public media.
 export const approvedPublicMediaPaths = validatePublicRenderApprovals(manifest);
+
+/**
+ * Targeted hold: restrict only confirmed SpecialSTL models or media paths
+ * explicitly carrying that distributor's branding. All other public catalog
+ * images retain their existing visibility without requiring a new approval.
+ */
+const restrictedModelIds = new Set(quarantine.confirmed.map((item) => item.modelId));
+const specialstlPathBrand = /(?:^|[^a-z0-9])special[\\s._-]*stl(?:\\.com)?(?=$|[^a-z0-9])/i;
+
+export function isRestrictedCatalogMediaPath(path) {
+  if (typeof path !== "string" || !path.startsWith("media/")) return false;
+  if (specialstlPathBrand.test(path)) return true;
+  const modelId = path.split("/")[1];
+  return restrictedModelIds.has(modelId) && !approvedPublicMediaPaths.has(path);
+}
