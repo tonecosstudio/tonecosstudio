@@ -75,7 +75,7 @@ function setupFetch() {
         return Response.json({
           current: null,
           trail: [],
-          items: [{ id: "personagens", label: "Personagens", count: 1, hasChildren: false }],
+          items: [{ id: "personagens", label: "Personagens", count: 1, hasChildren: false, cover_storage_key: "media/model-one/img_one/card.webp" }],
         });
       }
       if (url.pathname.endsWith("/api/recent")) {
@@ -218,7 +218,7 @@ describe("canonical public navigation without Supabase catalog", () => {
     expect(link).toHaveAttribute("href", "/modelos/escultura-original");
     const image = screen.getByRole("img", { name: "Referência visual de Escultura original" });
     expect(image).toHaveAttribute("src", BASE + "/media/model-one/img_one/card.webp");
-    expect(screen.getByRole("link", { name: /EXPLORAR TODOS OS MODELOS/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /EXPLORAR MODELOS/ })).toHaveAttribute(
       "href",
       "/modelos",
     );
