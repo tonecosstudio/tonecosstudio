@@ -559,7 +559,7 @@ describe("read-only catalog discovery and detail", () => {
     );
   });
 
-  it("hides every catalog image in the Vercel public rights-review mode", () => {
+  it("keeps non-SpecialSTL media visible even with the old review flag", () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     try {
       const io = vi.fn();
@@ -567,8 +567,8 @@ describe("read-only catalog discovery and detail", () => {
         "https://example.test/catalogo-api",
         io as typeof fetch,
       );
-      expect(gateway.mediaUrl("media/covers/mdl-123.webp")).toBeNull();
-      expect(gateway.mediaUrl("media/gallery/valid.webp")).toBeNull();
+      expect(gateway.mediaUrl("media/covers/mdl-123.webp")).toBe("https://example.test/catalogo-api/media/covers/mdl-123.webp");
+      expect(gateway.mediaUrl("media/gallery/valid.webp")).toBe("https://example.test/catalogo-api/media/gallery/valid.webp");
       expect(io).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllEnvs();
