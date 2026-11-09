@@ -1,5 +1,14 @@
 # Tonecos Studio — checkpoint operacional
 
+## Checkpoint 09/11 — capas restauradas na prévia; somente SpecialSTL oculto
+
+- **Diretriz atual:** mostrar renders comuns do catálogo digital; ocultar apenas mídia/modelos SpecialSTL identificados. `approved: []` significa zero exceções à quarentena, e não embargo geral. `AGENTS.md` foi atualizado no commit `78baff6c`.
+- **Causa reproduzida:** Worker remoto entregava imagens completas como HTTP 206, e o proxy as rejeitava com `Invalid upstream media range`. Objeto exato `media/mdl_3c8929959474a04da98a/img_0fa186c2cbfafdcf353f/card.webp` existe no R2 (WebP válido, 21668 bytes), verificado por leitura pontual sem consultas D1.
+- **Correção:** `functions/catalogo-api/[[path]].js` normaliza exclusivamente resposta 206 sem solicitação Range cujo `Content-Range` comprove o arquivo inteiro para 200, removendo o cabeçalho parcial; demais respostas malformadas seguem bloqueadas. Testes em `scripts/cloudflare/catalog-pages-proxy.test.mjs`, código commit `fc1c2f5c`. Quality Gate #1200 completed/success (job offline; demais jobs skipped).
+- **Prévia e prova visual:** Vercel `dpl_AQ6UcQQs3d1of6NCEAEg2XnH2xXA`, https://tonart-studio-public-clymfo79v-jogo-brasils-projects.vercel.app/modelos, READY. A mesma imagem antes quebrada abriu; a grade mostra capas em desktop e mobile. Um URL de modelo SpecialSTL identificado segue retornando `Imagem em revisão`.
+- **Estado e próximo passo:** produção `tonartstudio.com.br` permanece no deploy anterior, sem merge, promoção, exclusão ou mutação D1/R2. Completar `release:verify`, revisão de licenças e gates de QA/autorizações antes de publicar o SHA validado no projeto Vercel existente. **DO_NOT_REPEAT:** não reimportar, não varrer D1/R2, não criar outra PR/proxy, não ocultar renders normais.
+
+---
 ## MVP visual — primeira seleção de renders e autorização (08/11/2026)
 
 - **Regra SSOT:** o MVP exige renders digitais com imagem utilizável e direitos registrados. SpecialSTL permanece oculto. O registro de liberação está em `src/services/catalog/public-render-approvals.json` (ainda `approved: []`), validado por `scripts/security/catalog-public-media-approval-policy.mjs` e aplicado no proxy Vercel; chaves não registradas não atravessam `/media`. Não basta desativar uma flag no frontend.
