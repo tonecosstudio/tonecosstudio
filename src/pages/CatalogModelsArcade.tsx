@@ -15,7 +15,7 @@ import {
   ArcadeHero,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
-import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
+import { catalogModelDetailsPath } from "@/config/routes";
 import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
   Sheet,
