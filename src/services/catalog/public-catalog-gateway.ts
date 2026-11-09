@@ -316,7 +316,7 @@ export function createPublicCatalogGateway(
             !part ||
             part === "." ||
             part === ".." ||
-            /[:?#%\\\x00-\x1f\x7f]/.test(part),
+            /[:?#%\\]/.test(part) || Array.from(part).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127),
         )
       ) return null;
       try {
