@@ -1,5 +1,4 @@
-import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
-import { findApprovedPublicRender, isApprovedPublicCover, isApprovedPublicMediaKey } from "./approved-public-renders";
+import { isApprovedPublicCover, isApprovedPublicMediaKey } from "./approved-public-renders";
 import specialstlQuarantine from "./specialstl-quarantine.json";
 
 /**
@@ -304,9 +303,6 @@ export function createPublicCatalogGateway(
 
   return {
     mediaUrl(key: string | null): string | null {
-      // Public Vercel deployment must not render unverified third-party
-      // photographs. The server-side adapter also blocks direct /media reads.
-      if (isCatalogMediaUnderReview() && !isApprovedPublicMediaKey(key)) return null;
       // The Worker and Pages proxy expose only /media/*, never arbitrary
       // catalog API routes. Validate before turning untrusted keys into URLs.
       if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key)) return null;
@@ -558,20 +554,12 @@ export function createPublicCatalogGateway(
     ): Promise<PublicCatalogDetail> {
       if (!validCatalogSlug(slug))
         throw new Error("invalid_catalog_slug");
-      const publicMediaHold = isCatalogMediaUnderReview() && isCatalogPublicMvpEnabled() &&
-        import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
-      if (publicMediaHold && !findApprovedPublicRender(slug)) {
-        throw new Error("catalog_model_not_approved_for_public_view");
-      }
       const result = await read(
         `api/models/${encodeURIComponent(slug)}`,
         signal,
       );
       const model = decodeModel(result);
       if (model.slug !== slug) throw new Error("invalid_catalog_model_slug");
-      if (publicMediaHold && !isApprovedPublicCover(model)) {
-        throw new Error("catalog_model_release_identity_mismatch");
-      }
       if (!isPubliclyEligibleCatalogModel(model)) {
         throw new Error("catalog_model_media_restricted");
       }
