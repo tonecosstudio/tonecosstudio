@@ -125,6 +125,32 @@ test("Vercel catalog proxy refuses confirmed SpecialSTL media and writes before 
   }
 });
 
+test("Vercel proxy serves a normal catalog image without a publication allowlist", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    calls.push(String(url));
+    return new Response("normal-image", {
+      status: 200, headers: { "content-type": "image/webp" },
+    });
+  };
+  try {
+    const res = responseSink();
+    await handler({
+      method: "GET",
+      url: "/api/catalogo-proxy?path=media%2Fmdl-ordinary%2Fimage%2Fcard.webp",
+      query: { path: "media/mdl-ordinary/image/card.webp" },
+      headers: { accept: "image/webp" },
+    }, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0], "https://tonecos-catalogo-api.tonecosstudio.workers.dev/media/mdl-ordinary/image/card.webp");
+    assert.equal(res.body.toString(), "normal-image");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("Vercel catalog proxy forwards only a bounded read through the canonical proxy", async () => {
   const initialFetch = globalThis.fetch;
   const calls = [];
