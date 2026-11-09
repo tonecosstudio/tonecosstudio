@@ -1,12 +1,21 @@
 # Tonecos Studio — checkpoint operacional
 
+## Checkpoint 09/11 — catálogo visual em pré-lançamento no domínio oficial
+
+- **Marco registrado:** publicação manual no projeto Vercel existente `tonart-studio-public`, deployment `dpl_HF9PbdGxtke3cdg981yhFEauZP2B` com estado `READY`, código `0d7cc5dd957215672c328187215035fb162c7322`, no domínio `tonartstudio.com.br`. Trata-se de **pré-lançamento somente leitura e noindex**, não de autorização comercial, indexação ou merge da PR #4 Draft. Este checkpoint reconcilia o README com a publicação já registrada na PR; não constitui nova inspeção visual independente.
+- **Mídias:** capas e galerias comuns devem continuar visíveis; somente os 264 modelos SpecialSTL identificados permanecem em quarentena, com zero substituições aprovadas. Não transformar `approved: []` em bloqueio geral.
+- **Pendências reais:** QA visual independente da versão publicada em desktop/mobile, navegação e imagens; revisão editorial/licenças, termos e identidade; autorização expressa antes de lançamento/indexação. CI verde e deployment READY não substituem esses gates.
+- **NEXT_ACTION:** inspecionar a versão oficial publicada, corrigir apenas defeitos funcionais comprovados na mesma branch/PR, validar proporcionalmente e manter noindex. **DO_NOT_REPEAT:** não republicar por documentação, não abrir outra PR, não reexecutar scans D1/R2, não alterar Worker, Washington, Cloudflare Access ou produção sem necessidade.
+
+---
+
 ## Checkpoint 09/11 — capas restauradas na prévia; somente SpecialSTL oculto
 
 - **Diretriz atual:** mostrar renders comuns do catálogo digital; ocultar apenas mídia/modelos SpecialSTL identificados. `approved: []` significa zero exceções à quarentena, e não embargo geral. `AGENTS.md` foi atualizado no commit `78baff6c`.
 - **Causa reproduzida:** Worker remoto entregava imagens completas como HTTP 206, e o proxy as rejeitava com `Invalid upstream media range`. Objeto exato `media/mdl_3c8929959474a04da98a/img_0fa186c2cbfafdcf353f/card.webp` existe no R2 (WebP válido, 21668 bytes), verificado por leitura pontual sem consultas D1.
 - **Correção:** `functions/catalogo-api/[[path]].js` normaliza exclusivamente resposta 206 sem solicitação Range cujo `Content-Range` comprove o arquivo inteiro para 200, removendo o cabeçalho parcial; demais respostas malformadas seguem bloqueadas. Testes em `scripts/cloudflare/catalog-pages-proxy.test.mjs`, código commit `fc1c2f5c`. Quality Gate #1200 completed/success (job offline; demais jobs skipped).
 - **Prévia e prova visual:** Vercel `dpl_AQ6UcQQs3d1of6NCEAEg2XnH2xXA`, https://tonart-studio-public-clymfo79v-jogo-brasils-projects.vercel.app/modelos, READY. A mesma imagem antes quebrada abriu; a grade mostra capas em desktop e mobile. Um URL de modelo SpecialSTL identificado segue retornando `Imagem em revisão`.
-- **Estado e próximo passo:** produção `tonartstudio.com.br` permanece no deploy anterior, sem merge, promoção, exclusão ou mutação D1/R2. Completar `release:verify`, revisão de licenças e gates de QA/autorizações antes de publicar o SHA validado no projeto Vercel existente. **DO_NOT_REPEAT:** não reimportar, não varrer D1/R2, não criar outra PR/proxy, não ocultar renders normais.
+- **Estado e próximo passo:** a produção `tonartstudio.com.br` foi posteriormente atualizada manualmente para o deployment `dpl_HF9PbdGxtke3cdg981yhFEauZP2B` (READY), conforme checkpoint mais recente acima; sem merge ou mutação D1/R2. Completar `release:verify`, revisão de licenças e gates de QA/autorizações antes de publicar o SHA validado no projeto Vercel existente. **DO_NOT_REPEAT:** não reimportar, não varrer D1/R2, não criar outra PR/proxy, não ocultar renders normais.
 
 ---
 ## MVP visual — primeira seleção de renders e autorização (08/11/2026)
