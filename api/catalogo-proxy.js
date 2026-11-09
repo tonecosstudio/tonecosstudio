@@ -1,5 +1,5 @@
 import { proxyCatalogRequest } from "../functions/catalogo-api/[[path]].js";
-import { approvedPublicMediaPaths } from "../scripts/security/catalog-public-media-approval-policy.mjs";
+import { isRestrictedCatalogMediaPath } from "../scripts/security/catalog-public-media-approval-policy.mjs";
 
 // Vercel is the public site. The existing Worker stays the only catalog API.
 // Adapt the reviewed Pages read-only proxy; no parallel catalog implementation.
@@ -24,10 +24,8 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Never forward a /media request unless the EXACT key is in the verified
-    // digital-render release register. Zero approved entries = zero media.
-    // This is a server boundary; the browser cannot disable this check.
-    if (path.startsWith("media/") && !approvedPublicMediaPaths.has(path)) {
+    // Preserve all ordinary catalog images. Block only identified SpecialSTL media.
+    if (isRestrictedCatalogMediaPath(path)) {
       res.statusCode = 404;
       res.end("Imagem em revisão");
       return;
