@@ -75,7 +75,7 @@ function matchesRequestedMediaRange(range, contentRange) {
 // normalize it to 200 and retain strict rejection for genuine partial bodies.
 function isCompleteMediaRange(contentRange) {
   if (typeof contentRange !== "string") return false;
-  const match = /^bytes 0-(\\d{1,15})\\/(\\d{1,15})$/i.exec(contentRange);
+  const match = /^bytes 0-(\d{1,15})\/(\d{1,15})$/i.exec(contentRange);
   if (!match) return false;
   const end = Number(match[1]);
   const total = Number(match[2]);
