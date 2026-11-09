@@ -78,7 +78,7 @@ describe("Tonecos public contact entry", () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
     mount();
-    expect(screen.getByRole("heading", { name: "FALE COM A TONECOS" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "FALE COM A TONART" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "ENVIAR E-MAIL" })).toHaveAttribute(
       "href", expect.stringContaining("mailto:tonecosstudio%40gmail.com"),
     );
