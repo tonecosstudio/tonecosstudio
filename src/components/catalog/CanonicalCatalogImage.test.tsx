@@ -5,7 +5,7 @@ import { CanonicalCatalogImage } from "./CanonicalCatalogImage";
 afterEach(() => vi.unstubAllEnvs());
 
 describe("CanonicalCatalogImage", () => {
-  it("never creates primary or fallback image requests during public media review", () => {
+  it("keeps ordinary image sources visible during SpecialSTL review", () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     const { container } = render(
       <CanonicalCatalogImage
@@ -15,9 +15,8 @@ describe("CanonicalCatalogImage", () => {
         fallbackLabel="Sem prévia"
       />,
     );
-    expect(container.querySelector("img")).toBeNull();
-    expect(screen.getByText("Imagem em revisão")).toBeInTheDocument();
-    expect(screen.queryByText("Sem prévia")).not.toBeInTheDocument();
+    expect(container.querySelector("img")).toHaveAttribute("src", "/catalogo-api/media/model-one/detail.webp");
+    expect(screen.queryByText("Imagem em revisão")).not.toBeInTheDocument();
   });
   it("shows the official image and a readable placeholder when loading fails", () => {
     render(
