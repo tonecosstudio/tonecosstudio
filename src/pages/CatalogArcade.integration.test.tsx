@@ -98,7 +98,6 @@ describe("Tonecos canonical Universe discovery", () => {
     const calls = setupFetch();
     await renderUniverse("/universo");
     expect(await screen.findByRole("link", { name: /Originais/ })).toHaveAttribute("href", "/universo/originais");
-    const categoryCard = screen.getByRole("link", { name: /Originais/ });
     expect(screen.getByText("1 modelo", { exact: true })).toBeInTheDocument();
     expect(screen.queryByText("1 modelos", { exact: true })).not.toBeInTheDocument();
     expect(calls.map(call => call.pathname)).toEqual(["/catalogo-api/api/categories"]);
