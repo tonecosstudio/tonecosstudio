@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import handler from "../../api/catalogo-proxy.js";
-import { approvedPublicMediaPaths, validatePublicRenderApprovals } from "../security/catalog-public-media-approval-policy.mjs";
+import { approvedPublicMediaPaths, isRestrictedCatalogMediaPath, validatePublicRenderApprovals } from "../security/catalog-public-media-approval-policy.mjs";
 
 function responseSink() {
   return {
@@ -70,6 +70,17 @@ test("digital-render release register denies everything until rights are explici
     () => validatePublicRenderApprovals({ version: 1, approved: [{ ...valid, coverStorageKey: "media/" + modelId + "/img_0123456789abcdef/specialstl/card.webp" }] }, restricted),
     /invalid_public_render_approval_entry/,
   );
+});
+
+test("exact quarantine survives encoded model IDs and branding without hiding ordinary media", () => {
+  const held = "mdl_ae8d28d2fa93b1367b0a";
+  assert.equal(isRestrictedCatalogMediaPath("media/" + held + "/image/card.webp"), true);
+  assert.equal(isRestrictedCatalogMediaPath("media/%6ddl_ae8d28d2fa93b1367b0a/image/card.webp"), true);
+  assert.equal(isRestrictedCatalogMediaPath("media/models/%73pecialstl.com/cover.webp"), true);
+  assert.equal(isRestrictedCatalogMediaPath("media/%256ddl_ae8d28d2fa93b1367b0a/image/card.webp"), true);
+  assert.equal(isRestrictedCatalogMediaPath("media/models/%2Fprivate.webp"), true);
+  assert.equal(isRestrictedCatalogMediaPath("media/models/normal/card.webp"), false);
+  assert.equal(isRestrictedCatalogMediaPath("media/models/figure%20one.webp"), false);
 });
 
 test("Vercel catalog proxy refuses confirmed SpecialSTL media and writes before an upstream read", async () => {
