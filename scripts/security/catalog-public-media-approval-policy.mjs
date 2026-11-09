@@ -68,7 +68,19 @@ const specialstlPathBrand = /(?:^|[^a-z0-9])special[\s._-]*stl(?:\.com)?(?=$|[^a
 
 export function isRestrictedCatalogMediaPath(path) {
   if (typeof path !== "string" || !path.startsWith("media/")) return false;
-  if (specialstlPathBrand.test(path)) return true;
-  const modelId = path.split("/")[1];
+  // Inspect the decoded identity, not just its transport representation.
+  // Encoded model IDs or brand names must not bypass the exact quarantine.
+  // Reject ambiguous double encodings and encoded path separators outright.
+  let decoded;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    return true;
+  }
+  if (decoded.includes("%") || /[\\\\?#\\x00-\\x1f\\x7f]/.test(decoded)) return true;
+  const segments = decoded.split("/");
+  if (segments.some((segment) => !segment || segment === "." || segment === "..")) return true;
+  if (specialstlPathBrand.test(decoded)) return true;
+  const modelId = segments[1];
   return restrictedModelIds.has(modelId) && !approvedPublicMediaPaths.has(path);
 }
