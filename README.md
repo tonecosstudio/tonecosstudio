@@ -1,6 +1,6 @@
 # TONART Studio
 
-O site público oficial TONART Studio está em **https://tonartstudio.com.br**, hospedado manualmente no projeto Vercel `tonart-studio-public` da equipe Washington, com GitHub `tonecosstudio/tonecosstudio` como fonte única. **Cloudflare permanece como backend canônico** (Worker, D1/R2) e preview protegido. Em 08/11/2026 o site está no ar como **pré-lançamento somente leitura/noindex**, mas o **MVP visual de modelos ainda é NO-GO**: nenhuma mídia da quarentena SpecialSTL foi aprovada. A regra permanente está em [AGENTS.md](AGENTS.md).
+O site público oficial TONART Studio está em **https://tonartstudio.com.br**, hospedado manualmente no projeto Vercel `tonart-studio-public` da equipe Washington, com GitHub `tonecosstudio/tonecosstudio` como fonte única. **Cloudflare permanece como backend canônico** (Worker, D1/R2) e preview protegido. Em 09/11/2026 o catálogo visual foi publicado manualmente no domínio oficial como **pré-lançamento somente leitura/noindex**, no deployment Vercel `dpl_HF9PbdGxtke3cdg981yhFEauZP2B` (`READY`), SHA `0d7cc5dd957215672c328187215035fb162c7322`. Renders comuns estão visíveis e os 264 modelos SpecialSTL identificados permanecem em quarentena, sem substituições aprovadas. **Lançamento comercial e indexação continuam NO-GO**. A regra permanente está em [AGENTS.md](AGENTS.md).
 
 ## Quem é dono de quê
 
@@ -42,4 +42,4 @@ O workflow GitHub `quality.yml` valida as alterações da PR por impacto; a prod
 - [docs/TONECOS_SAFE_PREVIEW.md](docs/TONECOS_SAFE_PREVIEW.md): proteção do preview.
 - [docs/OPERACAO_CLOUDFLARE_PAGES.md](docs/OPERACAO_CLOUDFLARE_PAGES.md): publicação, rollback e limite gratuito.
 
-O domínio de pré-lançamento já está publicado na Vercel. **Não liberar indexação, imagens, conta, pedidos ou pagamento nem declarar o catálogo visual MVP pronto** sem mídia aprovada, QA real, revisão pertinente e autorização explícita.
+O catálogo visual já está publicado em pré-lançamento na Vercel com renders comuns visíveis. **Não liberar imagens SpecialSTL em quarentena, indexação, contas, pedidos ou pagamentos**, nem declarar lançamento comercial concluído, sem direitos verificados, revisão pertinente e autorização explícita. A PR #4 permanece Draft; o deploy manual não equivale a merge.
