@@ -52,7 +52,7 @@ export default async function handler(req, res) {
   }
   if (body.action === "request") {
     // Only the approved business mailbox receives a login link.
-    const response = await fetch(SUPABASE + "/auth/v1/otp", {
+    const response = await fetch(SUPABASE + "/auth/v1/otp?redirect_to=" + encodeURIComponent("https://tonartstudio.com.br/gestao"), {
       method: "POST", headers: headers(), signal: AbortSignal.timeout(8000),
       body: JSON.stringify({
         email: OWNER_EMAIL, create_user: true,
