@@ -50,8 +50,10 @@ const FAQS = [
   { q: "Como é a entrega?", a: "Envio com embalagem e proteção adequada. Detalhes confirmados no retorno do orçamento." },
 ];
 
-const PUBLIC_FAQS = [  { q: "Os modelos mostrados já foram produzidos?", a: "As imagens são referências digitais e não representam necessariamente peças físicas já produzidas." },
-  { q: "Posso comprar pelo site?", a: "O catálogo é para consulta. Não há compras nem pagamentos online nesta versão." },  { q: "Como falar com o estúdio?", a: "A página Contato abre seu aplicativo de e-mail para conversar diretamente com a TONART Studio." },
+const PUBLIC_FAQS = [
+  { q: "Os modelos mostrados já foram produzidos?", a: "As imagens são referências digitais e não representam necessariamente peças físicas já produzidas." },
+  { q: "Posso comprar pelo site?", a: "O catálogo é para consulta. Não há compras nem pagamentos online nesta versão." },
+  { q: "Como falar com o estúdio?", a: "A página Contato abre seu aplicativo de e-mail para conversar diretamente com a TONART Studio." },
   { q: "Escala e acabamento podem variar?", a: "Sim. As características de uma peça física dependem da proposta, dos materiais e de avaliação individual." },
 ];
 

@@ -13,10 +13,12 @@ const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.home, label: "INÍCIO" },
   { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
   { to: PUBLIC_ROUTES.catalogModels, label: "MODELOS" },
+  { to: PUBLIC_ROUTES.about, label: "SOBRE" },
+  { to: PUBLIC_ROUTES.contact, label: "CONTATO" },
 ];
 
 if (PUBLIC_COLLECTIONS_ENABLED) {
-  navLinks.splice(2, 0, { to: PUBLIC_ROUTES.collections, label: "COLECOES" });
+  navLinks.splice(2, 0, { to: PUBLIC_ROUTES.collections, label: "COLEÇÕES" });
 }
 
 const authNavLinks: Array<{ to: string; label: string }> = [

@@ -28,10 +28,15 @@ export default function PublicCatalogContact() {
               Este catálogo é para consulta; o contato não formaliza uma encomenda.
             </p>
             {emailHref ? (
-              <a href={emailHref}
+              <div className="flex flex-col items-center gap-3">
+                <a href={emailHref}
                 className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]">
                 ENVIAR E-MAIL
-              </a>
+                </a>
+                <a href={emailHref} className="break-all text-sm text-[hsl(0,0%,78%)] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--gold-accent))]">
+                  {CONTACT.CONTACT_EMAIL}
+                </a>
+              </div>
             ) : (
               <Link to={PUBLIC_ROUTES.catalogModels}
                 className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]">
