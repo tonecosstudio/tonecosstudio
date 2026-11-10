@@ -67,8 +67,8 @@ describe("TONART approved-only public showcase", () => {
   it("makes no metadata requests and shows no placeholder cards with zero releases", () => {
     const getModel = vi.fn();
     show({ getModel, mediaUrl: vi.fn() } as unknown as Parameters<typeof ApprovedModelShowcase>[0]["gateway"], []);
-    expect(screen.getByRole("heading", { name: "Imagens em preparação" })).toBeInTheDocument();
-    expect(screen.getByText(/A TONART apresenta modelos por meio de renders digitais/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Explore nossas referências" })).toBeInTheDocument();
+    expect(screen.getByText(/As imagens do acervo são referências digitais/)).toBeInTheDocument();
     expect(getModel).not.toHaveBeenCalled();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
@@ -96,7 +96,7 @@ describe("TONART approved-only public showcase", () => {
     fireEvent.error(img);
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Ver detalhes/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/As imagens autorizadas não estão disponíveis agora/)).toBeInTheDocument();
+    expect(screen.getByText(/Nenhuma referência desta seleção está disponível no momento/)).toBeInTheDocument();
   });
 
   it("reuses exactly the same approved selection for the Home without a catalog scan", async () => {
@@ -112,7 +112,7 @@ describe("TONART approved-only public showcase", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    expect(screen.getByRole("heading", { name: "Renders autorizados" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Seleção do acervo" })).toBeInTheDocument();
     await screen.findByRole("img", { name: "Render digital de Escultura original" });
     expect(screen.getByRole("link", { name: "Ver todos os modelos" })).toHaveAttribute("href", "/modelos");
     expect(getModel).toHaveBeenCalledTimes(1);
@@ -131,14 +131,14 @@ describe("TONART approved-only public showcase", () => {
     );
     expect(getModel).not.toHaveBeenCalled();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Renders autorizados" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Seleção do acervo" })).not.toBeInTheDocument();
   });
 
   it("fails closed if the Worker returns another model or another cover", async () => {
     for (const wrong of [{ ...model, id: "mdl_other" }, { ...model, coverStorageKey: "media/other/card.webp" }]) {
       const getModel = vi.fn(async () => wrong);
       const view = show({ getModel, mediaUrl: () => "https://catalog.example.test/catalogo-api/" + key }, [release]);
-      await waitFor(() => expect(screen.getByText(/Nenhuma imagem sem autorização será exibida/)).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/Nenhuma referência desta seleção está disponível no momento/)).toBeInTheDocument());
       expect(screen.queryByRole("img")).not.toBeInTheDocument();
       view.unmount();
     }
