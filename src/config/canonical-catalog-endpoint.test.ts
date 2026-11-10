@@ -93,10 +93,12 @@ describe("Cloudflare Pages canonical public catalog", () => {
       source: "/catalogo-api/:path*",
       destination: "/api/catalogo-proxy?path=:path*",
     });
-    expect(vercelConfig.rewrites[1]).toEqual({
+    expect(vercelConfig.rewrites.at(-1)).toEqual({
       source: "/(.*)",
       destination: "/index.html",
     });
+    expect(vercelConfig.rewrites).toContainEqual({ source: "/api/tonart-quotes", destination: "/api/tonart-quotes" });
+    expect(vercelConfig.rewrites).toContainEqual({ source: "/api/tonart-auth", destination: "/api/tonart-auth" });
     expect(vercelConfig.headers.flatMap((rule) => rule.headers)).toContainEqual({
       key: "X-Robots-Tag",
       value: "noindex, nofollow, noarchive",
