@@ -518,8 +518,8 @@ describe("published model/gallery identity on the public detail page", () => {
 
   it("explains intentionally quarantined image without offering a retry or gallery", async () => {
     const { io } = mountGallery({ total: 1, restricted: true });
-    expect(await screen.findByRole("heading", { name: "Modelo em revisão de imagem" })).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("temporariamente indisponível");
+    expect(await screen.findByRole("heading", { name: "Modelo indisponível" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Esta referência não está disponível no momento");
     expect(screen.queryByRole("button", { name: "Tentar novamente" })).not.toBeInTheDocument();
     expect(screen.queryByRole("img", { name: /Referência visual de/ })).not.toBeInTheDocument();
     expect(io).toHaveBeenCalledTimes(1);
