@@ -15,6 +15,7 @@ const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.catalogModels, label: "MODELOS" },
   { to: PUBLIC_ROUTES.about, label: "SOBRE" },
   { to: PUBLIC_ROUTES.contact, label: "CONTATO" },
+  { to: PUBLIC_ROUTES.quoteRequest, label: "ORÇAMENTO" },
 ];
 
 if (PUBLIC_COLLECTIONS_ENABLED) {

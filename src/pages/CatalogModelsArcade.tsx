@@ -693,7 +693,7 @@ export default function CatalogModelsArcade() {
             </span>
             <SheetTitle className="text-2xl text-[hsl(0,0%,94%)]">Minha seleção</SheetTitle>
             <SheetDescription className="text-[hsl(0,0%,66%)]">
-              {publicReadOnly ? "Salve referências para comparar durante esta visita. O catálogo não recebe pedidos ou orçamentos." : "Revise os modelos que você reuniu para um futuro orçamento."}
+              {publicReadOnly ? "Reúna as referências que deseja consultar e envie uma solicitação de orçamento pelo site. Isso não confirma encomenda ou pagamento." : "Revise os modelos que você reuniu para um futuro orçamento."}
             </SheetDescription>
             <p role="status" className="text-sm text-[hsl(var(--gold-accent))]">
               {selectedModels.length} de {MAX_CANONICAL_SELECTION} modelos selecionados.
@@ -751,7 +751,7 @@ export default function CatalogModelsArcade() {
 
           <footer className="shrink-0 border-t border-[hsl(0,0%,18%)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 sm:px-6">
             <p className="mb-3 text-xs leading-relaxed text-[hsl(0,0%,66%)]">
-              {publicReadOnly ? "As referências ficam salvas somente nesta visita e não são enviadas ao estúdio." : "A seleção fica disponível durante esta visita. Nenhum orçamento foi enviado."}
+              {publicReadOnly ? "A seleção é temporária nesta visita. Somente o envio do formulário registra uma solicitação." : "A seleção fica disponível durante esta visita. Nenhum orçamento foi enviado."}
             </p>
             <SheetClose asChild>
               <button

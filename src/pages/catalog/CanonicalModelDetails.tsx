@@ -682,6 +682,14 @@ export default function CanonicalModelDetails() {
                         ? "Remover da seleção"
                         : "Adicionar à seleção"}
                     </button>
+                    <Link
+                      to={PUBLIC_ROUTES.quoteRequest}
+                      onClick={() => setSelectedModels((current) => current.some((entry) => entry.id === model.id)
+                        ? current : toggleCanonicalSelection(current, model))}
+                      className="inline-flex min-h-11 w-full items-center justify-center bg-[hsl(var(--gold-accent))] px-4 py-3 text-sm font-semibold text-black hover:brightness-110"
+                    >
+                      Solicitar orçamento deste modelo
+                    </Link>
                     <p
                       role="status"
                       aria-live="polite"

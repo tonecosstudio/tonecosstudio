@@ -18,6 +18,8 @@ const About = lazy(() => import("@/pages/AboutArcade"));
 const Privacy = lazy(() => import("@/pages/PrivacyArcadeView").then(m => ({ default: m.PrivacyArcadeView })));
 const Terms = lazy(() => import("@/pages/TermsArcadeView").then(m => ({ default: m.TermsArcadeView })));
 const HistoricalCharacter = lazy(() => import("@/pages/CatalogCharacterArcade"));
+const QuoteRequest = lazy(() => import("@/pages/PublicQuoteRequest"));
+const QuotePortal = lazy(() => import("@/pages/TonartQuotePortal"));
 
 const queryClient = new QueryClient();
 
@@ -85,6 +87,8 @@ export function CatalogMvpShell({
                   <Route path={PUBLIC_ROUTES.catalogDetails} element={<Details />} />
                   <Route path={PUBLIC_ROUTES.about} element={<About />} />
                   <Route path={PUBLIC_ROUTES.contact} element={<PublicCatalogContact />} />
+                  <Route path={PUBLIC_ROUTES.quoteRequest} element={<QuoteRequest />} />
+                  <Route path={PUBLIC_ROUTES.quotePortal} element={<QuotePortal />} />
                   <Route path={PUBLIC_ROUTES.privacy} element={<Privacy />} />
                   <Route path={PUBLIC_ROUTES.terms} element={<Terms />} />
                   {extraRoutes}

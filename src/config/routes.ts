@@ -22,6 +22,8 @@ export const PUBLIC_ROUTES = {
   terms: "/termos",
   privacy: "/privacidade",
   contact: "/contato",
+  quoteRequest: "/orcamento",
+  quotePortal: "/gestao",
   login: "/login",
   preLaunch: "/pre-lancamento",
 } as const;

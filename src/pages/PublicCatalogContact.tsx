@@ -27,6 +27,10 @@ export default function PublicCatalogContact() {
               Gostou de algum modelo ou tem dúvidas sobre referências, escalas e acabamentos? Escreva diretamente para a TONART Studio.
               Este catálogo é para consulta; o contato não formaliza uma encomenda.
             </p>
+            <Link to={PUBLIC_ROUTES.quoteRequest}
+              className="inline-flex min-h-11 items-center justify-center bg-[hsl(var(--gold-accent))] px-5 text-sm font-semibold text-black hover:brightness-110">
+              SOLICITAR ORÇAMENTO
+            </Link>
             {emailHref ? (
               <div className="flex flex-col items-center gap-3">
                 <a href={emailHref}

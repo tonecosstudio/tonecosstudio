@@ -1,6 +1,6 @@
 /** Quote inquiry only: no cart checkout, payment or account requirement. */
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Mail, Send, ShieldCheck } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
 import { ArcadeHero } from "@/components/arcade/ArcadeLayout";
@@ -12,7 +12,6 @@ const inputClass = "mt-2 block min-h-11 w-full border border-[hsl(0,0%,25%)] bg-
 const labelClass = "block text-sm text-[hsl(0,0%,82%)]";
 export default function PublicQuoteRequest() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
-  const navigate = useNavigate();
   const [items, setItems] = useState<QuoteItem[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
