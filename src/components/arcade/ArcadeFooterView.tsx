@@ -78,8 +78,7 @@ export function ArcadeFooterView({ settings }: { settings?: SystemSettings }) {
             </Link>
 
             <p className="text-xs text-[hsl(0,0%,40%)] leading-relaxed max-w-sm font-mono">
-              Colecionáveis premium produzidos sob encomenda. Cada peça é
-              artesanalmente criada com acabamento e pintura de alta qualidade.
+              {previewReadOnly ? "Um universo de personagens e referências digitais para quem aprecia esculturas colecionáveis." : "Colecionáveis produzidos sob encomenda, com atenção ao acabamento e à pintura artesanal."}
             </p>
 
             {/* Decorative line */}

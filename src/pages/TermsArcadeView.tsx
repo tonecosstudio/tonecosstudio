@@ -18,11 +18,11 @@ export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
   const sections = publicMvp ? [
     { num: "01", title: "Uso do catálogo", icon: <Shield className="w-4 h-4" />, content: "O site apresenta um acervo público de modelos, categorias e imagens para consulta e referência. A navegação não representa reserva, contratação ou pedido." },
     { num: "02", title: "Modelos e disponibilidade", icon: <FileText className="w-4 h-4" />, content: "Imagens, nomes e descrições são referências do catálogo e podem ser atualizados. A presença de um modelo não garante disponibilidade de produção ou preço." },
-    { num: "03", title: "Sem transações no site", icon: <AlertTriangle className="w-4 h-4" />, content: "Nesta fase o catálogo não oferece cadastro, compras, pagamentos, assinaturas ou moedas virtuais. Nenhuma ação na página confirma encomenda.", highlight: true },
-    { num: "04", title: "Contato", icon: <FileText className="w-4 h-4" />, content: "A página Contato oferece comunicação por e-mail. O site não recebe formulários de orçamento nem registra pedidos nesta versão." },
+    { num: "03", title: "Sem transações no site", icon: <AlertTriangle className="w-4 h-4" />, content: "O catálogo não permite concluir compras, pagamentos ou encomendas diretamente pelo site.", highlight: true },
+    { num: "04", title: "Contato", icon: <FileText className="w-4 h-4" />, content: "A página Contato oferece comunicação por e-mail. O envio de um e-mail não representa confirmação de pedido, preço ou prazo." },
     { num: "05", title: "Marcas e personagens", icon: <Scale className="w-4 h-4" />, content: "Marcas, nomes e personagens de franquias podem pertencer a seus respectivos titulares. O uso como referência no catálogo não transfere direitos sobre essas obras." },
     { num: "06", title: "Uso responsável", icon: <Shield className="w-4 h-4" />, content: "Não são permitidos acesso não autorizado, exploração abusiva do serviço, envio de conteúdo malicioso ou violação de direitos de terceiros." },
-    { num: "07", title: "Mudanças", icon: <FileText className="w-4 h-4" />, content: "Estes termos descrevem o catálogo público somente leitura. Funcionalidades comerciais só serão disponibilizadas após sua homologação e comunicação apropriada." },
+    { num: "07", title: "Mudanças", icon: <FileText className="w-4 h-4" />, content: "Estes termos se aplicam aos recursos disponíveis no site. Eventuais serviços adicionais terão condições específicas antes de sua utilização." },
   ] : [
     {
       num: "01",
@@ -59,7 +59,7 @@ export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
       num: "06",
       title: "Propriedade Intelectual",
       icon: <Scale className="w-4 h-4" />,
-      content: "Todo conteúdo é propriedade da Tonecos Studios, protegido por leis de direitos autorais. Reprodução, distribuição ou criação derivada requer autorização.",
+      content: "Textos, identidade visual e conteúdos originais pertencem à TONART Studio ou a seus respectivos titulares. Marcas e personagens de terceiros permanecem sob os direitos de seus proprietários.",
     },
     {
       num: "07",
@@ -94,9 +94,9 @@ export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
       keywords={["termos", "condições", "uso", "legal"]}
     >
       <ArcadeHero
-        badge="Documento Oficial"
+        badge="TONART STUDIO"
         title="TERMOS DE USO"
-        subtitle={publicMvp ? "Catálogo público somente leitura" : "Última atualização: 03/02/2026"}
+        subtitle={publicMvp ? "Informações sobre o uso do catálogo" : "Última atualização: 03/02/2026"}
         compact
       />
 
@@ -149,7 +149,7 @@ export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
       <ArcadeCTA
         badge="Voltar"
         title="EXPLORAR UNIVERSO"
-        description="Conheça nossas peças artesanais"
+        description="Explore referências digitais do acervo."
         primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog }}
         secondaryAction={{ label: "INÍCIO", href: PUBLIC_ROUTES.home }}
       />

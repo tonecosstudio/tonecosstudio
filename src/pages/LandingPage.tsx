@@ -111,9 +111,9 @@ function StatCounter({
 export function landingCopyForMode(publicReadOnly: boolean) {
   return publicReadOnly
     ? {
-        description: "Explore modelos, personagens e referências de esculturas da TONART Studio. Catálogo para consulta, sem compras ou cadastro.",
+        description: "Explore personagens, esculturas e referências digitais para inspirar sua próxima peça colecionável.",
         ctaTitle: "CONHEÇA O ACERVO",
-        ctaDescription: "Explore modelos e referências. Para conversar sobre uma peça, entre em contato com o estúdio por e-mail.",
+        ctaDescription: "Explore personagens e referências do acervo. Para conversar sobre uma ideia, fale diretamente com o estúdio.",
       }
     : {
         description: "Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão.",
@@ -166,7 +166,7 @@ export default function LandingPage() {
   const hasCatalogError = !catalogMediaOnHold && (gateway === null || modelsQuery.isError);
   const hasCatalogData = models.length > 0;
   const catalogStatus = hasApprovedRenders
-    ? "Renders autorizados"
+    ? "Destaques do acervo"
     : isCatalogLoading
     ? "Carregando referências"
     : hasCatalogError
@@ -244,7 +244,9 @@ export default function LandingPage() {
             >
               Universo de Personagens
             </span>
-          </h1>
+          </h1>          {publicReadOnly && (
+            <p className="mx-auto mb-6 max-w-2xl text-sm leading-7 text-[hsl(0,0%,70%)] sm:text-base">Descubra universos, personagens e detalhes que inspiram esculturas colecionáveis. As imagens do catálogo são referências digitais para explorar.</p>
+          )}
 
           {/* Typewriter */}
           <div className="min-h-8 mb-8">
@@ -253,7 +255,7 @@ export default function LandingPage() {
               style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
               <TypewriterText
-                text={publicReadOnly ? ">> PERSONAGENS, MODELOS E REFERÊNCIAS PARA CONSULTA." : ">> PERSONAGENS, MODELOS E VARIAÇÕES SOB ENCOMENDA."}
+                text={publicReadOnly ? "PERSONAGENS, ESCULTURAS E REFERÊNCIAS PARA COLECIONADORES." : ">> PERSONAGENS, MODELOS E VARIAÇÕES SOB ENCOMENDA."}
                 delay={800}
               />
             </p>
@@ -291,7 +293,7 @@ export default function LandingPage() {
               </div>
               <div className="flex items-center gap-3">
                 <Shield size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
-                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">{hasApprovedRenders ? "Renders selecionados" : "Renders em revisão"}</span>
+                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">{hasApprovedRenders ? "Referências em destaque" : "Novidades do acervo"}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
@@ -325,10 +327,10 @@ export default function LandingPage() {
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent))]">O ACERVO TONART</p>
               <h2 id="catalog-curation-heading" className="mt-4 max-w-xl text-3xl font-semibold uppercase leading-tight tracking-[0.035em] text-white sm:text-4xl">
-                Referências em curadoria
+                Conheça novas possibilidades
               </h2>
               <p className="mt-5 max-w-xl text-base leading-7 text-[hsl(0,0%,70%)]">
-                Estamos preparando a apresentação visual do acervo com atenção à origem e à autorização dos renders digitais.
+                Explore inspirações do universo das esculturas e dos personagens colecionáveis.
               </p>
               <p className="mt-4 max-w-xl text-sm leading-6 text-[hsl(0,0%,52%)]">
                 Novas referências serão publicadas em breve.
@@ -337,10 +339,10 @@ export default function LandingPage() {
             <div className="border-l-2 border-[hsl(var(--gold-accent)/0.65)] bg-[hsl(0,0%,7%)] px-6 py-7 sm:px-8 sm:py-9">
               <div className="flex items-center gap-3">
                 <Shield size={20} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
-                <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-[hsl(0,0%,92%)]">Publicação responsável</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-[hsl(0,0%,92%)]">Sobre as imagens</h3>
               </div>
               <p className="mt-4 text-sm leading-7 text-[hsl(0,0%,70%)]">
-                Renders em revisão para publicação. As imagens só serão exibidas após a verificação das permissões de uso.
+                As imagens digitais mostram referências. A aparência de uma peça produzida pode variar conforme escala, materiais e acabamento.
               </p>
               <Link to={PUBLIC_ROUTES.contact} className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--gold-accent))]">
                 Falar com o estúdio <ArrowRight size={16} aria-hidden="true" />
@@ -416,43 +418,6 @@ export default function LandingPage() {
         secondaryAction={{ label: "FALE CONOSCO", href: PUBLIC_ROUTES.contact }}
       /> : null}
 
-      {/* ═══ FOOTER ═══ */}
-      <footer className="border-t border-[hsl(0,0%,10%)] py-8 px-6 bg-[hsl(0,0%,3%)]">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span
-              className="text-2xl tracking-[0.2em] text-white"
-              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-            >
-              {BRAND_SHORT_NAME}
-            </span>
-          </div>
-
-          <nav className="flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:w-auto sm:flex-nowrap sm:justify-start sm:gap-6">
-            {[
-              { label: "Sobre", href: PUBLIC_ROUTES.about },
-              { label: "Contato", href: PUBLIC_ROUTES.contact },
-              { label: "Termos", href: PUBLIC_ROUTES.terms },
-              { label: "Privacidade", href: PUBLIC_ROUTES.privacy },
-            ].map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="inline-flex min-h-11 items-center text-[11px] leading-6 text-[hsl(0,0%,68%)] hover:text-[hsl(var(--gold-accent))] tracking-[0.04em] transition-colors uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          <p
-            className="text-[11px] leading-5 text-[hsl(0,0%,57%)] tracking-[0.04em]"
-            style={{ fontFamily: "'Press Start 2P', monospace" }}
-          >
-            © {new Date().getFullYear()} {BRAND_NAME}
-          </p>
-        </div>
-      </footer>
     </Page>
   );
 }

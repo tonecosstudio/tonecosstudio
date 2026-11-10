@@ -21,9 +21,9 @@ export function PrivacyArcadeView({ settings }: { settings?: SystemSettings }) {
     { num: "02", title: "Dados técnicos", icon: <Eye className="w-4 h-4" />, content: "A navegação pode gerar registros técnicos de acesso, como endereço IP, horário e páginas solicitadas, necessários para operação e segurança da hospedagem." },
     { num: "03", title: "Contato por e-mail", icon: <Users className="w-4 h-4" />, content: "O contato abre seu aplicativo de e-mail. O endereço do remetente e o conteúdo enviado são tratados pelos respectivos serviços de correio eletrônico; não há formulário de envio pelo catálogo." },
     { num: "04", title: "Cookies e proteção", icon: <Cookie className="w-4 h-4" />, content: "Recursos de segurança e funcionamento podem utilizar cookies técnicos. O catálogo não exige uma conta de cliente para navegar." },
-    { num: "05", title: "Provedores", icon: <Lock className="w-4 h-4" />, content: "A infraestrutura de hospedagem e entrega das imagens utiliza serviços Cloudflare. A comunicação por e-mail depende do provedor escolhido pelo remetente e pelo estúdio." },
+    { num: "05", title: "Provedores", icon: <Lock className="w-4 h-4" />, content: "O site utiliza serviços de hospedagem e entrega de conteúdo, incluindo Vercel e Cloudflare. A comunicação por e-mail depende dos provedores utilizados pelo remetente e pelo estúdio." },
     { num: "06", title: "Direitos sobre dados", icon: <UserCheck className="w-4 h-4" />, content: "Você pode solicitar informações e exercer os direitos aplicáveis pela LGPD por meio do contato de privacidade informado abaixo.", highlight: true },
-    { num: "07", title: "Atualizações", icon: <RefreshCw className="w-4 h-4" />, content: "Esta descrição cobre o catálogo público somente leitura. Recursos futuros de cadastro ou compra exigirão informações e controles próprios antes de serem disponibilizados." },
+    { num: "07", title: "Atualizações", icon: <RefreshCw className="w-4 h-4" />, content: "Esta política descreve os recursos atualmente disponíveis. Eventuais novos serviços terão suas condições de privacidade informadas antes do uso." },
   ] : [
     { num: "01", title: "Dados Coletados", icon: <Database className="w-4 h-4" />, content: "Cadastro (nome, email, CPF, telefone) • Endereço • Pagamento (criptografado) • Uso (preferências, histórico, cookies)" },
     { num: "02", title: "Finalidade", icon: <Eye className="w-4 h-4" />, content: "Processar pedidos • Comunicar status • Personalizar experiência • Processar pagamentos • Melhorar serviços • Cumprir obrigações legais" },
@@ -44,7 +44,7 @@ export function PrivacyArcadeView({ settings }: { settings?: SystemSettings }) {
       keywords={["privacidade", "dados", "lgpd", "proteção"]}
     >
       <ArcadeHero
-        badge="Arquivo Confidencial"
+        badge="TONART STUDIO"
         title="PRIVACIDADE"
         subtitle={publicMvp ? "Informações sobre a navegação no catálogo" : "Seus dados estão protegidos"}
         compact
@@ -88,7 +88,7 @@ export function PrivacyArcadeView({ settings }: { settings?: SystemSettings }) {
       <ArcadeCTA
         badge="Voltar"
         title="EXPLORAR UNIVERSO"
-        description="Conheça nossas peças artesanais"
+        description="Explore referências digitais de personagens e esculturas."
         primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog }}
         secondaryAction={{ label: "INÍCIO", href: PUBLIC_ROUTES.home }}
       />

@@ -50,9 +50,9 @@ const FAQS = [
   { q: "Como é a entrega?", a: "Envio com embalagem e proteção adequada. Detalhes confirmados no retorno do orçamento." },
 ];
 
-const PUBLIC_FAQS = [
-  { q: "Este catálogo recebe pedidos ou pagamentos?", a: "Não. Nesta fase o site é somente para consulta: não há pedidos, cadastros, solicitações de orçamento ou pagamentos." },
-  { q: "Como falar com o estúdio?", a: "Use a página Contato para enviar um e-mail. A mensagem não cria pedidos nem pagamentos no site." },
+const PUBLIC_FAQS = [  { q: "Os modelos mostrados já foram produzidos?", a: "As imagens são referências digitais e não representam necessariamente peças físicas já produzidas." },
+  { q: "Posso comprar pelo site?", a: "O catálogo é para consulta. Não há compras nem pagamentos online nesta versão." },  { q: "Como falar com o estúdio?", a: "A página Contato abre seu aplicativo de e-mail para conversar diretamente com a TONART Studio." },
+  { q: "Escala e acabamento podem variar?", a: "Sim. As características de uma peça física dependem da proposta, dos materiais e de avaliação individual." },
 ];
 
 export default function AboutArcade() {
@@ -70,25 +70,25 @@ export default function AboutArcade() {
         compact
       />
       {publicReadOnly ? (
-        <section aria-label="Estado do catálogo" className="relative z-10 mx-auto mb-8 max-w-5xl px-4 md:px-6">
+        <section aria-label="Sobre as referências digitais" className="relative z-10 mx-auto mb-8 max-w-5xl px-4 md:px-6">
           <p className="border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] p-5 text-sm leading-relaxed text-[hsl(0,0%,75%)]">
-            Este site é um catálogo para consulta. Não recebe cadastro, pedidos, orçamentos ou pagamentos. Os renders digitais são referências de modelos, não fotos de peças físicas já produzidas.
+            As imagens exibidas neste catálogo são referências digitais, não necessariamente fotografias de peças físicas já produzidas.
           </p>
         </section>
       ) : null}
 
       {/* ═══ MISSION ═══ */}
       <section className="max-w-5xl mx-auto px-4 md:px-6 pb-16 relative z-10">
-        <ArcadeSectionTitle>Missão</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Nossa essência</ArcadeSectionTitle>
 
         <ArcadeCard>
           <div className="p-4 sm:p-6 md:p-12 text-center relative overflow-hidden">
             <FloatingParticles />
             <div className="relative z-10">
               <p className="font-mono text-sm md:text-base text-[hsl(0,0%,60%)] leading-relaxed tracking-wider max-w-3xl mx-auto">
-                A TONART Studio reúne referências de personagens, universos e esculturas
-                para ajudar você a encontrar ideias para sua próxima peça. Cada solicitação
-                é avaliada conforme escala, acabamento e possibilidades de produção.
+                A TONART Studio reúne personagens, universos e referências de esculturas
+                para inspirar quem aprecia peças colecionáveis. Escala, materiais, pintura
+                e acabamento são detalhes que tornam cada projeto singular.
               </p>
             </div>
           </div>
@@ -97,7 +97,7 @@ export default function AboutArcade() {
 
       {/* ═══ HOW WE WORK ═══ */}
       <section className="max-w-5xl mx-auto px-4 md:px-6 pb-16 relative z-10">
-        <ArcadeSectionTitle>Como Operamos</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Do conceito à peça</ArcadeSectionTitle>
 
         <div className="grid md:grid-cols-2 gap-5">
           <ArcadeCard>
@@ -111,7 +111,7 @@ export default function AboutArcade() {
                 </h3>
               </div>
               <ul className="space-y-3">
-                {["Catálogo de modelos e referências", "Navegação por categorias, franquias e pastas", "Solicitação de avaliação pelo contato", "Informações de produção conforme o pedido", "Atendimento para dúvidas sobre a encomenda"].map((item) => (
+                {["Acervo de modelos e referências digitais", "Navegação por categorias e franquias", "Referências para explorar e comparar", "Informações sobre escala e acabamento", "Contato direto por e-mail com o estúdio"].map((item) => (
                   <li key={item} className="flex items-start gap-2 font-mono text-xs text-[hsl(0,0%,50%)] tracking-wider">
                     <div className="mt-1.5 w-1.5 h-1.5 bg-[hsl(var(--gold-accent))] shrink-0" />
                     {item}
@@ -208,7 +208,7 @@ export default function AboutArcade() {
 
         <div className="mt-8 text-center">
           <p className="font-mono text-[10px] text-[hsl(0,0%,35%)] tracking-wider">
-            Prazos de produção e entrega são informados após a avaliação de cada encomenda.
+            Prazos e possibilidades de produção dependem da avaliação individual de cada projeto.
           </p>
         </div>
       </section>
@@ -227,8 +227,8 @@ export default function AboutArcade() {
       <ArcadeCTA
         badge={publicReadOnly ? "CATÁLOGO INFORMATIVO" : "Pronto para começar?"}
         title={publicReadOnly ? "EXPLORE O ACERVO" : "SUA PRÓXIMA PEÇA"}
-        description={publicReadOnly ? "Consulte referências e entre em contato por e-mail para tirar dúvidas. Este site não recebe pedidos ou pagamentos." : "Explore nosso catálogo e solicite um orçamento personalizado."}
-        primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog, icon: <ArrowRight className="w-4 h-4" /> }}
+        description={publicReadOnly ? "Explore referências e conheça os universos da TONART. Se tiver dúvidas, converse diretamente com o estúdio por e-mail." : "Explore nosso catálogo e solicite um orçamento personalizado."}
+        primaryAction={{ label: "EXPLORAR MODELOS", href: PUBLIC_ROUTES.catalogModels, icon: <ArrowRight className="w-4 h-4" /> }}
         secondaryAction={{ label: "FALAR COM O ESTÚDIO", href: PUBLIC_ROUTES.contact }}
       />
     </Page>

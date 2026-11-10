@@ -12,20 +12,20 @@ export default function PublicCatalogContact() {
   return (
     <Page title="Contato" description="Fale com a TONART Studio sobre modelos e referências.">
       <ArcadeHero
-        badge="Canal Aberto"
+        badge="TONART STUDIO"
         title="CONTATO"
-        subtitle=">> FALE COM A TONART."
+        subtitle="CONVERSE DIRETAMENTE COM O ESTÚDIO."
         compact
       />
       <section className="relative z-10 mx-auto max-w-2xl px-4 pb-16 md:px-6">
-        <ArcadeSectionTitle>Contato direto</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Estamos à disposição</ArcadeSectionTitle>
         <ArcadeCard hover={false}>
-          <div className="space-y-5 p-6 text-center md:p-8" role="status">
+          <div className="space-y-5 p-6 text-center md:p-8">
             <Mail className="mx-auto h-7 w-7 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
             <h2 className="text-lg font-medium text-[hsl(0,0%,94%)]">FALE COM A TONART</h2>
             <p className="text-sm text-[hsl(0,0%,65%)]">
-              Para conversar sobre uma referência ou modelo, envie um e-mail.
-              Este catálogo é informativo e não recebe cadastro, pedidos ou pagamentos.
+              Gostou de algum modelo ou tem dúvidas sobre referências, escalas e acabamentos? Escreva diretamente para a TONART Studio.
+              Este catálogo é para consulta; o contato não formaliza uma encomenda.
             </p>
             {emailHref ? (
               <a href={emailHref}
@@ -41,7 +41,7 @@ export default function PublicCatalogContact() {
           </div>
         </ArcadeCard>
       </section>
-      <ArcadeCTA badge="Explorar" title="MODELOS TONART"
+      <ArcadeCTA badge="Explore" title="DESCUBRA O ACERVO"
         description="Navegue pelo acervo de referências."
         primaryAction={{label:"VER MODELOS",href:PUBLIC_ROUTES.catalogModels}}
         secondaryAction={{label:"INÍCIO",href:PUBLIC_ROUTES.home}} />
