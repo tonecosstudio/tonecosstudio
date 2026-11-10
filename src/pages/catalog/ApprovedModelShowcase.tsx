@@ -59,7 +59,7 @@ function ApprovedCardGrid({ cards }: { cards: readonly ApprovedCard[] }) {
   if (shown.length === 0) {
     return (
       <p role="status" className="text-sm text-[hsl(0,0%,70%)]">
-        As imagens autorizadas não estão disponíveis agora. Nenhum card sem imagem será exibido.
+        As imagens desta seleção não estão disponíveis agora. Tente novamente mais tarde.
       </p>
     );
   }
@@ -108,7 +108,7 @@ export function ApprovedHomeHighlights({
           Personagens e modelos selecionados para você explorar.
         </p>
         {models.isPending ? (
-          <p role="status" className="text-sm">Verificando renders selecionados…</p>
+          <p role="status" className="text-sm">Carregando destaques…</p>
         ) : models.isError || gateway === null ? (
           <p role="alert" className="text-sm">A seleção está temporariamente indisponível.</p>
         ) : <ApprovedCardGrid cards={cards} />}
@@ -145,7 +145,7 @@ export function ApprovedModelShowcase({
         description="Explore referências digitais de personagens e esculturas no acervo TONART Studio."
       >
         <section className="min-h-[75svh] bg-[hsl(0,0%,4%)] pb-20 text-[hsl(0,0%,94%)]">
-          <ArcadeHero badge="ACERVO TONART" title="MODELOS" subtitle=">> UMA VITRINE VISUAL EM PREPARAÇÃO." compact />
+          <ArcadeHero badge="ACERVO TONART" title="MODELOS" subtitle="PERSONAGENS E REFERÊNCIAS PARA CONHECER." compact />
           <div role="status" className="relative z-10 mx-auto max-w-3xl border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] px-6 py-9 sm:px-10 sm:py-12">
             <p className="font-mono text-xs uppercase tracking-[0.17em] text-[hsl(var(--gold-accent))]">ACERVO TONART</p>
             <h2 className="mt-5 text-2xl font-semibold uppercase tracking-wide sm:text-3xl">Explore nossas referências</h2>
@@ -168,7 +168,7 @@ export function ApprovedModelShowcase({
 
 
   return (
-    <Page title="Modelos — TONART Studio" description="Renders digitais de modelos 3D com origem e exibição autorizadas para o catálogo TONART.">
+    <Page title="Modelos — TONART Studio" description="Explore personagens e referências digitais do acervo TONART Studio.">
       <section className="min-h-[75svh] bg-[hsl(0,0%,4%)] px-4 pb-20 text-[hsl(0,0%,94%)] sm:px-8">
         <ArcadeHero badge="SELEÇÃO TONART" title="MODELOS" subtitle=">> PERSONAGENS E ESCULTURAS PARA EXPLORAR." compact />
         <div className="mx-auto max-w-6xl">

@@ -96,7 +96,7 @@ describe("TONART approved-only public showcase", () => {
     fireEvent.error(img);
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Ver detalhes/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/Nenhuma referência desta seleção está disponível no momento/)).toBeInTheDocument();
+    expect(screen.getByText(/As imagens desta seleção não estão disponíveis agora/)).toBeInTheDocument();
   });
 
   it("reuses exactly the same approved selection for the Home without a catalog scan", async () => {

@@ -187,7 +187,7 @@ describe("Tonecos canonical model discovery UI", () => {
     });
     vi.stubGlobal("fetch", fetcher);
     await renderCatalog();
-    expect(await screen.findByText("Nenhum modelo corresponde aos filtros utilizados.")).toBeInTheDocument();
+    expect(await screen.findByText("Nenhum modelo disponível corresponde aos filtros utilizados. Tente outra busca.")).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
