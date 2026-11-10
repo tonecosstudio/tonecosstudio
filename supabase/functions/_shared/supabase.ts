@@ -66,6 +66,13 @@ export function getServiceClient() {
   return createClient(getSupabaseUrl(), getServiceRoleKey());
 }
 
+/** Private, non-reversible rate key used for public TONART inquiries. */
+export async function createPrivateRateFingerprint(value: string): Promise<string> {
+  const material = new TextEncoder().encode(getServiceRoleKey() + ":tonart-quote-rate:" + value);
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", material));
+  return Array.from(digest).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 export function callServiceRoleFunction(
   functionName: string,
   body: unknown,

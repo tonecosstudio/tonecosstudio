@@ -1,9 +1,6 @@
-import { createClient } from "npm:@supabase/supabase-js@2.75.0";
+import { createPrivateRateFingerprint, getServiceClient } from "../_shared/supabase.ts";
 
-const URL = Deno.env.get("SUPABASE_URL");
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-if (!URL || !SERVICE_KEY) throw new Error("tonart_quote_backend_unconfigured");
-const db = createClient(URL, SERVICE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+const db = getServiceClient();
 const allowed = (origin: string) => /^https:\/\/(?:www\.)?tonartstudio\.com\.br$/.test(origin) ||
   /^https:\/\/tonart-studio-public-[a-z0-9-]+\.vercel\.app$/.test(origin);
 const json = (body: unknown, status = 200, origin = "") => new Response(JSON.stringify(body), {
@@ -18,12 +15,8 @@ const string = (v: unknown, max: number) => typeof v === "string" && v.length <=
 function validEmail(value: string): boolean {
   return value.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
 }
-async function fingerprint(value: string): Promise<string> {
-  const bytes = new TextEncoder().encode(SERVICE_KEY + ":tonart-quote-rate:" + value);
-  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))).map(x => x.toString(16).padStart(2, "0")).join("");
-}
 async function rateAllowed(value: string) {
-  const { data, error } = await db.rpc("tonart_quote_check_limit", { p_fingerprint: await fingerprint(value) });
+  const { data, error } = await db.rpc("tonart_quote_check_limit", { p_fingerprint: await createPrivateRateFingerprint(value) });
   return !error && data === true;
 }
 async function authenticate(request: Request) {
