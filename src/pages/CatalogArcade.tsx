@@ -196,7 +196,7 @@ export default function CatalogArcade() {
         <ArcadeHero
           badge="ACERVO TONART"
           title="UNIVERSO"
-          subtitle=">> CATEGORIAS E FRANQUIAS DO ACERVO PUBLICADO."
+          subtitle="EXPLORE CATEGORIAS, PERSONAGENS E UNIVERSOS."
           stats={[]}
           compact
         />
@@ -264,20 +264,20 @@ export default function CatalogArcade() {
 
           {gateway === null ? (
             <div role="status" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
-              Acervo em integração neste ambiente. Não exibimos modelos de outra fonte.
+              O acervo não está disponível agora. Tente novamente mais tarde.
             </div>
           ) : invalidScope ? (
             <div role={invalidFolderScope ? "alert" : "status"} className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
               {invalidFolderScope
-                ? "Pasta indisponível ou inválida. Nenhuma consulta foi realizada."
+                ? "Não foi possível encontrar esta pasta. Volte ao catálogo para continuar."
                 : "Categoria ou franquia inválida. Volte ao Universo para navegar pelas categorias publicadas."}
             </div>
           ) : mediaUnderReview ? (
             <section role="status" aria-labelledby="universe-review-title" className="mt-6 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(0,0%,7%)] px-6 py-9 sm:px-9">
-              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))]">ACERVO EM CURADORIA</p>
-              <h3 id="universe-review-title" className="mt-4 text-2xl font-semibold uppercase tracking-wide sm:text-3xl">Universo em preparação</h3>
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))]">ACERVO TONART</p>
+              <h3 id="universe-review-title" className="mt-4 text-2xl font-semibold uppercase tracking-wide sm:text-3xl">Explore nosso universo</h3>
               <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[hsl(0,0%,70%)]">
-                Estamos verificando as autorizações das fotografias antes de apresentar categorias e franquias ao público. Os modelos não foram excluídos; as referências em revisão permanecem protegidas.
+                Conheça as referências disponíveis no catálogo e explore diferentes personagens e estilos.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link to={PUBLIC_ROUTES.catalogModels} className="inline-flex min-h-11 items-center gap-2 border border-[hsl(var(--gold-accent))] px-5 py-3 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]">

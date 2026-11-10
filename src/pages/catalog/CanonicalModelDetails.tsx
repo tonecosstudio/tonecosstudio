@@ -346,14 +346,14 @@ export default function CanonicalModelDetails() {
   if (publicationBlocked) {
     return (
       <Page
-        title="Ficha em preparação — TONART Studio"
-        description="Renders e referências desta ficha aguardam curadoria e autorização para publicação."
+        title="Modelo indisponível — TONART Studio"
+        description="Esta referência não está disponível para consulta no momento."
       >
         <section className="min-h-[70svh] bg-[hsl(0,0%,4%)] px-4 py-16 text-[hsl(0,0%,94%)] sm:px-8">
           <div role="status" className="mx-auto max-w-2xl border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] p-7 sm:p-10">
-            <h1 className="text-2xl font-semibold uppercase tracking-wide">Ficha em preparação</h1>
+            <h1 className="text-2xl font-semibold uppercase tracking-wide">Modelo indisponível</h1>
             <p className="mt-5 text-sm leading-7 text-[hsl(0,0%,73%)]">
-              Este render ainda não possui liberação registrada para exibição na vitrine pública. Nenhuma imagem de origem não verificada será exibida; o modelo permanece preservado no acervo.
+              Este modelo não está disponível para consulta no momento. Explore as demais referências do acervo.
             </p>
             <Link to={PUBLIC_ROUTES.catalogModels} className="mt-7 inline-flex min-h-11 items-center gap-2 border border-[hsl(var(--gold-accent))] px-5 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]">
               <ArrowLeft size={16} aria-hidden="true" /> Voltar ao acervo
@@ -432,8 +432,7 @@ export default function CanonicalModelDetails() {
             <section className="mt-8 rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-6">
               <h1 className="text-2xl font-medium">Ficha indisponível</h1>
               <p role="alert" className="mt-2 text-sm text-[hsl(0,0%,56%)]">
-                A origem do catálogo TONART ainda não está configurada para
-                este ambiente.
+                Não foi possível acessar o catálogo agora. Tente novamente mais tarde.
               </p>
             </section>
           ) : modelQuery.isPending ? (
@@ -443,11 +442,11 @@ export default function CanonicalModelDetails() {
           ) : modelQuery.isError || !model ? (
             <section className="mt-8 rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-6">
               <h1 className="text-2xl font-medium">
-                {imageUnderReview ? "Modelo em revisão de imagem" : "Ficha indisponível"}
+                {imageUnderReview ? "Modelo indisponível" : "Ficha indisponível"}
               </h1>
               <p role="alert" className="mt-2 text-sm text-[hsl(0,0%,56%)]">
                 {imageUnderReview
-                  ? "Este modelo está temporariamente indisponível no catálogo público enquanto sua imagem é revisada. Consulte os demais modelos publicados."
+                  ? "Esta referência não está disponível no momento. Explore os demais modelos do catálogo."
                   : "Não foi possível carregar este modelo publicado. Tente novamente mais tarde."}
               </p>
               {!imageUnderReview ? (
@@ -466,7 +465,7 @@ export default function CanonicalModelDetails() {
               <section aria-label="Imagens do modelo">
                 {mediaUnderReview && !coverReleased ? (
                   <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] pl-4 text-sm text-[hsl(0,0%,72%)]">
-                    Fotografias em revisão para publicação. Os dados do modelo continuam disponíveis para consulta.
+                    Algumas imagens deste modelo não estão disponíveis no momento.
                   </p>
                 ) : null}
                 <ArcadeCard className="flex min-h-[280px] items-center justify-center sm:min-h-[360px] md:min-h-[560px]">
@@ -649,7 +648,7 @@ export default function CanonicalModelDetails() {
                         Imagens publicadas
                       </dt>
                       <dd className="mt-1 font-medium">
-                        {mediaUnderReview ? (coverReleased ? "1 render autorizado" : "Em revisão") : galleryQuery.isError || duplicateGalleryIdentity || inconsistentGalleryCount
+                        {mediaUnderReview ? (coverReleased ? "1 imagem disponível" : "Indisponível") : galleryQuery.isError || duplicateGalleryIdentity || inconsistentGalleryCount
                           ? "Indisponível"
                           : galleryQuery.data?.pages[0]?.total ??
                             (model.galleryVersion > 0
@@ -661,7 +660,7 @@ export default function CanonicalModelDetails() {
 
                   <p className="text-sm leading-relaxed text-[hsl(0,0%,56%)]">
                     {publicMediaHold
-                      ? "Render digital com origem e direito de publicação registrados. Este catálogo é somente para consulta; não recebe pedidos ou pagamentos."
+                      ? "Imagem digital de referência. Este catálogo é somente para consulta e não recebe pedidos ou pagamentos."
                       : "Disponibilidade e preço são confirmados pela equipe na etapa de orçamento. Esta ficha apresenta somente os dados publicados no catálogo."}
                   </p>
                   <div className="space-y-3">

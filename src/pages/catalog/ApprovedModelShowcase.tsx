@@ -103,9 +103,9 @@ export function ApprovedHomeHighlights({
   return (
     <section aria-labelledby="tonart-approved-highlights" className="border-y border-[hsl(var(--gold-accent)/0.12)] bg-[hsl(0,0%,5%)] px-6 py-12">
       <div className="mx-auto max-w-6xl">
-        <h2 id="tonart-approved-highlights" className="text-xl font-semibold uppercase tracking-[0.08em] text-[hsl(var(--gold-accent))]">Renders autorizados</h2>
+        <h2 id="tonart-approved-highlights" className="text-xl font-semibold uppercase tracking-[0.08em] text-[hsl(var(--gold-accent))]">Seleção do acervo</h2>
         <p className="my-5 max-w-3xl text-sm leading-7 text-[hsl(0,0%,70%)]">
-          Uma seleção de modelos digitais com origem e autorização de exibição registradas.
+          Personagens e modelos selecionados para você explorar.
         </p>
         {models.isPending ? (
           <p role="status" className="text-sm">Verificando renders selecionados…</p>
@@ -141,19 +141,19 @@ export function ApprovedModelShowcase({
   if (releases.length === 0) {
     return (
       <Page
-        title="Acervo em preparação — TONART Studio"
-        description="A vitrine de renders da TONART Studio está em curadoria. Só publicaremos modelos com imagens de origem e uso autorizados."
+        title="Modelos TONART Studio"
+        description="Explore referências digitais de personagens e esculturas no acervo TONART Studio."
       >
         <section className="min-h-[75svh] bg-[hsl(0,0%,4%)] pb-20 text-[hsl(0,0%,94%)]">
           <ArcadeHero badge="ACERVO TONART" title="MODELOS" subtitle=">> UMA VITRINE VISUAL EM PREPARAÇÃO." compact />
           <div role="status" className="relative z-10 mx-auto max-w-3xl border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] px-6 py-9 sm:px-10 sm:py-12">
-            <p className="font-mono text-xs uppercase tracking-[0.17em] text-[hsl(var(--gold-accent))]">MVP VISUAL EM CURADORIA</p>
-            <h2 className="mt-5 text-2xl font-semibold uppercase tracking-wide sm:text-3xl">Imagens em preparação</h2>
+            <p className="font-mono text-xs uppercase tracking-[0.17em] text-[hsl(var(--gold-accent))]">ACERVO TONART</p>
+            <h2 className="mt-5 text-2xl font-semibold uppercase tracking-wide sm:text-3xl">Explore nossas referências</h2>
             <p className="mt-5 text-sm leading-7 text-[hsl(0,0%,76%)]">
-              A TONART apresenta modelos por meio de renders digitais; eles não representam peças físicas já produzidas. Estamos revisando a origem e as permissões de cada imagem antes de liberar a vitrine.
+              As imagens do acervo são referências digitais e não representam necessariamente peças físicas já produzidas.
             </p>
             <p className="mt-3 text-sm leading-7 text-[hsl(0,0%,64%)]">
-              Referências com mídia ainda não autorizada permanecem preservadas no acervo interno. Não exibimos cards sem imagem nem renders de procedência não verificada como modelos prontos para publicação.
+              A seleção de modelos pode mudar conforme novas referências ficam disponíveis.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link to={PUBLIC_ROUTES.about} className="inline-flex min-h-11 items-center border border-[hsl(var(--gold-accent))] px-5 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]">Conheça o estúdio</Link>
@@ -170,24 +170,24 @@ export function ApprovedModelShowcase({
   return (
     <Page title="Modelos — TONART Studio" description="Renders digitais de modelos 3D com origem e exibição autorizadas para o catálogo TONART.">
       <section className="min-h-[75svh] bg-[hsl(0,0%,4%)] px-4 pb-20 text-[hsl(0,0%,94%)] sm:px-8">
-        <ArcadeHero badge="SELEÇÃO TONART" title="MODELOS" subtitle=">> RENDERS DIGITAIS COM PUBLICAÇÃO AUTORIZADA." compact />
+        <ArcadeHero badge="SELEÇÃO TONART" title="MODELOS" subtitle=">> PERSONAGENS E ESCULTURAS PARA EXPLORAR." compact />
         <div className="mx-auto max-w-6xl">
           <p className="mb-8 max-w-3xl text-sm leading-7 text-[hsl(0,0%,70%)]">
-            Referências de esculturas digitais. Cada render publicado possui registro de autorização; imagens de origem não verificada não aparecem nesta seleção.
+            Explore personagens e detalhes do acervo. As imagens são representações digitais de referência.
           </p>
           {gateway === null ? (
             <p role="alert" className="text-sm">O catálogo está temporariamente indisponível.</p>
           ) : models.isPending ? (
-            <p role="status" className="text-sm">Carregando referências autorizadas…</p>
+            <p role="status" className="text-sm">Carregando referências…</p>
           ) : models.isError ? (
-            <p role="alert" className="text-sm">Não foi possível verificar as referências autorizadas.</p>
+            <p role="alert" className="text-sm">Não foi possível carregar as referências agora.</p>
           ) : approvedCards.length === 0 ? (
-            <p role="status" className="text-sm">As referências desta seleção ainda não puderam ser verificadas. Nenhuma imagem sem autorização será exibida.</p>
+            <p role="status" className="text-sm">Nenhuma referência desta seleção está disponível no momento.</p>
           ) : (
             <ApprovedCardGrid cards={approvedCards} />
           )}
           {releases.length > PAGE_SIZE ? (
-            <nav aria-label="Páginas dos renders aprovados" className="mt-8 flex justify-between gap-4">
+            <nav aria-label="Páginas dos modelos" className="mt-8 flex justify-between gap-4">
               <button type="button" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} className="inline-flex min-h-11 items-center gap-2 border px-4 text-sm disabled:opacity-40"><ArrowLeft size={16} aria-hidden="true" /> Anterior</button>
               <span className="self-center text-sm">{page + 1} de {Math.ceil(releases.length / PAGE_SIZE)}</span>
               <button type="button" disabled={start + PAGE_SIZE >= releases.length} onClick={() => setPage((p) => p + 1)} className="inline-flex min-h-11 items-center gap-2 border px-4 text-sm disabled:opacity-40">Próxima <ArrowRight size={16} aria-hidden="true" /></button>

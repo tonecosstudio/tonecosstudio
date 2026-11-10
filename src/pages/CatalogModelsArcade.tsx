@@ -258,14 +258,14 @@ export default function CatalogModelsArcade() {
           <ArcadeHero
             badge="ACERVO TONART"
             title="MODELOS"
-            subtitle=">> BUSCA, CATEGORIAS E REFERÊNCIAS DO ACERVO."
+            subtitle="ENCONTRE PERSONAGENS E REFERÊNCIAS NO ACERVO."
             compact
           />
 
           <div className="relative z-10 mx-auto -mt-4 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
              {mediaUnderReview ? (
                <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(0,0%,7%)] px-4 py-3 text-sm text-[hsl(0,0%,72%)]">
-                 As fotografias do acervo estão em revisão para publicação. A busca permanece disponível; fichas restritas só serão exibidas após aprovação.
+                 Explore as referências disponíveis. Algumas opções podem não estar visíveis neste momento.
                </p>
              ) : null}
             <div className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] p-3 sm:p-4">
@@ -531,11 +531,9 @@ export default function CatalogModelsArcade() {
                 role="status"
                 className="rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-8"
               >
-                <h3 className="text-xl">Catálogo em integração</h3>
+                <h3 className="text-xl">Catálogo temporariamente indisponível</h3>
                 <p className="mt-2 max-w-xl text-sm text-[hsl(0,0%,56%)]">
-                  A origem oficial do catálogo ainda não foi configurada neste
-                  ambiente. Nenhum modelo ou preço será apresentado como
-                  disponível sem essa validação.
+                  Não foi possível acessar os modelos agora. Tente novamente mais tarde.
                 </p>
               </div>
             ) : invalidCatalogScope ? (
@@ -569,8 +567,7 @@ export default function CatalogModelsArcade() {
               >
                 <h3 className="text-lg">Não foi possível consultar o acervo.</h3>
                 <p className="mt-2 text-sm text-[hsl(0,0%,56%)]">
-                  Verifique a conexão e tente novamente. Não exibimos resultados
-                  antigos como se estivessem disponíveis.
+                  Verifique sua conexão e tente novamente em instantes.
                 </p>
                 <button
                   type="button"
@@ -586,10 +583,8 @@ export default function CatalogModelsArcade() {
                 className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm"
               >
                 {canGoNext
-                  ? "Os modelos desta página estão em revisão de imagem. Existem mais resultados nas próximas páginas."
-                  : isCatalogMediaUnderReview()
-                     ? "Nenhuma ficha aprovada para exibição pública foi encontrada nesta busca. Referências em revisão permanecem ocultas até a autorização."
-                     : "Nenhum modelo publicado corresponde aos filtros utilizados."}
+                  ? "Não há modelos disponíveis nesta página. Continue para ver mais resultados."
+                  : "Nenhum modelo disponível corresponde aos filtros utilizados. Tente outra busca."}
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-5 2xl:grid-cols-6 2xl:gap-5">
