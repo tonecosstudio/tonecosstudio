@@ -44,11 +44,11 @@ describe("public TONART Studio about page", () => {
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
     render(<AboutArcade />);
-    expect(screen.getByText(/Este site é um catálogo para consulta/)).toBeInTheDocument();
+    expect(screen.getByText(/As imagens exibidas neste catálogo são referências digitais/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "EXPLORE O ACERVO" })).toBeInTheDocument();
     expect(screen.queryByText("Explore nosso catálogo e solicite um orçamento personalizado.")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Este catálogo recebe pedidos ou pagamentos\?/ }));
-    expect(screen.getByText(/não há pedidos, cadastros, solicitações de orçamento ou pagamentos/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Posso comprar pelo site\?/ }));
+    expect(screen.getByText(/Não há compras nem pagamentos online nesta versão/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "FALAR COM O ESTÚDIO" })).toHaveAttribute("href", "/contato");
   });
   it("uses the canonical brand and avoids legacy OrdaX and unsupported fixed deadlines", () => {
@@ -56,13 +56,13 @@ describe("public TONART Studio about page", () => {
     expect(view.container.querySelector("[data-page-title]")).toHaveAttribute("data-page-title", "Sobre");
     expect(screen.getByText("TONART STUDIO")).toBeInTheDocument();
     expect(screen.getByText("EXPERIÊNCIA TONART")).toBeInTheDocument();
-    expect(screen.getByText(/Prazos de produção e entrega são informados/)).toBeInTheDocument();
+    expect(screen.getByText(/Prazos e possibilidades de produção dependem da avaliação individual/)).toBeInTheDocument();
     expect(view.container.textContent).not.toMatch(/ORDAX|30 dias|Envio a partir do dia 15|Intel FAQ/i);
   });
 
   it("points public actions to existing canonical catalog and contact routes", () => {
     render(<AboutArcade />);
-    expect(screen.getByRole("link", { name: "VER UNIVERSO" })).toHaveAttribute("href", "/universo");
+    expect(screen.getByRole("link", { name: "EXPLORAR MODELOS" })).toHaveAttribute("href", "/modelos");
     expect(screen.getByRole("link", { name: "FALAR COM O ESTÚDIO" })).toHaveAttribute("href", "/contato");
     expect(screen.queryByRole("link", { name: "FAZER ORÇAMENTO" })).not.toBeInTheDocument();
   });

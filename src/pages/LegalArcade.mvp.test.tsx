@@ -33,7 +33,7 @@ describe("legal content for read-only public catalog", () => {
   });
   it("does not advertise unavailable subscriptions or coins", () => {
     render(<TermsArcade />);
-    expect(screen.getByText(/não oferece cadastro, compras, pagamentos, assinaturas ou moedas virtuais/)).toBeInTheDocument();
+    expect(screen.getByText(/não permite concluir compras, pagamentos ou encomendas diretamente pelo site/)).toBeInTheDocument();
     expect(screen.queryByText(/Sistema de Coins/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Assinaturas mensais/)).not.toBeInTheDocument();
     expect(mock.useSystemSettings).toHaveBeenCalledWith({ enabled: false });

@@ -199,7 +199,7 @@ describe("canonical public navigation without Supabase catalog", () => {
   it("rejects malformed folder scopes without making HTTP calls", async () => {
     const calls = setupFetch();
     await renderRoute("/universo/games/resident-evil?folder=characters%2F..%2Fadmin");
-    expect(await screen.findByRole("alert")).toHaveTextContent("Pasta indisponível");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível encontrar esta pasta");
     expect(calls).toHaveLength(0);
   });
 
