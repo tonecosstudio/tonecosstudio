@@ -187,7 +187,7 @@ describe("Tonecos canonical model discovery UI", () => {
     });
     vi.stubGlobal("fetch", fetcher);
     await renderCatalog();
-    expect(await screen.findByText("Nenhum modelo publicado corresponde aos filtros utilizados.")).toBeInTheDocument();
+    expect(await screen.findByText("Nenhum modelo corresponde aos filtros utilizados.")).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
@@ -428,7 +428,7 @@ describe("Tonecos canonical model discovery UI", () => {
     vi.stubGlobal("fetch", fetcher);
     await renderCatalog();
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Catálogo em integração",
+      "Catálogo temporariamente indisponível",
     );
     expect(
       screen.getByRole("combobox", { name: "Filtrar por categoria" }),
