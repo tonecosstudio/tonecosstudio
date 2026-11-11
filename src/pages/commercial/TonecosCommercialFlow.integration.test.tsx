@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => {
     getUser: vi.fn(), signIn: vi.fn(), signUp: vi.fn(), signOut: vi.fn(),
     getProfile: vi.fn(), updateProfile: vi.fn(),
     quoteItems: vi.fn(), submit: vi.fn(), listMine: vi.fn(),
-    listAdmin: vi.fn(), answerAdmin: vi.fn(), hasAdmin: vi.fn(),
+    listAdmin: vi.fn(), answerAdmin: vi.fn(), changeStatus: vi.fn(), hasAdmin: vi.fn(),
   };
 });
 vi.mock("@/services/customer/tonecos-account-service", () => ({
@@ -39,6 +39,7 @@ vi.mock("@/services/customer/catalog-quote-service", () => ({
 vi.mock("@/services/admin/config/catalog-quote-admin-service", () => ({
   listAdminCatalogQuotes: mocks.listAdmin,
   answerCatalogQuoteRequest: mocks.answerAdmin,
+  changeCatalogQuoteStatus: mocks.changeStatus,
 }));
 
 const model = {
@@ -207,4 +208,16 @@ describe("TONART commercial screens: account → request → history → respons
     fireEvent.click(screen.getByRole("button", { name: "Responder com valor" }));
     await waitFor(() => expect(mocks.answerAdmin).toHaveBeenCalledWith(QUOTE, 249.9));
   });
+  it("updates the canonical quote workflow only through the authorized admin service", async () => {
+    mocks.listAdmin.mockResolvedValue([{
+      id: QUOTE, userId: USER, status: "pending", createdAt: "2026-11-05T00:00:00Z",
+      notes: null, quotedAmount: null, items: [{ slug: "naruto", quantity: 1 }],
+    }]);
+    mocks.changeStatus.mockResolvedValue(QUOTE);
+    renderApp("/admin/orcamentos");
+    fireEvent.click(await screen.findByRole("button", { name: "Marcar em análise" }));
+    await waitFor(() => expect(mocks.changeStatus).toHaveBeenCalledWith(QUOTE, "reviewing"));
+    expect(mocks.answerAdmin).not.toHaveBeenCalled();
+  });
+
 });

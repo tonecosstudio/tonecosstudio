@@ -254,6 +254,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_update_quote_status: {
+        Args: { p_quote_id: string; p_status: string }
+        Returns: string
+      }
       answer_catalog_quote_request: {
         Args: { p_amount: number; p_quote_id: string }
         Returns: string

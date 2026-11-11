@@ -93,7 +93,7 @@ export async function listAdminCatalogQuotes(limit = 50): Promise<AdminCatalogQu
       createdAt: row.created_at,
       notes: row.notes,
       items: row.items,
-      quotedAmount: row.status === "answered" && row.total_amount !== null && row.total_amount > 0
+      quotedAmount: ["answered", "archived"].includes(row.status) && row.total_amount !== null && row.total_amount > 0
         ? row.total_amount : null,
       whatsapp: row.customer_whatsapp, postalCode: row.postal_code,
       scale: row.desired_scale, finishing: row.finishing,
@@ -116,5 +116,22 @@ export async function answerCatalogQuoteRequest(quoteId: string, amount: number)
   });
   if (error) throw error;
   if (data !== quoteId) throw new Error("admin_catalog_quote_result_invalid");
+  return data;
+}
+
+/** Uses the canonical quote status RPC; no direct client-side table mutations. */
+export async function changeCatalogQuoteStatus(quoteId: string, status: "pending" | "reviewing" | "archived"): Promise<string> {
+  assertCommercialMode();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(quoteId) ||
+      !["pending", "reviewing", "archived"].includes(status)) {
+    throw new Error("admin_catalog_quote_status_invalid");
+  }
+  await requireTonecosAdminAccess();
+  const { data, error } = await tonecos.rpc("admin_update_quote_status", {
+    p_quote_id: quoteId,
+    p_status: status,
+  });
+  if (error) throw error;
+  if (data !== quoteId) throw new Error("admin_catalog_quote_status_result_invalid");
   return data;
 }

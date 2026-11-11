@@ -139,7 +139,7 @@ export async function listMyCatalogQuotes(
       deadline: row.deadline,
       notes: row.notes,
       items,
-      quotedAmount: row.status === "answered" && row.total_amount !== null && row.total_amount > 0
+      quotedAmount: ["answered", "archived"].includes(row.status) && row.total_amount !== null && row.total_amount > 0
         ? row.total_amount : null,
       whatsapp: row.customer_whatsapp,
       postalCode: row.postal_code,

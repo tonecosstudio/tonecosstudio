@@ -1,9 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { answerCatalogQuoteRequest, listAdminCatalogQuotes, type AdminCatalogQuote } from "@/services/admin/config/catalog-quote-admin-service";
+import { answerCatalogQuoteRequest, changeCatalogQuoteStatus, listAdminCatalogQuotes, type AdminCatalogQuote } from "@/services/admin/config/catalog-quote-admin-service";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const statusLabels: Record<string,string> = {
+  pending: "Novo", reviewing: "Em análise",
+  answered: "Respondido", archived: "Arquivado",
+};
 export default function TonecosAdminQuotesPage() {
   const [quotes, setQuotes] = useState<AdminCatalogQuote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +43,18 @@ export default function TonecosAdminQuotesPage() {
     } finally { setBusyId(null); }
   }
 
+  async function updateStatus(quoteId: string, status: "pending" | "reviewing" | "archived") {
+    if (busyId) return;
+    setBusyId(quoteId); setError(""); setNotice("");
+    try {
+      await changeCatalogQuoteStatus(quoteId, status);
+      setNotice("Situação do orçamento atualizada.");
+      setAttempt((current) => current + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível atualizar a situação.");
+    } finally { setBusyId(null); }
+  }
+
   return (
     <CommercialPage title="Atendimento de orçamentos" intro="Área restrita da TONART Studio. Verifique os modelos no catálogo antes de informar um valor. Nenhuma cobrança é iniciada automaticamente.">
       {notice && <p role="status" className="mb-5 max-w-3xl border border-white/20 p-4 text-sm">{notice}</p>}
@@ -58,7 +74,7 @@ export default function TonecosAdminQuotesPage() {
           <li key={quote.id} className={panelClass}>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-semibold">Solicitação #{quote.id.slice(0, 8)}</h2>
-              <span className="border border-white/20 px-3 py-1 text-xs">{quote.status}</span>
+              <span className="border border-white/20 px-3 py-1 text-xs">{statusLabels[quote.status] ?? "Em atualização"}</span>
             </div>
             <p className="mb-1 text-sm text-white/80">{quote.customerName || "Cliente"}</p>
             <p className="mb-3 text-xs text-white/65">
@@ -83,8 +99,24 @@ export default function TonecosAdminQuotesPage() {
               Escala: {quote.scale || "A definir"} · Acabamento: {quote.finishing || "A definir"}
             </p>
             {quote.notes && <p className="mt-3 whitespace-pre-wrap text-sm text-white/65">{quote.notes}</p>}
+            <div className="mt-4 flex flex-wrap gap-2" aria-label={"Andamento do orçamento " + quote.id.slice(0,8)}>
+              {quote.status === "pending" && (
+                <button type="button" className={secondaryClass} disabled={busyId !== null}
+                  onClick={() => { void updateStatus(quote.id, "reviewing"); }}>Marcar em análise</button>
+              )}
+              {quote.status === "reviewing" && (
+                <button type="button" className={secondaryClass} disabled={busyId !== null}
+                  onClick={() => { void updateStatus(quote.id, "pending"); }}>Voltar para novo</button>
+              )}
+              {quote.status !== "archived" && (
+                <button type="button" className={secondaryClass} disabled={busyId !== null}
+                  onClick={() => { void updateStatus(quote.id, "archived"); }}>Arquivar</button>
+              )}
+            </div>
             <div className="mt-5 border-t border-white/15 pt-4">
-              {quote.quotedAmount !== null ? (
+              {quote.status === "archived" && quote.quotedAmount === null ? (
+                <p className="text-sm text-white/60">Solicitação arquivada sem valor.</p>
+              ) : quote.quotedAmount !== null ? (
                 <p className="text-sm font-semibold">Valor informado: {brl.format(quote.quotedAmount)}</p>
               ) : (
                 <form onSubmit={(event) => { void reply(event, quote.id); }} className="flex flex-wrap items-end gap-3">
