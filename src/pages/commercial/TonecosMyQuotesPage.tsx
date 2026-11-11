@@ -84,6 +84,9 @@ export default function TonecosMyQuotesPage() {
                   </li>
                 ))}
               </ul>
+              <p className="mt-3 text-xs text-white/60">
+                Escala: {row.scale || "A definir"} · Acabamento: {row.finishing || "A definir"}
+              </p>
               {row.notes && <p className="mt-4 whitespace-pre-wrap text-sm text-white/60">{row.notes}</p>}
               <div className="mt-5 border-t border-white/15 pt-4 text-sm font-semibold">
                 {row.quotedAmount === null ? "Valor em análise" : brl.format(row.quotedAmount)}

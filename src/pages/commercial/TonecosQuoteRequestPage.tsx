@@ -14,6 +14,10 @@ export default function TonecosQuoteRequestPage() {
   const [user, setUser] = useState<Identity | null | undefined>(undefined);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [scale, setScale] = useState<"a definir" | "1/10" | "1/6" | "outro">("a definir");
+  const [finishing, setFinishing] = useState<"a definir" | "pintado" | "sem pintura">("a definir");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,7 +37,9 @@ export default function TonecosQuoteRequestPage() {
       const items = quoteItemsFromSelection(selectedModels).map((item) => ({
         ...item, quantity: quantities[item.slug] ?? 1,
       }));
-      const quoteId = await submitCatalogQuoteRequest(user.id, items, notes);
+      const quoteId = await submitCatalogQuoteRequest(user.id, items, notes, {
+        whatsapp, postalCode, scale, finishing,
+      });
       setSelectedModels([]);
       navigate(TONECOS_COMMERCIAL_ROUTES.history, { replace: true, state: { sent: quoteId } });
     } catch (err) {
@@ -82,6 +88,39 @@ export default function TonecosQuoteRequestPage() {
                 </li>
               ))}
             </ul>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block space-y-2 text-sm">
+                <span>WhatsApp para contato (opcional)</span>
+                <input className={fieldClass} type="tel" inputMode="tel" autoComplete="tel"
+                  maxLength={40} placeholder="(71) 99999-9999" value={whatsapp}
+                  onChange={(event) => setWhatsapp(event.target.value)} />
+              </label>
+              <label className="block space-y-2 text-sm">
+                <span>CEP (opcional)</span>
+                <input className={fieldClass} type="text" inputMode="numeric" autoComplete="postal-code"
+                  maxLength={9} placeholder="00000-000" value={postalCode}
+                  onChange={(event) => setPostalCode(event.target.value)} />
+              </label>
+              <label className="block space-y-2 text-sm">
+                <span>Escala desejada</span>
+                <select className={fieldClass} value={scale}
+                  onChange={(event) => setScale(event.target.value as typeof scale)}>
+                  <option value="a definir">A definir</option>
+                  <option value="1/10">1/10 — aprox. 21 cm</option>
+                  <option value="1/6">1/6 — aprox. 36 cm</option>
+                  <option value="outro">Outra (informar nas observações)</option>
+                </select>
+              </label>
+              <label className="block space-y-2 text-sm">
+                <span>Acabamento</span>
+                <select className={fieldClass} value={finishing}
+                  onChange={(event) => setFinishing(event.target.value as typeof finishing)}>
+                  <option value="a definir">A definir</option>
+                  <option value="pintado">Pintado</option>
+                  <option value="sem pintura">Sem pintura</option>
+                </select>
+              </label>
+            </div>
             <label className="block space-y-2 text-sm">
               <span>Observações (opcional)</span>
               <textarea className={fieldClass + " min-h-28"} value={notes} maxLength={2000}

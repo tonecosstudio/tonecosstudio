@@ -57,7 +57,7 @@ function renderApp(entry: string, seed = false) {
         <Routes>
           <Route path="/login" element={<TonecosAccountPage />} />
           <Route path="/perfil" element={<TonecosAccountPage />} />
-          <Route path="/orcamento" element={<TonecosQuoteRequestPage />} />
+          <Route path="/solicitar-orcamento" element={<TonecosQuoteRequestPage />} />
           <Route path="/meus-orcamentos" element={<TonecosMyQuotesPage />} />
           <Route path="/admin/orcamentos" element={<TonecosAdminQuotesPage />} />
           <Route path="/modelos" element={<div>Catálogo público</div>} />
@@ -86,17 +86,17 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 describe("TONART commercial screens: account → request → history → response", () => {
   it("keeps logged-out quote selection and sends visitors to sign in", async () => {
     mocks.getUser.mockResolvedValue(null);
-    renderApp("/orcamento", true);
+    renderApp("/solicitar-orcamento", true);
     expect(await screen.findByText("Naruto")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Entrar ou criar conta" }))
-      .toHaveAttribute("href", "/login?next=%2Forcamento");
+      .toHaveAttribute("href", "/login?next=%2Fsolicitar-orcamento");
     expect(screen.getByRole("button", { name: "Enviar solicitação" })).toBeDisabled();
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
   it("submits quantities and notes, then navigates to the customer's history", async () => {
     mocks.submit.mockResolvedValue(QUOTE);
-    renderApp("/orcamento", true);
+    renderApp("/solicitar-orcamento", true);
     expect(await screen.findByText("Naruto")).toBeInTheDocument();
     fireEvent.change(screen.getByRole("spinbutton", { name: "Quantidade de Naruto" }), {
       target: { value: "2" },
@@ -108,6 +108,7 @@ describe("TONART commercial screens: account → request → history → respons
     fireEvent.click(screen.getByRole("button", { name: "Enviar solicitação" }));
     await waitFor(() => expect(mocks.submit).toHaveBeenCalledWith(
       USER, [{ slug: "naruto", quantity: 2 }], "Escala 1/5",
+      { whatsapp: "", postalCode: "", scale: "a definir", finishing: "a definir" },
     ));
     expect(await screen.findByText("Solicitação enviada. Você poderá acompanhar a resposta aqui."))
       .toBeInTheDocument();

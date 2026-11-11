@@ -76,7 +76,13 @@ export default function TonecosAdminQuotesPage() {
                 </li>
               ))}
             </ul>
-            {quote.notes && <p className="mt-3 whitespace-pre-wrap text-sm text-white/65">{quote.notes}</p>}
+            <p className="mt-2 text-xs text-white/65">
+              WhatsApp: {quote.whatsapp || "Não informado"} · CEP: {quote.postalCode || "Não informado"}
+            </p>
+            <p className="mt-1 text-xs text-white/65">
+              Escala: {quote.scale || "A definir"} · Acabamento: {quote.finishing || "A definir"}
+            </p>
+            {quote.notes && <p className="mt-3 whitespace-pre-wrap text-sm text-white/65">{quote.notes}</p>
             <div className="mt-5 border-t border-white/15 pt-4">
               {quote.quotedAmount !== null ? (
                 <p className="text-sm font-semibold">Valor informado: {brl.format(quote.quotedAmount)}</p>

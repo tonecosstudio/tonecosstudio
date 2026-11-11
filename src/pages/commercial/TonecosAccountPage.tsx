@@ -93,7 +93,11 @@ export default function TonecosAccountPage() {
         const id = await signInTonecosAccount(email, password);
         setPassword("");
         setIdentity({ id, email });
-        navigate(next);
+        const admin = await hasTonecosAdminAccess().catch(() => false);
+        setIsAdmin(admin);
+        navigate(next === TONECOS_COMMERCIAL_ROUTES.account && admin &&
+          import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true"
+          ? TONECOS_COMMERCIAL_ROUTES.adminQuotes : next);
       }
     } catch (err) {
       setError(errorText(err));
