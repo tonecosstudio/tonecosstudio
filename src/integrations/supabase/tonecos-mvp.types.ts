@@ -100,105 +100,6 @@ export type Database = {
           },
         ]
       }
-      tonart_quote_admin_emails: {
-        Row: {
-          created_at: string
-          email: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-        }
-        Relationships: []
-      }
-      tonart_quote_proxy_auth: {
-        Row: {
-          secret_sha256: string
-          slot: string
-          updated_at: string
-        }
-        Insert: {
-          secret_sha256: string
-          slot: string
-          updated_at?: string
-        }
-        Update: {
-          secret_sha256?: string
-          slot?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      tonart_quote_rate_limits: {
-        Row: {
-          attempts: number
-          fingerprint: string
-          window_start: string
-        }
-        Insert: {
-          attempts?: number
-          fingerprint: string
-          window_start: string
-        }
-        Update: {
-          attempts?: number
-          fingerprint?: string
-          window_start?: string
-        }
-        Relationships: []
-      }
-      tonart_quote_requests: {
-        Row: {
-          admin_note: string
-          created_at: string
-          customer_email: string
-          customer_name: string
-          customer_whatsapp: string | null
-          desired_scale: string
-          finishing: string
-          id: string
-          items: Json
-          notes: string | null
-          postal_code: string | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          admin_note?: string
-          created_at?: string
-          customer_email: string
-          customer_name: string
-          customer_whatsapp?: string | null
-          desired_scale: string
-          finishing: string
-          id?: string
-          items: Json
-          notes?: string | null
-          postal_code?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          admin_note?: string
-          created_at?: string
-          customer_email?: string
-          customer_name?: string
-          customer_whatsapp?: string | null
-          desired_scale?: string
-          finishing?: string
-          id?: string
-          items?: Json
-          notes?: string | null
-          postal_code?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       tonecos_coin_entries: {
         Row: {
           created_at: string
@@ -275,10 +176,6 @@ export type Database = {
           p_whatsapp?: string
         }
         Returns: string
-      }
-      tonart_quote_check_limit: {
-        Args: { p_fingerprint: string }
-        Returns: boolean
       }
     }
     Enums: {
