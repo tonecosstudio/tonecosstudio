@@ -176,8 +176,10 @@ describe("TONART commercial screens: account → request → history → respons
     fireEvent.change(screen.getByLabelText("E-mail"), { target: { value: "cliente@example.com" } });
     fireEvent.change(screen.getByLabelText("Senha"), { target: { value: "StrongPass123!" } });
     fireEvent.click(screen.getByRole("button", { name: "Criar conta" }));
-    expect(await screen.findByText("Cadastro recebido. Confirme seu e-mail antes de entrar."))
+    expect(await screen.findByText("Solicitação processada. Se esta for uma nova conta, verifique o e-mail de confirmação, inclusive no spam. Se já tem cadastro, entre com sua senha ou use a recuperação de acesso."))
       .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Esqueci minha senha" })).toBeInTheDocument();
     expect(mocks.signUp).toHaveBeenCalledWith({
       email: "cliente@example.com", password: "StrongPass123!", fullName: "Cliente",
     });
