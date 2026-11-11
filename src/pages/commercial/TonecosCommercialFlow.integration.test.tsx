@@ -149,6 +149,24 @@ describe("TONART commercial screens: account → request → history → respons
     expect(await screen.findByText("Meus orçamentos")).toBeInTheDocument();
   });
 
+  it("toggles password visibility without changing the typed password or submitting the login", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    renderApp("/login");
+    await screen.findByRole("button", { name: "Entrar" });
+    const field = screen.getByLabelText("Senha") as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "SenhaSecreta123!" } });
+    expect(field.type).toBe("password");
+    fireEvent.click(screen.getByRole("button", { name: "Mostrar senha" }));
+    expect(field.type).toBe("text");
+    expect(field.value).toBe("SenhaSecreta123!");
+    expect(screen.getByRole("button", { name: "Ocultar senha" }))
+      .toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Ocultar senha" }));
+    expect(field.type).toBe("password");
+    expect(field.value).toBe("SenhaSecreta123!");
+    expect(mocks.signIn).not.toHaveBeenCalled();
+  });
+
   it("shows account confirmation instead of claiming that signup is already active", async () => {
     mocks.getUser.mockResolvedValue(null);
     mocks.signUp.mockResolvedValue({ userId: USER, emailConfirmationRequired: true });

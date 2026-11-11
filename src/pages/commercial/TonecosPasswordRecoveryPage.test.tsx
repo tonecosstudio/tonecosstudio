@@ -36,6 +36,23 @@ describe("Tonecos password recovery screen", () => {
     expect(screen.queryByRole("button", { name: "Salvar nova senha" })).not.toBeInTheDocument();
     expect(mocks.complete).not.toHaveBeenCalled();
   });
+  it("shows and hides the new password independently of confirmation", async () => {
+    mocks.user.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111", email: "cliente@example.com" });
+    show("/recuperar-senha?action=update");
+    const newPassword = await screen.findByLabelText("Nova senha") as HTMLInputElement;
+    const confirmPassword = screen.getByLabelText("Confirmar nova senha") as HTMLInputElement;
+    fireEvent.change(newPassword, { target: { value: "SenhaNova123!" } });
+    fireEvent.change(confirmPassword, { target: { value: "SenhaNova123!" } });
+    fireEvent.click(screen.getByRole("button", { name: "Mostrar nova senha" }));
+    expect(newPassword.type).toBe("text");
+    expect(confirmPassword.type).toBe("password");
+    fireEvent.click(screen.getByRole("button", { name: "Mostrar confirmação da senha" }));
+    expect(confirmPassword.type).toBe("text");
+    fireEvent.click(screen.getByRole("button", { name: "Ocultar nova senha" }));
+    expect(newPassword.type).toBe("password");
+    expect(newPassword.value).toBe("SenhaNova123!");
+    expect(mocks.complete).not.toHaveBeenCalled();
+  });
   it("requires matching strong passwords with verified session before submitting", async () => {
     mocks.user.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111", email: "cliente@example.com" });
     mocks.complete.mockResolvedValue(undefined);

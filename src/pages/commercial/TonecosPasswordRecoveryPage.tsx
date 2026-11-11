@@ -6,6 +6,7 @@ import {
   completeTonecosPasswordRecovery, getTonecosCurrentUser, requestTonecosPasswordReset,
 } from "@/services/customer/tonecos-account-service";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
+import PasswordField from "./PasswordField";
 
 export default function TonecosPasswordRecoveryPage() {
   const [params] = useSearchParams();
@@ -78,18 +79,11 @@ export default function TonecosPasswordRecoveryPage() {
                   maxLength={320} value={email} onChange={(event) => setEmail(event.target.value)} />
               </label>
             ) : <>
-              <label className="block space-y-2 text-sm">
-                <span>Nova senha</span>
-                <input className={fieldClass} type="password" required minLength={12}
-                  autoComplete="new-password" value={password}
-                  onChange={(event) => setPassword(event.target.value)} />
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>Confirmar nova senha</span>
-                <input className={fieldClass} type="password" required minLength={12}
-                  autoComplete="new-password" value={confirm}
-                  onChange={(event) => setConfirm(event.target.value)} />
-              </label>
+              <PasswordField label="Nova senha" value={password} onChange={setPassword}
+                required minLength={12} autoComplete="new-password" />
+              <PasswordField label="Confirmar nova senha" visibilityLabel="confirmação da senha"
+                value={confirm} onChange={setConfirm} required minLength={12}
+                autoComplete="new-password" />
               <p className="text-xs text-white/55">Use pelo menos 12 caracteres com maiúscula, minúscula, número e símbolo.</p>
             </>}
             <button type="submit" className={actionClass} disabled={sending}>

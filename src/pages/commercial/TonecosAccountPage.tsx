@@ -7,6 +7,7 @@ import {
   signInTonecosAccount, signOutTonecosAccount, updateMyTonecosProfile,
 } from "@/services/customer/tonecos-account-service";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
+import PasswordField from "./PasswordField";
 
 type Identity = { id: string; email: string | null };
 const safeNext = new Set<string>([
@@ -193,12 +194,9 @@ export default function TonecosAccountPage() {
                 <input className={fieldClass} type="email" required maxLength={320} autoComplete="email"
                   value={email} onChange={(e) => setEmail(e.target.value)} />
               </label>
-              <label className="block space-y-2 text-sm">
-                <span>Senha</span>
-                <input className={fieldClass} type="password" required minLength={mode === "signup" ? 12 : 1}
-                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                  value={password} onChange={(e) => setPassword(e.target.value)} />
-              </label>
+              <PasswordField key={mode} label="Senha" value={password} onChange={setPassword}
+                required minLength={mode === "signup" ? 12 : 1}
+                autoComplete={mode === "signup" ? "new-password" : "current-password"} />
               {mode === "login" && <div className="text-right">
                 <Link className="text-xs text-[hsl(var(--gold-accent))] underline underline-offset-4"
                   to={TONECOS_COMMERCIAL_ROUTES.recovery}>Esqueci minha senha</Link>
