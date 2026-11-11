@@ -18,11 +18,11 @@ export function PrivacyArcadeView({ settings }: { settings?: SystemSettings }) {
   const contactEmail = settings?.privacy_email || CONTACT.PRIVACY_EMAIL || CONTACT.CONTACT_EMAIL;
 
   const sections = publicMvp ? [
-    { num: "01", title: "Escopo do catálogo", icon: <Database className="w-4 h-4" />, content: "O catálogo público permite consultar modelos, categorias e imagens. O formulário de orçamento não exige cadastro e não conclui pedidos nem pagamentos." },
+    { num: "01", title: "Escopo do catálogo", icon: <Database className="w-4 h-4" />, content: "O catálogo público permite consultar modelos, categorias e imagens. Nesta versão de consulta não há envio de orçamentos, pedidos ou pagamentos pelo site." },
     { num: "02", title: "Dados técnicos", icon: <Eye className="w-4 h-4" />, content: "A navegação pode gerar registros técnicos de acesso, como endereço IP, horário e páginas solicitadas, necessários para operação e segurança da hospedagem." },
-    { num: "03", title: "Solicitações de orçamento", icon: <Users className="w-4 h-4" />, content: "Ao solicitar orçamento, coletamos nome, e-mail, referências selecionadas, escala, acabamento e observações; WhatsApp e CEP são opcionais. Os dados são guardados no Supabase com acesso restrito ao estúdio e usados para responder sua solicitação. A seleção sem envio não é armazenada no servidor." },
+    { num: "03", title: "Contato por e-mail", icon: <Users className="w-4 h-4" />, content: "Na versão de consulta, o contato abre o aplicativo de e-mail. O site não recebe orçamentos nem armazena a seleção de modelos no servidor." },
     { num: "04", title: "Cookies e proteção", icon: <Cookie className="w-4 h-4" />, content: "Recursos de segurança e funcionamento podem utilizar cookies técnicos. O catálogo não exige uma conta de cliente para navegar." },
-    { num: "05", title: "Provedores", icon: <Lock className="w-4 h-4" />, content: "O catálogo utiliza Vercel e Cloudflare. Os dados de solicitações de orçamento são armazenados no Supabase com acesso restrito. O contato por e-mail pode utilizar os provedores do remetente e do estúdio." },
+    { num: "05", title: "Provedores", icon: <Lock className="w-4 h-4" />, content: "O catálogo utiliza Vercel e Cloudflare. A comunicação por e-mail depende dos provedores de correio do remetente e do estúdio." },
     { num: "06", title: "Direitos sobre dados", icon: <UserCheck className="w-4 h-4" />, content: "Você pode solicitar informações e exercer os direitos aplicáveis pela LGPD por meio do contato de privacidade informado abaixo.", highlight: true },
     { num: "07", title: "Atualizações", icon: <RefreshCw className="w-4 h-4" />, content: "Esta política descreve os recursos atualmente disponíveis. Eventuais novos serviços terão suas condições de privacidade informadas antes do uso." },
   ] : commercialMvp ? [

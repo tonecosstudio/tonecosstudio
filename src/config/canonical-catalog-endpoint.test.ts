@@ -97,8 +97,6 @@ describe("Cloudflare Pages canonical public catalog", () => {
       source: "/(.*)",
       destination: "/index.html",
     });
-    expect(vercelConfig.rewrites).toContainEqual({ source: "/api/tonart-quotes", destination: "/api/tonart-quotes" });
-    expect(vercelConfig.rewrites).toContainEqual({ source: "/api/tonart-auth", destination: "/api/tonart-auth" });
     expect(vercelConfig.headers.flatMap((rule) => rule.headers)).toContainEqual({
       key: "X-Robots-Tag",
       value: "noindex, nofollow, noarchive",

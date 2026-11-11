@@ -11,14 +11,6 @@
       "destination": "/api/catalogo-proxy?path=:path*"
     },
     {
-      "source": "/api/tonart-quotes",
-      "destination": "/api/tonart-quotes"
-    },
-    {
-      "source": "/api/tonart-auth",
-      "destination": "/api/tonart-auth"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

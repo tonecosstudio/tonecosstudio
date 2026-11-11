@@ -164,8 +164,8 @@ describe("Tonecos canonical model discovery UI", () => {
     await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
     const saved = screen.getByRole("button", { name: "Abrir referências salvas com 0 modelos" });
     fireEvent.click(saved);
-    expect(screen.getByText(/envie uma solicitação de orçamento pelo site/)).toBeInTheDocument();
-    expect(screen.getByText(/Somente o envio do formulário registra uma solicitação/)).toBeInTheDocument();
+    expect(screen.getByText(/O catálogo público não recebe solicitações/)).toBeInTheDocument();
+    expect(screen.getByText(/não é enviada ao estúdio/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Abrir seleção para orçamento/ })).not.toBeInTheDocument();
   });
   it("loads filtered public models without blocking categories behind the retired flag", async () => {

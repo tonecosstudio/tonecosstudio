@@ -26,8 +26,8 @@ afterEach(() => vi.unstubAllEnvs());
 describe("legal content for read-only public catalog", () => {
   it("does not claim to collect CPF or payments in the public catalog", () => {
     render(<PrivacyArcade />);
-    expect(screen.getByText(/O formulário de orçamento não exige cadastro e não conclui pedidos nem pagamentos/)).toBeInTheDocument();
-    expect(screen.getByText(/Solicitações de orçamento/)).toBeInTheDocument();
+    expect(screen.getByText(/Nesta versão de consulta não há envio de orçamentos, pedidos ou pagamentos pelo site/)).toBeInTheDocument();
+    expect(screen.getByText(/Contato por e-mail/)).toBeInTheDocument();
     expect(screen.queryByText(/Cadastro \(nome, email, CPF/)).not.toBeInTheDocument();
     expect(mock.useSystemSettings).toHaveBeenCalledWith({ enabled: false });
   });
