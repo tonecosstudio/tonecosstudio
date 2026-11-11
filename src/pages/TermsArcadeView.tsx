@@ -14,6 +14,7 @@ import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
   const readOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
   const publicMvp = readOnly && isCatalogPublicMvpEnabled();
+  const commercialMvp = import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true";
 
   const sections = publicMvp ? [
     { num: "01", title: "Uso do catálogo", icon: <Shield className="w-4 h-4" />, content: "O site apresenta um acervo público de modelos, categorias e imagens para consulta e referência. A navegação não representa reserva, contratação ou pedido." },
@@ -23,6 +24,13 @@ export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
     { num: "05", title: "Marcas e personagens", icon: <Scale className="w-4 h-4" />, content: "Marcas, nomes e personagens de franquias podem pertencer a seus respectivos titulares. O uso como referência no catálogo não transfere direitos sobre essas obras." },
     { num: "06", title: "Uso responsável", icon: <Shield className="w-4 h-4" />, content: "Não são permitidos acesso não autorizado, exploração abusiva do serviço, envio de conteúdo malicioso ou violação de direitos de terceiros." },
     { num: "07", title: "Mudanças", icon: <FileText className="w-4 h-4" />, content: "Estes termos se aplicam aos recursos disponíveis no site. Eventuais serviços adicionais terão condições específicas antes de sua utilização." },
+  ] : commercialMvp ? [
+    { num: "01", title: "Catálogo público", icon: <Shield className="w-4 h-4" />, content: "A consulta aos modelos e referências é livre. As imagens e descrições não garantem disponibilidade, valor ou prazo de produção." },
+    { num: "02", title: "Conta", icon: <FileText className="w-4 h-4" />, content: "Enviar e acompanhar solicitações exige uma conta autenticada. O titular deve manter suas credenciais protegidas e fornecer dados de contato corretos." },
+    { num: "03", title: "Orçamento", icon: <FileText className="w-4 h-4" />, content: "A solicitação reúne modelos, quantidades e preferências. O estúdio analisa e pode registrar uma proposta de preço, sem gerar cobrança automática." },
+    { num: "04", title: "Sem checkout", icon: <AlertTriangle className="w-4 h-4" />, content: "A versão atual não conclui pedidos, reservas ou pagamentos no site. O orçamento respondido não representa contratação automática.", highlight: true },
+    { num: "05", title: "Direitos de terceiros", icon: <Scale className="w-4 h-4" />, content: "Marcas, personagens e obras de terceiros permanecem sob os direitos de seus titulares. O catálogo não transfere tais direitos." },
+    { num: "06", title: "Uso adequado", icon: <Shield className="w-4 h-4" />, content: "São vedados acesso não autorizado, fraude, abuso de sistemas e uso indevido de conteúdo ou dados." },
   ] : [
     {
       num: "01",
@@ -96,7 +104,7 @@ export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
       <ArcadeHero
         badge="TONART STUDIO"
         title="TERMOS DE USO"
-        subtitle={publicMvp ? "Informações sobre o uso do catálogo" : "Última atualização: 03/02/2026"}
+        subtitle={publicMvp ? "Informações sobre o uso do catálogo" : commercialMvp ? "Condições para contas e orçamentos" : "Última atualização: 03/02/2026"}
         compact
       />
 

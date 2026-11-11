@@ -14,6 +14,7 @@ import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 export function PrivacyArcadeView({ settings }: { settings?: SystemSettings }) {
   const readOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
   const publicMvp = readOnly && isCatalogPublicMvpEnabled();
+  const commercialMvp = import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true";
   const contactEmail = settings?.privacy_email || CONTACT.PRIVACY_EMAIL || CONTACT.CONTACT_EMAIL;
 
   const sections = publicMvp ? [
@@ -24,6 +25,13 @@ export function PrivacyArcadeView({ settings }: { settings?: SystemSettings }) {
     { num: "05", title: "Provedores", icon: <Lock className="w-4 h-4" />, content: "O catálogo utiliza Vercel e Cloudflare. Os dados de solicitações de orçamento são armazenados no Supabase com acesso restrito. O contato por e-mail pode utilizar os provedores do remetente e do estúdio." },
     { num: "06", title: "Direitos sobre dados", icon: <UserCheck className="w-4 h-4" />, content: "Você pode solicitar informações e exercer os direitos aplicáveis pela LGPD por meio do contato de privacidade informado abaixo.", highlight: true },
     { num: "07", title: "Atualizações", icon: <RefreshCw className="w-4 h-4" />, content: "Esta política descreve os recursos atualmente disponíveis. Eventuais novos serviços terão suas condições de privacidade informadas antes do uso." },
+  ] : commercialMvp ? [
+    { num: "01", title: "Conta e catálogo", icon: <Database className="w-4 h-4" />, content: "Você pode explorar os modelos sem login. Para enviar ou acompanhar um orçamento, é necessária uma conta autenticada por e-mail e senha." },
+    { num: "02", title: "Dados de contato", icon: <Users className="w-4 h-4" />, content: "Na conta, tratamos nome, e-mail e telefone informado. Ao solicitar orçamento, WhatsApp, CEP, escala, acabamento e observações podem ser informados para análise e resposta." },
+    { num: "03", title: "Orçamentos", icon: <UserCheck className="w-4 h-4" />, content: "Cada orçamento fica associado à conta autenticada no Supabase. Clientes acessam somente seus registros; o estúdio acessa e responde às solicitações com permissão administrativa própria." },
+    { num: "04", title: "Finalidade", icon: <Eye className="w-4 h-4" />, content: "As informações são usadas para identificação, análise da solicitação, contato e acompanhamento. A solicitação não representa compra, reserva ou pagamento." },
+    { num: "05", title: "Infraestrutura e cookies", icon: <Cookie className="w-4 h-4" />, content: "O catálogo é hospedado na Vercel e usa serviços Cloudflare. O Supabase mantém as contas e orçamentos. Cookies ou armazenamento local podem manter a sessão; registros técnicos auxiliam na segurança." },
+    { num: "06", title: "Direitos do titular", icon: <Lock className="w-4 h-4" />, content: "Para acessar, corrigir ou solicitar informações sobre os dados pessoais, utilize o contato de privacidade informado abaixo.", highlight: true },
   ] : [
     { num: "01", title: "Dados Coletados", icon: <Database className="w-4 h-4" />, content: "Cadastro (nome, email, CPF, telefone) • Endereço • Pagamento (criptografado) • Uso (preferências, histórico, cookies)" },
     { num: "02", title: "Finalidade", icon: <Eye className="w-4 h-4" />, content: "Processar pedidos • Comunicar status • Personalizar experiência • Processar pagamentos • Melhorar serviços • Cumprir obrigações legais" },
