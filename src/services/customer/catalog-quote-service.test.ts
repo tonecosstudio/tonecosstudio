@@ -41,7 +41,7 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     ]);
   });
 
-  it("writes only slug/quantity/notes through authenticated canonical RPC", async () => {
+  it("writes slug, quantity, notes and validated preferences through the canonical RPC", async () => {
     mocks.rpc.mockResolvedValue({ data: QUOTE, error: null });
     await expect(submitCatalogQuoteRequest(USER, [
       { slug: "nier-2b", quantity: 2 },
@@ -54,7 +54,43 @@ describe("authenticated Tonecos catalog quote boundary", () => {
         { slug: "naruto", quantity: 1 },
       ],
       p_notes: "Escala 1/5",
+      p_whatsapp: undefined,
+      p_postal_code: undefined,
+      p_scale: "a definir",
+      p_finishing: "a definir",
     });
+  });
+
+  it("persists optional WhatsApp, CEP, scale and finishing in the same quote authority", async () => {
+    mocks.rpc.mockResolvedValue({ data: QUOTE, error: null });
+    await expect(submitCatalogQuoteRequest(
+      USER, [{ slug: "naruto", quantity: 1 }], "Peça pintada",
+      { whatsapp: "(71) 99999-9999", postalCode: "40000-000", scale: "1/6", finishing: "pintado" },
+    )).resolves.toBe(QUOTE);
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("submit_catalog_quote_request", {
+      p_models: [{ slug: "naruto", quantity: 1 }],
+      p_notes: "Peça pintada",
+      p_whatsapp: "71999999999",
+      p_postal_code: "40000000",
+      p_scale: "1/6",
+      p_finishing: "pintado",
+    });
+  });
+
+  it("rejects invalid quote contact and finishing before network or login I/O", async () => {
+    for (const preferences of [
+      { whatsapp: "not-a-phone" },
+      { whatsapp: "123" },
+      { postalCode: "123" },
+      { scale: "unauthorized" as "1/10" },
+      { finishing: "unrecognized" as "pintado" },
+    ]) {
+      await expect(submitCatalogQuoteRequest(
+        USER, [{ slug: "naruto", quantity: 1 }], null, preferences,
+      )).rejects.toThrow("catalog_quote_contact_invalid");
+    }
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.assertCurrentUserId).not.toHaveBeenCalled();
   });
 
   it("never submits in read-only previews or without explicit commercial release", async () => {
