@@ -18,8 +18,12 @@ const About = lazy(() => import("@/pages/AboutArcade"));
 const Privacy = lazy(() => import("@/pages/PrivacyArcadeView").then(m => ({ default: m.PrivacyArcadeView })));
 const Terms = lazy(() => import("@/pages/TermsArcadeView").then(m => ({ default: m.TermsArcadeView })));
 const HistoricalCharacter = lazy(() => import("@/pages/CatalogCharacterArcade"));
-const QuoteRequest = lazy(() => import("@/pages/PublicQuoteRequest"));
-const QuotePortal = lazy(() => import("@/pages/TonartQuotePortal"));
+// The predecessor intake is loaded ONLY in legacy public catalog builds.
+// Commercial builds use the existing authenticated Request and AdminQuotes routes.
+const LegacyQuoteRequest = import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true"
+  ? null : lazy(() => import("@/pages/PublicQuoteRequest"));
+const LegacyQuotePortal = import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true"
+  ? null : lazy(() => import("@/pages/TonartQuotePortal"));
 
 const queryClient = new QueryClient();
 
@@ -90,8 +94,8 @@ export function CatalogMvpShell({
                   {import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true"
                     ? <Route path={PUBLIC_ROUTES.quotePortal} element={<Navigate to={TONECOS_COMMERCIAL_ROUTES.adminQuotes} replace />} />
                     : <>
-                        <Route path={PUBLIC_ROUTES.quoteRequest} element={<QuoteRequest />} />
-                        <Route path={PUBLIC_ROUTES.quotePortal} element={<QuotePortal />} />
+                        <Route path={PUBLIC_ROUTES.quoteRequest} element={LegacyQuoteRequest ? <LegacyQuoteRequest /> : <NotFound />} />
+                        <Route path={PUBLIC_ROUTES.quotePortal} element={LegacyQuotePortal ? <LegacyQuotePortal /> : <NotFound />} />
                       </>}
                   <Route path={PUBLIC_ROUTES.privacy} element={<Privacy />} />
                   <Route path={PUBLIC_ROUTES.terms} element={<Terms />} />
