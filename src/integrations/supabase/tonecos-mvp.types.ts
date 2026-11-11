@@ -1,4 +1,3 @@
-// Generated from Tonecos commercial Supabase after deprecating guessed-owner bootstrap.
 export type Json =
   | string
   | number
@@ -45,14 +44,14 @@ export type Database = {
       quotes: {
         Row: {
           catalog_requested_at: string
+          created_at: string
           customer_whatsapp: string | null
-          postal_code: string | null
+          deadline: string | null
           desired_scale: string
           finishing: string
-          created_at: string
-          deadline: string | null
           id: string
           notes: string | null
+          postal_code: string | null
           requested_catalog_models: Json
           status: string
           total_amount: number | null
@@ -61,14 +60,14 @@ export type Database = {
         }
         Insert: {
           catalog_requested_at?: string
+          created_at?: string
           customer_whatsapp?: string | null
-          postal_code?: string | null
+          deadline?: string | null
           desired_scale?: string
           finishing?: string
-          created_at?: string
-          deadline?: string | null
           id?: string
           notes?: string | null
+          postal_code?: string | null
           requested_catalog_models: Json
           status?: string
           total_amount?: number | null
@@ -77,14 +76,14 @@ export type Database = {
         }
         Update: {
           catalog_requested_at?: string
+          created_at?: string
           customer_whatsapp?: string | null
-          postal_code?: string | null
+          deadline?: string | null
           desired_scale?: string
           finishing?: string
-          created_at?: string
-          deadline?: string | null
           id?: string
           notes?: string | null
+          postal_code?: string | null
           requested_catalog_models?: Json
           status?: string
           total_amount?: number | null
@@ -100,6 +99,105 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tonart_quote_admin_emails: {
+        Row: {
+          created_at: string
+          email: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+        }
+        Relationships: []
+      }
+      tonart_quote_proxy_auth: {
+        Row: {
+          secret_sha256: string
+          slot: string
+          updated_at: string
+        }
+        Insert: {
+          secret_sha256: string
+          slot: string
+          updated_at?: string
+        }
+        Update: {
+          secret_sha256?: string
+          slot?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tonart_quote_rate_limits: {
+        Row: {
+          attempts: number
+          fingerprint: string
+          window_start: string
+        }
+        Insert: {
+          attempts?: number
+          fingerprint: string
+          window_start: string
+        }
+        Update: {
+          attempts?: number
+          fingerprint?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      tonart_quote_requests: {
+        Row: {
+          admin_note: string
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_whatsapp: string | null
+          desired_scale: string
+          finishing: string
+          id: string
+          items: Json
+          notes: string | null
+          postal_code: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          customer_whatsapp?: string | null
+          desired_scale: string
+          finishing: string
+          id?: string
+          items: Json
+          notes?: string | null
+          postal_code?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          customer_whatsapp?: string | null
+          desired_scale?: string
+          finishing?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          postal_code?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       tonecos_coin_entries: {
         Row: {
@@ -165,10 +263,18 @@ export type Database = {
       is_tonecos_admin: { Args: never; Returns: boolean }
       submit_catalog_quote_request: {
         Args: {
-          p_models: Json; p_notes?: string; p_whatsapp?: string;
-          p_postal_code?: string; p_scale?: string; p_finishing?: string;
+          p_finishing?: string
+          p_models: Json
+          p_notes?: string
+          p_postal_code?: string
+          p_scale?: string
+          p_whatsapp?: string
         }
         Returns: string
+      }
+      tonart_quote_check_limit: {
+        Args: { p_fingerprint: string }
+        Returns: boolean
       }
     }
     Enums: {
