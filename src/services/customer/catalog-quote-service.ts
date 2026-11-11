@@ -9,6 +9,11 @@ import { MAX_CANONICAL_SELECTION } from "@/services/catalog/public-catalog-selec
 
 /** One commercial quote authority: Supabase quotes. Catalog model slugs come from D1. */
 export type CatalogQuoteItem = { slug: string; quantity: number };
+export type CatalogQuotePreferences = {
+  whatsapp?: string; postalCode?: string;
+  scale?: "a definir" | "1/10" | "1/6" | "outro";
+  finishing?: "a definir" | "pintado" | "sem pintura";
+};
 export type CustomerCatalogQuote = {
   id: string;
   status: string;
@@ -18,6 +23,8 @@ export type CustomerCatalogQuote = {
   items: CatalogQuoteItem[];
   /** No price is supplied or approved by the customer. */
   quotedAmount: number | null;
+  whatsapp: string | null; postalCode: string | null;
+  scale: string; finishing: string;
 };
 
 const requireCommercialQuoteMode = assertTonecosQuotesEnabled;
@@ -48,6 +55,7 @@ export async function submitCatalogQuoteRequest(
   userId: string,
   items: readonly CatalogQuoteItem[],
   notes: string | null = null,
+  preferences: CatalogQuotePreferences = {},
 ): Promise<string> {
   requireCommercialQuoteMode();
   const safeItems = validateItems(items);
@@ -58,11 +66,25 @@ export async function submitCatalogQuoteRequest(
   if (safeNotes && safeNotes.length > 2000) {
     throw new Error("catalog_quote_notes_invalid");
   }
+  const whatsapp = (preferences.whatsapp ?? "").trim().replace(/[ ()+.-]/g, "");
+  const postalCode = (preferences.postalCode ?? "").trim().replace(/\D/g, "");
+  const scale = preferences.scale ?? "a definir";
+  const finishing = preferences.finishing ?? "a definir";
+  if ((whatsapp && !/^[0-9]{10,13}$/.test(whatsapp)) ||
+      (postalCode && !/^[0-9]{8}$/.test(postalCode)) ||
+      !["a definir","1/10","1/6","outro"].includes(scale) ||
+      !["a definir","pintado","sem pintura"].includes(finishing)) {
+    throw new Error("catalog_quote_contact_invalid");
+  }
   await assertCurrentUserId(userId);
   const client = tonecos;
   const { data, error } = await client.rpc("submit_catalog_quote_request", {
     p_models: safeItems,
     p_notes: safeNotes ?? undefined,
+    p_whatsapp: whatsapp || undefined,
+    p_postal_code: postalCode || undefined,
+    p_scale: scale,
+    p_finishing: finishing,
   });
   if (error) throw error;
   if (!data || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data)) {
@@ -80,6 +102,8 @@ type QuoteDbRow = {
   total_amount: number | null;
   requested_catalog_models: unknown;
   catalog_requested_at: string | null;
+  customer_whatsapp: string | null; postal_code: string | null;
+  desired_scale: string; finishing: string;
 };
 
 /** Own records only; the quotes RLS policy remains the database's authority. */
@@ -94,7 +118,7 @@ export async function listMyCatalogQuotes(
   await assertCurrentUserId(userId);
   const { data, error } = await tonecos
     .from("quotes")
-    .select("id,status,created_at,deadline,notes,total_amount,requested_catalog_models,catalog_requested_at")
+    .select("id,status,created_at,deadline,notes,total_amount,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -117,6 +141,10 @@ export async function listMyCatalogQuotes(
       items,
       quotedAmount: row.status === "answered" && row.total_amount !== null && row.total_amount > 0
         ? row.total_amount : null,
+      whatsapp: row.customer_whatsapp,
+      postalCode: row.postal_code,
+      scale: row.desired_scale,
+      finishing: row.finishing,
     };
   });
 }

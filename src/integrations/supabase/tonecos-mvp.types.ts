@@ -45,6 +45,10 @@ export type Database = {
       quotes: {
         Row: {
           catalog_requested_at: string
+          customer_whatsapp: string | null
+          postal_code: string | null
+          desired_scale: string
+          finishing: string
           created_at: string
           deadline: string | null
           id: string
@@ -57,6 +61,10 @@ export type Database = {
         }
         Insert: {
           catalog_requested_at?: string
+          customer_whatsapp?: string | null
+          postal_code?: string | null
+          desired_scale?: string
+          finishing?: string
           created_at?: string
           deadline?: string | null
           id?: string
@@ -69,6 +77,10 @@ export type Database = {
         }
         Update: {
           catalog_requested_at?: string
+          customer_whatsapp?: string | null
+          postal_code?: string | null
+          desired_scale?: string
+          finishing?: string
           created_at?: string
           deadline?: string | null
           id?: string
@@ -152,7 +164,10 @@ export type Database = {
       get_my_tonecos_coin_balance: { Args: never; Returns: Json }
       is_tonecos_admin: { Args: never; Returns: boolean }
       submit_catalog_quote_request: {
-        Args: { p_models: Json; p_notes?: string }
+        Args: {
+          p_models: Json; p_notes?: string; p_whatsapp?: string;
+          p_postal_code?: string; p_scale?: string; p_finishing?: string;
+        }
         Returns: string
       }
     }

@@ -19,6 +19,8 @@ export type AdminCatalogQuote = {
   items: CatalogQuoteItem[];
   /** Pending records are unpriced; zero is never displayed as an offer. */
   quotedAmount: number | null;
+  whatsapp: string | null; postalCode: string | null;
+  scale: string; finishing: string;
 };
 
 const assertCommercialMode = assertTonecosQuotesEnabled;
@@ -52,6 +54,8 @@ type QuoteRow = {
   notes: string | null;
   total_amount: number | null;
   requested_catalog_models: unknown;
+  customer_whatsapp: string | null; postal_code: string | null;
+  desired_scale: string; finishing: string;
 };
 
 /** Admin-only bounded intake queue, distinct from the historical quotes list. */
@@ -63,7 +67,7 @@ export async function listAdminCatalogQuotes(limit = 50): Promise<AdminCatalogQu
   await requireTonecosAdminAccess();
   const { data, error } = await tonecos
     .from("quotes")
-    .select("id,user_id,status,created_at,notes,total_amount,requested_catalog_models,catalog_requested_at")
+    .select("id,user_id,status,created_at,notes,total_amount,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing")
     .not("catalog_requested_at", "is", null)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -91,6 +95,8 @@ export async function listAdminCatalogQuotes(limit = 50): Promise<AdminCatalogQu
       items: row.items,
       quotedAmount: row.status === "answered" && row.total_amount !== null && row.total_amount > 0
         ? row.total_amount : null,
+      whatsapp: row.customer_whatsapp, postalCode: row.postal_code,
+      scale: row.desired_scale, finishing: row.finishing,
     };
   });
 }
