@@ -40,7 +40,20 @@ async function authenticate(request: Request) {
   if (error || !data.user?.email_confirmed_at || !data.user.email) return null;
   const email = data.user.email.toLowerCase().trim();
   const permitted = await db.from("tonart_quote_admin_emails").select("email").eq("email", email).maybeSingle();
-  return permitted.error || !permitted.data ? null : data.user.id;
+  if (permitted.error) return null; // Role authority unavailable: fail closed.
+  return { userId: data.user.id, email, role: permitted.data ? "admin" as const : "customer" as const };
+}
+async function rateLimitLogin(request: Request, origin: string) {
+  if (!allowed(origin)) return json({ error: "Origem inválida." }, 403, origin);
+  const address = (request.headers.get("x-tonart-client-ip") || "").trim();
+  if (!/^[0-9a-fA-F:.]{3,45}$/.test(address)) return json({ error: "Origem inválida." }, 503, origin);
+  let input: Record<string, unknown>;
+  try { input = await request.json(); } catch { return json({ error: "Dados inválidos." }, 400, origin); }
+  const email = string(input?.email, 254).toLowerCase();
+  if (!validEmail(email)) return json({ error: "E-mail inválido." }, 400, origin);
+  if (!await rateAllowed("login-ip:" + address) || !await rateAllowed("login-email:" + email))
+    return json({ error: "Limite de acessos atingido. Tente mais tarde." }, 429, origin);
+  return json({ allowed: true }, 200, origin);
 }
 async function submit(request: Request, origin: string) {
   if (!allowed(origin)) return json({ error: "Origem inválida." }, 403, origin);
@@ -97,10 +110,17 @@ Deno.serve(async (request) => {
     } });
   }
   if (!await acceptedServer(request)) return json({ error: "Acesso não autorizado." }, 403, origin);
-  if (request.method === "POST") return submit(request, origin);
+  if (request.method === "POST") {
+    const input = await request.clone().json().catch(() => null);
+    if (input?.action === "auth_rate_check") return rateLimitLogin(request, origin);
+    return submit(request, origin);
+  }
   if (request.method !== "GET" && request.method !== "PATCH")
     return json({ error: "Método não permitido." }, 405, origin);
-  if (!await authenticate(request)) return json({ error: "Acesso restrito." }, 401, origin);
+  const identity = await authenticate(request);
+  if (!identity) return json({ error: "Acesso restrito." }, 401, origin);
+  if (request.method === "GET" && new URL(request.url).searchParams.get("scope") === "identity")
+    return json({ authenticated: true, role: identity.role, email: identity.email }, 200, origin);
   if (request.method === "GET") {
     const url = new URL(request.url);
     const page = Number(url.searchParams.get("page") || "0");
@@ -108,14 +128,18 @@ Deno.serve(async (request) => {
     const status = url.searchParams.get("status") || "";
     if (status && !["novo","em_analise","respondido","arquivado"].includes(status))
       return json({ error: "Filtro inválido." }, 400, origin);
+    const publicColumns = "id,created_at,updated_at,customer_name,customer_email,customer_whatsapp,postal_code,items,desired_scale,finishing,notes,status";
+    const adminColumns = publicColumns + ",admin_note";
     let query = db.from("tonart_quote_requests")
-      .select("id,created_at,updated_at,customer_name,customer_email,customer_whatsapp,postal_code,items,desired_scale,finishing,notes,status,admin_note", { count: "exact" })
+      .select(identity.role === "admin" ? adminColumns : publicColumns, { count: "exact" })
       .order("created_at", { ascending: false }).range(page * 30, (page + 1) * 30 - 1);
+    if (identity.role === "customer") query = query.eq("customer_email", identity.email);
     if (status) query = query.eq("status", status);
     const { data, error, count } = await query;
     return error ? json({ error: "Não foi possível consultar as solicitações." }, 503, origin)
       : json({ items: data, total: count ?? 0 }, 200, origin);
   }
+  if (identity.role !== "admin") return json({ error: "Apenas o estúdio pode alterar solicitações." }, 403, origin);
   let data: Record<string, unknown>;
   try { data = await request.json(); } catch { return json({ error: "Dados inválidos." }, 400, origin); }
   const id = typeof data?.id === "string" ? data.id : "";
