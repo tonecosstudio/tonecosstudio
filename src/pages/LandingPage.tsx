@@ -1,4 +1,6 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { BRAND_NAME, BRAND_SHORT_NAME } from "@/config/brand";
+import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
   ArrowRight,
   Crosshair,
@@ -6,30 +8,23 @@ import {
   Zap,
   Eye,
   Trophy,
-  Gamepad2,
-  Star,
+  Mail,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeCard,
   ArcadeSectionTitle,
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
-import {
-  FloatingParticles,
-  GlitchText,
-} from "@/components/arcade/ArcadeEffects";
-import { useAuth } from "@/lib/auth";
-import { useLandingCatalogModels } from "@/hooks/catalog/useLandingCatalogModels";
-import { useLandingCatalogSummary } from "@/hooks/catalog/useLandingCatalogSummary";
-import { useActiveCollectionPreviews } from "@/hooks/collections/usePublicCollections";
-import {
-  PUBLIC_COLLECTIONS_ENABLED,
-  PUBLIC_ROUTES,
-  catalogCharacterPath,
-  collectionDetailsPath,
-} from "@/config/routes";
+import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
+import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
+import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
+import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
+import { approvedPublicRenders } from "@/services/catalog/approved-public-renders";
+import { ApprovedHomeHighlights } from "./catalog/ApprovedModelShowcase";
 
 // ─── TYPEWRITER ──────────────────────────────────────────────────────
 
@@ -97,13 +92,13 @@ function StatCounter({
         <Icon className="h-6 w-6 text-[hsl(var(--gold-accent))]" />
       </div>
       <p
-        className="text-2xl sm:text-3xl tracking-[0.08em] text-[hsl(0,0%,95%)] font-black"
+        className="text-[clamp(1.125rem,5vw,1.5rem)] sm:text-2xl md:text-3xl tracking-[0.04em] sm:tracking-[0.08em] leading-tight text-[hsl(0,0%,95%)] font-black"
         style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
       >
         {value}
       </p>
       <p
-        className="text-[7px] text-[hsl(0,0%,40%)] mt-1 uppercase tracking-[0.25em]"
+        className="text-[8px] min-[360px]:text-[9px] sm:text-[10px] text-[hsl(0,0%,40%)] mt-1 uppercase tracking-[0.08em] sm:tracking-[0.12em]"
         style={{ fontFamily: "'Press Start 2P', monospace" }}
       >
         {label}
@@ -112,81 +107,27 @@ function StatCounter({
   );
 }
 
-// ─── FEATURED COLLECTION CARD ────────────────────────────────────────
-
-function FeaturedCollectionCard({
-  name,
-  description,
-  totalCharacters,
-  coverUrl,
-  slug,
-}: {
-  name: string;
-  description: string | null;
-  totalCharacters: number;
-  coverUrl: string | null;
-  slug: string;
-}) {
-  const navigate = useNavigate();
-
-  return (
-    <ArcadeCard className="cursor-pointer" hover>
-      <div
-        onClick={() => navigate(collectionDetailsPath(slug))}
-        className="relative overflow-hidden"
-      >
-        {/* Image */}
-        <div className="h-40 bg-[hsl(0,0%,8%)] overflow-hidden">
-          {coverUrl ? (
-            <img
-              src={coverUrl}
-              alt={name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80"
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Gamepad2 className="w-12 h-12 text-[hsl(0,0%,15%)]" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0,0%,5%)] via-transparent to-transparent" />
-        </div>
-
-        {/* Info */}
-        <div className="p-4">
-          <div className="flex items-center justify-between gap-3 mb-1.5">
-            <h3
-              className="text-lg tracking-[0.08em] text-[hsl(0,0%,95%)] font-black line-clamp-1"
-              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-            >
-              {name}
-            </h3>
-            <span className="font-mono text-[9px] text-[hsl(var(--gold-accent))] px-2 py-0.5 border border-[hsl(var(--gold-accent)/0.3)]">
-              {totalCharacters} PCS
-            </span>
-          </div>
-          {description && (
-            <p className="text-[hsl(0,0%,40%)] font-mono text-[9px] line-clamp-2 tracking-wider">
-              {description}
-            </p>
-          )}
-        </div>
-
-        {/* Power bar on hover */}
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[hsl(0,0%,10%)]">
-          <div className="h-full w-0 group-hover:w-full bg-[hsl(var(--gold-accent))] transition-all duration-700" />
-        </div>
-      </div>
-    </ArcadeCard>
-  );
+// Preserve the commercial copy outside the public read-only catalog.
+export function landingCopyForMode(publicReadOnly: boolean) {
+  return publicReadOnly
+    ? {
+        description: "Explore personagens, esculturas e referências digitais para inspirar sua próxima peça colecionável.",
+        ctaTitle: "CONHEÇA O ACERVO",
+        ctaDescription: "Explore personagens e referências do acervo. Para conversar sobre uma ideia, fale diretamente com o estúdio.",
+      }
+    : {
+        description: "Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão.",
+        ctaTitle: "READY PLAYER?",
+        ctaDescription: "Entre para o esquadrão de colecionadores. Peças exclusivas, produção artesanal e acompanhamento total.",
+      };
 }
+
 // ─── MAIN LANDING PAGE ───────────────────────────────────────────────
 
 export default function LandingPage() {
-  const navigate = useNavigate();
+  const publicReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true" && isCatalogPublicMvpEnabled();
+  const landingCopy = landingCopyForMode(publicReadOnly);
   const [scrollY, setScrollY] = useState(0);
-  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -194,54 +135,59 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const collectionsQuery = useActiveCollectionPreviews(3);
-  const modelsQuery = useLandingCatalogModels(6);
-  const summaryQuery = useLandingCatalogSummary();
+  // The publication-review build has no approved photographs. Avoid a
+  // pointless Worker/D1 recent query on every Home visit while preserving
+  // direct catalog browsing and the eventual release after approval.
+  const catalogMediaOnHold = isCatalogMediaUnderReview();
+  const hasApprovedRenders = catalogMediaOnHold && approvedPublicRenders.length > 0;
 
-  const collections = collectionsQuery.data || [];
-  const models = modelsQuery.data || [];
-  const characterCount = summaryQuery.data?.characterCount ?? 0;
-  const modelCount = summaryQuery.data?.modelCount ?? 0;
-  const isCatalogLoading =
-    collectionsQuery.isPending ||
-    modelsQuery.isPending ||
-    summaryQuery.isPending;
-  const hasCatalogError =
-    collectionsQuery.isError || modelsQuery.isError || summaryQuery.isError;
-  const hasCatalogData =
-    collections.length > 0 ||
-    models.length > 0 ||
-    characterCount > 0 ||
-    modelCount > 0;
-
-  const catalogStatus = isCatalogLoading
-    ? "Carregando catálogo"
+  // Use the existing indexed recent-publications endpoint, not an
+  // alphabetical catalog page or a client-side full-acervo scan.
+  const gateway = useMemo(() => {
+    if (!CANONICAL_CATALOG_API_BASE) return null;
+    try {
+      return createPublicCatalogGateway(CANONICAL_CATALOG_API_BASE, fetch);
+    } catch {
+      return null;
+    }
+  }, []);
+  // Fetch one bounded indexed window so quarantined recent covers do not
+  // leave the six-card Home showcase empty while eligible models follow.
+  // No full-catalog read, cursor walk or fallback catalog is involved.
+  const modelsQuery = useQuery({
+    queryKey: ["tonecos-landing-recent-models", 24],
+    queryFn: ({ signal }) => gateway!.listRecent(24, signal),
+    enabled: gateway !== null && !catalogMediaOnHold,
+    retry: false,
+    staleTime: 60 * 1000,
+  });
+  const models = modelsQuery.data?.slice(0, 6) ?? [];
+  const isCatalogLoading = gateway !== null && !catalogMediaOnHold && modelsQuery.isPending;
+  const hasCatalogError = !catalogMediaOnHold && (gateway === null || modelsQuery.isError);
+  const hasCatalogData = models.length > 0;
+  const catalogStatus = hasApprovedRenders
+    ? "Destaques do acervo"
+    : isCatalogLoading
+    ? "Carregando referências"
     : hasCatalogError
-      ? hasCatalogData
-        ? "Catálogo parcialmente disponível"
-        : "Catálogo temporariamente indisponível"
+      ? "Acervo temporariamente indisponível"
       : hasCatalogData
-        ? "Catálogo público ativo"
+        ? "Referências publicadas"
         : "Novidades em preparação";
-
-  const characterCountLabel =
-    summaryQuery.isPending || summaryQuery.isError
-      ? "—"
-      : String(characterCount);
-  const modelCountLabel =
-    summaryQuery.isPending || summaryQuery.isError ? "—" : String(modelCount);
+  // These six featured results are not an estimate of all published models.
+  const featuredCount = modelsQuery.isSuccess ? String(models.length) : "—";
 
   return (
     <Page
-      title="ORDAX — Colecionáveis Premium de Elite"
-      description="Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão."
+      title={BRAND_NAME}
+      description={landingCopy.description}
       keywords={[
         "colecionáveis",
         "premium",
         "artesanal",
         "figuras",
         "estátuas",
-        "ordax",
+        "tonart",
       ]}
     >
       {/* ═══ HERO ═══ */}
@@ -284,13 +230,13 @@ export default function LandingPage() {
           {/* Title */}
           <h1 className="mb-5">
             <span
-              className="block text-6xl sm:text-8xl md:text-9xl lg:text-[9rem] font-black tracking-[0.15em] leading-none"
+              className="block text-[clamp(3.5rem,14vw,9rem)] lg:text-[9rem] font-black tracking-[clamp(0.08em,2vw,0.15em)] leading-none"
               style={{
                 fontFamily: "'Bebas Neue', Impact, sans-serif",
-                textShadow: "0 0 60px hsl(var(--gold-accent) / 0.15)",
+                textShadow: "none",
               }}
             >
-              <GlitchText text="ORDAX" />
+              <span>{BRAND_SHORT_NAME}</span>
             </span>
             <span
               className="block text-[10px] sm:text-xs text-[hsl(var(--gold-accent))] tracking-[0.5em] mt-4 uppercase"
@@ -298,16 +244,18 @@ export default function LandingPage() {
             >
               Universo de Personagens
             </span>
-          </h1>
+          </h1>          {publicReadOnly && (
+            <p className="mx-auto mb-6 max-w-2xl text-sm leading-7 text-[hsl(0,0%,70%)] sm:text-base">Descubra universos, personagens e detalhes que inspiram esculturas colecionáveis. As imagens do catálogo são referências digitais para explorar.</p>
+          )}
 
           {/* Typewriter */}
-          <div className="h-8 mb-8">
+          <div className="min-h-8 mb-8">
             <p
               className="text-[9px] sm:text-[10px] text-[hsl(0,0%,45%)] tracking-wider"
               style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
               <TypewriterText
-                text=">> PERSONAGENS, MODELOS E VARIACOES SOB ENCOMENDA."
+                text={publicReadOnly ? "PERSONAGENS, ESCULTURAS E REFERÊNCIAS PARA COLECIONADORES." : ">> PERSONAGENS, MODELOS E VARIAÇÕES SOB ENCOMENDA."}
                 delay={800}
               />
             </p>
@@ -315,190 +263,161 @@ export default function LandingPage() {
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <button
-              onClick={() => navigate(PUBLIC_ROUTES.catalog)}
-              className="group inline-flex items-center gap-3 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all"
+            <Link
+              to={PUBLIC_ROUTES.catalogModels}
+              className="group inline-flex w-full max-w-[20rem] items-center justify-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.08em] text-xs h-14 px-3 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all sm:w-auto sm:max-w-none sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.15em]"
             >
               <Crosshair
                 className="w-5 h-5 group-hover:animate-spin"
                 style={{ animationDuration: "3s" }}
               />
-              EXPLORAR UNIVERSO
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
+              EXPLORAR MODELOS
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
+            </Link>
 
-            <button
-              onClick={() => navigate(PUBLIC_ROUTES.catalog)}
-              className="inline-flex items-center gap-3 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent)/0.6)] font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 transition-all"
+            <Link
+              to={publicReadOnly ? PUBLIC_ROUTES.about : PUBLIC_ROUTES.catalogModels}
+              className="inline-flex w-full max-w-[20rem] items-center justify-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent)/0.6)] font-mono uppercase tracking-[0.08em] text-xs h-14 px-3 transition-all sm:w-auto sm:max-w-none sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.15em]"
             >
               <Eye className="w-5 h-5" />
-              VER UNIVERSO
-            </button>
+              {publicReadOnly ? "CONHEÇA O ESTÚDIO" : "VER CATÁLOGO"}
+            </Link>
           </div>
 
-          {/* Stats */}
+          {/* An editorial status instead of empty or invented metrics during curatorial review. */}
+          {catalogMediaOnHold ? (
+            <div aria-label="Estado do catálogo" className="mx-auto grid max-w-3xl grid-cols-1 gap-3 border-t border-[hsl(var(--gold-accent)/0.18)] pt-6 text-left sm:grid-cols-3 sm:gap-6">
+              <div className="flex items-center gap-3">
+                <Eye size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">Catálogo para consulta</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Shield size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">{hasApprovedRenders ? "Referências em destaque" : "Novidades do acervo"}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Mail size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">Contato por e-mail</span>
+              </div>
+            </div>
+          ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 sm:gap-6 max-w-3xl mx-auto">
             <StatCounter
-              value={characterCountLabel}
-              label="Personagens"
+              value={hasCatalogData ? "ATIVO" : "—"}
+              label="Acervo"
               icon={Trophy}
             />
-            <StatCounter value={modelCountLabel} label="Modelos" icon={Shield} />
+            <StatCounter
+              value={featuredCount}
+              label="Destaques"
+              icon={Shield}
+            />
             <StatCounter value="100%" label="Artesanal" icon={Zap} />
-            <StatCounter value="Sob Encomenda" label="Atendimento" icon={Eye} />
+            <StatCounter value={publicReadOnly ? "Consulta" : "Sob Encomenda"} label="Atendimento" icon={Eye} />
           </div>
+          )}
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[hsl(var(--gold-accent)/0.3)] to-transparent" />
       </section>
 
-      {/* ═══ FEATURED COLLECTIONS ═══ */}
-      {PUBLIC_COLLECTIONS_ENABLED && collections.length > 0 && (
-        <section className="relative py-14 px-6">
-          <FloatingParticles />
-          <div className="max-w-6xl mx-auto">
-            <ArcadeSectionTitle>Coleções em Destaque</ArcadeSectionTitle>
-            <div className="grid md:grid-cols-3 gap-5">
-              {collections.map((c) => (
-                <FeaturedCollectionCard
-                  key={c.id}
-                  name={c.name}
-                  description={c.description}
-                  totalCharacters={c.total_characters ?? 0}
-                  coverUrl={c.cover_image_url ?? null}
-                  slug={c.slug ?? c.id}
-                />
-              ))}
+      {/* Do not render an empty "Recent models" showcase while no photographs are approved. */}
+      {catalogMediaOnHold ? (hasApprovedRenders ? <ApprovedHomeHighlights gateway={gateway} /> : (
+        <section aria-labelledby="catalog-curation-heading" className="relative border-y border-[hsl(var(--gold-accent)/0.12)] bg-[hsl(0,0%,5%)] px-6 py-14 sm:py-20">
+          <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent))]">O ACERVO TONART</p>
+              <h2 id="catalog-curation-heading" className="mt-4 max-w-xl text-3xl font-semibold uppercase leading-tight tracking-[0.035em] text-white sm:text-4xl">
+                Conheça novas possibilidades
+              </h2>
+              <p className="mt-5 max-w-xl text-base leading-7 text-[hsl(0,0%,70%)]">
+                Explore inspirações do universo das esculturas e dos personagens colecionáveis.
+              </p>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-[hsl(0,0%,52%)]">
+                Novas referências serão publicadas em breve.
+              </p>
             </div>
-            <div className="text-center mt-6">
-              <button
-                onClick={() => navigate(PUBLIC_ROUTES.catalog)}
-                className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
-              >
-                VER TODAS AS COLEÇÕES
-                <ArrowRight className="w-3 h-3" />
-              </button>
+            <div className="border-l-2 border-[hsl(var(--gold-accent)/0.65)] bg-[hsl(0,0%,7%)] px-6 py-7 sm:px-8 sm:py-9">
+              <div className="flex items-center gap-3">
+                <Shield size={20} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
+                <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-[hsl(0,0%,92%)]">Sobre as imagens</h3>
+              </div>
+              <p className="mt-4 text-sm leading-7 text-[hsl(0,0%,70%)]">
+                As imagens digitais mostram referências. A aparência de uma peça produzida pode variar conforme escala, materiais e acabamento.
+              </p>
+              <Link to={PUBLIC_ROUTES.contact} className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--gold-accent))]">
+                Falar com o estúdio <ArrowRight size={16} aria-hidden="true" />
+              </Link>
             </div>
           </div>
         </section>
-      )}
-
-      {/* ═══ RECENT CHARACTERS ═══ */}
-      {models.length > 0 && (
-        <section className="relative py-12 px-6 border-t border-[hsl(var(--gold-accent)/0.08)]">
-          <div className="max-w-6xl mx-auto">
-            <ArcadeSectionTitle>Personagens em Destaque</ArcadeSectionTitle>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5">
-              {models.map((m) => {
-                const imgUrl = m.thumbnailUrl ?? m.imageUrl;
-                const characterName = m.character_name;
-                const sourceName = m.source_title;
-                const detailPath = catalogCharacterPath(characterName, sourceName);
+      )) : (
+      <section className="relative border-t border-[hsl(var(--gold-accent)/0.08)] px-6 py-12">
+        <div className="mx-auto max-w-6xl">
+          <ArcadeSectionTitle>MODELOS RECENTES</ArcadeSectionTitle>
+           {isCatalogMediaUnderReview() ? (
+             <p className="mt-4 text-sm text-[hsl(0,0%,70%)]">
+               Fotos em revisão para publicação. Apenas referências autorizadas são exibidas no catálogo.
+             </p>
+           ) : null}
+          {hasCatalogError ? (
+            <div role="alert" className="mt-5 border border-[hsl(0,0%,18%)] p-6 text-sm text-[hsl(0,0%,70%)]">
+              Não foi possível carregar as referências publicadas.
+              {gateway && (
+                <button type="button" className="ml-3 border border-[hsl(var(--gold-accent))] px-3 py-2 text-[hsl(var(--gold-accent))]" onClick={() => void modelsQuery.refetch()}>
+                  Tentar novamente
+                </button>
+              )}
+            </div>
+          ) : isCatalogLoading ? (
+            <p className="mt-5 p-6 text-sm" role="status">Carregando modelos publicados…</p>
+          ) : models.length === 0 ? (
+            <p className="mt-5 p-6 text-sm" role="status">Novas referências serão publicadas em breve.</p>
+          ) : (
+            <div className="mt-5 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+              {models.map((model) => {
+                const imageUrl = gateway?.mediaUrl(model.coverStorageKey) ?? null;
                 return (
-                  <Link
-                    key={m.id}
-                    to={detailPath}
-                    className="group block"
-                    aria-label={`Abrir pagina de ${characterName}`}
-                  >
+                  <Link key={model.id} to={catalogModelDetailsPath(model.slug)} className="group block" aria-label={"Ver detalhes de " + model.name}>
                     <ArcadeCard>
-                      <div className="aspect-square bg-[hsl(0,0%,8%)] overflow-hidden">
-                        {imgUrl ? (
-                          <img
-                            src={imgUrl}
-                            alt={characterName}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-80 group-hover:opacity-100"
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Star className="w-6 h-6 text-[hsl(0,0%,15%)]" />
-                          </div>
-                        )}
+                      <div className="aspect-[2/3] overflow-hidden bg-[hsl(0,0%,8%)]">
+                        <CanonicalCatalogImage
+                          src={imageUrl}
+                          alt={"Referência visual de " + model.name}
+                          imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+                        />
                       </div>
                       <div className="p-2.5">
-                        <p className="font-mono text-[9px] text-[hsl(0,0%,70%)] line-clamp-1 tracking-wider uppercase">
-                          {characterName}
-                        </p>
-                        <p className="mt-0.5 font-mono text-[8px] text-[hsl(var(--gold-accent)/0.75)] uppercase tracking-widest">
-                          {m.model_count} {m.model_count === 1 ? "modelo" : "modelos"}
-                        </p>
-                        {sourceName && (
-                          <p className="font-mono text-[7px] text-[hsl(0,0%,30%)] mt-0.5 line-clamp-1">
-                            {sourceName}
-                          </p>
-                        )}
+                        <p className="line-clamp-2 font-mono text-[9px] uppercase tracking-wider text-[hsl(0,0%,80%)]">{model.name}</p>
+                        <p className="mt-1 line-clamp-1 font-mono text-[8px] uppercase text-[hsl(var(--gold-accent)/0.75)]">{model.variantName || model.franchise}</p>
                       </div>
                     </ArcadeCard>
                   </Link>
                 );
               })}
             </div>
-            <div className="text-center mt-6">
-              <button
-                onClick={() => navigate(PUBLIC_ROUTES.catalog)}
-                className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
-              >
-                VER UNIVERSO COMPLETO
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
+          )}
+          <div className="mt-6 text-center">
+            <Link to={PUBLIC_ROUTES.catalogModels} className="inline-flex h-11 items-center gap-2 border border-[hsl(var(--gold-accent)/0.4)] px-8 font-mono text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)]">
+              EXPLORAR TODOS OS MODELOS <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            </Link>
           </div>
-        </section>
+        </div>
+      </section>
       )}
 
-
       {/* ═══ CTA ═══ */}
-      <ArcadeCTA
-        badge="Vagas Limitadas"
-        title="READY PLAYER?"
-        description="Entre para o esquadrão de colecionadores. Peças exclusivas, produção artesanal e acompanhamento total."
+      {!catalogMediaOnHold ? <ArcadeCTA
+        badge="ACERVO TONART"
+        title={landingCopy.ctaTitle}
+        description={landingCopy.ctaDescription}
         primaryAction={{
-          label: "INSERT COIN",
-          href: user ? PUBLIC_ROUTES.catalog : PUBLIC_ROUTES.login,
+          label: "VER MODELOS",
+          href: PUBLIC_ROUTES.catalogModels,
           icon: <Zap className="w-5 h-5" />,
         }}
         secondaryAction={{ label: "FALE CONOSCO", href: PUBLIC_ROUTES.contact }}
-      />
+      /> : null}
 
-      {/* ═══ FOOTER ═══ */}
-      <footer className="border-t border-[hsl(0,0%,10%)] py-8 px-6 bg-[hsl(0,0%,3%)]">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span
-              className="text-2xl tracking-[0.2em] text-[hsl(var(--gold-accent))]"
-              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-            >
-              ORDAX
-            </span>
-          </div>
-
-          <nav className="flex items-center gap-6">
-            {[
-              { label: "Sobre", href: PUBLIC_ROUTES.about },
-              { label: "Contato", href: PUBLIC_ROUTES.contact },
-              { label: "Termos", href: PUBLIC_ROUTES.terms },
-              { label: "Privacidade", href: PUBLIC_ROUTES.privacy },
-            ].map((link) => (
-              <button
-                key={link.href}
-                onClick={() => navigate(link.href)}
-                className="text-[8px] text-[hsl(0,0%,35%)] hover:text-[hsl(var(--gold-accent))] tracking-wider transition-colors uppercase"
-                style={{ fontFamily: "'Press Start 2P', monospace" }}
-              >
-                {link.label}
-              </button>
-            ))}
-          </nav>
-
-          <p
-            className="text-[7px] text-[hsl(0,0%,20%)] tracking-wider"
-            style={{ fontFamily: "'Press Start 2P', monospace" }}
-          >
-            © {new Date().getFullYear()} TONECOS STUDIOS
-          </p>
-        </div>
-      </footer>
     </Page>
   );
 }

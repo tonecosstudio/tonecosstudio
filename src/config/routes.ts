@@ -22,8 +22,21 @@ export const PUBLIC_ROUTES = {
   terms: "/termos",
   privacy: "/privacidade",
   contact: "/contato",
+  quoteRequest: "/solicitar-orcamento",
+  quotePortal: "/gestao",
   login: "/login",
   preLaunch: "/pre-lancamento",
+} as const;
+
+export const TONECOS_COMMERCIAL_ROUTES = {
+  login: PUBLIC_ROUTES.login,
+  account: "/perfil",
+  recovery: "/recuperar-senha",
+  request: PUBLIC_ROUTES.quoteRequest,
+  history: "/meus-orcamentos",
+  coins: "/moedas",
+  adminQuotes: "/admin/orcamentos",
+  adminCoins: "/admin/moedas",
 } as const;
 
 export const PUBLIC_COLLECTIONS_ENABLED = false;

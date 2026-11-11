@@ -1,4 +1,5 @@
 import type React from "react";
+import { CONTACT } from "@/config/constants";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -84,6 +85,17 @@ describe("useSystemSettings", () => {
     mocks.upsertAdminSystemSettings.mockResolvedValue(undefined);
   });
 
+  it("does not request system settings in a read-only preview", () => {
+    const { result } = renderHook(
+      () => useSystemSettings({ enabled: false }),
+      { wrapper: createWrapper() },
+    );
+
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(result.current.data).toBeUndefined();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
   it("busca somente chaves publicas allowlisted e normaliza valores oficiais", async () => {
     const { result } = renderHook(() => useSystemSettings(), {
       wrapper: createWrapper(),
@@ -101,7 +113,7 @@ describe("useSystemSettings", () => {
       character_choice_days: 7,
       balance_payment_days: 5,
     });
-    expect(result.current.data?.support_email).toBeTruthy();
+    expect(result.current.data?.support_email).toBe(CONTACT.SUPPORT_EMAIL);
     expect(mocks.from).toHaveBeenCalledWith("system_settings");
     expect(mocks.select).toHaveBeenCalledWith("key,value");
 
@@ -167,7 +179,9 @@ describe("useSystemSettings", () => {
   });
 
   it("centraliza atualizacao de uma configuracao no servico admin", async () => {
-    await expect(updateSystemSetting("company_name", "Nova Ordax")).resolves.toEqual({
+    await expect(
+      updateSystemSetting("company_name", "Nova Ordax"),
+    ).resolves.toEqual({
       success: true,
     });
 
@@ -182,15 +196,21 @@ describe("useSystemSettings", () => {
       contact_email: "novo@ordax.test",
     };
 
-    await expect(updateSystemSettings(payload)).resolves.toEqual({ success: true });
+    await expect(updateSystemSettings(payload)).resolves.toEqual({
+      success: true,
+    });
 
     expect(mocks.upsertAdminSystemSettings).toHaveBeenCalledWith(payload);
   });
 
   it("propaga falhas de atualizacao como contrato de erro", async () => {
-    mocks.upsertAdminSystemSettings.mockRejectedValueOnce(new Error("sem permissao"));
+    mocks.upsertAdminSystemSettings.mockRejectedValueOnce(
+      new Error("sem permissao"),
+    );
 
-    await expect(updateSystemSetting("company_name", "Nova Ordax")).resolves.toEqual({
+    await expect(
+      updateSystemSetting("company_name", "Nova Ordax"),
+    ).resolves.toEqual({
       success: false,
       error: "sem permissao",
     });

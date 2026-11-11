@@ -1,93 +1,51 @@
-# AGENTS.md
+# AGENTS — TONART Studio
 
-## Missão
+## Ordem de verdade e limites
 
-Trabalhar até que o ORDAX tenha prova de prontidão para lançamento. O documento URGENTE.md é o plano e status operacional canônico.
+1. Instruções expressas do proprietário e escopo da PR atual.
+2. Evidência atual observada no GitHub, código, CI, Cloudflare e Vercel.
+3. [URGENTE.md](URGENTE.md), [README.md](README.md) e [docs/README.md](docs/README.md).
+4. Documentos técnicos específicos.
+5. docs-archive e relatórios datados: **somente histórico**, nunca autorização de deploy.
 
-## Ordem de autoridade
+**Repositório canônico único para site + backend após cutover:** tonecosstudio/tonecosstudio (GitHub ID 1163825583). Usar a branch integration/tonecosstudio-canonical-20261101, **PR #4 draft**; main preservada. Não criar outro repo/PR/branch, não fazer merge ou deploy de produção sem gates e autorização. washingtonmsdj/tonecosstudio é alias histórico para o mesmo ID.
 
-1. pedido explícito do usuário e contrato do issue/PR atual;
-2. este AGENTS.md;
-3. URGENTE.md;
-4. README.md e docs/README.md;
-5. código, testes e configuração vigentes;
-6. docs-archive e relatórios datados, que são apenas históricos.
+**Hosting oficial vigente (08/11/2026):** frontend no projeto Vercel `tonart-studio-public` (equipe Washington) com domínio `https://tonartstudio.com.br` e redirecionamento `www`, publicação manual controlada da PR #4. Cloudflare Pages permanece somente como prévia protegida, não como segundo frontend oficial. A autoridade única do catálogo continua no Cloudflare Worker `tonecos-catalogo-api` (D1/R2) da conta Tonecos; a Vercel apenas disponibiliza um proxy GET restrito, sem segunda base ou inventário. Backend no checkout de `services/catalogo/` ainda em consolidação, sem trocar o Worker em produção. Não tocar nos domínios OrdaX.
 
-Documentos históricos nunca podem sobrescrever o estado observado no código, CI ou produção.
+## Regra permanente — MVP visual de renders (decisão do proprietário, 08/11/2026)
 
-## Regras de mudança
+- O catálogo apresenta **renders digitais de esculturas/modelos 3D**, não fotografias de peças físicas finalizadas. Não anunciar peça fabricada ou entregue sem evidência.
+- **Regra atual do proprietário (09/11): mostrar capas e galerias comuns; ocultar apenas imagens/modelos identificados como SpecialSTL.** `approved: []` não justifica ocultar o acervo inteiro. Renders são representações digitais de esculturas, não fotos de peças produzidas. A revisão de licenças/créditos de terceiros e o lançamento/indexação permanecem gates editoriais; não servem como autorização para esconder todas as imagens comuns.
+- **SpecialSTL:** o proprietário determinou ocultar os renders identificados como SpecialSTL devido a preocupações de procedência e possível redistribuição não autorizada; isso não é constatação jurídica de pirataria. Preservar todos os modelos e suas evidências em `src/services/catalog/specialstl-quarantine.json`. Nenhum dos 264 registros da quarentena está aprovado; `approvedImageStorageKey=null` e status técnico legado `pending_authorized_clean_photo` permanecem até substituição comprovada.
+- A substituição pode ser **render original TONART ou render de terceiro com licença/permissão verificável**, da **mesma escultura e variante**, preservando crédito legítimo. Não é obrigatória uma foto de peça física. Não apagar/cortar marca d'água, não reutilizar render marcado SpecialSTL, não trocar a identidade por outra escultura e não presumir licença apenas pela ausência de marcas.
+- **Sem desbloqueio SpecialSTL:** a liberação de uma chave vinculada a um dos 264 IDs confirmados exige prova de origem/licença e chave exata, validada também na rota `/media`. Demais modelos não exigem allowlist individual para carregar imagem. O sinalizador antigo `VITE_TONART_HIDE_CATALOG_MEDIA` não pode mais ocultar o acervo inteiro; a quarentena é por identidade/caminho, na interface e no servidor. Não duplicar manifesto, Worker, D1/R2 nem inventar imagens.
+- **Trilha de substituição SpecialSTL:** o registro `src/services/catalog/public-render-approvals.json`, o validador `scripts/security/catalog-public-media-approval-policy.mjs` e o cliente `src/services/catalog/approved-public-renders.ts` controlam exceções à quarentena. Para substituir uma mídia SpecialSTL, exigir ID + slug + chave exata, SHA-256 do arquivo-fonte, evidência independente de direitos, titular/crédito, data e aprovação expressa do proprietário. Com `approved: []`, existem **zero exceções à quarentena**, não zero imagens comuns. Preservar créditos legítimos e não inferir licença pela existência de um arquivo.
+- A Vercel permanece em **pré-lançamento/noindex** até revisão de direitos, QA visual e autorização de produção. Esse estado editorial não pode apagar as imagens comuns do catálogo. A aprovação de substituições SpecialSTL e a autorização de lançamento são decisões distintas.
 
-- A main é a única branch operacional enquanto esta decisão do usuário estiver vigente.
-- Escrever diretamente na main, em commits pequenos e reversíveis.
-- Antes de escrever, registrar o HEAD atual da main e confirmar que ele não avançou.
-- Não criar branch ou PR sem uma nova instrução explícita do usuário.
-- Não misturar limpeza documental, mudança de schema e deploy no mesmo checkpoint.
-- Não apagar histórico útil: arquivar com índice e motivo.
-- Não criar um segundo SSOT, segundo executor ou segundo mecanismo de autorização.
-- Não afirmar “pronto”, “seguro”, “100%” ou percentuais sem prova reproduzível.
-- Preservar mudanças não relacionadas e evitar refatorações cosméticas durante correções críticas.
-- Segredos reais nunca entram no Git, logs, screenshots, issues ou VITE_*.
-- Não executar migration remota, reativar serviço pago ou fazer deploy sem escopo e prova de rollback.
-- Alterações relevantes atualizam URGENTE.md com HEAD, provas, next_action e do_not_repeat.
+## MVP somente leitura
 
-## Toolchain canônica
+- UI atual da Tonecos, com visual Arcade/HUD escuro/dourado da aplicação original; reutilizar componentes. Não redesenhar identidade, importar UI/serviços OrdaX ou criar segundo design system.
+- Home, Universo, modelos por categoria/franquia/filtros/cursor, ficha/galeria por slug, Sobre, Contato por mailto e páginas legais. Preservar estados loading/empty/error e navegação desktop/mobile.
+- Bundle público sem Supabase, conta, admin, pedidos, pagamentos, assinatura ou Coins. Módulos comerciais podem existir no repositório, mas ficam isolados até homologação futura. Nunca usar segredos Supabase de outro projeto.
+- Não criar segunda API, banco, catálogo ou fallback para ordax.com.br. Na Vercel, `api/catalogo-proxy.js` é somente transporte GET restrito para o Worker existente; no Cloudflare Pages, o transporte de prévia usa a Pages Function. D1/R2 continuam com um único owner.
+- SEO falha fechada: previews e produção não liberada mantêm robots Disallow, noindex e nenhum sitemap; não ativar TONECOS_PUBLIC_INDEXING_RELEASE antes de GO explícito.
 
-- Node.js 24 LTS.
-- npm e package-lock.json como caminho de CI.
-- TypeScript strict.
-- Vitest para testes.
-- Supabase migrations como histórico de schema.
-- GitHub Actions como Quality Gate.
-- Vercel/Cloudflare somente conforme runbook de ambiente que será consolidado.
+## Regras de custo e execução
 
-Os lockfiles Bun permanecem apenas até P2 classificá-los e removê-los com CI verde.
+Não rodar scans D1, imports, migrações, consultas integrais R2, testes de carga ou polling de catálogo para checar status. Validar sem custos por metadados Cloudflare/GitHub e testes locais. Não contratar Vercel Pro nem contratar outras soluções pagas sem autorização. Não burlar Cloudflare Access nem confundir HTTP 200 da tela de login com QA do site.
 
-## Quality Gate
+Cloudflare Pages tem production_deployments_enabled=false e preview_deployment_setting=none; preservar. No projeto Vercel `tonart-studio-public`, Git auto deploy permanece desativado; publicar somente o SHA validado, sem criar outro projeto. Commit documental não justifica rebuild. Main e PR #4 devem ser reconciliadas apenas com gates e autorização pertinentes.
 
-Para uma mudança permanecer na main e ser candidata a release:
+## Gates obrigatórios
 
-1. npm ci;
-2. npm run typecheck;
-3. npm run lint;
-4. npm run security:supabase-access;
-5. auditores de autoridade comercial, profiles, notificações e configurações públicas;
-6. npm run test:coverage;
-7. npm run build;
-8. npm audit --omit=dev --audit-level=high;
-9. npm run format:check.
+- CI e release:verify completos no SHA candidato, sem ocultar falhas.
+- QA visual **autenticado** no desktop e celular, incluindo seis capas da amostra, busca, filtros, ficha e galeria.
+- Revisão humana de Termos/Privacidade, operador real, LGPD e direitos de mídia.
+- Domínio e HTTPS Vercel verificados não substituem QA visual desktop/mobile, validação de rotas/links, canonical/robots/sitemap e plano de rollback.
+- Site pré-lançamento na Vercel já acessível, mas **lançamento/indexação/comercial: NO-GO** até revisão de direitos, QA e autorização. A exibição de imagens comuns na prévia é desejada e não equivale ao GO editorial. PR #4 continua Draft; não afirmar que prévia pública equivale a lançamento concluído.
 
-A formatação continua requisito de GO. Ela fica por último enquanto a baseline histórica estiver fora do padrão, para não impedir que erros funcionais, de segurança, testes, build e dependências sejam descobertos e corrigidos primeiro. A dívida de formatação deve permanecer explícita até um commit mecânico controlado normalizar a baseline.
+Ao encerrar uma alteração, atualizar o checkpoint de URGENTE.md com base/HEAD, provas, bloqueios, next_action e do_not_repeat. Evitar novos documentos redundantes. Textos históricos devem ser movidos para docs-archive sem reescrever seu conteúdo.
 
-Falha deve ser corrigida ou registrada como bloqueio explícito; nunca ocultada reduzindo o gate sem justificativa.
+## Migração monorepo — ordem obrigatória
 
-## Supabase e segurança
-
-- Confirmar o project_id antes de qualquer operação.
-- Toda tabela/view exposta precisa de grants deliberados e RLS apropriada.
-- Views públicas devem usar security_invoker quando suportado.
-- SECURITY DEFINER exige necessidade documentada, search_path seguro, EXECUTE restrito e teste.
-- UI nunca é fronteira de autorização.
-- Operações administrativas usam o gateway canônico e validação server-side.
-- Funções verify_jwt=false devem provar assinatura/segredo, rate limit, idempotência quando aplicável e fail-closed.
-- service_role é exclusivamente server-side.
-- Mudanças de schema devem ser migrations ordenadas e testadas do zero.
-
-## Frontend e produto
-
-- Estados loading, empty, error e success são obrigatórios para dados remotos.
-- Não mostrar sucesso/atividade quando a fonte está vazia ou indisponível.
-- Não publicar mocks, placeholders ou dados de demonstração como se fossem reais.
-- Toda rota crítica deve funcionar por navegação e refresh direto.
-- Mudanças visuais exigem verificação desktop e mobile, teclado, contraste e landmarks.
-- Conteúdo legal, contato, preços e marca devem vir de fonte canônica.
-
-## Checkpoint obrigatório
-
-Ao encerrar trabalho, registrar em URGENTE.md:
-
-- HEAD;
-- concluído;
-- testes/provas;
-- bloqueios;
-- next_action;
-- do_not_repeat.
+O [plano único de migração](docs/MIGRACAO_CATALOGO_MONOREPO.md) e o manifesto **config/catalog-code-consolidation.json** são autoridade de fases M0–M6; o guard **npm run catalog:monorepo:check** deve passar antes de registrar avanço. Não considerar a proposta antiga de transferir o repo para tonecosstudio/catalogo como plano vigente. Primeiro reconciliar PR #266 e dependências da origem, depois importar o código Worker **inativo**, testar offline, isolar CI, autorizar um único writer e por último aposentar URLs/arquivar o repositório Washington. Não duplicar frontend, D1, R2, Worker, workflows ou permissões.

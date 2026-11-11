@@ -10,10 +10,18 @@ import { signOutCurrentSession } from "@/services/auth/auth-session-service";
 export default function RequireAdmin({ children }: PropsWithChildren) {
   const location = useLocation();
   const { user, isLoading } = useAuth();
-  const isAdminQuery = useCurrentUserIsAdmin({ currentUserId: user?.id });
+  const previewReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  const isAdminQuery = useCurrentUserIsAdmin({
+    currentUserId: previewReadOnly ? undefined : user?.id,
+    enabled: !previewReadOnly,
+  });
 
   const isChecking = isLoading || (user && isAdminQuery.isLoading);
   const isAdmin = Boolean(isAdminQuery.data);
+
+  if (previewReadOnly) {
+    return <Navigate to={PUBLIC_ROUTES.catalogModels} replace />;
+  }
 
   if (isChecking) {
     return (

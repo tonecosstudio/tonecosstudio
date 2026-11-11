@@ -5,6 +5,7 @@
  * critical production alerts.
  */
 
+import { ASSETS } from "@/config/constants";
 import { logInfo, logError, logWarn } from "@/lib/logger";
 import { navigateInApp } from "@/lib/navigation";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
@@ -79,7 +80,7 @@ export function showBrowserNotification(notification: AlertNotification): void {
 
   const notif = new Notification(title, {
     body,
-    icon: icon || "/favicon.ico",
+    icon: icon || ASSETS.DEFAULT_ICON_URL,
     tag: tag || "production-alert",
     data,
     requireInteraction: true, // Keep notification visible until user interacts

@@ -1,10 +1,13 @@
 # Customer Components
 
+> **Escopo e segurança (04/11/2026):** documentação técnica de módulo **comercial futuro**; não integra o MVP público somente leitura hospedado no Cloudflare Pages. Conteúdo histórico não autoriza deploy, acesso a Supabase, envio de e-mails, operações financeiras nem reutilização de domínios/credenciais da OrdaX. Validar código, identidade, configuração e autorização antes de ativar esta funcionalidade.
+
+
 Esta pasta concentra a superficie de atendimento do cliente.
 
 ## CustomerChat
 
-[CustomerChat](</C:/Users/Casa/Documents/Novo github/ordax/src/components/customer/CustomerChat.tsx>) e a unica entrada ativa do chat do cliente no app.
+[CustomerChat](CustomerChat.tsx) e a unica entrada ativa do chat do cliente no app.
 
 ### O que ele faz
 
@@ -18,10 +21,10 @@ Esta pasta concentra a superficie de atendimento do cliente.
 
 ### Dependencias principais
 
-- [useCustomerChatButton](</C:/Users/Casa/Documents/Novo github/ordax/src/hooks/customer/useCustomerChatButton.ts>)
-- [CustomerMessageList](</C:/Users/Casa/Documents/Novo github/ordax/src/components/customer/CustomerMessageList.tsx>)
-- [CustomerMessageInput](</C:/Users/Casa/Documents/Novo github/ordax/src/components/customer/CustomerMessageInput.tsx>)
-- [useMessages](</C:/Users/Casa/Documents/Novo github/ordax/src/hooks/useMessages.ts>)
+- [useCustomerChatButton](../../hooks/customer/useCustomerChatButton.ts)
+- [CustomerMessageList](CustomerMessageList.tsx)
+- [CustomerMessageInput](CustomerMessageInput.tsx)
+- [useMessages](../../hooks/useMessages.ts)
 
 ### Contrato atual
 
@@ -31,7 +34,7 @@ Esta pasta concentra a superficie de atendimento do cliente.
 
 ### Integracao
 
-O app monta o chat em [App.tsx](</C:/Users/Casa/Documents/Novo github/ordax/src/App.tsx>) com:
+O app monta o chat em [App.tsx](../../App.tsx) com:
 
 ```tsx
 import { CustomerChat } from "@/components/customer/CustomerChat";

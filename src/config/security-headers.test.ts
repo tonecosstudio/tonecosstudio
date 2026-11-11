@@ -33,8 +33,11 @@ describe("security headers", () => {
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("base-uri 'self'");
     expect(csp).toContain("frame-ancestors 'none'");
-    expect(csp).toContain("https://js.stripe.com");
-    expect(csp).toContain("https://*.supabase.co");
+    expect(csp).toContain("connect-src 'self'");
+    expect(csp).toContain("https://fonts.googleapis.com");
+    expect(csp).toContain("https://fonts.gstatic.com");
+    expect(csp).not.toContain("https://js.stripe.com");
+    expect(csp).not.toContain("https://*.supabase.co");
     expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
   });
 });

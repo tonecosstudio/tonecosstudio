@@ -24,21 +24,23 @@ import {
 import { Page } from "@/components/layouts/Page";
 import { useState } from "react";
 import { PUBLIC_ROUTES } from "@/config/routes";
+import { BRAND_NAME } from "@/config/brand";
+import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 
 const VALUES = [
-  { icon: Shield, title: "QUALIDADE", desc: "Inspeção rigorosa antes do envio. Padrões elevados em todas as etapas." },
-  { icon: Sparkles, title: "TRANSPARÊNCIA", desc: "Acompanhe cada etapa com fotos e atualizações em tempo real." },
-  { icon: Heart, title: "PERSONALIZAÇÃO", desc: "Sua peça, suas especificações. Customização completa disponível." },
-  { icon: Clock, title: "CONFIABILIDADE", desc: "Prazos claros, comunicação direta, compromisso cumprido." },
+  { icon: Shield, title: "QUALIDADE", desc: "Cuidado com acabamentos e detalhes, com conferência antes da entrega." },
+  { icon: Sparkles, title: "TRANSPARÊNCIA", desc: "Informações sobre cada etapa conforme o andamento do seu pedido." },
+  { icon: Heart, title: "PERSONALIZAÇÃO", desc: "Escalas, acabamentos e detalhes avaliados conforme a viabilidade do projeto." },
+  { icon: Clock, title: "CONFIABILIDADE", desc: "Prazos e condições apresentados durante a avaliação da encomenda." },
 ];
 
 const PROCESS = [
-  { step: 1, title: "MODELAGEM 3D", desc: "Design digital preciso com atenção aos detalhes.", icon: Crosshair },
-  { step: 2, title: "IMPRESSÃO 3D", desc: "Resina de alta qualidade, definição e durabilidade.", icon: Zap },
+  { step: 1, title: "ESCOLHA DA REFERÊNCIA", desc: "Escolha da referência e avaliação de escala, pose e acabamento.", icon: Crosshair },
+  { step: 2, title: "PRODUÇÃO", desc: "Preparação e produção conforme as necessidades da peça.", icon: Zap },
   { step: 3, title: "ACABAMENTO", desc: "Lixamento, tratamento e preparação profissional.", icon: Eye },
   { step: 4, title: "PINTURA", desc: "Pintura à mão com técnicas profissionais.", icon: Palette },
-  { step: 5, title: "INSPEÇÃO", desc: "Verificação rigorosa de acabamento e detalhes.", icon: Shield },
-  { step: 6, title: "ENVIO", desc: "Embalagem premium com proteção adequada.", icon: Package },
+  { step: 5, title: "INSPEÇÃO", desc: "Conferência visual dos detalhes e do acabamento.", icon: Shield },
+  { step: 6, title: "ENVIO", desc: "Embalagem e condições de entrega definidas para a encomenda.", icon: Package },
 ];
 
 const FAQS = [
@@ -48,31 +50,47 @@ const FAQS = [
   { q: "Como é a entrega?", a: "Envio com embalagem e proteção adequada. Detalhes confirmados no retorno do orçamento." },
 ];
 
+const PUBLIC_FAQS = [
+  { q: "Os modelos mostrados já foram produzidos?", a: "As imagens são referências digitais e não representam necessariamente peças físicas já produzidas." },
+  { q: "Posso comprar pelo site?", a: "O catálogo é para consulta. Não há compras nem pagamentos online nesta versão." },
+  { q: "Como falar com o estúdio?", a: "A página Contato abre seu aplicativo de e-mail para conversar diretamente com a TONART Studio." },
+  { q: "Escala e acabamento podem variar?", a: "Sim. As características de uma peça física dependem da proposta, dos materiais e de avaliação individual." },
+];
+
 export default function AboutArcade() {
+  const publicReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true" && isCatalogPublicMvpEnabled();
   return (
     <Page
-      title="Sobre | ORDAX Intel"
-      description="Ordax é a plataforma brasileira de colecionáveis premium sob encomenda."
-      keywords={["sobre", "ordax", "colecionáveis", "impressão 3d"]}
+      title="Sobre"
+      description={publicReadOnly ? "Conheça a TONART Studio e seu catálogo de referências." : "Conheça a TONART Studio, seu catálogo de referências e o processo de avaliação de esculturas sob encomenda."}
+      keywords={["sobre", "tonart", "colecionáveis", "esculturas sob encomenda"]}
     >
       <ArcadeHero
-        badge="Arquivo Classificado"
+        badge="TONART STUDIO"
         title="SOBRE"
-        subtitle=">> CONHEÇA A OPERAÇÃO ORDAX."
+        subtitle=">> CONHEÇA O ESTÚDIO E COMO UMA PEÇA GANHA FORMA."
+        compact
       />
+      {publicReadOnly ? (
+        <section aria-label="Sobre as referências digitais" className="relative z-10 mx-auto mb-8 max-w-5xl px-4 md:px-6">
+          <p className="border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] p-5 text-sm leading-relaxed text-[hsl(0,0%,75%)]">
+            As imagens exibidas neste catálogo são referências digitais, não necessariamente fotografias de peças físicas já produzidas.
+          </p>
+        </section>
+      ) : null}
 
       {/* ═══ MISSION ═══ */}
       <section className="max-w-5xl mx-auto px-4 md:px-6 pb-16 relative z-10">
-        <ArcadeSectionTitle>Missão</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Nossa essência</ArcadeSectionTitle>
 
         <ArcadeCard>
-          <div className="p-8 md:p-12 text-center relative overflow-hidden">
+          <div className="p-4 sm:p-6 md:p-12 text-center relative overflow-hidden">
             <FloatingParticles />
             <div className="relative z-10">
               <p className="font-mono text-sm md:text-base text-[hsl(0,0%,60%)] leading-relaxed tracking-wider max-w-3xl mx-auto">
-                Tornar colecionáveis premium acessíveis através de uma plataforma organizada,
-                transparente e confiável. Cada peça é produzida sob encomenda com atenção aos detalhes
-                e acompanhamento completo.
+                A TONART Studio reúne personagens, universos e referências de esculturas
+                para inspirar quem aprecia peças colecionáveis. Escala, materiais, pintura
+                e acabamento são detalhes que tornam cada projeto singular.
               </p>
             </div>
           </div>
@@ -81,21 +99,21 @@ export default function AboutArcade() {
 
       {/* ═══ HOW WE WORK ═══ */}
       <section className="max-w-5xl mx-auto px-4 md:px-6 pb-16 relative z-10">
-        <ArcadeSectionTitle>Como Operamos</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Do conceito à peça</ArcadeSectionTitle>
 
         <div className="grid md:grid-cols-2 gap-5">
           <ArcadeCard>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 flex items-center justify-center border border-[hsl(var(--gold-accent)/0.4)] bg-[hsl(var(--gold-accent)/0.1)]">
                   <Zap className="w-5 h-5 text-[hsl(var(--gold-accent))]" />
                 </div>
-                <h3 className="text-xl font-black tracking-[0.1em]" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
-                  PLATAFORMA ORDAX
+                <h3 className="text-[clamp(0.9375rem,5vw,1.25rem)] font-black tracking-[0.1em] leading-tight" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
+                  EXPERIÊNCIA TONART
                 </h3>
               </div>
               <ul className="space-y-3">
-                {["Universo digital organizado", "Sistema de pedidos personalizado", "Timeline com fotos em tempo real", "Comunicação direta e transparente", "Garantia de qualidade e suporte"].map((item) => (
+                {["Acervo de modelos e referências digitais", "Navegação por categorias e franquias", "Referências para explorar e comparar", "Informações sobre escala e acabamento", "Contato direto por e-mail com o estúdio"].map((item) => (
                   <li key={item} className="flex items-start gap-2 font-mono text-xs text-[hsl(0,0%,50%)] tracking-wider">
                     <div className="mt-1.5 w-1.5 h-1.5 bg-[hsl(var(--gold-accent))] shrink-0" />
                     {item}
@@ -106,17 +124,17 @@ export default function AboutArcade() {
           </ArcadeCard>
 
           <ArcadeCard>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 flex items-center justify-center border border-[hsl(280,80%,55%)/0.4] bg-[hsl(280,80%,55%)/0.1]">
                   <Palette className="w-5 h-5 text-[hsl(280,80%,65%)]" />
                 </div>
-                <h3 className="text-xl font-black tracking-[0.1em]" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
-                  PRODUÇÃO PROFISSIONAL
+                <h3 className="text-[clamp(0.9375rem,5vw,1.25rem)] font-black tracking-[0.1em] leading-tight" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
+                  CRIAÇÃO SOB ENCOMENDA
                 </h3>
               </div>
               <ul className="space-y-3">
-                {["Estúdio criativo especializado", "Impressão 3D em resina premium", "Acabamento profissional detalhado", "Pintura por especialistas", "Inspeção rigorosa pré-envio"].map((item) => (
+                {["Avaliação da referência escolhida", "Definição da escala e dos detalhes", "Produção conforme a peça", "Acabamento e pintura quando aplicáveis", "Conferência e preparação para envio"].map((item) => (
                   <li key={item} className="flex items-start gap-2 font-mono text-xs text-[hsl(0,0%,50%)] tracking-wider">
                     <div className="mt-1.5 w-1.5 h-1.5 bg-[hsl(280,80%,65%)] shrink-0" />
                     {item}
@@ -125,7 +143,7 @@ export default function AboutArcade() {
               </ul>
               <div className="mt-6 pt-4 border-t border-[hsl(0,0%,12%)]">
                 <p className="font-mono text-[10px] text-[hsl(0,0%,35%)] tracking-wider">
-                  Produção principal: <span className="text-[hsl(var(--gold-accent))]">Tonecos Studios</span>
+                  Estúdio: <span className="text-[hsl(var(--gold-accent))]">{BRAND_NAME}</span>
                 </p>
               </div>
             </div>
@@ -135,7 +153,7 @@ export default function AboutArcade() {
 
       {/* ═══ VALUES ═══ */}
       <section className="max-w-5xl mx-auto px-4 md:px-6 pb-16 relative z-10">
-        <ArcadeSectionTitle>Nossos Stats</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Nossos valores</ArcadeSectionTitle>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {VALUES.map(({ icon: Icon, title, desc }) => (
@@ -150,7 +168,7 @@ export default function AboutArcade() {
                 >
                   {title}
                 </h3>
-                <p className="font-mono text-[10px] text-[hsl(0,0%,45%)] tracking-wider leading-relaxed">
+                <p className="font-mono text-[11px] text-[hsl(0,0%,45%)] tracking-wide leading-relaxed">
                   {desc}
                 </p>
               </div>
@@ -182,7 +200,7 @@ export default function AboutArcade() {
                 >
                   {title}
                 </h3>
-                <p className="font-mono text-[10px] text-[hsl(0,0%,45%)] tracking-wider leading-relaxed">
+                <p className="font-mono text-[11px] text-[hsl(0,0%,45%)] tracking-wide leading-relaxed">
                   {desc}
                 </p>
               </div>
@@ -192,28 +210,28 @@ export default function AboutArcade() {
 
         <div className="mt-8 text-center">
           <p className="font-mono text-[10px] text-[hsl(0,0%,35%)] tracking-wider">
-            Tempo médio: <span className="text-[hsl(var(--gold-accent))]">30 dias</span> • Envio a partir do dia 15 do mês seguinte
+            Prazos e possibilidades de produção dependem da avaliação individual de cada projeto.
           </p>
         </div>
       </section>
 
       {/* ═══ FAQ ═══ */}
       <section className="max-w-4xl mx-auto px-4 md:px-6 pb-16 relative z-10">
-        <ArcadeSectionTitle>Intel FAQ</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Dúvidas frequentes</ArcadeSectionTitle>
 
         <div className="space-y-3">
-          {FAQS.map((faq, i) => (
+          {(publicReadOnly ? PUBLIC_FAQS : FAQS).map((faq, i) => (
             <FAQItem key={i} question={faq.q} answer={faq.a} index={i} />
           ))}
         </div>
       </section>
 
       <ArcadeCTA
-        badge="Pronto para começar?"
-        title="MISSÃO DISPONÍVEL"
-        description="Explore nosso catálogo e solicite um orçamento personalizado."
-        primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog, icon: <ArrowRight className="w-4 h-4" /> }}
-        secondaryAction={{ label: "FAZER ORÇAMENTO", href: "/orcamento/carrinho" }}
+        badge={publicReadOnly ? "CATÁLOGO INFORMATIVO" : "Pronto para começar?"}
+        title={publicReadOnly ? "EXPLORE O ACERVO" : "SUA PRÓXIMA PEÇA"}
+        description={publicReadOnly ? "Explore referências e conheça os universos da TONART. Se tiver dúvidas, converse diretamente com o estúdio por e-mail." : "Explore nosso catálogo e solicite um orçamento personalizado."}
+        primaryAction={{ label: "EXPLORAR MODELOS", href: PUBLIC_ROUTES.catalogModels, icon: <ArrowRight className="w-4 h-4" /> }}
+        secondaryAction={{ label: "FALAR COM O ESTÚDIO", href: PUBLIC_ROUTES.contact }}
       />
     </Page>
   );
@@ -221,23 +239,41 @@ export default function AboutArcade() {
 
 function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
   const [open, setOpen] = useState(false);
+  const triggerId = `about-faq-trigger-${index}`;
+  const answerId = `about-faq-answer-${index}`;
 
   return (
     <ArcadeCard hover={false}>
-      <button onClick={() => setOpen(!open)} className="w-full text-left p-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <button
+        type="button"
+        id={triggerId}
+        aria-expanded={open}
+        aria-controls={answerId}
+        onClick={() => setOpen((currentOpen) => !currentOpen)}
+        className="flex min-h-11 w-full items-center justify-between gap-4 p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(0,0%,4%)]"
+      >
+        <div className="flex min-w-0 items-center gap-3">
           <span className="font-mono text-[10px] text-[hsl(var(--gold-accent))] tracking-widest">
             {String(index + 1).padStart(2, "0")}
           </span>
-          <span className="font-mono text-xs text-[hsl(0,0%,80%)] tracking-wider">{question}</span>
+          <span className="min-w-0 font-mono text-xs text-[hsl(0,0%,80%)] tracking-wider">{question}</span>
         </div>
-        <span className={`text-[hsl(var(--gold-accent))] transition-transform duration-300 ${open ? "rotate-45" : ""}`}>+</span>
+        <span
+          aria-hidden="true"
+          className={`shrink-0 text-[hsl(var(--gold-accent))] transition-transform duration-300 ${open ? "rotate-45" : ""}`}
+        >
+          +
+        </span>
       </button>
-      {open && (
-        <div className="px-4 pb-4 pl-12 animate-fade-in">
-          <p className="font-mono text-[11px] text-[hsl(0,0%,45%)] leading-relaxed tracking-wide">{answer}</p>
-        </div>
-      )}
+      <div
+        id={answerId}
+        role="region"
+        aria-labelledby={triggerId}
+        hidden={!open}
+        className="px-4 pb-4 pl-12 animate-fade-in"
+      >
+        <p className="font-mono text-[11px] text-[hsl(0,0%,45%)] leading-relaxed tracking-wide">{answer}</p>
+      </div>
     </ArcadeCard>
   );
 }

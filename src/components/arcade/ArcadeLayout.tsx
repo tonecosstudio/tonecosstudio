@@ -3,18 +3,8 @@
  * Used across all public-facing pages for consistent Metal Slug aesthetic.
  */
 
-import { useNavigate, Link, useLocation } from "react-router-dom";
-import { Coins, Menu, Bell, X } from "lucide-react";
-import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
-import { useEffect, useState, type PropsWithChildren } from "react";
-import { useAuth } from "@/lib/auth";
-import { useCurrentUserIsAdmin } from "@/lib/roles";
-import {
-  ADMIN_ROUTES,
-  AUTH_ROUTES,
-  PUBLIC_COLLECTIONS_ENABLED,
-  PUBLIC_ROUTES,
-} from "@/config/routes";
+import { useNavigate } from "react-router-dom";
+import type { PropsWithChildren } from "react";
 
 // ─── SCANLINE OVERLAY ────────────────────────────────────────────────
 
@@ -79,58 +69,6 @@ export function FloatingParticles() {
   );
 }
 
-// ─── COIN COUNTER ────────────────────────────────────────────────────
-
-export function CoinCounter({
-  balance,
-  isLoading,
-}: {
-  balance: number;
-  isLoading: boolean;
-}) {
-  const [displayed, setDisplayed] = useState(0);
-  const [sparkle, setSparkle] = useState(false);
-
-  useEffect(() => {
-    if (isLoading || balance === displayed) return;
-    const step = Math.max(1, Math.floor(Math.abs(balance - displayed) / 20));
-    const timer = setInterval(() => {
-      setDisplayed((prev) => {
-        if (prev < balance) return Math.min(prev + step, balance);
-        if (prev > balance) return Math.max(prev - step, balance);
-        return prev;
-      });
-    }, 30);
-    return () => clearInterval(timer);
-  }, [balance, isLoading, displayed]);
-
-  useEffect(() => {
-    if (displayed === balance && balance > 0) {
-      setSparkle(true);
-      const t = setTimeout(() => setSparkle(false), 600);
-      return () => clearTimeout(t);
-    }
-  }, [displayed, balance]);
-
-  return (
-    <div
-      className={`flex items-center gap-2 px-4 py-2 border border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(var(--gold-accent)/0.08)] transition-all duration-300 ${
-        sparkle ? "shadow-[0_0_20px_hsl(var(--gold-accent)/0.4)] scale-105" : ""
-      }`}
-    >
-      <Coins
-        className={`w-5 h-5 text-[hsl(var(--gold-accent))] ${sparkle ? "animate-bounce" : ""}`}
-      />
-      <span className="font-mono text-lg font-bold text-[hsl(var(--gold-accent))] tracking-wider tabular-nums">
-        {isLoading ? "---" : displayed.toLocaleString("pt-BR")}
-      </span>
-      <span className="font-mono text-[10px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase">
-        coins
-      </span>
-    </div>
-  );
-}
-
 // ─── ANIMATED GRID BG ────────────────────────────────────────────────
 
 export function AnimatedGridBg({ scrollY = 0 }: { scrollY?: number }) {
@@ -149,161 +87,6 @@ export function AnimatedGridBg({ scrollY = 0 }: { scrollY?: number }) {
   );
 }
 
-// ─── TOP HUD NAV ─────────────────────────────────────────────────────
-
-const navLinks: Array<{ to: string; label: string }> = [
-  { to: PUBLIC_ROUTES.home, label: "INICIO" },
-  { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
-];
-
-if (PUBLIC_COLLECTIONS_ENABLED) {
-  navLinks.push({ to: PUBLIC_ROUTES.collections, label: "COLECOES" });
-}
-
-const authNavLinks: Array<{ to: string; label: string }> = [
-  { to: PUBLIC_ROUTES.catalog, label: "PERSONAGENS" },
-  { to: AUTH_ROUTES.profile, label: "CONTA" },
-];
-
-export function ArcadeNav() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useAuth();
-  const { data: isAdmin } = useCurrentUserIsAdmin({ currentUserId: user?.id });
-  const { data: balanceData, isLoading: balanceLoading } = useCoinsBalance();
-  const userBalance = balanceData?.balance ?? 0;
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const isActive = (path: string) => location.pathname === path;
-
-  const linkClass = (path: string) =>
-    `text-[10px] tracking-[0.2em] uppercase transition-colors font-mono ${
-      isActive(path)
-        ? "text-[hsl(var(--gold-accent))]"
-        : "text-[hsl(0,0%,55%)] hover:text-[hsl(var(--gold-accent))]"
-    }`;
-
-  return (
-    <>
-      <nav className="sticky top-0 z-40 border-b border-[hsl(var(--gold-accent)/0.15)] bg-[hsl(0,0%,5%)]/95 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-6 h-14">
-          {/* Logo */}
-          <Link
-            to={PUBLIC_ROUTES.home}
-            className="font-black text-xl tracking-[0.3em] text-[hsl(var(--gold-accent))] shrink-0"
-            style={{
-              fontFamily: "'Bebas Neue', Impact, sans-serif",
-              textShadow: "0 0 20px hsl(var(--gold-accent) / 0.3)",
-            }}
-          >
-            ORDAX
-          </Link>
-
-          {/* Desktop links */}
-          <div className="hidden lg:flex items-center gap-5">
-            {navLinks.map((l) => (
-              <Link key={l.to} to={l.to} className={linkClass(l.to)}>
-                {l.label}
-              </Link>
-            ))}
-            {user &&
-              authNavLinks.map((l) => (
-                <Link key={l.to} to={l.to} className={linkClass(l.to)}>
-                  {l.label}
-                </Link>
-              ))}
-            {isAdmin && (
-              <Link
-                to={ADMIN_ROUTES.home}
-                className="text-[10px] tracking-[0.2em] uppercase font-mono text-red-500 hover:text-red-400 transition-colors"
-              >
-                ADMIN
-              </Link>
-            )}
-          </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-3">
-            {user && (
-              <button
-                onClick={() => navigate(AUTH_ROUTES.notifications)}
-                className="relative text-[hsl(0,0%,55%)] hover:text-[hsl(var(--gold-accent))] transition-colors"
-              >
-                <Bell className="w-4 h-4" />
-              </button>
-            )}
-            <CoinCounter balance={userBalance} isLoading={balanceLoading} />
-            {!user && (
-              <button
-                onClick={() => navigate(PUBLIC_ROUTES.login)}
-                className="text-[10px] tracking-[0.2em] uppercase font-mono border border-[hsl(var(--gold-accent)/0.4)] px-3 py-1.5 text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] transition-colors"
-              >
-                ENTRAR
-              </button>
-            )}
-            {/* Mobile menu toggle */}
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden text-[hsl(0,0%,55%)] hover:text-[hsl(var(--gold-accent))] transition-colors"
-            >
-              {mobileOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile menu */}
-        {mobileOpen && (
-          <div className="lg:hidden border-t border-[hsl(var(--gold-accent)/0.1)] bg-[hsl(0,0%,5%)]/98 backdrop-blur-md px-4 py-4 space-y-3 animate-fade-in">
-            {navLinks.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                onClick={() => setMobileOpen(false)}
-                className={`block py-2 ${linkClass(l.to)}`}
-              >
-                {l.label}
-              </Link>
-            ))}
-            {user &&
-              authNavLinks.map((l) => (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  onClick={() => setMobileOpen(false)}
-                  className={`block py-2 ${linkClass(l.to)}`}
-                >
-                  {l.label}
-                </Link>
-              ))}
-            {user && (
-              <Link
-                to={AUTH_ROUTES.notifications}
-                onClick={() => setMobileOpen(false)}
-                className={`block py-2 ${linkClass(AUTH_ROUTES.notifications)}`}
-              >
-                🔔 NOTIFICAÇÕES
-              </Link>
-            )}
-            {isAdmin && (
-              <Link
-                to={ADMIN_ROUTES.home}
-                onClick={() => setMobileOpen(false)}
-                className="block py-2 text-[10px] tracking-[0.2em] uppercase font-mono text-red-500"
-              >
-                ADMIN
-              </Link>
-            )}
-          </div>
-        )}
-      </nav>
-    </>
-  );
-}
-
 // ─── SECTION TITLE ───────────────────────────────────────────────────
 
 export function ArcadeSectionTitle({ children }: { children: string }) {
@@ -311,8 +94,12 @@ export function ArcadeSectionTitle({ children }: { children: string }) {
     <div className="flex items-center gap-4 mb-8">
       <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[hsl(var(--gold-accent)/0.3)]" />
       <h2
-        className="text-sm tracking-[0.3em] text-[hsl(var(--gold-accent))] uppercase"
-        style={{ fontFamily: "'Press Start 2P', monospace", fontSize: "10px" }}
+        className="text-center text-[hsl(var(--gold-accent))] uppercase"
+        style={{
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: "clamp(9px, 2.5vw, 10px)",
+          letterSpacing: "clamp(1.2px, 0.39vw, 3px)",
+        }}
       >
         {children}
       </h2>
@@ -328,11 +115,13 @@ interface ArcadeHeroProps {
   title: string;
   subtitle: string;
   stats?: { value: string | number; label: string }[];
+  /** Reduce the promotional hero height on dense, browse-first pages. */
+  compact?: boolean;
 }
 
-export function ArcadeHero({ badge, title, subtitle, stats }: ArcadeHeroProps) {
+export function ArcadeHero({ badge, title, subtitle, stats, compact = false }: ArcadeHeroProps) {
   return (
-    <section className="relative py-16 md:py-24 px-6 overflow-hidden">
+    <section className={`relative overflow-hidden px-6 ${compact ? "py-6 sm:py-9 md:py-12" : "py-16 md:py-24"}`}>
       <FloatingParticles />
 
       <div
@@ -344,7 +133,7 @@ export function ArcadeHero({ badge, title, subtitle, stats }: ArcadeHeroProps) {
       />
 
       <div className="relative max-w-5xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 border border-[hsl(var(--gold-accent)/0.4)] bg-[hsl(var(--gold-accent)/0.05)] animate-fade-in">
+        <div className={`inline-flex items-center gap-2 px-4 py-1.5 border border-[hsl(var(--gold-accent)/0.4)] bg-[hsl(var(--gold-accent)/0.05)] animate-fade-in ${compact ? "mb-4" : "mb-6"}`}>
           <div className="w-2 h-2 bg-[hsl(var(--gold-accent))] rounded-full animate-pulse" />
           <span
             className="text-[9px] text-[hsl(var(--gold-accent))] tracking-[0.3em] uppercase"
@@ -355,7 +144,7 @@ export function ArcadeHero({ badge, title, subtitle, stats }: ArcadeHeroProps) {
         </div>
 
         <h1
-          className="text-5xl md:text-7xl lg:text-8xl font-black tracking-[0.15em] mb-4 leading-none"
+          className={`font-black tracking-[clamp(0.08em,2vw,0.15em)] mb-4 leading-none ${compact ? "text-5xl md:text-6xl lg:text-7xl" : "text-5xl md:text-7xl lg:text-8xl"}`}
           style={{
             fontFamily: "'Bebas Neue', Impact, sans-serif",
             textShadow: "0 0 40px hsl(var(--gold-accent) / 0.15)",
@@ -365,7 +154,7 @@ export function ArcadeHero({ badge, title, subtitle, stats }: ArcadeHeroProps) {
         </h1>
 
         <p
-          className="text-[hsl(0,0%,50%)] text-[10px] md:text-xs max-w-lg mx-auto tracking-[0.15em] mb-8"
+          className={`text-[hsl(0,0%,50%)] text-[10px] md:text-xs max-w-lg mx-auto tracking-[0.15em] ${compact ? "mb-4" : "mb-8"}`}
           style={{ fontFamily: "'Press Start 2P', monospace" }}
         >
           {subtitle}

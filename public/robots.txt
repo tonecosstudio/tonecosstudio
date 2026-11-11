@@ -1,9 +1,2 @@
-# Robots.txt para Ordax Collectibles
 User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /perfil
-Disallow: /login
-
-# Sitemap
-Sitemap: https://ordax.com.br/sitemap.xml
+Disallow: /

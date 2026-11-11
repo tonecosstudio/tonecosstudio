@@ -1,5 +1,8 @@
 # Email Templates - Character Choice Reminders
 
+> **Escopo e segurança (04/11/2026):** documentação técnica de módulo **comercial futuro**; não integra o MVP público somente leitura hospedado no Cloudflare Pages. Conteúdo histórico não autoriza deploy, acesso a Supabase, envio de e-mails, operações financeiras nem reutilização de domínios/credenciais da OrdaX. Validar código, identidade, configuração e autorização antes de ativar esta funcionalidade.
+
+
 This directory contains reusable HTML email templates for the Production Management System's character choice reminder workflow.
 
 ## Overview
@@ -104,7 +107,7 @@ All templates use the following variable syntax: `{{variableName}}`
 | `{{userName}}` | Customer's name | "João Silva" |
 | `{{collectionName}}` | Name of the collection | "Marvel Legends" |
 | `{{deadline}}` | Formatted deadline date | "15/01/2024" |
-| `{{choiceUrl}}` | URL to character selection page | "https://ordax.com.br/assinatura/123" |
+| `{{choiceUrl}}` | URL to character selection page | "https://example.invalid/assinatura/123" |
 | `{{year}}` | Current year for copyright | "2024" |
 
 ### Admin Template Variables
@@ -116,7 +119,7 @@ All templates use the following variable syntax: `{{variableName}}`
 | `{{orderId}}` | Order identifier | "abc-123-def" |
 | `{{orderType}}` | Type of order | "Assinatura" or "Compra Avulsa" |
 | `{{daysExpired}}` | Days since deadline expired | "2" |
-| `{{adminUrl}}` | URL to admin management panel | "https://ordax.com.br/admin/character-choices" |
+| `{{adminUrl}}` | URL to admin management panel | "https://example.invalid/admin/character-choices" |
 
 ---
 

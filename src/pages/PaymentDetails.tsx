@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CreditCard } from "lucide-react";
 import { CustomerPaymentDetails } from "@/components/customer/CustomerPaymentDetails";
 import { Page } from "@/components/layouts/Page";
+import { BRAND_NAME } from "@/config/brand";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { AUTH_ROUTES } from "@/config/routes";
@@ -17,7 +18,7 @@ export default function PaymentDetails() {
 
   if (!paymentId) {
     return (
-      <Page title="Pagamento nao encontrado | ORDAX" description="Detalhes do pagamento">
+      <Page title={`Pagamento nao encontrado | ${BRAND_NAME}`} description="Detalhes do pagamento">
         <section className="relative px-6 py-12 md:py-16">
           <div className="mx-auto max-w-5xl">
             <div className="rounded-sm border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] p-8 text-center">
@@ -38,7 +39,7 @@ export default function PaymentDetails() {
 
   return (
     <Page
-      title="Detalhes do Pagamento | ORDAX"
+      title={`Detalhes do Pagamento | ${BRAND_NAME}`}
       description="Acompanhe status, comprovantes e orientacoes do pagamento."
     >
       <section className="relative px-6 py-12 md:py-16">

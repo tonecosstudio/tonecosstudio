@@ -7,11 +7,7 @@
 // Saldo de coins
 export {
   useCoinsBalance,
-  useHasSufficientBalance,
-  useBalanceAfterPurchase,
-  useInitializeBalance,
   invalidateCoinsBalance,
-  updateCoinsBalanceCache,
   coinsBalanceKeys,
 } from "./useCoinsBalance";
 
@@ -28,6 +24,3 @@ export {
   filterTransactionsByPeriod,
   coinsTransactionsKeys,
 } from "./useCoinsTransactions";
-
-// Reembolso de compras registradas no ledger canônico de coins.
-export { useRefundPurchase } from "./usePurchaseWithCoins";

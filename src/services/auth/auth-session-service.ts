@@ -69,13 +69,15 @@ export async function signInWithPasswordCredentials(params: {
   password: string;
 }) {
   const rateLimitKey = assertAuthRateLimit("login", params.email, RATE_LIMITS.login);
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: normalizeAuthSubject(params.email),
     password: params.password,
   });
 
   if (error) throw normalizeAuthError(error);
+  if (!data?.user || !data.session) throw new Error("tonecos_login_incomplete");
   resetRateLimit(rateLimitKey);
+  return data.user.id;
 }
 
 export async function signUpWithPasswordCredentials(params: {
@@ -86,7 +88,7 @@ export async function signUpWithPasswordCredentials(params: {
   emailRedirectTo: string;
 }) {
   const rateLimitKey = assertAuthRateLimit("signup", params.email, RATE_LIMITS.register);
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: normalizeAuthSubject(params.email),
     password: params.password,
     options: {
@@ -103,6 +105,7 @@ export async function signUpWithPasswordCredentials(params: {
   }
 
   resetRateLimit(rateLimitKey);
+  return { userId: data.user?.id ?? null, emailConfirmationRequired: !data.session };
 }
 
 export async function signInWithGoogleOAuth(redirectTo: string) {

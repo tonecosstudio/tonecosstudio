@@ -1,75 +1,45 @@
-# ORDAX
+# TONART Studio
 
-Plataforma web da Tonecos Studios para catálogo, clientes, assinaturas, pagamentos e operação de produção de colecionáveis.
+O site público oficial TONART Studio está em **https://tonartstudio.com.br**, hospedado manualmente no projeto Vercel `tonart-studio-public` da equipe Washington, com GitHub `tonecosstudio/tonecosstudio` como fonte única. **Cloudflare permanece como backend canônico** (Worker, D1/R2) e preview protegido. Em 09/11/2026 o catálogo visual foi publicado manualmente no domínio oficial como **pré-lançamento somente leitura/noindex**, no deployment Vercel `dpl_HF9PbdGxtke3cdg981yhFEauZP2B` (`READY`), SHA `0d7cc5dd957215672c328187215035fb162c7322`. Renders comuns estão visíveis e os 264 modelos SpecialSTL identificados permanecem em quarentena, sem substituições aprovadas. **Lançamento comercial e indexação continuam NO-GO**. A regra permanente está em [AGENTS.md](AGENTS.md).
 
-## Estado atual
+## Quem é dono de quê
 
-**NO-GO para lançamento.** A recuperação está sendo executada diretamente na **main**, única branch operacional.
+| Recurso | Conta e origem | Estado |
+| --- | --- | --- |
+| Repositório do site | GitHub tonecosstudio/tonecosstudio (ID 1163825583) | Único código-fonte do site; PR #4 draft |
+| Hospedagem do frontend oficial | Vercel `tonart-studio-public`, equipe Washington | `tonartstudio.com.br` e `www`, deploy manual controlado, site pré-lançamento/noindex |
+| Prévia | Cloudflare Pages + Cloudflare Access | Testes privados, sem segundo frontend público oficial |
+| API de modelos e imagens | Cloudflare Worker tonecos-catalogo-api, mesma conta Tonecos | Autoridade única dos modelos; D1/R2 somente via Worker |
+| Código do backend da API | Origem temporária GitHub washingtonmsdj/catalogo → destino **services/catalogo/** neste repo | Migração para monorepo **autorizada como plano**, sem copiar/cutover/publicar até gates |
+| Publicação | PR #4 Draft → CI offline → Vercel projeto oficial | Git auto deploy desligado; nenhum GO de mídia sem aprovação |
+| Supabase, Stripe, clientes, pedidos | Aplicação comercial futura | Excluídos do MVP público somente leitura |
 
-O site público renderiza, mas o catálogo publicado está vazio e o projeto Supabase declarado pelo repositório está inativo. O repositório também não possuía CI versionado nem release publicada na auditoria de 2026-08-30.
+O endereço GitHub antigo washingtonmsdj/tonecosstudio redireciona ao mesmo repositório institucional ID 1163825583. Isso **não** transfere a Vercel antiga para a conta Tonecos.
 
-O plano, as evidências e o próximo passo ficam em [URGENTE.md](URGENTE.md). Não use percentuais ou relatórios datados como estado atual.
+**Decisão canônica:** o frontend e o backend ficarão no **mesmo repositório tonecosstudio/tonecosstudio**. O serviço Worker, os dados D1 e imagens R2 continuam únicos na Cloudflare Tonecos. A implementação segue o [plano canônico de consolidação](docs/MIGRACAO_CATALOGO_MONOREPO.md), sem criar outro GitHub repo nem importar a antiga interface React.
 
-## Stack
+**Migração em andamento:** a API pública foi copiada **inativa** para [`services/catalogo/`](services/catalogo/README.md), com 22 migrations D1 versionadas e testes offline. O publicador ativo e o banco **continuam na origem atual**; nenhuma versão nova do Worker foi publicada. Plano: [MIGRACAO_CATALOGO_MONOREPO.md](docs/MIGRACAO_CATALOGO_MONOREPO.md).
 
-- React 18, TypeScript e Vite;
-- Tailwind CSS, shadcn/ui e Radix UI;
-- Supabase Auth, PostgreSQL, Storage e Edge Functions;
-- Stripe;
-- Vitest e Testing Library.
+## Arquitetura e escopo
 
-## Requisitos
+Navegador → Vercel React/Vite (`tonartstudio.com.br`) → `/catalogo-api/` na mesma origem → adaptador Vercel GET restrito → Worker canônico `tonecos-catalogo-api` → D1/R2. Prévia privada alternativa: Cloudflare Pages → Pages Function GET → Worker canônico. O Pages não controla o banco nem mantém outro catálogo. O site público mostra Home, Universo, listagem/busca, fichas/galerias, Sobre, Contato por e-mail, Termos e Privacidade. Sem cadastro, login, orçamento confirmado, checkout, pagamento ou admin nesta fase.
 
-- Node.js 24 LTS;
-- npm;
-- projeto Supabase separado por ambiente;
-- credenciais server-side configuradas fora do Git.
+A aplicação comercial antiga continua no repositório para uma fase posterior, mas não foi incluída nos chunks do MVP readonly homologado. Preservar a identidade visual escura/dourada Arcade existente, sem outro frontend ou design system.
 
-## Desenvolvimento local
+## Desenvolvimento e validação
 
-1. Clone o repositório.
-2. Execute npm ci.
-3. Copie .env.example para .env.local.
-4. Preencha somente os valores do seu ambiente.
-5. Execute npm run dev.
+Requer Node.js 24 LTS e npm. Usar **npm ci** e **npm run release:verify** em ambiente configurado para validar TypeScript, lint, auditorias, testes/cobertura, build e dependências. Copiar .env.example para .env.local apenas em desenvolvimento; segredos não podem entrar em VITE_* nem no Git. O proxy first-party é configurado no Cloudflare Pages, não em uma nova API do site.
 
-Nunca coloque service_role, Stripe secret, OAuth secret, SMTP secret ou tokens em variáveis VITE_*.
+O workflow GitHub `quality.yml` valida as alterações da PR por impacto; a produção Vercel só é atualizada manualmente com SHA aprovado. Compilação verde não comprova QA visual, origem de mídia, revisão jurídica ou GO do MVP.
 
-## Quality Gate
+## Documentação vigente
 
-Execute antes de cada commit relevante e confirme novamente no push:
+- [AGENTS.md](AGENTS.md): regras de execução, conta e SSOT.
+- [URGENTE.md](URGENTE.md): checkpoint operacional e bloqueios.
+- [docs/README.md](docs/README.md): índice da documentação ativa e do arquivo histórico.
+- [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md): autoridade de cada camada.
+- [docs/TONECOS_CATALOG_FIRST_PARTY_PROXY.md](docs/TONECOS_CATALOG_FIRST_PARTY_PROXY.md): caminho do Worker.
+- [docs/TONECOS_SAFE_PREVIEW.md](docs/TONECOS_SAFE_PREVIEW.md): proteção do preview.
+- [docs/OPERACAO_CLOUDFLARE_PAGES.md](docs/OPERACAO_CLOUDFLARE_PAGES.md): publicação, rollback e limite gratuito.
 
-- npm run format:check
-- npm run typecheck
-- npm run lint
-- npm run security:supabase-access
-- npm run test:coverage
-- npm run build
-- npm audit --omit=dev --audit-level=high
-
-O GitHub Actions deve executar o mesmo gate em cada push para a main. Um build local isolado não prova prontidão de produção.
-
-## Documentação canônica
-
-- [URGENTE.md](URGENTE.md): plano e status de lançamento;
-- [AGENTS.md](AGENTS.md): regras de continuidade e qualidade;
-- [docs/README.md](docs/README.md): mapa da documentação vigente;
-- [docs-archive/](docs-archive/): histórico sem autoridade operacional.
-
-## Estrutura principal
-
-- src/: aplicação React;
-- supabase/migrations/: histórico do schema;
-- supabase/functions/: Edge Functions;
-- scripts/: automações e auditorias;
-- docs/: documentação vigente;
-- docs-archive/: relatórios históricos;
-- public/: assets públicos.
-
-## Segurança
-
-A base possui TypeScript strict, CSP, RLS e auditoria de fronteiras Supabase, mas segurança de lançamento só será declarada após CI verde, projeto remoto acessível, advisors, revisão de grants/RLS/funções e testes de autorização. Veja os gates em URGENTE.md.
-
-## Licença
-
-Proprietary — todos os direitos reservados.
+O catálogo visual já está publicado em pré-lançamento na Vercel com renders comuns visíveis. **Não liberar imagens SpecialSTL em quarentena, indexação, contas, pedidos ou pagamentos**, nem declarar lançamento comercial concluído, sem direitos verificados, revisão pertinente e autorização explícita. A PR #4 permanece Draft; o deploy manual não equivale a merge.

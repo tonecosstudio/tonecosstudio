@@ -208,6 +208,22 @@ function assertExecuteConfig() {
       "Missing VITE_CATALOG_ASSET_BASE_URL/CATALOG_ASSET_BASE_URL for R2 thumbnail URLs.",
     );
   }
+  let origin;
+  try {
+    origin = new URL(ASSET_BASE_URL);
+  } catch {
+    throw new Error("Invalid catalog asset origin.");
+  }
+  if (
+    origin.protocol !== "https:" ||
+    origin.username || origin.password || origin.search || origin.hash ||
+    origin.pathname !== "/" ||
+    origin.hostname === "ordax.com.br" ||
+    origin.hostname.endsWith(".ordax.com.br") ||
+    origin.hostname.endsWith(".vercel.app")
+  ) {
+    throw new Error("An explicit HTTPS Tonecos media origin is required; OrdaX domains are forbidden.");
+  }
 }
 
 async function ensureCatalogQueueReady() {

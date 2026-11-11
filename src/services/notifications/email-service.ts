@@ -88,9 +88,11 @@ export class EmailService {
       fromName:
         import.meta.env.VITE_EMAIL_FROM_NAME ||
         import.meta.env.VITE_COMPANY_NAME ||
-        "ORDAX",
+        CONTACT.COMPANY_NAME,
       maxRetries:
-        Number.isInteger(parsedRetries) && parsedRetries >= 0 ? parsedRetries : 3,
+        Number.isInteger(parsedRetries) && parsedRetries >= 0
+          ? parsedRetries
+          : 3,
       retryDelay:
         Number.isFinite(parsedDelay) && parsedDelay > 0 ? parsedDelay : 2000,
     };
@@ -183,7 +185,10 @@ export class EmailService {
         lastError = error instanceof Error ? error : new Error(String(error));
         attempt += 1;
 
-        if (!this.isRetryableError(lastError) || attempt > this.config.maxRetries) {
+        if (
+          !this.isRetryableError(lastError) ||
+          attempt > this.config.maxRetries
+        ) {
           break;
         }
 
@@ -272,7 +277,8 @@ export class EmailService {
       if (collection?.name) collectionName = collection.name;
     }
 
-    const userName = profile.full_name || profile.display_name || profile.email.split("@")[0];
+    const userName =
+      profile.full_name || profile.display_name || profile.email.split("@")[0];
     const safeUserName = escapeHtml(userName);
     const safeCollection = escapeHtml(collectionName);
     const dashboardUrl = `${window.location.origin}/my-orders`;
@@ -286,7 +292,7 @@ export class EmailService {
 
     await this.sendEmail(
       profile.email,
-      "Atualização de produção do seu pedido ORDAX",
+      `Atualização de produção do seu pedido ${CONTACT.COMPANY_NAME}`,
       html,
       "production_update",
       purchase.user_id,

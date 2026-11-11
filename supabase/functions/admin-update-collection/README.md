@@ -1,6 +1,9 @@
 # Admin Update Collection Endpoint
 
-Edge Function for updating existing collections in the ORDAX system.
+> **Escopo e segurança (04/11/2026):** documentação técnica de módulo **comercial futuro**; não integra o MVP público somente leitura hospedado no Cloudflare Pages. Conteúdo histórico não autoriza deploy, acesso a Supabase, envio de e-mails, operações financeiras nem reutilização de domínios/credenciais da OrdaX. Validar código, identidade, configuração e autorização antes de ativar esta funcionalidade.
+
+
+Edge Function for updating existing collections in the Tonecos Studio commercial module (not released in the readonly MVP).
 
 ## Requirements
 

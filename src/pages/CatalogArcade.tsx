@@ -1,637 +1,399 @@
-import { useEffect, useMemo } from "react";
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import {
-  ArrowRight,
-  ChevronRight,
-  Crosshair,
-  Folder,
-  FolderOpen,
-  Package,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { ArrowRight, FolderOpen, ImageOff } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
+import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import {
   ArcadeCard,
   ArcadeHero,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
-import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
-import {
-  PUBLIC_ROUTES,
-  catalogModelDetailsPath,
-  catalogUniverseCharacterPath,
-  catalogUniverseFranchisePath,
-  catalogUniverseThemePath,
-} from "@/config/routes";
-import {
-  listCatalogCharacterModels,
-  listCatalogUniverseIndex,
-  type CatalogUniverseFranchiseRow,
-  type CatalogUniverseThemeRow,
-} from "@/services/catalog/catalog-models-service";
-import type { CatalogCharacterRow, CatalogModelRow } from "@/types/catalog";
-import { getCatalogCharacterName, getCatalogVersionName } from "@/lib/catalog-utils";
+import { PUBLIC_ROUTES } from "@/config/routes";
+import { formatModelCountLabel } from "@/lib/catalog-model-count";
+import { CanonicalUniverseFolders } from "@/pages/catalog/CanonicalUniverseFolders";
+import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
+import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
+import { createPublicCatalogGateway, validCatalogFolder } from "@/services/catalog/public-catalog-gateway";
 
-function UniverseMiniFolderCard({
-  title,
-  subtitle,
-  countLabel,
-  imageUrl,
-  to,
-  tone = "root",
-}: {
-  title: string;
-  subtitle: string;
-  countLabel: string;
-  imageUrl: string | null;
-  to: string;
-  tone?: "root" | "branch";
-}) {
-  return (
-    <ArcadeCard>
-      <Link to={to} className="group flex h-full flex-col">
-        <div className="relative aspect-square overflow-hidden bg-[hsl(0,0%,8%)]">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={title}
-              className="h-full w-full object-cover opacity-75 transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Crosshair className="h-8 w-8 text-[hsl(0,0%,18%)]" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0,0%,5%)] via-[hsl(0,0%,5%)]/20 to-transparent" />
-          <div className="absolute left-2 top-2 border border-[hsl(var(--gold-accent)/0.28)] bg-[hsl(0,0%,5%)]/92 px-1.5 py-0.5 font-mono text-[7px] uppercase tracking-[0.16em] text-[hsl(var(--gold-accent))]">
-            {tone === "root" ? "Raiz" : "Subpasta"}
-          </div>
-          <div className="absolute right-2 top-2 text-[hsl(var(--gold-accent))]">
-            {tone === "root" ? (
-              <Folder className="h-4 w-4" />
-            ) : (
-              <FolderOpen className="h-4 w-4" />
-            )}
-          </div>
-        </div>
-        <div className="flex flex-1 flex-col gap-1.5 p-2.5">
-          <div className="line-clamp-2 text-sm font-black uppercase tracking-[0.05em] text-[hsl(0,0%,97%)] group-hover:text-[hsl(var(--gold-accent))]">
-            {title}
-          </div>
-          <div className="line-clamp-1 font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(0,0%,48%)]">
-            {subtitle}
-          </div>
-          <div className="mt-auto inline-flex w-fit items-center gap-1.5 border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(0,0%,70%)]">
-            <Package className="h-3 w-3" />
-            {countLabel}
-          </div>
-        </div>
-      </Link>
-    </ArcadeCard>
-  );
+const VALID_SLUG = /^[a-z0-9][a-z0-9-]{0,239}$/;
+
+function modelsPath(category?: string, franchise?: string): string {
+  const params = new URLSearchParams();
+  if (category) params.set("category", category);
+  if (franchise) params.set("franchise", franchise);
+  const search = params.toString();
+  return PUBLIC_ROUTES.catalogModels + (search ? "?" + search : "");
 }
 
-function UniverseMiniCharacterCard({
-  row,
-  to,
-}: {
-  row: CatalogCharacterRow;
-  to: string;
-}) {
-  const imageUrl = row.thumbnailUrl ?? row.imageUrl;
-
-  return (
-    <ArcadeCard>
-      <Link to={to} className="group flex h-full flex-col">
-        <div className="relative aspect-[3/4] overflow-hidden bg-[hsl(0,0%,8%)]">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={row.character_name}
-              className="h-full w-full object-cover opacity-80 transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Crosshair className="h-8 w-8 text-[hsl(0,0%,18%)]" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0,0%,5%)] via-transparent to-transparent" />
-        </div>
-        <div className="flex flex-1 flex-col gap-1.5 p-2.5">
-          <div className="line-clamp-2 text-sm font-black uppercase tracking-[0.05em] text-[hsl(0,0%,97%)] group-hover:text-[hsl(var(--gold-accent))]">
-            {row.character_name}
-          </div>
-          {row.source_title && (
-            <div className="line-clamp-1 font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(0,0%,48%)]">
-              {row.source_title}
-            </div>
-          )}
-          <div className="mt-auto inline-flex w-fit items-center gap-1.5 border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(0,0%,70%)]">
-            <Sparkles className="h-3 w-3" />
-            {row.model_count} {row.model_count === 1 ? "modelo" : "modelos"}
-          </div>
-        </div>
-      </Link>
-    </ArcadeCard>
-  );
+function readableSlugLabel(slug: string): string {
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
-function UniverseMiniModelCard({ model }: { model: CatalogModelRow }) {
-  const imageUrl = model.thumbnailUrl ?? model.imageUrl;
-  const characterName = getCatalogCharacterName(model);
-  const versionName = getCatalogVersionName(model);
-  const title = versionName || characterName;
-  const detailsPath = catalogModelDetailsPath(
-    model.id,
-    [model.character_name || model.name, model.variant_name]
-      .filter(Boolean)
-      .join(" "),
-  );
-
-  return (
-    <ArcadeCard>
-      <Link to={detailsPath} className="group flex h-full flex-col">
-        <div className="relative aspect-[3/4] overflow-hidden bg-[hsl(0,0%,8%)]">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={title}
-              className="h-full w-full object-cover opacity-85 transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Crosshair className="h-8 w-8 text-[hsl(0,0%,18%)]" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0,0%,5%)] via-transparent to-transparent" />
-        </div>
-        <div className="flex flex-1 flex-col gap-1.5 p-2.5">
-          <div className="line-clamp-2 text-sm font-black uppercase tracking-[0.05em] text-[hsl(0,0%,97%)] group-hover:text-[hsl(var(--gold-accent))]">
-            {title}
-          </div>
-          {title !== characterName && (
-            <div className="line-clamp-1 font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(0,0%,48%)]">
-              {characterName}
-            </div>
-          )}
-          <div className="mt-auto inline-flex w-fit items-center gap-1.5 border border-[hsl(var(--gold-accent)/0.28)] px-2 py-1 font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--gold-accent))]">
-            Abrir detalhe
-            <ArrowRight className="h-3 w-3" />
-          </div>
-        </div>
-      </Link>
-    </ArcadeCard>
-  );
-}
-
-function buildUniversePath(params: {
-  themeKey?: string | null;
-  franchiseKey?: string | null;
-  characterSlug?: string | null;
-}) {
-  if (params.themeKey && params.franchiseKey && params.characterSlug) {
-    return catalogUniverseCharacterPath(
-      params.themeKey,
-      params.franchiseKey,
-      params.characterSlug,
-    );
-  }
-
-  if (params.themeKey && params.franchiseKey) {
-    return catalogUniverseFranchisePath(params.themeKey, params.franchiseKey);
-  }
-
-  if (params.themeKey) {
-    return catalogUniverseThemePath(params.themeKey);
-  }
-
-  return PUBLIC_ROUTES.catalog;
-}
-
-function isUuidLikePathParam(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    value,
-  );
-}
-
-function normalizeUniverseKey(value: string | null | undefined) {
-  return String(value || "").trim().toLowerCase();
-}
-
-function slugifyUniverseSegment(value: string | null | undefined) {
-  return String(value || "")
+function normalizeUniverseLabel(value: string): string {
+  return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, " e ")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 
-function getUniverseThemeKeyForCharacter(row: CatalogCharacterRow) {
-  const combined = [row.source_title, row.category, ...(row.tags ?? [])]
-    .map(normalizeUniverseKey)
-    .join(" ");
+const ALL_MODELS_CATEGORY_KEYS = new Set([
+  "all",
+  "all-categories",
+  "all-items",
+  "all-models",
+  "acervo-completo",
+  "catalogo-completo",
+  "todas",
+  "todas-as-categorias",
+  "todas-categorias",
+  "todos",
+  "todos-modelos",
+  "todos-os-modelos",
+]);
 
-  if (/\bmarvel\b/.test(combined)) return "marvel";
-  if (/\bdc\b/.test(combined) || /\bdc-comics\b/.test(combined)) return "dc";
-
-  const sourceType = normalizeUniverseKey(row.source_type);
-  if (sourceType === "anime") return "anime";
-  if (sourceType === "manga") return "manga";
-  if (sourceType === "movie") return "filmes";
-  if (sourceType === "series") return "series";
-  if (sourceType === "game") return "games";
-  if (sourceType === "comic") return "quadrinhos";
-  if (sourceType === "tokusatsu") return "tokusatsu";
-  if (sourceType === "original") return "originais";
-
-  const category = normalizeUniverseKey(row.category);
-  if (category === "quadrinhos") return "quadrinhos";
-  if (category === "filmes") return "filmes";
-  if (category === "series") return "series";
-  if (category === "jogos") return "games";
-  if (
-    category === "desenhos" ||
-    category === "desenho" ||
-    category === "animacao" ||
-    category === "desenho animacao" ||
-    category === "desenhos animacao"
-  ) {
-    return "desenho-animacao";
-  }
-
-  return "outros";
+function isAllModelsCategory(category: { id: string; label: string }): boolean {
+  return (
+    ALL_MODELS_CATEGORY_KEYS.has(normalizeUniverseLabel(category.id)) ||
+    ALL_MODELS_CATEGORY_KEYS.has(normalizeUniverseLabel(category.label))
+  );
 }
 
-function getUniverseFranchiseKeyForCharacter(
-  row: CatalogCharacterRow,
-  fallbackThemeKey: string,
-) {
-  return slugifyUniverseSegment(row.source_title || "") || fallbackThemeKey;
+function isAnimesAndDrawingsCategory(id: string, label?: string): boolean {
+  const animeKeys = new Set(["animes-desenhos", "animes-e-desenhos"]);
+  return (
+    animeKeys.has(normalizeUniverseLabel(id)) ||
+    animeKeys.has(normalizeUniverseLabel(label ?? ""))
+  );
 }
 
+function categoryDisplayLabel(id: string, label?: string): string {
+  if (isAnimesAndDrawingsCategory(id, label)) return "Animes e Desenhos";
+  return label ?? readableSlugLabel(id);
+}
+
+/**
+ * Public Universe is only a navigation layer over the canonical D1/R2 catalog.
+ * Do not build a second catalog from Supabase models or fetch every page to
+ * synthesize missing character/folder aggregates.
+ */
 export default function CatalogArcade() {
-  const navigate = useNavigate();
-  const { themeKey = "", franchiseKey = "", characterSlug = "" } = useParams<{
+  const { themeKey, franchiseKey, characterSlug } = useParams<{
     themeKey?: string;
     franchiseKey?: string;
     characterSlug?: string;
   }>();
-  const [searchParams] = useSearchParams();
-  const legacyTheme = searchParams.get("tema")?.trim().toLowerCase() ?? "";
-  const legacyFranchise = searchParams.get("obra")?.trim().toLowerCase() ?? "";
-  const legacyCharacter = searchParams.get("personagem")?.trim().toLowerCase() ?? "";
-
-  const activeTheme = (themeKey || legacyTheme).trim().toLowerCase();
-  const activeFranchise = (franchiseKey || legacyFranchise).trim().toLowerCase();
-  const activeCharacter = (characterSlug || legacyCharacter).trim().toLowerCase();
-  const hasLegacyQuery = Boolean(legacyTheme || legacyFranchise || legacyCharacter);
-  const shouldRedirectLegacyModel =
-    activeTheme && isUuidLikePathParam(activeTheme) && !activeFranchise && !activeCharacter;
+  const mediaUnderReview = isCatalogMediaUnderReview();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const folderScope = searchParams.get("folder");
+  const invalidFolderScope = folderScope !== null && !validCatalogFolder(folderScope);
+  const invalidScope =
+    (themeKey !== undefined && !VALID_SLUG.test(themeKey)) ||
+    (franchiseKey !== undefined && !VALID_SLUG.test(franchiseKey)) ||
+    invalidFolderScope;
+  const franchiseSearch = searchParams.get("q")?.trim() ?? "";
+  const franchiseLabelSearch = franchiseKey
+    ? franchiseKey.replace(/-/g, " ")
+    : franchiseSearch;
+  const [franchiseDraft, setFranchiseDraft] = useState(franchiseSearch);
+  const invalidFranchiseSearch =
+    franchiseSearch.length > 0 &&
+    (Array.from(franchiseSearch).length < 3 ||
+      Array.from(franchiseSearch).length > 80);
 
   useEffect(() => {
-    if (!hasLegacyQuery) return;
-    navigate(
-      buildUniversePath({
-        themeKey: legacyTheme || activeTheme || null,
-        franchiseKey: legacyFranchise || activeFranchise || null,
-        characterSlug: legacyCharacter || activeCharacter || null,
-      }),
-      { replace: true },
-    );
-  }, [
-    activeCharacter,
-    activeFranchise,
-    activeTheme,
-    hasLegacyQuery,
-    legacyCharacter,
-    legacyFranchise,
-    legacyTheme,
-    navigate,
-  ]);
+    setFranchiseDraft(franchiseSearch);
+  }, [franchiseSearch, themeKey]);
 
-  const universeQuery = useQuery({
-    queryKey: ["catalog-universe-index"],
-    queryFn: listCatalogUniverseIndex,
-  });
-
-  const themes = useMemo(() => universeQuery.data?.themes ?? [], [universeQuery.data?.themes]);
-  const franchises = useMemo(
-    () => universeQuery.data?.franchises ?? [],
-    [universeQuery.data?.franchises],
-  );
-  const characters = useMemo(
-    () => universeQuery.data?.characters ?? [],
-    [universeQuery.data?.characters],
-  );
-
-  const currentTheme = useMemo(
-    () => themes.find((theme) => theme.key === activeTheme) ?? null,
-    [activeTheme, themes],
-  );
-  const currentFranchise = useMemo(
-    () =>
-      franchises.find(
-        (franchise) =>
-          franchise.themeKey === activeTheme && franchise.key === activeFranchise,
-      ) ?? null,
-    [activeFranchise, activeTheme, franchises],
-  );
-
-  const visibleFranchises = useMemo(
-    () =>
-      activeTheme
-        ? franchises.filter((franchise) => franchise.themeKey === activeTheme)
-        : [],
-    [activeTheme, franchises],
-  );
-
-  const visibleCharacters = useMemo(() => {
-    if (!activeTheme || !activeFranchise || !currentFranchise) return [];
-    return characters.filter((row) => {
-      const rowThemeKey = getUniverseThemeKeyForCharacter(row);
-      if (rowThemeKey !== activeTheme) return false;
-
-      const rowFranchiseKey = getUniverseFranchiseKeyForCharacter(row, rowThemeKey);
-      return rowFranchiseKey === currentFranchise.key;
-    });
-  }, [activeFranchise, activeTheme, characters, currentFranchise]);
-
-  const currentCharacter = useMemo(
-    () => visibleCharacters.find((row) => row.slug === activeCharacter) ?? null,
-    [activeCharacter, visibleCharacters],
-  );
-
-  const characterModelsQuery = useQuery({
-    queryKey: [
-      "catalog-universe-character-models",
-      currentCharacter?.character_name ?? "",
-      currentCharacter?.source_title ?? "",
-    ],
-    queryFn: () =>
-      listCatalogCharacterModels({
-        characterName: currentCharacter?.character_name ?? "",
-        sourceTitle: currentCharacter?.source_title ?? "",
-      }),
-    enabled: Boolean(currentCharacter),
-  });
-
-  const visibleModels = useMemo(
-    () => characterModelsQuery.data ?? [],
-    [characterModelsQuery.data],
-  );
-
-  const stats = useMemo(() => {
-    if (currentCharacter) {
-      return {
-        primary: visibleModels.length,
-        primaryLabel: visibleModels.length === 1 ? "Modelo" : "Modelos",
-        secondary: 1,
-        secondaryLabel: "Personagem",
-      };
+  function submitFranchiseSearch() {
+    const needle = franchiseDraft.trim();
+    if (needle && (Array.from(needle).length < 3 || Array.from(needle).length > 80)) {
+      return;
     }
-
-    if (activeTheme && activeFranchise) {
-      return {
-        primary: visibleCharacters.length,
-        primaryLabel: visibleCharacters.length === 1 ? "Personagem" : "Personagens",
-        secondary: visibleCharacters.reduce((total, row) => total + row.model_count, 0),
-        secondaryLabel: "Modelos",
-      };
-    }
-
-    if (activeTheme) {
-      return {
-        primary: visibleFranchises.length,
-        primaryLabel: visibleFranchises.length === 1 ? "Subpasta" : "Subpastas",
-        secondary: visibleFranchises.reduce((total, row) => total + row.modelCount, 0),
-        secondaryLabel: "Modelos",
-      };
-    }
-
-    return {
-      primary: themes.length,
-      primaryLabel: themes.length === 1 ? "Pasta raiz" : "Pastas raiz",
-      secondary: themes.reduce((total, row) => total + row.modelCount, 0),
-      secondaryLabel: "Modelos",
-    };
-  }, [
-    activeFranchise,
-    activeTheme,
-    currentCharacter,
-    themes,
-    visibleCharacters,
-    visibleFranchises,
-    visibleModels.length,
-  ]);
-
-  const breadcrumb = [
-    { label: "Universo", href: PUBLIC_ROUTES.catalog },
-    ...(currentTheme
-      ? [{ label: currentTheme.label, href: buildUniversePath({ themeKey: currentTheme.key }) }]
-      : []),
-    ...(currentFranchise
-      ? [
-          {
-            label: currentFranchise.label,
-            href: buildUniversePath({
-              themeKey: currentTheme?.key,
-              franchiseKey: currentFranchise.key,
-            }),
-          },
-        ]
-      : []),
-    ...(currentCharacter
-      ? [
-          {
-            label: currentCharacter.character_name,
-            href: buildUniversePath({
-              themeKey: currentTheme?.key,
-              franchiseKey: currentFranchise?.key,
-              characterSlug: currentCharacter.slug,
-            }),
-          },
-        ]
-      : []),
-  ];
-
-  const currentLevelTitle = currentCharacter
-    ? currentCharacter.character_name
-    : currentFranchise
-      ? currentFranchise.label
-      : currentTheme
-        ? currentTheme.label
-        : "Pastas raiz";
-
-  const currentLevelSubtitle = currentCharacter
-    ? ">> MINIATURAS DE MODELOS"
-    : currentFranchise
-      ? ">> PERSONAGENS"
-      : currentTheme
-        ? ">> SUBPASTAS"
-        : ">> TEMAS PRINCIPAIS";
-
-  if (shouldRedirectLegacyModel) {
-    return <Navigate to={catalogModelDetailsPath(activeTheme)} replace />;
+    const params = new URLSearchParams();
+    if (needle) params.set("q", needle);
+    setSearchParams(params);
   }
+
+  const gateway = useMemo(() => {
+    if (!CANONICAL_CATALOG_API_BASE) return null;
+    try {
+      return createPublicCatalogGateway(CANONICAL_CATALOG_API_BASE, fetch);
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const categoriesQuery = useQuery({
+    queryKey: ["tonecos-universe-canonical-categories"],
+    queryFn: ({ signal }) => gateway!.listCategories(signal),
+    enabled: gateway !== null && !invalidScope && !mediaUnderReview,
+    retry: false,
+    staleTime: 15 * 60 * 1000,
+  });
+
+  const franchisesQuery = useQuery({
+    queryKey: ["tonecos-universe-canonical-franchises", themeKey, franchiseLabelSearch],
+    queryFn: ({ signal }) =>
+      gateway!.listFranchises({
+        category: themeKey,
+        search: franchiseLabelSearch || undefined,
+        limit: 24,
+      }, signal),
+    enabled:
+      gateway !== null &&
+      !mediaUnderReview &&
+      Boolean(themeKey) &&
+      !invalidScope &&
+      (franchiseKey
+        ? Array.from(franchiseLabelSearch).length >= 3 &&
+          Array.from(franchiseLabelSearch).length <= 80
+        : !invalidFranchiseSearch),
+    retry: false,
+    staleTime: 15 * 60 * 1000,
+  });
+
+  // Existing deep links remain navigable. A character-only index is not
+  // exposed by the canonical API, so never invent character-level results.
+  if (characterSlug && franchiseKey && themeKey && !invalidScope) {
+    return <Navigate to={modelsPath(themeKey, franchiseKey)} replace />;
+  }
+
+  const activeQuery = themeKey ? franchisesQuery : categoriesQuery;
+  const categories = categoriesQuery.data ?? [];
+  // The API's aggregate "Todos" points to the same catalog as the CTA above.
+  const visibleCategories = categories.filter(
+    (category) => !isAllModelsCategory(category),
+  );
+  const franchises = franchisesQuery.data?.items ?? [];
+  const categoryLabel = themeKey
+    ? categoryDisplayLabel(
+        themeKey,
+        categories.find((category) => category.id === themeKey)?.label,
+      )
+    : "";
+  const franchiseLabel = franchiseKey
+    ? franchises.find(
+        (franchise) =>
+          franchise.id === franchiseKey && franchise.category === themeKey,
+      )?.label ?? readableSlugLabel(franchiseKey)
+    : "";
 
   return (
     <Page
-      title="Universo | ORDAX"
-      description="Navegue pelo acervo em estrutura tematica, com pastas, subpastas, personagens e miniaturas de modelos."
-      keywords={["universo", "pastas", "subpastas", "personagens", "modelos", "ordax"]}
+      title="Universo de modelos — TONART Studio"
+      description="Explore categorias, franquias e modelos publicados no acervo canônico TONART Studio."
+      keywords={["tonart", "universo", "modelos", "catálogo"]}
     >
-      <section className="relative overflow-hidden">
-        <FloatingParticles />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(var(--gold-accent)/0.08),transparent_45%)]" />
-
-        <div className="relative mx-auto max-w-7xl px-4 md:px-6">
-          <ArcadeHero
-            badge="Arquivo Tematico"
-            title={currentCharacter ? currentCharacter.character_name.toUpperCase() : "UNIVERSO"}
-            subtitle={currentLevelSubtitle}
-            stats={[
-              { value: stats.primary, label: stats.primaryLabel },
-              { value: stats.secondary, label: stats.secondaryLabel },
-            ]}
-          />
-        </div>
-      </section>
-
-      <section className="relative z-10 mx-auto -mt-6 max-w-7xl px-4 pb-12 md:px-6">
-        <div className="mb-5 flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,48%)]">
-          {breadcrumb.map((item, index) => (
-            <div key={item.href} className="flex items-center gap-2">
-              {index > 0 && <ChevronRight className="h-3 w-3 text-[hsl(0,0%,30%)]" />}
-              <Link
-                to={item.href}
-                className="transition-colors hover:text-[hsl(var(--gold-accent))]"
-              >
-                {item.label}
+      <div className="min-h-[80vh] bg-[hsl(0,0%,4%)] pb-20 text-[hsl(0,0%,94%)]">
+        <ArcadeHero
+          badge="ACERVO TONART"
+          title="UNIVERSO"
+          subtitle="EXPLORE CATEGORIAS, PERSONAGENS E UNIVERSOS."
+          stats={[]}
+          compact
+        />
+        <div className="relative z-10 mx-auto max-w-7xl px-4 pt-8 md:px-6">
+          <nav aria-label="Navegação do acervo" className="mb-8 flex flex-wrap items-center gap-3 text-xs">
+            <Link className="inline-flex min-h-11 items-center text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog}>
+              Universo
+            </Link>
+            {themeKey && (
+              <Link className="inline-flex min-h-11 items-center text-[hsl(0,0%,56%)] hover:text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(themeKey)}>
+                / {categoryLabel}
               </Link>
+            )}
+            {franchiseKey && (
+              <span className="text-[hsl(0,0%,56%)]">
+                / {franchiseLabel}
+              </span>
+            )}
+            <Link className="ml-auto inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent)/0.4)] px-4 py-3 font-mono uppercase text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={modelsPath()}>
+              Ver todos os modelos
+            </Link>
+          </nav>
+          <ArcadeSectionTitle>
+            {franchiseKey ? "PASTAS E MODELOS" : themeKey ? "FRANQUIAS DA CATEGORIA" : "CATEGORIAS"}
+          </ArcadeSectionTitle>
+
+          {themeKey && !franchiseKey && !invalidScope && !mediaUnderReview && (
+            <form
+              role="search"
+              aria-label="Buscar franquias desta categoria"
+              onSubmit={(event) => {
+                event.preventDefault();
+                submitFranchiseSearch();
+              }}
+              className="mt-6 flex flex-wrap items-center gap-3"
+            >
+              <label className="w-full min-w-0 flex-1 sm:w-auto sm:min-w-56">
+                <span className="sr-only">Nome da franquia</span>
+                <input
+                  type="search"
+                  value={franchiseDraft}
+                  onChange={(event) => setFranchiseDraft(event.target.value)}
+                  maxLength={80}
+                  placeholder="Buscar franquia (3+ letras)"
+                  className="h-12 w-full border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,7%)] px-4 text-sm text-[hsl(0,0%,94%)] focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={Boolean(franchiseDraft.trim()) && Array.from(franchiseDraft.trim()).length < 3}
+                className="h-12 w-full border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] disabled:opacity-40 sm:w-auto"
+              >
+                Buscar franquias
+              </button>
+              {franchiseSearch && (
+                <Link
+                  to={PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(themeKey)}
+                  className="inline-flex min-h-12 items-center border border-[hsl(0,0%,18%)] px-4 text-xs text-[hsl(0,0%,75%)] hover:text-[hsl(var(--gold-accent))]"
+                >
+                  Limpar busca
+                </Link>
+              )}
+            </form>
+          )}
+
+          {gateway === null ? (
+            <div role="status" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
+              O acervo não está disponível agora. Tente novamente mais tarde.
             </div>
-          ))}
-        </div>
-
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <ArcadeSectionTitle>{currentLevelTitle}</ArcadeSectionTitle>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to={PUBLIC_ROUTES.characterSelect}
-              className="inline-flex items-center gap-2 border border-[hsl(0,0%,15%)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,70%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.4)] hover:text-[hsl(var(--gold-accent))]"
-            >
-              <Users className="h-3.5 w-3.5" />
-              Personagens
-            </Link>
-            <Link
-              to={PUBLIC_ROUTES.catalogModels}
-              className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.28)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.08)]"
-            >
-              <Package className="h-3.5 w-3.5" />
-              Modelos
-            </Link>
-          </div>
-        </div>
-
-        {universeQuery.isLoading ? (
-          <ArcadeCard hover={false} className="p-8 text-center">
-            <Package className="mx-auto mb-4 h-12 w-12 animate-pulse text-[hsl(0,0%,22%)]" />
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,45%)]">
-              Carregando universo...
+          ) : invalidScope ? (
+            <div role={invalidFolderScope ? "alert" : "status"} className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
+              {invalidFolderScope
+                ? "Não foi possível encontrar esta pasta. Volte ao catálogo para continuar."
+                : "Categoria ou franquia inválida. Volte ao Universo para navegar pelas categorias publicadas."}
+            </div>
+          ) : mediaUnderReview ? (
+            <section role="status" aria-labelledby="universe-review-title" className="mt-6 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(0,0%,7%)] px-6 py-9 sm:px-9">
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))]">ACERVO TONART</p>
+              <h3 id="universe-review-title" className="mt-4 text-2xl font-semibold uppercase tracking-wide sm:text-3xl">Explore nosso universo</h3>
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[hsl(0,0%,70%)]">
+                Conheça as referências disponíveis no catálogo e explore diferentes personagens e estilos.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link to={PUBLIC_ROUTES.catalogModels} className="inline-flex min-h-11 items-center gap-2 border border-[hsl(var(--gold-accent))] px-5 py-3 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]">
+                  Consultar modelos <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+                <Link to={PUBLIC_ROUTES.contact} className="inline-flex min-h-11 items-center border border-[hsl(0,0%,30%)] px-5 py-3 text-sm text-[hsl(0,0%,85%)] hover:border-[hsl(var(--gold-accent))]">
+                  Falar com o estúdio
+                </Link>
+              </div>
+            </section>
+          ) : themeKey && !franchiseKey && invalidFranchiseSearch ? (
+            <p role="status" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
+              Pesquise franquias usando de 3 a 80 caracteres ou limpe a busca.
             </p>
-          </ArcadeCard>
-        ) : currentCharacter ? (
-          visibleModels.length === 0 && !characterModelsQuery.isLoading ? (
-            <ArcadeCard hover={false} className="p-8 text-center">
-              <Package className="mx-auto mb-4 h-12 w-12 text-[hsl(0,0%,22%)]" />
-              <h2 className="text-3xl font-black uppercase tracking-[0.08em]">
-                Nenhum modelo encontrado
-              </h2>
-            </ArcadeCard>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-              {visibleModels.map((model) => (
-                <UniverseMiniModelCard key={model.id} model={model} />
-              ))}
+          ) : franchiseKey && themeKey ? (
+            <CanonicalUniverseFolders
+              category={themeKey}
+              franchise={franchiseKey}
+              gateway={gateway}
+            />
+          ) : activeQuery.isPending ? (
+            <p role="status" className="mt-6 p-8 text-sm">{themeKey ? "Carregando franquias publicadas…" : "Carregando categorias publicadas…"}</p>
+          ) : activeQuery.isError ? (
+            <div role="alert" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
+              Não foi possível consultar o acervo oficial.
+              <button className="ml-4 border border-[hsl(var(--gold-accent))] px-4 py-2 text-[hsl(var(--gold-accent))]" type="button" onClick={() => void activeQuery.refetch()}>
+                Tentar novamente
+              </button>
             </div>
-          )
-        ) : activeTheme && activeFranchise ? (
-          visibleCharacters.length === 0 ? (
-            <ArcadeCard hover={false} className="p-8 text-center">
-              <Users className="mx-auto mb-4 h-12 w-12 text-[hsl(0,0%,22%)]" />
-              <h2 className="text-3xl font-black uppercase tracking-[0.08em]">
-                Nenhum personagem encontrado
-              </h2>
-            </ArcadeCard>
+          ) : themeKey ? (
+            franchises.length === 0 ? (
+              <p role="status" className="mt-6 p-8 text-sm">
+                Nenhuma franquia publicada nesta categoria.
+              </p>
+            ) : (
+              <>
+                <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {franchises.map((franchise) => (
+                    <ArcadeCard key={franchise.category + "/" + franchise.id}>
+                      <Link className="group flex min-h-44 flex-col focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + themeKey + "/" + franchise.id}>
+                        <div className="aspect-[4/3] w-full overflow-hidden bg-[hsl(0,0%,8%)]">
+                          <CanonicalCatalogImage
+                            src={gateway.mediaUrl(franchise.coverStorageKey ?? null)}
+                            alt={"Prévia de " + franchise.label}
+                            imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+                            fallbackClassName="flex h-full w-full items-center justify-center"
+                            fallbackIcon={<FolderOpen className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />}
+                            fallbackLabel=""
+                          />
+                        </div>
+                        <div className="flex flex-1 flex-col gap-2 p-4">
+                          <span className="line-clamp-3 break-words text-[clamp(0.625rem,3vw,0.875rem)] font-semibold uppercase sm:line-clamp-2">{franchise.label}</span>
+                          <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
+                            {formatModelCountLabel(franchise.count)} <ArrowRight size={16} aria-hidden="true" />
+                          </span>
+                        </div>
+                      </Link>
+                    </ArcadeCard>
+                  ))}
+                </div>
+                {franchisesQuery.data?.truncated && (
+                  <p role="status" className="mt-5 text-xs text-[hsl(0,0%,56%)]">
+                    Exibindo parte das franquias. Pesquise pelo nome acima para encontrar outras sem carregar todas as páginas do acervo.
+                  </p>
+                )}
+              </>
+            )
+          ) : visibleCategories.length === 0 ? (
+            <p role="status" className="mt-6 p-8 text-sm">
+              Nenhuma categoria publicada no momento.
+            </p>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-              {visibleCharacters.map((row) => (
-                <UniverseMiniCharacterCard
-                  key={row.id}
-                  row={row}
-                  to={buildUniversePath({
-                    themeKey: currentTheme?.key,
-                    franchiseKey: currentFranchise?.key,
-                    characterSlug: row.slug,
-                  })}
-                />
-              ))}
+            <div className="mt-6 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+              {visibleCategories.map((category) => {
+                const displayLabel = categoryDisplayLabel(category.id, category.label);
+                const isAnimeCategory = isAnimesAndDrawingsCategory(category.id, category.label);
+                return (
+                  <ArcadeCard key={category.id}>
+                    <Link className="group flex min-h-44 flex-col focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]" to={PUBLIC_ROUTES.catalog + "/" + encodeURIComponent(category.id)}>
+                      <div className="aspect-[4/3] w-full overflow-hidden bg-[hsl(0,0%,8%)]">
+                        <CanonicalCatalogImage
+                          src={gateway.mediaUrl(category.coverStorageKey ?? null)}
+                          alt={"Prévia de " + displayLabel}
+                          imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+                          fallbackClassName="flex h-full w-full items-center justify-center"
+                          fallbackIcon={<ImageOff className="h-8 w-8 text-[hsl(var(--gold-accent))]" aria-hidden="true" />}
+                          fallbackLabel=""
+                        />
+                      </div>
+                      <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
+                        <span
+                          className={
+                            isAnimeCategory
+                              ? "block max-w-full min-w-0 whitespace-nowrap tracking-tight text-sm min-[360px]:text-[clamp(0.625rem,2.8vw,0.875rem)] font-semibold uppercase"
+                              : "break-normal text-[clamp(0.75rem,4vw,1rem)] font-semibold uppercase"
+                          }
+                        >
+                          {displayLabel}
+                        </span>
+                        <span className="mt-auto flex items-center justify-between gap-2 text-xs text-[hsl(0,0%,56%)]">
+                          {formatModelCountLabel(category.count)} <ArrowRight size={16} aria-hidden="true" />
+                        </span>
+                      </div>
+                    </Link>
+                  </ArcadeCard>
+                );
+              })}
             </div>
-          )
-        ) : activeTheme ? (
-          visibleFranchises.length === 0 ? (
-            <ArcadeCard hover={false} className="p-8 text-center">
-              <FolderOpen className="mx-auto mb-4 h-12 w-12 text-[hsl(0,0%,22%)]" />
-              <h2 className="text-3xl font-black uppercase tracking-[0.08em]">
-                Nenhuma subpasta encontrada
-              </h2>
-            </ArcadeCard>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-              {visibleFranchises.map((row: CatalogUniverseFranchiseRow) => (
-                <UniverseMiniFolderCard
-                  key={`${row.themeKey}::${row.key}`}
-                  title={row.label}
-                  subtitle={row.themeLabel}
-                  countLabel={`${row.characterCount} ${row.characterCount === 1 ? "personagem" : "personagens"}`}
-                  imageUrl={row.thumbnailUrl ?? row.imageUrl}
-                  to={buildUniversePath({ themeKey: row.themeKey, franchiseKey: row.key })}
-                  tone="branch"
-                />
-              ))}
-            </div>
-          )
-        ) : themes.length === 0 ? (
-          <ArcadeCard hover={false} className="p-8 text-center">
-            <Folder className="mx-auto mb-4 h-12 w-12 text-[hsl(0,0%,22%)]" />
-            <h2 className="text-3xl font-black uppercase tracking-[0.08em]">
-              Universo vazio
-            </h2>
-          </ArcadeCard>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-            {themes.map((row: CatalogUniverseThemeRow) => (
-              <UniverseMiniFolderCard
-                key={row.key}
-                title={row.label}
-                subtitle={`${row.franchiseCount} ${row.franchiseCount === 1 ? "subpasta" : "subpastas"}`}
-                countLabel={`${row.characterCount} ${row.characterCount === 1 ? "personagem" : "personagens"}`}
-                imageUrl={row.thumbnailUrl ?? row.imageUrl}
-                to={buildUniversePath({ themeKey: row.key })}
-                tone="root"
-              />
-            ))}
-          </div>
-        )}
-      </section>
+          )}
+          {themeKey && !franchiseKey && !invalidScope && !mediaUnderReview && (
+            <Link className="mt-8 inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.4)] px-5 py-3 text-sm text-[hsl(var(--gold-accent))]" to={modelsPath(themeKey)}>
+              Explorar modelos desta categoria <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          )}
+        </div>
+      </div>
     </Page>
   );
 }

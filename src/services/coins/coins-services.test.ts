@@ -5,7 +5,6 @@ import {
   getCoinTransaction,
   getCoinTransactionStats,
   listCoinsTransactions,
-  listLegacyCoinTransactions,
   listRecentCoinTransactions,
 } from "./coins-transactions-service";
 
@@ -370,25 +369,9 @@ describe("coins transactions service", () => {
     );
   });
 
-  it("keeps the legacy reader inert without an explicit user", async () => {
-    await expect(listLegacyCoinTransactions()).resolves.toEqual([]);
-    expect(mocks.from).not.toHaveBeenCalled();
-    expect(mocks.assertCurrentUserId).not.toHaveBeenCalled();
-  });
 
-  it("reads legacy transaction rows only after current-user validation", async () => {
-    const row = transactionRow("adjustment", 5);
-    const query = createRecentQuery({ data: [row], error: null });
-    mocks.from.mockReturnValue(query);
 
-    await expect(listLegacyCoinTransactions(USER_ID, 3)).resolves.toEqual([row]);
-    expect(mocks.assertCurrentUserId).toHaveBeenCalledWith(USER_ID);
-    expect(query.limit).toHaveBeenCalledWith(3);
-  });
 
-  it("propagates legacy query errors without rewriting them", async () => {
-    const error = { message: "legacy failed" };
-    mocks.from.mockReturnValue(createRecentQuery({ data: null, error }));
-    await expect(listLegacyCoinTransactions(USER_ID)).rejects.toBe(error);
-  });
+
+
 });

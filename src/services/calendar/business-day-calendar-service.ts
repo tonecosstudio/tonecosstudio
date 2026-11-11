@@ -70,9 +70,9 @@ function toHoliday(row: HolidayRow): Holiday {
 class BusinessDayService {
   /**
    * Cache de feriados por ano
-   * Map<ano, Set<data_formatada>>
+   * Map<ano, lista de feriados preservando todos os metadados>
    */
-  private holidayCache: Map<number, Set<string>> = new Map();
+  private holidayCache: Map<number, Holiday[]> = new Map();
   
   /**
    * Timestamp de expiração do cache por ano
@@ -240,22 +240,14 @@ class BusinessDayService {
 
     // Verificar se o cache é válido
     if (cached && expiry && expiry > now) {
-      // Reconstruir array de holidays do cache
-      return Array.from(cached).map(dateStr => ({
-        id: '',
-        holiday_date: dateStr,
-        name: '',
-        type: 'national' as const,
-        is_recurring: false,
-      }));
+      return cached.map(holiday => ({ ...holiday }));
     }
 
     // Buscar do banco de dados
     const holidays = await this.fetchHolidaysFromDB(year);
 
     // Atualizar cache
-    const holidayDates = new Set(holidays.map(h => h.holiday_date));
-    this.holidayCache.set(year, holidayDates);
+    this.holidayCache.set(year, holidays.map(holiday => ({ ...holiday })));
     this.cacheExpiry.set(year, now + this.CACHE_TTL);
 
     return holidays;

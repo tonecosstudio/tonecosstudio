@@ -1,5 +1,8 @@
 # Character Revelation Cron Job
 
+> **Escopo e segurança (04/11/2026):** documentação técnica de módulo **comercial futuro**; não integra o MVP público somente leitura hospedado no Cloudflare Pages. Conteúdo histórico não autoriza deploy, acesso a Supabase, envio de e-mails, operações financeiras nem reutilização de domínios/credenciais da OrdaX. Validar código, identidade, configuração e autorização antes de ativar esta funcionalidade.
+
+
 ## Overview
 
 This Supabase Edge Function runs daily at 10:00 AM (Bahia Time) to automatically reveal characters for collections whose revelation date has been reached.
@@ -65,9 +68,9 @@ Required environment variables:
 - `SUPABASE_SERVICE_ROLE_KEY`: Service role key for database access
 - `EMAIL_PROVIDER`: Email service provider ('resend' or 'sendgrid')
 - `EMAIL_API_KEY`: API key for the email provider
-- `EMAIL_FROM`: Sender email address (default: 'noreply@ordax.com.br')
-- `EMAIL_FROM_NAME`: Sender name (default: 'ORDAX')
-- `FRONTEND_URL`: Frontend URL for links in emails (default: 'https://ordax.com.br')
+- `EMAIL_FROM`: explicit, authorized sender address. Shared email config throws if this value is absent.
+- `EMAIL_FROM_NAME`: explicitly set the approved Tonecos sender name; the existing shared email code still has an obsolete OrdaX fallback and must be corrected before the commercial release.
+- `FRONTEND_URL`: explicit authorized HTTPS commercial origin, required by getPublicBaseUrl; there is no valid OrdaX fallback.
 
 ## Testing
 
@@ -176,7 +179,7 @@ The revelation email includes:
 - Character name in a highlighted reveal box
 - Character image (if available)
 - Call-to-action button to view deliveries
-- Professional ORDAX branding
+- Branding must be reviewed and approved for Tonecos Studio before commercial deployment
 
 ## Monitoring
 

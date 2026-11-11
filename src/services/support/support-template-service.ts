@@ -303,7 +303,7 @@ export async function processTemplate(
 }
 
 export function detectVariables(template: string): string[] {
-  const regex = /\{\{([A-Z_]+)\}\}/g;
+  const regex = /\{\{([^{}]*)\}\}/g;
   return Array.from(template.matchAll(regex), (match) => `{{${match[1]}}}`);
 }
 

@@ -1,4 +1,5 @@
 import { APP_ROUTES } from "./routes";
+import { BRAND_NAME } from "./brand";
 
 /**
  * Runtime constants that are safe to define in the browser bundle.
@@ -54,23 +55,24 @@ export const BATCH = {
 } as const;
 
 export const ASSETS = {
-  DEFAULT_ICON_URL: "/favicon.ico",
+  DEFAULT_ICON_URL: "/favicon.svg",
   FALLBACK_IMAGE_URL: "/image-fallback.svg",
 } as const;
 
 export const CONTACT = {
-  SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL || "suporte@ordax.com.br",
-  CONTACT_EMAIL: import.meta.env.VITE_CONTACT_EMAIL || "contato@ordax.com.br",
-  PRIVACY_EMAIL:
-    import.meta.env.VITE_PRIVACY_EMAIL || "privacidade@ordax.com.br",
-  DPO_EMAIL: import.meta.env.VITE_DPO_EMAIL || "dpo@ordax.com.br",
-  WEBSITE_URL: import.meta.env.VITE_WEBSITE_URL || "https://ordax.com.br",
+  SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL || "",
+  CONTACT_EMAIL: import.meta.env.VITE_CONTACT_EMAIL || "",
+  PRIVACY_EMAIL: import.meta.env.VITE_PRIVACY_EMAIL || "",
+  DPO_EMAIL: import.meta.env.VITE_DPO_EMAIL || "",
+  WEBSITE_URL:
+    import.meta.env.VITE_WEBSITE_URL ||
+    (typeof window !== "undefined" ? window.location.origin : ""),
   COMPANY_LOGO_URL:
     import.meta.env.VITE_COMPANY_LOGO_URL || ASSETS.DEFAULT_ICON_URL,
   BUSINESS_HOURS:
     import.meta.env.VITE_BUSINESS_HOURS || "Segunda a Sexta, 9h às 18h",
-  COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME || "Tonecos Studios",
-  LEGAL_NAME: import.meta.env.VITE_LEGAL_NAME || "Tonecos Studios LTDA",
+  COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME || BRAND_NAME,
+  LEGAL_NAME: import.meta.env.VITE_LEGAL_NAME || "",
   COMPANY_ADDRESS: import.meta.env.VITE_COMPANY_ADDRESS || "",
 } as const;
 

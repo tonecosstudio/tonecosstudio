@@ -1,13 +1,18 @@
 # Página Admin - Sistema de Coins
 
+> **Escopo e segurança (04/11/2026):** documentação técnica de módulo **comercial futuro**; não integra o MVP público somente leitura hospedado no Cloudflare Pages. Conteúdo histórico não autoriza deploy, acesso a Supabase, envio de e-mails, operações financeiras nem reutilização de domínios/credenciais da OrdaX. Validar código, identidade, configuração e autorização antes de ativar esta funcionalidade.
+
+
 ## 📍 Localização
 - **Rota**: `/admin/coins`
-- **Arquivo**: `src/pages/admin/AdminCoinsSystem.tsx`
+- **Arquivo**: `src/pages/admin/credits/AdminCoinsSystem.tsx`
 - **Menu**: Admin → Sistema de Créditos → Sistema de Coins
 
 ## 🎯 Objetivo
 
-Página administrativa completa para gerenciar e visualizar o sistema de coins (créditos internos) da plataforma Ordax.
+Página administrativa completa para gerenciar e visualizar o sistema de coins (créditos internos) da módulo comercial Tonecos Studio.
+
+**Atenção:** valores de coins/tabelas exibidos neste documento são um registro histórico do componente, **não preços ou regras de produção aprovados**. Para a futura fase comercial, consultar o serviço de precificação canônico e suas permissões no ambiente correto.
 
 ## 📊 Funcionalidades
 
@@ -100,7 +105,7 @@ const { data: purchases } = await supabase
 ## 📋 Regras de Negócio
 
 ### O que são Coins?
-Coins são créditos internos da plataforma Ordax que servem exclusivamente para:
+Coins são créditos internos da módulo comercial Tonecos Studio que servem exclusivamente para:
 - ✓ Selecionar personagens do catálogo
 - ✓ Trocar personagens já selecionados
 - ✓ Acessar personagens de outras coleções

@@ -1,58 +1,67 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import ArcadeLab from "./ArcadeLab";
 
 const catalog = vi.hoisted(() => ({
-  state: {
-    isPending: false,
-    isError: false,
-    data: [] as unknown[],
-    refetch: vi.fn(),
-  },
-  hook: vi.fn(),
+  listPage: vi.fn(),
+  mediaUrl: vi.fn(),
 }));
-vi.mock("@/hooks/catalog/useLandingCatalogModels", () => ({
-  useLandingCatalogModels: () => {
-    catalog.hook();
-    return catalog.state;
-  },
+
+vi.mock("@/config/canonical-catalog-endpoint", () => ({
+  CANONICAL_CATALOG_API_BASE: "https://catalog.example.test/catalogo-api/",
+}));
+vi.mock("@/services/catalog/public-catalog-gateway", () => ({
+  createPublicCatalogGateway: () => ({
+    listPage: catalog.listPage,
+    mediaUrl: catalog.mediaUrl,
+  }),
 }));
 vi.mock("@/components/SEOHead", () => ({ default: () => null }));
 
 function setup() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
-      <ArcadeLab />
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <ArcadeLab />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
-describe("Arcade Lab", () => {
-  beforeEach(() => {
-    catalog.state = {
-      isPending: false,
-      isError: false,
-      data: [],
-      refetch: vi.fn(),
-    };
-    catalog.hook.mockClear();
-  });
+beforeEach(() => {
+  catalog.listPage.mockReset();
+  catalog.mediaUrl.mockReset();
+  catalog.listPage.mockResolvedValue({ items: [], nextCursor: null });
+  catalog.mediaUrl.mockReturnValue(null);
+  vi.stubGlobal("fetch", vi.fn());
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
-  it("keeps illustrative characters out of the real catalog and fetches only on request", () => {
+describe("Arcade Lab", () => {
+  it("keeps illustrative characters out of the real catalog and fetches only on request", async () => {
     setup();
     expect(
       screen.getByRole("button", { name: "Selecionar Kage" }),
     ).toHaveAttribute("aria-pressed", "true");
-    expect(catalog.hook).not.toHaveBeenCalled();
+    expect(catalog.listPage).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /Catálogo real/ }));
-    expect(catalog.hook).toHaveBeenCalled();
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Nenhum modelo publicado",
+    );
+    expect(catalog.listPage).toHaveBeenCalledOnce();
+    expect(catalog.listPage).toHaveBeenCalledWith(
+      { limit: 12 },
+      expect.any(AbortSignal),
+    );
     expect(
       screen.queryByRole("button", { name: "Selecionar Kage" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Nenhum personagem publicado",
-    );
   });
 
   it("selects a character by keyboard and resets the selection when filtering", () => {
@@ -79,6 +88,7 @@ describe("Arcade Lab", () => {
     expect(
       screen.getByRole("heading", { name: "Bolt", exact: true }),
     ).toBeInTheDocument();
+    expect(catalog.listPage).not.toHaveBeenCalled();
   });
 
   it("identifies preview pieces in the details dialog without a purchase action", () => {
@@ -93,49 +103,61 @@ describe("Arcade Lab", () => {
     expect(
       within(dialog).getByRole("link", { name: /Explorar catálogo real/ }),
     ).toHaveAttribute("href", "/universo");
+    expect(catalog.listPage).not.toHaveBeenCalled();
   });
 
-  it("shows loading and retryable errors instead of demo inventory in real mode", () => {
-    catalog.state.isPending = true;
-    const view = setup();
+  it("shows retryable errors instead of demo inventory in real mode", async () => {
+    catalog.listPage.mockRejectedValueOnce(new Error("Worker unavailable"));
+    setup();
     fireEvent.click(screen.getByRole("button", { name: /Catálogo real/ }));
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Preparando a seleção",
-    );
-    catalog.state.isPending = false;
-    catalog.state.isError = true;
-    view.rerender(
-      <MemoryRouter>
-        <ArcadeLab />
-      </MemoryRouter>,
-    );
-    expect(screen.getByRole("alert")).toHaveTextContent(
+    expect(await screen.findByRole("alert")).toHaveTextContent(
       "O acervo não respondeu",
     );
     fireEvent.click(screen.getByRole("button", { name: /Tentar novamente/ }));
-    expect(catalog.state.refetch).toHaveBeenCalledOnce();
+    await waitFor(() => expect(catalog.listPage).toHaveBeenCalledTimes(2));
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Nenhum modelo publicado",
+    );
     expect(
       screen.queryByRole("button", { name: "Selecionar Kage" }),
     ).not.toBeInTheDocument();
   });
 
-  it("links published characters to the canonical catalog route", () => {
-    catalog.state.data = [
-      {
-        id: "published-one",
-        character_name: "Ryu",
-        source_title: "Street Fighter",
-        model_count: 2,
-        thumbnailUrl: null,
-        imageUrl: null,
-      },
-    ];
+  it("opens a published canonical model rather than the legacy character catalog", async () => {
+    catalog.listPage.mockResolvedValue({
+      items: [{
+        id: "mdl-1",
+        slug: "nier-10h-nier",
+        name: "10H",
+        franchise: "NieR",
+        variantName: "",
+        imageCount: 1,
+        coverStorageKey: "media/mdl-1/card.webp",
+      }],
+      nextCursor: "another-page",
+    });
+    catalog.mediaUrl.mockReturnValue("/catalogo-api/media/mdl-1/card.webp");
     setup();
     fireEvent.click(screen.getByRole("button", { name: /Catálogo real/ }));
-    expect(screen.getByRole("heading", { name: "Ryu" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "10H" })).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Ver modelos/ }).getAttribute("href"),
-    ).toContain("/universo/");
-    expect(screen.getByText("2 modelos no catálogo")).toBeInTheDocument();
+      screen.getByRole("link", { name: /Ver ficha do modelo/ }),
+    ).toHaveAttribute("href", "/modelos/nier-10h-nier");
+    // The same canonical image appears in both the roster thumbnail and
+    // the selected-model panel. Both must point to the official media proxy.
+    const modelImages = screen.getAllByRole("img", { name: "10H" });
+    expect(modelImages).toHaveLength(2);
+    for (const image of modelImages) {
+      expect(image).toHaveAttribute(
+        "src",
+        "/catalogo-api/media/mdl-1/card.webp",
+      );
+    }
+    expect(screen.getByText("Modelo do acervo publicado")).toBeInTheDocument();
+    expect(catalog.listPage).toHaveBeenCalledOnce();
+    expect(catalog.listPage).toHaveBeenCalledWith(
+      { limit: 12 },
+      expect.any(AbortSignal),
+    );
   });
 });

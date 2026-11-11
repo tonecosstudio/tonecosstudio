@@ -61,7 +61,8 @@ export function ReportModelNameDialog({
 
   const reportUrl = useMemo(() => {
     if (!detailPath.startsWith("/")) return detailPath;
-    return `${CONTACT.WEBSITE_URL}${detailPath}`;
+    const origin = CONTACT.WEBSITE_URL || window.location.origin;
+    return `${origin}${detailPath}`;
   }, [detailPath]);
 
   const handleSubmit = async () => {
@@ -161,7 +162,9 @@ export function ReportModelNameDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`report-correct-name-${modelId}`}>Nome correto</Label>
+            <Label htmlFor={`report-correct-name-${modelId}`}>
+              Nome correto
+            </Label>
             <Input
               id={`report-correct-name-${modelId}`}
               value={suggestedName}

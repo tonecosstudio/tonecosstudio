@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620" role="img" aria-labelledby="logo-title logo-desc">
+  <title id="logo-title">TONART Studio</title>
+  <desc id="logo-desc">Monograma TA e assinatura TONART Studio, versão preta monocromática.</desc>
+  <text x="500" y="285" text-anchor="middle" fill="#111111" font-family="Georgia, 'Times New Roman', serif" font-size="275" letter-spacing="-15">TA</text>
+  <path d="M365 272C444 218 547 206 633 253" fill="none" stroke="#111111" stroke-width="9" stroke-linecap="round"/>
+  <text x="500" y="454" text-anchor="middle" fill="#111111" font-family="Georgia, 'Times New Roman', serif" font-size="126" letter-spacing="14">TONART</text>
+  <path d="M200 527H350M650 527H800" stroke="#111111" stroke-width="2"/>
+  <text x="500" y="541" text-anchor="middle" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="37" letter-spacing="21">STUDIO</text>
+</svg>

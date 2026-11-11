@@ -8,8 +8,9 @@ import {
 
 export type { SystemSettings } from "@/services/system/system-settings-service";
 
-export function useSystemSettings() {
+export function useSystemSettings(options: { enabled?: boolean } = {}) {
   return useQuery({
+    enabled: options.enabled ?? true,
     queryKey: ["system-settings"],
     queryFn: readSystemSettings,
     staleTime: 1 * 60 * 1000,
