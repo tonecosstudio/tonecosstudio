@@ -4,7 +4,7 @@ afterEach(() => vi.unstubAllEnvs());
 describe("Tonecos catalog MVP allowlist", () => {
   it.each(["/", "/landing", "/universo", "/universo/anime", "/universo/anime/nier",
     "/universo/anime/nier/2b", "/universo/personagem/legado", "/modelos", "/modelos/nier-10h-nier",
-    "/sobre", "/contato", "/termos", "/privacidade", "/modelos/"])("accepts %s", p => expect(isPublicCatalogMvpPath(p)).toBe(true));
+    "/sobre", "/contato", "/solicitar-orcamento", "/termos", "/privacidade", "/modelos/"])("accepts %s", p => expect(isPublicCatalogMvpPath(p)).toBe(true));
   it.each(["/login", "/admin", "/admin/users", "/perfil", "/orcamento", "/meus-orcamentos", "/moedas", "/recuperar-senha", "/admin/moedas", "/admin/orcamentos", "/dashboard", "/wishlist",
     "/pedido/colecao/1/progresso", "/grupos", "/colecoes", "/selecionar-personagem",
     "/arcade-lab", "/migrar-pedido", "//evil.example", "/modelos/%2e%2e",
