@@ -18,6 +18,11 @@ const statuses: {value:Status; label:string}[] = [
   { value:"respondido",label:"Respondido" }, { value:"arquivado",label:"Arquivado" },
 ];
 const inputClass = "w-full min-h-11 border border-[hsl(0,0%,30%)] bg-[hsl(0,0%,8%)] px-3 py-2 text-sm text-white focus:border-[hsl(var(--gold-accent))] focus:outline-none";
+function quoteReplyHref(item: Quote) {
+  const subject = `Orçamento TONART Studio — solicitação ${item.id.slice(0, 8)}`;
+  const message = `Olá, ${item.customer_name}!\n\nRecebemos sua solicitação de orçamento na TONART Studio.\n\nReferência: ${item.id}\n\n`;
+  return `mailto:${encodeURIComponent(item.customer_email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+}
 async function requestJSON(url: string, init?: RequestInit) {
   const res = await fetch(url, { credentials:"same-origin",...init });
   const data: Record<string, unknown> = await res.json();
@@ -52,6 +57,11 @@ export default function TonartQuotePortal() {
       try {
         const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
         const query = new URLSearchParams(window.location.search);
+        const accessError = hash.get("error") || query.get("error");
+        if (accessError) {
+          window.history.replaceState(null, "", window.location.pathname);
+          throw new Error("O link de acesso expirou ou não pôde ser validado. Solicite um novo acesso.");
+        }
         const accessToken = hash.get("access_token");
         const tokenHash = query.get("token_hash");
         const action = accessToken
@@ -68,7 +78,13 @@ export default function TonartQuotePortal() {
         if (!mounted) return;
         const ok = result.authenticated === true;
         setAuthorized(ok);
-        if (ok) await load(0,"");
+        if (ok) {
+          try {
+            await load(0,"");
+          } catch (e) {
+            if (mounted) setError(e instanceof Error ? e.message : "A sessão está ativa, mas não foi possível carregar as solicitações.");
+          }
+        }
       } catch (e) {
         if (mounted) { setAuthorized(false); setError(e instanceof Error ? e.message : "Sessão indisponível."); }
       }
@@ -112,6 +128,11 @@ export default function TonartQuotePortal() {
         body:JSON.stringify({id:item.id,status:value.status,adminNote:value.adminNote}),
       });
       await load(page,status);
+      setEdited(old => {
+        const next = {...old};
+        delete next[item.id];
+        return next;
+      });
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar.");}
     finally{setSavingId("");}
   }
@@ -191,6 +212,14 @@ export default function TonartQuotePortal() {
                       <p>WhatsApp: <span className="text-[hsl(0,0%,75%)]">{item.customer_whatsapp||"Não informado"}</span></p>
                       <p>CEP: {item.postal_code||"Não informado"}</p>
                       <p>Escala: {item.desired_scale} · Acabamento: {item.finishing}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-3">
+                      <a href={quoteReplyHref(item)}
+                        className="inline-flex min-h-11 items-center border border-[hsl(var(--gold-accent))] px-4 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]"
+                        aria-label={"Responder por e-mail a " + item.customer_name}>
+                        Responder por e-mail
+                      </a>
+                      <span className="text-xs text-[hsl(0,0%,57%)]">Abre seu aplicativo de e-mail. Nenhuma mensagem é enviada automaticamente.</span>
                     </div>
                     <div className="border-t border-white/10 pt-3">
                       <h3 className="mb-2 text-sm font-semibold">Modelos</h3>
