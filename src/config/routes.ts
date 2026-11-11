@@ -32,7 +32,7 @@ export const TONECOS_COMMERCIAL_ROUTES = {
   login: PUBLIC_ROUTES.login,
   account: "/perfil",
   recovery: "/recuperar-senha",
-  request: "/orcamento",
+  request: PUBLIC_ROUTES.quoteRequest,
   history: "/meus-orcamentos",
   coins: "/moedas",
   adminQuotes: "/admin/orcamentos",

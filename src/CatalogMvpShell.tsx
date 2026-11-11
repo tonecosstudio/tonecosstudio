@@ -1,13 +1,13 @@
 /** Shared catalog shell: no Supabase, auth, quoting or commercial imports. */
 import { Suspense, lazy, useLayoutEffect, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Link, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ArcadeFrame } from "@/components/layouts/ArcadeFrame";
 import { ArcadeNavView } from "@/components/arcade/ArcadeNavView";
 import { ArcadeFooterView } from "@/components/arcade/ArcadeFooterView";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
-import { PUBLIC_ROUTES } from "@/config/routes";
+import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import PublicCatalogContact from "@/pages/PublicCatalogContact";
 
 const Home = lazy(() => import("@/pages/LandingPage"));
@@ -87,8 +87,12 @@ export function CatalogMvpShell({
                   <Route path={PUBLIC_ROUTES.catalogDetails} element={<Details />} />
                   <Route path={PUBLIC_ROUTES.about} element={<About />} />
                   <Route path={PUBLIC_ROUTES.contact} element={<PublicCatalogContact />} />
-                  <Route path={PUBLIC_ROUTES.quoteRequest} element={<QuoteRequest />} />
-                  <Route path={PUBLIC_ROUTES.quotePortal} element={<QuotePortal />} />
+                  {import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true"
+                    ? <Route path={PUBLIC_ROUTES.quotePortal} element={<Navigate to={TONECOS_COMMERCIAL_ROUTES.adminQuotes} replace />} />
+                    : <>
+                        <Route path={PUBLIC_ROUTES.quoteRequest} element={<QuoteRequest />} />
+                        <Route path={PUBLIC_ROUTES.quotePortal} element={<QuotePortal />} />
+                      </>}
                   <Route path={PUBLIC_ROUTES.privacy} element={<Privacy />} />
                   <Route path={PUBLIC_ROUTES.terms} element={<Terms />} />
                   {extraRoutes}
