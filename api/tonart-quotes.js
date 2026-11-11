@@ -1,4 +1,5 @@
 /** No direct database credentials in the browser; Supabase Edge Function owns writes. */
+import { isIP } from "node:net";
 const REMOTE = "https://icmtmaakjucmuzxnofkd.supabase.co/functions/v1/tonart-quotes";
 const COOKIE = "tonart_quote_owner";
 function ownerToken(req) {
@@ -24,6 +25,8 @@ export default async function handler(req, res) {
   if ((req.method === "POST" || req.method === "PATCH") && !accepted(origin)) {
     res.status(403).json({ error: "Origem não autorizada." }); return;
   }
+  const clientIP = req.method === "POST" ? String(req.headers["x-vercel-forwarded-for"] || req.headers["x-forwarded-for"] || "").split(",")[0].trim() : "";
+  if (req.method === "POST" && isIP(clientIP) === 0) { res.status(503).json({ error: "Não foi possível verificar a origem da solicitação." }); return; }
   const token = req.method === "POST" ? "" : ownerToken(req);
   if (req.method !== "POST" && !token) {
     res.status(401).json({ error: "Acesso restrito." }); return;
@@ -49,7 +52,7 @@ export default async function handler(req, res) {
         "x-tonart-proxy-secret": proxySecret,
         "origin": origin || "https://tonartstudio.com.br",
         ...(token ? { Authorization: "Bearer " + token } : {}),
-        ...(req.method === "POST" ? { "x-forwarded-for": String(req.headers["x-vercel-forwarded-for"] || req.headers["x-forwarded-for"] || "") } : {}),
+        ...(req.method === "POST" ? { "x-tonart-client-ip": clientIP } : {}),
       },
       body, signal: AbortSignal.timeout(9000),
     });

@@ -70,7 +70,8 @@ async function submit(request: Request, origin: string) {
       !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 10) ||
     new Set(items.map((item) => item.slug)).size !== items.length
   ) return json({ error: "Revise os dados do orçamento." }, 400, origin);
-  const forwarded = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() || "unknown";
+  const forwarded = (request.headers.get("x-tonart-client-ip") || "").trim();
+  if (!/^[0-9a-fA-F:.]{3,45}$/.test(forwarded)) return json({ error: "Não foi possível validar a origem." }, 503, origin);
   // Independent hourly quotas for address and e-mail. Never retain raw IPs.
   if (!await rateAllowed("address:" + forwarded) || !await rateAllowed("email:" + email)) {
     return json({ error: "Limite de solicitações atingido. Tente novamente mais tarde." }, 429, origin);

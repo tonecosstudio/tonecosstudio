@@ -57,7 +57,7 @@ test("quote proxy sends its proof and relays a verified receipt", async () => {
     assert.deepEqual(JSON.parse(res.payload),{received:true,reference:"db-verified"});
     assert.equal(calls.length,1);
     assert.equal(calls[0].init.headers["x-tonart-proxy-secret"],SECRET);
-    assert.equal(calls[0].init.headers["x-forwarded-for"],"203.0.113.5");
+    assert.equal(calls[0].init.headers["x-tonart-client-ip"],"203.0.113.5");
     assert.equal(calls[0].init.headers.origin,DOMAIN);
   });
 });
