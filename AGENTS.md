@@ -8,7 +8,7 @@
 4. Documentos técnicos específicos.
 5. docs-archive e relatórios datados: **somente histórico**, nunca autorização de deploy.
 
-**Repositório canônico único para site + backend após cutover:** tonecosstudio/tonecosstudio (GitHub ID 1163825583). Usar a branch integration/tonecosstudio-canonical-20261101, **PR #4 draft**; main preservada. Não criar outro repo/PR/branch, não fazer merge ou deploy de produção sem gates e autorização. washingtonmsdj/tonecosstudio é alias histórico para o mesmo ID.
+**Repositório canônico único para site + backend:** `tonecosstudio/tonecosstudio` (GitHub ID 1163825583), com **`main` como SSOT após integração da PR #4 em 11/11/2026**. Não ressuscitar a branch de integração nem criar repositórios, PRs, fluxos ou instalações paralelos. Novas alterações seguem os gates pertinentes e deploy de produção requer autorização específica. `washingtonmsdj/tonecosstudio` é alias histórico do mesmo ID.
 
 **Hosting oficial vigente (08/11/2026):** frontend no projeto Vercel `tonart-studio-public` (equipe Washington) com domínio `https://tonartstudio.com.br` e redirecionamento `www`, publicação manual controlada da PR #4. Cloudflare Pages permanece somente como prévia protegida, não como segundo frontend oficial. A autoridade única do catálogo continua no Cloudflare Worker `tonecos-catalogo-api` (D1/R2) da conta Tonecos; a Vercel apenas disponibiliza um proxy GET restrito, sem segunda base ou inventário. Backend no checkout de `services/catalogo/` ainda em consolidação, sem trocar o Worker em produção. Não tocar nos domínios OrdaX.
 
@@ -20,13 +20,13 @@
 - A substituição pode ser **render original TONART ou render de terceiro com licença/permissão verificável**, da **mesma escultura e variante**, preservando crédito legítimo. Não é obrigatória uma foto de peça física. Não apagar/cortar marca d'água, não reutilizar render marcado SpecialSTL, não trocar a identidade por outra escultura e não presumir licença apenas pela ausência de marcas.
 - **Sem desbloqueio SpecialSTL:** a liberação de uma chave vinculada a um dos 264 IDs confirmados exige prova de origem/licença e chave exata, validada também na rota `/media`. Demais modelos não exigem allowlist individual para carregar imagem. O sinalizador antigo `VITE_TONART_HIDE_CATALOG_MEDIA` não pode mais ocultar o acervo inteiro; a quarentena é por identidade/caminho, na interface e no servidor. Não duplicar manifesto, Worker, D1/R2 nem inventar imagens.
 - **Trilha de substituição SpecialSTL:** o registro `src/services/catalog/public-render-approvals.json`, o validador `scripts/security/catalog-public-media-approval-policy.mjs` e o cliente `src/services/catalog/approved-public-renders.ts` controlam exceções à quarentena. Para substituir uma mídia SpecialSTL, exigir ID + slug + chave exata, SHA-256 do arquivo-fonte, evidência independente de direitos, titular/crédito, data e aprovação expressa do proprietário. Com `approved: []`, existem **zero exceções à quarentena**, não zero imagens comuns. Preservar créditos legítimos e não inferir licença pela existência de um arquivo.
-- A Vercel permanece em **pré-lançamento/noindex** até revisão de direitos, QA visual e autorização de produção. Esse estado editorial não pode apagar as imagens comuns do catálogo. A aprovação de substituições SpecialSTL e a autorização de lançamento são decisões distintas.
+- A vitrine visual está publicada na Vercel, mas **indexação permanece retida/noindex** até GO editorial específico; esse estado não pode ocultar imagens comuns. A liberação de substituições SpecialSTL, a recepção de orçamentos autenticados e a autorização de checkout/pagamentos são decisões independentes.
 
-## MVP somente leitura
+## Catálogo público e orçamento autenticado por feature gate
 
 - UI atual da Tonecos, com visual Arcade/HUD escuro/dourado da aplicação original; reutilizar componentes. Não redesenhar identidade, importar UI/serviços OrdaX ou criar segundo design system.
 - Home, Universo, modelos por categoria/franquia/filtros/cursor, ficha/galeria por slug, Sobre, Contato por mailto e páginas legais. Preservar estados loading/empty/error e navegação desktop/mobile.
-- Bundle público sem Supabase, conta, admin, pedidos, pagamentos, assinatura ou Coins. Módulos comerciais podem existir no repositório, mas ficam isolados até homologação futura. Nunca usar segredos Supabase de outro projeto.
+- **Dois modos sem duplicação:** o catálogo somente leitura não exige login nem Supabase. Quando as flags comerciais do ambiente estiverem habilitadas, Conta, login e solicitação/acompanhamento de orçamento usam os portais e serviços canônicos existentes (`TONECOS_COMMERCIAL_ROUTES`, `src/services/customer/catalog-quote-service.ts` e serviço administrativo correspondente), a tabela única `quotes` do Supabase TONART, autenticação, RPC e RLS. Não recriar formulário, tabela, portal, login ou API paralelos. Solicitação de orçamento não equivale a compra/cobrança; checkout, Coins e pagamentos exigem autorização própria. Nunca compartilhar segredos Supabase entre projetos.
 - Não criar segunda API, banco, catálogo ou fallback para ordax.com.br. Na Vercel, `api/catalogo-proxy.js` é somente transporte GET restrito para o Worker existente; no Cloudflare Pages, o transporte de prévia usa a Pages Function. D1/R2 continuam com um único owner.
 - SEO falha fechada: previews e produção não liberada mantêm robots Disallow, noindex e nenhum sitemap; não ativar TONECOS_PUBLIC_INDEXING_RELEASE antes de GO explícito.
 
@@ -34,7 +34,7 @@
 
 Não rodar scans D1, imports, migrações, consultas integrais R2, testes de carga ou polling de catálogo para checar status. Validar sem custos por metadados Cloudflare/GitHub e testes locais. Não contratar Vercel Pro nem contratar outras soluções pagas sem autorização. Não burlar Cloudflare Access nem confundir HTTP 200 da tela de login com QA do site.
 
-Cloudflare Pages tem production_deployments_enabled=false e preview_deployment_setting=none; preservar. No projeto Vercel `tonart-studio-public`, Git auto deploy permanece desativado; publicar somente o SHA validado, sem criar outro projeto. Commit documental não justifica rebuild. Main e PR #4 devem ser reconciliadas apenas com gates e autorização pertinentes.
+Cloudflare Pages tem `production_deployments_enabled=false` e `preview_deployment_setting=none`; preservar. No projeto Vercel `tonart-studio-public`, Git auto deploy permanece desativado; publicar somente o SHA validado, sem criar outro projeto. Commit documental não justifica rebuild. A PR #4 foi integrada: novas entregas partem da `main` canônica, com gates e autorização proporcionais ao risco.
 
 ## Gates obrigatórios
 
@@ -42,7 +42,7 @@ Cloudflare Pages tem production_deployments_enabled=false e preview_deployment_s
 - QA visual **autenticado** no desktop e celular, incluindo seis capas da amostra, busca, filtros, ficha e galeria.
 - Revisão humana de Termos/Privacidade, operador real, LGPD e direitos de mídia.
 - Domínio e HTTPS Vercel verificados não substituem QA visual desktop/mobile, validação de rotas/links, canonical/robots/sitemap e plano de rollback.
-- Site pré-lançamento na Vercel já acessível, mas **lançamento/indexação/comercial: NO-GO** até revisão de direitos, QA e autorização. A exibição de imagens comuns na prévia é desejada e não equivale ao GO editorial. PR #4 continua Draft; não afirmar que prévia pública equivale a lançamento concluído.
+- A vitrine visual já está publicada no domínio oficial; **indexação SEO, pagamentos, assinaturas e liberação SpecialSTL continuam NO-GO** sem autorização específica e gates aplicáveis. Orçamentos autenticados podem operar apenas quando as flags do ambiente e as políticas de acesso do Supabase os habilitarem, sem pressupor checkout. PR #4 já integrada à main; publicação manual do SHA e QA de produção continuam processos distintos.
 
 Ao encerrar uma alteração, atualizar o checkpoint de URGENTE.md com base/HEAD, provas, bloqueios, next_action e do_not_repeat. Evitar novos documentos redundantes. Textos históricos devem ser movidos para docs-archive sem reescrever seu conteúdo.
 
