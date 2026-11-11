@@ -753,7 +753,7 @@ export default function CatalogModelsArcade() {
             <p className="mb-3 text-xs leading-relaxed text-[hsl(0,0%,66%)]">
               {publicReadOnly ? "A seleção é temporária nesta visita. Somente o envio do formulário registra uma solicitação." : "A seleção fica disponível durante esta visita. Nenhum orçamento foi enviado."}
             </p>
-            {selectedModels.length > 0 && publicReadOnly ? (
+            {selectedModels.length > 0 ? (
               <SheetClose asChild>
                 <Link to={PUBLIC_ROUTES.quoteRequest}
                   className="mb-3 inline-flex min-h-11 w-full items-center justify-center bg-[hsl(var(--gold-accent))] px-4 text-sm font-semibold text-black hover:brightness-110">
