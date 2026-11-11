@@ -11,6 +11,20 @@ const json = (body: unknown, status = 200, origin = "") => new Response(JSON.str
     ...(allowed(origin) ? { "Access-Control-Allow-Origin": origin } : {}),
   },
 });
+async function acceptedServer(request: Request): Promise<boolean> {
+  const value = request.headers.get("x-tonart-proxy-secret") ?? "";
+  if (!/^[a-f0-9]{64}$/.test(value)) return false;
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+  const actual = Array.from(digest).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  const { data, error } = await db.from("tonart_quote_proxy_auth")
+    .select("secret_sha256").eq("slot", "active").maybeSingle();
+  if (error || typeof data?.secret_sha256 !== "string" ||
+      data.secret_sha256.length !== actual.length) return false;
+  let diff = 0;
+  for (let i = 0; i < actual.length; i++)
+    diff |= actual.charCodeAt(i) ^ data.secret_sha256.charCodeAt(i);
+  return diff === 0;
+}
 const string = (v: unknown, max: number) => typeof v === "string" && v.length <= max ? v.trim() : "";
 function validEmail(value: string): boolean {
   return value.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
@@ -81,6 +95,7 @@ Deno.serve(async (request) => {
       "Vary": "Origin", "Access-Control-Max-Age": "300"
     } });
   }
+  if (!await acceptedServer(request)) return json({ error: "Acesso não autorizado." }, 403, origin);
   if (request.method === "POST") return submit(request, origin);
   if (request.method !== "GET" && request.method !== "PATCH")
     return json({ error: "Método não permitido." }, 405, origin);

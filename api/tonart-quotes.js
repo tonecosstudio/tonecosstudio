@@ -16,6 +16,10 @@ export default async function handler(req, res) {
     res.setHeader("Allow", "POST, GET, PATCH");
     res.status(405).json({ error: "Método não permitido." }); return;
   }
+  const proxySecret = process.env.TONART_QUOTE_PROXY_SECRET || "";
+  if (!/^[0-9a-f]{64}$/.test(proxySecret)) {
+    res.status(503).json({ error: "O serviço de orçamento não está configurado." }); return;
+  }
   const origin = req.headers.origin || "";
   if ((req.method === "POST" || req.method === "PATCH") && !accepted(origin)) {
     res.status(403).json({ error: "Origem não autorizada." }); return;
@@ -42,6 +46,7 @@ export default async function handler(req, res) {
       method: req.method,
       headers: {
         "Content-Type": "application/json",
+        "x-tonart-proxy-secret": proxySecret,
         "origin": origin || "https://tonartstudio.com.br",
         ...(token ? { Authorization: "Bearer " + token } : {}),
         ...(req.method === "POST" ? { "x-forwarded-for": String(req.headers["x-vercel-forwarded-for"] || req.headers["x-forwarded-for"] || "") } : {}),
