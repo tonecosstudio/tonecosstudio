@@ -83,7 +83,8 @@ export default function TonecosAccountPage() {
         const result = await registerTonecosAccount({ email, password, fullName: name });
         setPassword("");
         if (result.emailConfirmationRequired) {
-          setNotice("Cadastro recebido. Confirme seu e-mail antes de entrar.");
+          setNotice("Solicitação processada. Se esta for uma nova conta, verifique o e-mail de confirmação, inclusive no spam. Se já tem cadastro, entre com sua senha ou use a recuperação de acesso.");
+          setMode("login");
         } else {
           const current = await getTonecosCurrentUser();
           if (!current) throw new Error("Confirme a sessão antes de continuar.");
