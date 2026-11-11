@@ -101,5 +101,11 @@ describe("Cloudflare Pages canonical public catalog", () => {
       key: "X-Robots-Tag",
       value: "noindex, nofollow, noarchive",
     });
+    const csp = vercelConfig.headers.flatMap((rule) => rule.headers)
+      .find((header) => header.key === "Content-Security-Policy")?.value;
+    expect(csp).toContain("connect-src 'self' https://icmtmaakjucmuzxnofkd.supabase.co;");
+    expect(csp).not.toContain("*.supabase.co");
+    expect(csp).not.toContain("ordax");
+
   });
 });
