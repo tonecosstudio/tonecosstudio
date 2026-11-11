@@ -3,7 +3,6 @@ import { PUBLIC_ROUTES } from "./routes";
 const PUBLIC = new Set<string>([
   PUBLIC_ROUTES.home, PUBLIC_ROUTES.landing, PUBLIC_ROUTES.catalog,
   PUBLIC_ROUTES.catalogModels, PUBLIC_ROUTES.about, PUBLIC_ROUTES.contact,
-  PUBLIC_ROUTES.quoteRequest, PUBLIC_ROUTES.quotePortal,
   PUBLIC_ROUTES.terms, PUBLIC_ROUTES.privacy,
 ]);
 const SLUG = /^[a-z0-9][a-z0-9-]{0,239}$/;
