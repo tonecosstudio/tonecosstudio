@@ -38,7 +38,11 @@ describe("TONART admin workspace", () => {
     await waitFor(() => expect(mocks.overview).toHaveBeenCalledTimes(1));
     expect(await screen.findByText("Cliente de teste")).toBeInTheDocument();
     expect(screen.getByText("Orçamentos recebidos")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Abrir atendimento" })).toHaveAttribute("href", "/admin/orcamentos");
+    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true") {
+      expect(screen.getByRole("link", { name: "Abrir atendimento" })).toHaveAttribute("href", "/admin/orcamentos");
+    } else {
+      expect(screen.getByText("Operação de orçamentos desativada")).toBeInTheDocument();
+    }
   });
 
   it("opens the read-only users list without creating or granting accounts", async () => {
