@@ -328,7 +328,7 @@ describe("TONART canonical admin catalog review", () => {
   it("downloads only the current filtered page without another D1 request", async () => {
     const create = URL.createObjectURL;
     const revoke = URL.revokeObjectURL;
-    const newCreate = vi.fn(() => "blob:tonart-editorial-review");
+    const newCreate = vi.fn((_blob: Blob) => "blob:tonart-editorial-review");
     const newRevoke = vi.fn();
     Object.defineProperty(URL, "createObjectURL", { configurable: true, writable: true, value: newCreate });
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, writable: true, value: newRevoke });
