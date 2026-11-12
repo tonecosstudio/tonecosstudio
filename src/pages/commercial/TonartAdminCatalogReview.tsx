@@ -123,8 +123,8 @@ export default function TonartAdminCatalogReview() {
     setReviewError("");
     setReviewingId(model.id);
     try {
-      // One user-requested detail and at most one six-item gallery page.
-      // Never query the entire collection, download images or write to D1/R2.
+      // Only after an explicit click: one model detail and one gallery page
+      // (at most six entries), with no full-catalog scan or D1 write.
       const detail = await gateway.getModel(model.slug, controller.signal);
       if (detail.id !== model.id || detail.galleryVersion !== model.galleryVersion) {
         throw new Error("catalog_model_changed");
@@ -334,50 +334,100 @@ export default function TonartAdminCatalogReview() {
                     disabled={busy || reviewingId !== null}
                     onClick={() => { void inspectModel(selectedModel); }}
                   >
-                    {reviewingId === selectedModel.id ? "Consultando dados..." : "Informações técnicas (opcional)"}
+                    {reviewingId === selectedModel.id ? "Carregando galeria..." : "Ver galeria (até 6 fotos)"}
                   </button>
                 </div>
               </div>
             </section>
           )}
-          {reviewingId && <p role="status" className="mt-5 text-sm text-white/65">Verificando apenas o modelo selecionado...</p>}
+          {reviewingId && <p role="status" className="mt-5 text-sm text-white/65">Carregando fotos do modelo selecionado...</p>}
           {reviewError && <p role="alert" className="mt-5 border border-amber-500/40 p-4 text-sm">{reviewError}</p>}
           {review && (
             <section aria-label="Resultado da verificação individual" className="mt-6 border border-white/20 p-5">
-              <h4 className="text-base font-semibold">Informações da mídia: {review.model.name}</h4>
+              <h4 className="text-base font-semibold">Galeria: {review.model.name}</h4>
               <p className="mt-2 text-sm text-white/65">
-                Ficha atual consultada na origem canônica. {review.model.imageCount} imagens declaradas;
-                {" "}{review.gallery ? review.gallery.items.length : 0} registros da galeria examinados
-                (máximo de 6).
+                {review.model.imageCount} imagem(ns) cadastrada(s) no catálogo;
+                {" "}{review.gallery ? review.gallery.items.length : 0} nesta prévia (máximo de 6).
+                As imagens são carregadas somente depois de solicitar a galeria.
               </p>
               <p className="mt-2 text-sm text-white/70">
                 Capa no índice: {review.model.coverStorageKey ? "chave cadastrada" : "sem chave de capa"}.
                 {" "}Versão da galeria: {review.model.galleryVersion}.
               </p>
-              {review.gallery && (
-                <div className="mt-4 overflow-x-auto">
-                  <table className="w-full min-w-[430px] border-collapse text-left text-xs">
-                    <thead className="border-b border-white/20 text-white/55">
-                      <tr><th className="py-2 pr-3">Papel</th><th className="py-2 pr-3">Formato</th><th className="py-2 pr-3">Dimensões</th><th className="py-2">Versões disponíveis</th></tr>
-                    </thead>
-                    <tbody>
-                      {review.gallery.items.map((image) => (
-                        <tr key={image.id} className="border-b border-white/10">
-                          <td className="py-3 pr-3">{image.role === "cover" ? "Capa" : "Galeria"}</td>
-                          <td className="py-3 pr-3">{image.mime}</td>
-                          <td className="py-3 pr-3">{image.width} × {image.height}</td>
-                          <td className="py-3">{Object.entries(image.variantKeys)
-                            .filter(([, key]) => Boolean(key))
-                            .map(([kind]) => kind).join(", ") || "Nenhuma"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              {review.gallery && review.gallery.items.length > 0 && (
+                <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Fotos da galeria">
+                  {review.gallery.items.map((image, index) => {
+                    // Prefer published low-resolution variants. The same
+                    // SSOT allowlist/quarantine as the public model page
+                    // applies to every image URL and fallback.
+                    const key = image.variantKeys.thumb ??
+                      image.variantKeys.card ?? image.variantKeys.detail;
+                    const backupKey = image.variantKeys.thumb
+                      ? (image.variantKeys.card ?? image.variantKeys.detail)
+                      : image.variantKeys.card
+                        ? image.variantKeys.detail
+                        : null;
+                    const src = gateway?.mediaUrl(key) ?? null;
+                    const fallbackSrc = backupKey && backupKey !== key
+                      ? gateway?.mediaUrl(backupKey) ?? null
+                      : null;
+                    return (
+                      <figure key={image.id} className="min-w-0 border border-white/15 bg-black/25 p-3">
+                        <div className="flex aspect-[4/5] items-center justify-center overflow-hidden bg-black/35">
+                          <CanonicalCatalogImage
+                            src={src}
+                            fallbackSrc={fallbackSrc}
+                            alt={`Foto ${index + 1} do modelo ${review.model.name}`}
+                            loading="lazy"
+                            imageClassName="h-full w-full object-contain"
+                            fallbackClassName="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center text-xs text-white/60"
+                            fallbackLabel="Imagem indisponível"
+                          />
+                        </div>
+                        <figcaption className="mt-3 flex flex-wrap justify-between gap-2 text-xs text-white/60">
+                          <span>Foto {index + 1}</span>
+                          <span>{image.role === "cover" ? "Capa" : "Galeria"}</span>
+                        </figcaption>
+                      </figure>
+                    );
+                  })}
                 </div>
               )}
+              {review.gallery && review.gallery.items.length === 0 && (
+                <p className="mt-4 text-sm text-white/60">Nenhuma foto disponível nesta galeria.</p>
+              )}
+              {!review.gallery && (
+                <p className="mt-4 text-sm text-white/60">Este modelo não possui fotos cadastradas.</p>
+              )}
+              {review.gallery && (
+                <details className="mt-5 border-t border-white/15 pt-4">
+                  <summary className="cursor-pointer text-sm text-[hsl(var(--gold-accent))]">
+                    Informações técnicas (opcional)
+                  </summary>
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full min-w-[430px] border-collapse text-left text-xs">
+                      <thead className="border-b border-white/20 text-white/55">
+                        <tr><th className="py-2 pr-3">Papel</th><th className="py-2 pr-3">Formato</th><th className="py-2 pr-3">Dimensões</th><th className="py-2">Versões disponíveis</th></tr>
+                      </thead>
+                      <tbody>
+                        {review.gallery.items.map((image) => (
+                          <tr key={image.id} className="border-b border-white/10">
+                            <td className="py-3 pr-3">{image.role === "cover" ? "Capa" : "Galeria"}</td>
+                            <td className="py-3 pr-3">{image.mime}</td>
+                            <td className="py-3 pr-3">{image.width} × {image.height}</td>
+                            <td className="py-3">{Object.entries(image.variantKeys)
+                              .filter(([, key]) => Boolean(key))
+                              .map(([kind]) => kind).join(", ") || "Nenhuma"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              )}
               <p className="mt-4 text-xs leading-5 text-white/50">
-                Estas informações vêm do índice publicado e não substituem a visualização da capa.
-                Não comprovam ausência de marcas d’água ou direitos de uso.
+                As fotos e informações usam o catálogo público canônico. A disponibilidade de uma miniatura
+                não comprova a integridade das demais versões nem a ausência de marcas d’água.
                 A publicação e a correção de mídia continuam com o único publicador canônico.
               </p>
               <Link className="mt-3 inline-block text-sm text-[hsl(var(--gold-accent))] underline" to={catalogModelDetailsPath(review.model.id, review.model.name)}>

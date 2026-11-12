@@ -127,8 +127,8 @@ describe("TONART canonical admin catalog review", () => {
     expect(mocks.getModel).not.toHaveBeenCalled();
     expect(mocks.listGallery).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Informações técnicas (opcional)" }));
-    expect(await screen.findByRole("heading", { name: "Informações da mídia: Modelo de teste" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (até 6 fotos)" }));
+    expect(await screen.findByRole("heading", { name: "Galeria: Modelo de teste" })).toBeInTheDocument();
     expect(mocks.getModel).toHaveBeenCalledTimes(1);
     expect(mocks.getModel.mock.calls[0][0]).toBe("modelo-teste");
     expect(mocks.listGallery).toHaveBeenCalledTimes(1);
@@ -136,9 +136,12 @@ describe("TONART canonical admin catalog review", () => {
       version: 1, expectedTotal: 4, expectedCoverStorageKey: withCover.coverStorageKey,
       limit: 4,
     });
-    expect(screen.getByText(/não comprova a entrega física dos arquivos/)).toBeInTheDocument();
+    expect(screen.getByText(/não comprova a integridade das demais versões/)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Capa do modelo Modelo de teste" })).toBeInTheDocument();
     expect(mocks.listPage).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("img", { name: "Foto 1 do modelo Modelo de teste" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Fotos da galeria")).toBeInTheDocument();
+    expect(screen.getByText("Informações técnicas (opcional)")).toBeInTheDocument();
   });
 
   it("checks an image-less entry without requesting its gallery", async () => {
@@ -151,10 +154,44 @@ describe("TONART canonical admin catalog review", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[1]);
     expect(screen.getByText("Este modelo não possui capa cadastrada.")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Informações técnicas (opcional)" }));
-    expect(await screen.findByRole("heading", { name: "Informações da mídia: Modelo sem capa" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (até 6 fotos)" }));
+    expect(await screen.findByRole("heading", { name: "Galeria: Modelo sem capa" })).toBeInTheDocument();
     expect(mocks.listGallery).not.toHaveBeenCalled();
     expect(screen.getAllByText(/sem chave de capa/i).length).toBeGreaterThan(0);
+  });
+
+  it("fetches at most six gallery records and reuses approved low-resolution URLs", async () => {
+    mocks.listPage.mockResolvedValueOnce({
+      items: [{ ...withCover, imageCount: 15, galleryVersion: 3 }], nextCursor: null,
+    });
+    mocks.getModel.mockResolvedValueOnce({ ...withCover, imageCount: 15, galleryVersion: 3 });
+    mocks.listGallery.mockResolvedValueOnce({
+      items: Array.from({ length: 6 }, (_, index) => ({
+        id: "image-" + index,
+        role: index === 0 ? "cover" : "gallery",
+        width: 400, height: 400, bytes: 12000, mime: "image/webp",
+        qualityScore: 1, sourceSha256: "approved",
+        variantKeys: { thumb: "media/test/gallery/thumb-" + index + ".webp",
+          card: "media/test/gallery/card-" + index + ".webp",
+          detail: null, original: null },
+      })),
+      total: 15, version: 3, nextCursor: "more",
+    });
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo de teste");
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
+    expect(mocks.listGallery).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (até 6 fotos)" }));
+    expect(await screen.findByRole("heading", { name: "Galeria: Modelo de teste" })).toBeInTheDocument();
+    expect(mocks.listGallery).toHaveBeenCalledExactlyOnceWith(
+      "modelo-teste",
+      expect.objectContaining({ limit: 6, version: 3, expectedTotal: 15 }),
+      expect.anything(),
+    );
+    expect(screen.getAllByRole("img").length).toBe(7); // cover plus six thumbnails
+    expect(screen.getByText("Informações técnicas (opcional)")).toBeInTheDocument();
+    expect(mocks.listPage).toHaveBeenCalledTimes(1);
   });
 
   it("fails closed when the detail no longer corresponds to the selected model", async () => {
@@ -166,10 +203,10 @@ describe("TONART canonical admin catalog review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Informações técnicas (opcional)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (até 6 fotos)" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível verificar os metadados");
     expect(mocks.listGallery).not.toHaveBeenCalled();
-    expect(screen.queryByRole("heading", { name: /Informações da mídia:/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Galeria:/ })).not.toBeInTheDocument();
   });
 
   it("shows the real cover from the shared image component without any new D1 lookup", async () => {
