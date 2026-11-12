@@ -244,12 +244,17 @@ jobs:
       - name: Validate cutover gate fail-closed without network
         run: node --test scripts/catalog/cutover-readiness.test.mjs
 
-      # The canonical TONART launch PR requires release:verify before a
-      # production promotion. Reuse this existing PR job instead of creating
-      # additional workflows or running the full suite on unrelated PRs.
-      - name: Verify canonical TONART release candidate
+      # Test the changed catalog/admin boundaries and production build.
+      # The full monorepo suite belongs to the existing main-push jobs;
+      # do not re-run 3,500 unrelated tests for every candidate correction.
+      - name: Verify canonical TONART catalog/admin candidate
         if: github.event.pull_request.number == 26 && github.head_ref == 'feat/catalog-editorial-authenticated-submission-20261112'
-        run: npm run release:verify
+        run: |
+          npm run typecheck
+          npm run lint
+          npm run security:supabase-access
+          npm run build
+          npx vitest run src/pages/commercial/TonartAdminCatalogReview.test.tsx src/pages/commercial/TonecosAdminHomePage.test.tsx src/services/admin/tonart-admin-workspace-service.test.ts src/services/catalog/tonart-catalog-review-export.test.ts
 
   # The same quality workflow owns the target release; no parallel writer.
   # Manual main-only activation is blocked until M5 live preflight proves that

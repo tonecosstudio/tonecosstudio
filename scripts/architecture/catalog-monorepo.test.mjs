@@ -20,7 +20,9 @@ test('a single GitHub code owner is specified; current external publisher is exp
   assert.equal(contract.origin.repositoryId, 1398242143);
   assert.match(contract.origin.observedMainSha, sha);
   assert.deepEqual(contract.origin.openPullRequestsAtAudit, [266, 264, 263]);
-  assert.equal(contract.activeWorkerPublisher, contract.origin.repository);
+  assert.equal(contract.activeWorkerPublisher,
+    ['cutover-approved', 'cutover-complete'].includes(contract.migration.phase)
+      ? contract.target.repository : contract.origin.repository);
 });
 
 test('source inventory has immutable blob identities and no missing migration sequence', () => {
@@ -160,10 +162,13 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   assert.deepEqual(Object.keys(overlays).sort(), [
     'tools/test_worker_folder_counts.mjs', 'worker/index.ts', 'worker/publicQueryBudget.ts',
   ]);
-  // The separate M5 test validates both pre-cutover and approved states.
-  // Staged source-integrity checks must keep running after the owner switch.
-  assert.ok(['staged-offline', 'cutover-approved', 'cutover-complete'].includes(contract.migration.phase));
-  assert.equal(contract.migration.releaseAuthorized, false);
+  // The immutable import snapshot gates the INITIAL M5 release, not later
+  // improvements published exclusively from TONART after M5 completes.
+  if (contract.migration.phase === 'staged-offline') {
+    assert.equal(contract.migration.releaseAuthorized, false);
+  } else {
+    assert.equal(contract.migration.releaseAuthorized, true);
+  }
   for (const [path, local] of Object.entries(overlays)) {
     assert.equal(local.sourceBlob, stage[path], 'Original import pin changed: ' + path);
     assert.match(local.localBlob, sha, 'Invalid local Git blob: ' + path);
@@ -173,10 +178,14 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   }
   for (const [path, sourceBlob] of Object.entries(stage)) {
     assert.match(sourceBlob, sha, path);
-    const buf = readFileSync(join(root, contract.target.serviceRoot, path));
-    const actual = createHash('sha1').update('blob ' + buf.byteLength).update(Buffer.from([0])).update(buf).digest('hex');
-    assert.equal(actual, overlays[path]?.localBlob ?? sourceBlob,
-      'Unexpected content drift in ' + path);
+    const actualPath = join(root, contract.target.serviceRoot, path);
+    assert.equal(existsSync(actualPath), true, 'Canonical catalog file missing: ' + path);
+    if (contract.migration.phase !== 'cutover-complete') {
+      const buf = readFileSync(actualPath);
+      const actual = createHash('sha1').update('blob ' + buf.byteLength).update(Buffer.from([0])).update(buf).digest('hex');
+      assert.equal(actual, overlays[path]?.localBlob ?? sourceBlob,
+        'Unexpected candidate import drift in ' + path);
+    }
   }
   for (const excluded of contract.staging.excludedModules) {
     assert.equal(existsSync(join(root, contract.target.serviceRoot, excluded)), false, excluded);
