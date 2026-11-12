@@ -269,6 +269,35 @@ jobs:
       - name: Test approved editorial D1 plan and atomic SQL offline
         run: node --test scripts/catalog/apply-approved-editorial.test.mjs
 
+      # The staged source Python code must be import-complete. This is a cheap
+      # static verification; it never connects to the original writer or D1/R2.
+      - name: Verify migrated data writer import closure offline
+        run: |
+          python3 - <<'PY'
+          import ast
+          import pathlib
+          import sys
+          root = pathlib.Path('services/catalogo/tools')
+          third_party = {'PIL', 'boto3', 'botocore'}
+          files = sorted(root.glob('*.py'))
+          assert len(files) >= 25, f'Incomplete data writer import: {len(files)} Python tools'
+          for path in files:
+              tree = ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
+              for node in ast.walk(tree):
+                  if isinstance(node, ast.Import):
+                      modules = [alias.name.split('.')[0] for alias in node.names]
+                  elif isinstance(node, ast.ImportFrom) and node.module:
+                      modules = [node.module.split('.')[0]]
+                  else:
+                      continue
+                  for module in modules:
+                      if module in sys.stdlib_module_names or module in third_party:
+                          continue
+                      assert (root / (module + '.py')).is_file(), (
+                          f'Missing local import {module} from {path}')
+          print(f'PASS: {len(files)} Python scripts have a complete local import graph')
+          PY
+
       # Test the changed catalog/admin boundaries and production build.
       # The full monorepo suite belongs to the existing main-push jobs;
       # do not re-run 3,500 unrelated tests for every candidate correction.

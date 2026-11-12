@@ -163,11 +163,20 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   assert.match(contract.staging.sourceFixMergeCommit, sha);
   assert.equal(contract.staging.reconciliation.sourceMainSha, contract.staging.sourceMain);
   const stage = contract.staging.fileBlobs;
-  assert.equal(Object.keys(stage).length, 65);
+  assert.equal(Object.keys(stage).length, 97);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 10);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('migrations/')).length, 22);
-  // Verify all 65 exact source Git blobs, including query budget and editorial
+  // Verify all 97 exact source Git blobs, including query budget and editorial
   // contract. Keep only the reviewed folder-cover overlay and SQLite regression test.
+  assert.equal(Object.keys(contract.origin.dataWriterToolchainBlobs ?? {}).length, 32,
+    'Import one complete, source-pinned data-writer toolchain (no second pipeline)');
+  assert.equal(contract.staging.dataWriterToolchain?.phase, 'staged-offline');
+  assert.equal(contract.staging.dataWriterToolchain?.releaseAuthorized, false);
+  assert.equal(contract.staging.dataWriterToolchain?.workflowWriterEnabled, false);
+  for (const [path, blob] of Object.entries(contract.origin.dataWriterToolchainBlobs)) {
+    assert.equal(stage[path], blob, 'Data writer source pin changed: ' + path);
+    assert.ok(path.startsWith('tools/') || path.startsWith('config/'));
+  }
   const overlays = contract.staging.localOverlays ?? {};
   assert.deepEqual(Object.keys(overlays).sort(), [
     'tools/test_worker_folder_counts.mjs', 'worker/index.ts', 'worker/publicQueryBudget.ts',

@@ -140,7 +140,41 @@
         "id": 385318875,
         "authority": "R2 staging objects"
       }
-    ]
+    ],
+    "dataWriterToolchainBlobs": {
+      "tools/materialize_external_media_batch.py": "b62a0a151f9216bce1af4488de2875b1a6a91ee5",
+      "tools/ingest_catalog.py": "70b2329befd9d0e738abfda5adec079aa3284dbe",
+      "tools/build_media_bundle.py": "7d9b59c099b7f6cdcd10a1bcae1ce330dc82c5a7",
+      "tools/publish_r2_wrangler.py": "857f88f9aa34a6ba60e3448ce5bf55ab515e61ae",
+      "tools/publish_d1_new_models.py": "e35b5c68687bb96ebbafc9da4236303258e9a367",
+      "tools/verify_external_batch_release.py": "6b91d9c00b9b5cfa523a7672e3522c9dfa9ffa0a",
+      "tools/apply_exact_source_gallery_promotion.py": "3505545f333dfbde9cecedfc981718c79b594950",
+      "tools/apply_existing_gallery_promotion.py": "bdacbbdb0716646223535da9556761637f285a1a",
+      "tools/stage_external_media.py": "6f0558c343e9c542f5f3715ced4e3fa0da7a2b5d",
+      "tools/creator_attribution_release.py": "6ad99c8fe0a887d526f85b8138c05379a1b4c40b",
+      "tools/catalog_scope.py": "02ee2903066478fe102e425ffc2dc61ce5669578",
+      "tools/model_identity.py": "6d659eb6514203ddf90d58a05525e273965b5751",
+      "tools/legacy_gallery_registry.py": "bf816c1a6e7a609a7c0716fee1891cabb3dc3578",
+      "tools/production_model_contract.py": "0577cd1a5c1232011699f1540a85d6f3becd8264",
+      "tools/publish_r2.py": "60ced6476d77fe250f0247da8383bbdc2bf84a79",
+      "tools/publish_d1.py": "92b9c264a8ba93332509b8c60f0361a4cffddbdc",
+      "tools/preflight_existing_gallery_evidence.py": "9f6a680094e41075e5832e14b47ee86ffb2dc341",
+      "tools/preflight_exact_source_gallery_evidence.py": "79d5da90884ab00bf6adecde8ffd8a44a095c094",
+      "tools/staging_checkpoint.py": "4325764893f958d56ae53b7b6ffbb1f4f2d33d3e",
+      "tools/audit_model_identity.py": "eb5aedc6821366b896b9c47f309aeabf98bf9a8a",
+      "tools/build_gallery_promotion_manifest.py": "62bb1cbf01eafa3c30673efef053fa8d446fce5d",
+      "tools/media_quality_policy.py": "7121ebeb1b31e351095b0e7ba587838444196dfc",
+      "tools/plan_gallery_merge.py": "208a4dd28b082f80c37e78772f2d9301641ab2a4",
+      "tools/resolve_gallery_merge.py": "ccb3c5c877d124da959569d1afd94d129a9b6692",
+      "tools/external_identity_contract.py": "397719ccd6ad95a33199aaf4b557419cb7a1db5a",
+      "tools/requirements.txt": "6eabe054811b796deac04af22e500ff87b7bd899",
+      "config/public-catalog-roots.json": "dae1b4d9c70c6728cf641aca105bdb140c39ba78",
+      "config/catalog-view-descriptors.json": "d0f1d1bfb1da7274ea7fe2568b3efb38371ba4f0",
+      "config/catalog-model-identity-aliases.json": "6d061618a2906400896be60433315636d6098ef7",
+      "config/catalog-legacy-gallery-overrides.json": "d43d43ac005edfeffaeb5725d0fc1b1883bf7da7",
+      "config/external-batches/external-source-001-batch-012.json": "d79ee1f5174ffb378dd91efcf11fcbd5b3852df0",
+      "config/external-sources/external-source-001.json": "0e45084398768cb2de9d8edd628659dbfba1efb7"
+    }
   },
   "runtime": {
     "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
@@ -241,7 +275,39 @@
       "tools/worker_release_smoke.mjs": "a16fcc51cc30d5b959df3bc75b00e41f15fc2a5e",
       "tools/wrangler_config_contract.mjs": "59821cfda7350afbf3c8ee5fb3a0c715264d7eac",
       "tools/catalog_schema_contract.py": "aedfade4a3bdb7e805669c4300e221ca33f69a9b",
-      "config/migration-deploy-policy.json": "e8f0cc455058e38c9accd98cf7ed67b3e5d79a14"
+      "config/migration-deploy-policy.json": "e8f0cc455058e38c9accd98cf7ed67b3e5d79a14",
+      "tools/materialize_external_media_batch.py": "b62a0a151f9216bce1af4488de2875b1a6a91ee5",
+      "tools/ingest_catalog.py": "70b2329befd9d0e738abfda5adec079aa3284dbe",
+      "tools/build_media_bundle.py": "7d9b59c099b7f6cdcd10a1bcae1ce330dc82c5a7",
+      "tools/publish_r2_wrangler.py": "857f88f9aa34a6ba60e3448ce5bf55ab515e61ae",
+      "tools/publish_d1_new_models.py": "e35b5c68687bb96ebbafc9da4236303258e9a367",
+      "tools/verify_external_batch_release.py": "6b91d9c00b9b5cfa523a7672e3522c9dfa9ffa0a",
+      "tools/apply_exact_source_gallery_promotion.py": "3505545f333dfbde9cecedfc981718c79b594950",
+      "tools/apply_existing_gallery_promotion.py": "bdacbbdb0716646223535da9556761637f285a1a",
+      "tools/stage_external_media.py": "6f0558c343e9c542f5f3715ced4e3fa0da7a2b5d",
+      "tools/creator_attribution_release.py": "6ad99c8fe0a887d526f85b8138c05379a1b4c40b",
+      "tools/catalog_scope.py": "02ee2903066478fe102e425ffc2dc61ce5669578",
+      "tools/model_identity.py": "6d659eb6514203ddf90d58a05525e273965b5751",
+      "tools/legacy_gallery_registry.py": "bf816c1a6e7a609a7c0716fee1891cabb3dc3578",
+      "tools/production_model_contract.py": "0577cd1a5c1232011699f1540a85d6f3becd8264",
+      "tools/publish_r2.py": "60ced6476d77fe250f0247da8383bbdc2bf84a79",
+      "tools/publish_d1.py": "92b9c264a8ba93332509b8c60f0361a4cffddbdc",
+      "tools/preflight_existing_gallery_evidence.py": "9f6a680094e41075e5832e14b47ee86ffb2dc341",
+      "tools/preflight_exact_source_gallery_evidence.py": "79d5da90884ab00bf6adecde8ffd8a44a095c094",
+      "tools/staging_checkpoint.py": "4325764893f958d56ae53b7b6ffbb1f4f2d33d3e",
+      "tools/audit_model_identity.py": "eb5aedc6821366b896b9c47f309aeabf98bf9a8a",
+      "tools/build_gallery_promotion_manifest.py": "62bb1cbf01eafa3c30673efef053fa8d446fce5d",
+      "tools/media_quality_policy.py": "7121ebeb1b31e351095b0e7ba587838444196dfc",
+      "tools/plan_gallery_merge.py": "208a4dd28b082f80c37e78772f2d9301641ab2a4",
+      "tools/resolve_gallery_merge.py": "ccb3c5c877d124da959569d1afd94d129a9b6692",
+      "tools/external_identity_contract.py": "397719ccd6ad95a33199aaf4b557419cb7a1db5a",
+      "tools/requirements.txt": "6eabe054811b796deac04af22e500ff87b7bd899",
+      "config/public-catalog-roots.json": "dae1b4d9c70c6728cf641aca105bdb140c39ba78",
+      "config/catalog-view-descriptors.json": "d0f1d1bfb1da7274ea7fe2568b3efb38371ba4f0",
+      "config/catalog-model-identity-aliases.json": "6d061618a2906400896be60433315636d6098ef7",
+      "config/catalog-legacy-gallery-overrides.json": "d43d43ac005edfeffaeb5725d0fc1b1883bf7da7",
+      "config/external-batches/external-source-001-batch-012.json": "d79ee1f5174ffb378dd91efcf11fcbd5b3852df0",
+      "config/external-sources/external-source-001.json": "0e45084398768cb2de9d8edd628659dbfba1efb7"
     },
     "localOverlays": {
       "tools/test_worker_folder_counts.mjs": {
@@ -366,7 +432,17 @@
         "tools/check_worker_gallery_contract.mjs"
       ],
       "editorialContract": "config/catalog-production-model-contract.json",
-      "note": "Current Git blob identities copied; offline and production cutover gates remain required."
+      "note": "Current Git blob identities copied; offline and production cutover gates remain required.",
+      "dataWriterToolchainFiles": 32,
+      "dataWriterToolchainSourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7"
+    },
+    "dataWriterToolchain": {
+      "phase": "staged-offline",
+      "fileCount": 32,
+      "sourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
+      "releaseAuthorized": false,
+      "workflowWriterEnabled": false,
+      "note": "Exact source Python import closure plus required configuration; only staging, no production D1/R2 publisher activated."
     }
   },
   "productionObservation": {
