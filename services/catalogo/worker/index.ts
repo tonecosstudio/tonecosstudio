@@ -1,9 +1,10 @@
 import { createSharedCollection, getSharedCollection } from './sharedCollections'
 import { aggregateGallerySources, type GallerySourceState } from './galleryAggregation'
-import { type GalleryModelState } from './galleryValidation'
+import { validGalleryManifest, type GalleryModelState } from './galleryValidation'
 import { catalogSchemaStatus } from './schemaContract'
 import { configuredPublicOrigins, validateTurnstile } from './turnstile'
 import { RESOLVED_MODEL_BY_SLUG_CTE, resolvePublicModelIds } from './modelAliases'
+import { validatePublicCatalogQuery } from './publicQueryBudget'
 
 type D1Statement = {
   bind(...values: unknown[]): D1Statement
@@ -275,11 +276,7 @@ async function listFolders(request: Request, env: Env) {
       cf.path AS id,
       cf.name AS label,
       cf.subtree_model_count AS count,
-      EXISTS(SELECT 1 FROM catalog_folders child WHERE child.parent_id=cf.id) AS has_children,
-      (SELECT m.cover_storage_key FROM models m
-       WHERE m.folder_id=cf.id AND m.published=1
-         AND m.cover_storage_key IS NOT NULL AND m.cover_storage_key<>''
-       ORDER BY m.name COLLATE NOCASE,m.id LIMIT 1) AS cover_storage_key
+      EXISTS(SELECT 1 FROM catalog_folders child WHERE child.parent_id=cf.id) AS has_children
     FROM catalog_folders cf
     JOIN franchises f ON f.id=cf.franchise_id
     JOIN categories c ON c.id=f.category_id
@@ -288,7 +285,7 @@ async function listFolders(request: Request, env: Env) {
       (?<>'' AND cf.parent_id=(SELECT p.id FROM catalog_folders p WHERE p.franchise_id=f.id AND p.path=? LIMIT 1))
     )
     ORDER BY cf.name COLLATE NOCASE,cf.id`).bind(category, franchise, parent, parent, parent)
-    .all<{ id: string; label: string; count: number; has_children: number; cover_storage_key: string | null }>()
+    .all<{ id: string; label: string; count: number; has_children: number }>()
 
   const current = parent ? await env.DB.prepare(`SELECT
       cf.path AS id,
@@ -329,7 +326,6 @@ async function listFolders(request: Request, env: Env) {
       label: item.label,
       count: Number(item.count || 0),
       hasChildren: Boolean(item.has_children),
-      cover_storage_key: item.cover_storage_key,
     })),
   }, {}, 'public, max-age=300, s-maxage=1800')
 }
@@ -592,6 +588,16 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === 'OPTIONS') return options(request, env)
     const url = new URL(request.url)
+    // Reject cache-busting arguments BEFORE even the D1 schema-readiness check.
+    // Quote and shared-collection contracts are intentionally untouched.
+    if (request.method === 'GET') {
+      const budget = validatePublicCatalogQuery(url)
+      if (budget !== null && budget !== true) {
+        // Preserve published error contracts for height/search validation.
+        const detail = budget === false ? { error: 'invalid_catalog_query' } : budget
+        return json(request, env, detail, { status: 400 })
+      }
+    }
 
     if (request.method === 'GET' && url.pathname === '/api/health') {
       const schema = await catalogSchemaStatus(env.DB)
