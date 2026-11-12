@@ -144,6 +144,7 @@ describe("TONART admin workspace", () => {
       }],
     });
     show("/admin/comunicacao");
+    expect(screen.getAllByRole("heading", { name: "Central de Comunicação" }).length).toBeGreaterThan(0);
     expect(await screen.findByText("Solicitação #33333333")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Preparar e-mail para cliente@example.com" }))
       .toHaveAttribute("href", expect.stringMatching(/^mailto:/));
