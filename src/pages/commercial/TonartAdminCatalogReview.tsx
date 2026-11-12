@@ -157,7 +157,7 @@ export default function TonartAdminCatalogReview() {
     cursors: Array<string | undefined>,
   ) {
     if (!gateway || !review?.gallery || reviewingId !== null ||
-        pageIndex < 0 || pageIndex >= review.model.imageCount) return;
+        pageIndex < 0 || pageIndex * 6 >= review.model.imageCount) return;
     const current = review;
     // The existing gateway validates cursor syntax, gallery version, total
     // and each page. Never fetch unbounded galleries or skip page boundaries.
