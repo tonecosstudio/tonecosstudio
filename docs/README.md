@@ -1,34 +1,35 @@
-# Documentação operacional — Tonecos Studio
+# Documentação operacional — TONART Studio
 
-**Hospedagem oficial atual: Vercel `tonart-studio-public` em https://tonartstudio.com.br.** Cloudflare mantém o Worker/D1/R2 e a prévia Pages protegida; não há segundo catálogo. O site está em pré-lançamento somente leitura/noindex, PR #4 Draft e **NO-GO do MVP visual sem renders aprovados**. A regra permanente está em [AGENTS.md](../AGENTS.md), e o checkpoint em [URGENTE.md](../URGENTE.md).
+**Estado verificado em 12/11/2026.** Frontend oficial: Vercel `tonart-studio-public` em https://tonartstudio.com.br. Catálogo e mídias: **único** Cloudflare Worker `tonecos-catalogo-api`, D1/R2 na conta Tonecos, com publicador ativo `washingtonmsdj/catalogo`. A cópia `services/catalogo/` é *staged-offline*, sem cutover aprovado. Cloudflare Pages continua uma prévia protegida, não o frontend oficial.
 
-## Ordem de leitura
+O site está em **pré-lançamento/noindex**. O modo comercial Vercel (conta e orçamento autenticado) está habilitado; **isso não é GO para indexação, pagamentos ou lançamento comercial completo**. Os módulos de perfil além de dados pessoais, pedidos de orçamento e acesso básico ainda aparecem como indisponíveis.
 
-1. [README principal](../README.md) — contas, produto, stack e arquitetura.
-2. [AGENTS](../AGENTS.md) — regras de autorização e implementação.
-3. [URGENTE](../URGENTE.md) — checkpoint verificável, próximos gates e do_not_repeat.
-4. [TONECOS-STUDIO-CONSOLIDACAO.md](TONECOS-STUDIO-CONSOLIDACAO.md) — autoridades do produto, das contas e das integrações.
-5. [TONECOS_CATALOG_FIRST_PARTY_PROXY.md](TONECOS_CATALOG_FIRST_PARTY_PROXY.md) — contrato GET do proxy e Worker canônico; frontend oficial usa o adaptador Vercel.
-6. [TONECOS_SAFE_PREVIEW.md](TONECOS_SAFE_PREVIEW.md) — preview protegido e isolamento de Supabase.
-7. [OPERACAO_CLOUDFLARE_PAGES.md](OPERACAO_CLOUDFLARE_PAGES.md) — runbook específico do Pages privado; publicação oficial Vercel segue `vercel.json` e [README](../README.md).
+## Documentos canônicos por finalidade
 
-## Execução canônica da consolidação
+| Documento | O que responde |
+| --- | --- |
+| [README principal](../README.md) | Estado consolidado do MVP, Minha Conta, orçamentos, owners e pendências reais de GO |
+| [AGENTS](../AGENTS.md) | Regras, segurança, owners, entrega rápida e política de mídia |
+| [URGENTE](../URGENTE.md) | Checkpoint operacional atual; os checkpoints antigos abaixo são históricos, não ordens atuais |
+| [TONECOS-STUDIO-CONSOLIDACAO.md](TONECOS-STUDIO-CONSOLIDACAO.md) | Limites de autoridade e integração; confirmar observações datadas antes de agir |
+| [TONECOS_CATALOG_FIRST_PARTY_PROXY.md](TONECOS_CATALOG_FIRST_PARTY_PROXY.md) | Site → proxy Vercel/Pages → Worker → D1/R2; filtros e cache |
+| [TONECOS_SAFE_PREVIEW.md](TONECOS_SAFE_PREVIEW.md) | Preview protegido e fail-closed |
+| [OPERACAO_CLOUDFLARE_PAGES.md](OPERACAO_CLOUDFLARE_PAGES.md) | Runbook específico do Pages privado, não autoriza segundo frontend público |
+| [MIGRACAO_CATALOGO_MONOREPO.md](MIGRACAO_CATALOGO_MONOREPO.md) | Plano M0–M6 **pendente de cutover autorizado**, com históricos datados |
 
-- **[MIGRACAO_CATALOGO_MONOREPO.md](MIGRACAO_CATALOGO_MONOREPO.md)** — plano M0–M6, SSOT de etapas, critérios de GO, ownership, dependências, rollback e checkpoint; prevalece sobre a proposta anterior de transferir o repo do catálogo.
-- **[Manifesto de migração](../config/catalog-code-consolidation.json)** — fonte verificável dos blobs Worker/D1 da origem; é snapshot auditado, não autorização de release.
-- **[Guard offline](../scripts/architecture/catalog-monorepo.test.mjs)** — executado por npm run catalog:monorepo:check e pelo build, sem rede, D1 ou R2.
-- **[Configuração do Worker staged](../services/catalogo/wrangler.jsonc)** — fonte dos recursos Worker/D1/R2 já existentes; o preflight M5 a consulta junto do manifesto, nunca substitui aprovação humana ou o publicador ativo.
+**Ordem de leitura proporcional ao trabalho:** README → AGENTS → trecho pertinente de URGENTE; abrir outros documentos somente quando o componente for afetado. Não voltar a ler o acervo histórico inteiro a cada tarefa.
 
-## Documentos históricos
+## Marcos confirmados e não confirmados
 
-Em 04/11/2026 foram identificados **36 documentos de docs/** que descreviam configuração antiga, relatórios datados, catálogo em Supabase, Vercel como hosting, scripts de importação ou recursos da OrdaX. Devem residir apenas em [docs-archive/historico-2026-11-04](../docs-archive/historico-2026-11-04/), sem autoridade operacional. O conteúdo de URGENTE anterior e ORDAX_APP_PLATFORM também pertence ao arquivo. O Git preserva versões anteriores.
+- Site Vercel `main` integrado até PR #24 (12/11); a visualização de modelos, revisão administrativa e proteção de cache foram entregues sem um segundo catálogo.
+- Worker original: PRs [#266](https://github.com/washingtonmsdj/catalogo/pull/266), [#267](https://github.com/washingtonmsdj/catalogo/pull/267), [#268](https://github.com/washingtonmsdj/catalogo/pull/268) e [#269](https://github.com/washingtonmsdj/catalogo/pull/269) integradas na origem. A última corrigiu o teste de cache que provocara rollback; versão observada a 100% em 12/11: `0b6d0d02-58f6-4f99-9a9a-92a605a498ed`.
+- Produção Vercel: `VITE_TONECOS_COMMERCIAL_MVP=true`, `VITE_CATALOG_QUOTES_ENABLED=true`, `VITE_PUBLIC_CATALOG_MVP=false`, `VITE_PREVIEW_READ_ONLY=false`.
+- Supabase TONART ativo: `profiles` e `quotes` com RLS, RPC `submit_catalog_quote_request`; não inferir E2E de usuário real a partir de schema.
+- Pendente: confirmação E2E autenticada de cadastro/login/recovery/orçamento/resposta, QA visual, revisão jurídica e direitos de mídia, autorização específica para indexação. Seções legadas da Minha Conta não integram o MVP funcional de orçamento.
+- **Quarentena SpecialSTL** permanece por identidade confirmada (264 registros) e somente pode ser liberada por evidência de direitos e render legítimo da escultura correta. Imagens comuns permanecem visíveis.
 
-Documentação junto aos módulos em src/ e supabase/functions/ é específica desses módulos, majoritariamente da fase comercial futura; não altera o escopo do MVP readonly. Não executar instruções de importação ou consultas caras encontradas em históricos sem escopo e orçamento aprovados.
+## Manutenção de documentação
 
-## Regra de manutenção
+Status mutável fica em **URGENTE.md** e resume-se no README; decisões permanentes ficam em AGENTS/manifesto; operações em runbooks. Não abrir outro documento SSOT nem usar arquivos arquivados como ordem de deploy. Observações antigas sobre PR #4 Draft, Cloudflare Pages como hospedagem principal, ausência de contas/orçamentos ou a PR #266 pendente **foram superadas pelo estado atual**.
 
-Status mutável vai para URGENTE.md; decisão arquitetural, para o contrato vigente; operações, para o runbook existente. **Não abrir SSOT paralelo** por ocasião de um novo chat. Verificar ambiente remoto antes de afirmar estados. Documentação não é teste visual nem gate de segurança.
-
-## Verificação de documentação junto ao código — 04/11/2026
-
-Foram lidos **48 Markdown** existentes em `src/` e `supabase/`: são descrições técnicas dos componentes comerciais e funções Supabase futuras, **não runbooks de operação do MVP público**. Nenhum deles configurava Vercel como hosting; **seis** continham termos da OrdaX ou URLs/caminhos antigos e receberam avisos explícitos, correções de caminhos e instruções de configuração sem domínios de terceiros. Um arquivo vazio (`src/hooks/admin/STATUS_PERSISTENCE_README.md`) foi removido. Os demais documentos locais permanecem associados ao código para preservar a rastreabilidade da fase comercial; afirmações neles não equivalem a validação de produção.
+O histórico anterior a 04/11 e os relatórios datados residem em [docs-archive](../docs-archive/). Código comercial antigo que não está exposto/operacional no MVP não é prova de funcionalidade concluída. A documentação não substitui testes, aprovação humana ou controle de produção; **nenhuma mudança documental, por si, requer build/deploy**.

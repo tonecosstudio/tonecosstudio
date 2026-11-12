@@ -1,29 +1,28 @@
-# Catálogo público — proxy canônico do Cloudflare Pages
+# Catálogo público — transporte first-party canônico
 
-**Hospedagem do frontend:** Cloudflare Pages tonecosstudio, conta Tonecos. **API única:** Worker tonecos-catalogo-api na mesma conta, controlador de D1/R2. O site não possui catálogo em Supabase nem outra API.
+**Atualizado em 12/11/2026.** Frontend oficial: **Vercel `tonart-studio-public` → https://tonartstudio.com.br**. O Cloudflare Pages `tonecosstudio` permanece **prévia protegida**. O **único backend de modelos/mídia** continua sendo o Worker `tonecos-catalogo-api` com D1 e R2 existentes; o publicador ativo está em `washingtonmsdj/catalogo`.
 
-## Como funciona
+## Caminhos existentes (sem duplicação)
 
-Em HTTPS, o navegador usa **/catalogo-api/** na própria origem do site. A função **functions/catalogo-api/[[path]].js** só atende rotas públicas GET da allowlist; sua única saída autorizada é **env.CATALOG_WORKER.fetch**. O Service Binding **CATALOG_WORKER → tonecos-catalogo-api** está configurado nos ambientes preview e produção do Pages. Sem binding, retornar erro em vez de usar outro Worker, URL externa ou outro banco.
+- **Site oficial Vercel:** navegador → endpoint first-party `/catalogo-api/...` → adaptador restrito `api/catalogo-proxy.js` (via reescrita do site) → **Worker original**. O código de transporte da Vercel é diferente do transportador Pages, mas ambos respeitam a mesma API pública.
+- **Prévia Pages:** navegador → `functions/catalogo-api/[[path]].js` → Service Binding `env.CATALOG_WORKER.fetch` → mesmo Worker original. Sem binding, falha fechada; sem fallback para outro domínio, Worker ou inventário.
+- **Resolver único do frontend:** `src/config/canonical-catalog-endpoint.ts` e cliente `src/services/catalog/public-catalog-gateway.ts`. Navegação, ficha, pastas, filtros e galeria não consultam Supabase nem criam outra base.
+- **Rota de mídia:** somente chaves `media/...` verificadas; Range, ETag, HEAD e GET preservados. Chaves inválidas, traversal, Unicode malformado e segmentos indevidos são rejeitados.
 
-Rotas de leitura aceitas pela função:
-- /catalogo-api/api/catalog
-- /catalogo-api/api/categories
-- /catalogo-api/api/franchises
-- /catalogo-api/api/folders
-- /catalogo-api/api/models/:slug
-- /catalogo-api/api/models/:slug/images
-- /catalogo-api/media/:path* (segmentos validados)
+## Escopo e controle de custo
 
-Método diferente de GET → 405; path fora da allowlist → 404; exceção no upstream → 502; redirecionamento inesperado é rejeitado. Qualquer erro HTTP do Worker (4xx/5xx) sai com `Cache-Control: no-store`, mesmo que a origem solicite cache público; respostas válidas mantêm o cache declarado. Encaminha Range de mídia e If-None-Match. A resposta é **construída por allowlist de cabeçalhos**: preserva somente semântica pública de JSON, cache, ETag, Range, codificação, CORS público e CORP de mídia; descarta cookies, Clear-Site-Data, políticas de segurança impostas pelo upstream, Refresh, Location, Link, Content-Disposition e credenciais CORS. O Worker não recebe autoridade para alterar a política do site por meio de cabeçalhos. Para evitar execução de documentos ativos em rotas da origem própria, a função aplica **Content-Security-Policy: sandbox** a todas as respostas encaminhadas, sem confiar em uma política CSP devolvida pelo publicador antigo. O contrato da **Pages Function** não é o mesmo que um HEAD direto no Worker, que pode ter suporte diferente.
+Leituras públicas aceitas: `/api/catalog`, `/api/categories`, `/api/franchises`, `/api/folders`, `/api/recent`, `/api/models/:slug`, `/api/models/:slug/images` e `/media/:key`, através do prefixo first-party. Os métodos e cabeçalhos são filtrados; não encaminhar credenciais/cookies ou reescrever cabeçalhos privilegiados do Worker. Erros não devem ser cacheados.
 
-**Resolver SSOT:** src/config/canonical-catalog-endpoint.ts. **Cliente:** src/services/catalog/public-catalog-gateway.ts. O cliente usa uma única função de GET JSON para listagem, ficha, galeria e navegação; URLs de mídia só são construídas a partir de chaves `media/...` que obedeçam aos limites de segmentos e comprimento da função Pages. Chaves apontando para `api/...`, segmentos inválidos, traversal, controle ou Unicode malformado são rejeitadas antes de renderização. A navegação e filtro de pastas obedecem ao limite canônico de **240 caracteres** do Worker, não 512, bloqueando caminhos excessivos antes de qualquer GET. A variável VITE_CANONICAL_CATALOG_API_BASE só permite overrides em desenvolvimento; no navegador de produção, o resolver aceita exclusivamente o proxy HTTPS da mesma origem. Em builds do MVP público, qualquer override definido bloqueia o build antes do Vite. Não existe fallback OrdaX. As rewrites no vercel.json são apenas compatibilidade histórica, não o caminho oficial Cloudflare.
+- Catálogo da administração: primeira página limitada a **12 modelos** automaticamente; demais páginas/buscas, capas e galerias completas somente quando solicitadas.
+- Cache no Worker: usa os próprios `Cache-Control` públicos; nenhuma varredura D1 ou leitura de acervo R2 apenas para validar o cache.
+- Cache CDN Vercel: `Vercel-CDN-Cache-Control: public, s-maxage=300` para JSON público 200 de catálogo, `recent`, fichas e galeria (somente se o Worker autorizou cache público). Não estender a erros, cookies, dados de contas, tokens, pedidos privados, Range ou mídia R2.
+- Proteção de parâmetros: [TONART PR #24](https://github.com/tonecosstudio/tonecosstudio/pull/24) rejeita parâmetros desconhecidos/repetidos/abusivos no proxy. [Worker PR #268](https://github.com/washingtonmsdj/catalogo/pull/268) implementou defesa correspondente **na origem direta**; [PR #269](https://github.com/washingtonmsdj/catalogo/pull/269) ajustou o smoke de cache para usar apenas a chave canônica `/api/recent?limit=1`. Gates de staging, promoção, cache HIT e rollback aprovados na publicação de 12/11; Worker `0b6d0d02-58f6-4f99-9a9a-92a605a498ed` observado a 100%.
+- Correção original HTTP Range [PR #266](https://github.com/washingtonmsdj/catalogo/pull/266) **já foi integrada e publicada**; não reimplementar por workaround na Vercel/Pages. Imagens comuns continuam visíveis; mídias SpecialSTL identificadas permanecem em quarentena até aprovação de direitos.
 
-## Testes e evidências
+## Segurança e validação
 
-- Teste offline: scripts/cloudflare/catalog-pages-proxy.test.mjs, seleção/gateway de catálogo e gate scripts/security/assert-public-mvp-bundle.mjs.
-- Sondas anteriores de baixo volume validaram seis capas WebP, ficha do modelo **nier-10h-nier** e galeria. **Não** confundir isso com renderização visual correta em mobile/desktop.
-- Problema HTTP Range no backend está separado em **washingtonmsdj/catalogo#266**; não corrigir na Pages Function com workaround e não implantar Worker sem testes/staging/rollback.
-- Jamais realizar scan SQL, importação ou varredura D1/R2 para validar integração do frontend.
+Validadores do cliente e do proxy limitam caminhos e campos antes de fazer requests. A autoridade final de leitura D1/R2 é **sempre o Worker**. O proxy Pages aplica `Content-Security-Policy: sandbox` e allowlist de cabeçalhos, sem aceitar redirecionamentos/credenciais do upstream. O proxy Vercel mantém transporte estritamente GET/HEAD público quando permitido por rota; nenhum deles é endpoint de escrita do catálogo.
 
-Ver [arquitetura](TONECOS-STUDIO-CONSOLIDACAO.md) e [runbook](OPERACAO_CLOUDFLARE_PAGES.md).
+Testes offline relevantes: `scripts/cloudflare/catalog-pages-proxy.test.mjs`, `scripts/vercel/catalog-proxy.test.mjs` e suíte do Worker original. **Não** confundir testes HTTP e build verde com QA visual autenticado desktop/mobile ou E2E de cadastro/orçamento. Cache HIT confirmado não prova consumo zero de D1 para consultas inéditas. Não executar scans SQL, importações, testes de carga, D1/R2 remoto em massa ou novos caches como forma de monitoramento.
+
+Ver [README](../README.md), [AGENTS](../AGENTS.md), [plano de migração](MIGRACAO_CATALOGO_MONOREPO.md) e [runbook Pages](OPERACAO_CLOUDFLARE_PAGES.md).
