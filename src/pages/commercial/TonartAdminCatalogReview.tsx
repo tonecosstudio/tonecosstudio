@@ -10,7 +10,11 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
-import { buildTonartCatalogReviewCsv } from "@/services/catalog/tonart-catalog-review-export";
+import {
+  buildTonartCatalogReviewCsv,
+  validateTonartCatalogEditorialProposal,
+  type TonartCatalogEditorialProposal,
+} from "@/services/catalog/tonart-catalog-review-export";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { catalogModelDetailsPath } from "@/config/routes";
 import {
@@ -34,6 +38,10 @@ export default function TonartAdminCatalogReview() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [downloadError, setDownloadError] = useState("");
+  // Ephemeral drafts for this already loaded page. Never a second data ledger.
+  const [editorialDrafts, setEditorialDrafts] = useState<Map<string, TonartCatalogEditorialProposal>>(
+    () => new Map(),
+  );
   const requestRef = useRef<AbortController | null>(null);
   const reviewRef = useRef<AbortController | null>(null);
   const [selectedModel, setSelectedModel] = useState<PublicCatalogModel | null>(null);
@@ -73,6 +81,10 @@ export default function TonartAdminCatalogReview() {
     nextCursors: Array<string | undefined>,
     nextIndex: number,
   ) {
+    if (editorialDrafts.size > 0) {
+      setError("Baixe a planilha e descarte as propostas locais antes de mudar a página.");
+      return;
+    }
     if (!gateway) {
       setError("O catálogo canônico não está configurado neste ambiente.");
       return;
@@ -99,6 +111,7 @@ export default function TonartAdminCatalogReview() {
       setPageIndex(nextIndex);
       setActiveSearch(search);
       setOnlyWithoutCover(false);
+      setEditorialDrafts(new Map());
     } catch {
       if (!controller.signal.aborted) {
         setError("Não foi possível consultar a página do catálogo. Tente novamente.");
@@ -219,13 +232,38 @@ export default function TonartAdminCatalogReview() {
     ? page?.items.filter((model) => !model.coverStorageKey) ?? []
     : page?.items ?? [];
   const withoutCover = page?.items.filter((model) => !model.coverStorageKey).length ?? 0;
+  const hasInvalidEditorialDraft = [...editorialDrafts.entries()].some(([id, proposal]) => {
+    const model = page?.items.find((entry) => entry.id === id);
+    if (!model) return true;
+    try {
+      validateTonartCatalogEditorialProposal(model, proposal);
+      return false;
+    } catch {
+      return true;
+    }
+  });
+
+  function updateEditorialDraft(model: PublicCatalogModel, field: "name" | "variant", value: string) {
+    setEditorialDrafts((current) => {
+      const next = new Map(current);
+      const draft = { ...(next.get(model.id) ?? {}), [field]: value };
+      if (!draft.name?.trim() && !draft.variant?.trim()) next.delete(model.id);
+      else next.set(model.id, draft);
+      return next;
+    });
+    setDownloadError("");
+  }
 
   function downloadCurrentReview() {
     if (!page || !visible.length || busy) return;
+    if (hasInvalidEditorialDraft) {
+      setDownloadError("Corrija os campos de nome e variante antes de baixar a planilha.");
+      return;
+    }
     setDownloadError("");
     let objectUrl: string | null = null;
     try {
-      const csv = buildTonartCatalogReviewCsv(visible);
+      const csv = buildTonartCatalogReviewCsv(visible, editorialDrafts);
       const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
       objectUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -260,7 +298,7 @@ export default function TonartAdminCatalogReview() {
             className="min-h-11 w-full rounded-sm border border-white/25 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[hsl(var(--gold-accent))]"
           />
         </label>
-        <button className={actionClass} type="submit" disabled={busy || gateway === null}>
+        <button className={actionClass} type="submit" disabled={busy || gateway === null || editorialDrafts.size > 0}>
           {busy ? "Consultando..." : page ? "Pesquisar" : "Carregar modelos"}
         </button>
       </form>
@@ -289,6 +327,7 @@ export default function TonartAdminCatalogReview() {
               <input
                 type="checkbox"
                 checked={onlyWithoutCover}
+                disabled={editorialDrafts.size > 0}
                 onChange={(event) => setOnlyWithoutCover(event.target.checked)}
                 className="h-4 w-4 accent-[hsl(var(--gold-accent))]"
               />
@@ -403,6 +442,57 @@ export default function TonartAdminCatalogReview() {
                     {reviewingId === selectedModel.id ? "Carregando galeria..." : "Ver galeria (6 fotos por página)"}
                   </button>
                 </div>
+              </div>
+              <div className="mt-6 border-t border-white/15 pt-5">
+                <h5 className="text-sm font-semibold">Propor correção editorial</h5>
+                <p className="mt-2 text-xs leading-5 text-white/60">
+                  Preencha somente o que deseja mudar. Esta proposta existe apenas nesta página,
+                  até ser exportada como CSV; não salva alterações no catálogo público.
+                  Nome atual: {selectedModel.name}
+                  {selectedModel.variantName ? " · Variante atual: " + selectedModel.variantName : " · Sem variante atual"}.
+                </p>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <label className="text-xs text-white/75">
+                    <span className="mb-2 block">Novo nome (opcional)</span>
+                    <input
+                      aria-label={`Novo nome de ${selectedModel.name}`}
+                      type="text"
+                      maxLength={120}
+                      value={editorialDrafts.get(selectedModel.id)?.name ?? ""}
+                      placeholder="Manter o nome atual"
+                      onChange={(event) => updateEditorialDraft(selectedModel, "name", event.target.value)}
+                      className="min-h-11 w-full rounded-sm border border-white/25 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[hsl(var(--gold-accent))]"
+                    />
+                  </label>
+                  <label className="text-xs text-white/75">
+                    <span className="mb-2 block">Nova variante (opcional)</span>
+                    <input
+                      aria-label={`Nova variante de ${selectedModel.name}`}
+                      type="text"
+                      maxLength={160}
+                      value={editorialDrafts.get(selectedModel.id)?.variant ?? ""}
+                      placeholder="Manter a variante atual"
+                      onChange={(event) => updateEditorialDraft(selectedModel, "variant", event.target.value)}
+                      className="min-h-11 w-full rounded-sm border border-white/25 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[hsl(var(--gold-accent))]"
+                    />
+                  </label>
+                </div>
+                {editorialDrafts.has(selectedModel.id) && (
+                  <button
+                    type="button"
+                    className={secondaryClass + " mt-3"}
+                    onClick={() => {
+                      setEditorialDrafts((current) => {
+                        const next = new Map(current);
+                        next.delete(selectedModel.id);
+                        return next;
+                      });
+                      setDownloadError("");
+                    }}
+                  >
+                    Limpar proposta deste modelo
+                  </button>
+                )}
               </div>
             </section>
           )}
@@ -536,6 +626,30 @@ export default function TonartAdminCatalogReview() {
               </Link>
             </section>
           )}
+          <div className="mt-4 flex flex-wrap items-center gap-3" aria-live="polite">
+            <p className="text-xs text-white/65">
+              {editorialDrafts.size} modelo(s) com proposta local nesta página.
+              {editorialDrafts.size > 0
+                ? " Baixe a planilha antes de mudar a busca ou a página." : ""}
+            </p>
+            {editorialDrafts.size > 0 && (
+              <button
+                type="button"
+                className={secondaryClass}
+                onClick={() => {
+                  setEditorialDrafts(new Map());
+                  setDownloadError("");
+                }}
+              >
+                Descartar todas as propostas locais
+              </button>
+            )}
+            {hasInvalidEditorialDraft && (
+              <p role="alert" className="text-xs text-amber-200">
+                Revise as propostas: não use fórmulas, caracteres de controle, sinais de HTML ou nomes excessivos.
+              </p>
+            )}
+          </div>
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <p className="max-w-xl text-xs text-white/50">
               Somente a página solicitada é consultada. Os totais acima não representam o acervo inteiro.
@@ -545,7 +659,7 @@ export default function TonartAdminCatalogReview() {
               <button
                 type="button"
                 className={secondaryClass}
-                disabled={busy || visible.length === 0}
+                disabled={busy || visible.length === 0 || hasInvalidEditorialDraft}
                 onClick={downloadCurrentReview}
               >
                 Baixar planilha de revisão (CSV)
@@ -553,7 +667,7 @@ export default function TonartAdminCatalogReview() {
               <button
                 type="button"
                 className={secondaryClass}
-                disabled={busy || pageIndex === 0}
+                disabled={busy || pageIndex === 0 || editorialDrafts.size > 0}
                 onClick={() => {
                   const index = pageIndex - 1;
                   if (index < 0) return;
@@ -565,7 +679,7 @@ export default function TonartAdminCatalogReview() {
               <button
                 type="button"
                 className={secondaryClass}
-                disabled={busy || !page.nextCursor}
+                disabled={busy || !page.nextCursor || editorialDrafts.size > 0}
                 onClick={() => {
                   if (!page.nextCursor) return;
                   const index = pageIndex + 1;
