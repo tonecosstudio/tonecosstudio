@@ -124,7 +124,9 @@ function isBoundedPublicQuery(route, searchParams) {
       if (!/^[1-9][0-9]{0,14}$/.test(value) ||
           !Number.isSafeInteger(Number(value))) return false;
     } else if (key === "cursor") {
-      if (!/^[A-Za-z0-9_-]{1,2048}$/.test(value)) return false;
+      // Gallery cursors use padded base64 (e.g. "Ng=="); model list
+      // cursors use unpadded base64url. Preserve both canonical encodings.
+      if (!/^[A-Za-z0-9+/_-]{1,2048}={0,2}$/.test(value)) return false;
     } else if (key === "category" || key === "franchise") {
       if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(value)) return false;
     } else if (key === "folder" || key === "parent") {
