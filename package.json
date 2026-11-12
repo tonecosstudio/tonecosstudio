@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "catalog:monorepo:check": "node --test scripts/architecture/catalog-monorepo.test.mjs",
-    "build": "npm run catalog:monorepo:check && node scripts/security/assert-catalog-mvp-build.mjs && node --test scripts/catalog/catalog-editorial-contract.test.mjs scripts/branding/generate-og-image.test.mjs scripts/cloudflare/catalog-pages-proxy.test.mjs scripts/security/assert-public-mvp-bundle.test.mjs scripts/seo/generate-public-index.test.mjs && vite build && node scripts/security/assert-public-mvp-bundle.mjs && node scripts/branding/generate-og-image.mjs && node scripts/seo/generate-public-index.mjs",
+    "build": "npm run catalog:monorepo:check && node scripts/security/assert-catalog-mvp-build.mjs && node --test scripts/catalog/catalog-editorial-contract.test.mjs scripts/catalog/catalog-editorial-endpoint.test.mjs scripts/branding/generate-og-image.test.mjs scripts/cloudflare/catalog-pages-proxy.test.mjs scripts/security/assert-public-mvp-bundle.test.mjs scripts/seo/generate-public-index.test.mjs && vite build && node scripts/security/assert-public-mvp-bundle.mjs && node scripts/branding/generate-og-image.mjs && node scripts/seo/generate-public-index.mjs",
     "build:dev": "vite build --mode development",
     "typecheck": "tsc -b --pretty false",
     "typecheck:app": "tsc -p tsconfig.app.json --pretty false --noEmit",
