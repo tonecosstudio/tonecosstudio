@@ -115,6 +115,19 @@ export function assessCutoverReadiness(contract, state) {
   add(Number.isInteger(observed.requested) && observed.requested === 0, 'source_workflow_runs_requested_or_unverified')
   add(Number.isInteger(observed.waiting) && observed.waiting === 0, 'source_workflow_runs_waiting_or_unverified')
   add(Number.isInteger(observed.pending) && observed.pending === 0, 'source_workflow_runs_pending_or_unverified')
+  // The original repository has FOUR more D1/R2 writers than cloudflare.yml.
+  // Checking only the main Worker workflow is insufficient to transfer ownership.
+  const writers = contract?.origin?.additionalWriterWorkflows
+  const liveWriters = observed.additionalWriters
+  add(Array.isArray(writers) && writers.length === 4 &&
+    new Set(writers.map(row => row.path)).size === 4 &&
+    Array.isArray(liveWriters) && liveWriters.length === writers.length &&
+    writers.every(writer => {
+      const live = liveWriters.find(item => item?.path === writer.path)
+      return live?.id === writer.id && live?.state === 'disabled_manually' &&
+        ['running','queued','requested','waiting','pending'].every(
+          status => Number.isInteger(live[status]) && live[status] === 0)
+    }), 'source_additional_writers_active_or_unverified')
   }
   add(observed.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID, 'cloudflare_account_unverified')
 
@@ -204,6 +217,25 @@ export async function inspectLiveReadOnly(env = process.env, contract = CANONICA
     workflow, running: active.total_count, queued: queued.total_count,
     requested: requested.total_count, waiting: waiting.total_count, pending: pending.total_count,
   }
+  const sourceWriters = contract.origin.additionalWriterWorkflows
+  if (!Array.isArray(sourceWriters) || sourceWriters.length !== 4) {
+    throw new Error('source_writer_inventory_unverified')
+  }
+  state.additionalWriters = await Promise.all(sourceWriters.map(async writer => {
+    const writerApi = sourceUrl + '/actions/workflows/' +
+      encodeURIComponent(writer.path.split('/').at(-1))
+    const [metadata, ...runs] = await Promise.all([
+      getJSON(writerApi, ghHeaders),
+      ...['in_progress', 'queued', 'requested', 'waiting', 'pending'].map(status =>
+        getJSON(writerApi + '/runs?status=' + status + '&per_page=1', ghHeaders)),
+    ])
+    return {
+      id: metadata.id, path: metadata.path, state: metadata.state,
+      running: runs[0].total_count, queued: runs[1].total_count,
+      requested: runs[2].total_count, waiting: runs[3].total_count,
+      pending: runs[4].total_count,
+    }
+  }))
   }
   // No token: still report actual GitHub state, but never infer Cloudflare readiness.
   if (!env.CLOUDFLARE_API_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) return state
@@ -247,6 +279,7 @@ async function main() {
       sourceRequested: state.requested ?? null,
       sourceWaiting: state.waiting ?? null,
       sourcePending: state.pending ?? null,
+      sourceAdditionalWriters: state.additionalWriters ?? null,
       liveWorkerVersionId: state.deployment?.versions?.[0]?.version_id ?? null,
       blockers: verdict.blockers,
     }, null, 2))

@@ -70,6 +70,16 @@ test('M1 deploy tooling inventory is pinned without authorizing a second pipelin
   assert.ok(Object.values(origin.apiBuildConfigBlobs).every(v => sha.test(v)));
   assert.equal(origin.apiDeployPipeline, '.github/workflows/cloudflare.yml');
   assert.equal(origin.apiDeployWorkflowId, 371358484, 'Source publisher workflow identity is pinned');
+  assert.deepEqual(
+    origin.additionalWriterWorkflows.map(({ path, id }) => ({ path, id })),
+    [
+      { path: '.github/workflows/external-batch-release.yml', id: 384544141 },
+      { path: '.github/workflows/exact-source-gallery-promotion.yml', id: 385740730 },
+      { path: '.github/workflows/existing-gallery-promotion.yml', id: 385342502 },
+      { path: '.github/workflows/external-media-staging.yml', id: 385318875 },
+    ],
+    'The D1/R2 publisher inventory must stay complete for M5',
+  );
   assert.equal(contract.migration.targetWorkerReleaseEnabled, false);
 });
 

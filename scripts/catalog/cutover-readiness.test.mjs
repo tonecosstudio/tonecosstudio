@@ -28,6 +28,10 @@ function approvedContract() {
 }
 const fullState = () => ({
   workflow: { ...workflow }, running: 0, queued: 0, requested: 0, waiting: 0, pending: 0,
+  additionalWriters: original.origin.additionalWriterWorkflows.map(writer => ({
+    id: writer.id, path: writer.path, state: 'disabled_manually',
+    running: 0, queued: 0, requested: 0, waiting: 0, pending: 0,
+  })),
   sourceRepositoryId: original.origin.repositoryId,
   sourceRepositoryName: original.origin.repository,
   targetRepositoryId: original.target.repositoryId,
@@ -78,6 +82,22 @@ test('source activity, drift or missing live bindings block the cutover', () => 
 test('a fully verified offline fixture can pass without performing any release', () => {
   const result = assessCutoverReadiness(approvedContract(), fullState())
   assert.deepEqual(result, { ready: true, blockers: [] })
+})
+
+test('all additional D1 and R2 writers must be disabled before M5', () => {
+  const c = approvedContract()
+  const active = fullState()
+  active.additionalWriters[1].state = 'active'
+  assert.ok(assessCutoverReadiness(c, active).blockers.includes('source_additional_writers_active_or_unverified'))
+  const running = fullState()
+  running.additionalWriters[2].pending = 1
+  assert.ok(assessCutoverReadiness(c, running).blockers.includes('source_additional_writers_active_or_unverified'))
+  const missing = fullState()
+  missing.additionalWriters.pop()
+  assert.ok(assessCutoverReadiness(c, missing).blockers.includes('source_additional_writers_active_or_unverified'))
+  const substituted = fullState()
+  substituted.additionalWriters[0].id += 1
+  assert.ok(assessCutoverReadiness(c, substituted).blockers.includes('source_additional_writers_active_or_unverified'))
 })
 
 test('D1 migration enabling remains a blocker even with all other checks passing', () => {
@@ -149,7 +169,11 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
         default_branch: 'main',
       })
     }
-    return Response.json(workflow)
+    const writer = original.origin.additionalWriterWorkflows.find(item =>
+      String(url).endsWith('/workflows/' + item.path.split('/').at(-1)))
+    return Response.json(writer
+      ? { id: writer.id, path: writer.path, state: 'disabled_manually' }
+      : workflow)
   }
   try {
     const state = await inspectLiveReadOnly({})
@@ -160,7 +184,7 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
     assert.equal(state.pending, 0)
     assert.equal(state.deployment, undefined)
     assert.equal(state.cloudflareAccountId, undefined)
-    assert.equal(requests.length, 11)
+    assert.equal(requests.length, 35)
     assert.equal(state.targetRepositoryId, original.target.repositoryId)
     assert.equal(state.targetDefaultBranch, 'main')
     assert.ok(requests.some(url => url.endsWith('/repos/' + original.target.repository)))
@@ -169,6 +193,8 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
     assert.equal(state.sourceMediaBlobSha, original.staging.fileBlobs['worker/media.ts'])
     assert.equal(state.sourceMainSha, original.origin.observedMainSha)
     assert.equal(state.sourceRepositoryId, original.origin.repositoryId)
+    assert.equal(state.additionalWriters.length, 4)
+    assert.ok(state.additionalWriters.every(w => w.state === 'disabled_manually'))
     assert.ok(requests.some(url => url.endsWith('/git/ref/heads/main')))
     for (const status of ['in_progress', 'queued', 'requested', 'waiting', 'pending']) {
       assert.ok(requests.some(url => url.includes('/runs?status=' + status + '&')))
@@ -339,12 +365,16 @@ test('a read-only GitHub token is used only for metadata GET requests', async ()
       })
     }
     if (String(url).includes('/runs?status=')) return Response.json({ total_count: 0 })
-    return Response.json(workflow)
+    const writer = original.origin.additionalWriterWorkflows.find(item =>
+      String(url).endsWith('/workflows/' + item.path.split('/').at(-1)))
+    return Response.json(writer
+      ? { id: writer.id, path: writer.path, state: 'disabled_manually' }
+      : workflow)
   }
   try {
     const state = await inspectLiveReadOnly({ GITHUB_TOKEN: 'test-github-token' })
     assert.equal(state.targetRepositoryId, original.target.repositoryId)
-    assert.equal(requests.length, 11)
+    assert.equal(requests.length, 35)
     assert.ok(requests.every(r => r.method === 'GET' && r.token === 'Bearer test-github-token'))
     assert.ok(requests.every(r => r.url.startsWith('https://api.github.com/')))
   } finally {

@@ -21,3 +21,7 @@ O código de runtime do Worker e o contrato editorial versionado pertencem a `to
 - Não ativar pipeline concorrente nem autorizar `workflow_dispatch` antigo durante a transferência.
 - Não alterar Supabase, e-mails comerciais, indexação, pagamentos ou permissões de mídia como efeito colateral.
 - A documentação histórica do processo M0–M6 permanece em [MIGRACAO_CATALOGO_MONOREPO.md](../../docs/MIGRACAO_CATALOGO_MONOREPO.md); o manifesto e o runtime presente são a autoridade atual.
+
+### Writers da origem que impedem o M5
+
+Além do deploy `cloudflare.yml`, existem quatro workflows GitHub Actions na origem com capacidade de publicar D1/R2: `external-batch-release.yml`, `exact-source-gallery-promotion.yml`, `existing-gallery-promotion.yml` e `external-media-staging.yml` (staging R2). O primeiro corte exige os cinco fluxos `disabled_manually` e sem `in_progress`, `queued`, `requested`, `waiting` ou `pending`. IDs e caminhos estão fixados no manifesto e no guard offline. Depois do corte, os releases TONART não consultam Washington.
