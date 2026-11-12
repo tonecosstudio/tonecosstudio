@@ -6,7 +6,7 @@ const media = base + "media/mdl-ordinary/image/card.webp";
 
 describe("canonical catalog single-byte media probe", () => {
   it("accepts only exact one-byte 206 through the existing first-party proxy", async () => {
-    const request = vi.fn(async () => new Response(new Uint8Array([0x52]), {
+    const request = vi.fn(async (_url: RequestInfo | URL, _options?: RequestInit) => new Response(new Uint8Array([0x52]), {
       status: 206,
       headers: {
         "Content-Range": "bytes 0-0/84222",
