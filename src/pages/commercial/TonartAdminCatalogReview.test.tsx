@@ -192,6 +192,22 @@ describe("TONART canonical admin catalog review", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
+  it("clears the previously selected image whenever a new catalog search starts", async () => {
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo de teste");
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
+    expect(screen.getByRole("img", { name: "Capa do modelo Modelo de teste" })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar modelos do catálogo" }), {
+      target: { value: "outra busca" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Pesquisar" }));
+    await waitFor(() => expect(mocks.listPage).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Capa: Modelo de teste" })).not.toBeInTheDocument();
+  });
+
   it("displays a clear image-unavailable state when the approved image cannot load", async () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
