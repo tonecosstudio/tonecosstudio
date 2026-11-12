@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import { requireTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
+
+const tonecos = supabase as unknown as SupabaseClient;
 
 export type TonartAdminProfile = {
   id: string;
@@ -25,7 +28,7 @@ export async function getTonartAdminOverview(): Promise<TonartAdminOverview> {
   assertTonecosCommercialEnabled();
   await requireTonecosAdminAccess();
 
-  const { data, error } = await supabase.rpc("tonart_admin_workspace_overview" as never);
+  const { data, error } = await tonecos.rpc("tonart_admin_workspace_overview");
   if (error) throw error;
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new Error("tonart_admin_overview_invalid");
@@ -49,7 +52,7 @@ export async function getTonartAdminOverview(): Promise<TonartAdminOverview> {
     }
     const p = item as Record<string, unknown>;
     if (typeof p.id !== "string" ||
-      !/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(p.id) ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.id) ||
       typeof p.email !== "string" || p.email.length < 3 || p.email.length > 320 ||
       !(p.fullName === null || typeof p.fullName === "string") ||
       typeof p.createdAt !== "string" || Number.isNaN(Date.parse(p.createdAt))) {
