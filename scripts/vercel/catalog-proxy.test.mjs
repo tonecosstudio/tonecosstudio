@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import handler from "../../api/catalogo-proxy.js";
+import { proxyCatalogRequest } from "../../functions/catalogo-api/[[path]].js";
 import { approvedPublicMediaPaths, isRestrictedCatalogMediaPath, validatePublicRenderApprovals } from "../security/catalog-public-media-approval-policy.mjs";
 
 function responseSink() {
@@ -255,6 +256,67 @@ test("Vercel catalog proxy forwards only a bounded read through the canonical pr
   } finally {
     globalThis.fetch = initialFetch;
   }
+});
+
+test("canonical proxy rejects unknown, duplicate and cache-busting D1 queries without upstream reads", async () => {
+  let upstream = 0;
+  const fetcher = async () => { upstream++; return Response.json({ items: [] }); };
+  const invalid = [
+    "/api/catalog?limit=12&utm_source=bot",
+    "/api/catalog?limit=12&limit=12",
+    "/api/catalog?limit=000012",
+    "/api/catalog?limit=61",
+    "/api/catalog?cursor=invalid%25cursor",
+    "/api/catalog?q=ab",
+    "/api/catalog?q=" + "x".repeat(121),
+    "/api/catalog?material=" + "x".repeat(121),
+    "/api/recent?cursor=Ng%3D%3D",
+    "/api/recent?limit=25",
+    "/api/categories?offset=0",
+    "/api/franchises?category=filmes&limit=49",
+    "/api/folders?category=filmes&franchise=classicos&parent=..",
+    "/api/models/modelo-test?noCache=1",
+    "/api/models/modelo-test/images?limit=6&v=1&cursor=wrong%25",
+    "/media/mdl-ordinary/image/card.webp?cache_bust=random",
+  ];
+  for (const path of invalid) {
+    const response = await proxyCatalogRequest(
+      new Request("https://tonartstudio.com.br/catalogo-api" + path),
+      fetcher,
+    );
+    assert.equal(response.status, 400, path);
+    assert.equal(response.headers.get("cache-control"), "no-store", path);
+  }
+  assert.equal(upstream, 0);
+});
+
+test("canonical proxy preserves real catalog, folder and padded gallery cursors", async () => {
+  const paths = [
+    "/api/catalog?limit=12",
+    "/api/catalog?category=filmes&franchise=classicos&folder=colecao%2Fpersonagens&limit=12",
+    "/api/catalog?category=all&q=Boneco%20Raro&limit=12",
+    "/api/catalog?material=Resina&collection=Especial&minHeight=10&maxHeight=120",
+    "/api/categories",
+    "/api/franchises?category=filmes&q=Boneco&limit=24",
+    "/api/folders?category=filmes&franchise=classicos&parent=colecao%2Fpersonagens",
+    "/api/recent?limit=12",
+    "/api/models/modelo-test",
+    "/api/models/modelo-test/images?limit=6&v=1&cursor=Ng%3D%3D",
+    "/api/catalog?limit=12&cursor=eyJuYW1lIjoiQm9uZWNvIiwiaWQiOiJtb2RlbG8ifQ",
+  ];
+  const upstreamPaths = [];
+  const fetcher = async (url) => {
+    upstreamPaths.push(url.pathname + url.search);
+    return Response.json({ items: [] }, { headers: { "Cache-Control": "public, max-age=30" } });
+  };
+  for (const path of paths) {
+    const response = await proxyCatalogRequest(
+      new Request("https://tonartstudio.com.br/catalogo-api" + path),
+      fetcher,
+    );
+    assert.equal(response.status, 200, path);
+  }
+  assert.deepEqual(upstreamPaths, paths);
 });
 
 test("Vercel CDN caches only successful public catalog JSON for five minutes", async () => {
