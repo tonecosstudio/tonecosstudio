@@ -259,6 +259,53 @@ export function resolveCatalogFetchCredentials(
   return siteOrigin && siteOrigin === catalogOrigin ? "same-origin" : "omit";
 }
 
+/**
+ * Probe one byte of a specifically approved public media URL, on demand.
+ * Uses the existing first-party catalog gateway and validated Range proxy.
+ * Never downloads the full R2 object or accepts a third-party/redirect URL.
+ */
+export async function probeCanonicalCatalogMediaByte(
+  baseUrl: string,
+  approvedMediaUrl: string | null,
+  fetcher: typeof fetch,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (!approvedMediaUrl) throw new Error("catalog_media_probe_url_missing");
+  const base = new URL(baseUrl);
+  const url = new URL(approvedMediaUrl);
+  if (base.protocol !== "https:" || url.origin !== base.origin ||
+      !url.href.startsWith(base.href + "media/") || url.search || url.hash ||
+      url.username || url.password) {
+    throw new Error("catalog_media_probe_url_invalid");
+  }
+  const response = await fetcher(url.toString(), {
+    method: "GET",
+    headers: { Range: "bytes=0-0", Accept: "image/webp,image/avif,image/png,image/jpeg" },
+    credentials: "omit",
+    redirect: "error",
+    signal,
+  });
+  const reader = response.body?.getReader();
+  try {
+    const range = response.headers.get("Content-Range");
+    const mime = response.headers.get("Content-Type");
+    if (response.status !== 206 ||
+        !range || !/^bytes 0-0\/[1-9][0-9]*$/.test(range) ||
+        !mime || !/^image\/(?:webp|avif|png|jpeg)(?:;|$)/i.test(mime) ||
+        !reader) {
+      throw new Error("catalog_media_probe_invalid_response");
+    }
+    const chunk = await reader.read();
+    if (chunk.done || chunk.value?.byteLength !== 1) {
+      throw new Error("catalog_media_probe_invalid_body");
+    }
+  } finally {
+    // Even if the server ignores Range, do not consume or buffer a full image.
+    if (reader) await reader.cancel().catch(() => undefined);
+    else await response.body?.cancel().catch(() => undefined);
+  }
+}
+
 export function createPublicCatalogGateway(
   baseUrl: string,
   fetcher: typeof fetch,
