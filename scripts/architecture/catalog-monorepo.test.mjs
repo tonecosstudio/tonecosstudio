@@ -175,7 +175,8 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   assert.equal(contract.staging.dataWriterToolchain?.workflowWriterEnabled, false);
   for (const [path, blob] of Object.entries(contract.origin.dataWriterToolchainBlobs)) {
     assert.equal(stage[path], blob, 'Data writer source pin changed: ' + path);
-    assert.ok(path.startsWith('tools/') || path.startsWith('config/'));
+    assert.ok(path.startsWith('tools/') || path.startsWith('config/') || path.startsWith('docs/evidence/'),
+      'Imported D1/R2 toolchain may contain only executable code, contracts and reviewed evidence');
   }
   const overlays = contract.staging.localOverlays ?? {};
   assert.deepEqual(Object.keys(overlays).sort(), [
