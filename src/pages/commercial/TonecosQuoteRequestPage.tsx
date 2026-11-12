@@ -63,7 +63,7 @@ export default function TonecosQuoteRequestPage() {
             <p className="mb-5 text-white/70">Nenhum modelo selecionado nesta visita.</p>
             <Link className={secondaryClass} to="/modelos">Escolher modelos</Link>
           </div>
-        ) : (
+        ) : user ? (
           <form className={panelClass + " space-y-6"} onSubmit={(event) => { void submit(event); }}>
             <div>
               <h2 className="text-lg font-semibold">{selectedModels.length} {selectedModels.length === 1 ? "modelo selecionado" : "modelos selecionados"}</h2>
@@ -135,7 +135,7 @@ export default function TonecosQuoteRequestPage() {
               <Link className={secondaryClass} to="/modelos">Adicionar modelos</Link>
             </div>
           </form>
-        )}
+        ) : null}
       </div>
     </CommercialPage>
   );
