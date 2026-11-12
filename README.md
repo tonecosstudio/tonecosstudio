@@ -6,12 +6,12 @@ O site público oficial TONART Studio está em **https://tonartstudio.com.br**, 
 
 | Recurso | Conta e origem | Estado |
 | --- | --- | --- |
-| Repositório do site | GitHub tonecosstudio/tonecosstudio (ID 1163825583) | Único código-fonte do site; PR #4 draft |
+| Repositório do site | GitHub tonecosstudio/tonecosstudio (ID 1163825583) | Único código-fonte do site; PR #4 integrada à main em 11/11/2026 |
 | Hospedagem do frontend oficial | Vercel `tonart-studio-public`, equipe Washington | `tonartstudio.com.br` e `www`, deploy manual controlado, site pré-lançamento/noindex |
 | Prévia | Cloudflare Pages + Cloudflare Access | Testes privados, sem segundo frontend público oficial |
 | API de modelos e imagens | Cloudflare Worker tonecos-catalogo-api, mesma conta Tonecos | Autoridade única dos modelos; D1/R2 somente via Worker |
-| Código do backend da API | Origem temporária GitHub washingtonmsdj/catalogo → destino **services/catalogo/** neste repo | Migração para monorepo **autorizada como plano**, sem copiar/cutover/publicar até gates |
-| Publicação | PR #4 Draft → CI offline → Vercel projeto oficial | Git auto deploy desligado; nenhum GO de mídia sem aprovação |
+| Código do backend da API | Código importado inativo em **services/catalogo/**; publicador atual permanece no Worker existente | Código importado inativo; sem cutover/publicação de novo Worker |
+| Publicação | PR #4 integrada à main → CI e QA → Vercel projeto oficial (deploy manual) | Git auto deploy desligado; nenhum GO de mídia sem aprovação |
 | Supabase, Stripe, clientes, pedidos | Aplicação comercial futura | Excluídos do MVP público somente leitura |
 
 O endereço GitHub antigo washingtonmsdj/tonecosstudio redireciona ao mesmo repositório institucional ID 1163825583. Isso **não** transfere a Vercel antiga para a conta Tonecos.
@@ -42,4 +42,4 @@ O workflow GitHub `quality.yml` valida as alterações da PR por impacto; a prod
 - [docs/TONECOS_SAFE_PREVIEW.md](docs/TONECOS_SAFE_PREVIEW.md): proteção do preview.
 - [docs/OPERACAO_CLOUDFLARE_PAGES.md](docs/OPERACAO_CLOUDFLARE_PAGES.md): publicação, rollback e limite gratuito.
 
-O catálogo visual já está publicado em pré-lançamento na Vercel com renders comuns visíveis. **Não liberar imagens SpecialSTL em quarentena, indexação, contas, pedidos ou pagamentos**, nem declarar lançamento comercial concluído, sem direitos verificados, revisão pertinente e autorização explícita. A PR #4 permanece Draft; o deploy manual não equivale a merge.
+O catálogo visual já está publicado em pré-lançamento na Vercel com renders comuns visíveis. **Não liberar imagens SpecialSTL em quarentena, indexação, contas, pedidos ou pagamentos**, nem declarar lançamento comercial concluído, sem direitos verificados, revisão pertinente e autorização explícita. A PR #4 foi integrada à main em 11/11/2026 (merge `c1e19d900da5e4d59f16d9c651b45251aba2a87b`). O deploy manual anterior não equivale à publicação desse novo SHA; indexação e lançamento comercial permanecem NO-GO.
