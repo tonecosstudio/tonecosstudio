@@ -226,6 +226,11 @@
         "sourceBlob": "dc3e68ebc5f0cd73132fb55e4173c129c06ecb47",
         "localBlob": "45303c880cb701457faeb9ac220783f9798f6fa9",
         "reason": "Extended offline SQLite folder regression test in Tonecos; source pin remains immutable"
+      },
+      "worker/index.ts": {
+        "sourceBlob": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
+        "localBlob": "7f1ad04b181e6affba1fb118d5a06dbb25caf146",
+        "reason": "Preserve TONART indexed folder cover lookup and avoid unused gallery import while integrating the original Worker query-budget security fix"
       }
     },
     "excludedModules": [

@@ -155,9 +155,11 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 10);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('migrations/')).length, 22);
   // Verify all 65 exact source Git blobs, including query budget and editorial
-  // contract. Keep only the reviewed SQLite regression test overlay.
+  // contract. Keep only the reviewed folder-cover overlay and SQLite regression test.
   const overlays = contract.staging.localOverlays ?? {};
-  assert.deepEqual(Object.keys(overlays).sort(), ['tools/test_worker_folder_counts.mjs']);
+  assert.deepEqual(Object.keys(overlays).sort(), [
+    'tools/test_worker_folder_counts.mjs', 'worker/index.ts',
+  ]);
   // The separate M5 test validates both pre-cutover and approved states.
   // Staged source-integrity checks must keep running after the owner switch.
   assert.ok(['staged-offline', 'cutover-approved', 'cutover-complete'].includes(contract.migration.phase));
