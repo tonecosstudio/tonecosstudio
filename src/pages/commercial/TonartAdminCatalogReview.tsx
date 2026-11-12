@@ -39,6 +39,8 @@ export default function TonartAdminCatalogReview() {
   const [review, setReview] = useState<{
     model: PublicCatalogDetail;
     gallery: PublicCatalogGalleryPage | null;
+    pageIndex: number;
+    cursors: Array<string | undefined>;
   } | null>(null);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState("");
@@ -137,10 +139,52 @@ export default function TonartAdminCatalogReview() {
             expectedCoverStorageKey: detail.coverStorageKey ?? undefined,
           }, controller.signal)
         : null;
-      if (!controller.signal.aborted) setReview({ model: detail, gallery });
+      if (!controller.signal.aborted) setReview({
+        model: detail, gallery, pageIndex: 0, cursors: [undefined],
+      });
     } catch {
       if (!controller.signal.aborted) {
         setReviewError("Não foi possível verificar os metadados dessa ficha. Ela pode ter sido atualizada ou estar com mídia inconsistente.");
+      }
+    } finally {
+      if (!controller.signal.aborted) setReviewingId(null);
+    }
+  }
+
+  async function moveGalleryPage(
+    pageIndex: number,
+    cursor: string | undefined,
+    cursors: Array<string | undefined>,
+  ) {
+    if (!gateway || !review?.gallery || reviewingId !== null ||
+        pageIndex < 0 || pageIndex >= review.model.imageCount) return;
+    const current = review;
+    // The existing gateway validates cursor syntax, gallery version, total
+    // and each page. Never fetch unbounded galleries or skip page boundaries.
+    if (cursor !== undefined && cursors.slice(0, -1).includes(cursor)) {
+      setReviewError("A paginação da galeria está inconsistente. Reabra a ficha.");
+      return;
+    }
+    reviewRef.current?.abort();
+    const controller = new AbortController();
+    reviewRef.current = controller;
+    setReviewError("");
+    setReviewingId(current.model.id);
+    try {
+      const gallery = await gateway.listGallery(current.model.slug, {
+        version: current.model.galleryVersion,
+        limit: Math.min(6, current.model.imageCount),
+        cursor,
+        expectedTotal: current.model.imageCount,
+        // Only the first page has the canonical cover position guarantee.
+        ...(cursor ? {} : { expectedCoverStorageKey: current.model.coverStorageKey ?? undefined }),
+      }, controller.signal);
+      if (controller.signal.aborted) return;
+      setReview((latest) => latest?.model.id === current.model.id
+        ? { ...latest, gallery, pageIndex, cursors } : latest);
+    } catch {
+      if (!controller.signal.aborted) {
+        setReviewError("Não foi possível carregar esta página da galeria. A página anterior foi preservada.");
       }
     } finally {
       if (!controller.signal.aborted) setReviewingId(null);
@@ -334,7 +378,7 @@ export default function TonartAdminCatalogReview() {
                     disabled={busy || reviewingId !== null}
                     onClick={() => { void inspectModel(selectedModel); }}
                   >
-                    {reviewingId === selectedModel.id ? "Carregando galeria..." : "Ver galeria (até 6 fotos)"}
+                    {reviewingId === selectedModel.id ? "Carregando galeria..." : "Ver galeria (6 fotos por página)"}
                   </button>
                 </div>
               </div>
@@ -346,9 +390,9 @@ export default function TonartAdminCatalogReview() {
             <section aria-label="Resultado da verificação individual" className="mt-6 border border-white/20 p-5">
               <h4 className="text-base font-semibold">Galeria: {review.model.name}</h4>
               <p className="mt-2 text-sm text-white/65">
-                {review.model.imageCount} imagem(ns) cadastrada(s) no catálogo;
-                {" "}{review.gallery ? review.gallery.items.length : 0} nesta prévia (máximo de 6).
-                As imagens são carregadas somente depois de solicitar a galeria.
+                {review.model.imageCount} imagem(ns) cadastrada(s) no catálogo.
+                {" "}Página {review.pageIndex + 1}: {review.gallery ? review.gallery.items.length : 0} foto(s).
+                Outras páginas são carregadas somente quando você solicitar.
               </p>
               <p className="mt-2 text-sm text-white/70">
                 Capa no índice: {review.model.coverStorageKey ? "chave cadastrada" : "sem chave de capa"}.
@@ -377,7 +421,7 @@ export default function TonartAdminCatalogReview() {
                           <CanonicalCatalogImage
                             src={src}
                             fallbackSrc={fallbackSrc}
-                            alt={`Foto ${index + 1} do modelo ${review.model.name}`}
+                            alt={`Foto ${review.pageIndex * 6 + index + 1} do modelo ${review.model.name}`}
                             loading="lazy"
                             imageClassName="h-full w-full object-contain"
                             fallbackClassName="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center text-xs text-white/60"
@@ -385,12 +429,47 @@ export default function TonartAdminCatalogReview() {
                           />
                         </div>
                         <figcaption className="mt-3 flex flex-wrap justify-between gap-2 text-xs text-white/60">
-                          <span>Foto {index + 1}</span>
+                          <span>Foto {review.pageIndex * 6 + index + 1}</span>
                           <span>{image.role === "cover" ? "Capa" : "Galeria"}</span>
                         </figcaption>
                       </figure>
                     );
                   })}
+                </div>
+              )}
+              {review.gallery && (
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3" aria-label="Paginação das fotos">
+                  <span className="text-xs text-white/60">
+                    Página {review.pageIndex + 1} · {review.gallery.items.length} fotos carregadas
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={secondaryClass}
+                      disabled={reviewingId !== null || review.pageIndex === 0}
+                      onClick={() => {
+                        const index = review.pageIndex - 1;
+                        void moveGalleryPage(index, review.cursors[index], review.cursors.slice(0, index + 1));
+                      }}
+                    >
+                      Fotos anteriores
+                    </button>
+                    <button
+                      type="button"
+                      className={secondaryClass}
+                      disabled={reviewingId !== null || !review.gallery?.nextCursor}
+                      onClick={() => {
+                        if (!review.gallery?.nextCursor) return;
+                        const index = review.pageIndex + 1;
+                        void moveGalleryPage(
+                          index, review.gallery.nextCursor,
+                          [...review.cursors.slice(0, index), review.gallery.nextCursor],
+                        );
+                      }}
+                    >
+                      Próximas fotos
+                    </button>
+                  </div>
                 </div>
               )}
               {review.gallery && review.gallery.items.length === 0 && (
