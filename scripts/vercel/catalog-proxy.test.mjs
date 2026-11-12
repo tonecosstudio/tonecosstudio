@@ -257,6 +257,70 @@ test("Vercel catalog proxy forwards only a bounded read through the canonical pr
   }
 });
 
+test("Vercel CDN caches only successful public catalog JSON for five minutes", async () => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async (url) => {
+    requests.push(String(url));
+    return Response.json({ items: [], nextCursor: null }, {
+      status: 200,
+      headers: { "Cache-Control": "public, max-age=30, s-maxage=120" },
+    });
+  };
+  try {
+    for (const path of [
+      "api/catalog", "api/recent", "api/models/modelo-exemplo",
+      "api/models/modelo-exemplo/images",
+    ]) {
+      const res = responseSink();
+      const query = new URLSearchParams({ path });
+      await handler({
+        method: "GET", url: "/api/catalogo-proxy?" + query,
+        query: { path }, headers: { accept: "application/json" },
+      }, res);
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.headers.get("vercel-cdn-cache-control"), "public, s-maxage=300");
+      assert.equal(res.headers.get("cache-control"), "public, max-age=30, s-maxage=120");
+      assert.equal(res.headers.has("set-cookie"), false);
+    }
+    assert.equal(requests.length, 4);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Vercel never extends CDN cache for errors, private payloads, media or Authorization", async () => {
+  const originalFetch = globalThis.fetch;
+  let reply = Response.json({ items: [] }, {
+    headers: { "Cache-Control": "no-store" },
+  });
+  globalThis.fetch = async () => reply;
+  try {
+    const scenarios = [
+      { path: "api/catalog", reply: Response.json({ items: [] }, { headers: { "Cache-Control": "no-store" } }) },
+      { path: "api/catalog", reply: Response.json({ error: "down" }, { status: 503, headers: { "Cache-Control": "public, max-age=120" } }) },
+      { path: "api/catalog", reply: new Response("private", { headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=120" } }) },
+      { path: "media/mdl-ordinary/image/card.webp", reply: new Response("image", { headers: { "Content-Type": "image/webp", "Cache-Control": "public, max-age=86400, s-maxage=604800" } }) },
+      { path: "api/catalog", reply: Response.json({ items: [] }, { headers: { "Cache-Control": "public, max-age=60" } }), auth: true },
+    ];
+    for (const item of scenarios) {
+      reply = item.reply;
+      const res = responseSink();
+      const query = new URLSearchParams({ path: item.path });
+      await handler({
+        method: "GET", url: "/api/catalogo-proxy?" + query,
+        query: { path: item.path },
+        headers: { accept: item.path.startsWith("media/") ? "image/webp" : "application/json",
+          ...(item.auth ? { authorization: "Bearer secret-not-forwarded" } : {}) },
+      }, res);
+      assert.equal(res.headers.has("vercel-cdn-cache-control"), false, item.path);
+      if (res.statusCode >= 400) assert.equal(res.headers.get("cache-control"), "no-store");
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("public catalog build keeps read-only gates without requiring blanket image hiding", () => {
   const script = fileURLToPath(new URL("../security/assert-catalog-mvp-build.mjs", import.meta.url));
   const run = (env) => spawnSync(process.execPath, [script], { env, encoding: "utf8" });

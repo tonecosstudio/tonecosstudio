@@ -1,6 +1,13 @@
 import { proxyCatalogRequest } from "../functions/catalogo-api/[[path]].js";
 import { isRestrictedCatalogMediaPath } from "../scripts/security/catalog-public-media-approval-policy.mjs";
 
+// The canonical Worker already controls browser cache headers. Extend only
+// Vercel's existing CDN TTL for bounded, anonymous public model metadata:
+// 5-minute edge freshness absorbs repeat visits without another D1 read.
+// Never cache account/quote operations, errors, Range responses or media here.
+const PUBLIC_MODEL_METADATA_ROUTE = /^(?:api\/catalog|api\/recent|api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?)$/;
+const PUBLIC_MODEL_EDGE_TTL = "public, s-maxage=300";
+
 // Vercel is the public site. The existing Worker stays the only catalog API.
 // Adapt the reviewed Pages read-only proxy; no parallel catalog implementation.
 export default async function handler(req, res) {
@@ -66,6 +73,19 @@ export default async function handler(req, res) {
         res.setHeader(name, value);
       }
     });
+    if (
+      response.status === 200 &&
+      PUBLIC_MODEL_METADATA_ROUTE.test(path) &&
+      !req.headers?.authorization &&
+      /^application\/json(?:\s*;|$)/i.test(response.headers.get("content-type") ?? "") &&
+      /^public(?:,|$)/i.test(response.headers.get("cache-control") ?? "") &&
+      !response.headers.has("set-cookie") &&
+      !response.headers.has("content-range")
+    ) {
+      // Vercel-only cache override: browser freshness stays owned by Worker
+      // Cache-Control. No parallel data cache, KV or D1 mirror.
+      res.setHeader("Vercel-CDN-Cache-Control", PUBLIC_MODEL_EDGE_TTL);
+    }
     const bytes = Buffer.from(await response.arrayBuffer());
     res.end(bytes);
   } catch {
