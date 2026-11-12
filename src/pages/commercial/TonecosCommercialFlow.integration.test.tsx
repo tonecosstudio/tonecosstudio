@@ -50,7 +50,7 @@ function SelectModel() {
   useEffect(() => { setSelectedModels([model]); }, [setSelectedModels]);
   return null;
 }
-function renderApp(entry: string, seed = false) {
+function renderApp(entry: string | { pathname: string; state?: { recovered?: boolean } }, seed = false) {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <CatalogBrowsingProvider>
@@ -133,6 +133,17 @@ describe("TONART commercial screens: account → request → history → respons
     expect(await screen.findByRole("link", { name: "Entrar" }))
       .toHaveAttribute("href", "/login?next=%2Fmeus-orcamentos");
     expect(mocks.listMine).not.toHaveBeenCalled();
+  });
+
+  it("shows a reassuring success message after password recovery without an active login session", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    renderApp({ pathname: "/login", state: { recovered: true } });
+    expect(await screen.findByRole("button", { name: "Entrar" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Senha atualizada com sucesso. Entre com sua nova senha.",
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(mocks.signIn).not.toHaveBeenCalled();
   });
 
   it("requires account sign-in and preserves a return-to path", async () => {

@@ -1,20 +1,21 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import {
   registerTonecosAccount, signInTonecosAccount, signOutTonecosAccount,
-  getMyTonecosProfile, updateMyTonecosProfile,
+  getTonecosCurrentUser, getMyTonecosProfile, updateMyTonecosProfile,
   requestTonecosPasswordReset, completeTonecosPasswordRecovery,
   verifyTonecosPasswordRecoveryToken,
 } from "./tonecos-account-service";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const mocks = vi.hoisted(() => ({
-  getUser: vi.fn(), from: vi.fn(), updateUser: vi.fn(), verifyOtp: vi.fn(),
+  getUser: vi.fn(), getSession: vi.fn(), from: vi.fn(), updateUser: vi.fn(), verifyOtp: vi.fn(),
   sendPasswordResetEmail: vi.fn(), signUpWithPasswordCredentials: vi.fn(),
   signInWithPasswordCredentials: vi.fn(), signOutCurrentSession: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { auth: {
     getUser: mocks.getUser,
+    getSession: mocks.getSession,
     updateUser: mocks.updateUser,
     verifyOtp: mocks.verifyOtp,
   }, from: mocks.from },
@@ -27,6 +28,7 @@ vi.mock("@/services/auth/auth-session-service", () => ({
 }));
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.getSession.mockResolvedValue({ data: { session: { access_token: "test" } }, error: null });
   vi.stubEnv("VITE_SUPABASE_URL", "https://icmtmaakjucmuzxnofkd.supabase.co");
   vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
   vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
@@ -36,6 +38,34 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("Tonecos authenticated MVP account", () => {
+
+  it("treats a logged-out visitor as guest without calling getUser or showing an Auth error", async () => {
+    mocks.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    await expect(getTonecosCurrentUser()).resolves.toBeNull();
+    expect(mocks.getUser).not.toHaveBeenCalled();
+  });
+
+  it("handles a session that disappears between preflight and server verification", async () => {
+    mocks.getUser.mockResolvedValue({
+      data: { user: null },
+      error: { name: "AuthSessionMissingError", message: "Auth session missing!" },
+    });
+    await expect(getTonecosCurrentUser()).resolves.toBeNull();
+  });
+
+  it("still verifies authenticated users server-side and propagates real Auth errors", async () => {
+    mocks.getUser.mockResolvedValueOnce({
+      data: { user: { id: USER, email: "client@example.com" } },
+      error: null,
+    });
+    await expect(getTonecosCurrentUser()).resolves.toEqual({ id: USER, email: "client@example.com" });
+    expect(mocks.getUser).toHaveBeenCalledTimes(1);
+    mocks.getUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: { name: "AuthApiError", message: "Authentication service unavailable" },
+    });
+    await expect(getTonecosCurrentUser()).rejects.toMatchObject({ message: "Authentication service unavailable" });
+  });
 
   it("sends password reset through existing rate-limited service to current Tonecos origin", async () => {
     mocks.sendPasswordResetEmail.mockResolvedValue(undefined);

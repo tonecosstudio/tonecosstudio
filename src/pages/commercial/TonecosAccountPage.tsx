@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { hasTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
 import {
@@ -24,6 +24,7 @@ function errorText(value: unknown) {
 
 export default function TonecosAccountPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [params] = useSearchParams();
   const next = safeNext.has(params.get("next") ?? "") ? params.get("next")! : TONECOS_COMMERCIAL_ROUTES.account;
   const [mode, setMode] = useState(params.get("mode") === "signup" ? "signup" : "login");
@@ -36,7 +37,11 @@ export default function TonecosAccountPage() {
   const [busy, setBusy] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(() =>
+    (location.state as { recovered?: unknown } | null)?.recovered === true
+      ? "Senha atualizada com sucesso. Entre com sua nova senha."
+      : "",
+  );
 
   useEffect(() => {
     let active = true;

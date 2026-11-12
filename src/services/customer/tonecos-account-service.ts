@@ -78,8 +78,19 @@ export async function signOutTonecosAccount(): Promise<void> {
 
 export async function getTonecosCurrentUser(): Promise<{ id: string; email: string | null } | null> {
   assertTonecosCommercialEnabled();
+  // A signed-out visitor has no session; that is not an authentication failure.
+  // This is only a local preflight: an existing session must still be verified by getUser().
+  const { data: stored, error: sessionError } = await tonecos.auth.getSession();
+  if (sessionError) {
+    if (sessionError.name === "AuthSessionMissingError") return null;
+    throw sessionError;
+  }
+  if (!stored.session) return null;
   const { data, error } = await tonecos.auth.getUser();
-  if (error) throw error;
+  if (error) {
+    if (error.name === "AuthSessionMissingError") return null;
+    throw error;
+  }
   return data.user ? { id: data.user.id, email: data.user.email ?? null } : null;
 }
 
