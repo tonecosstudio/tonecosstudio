@@ -1,4 +1,18 @@
-# Tonecos Studio — checkpoint operacional
+# TONART Studio — checkpoint operacional
+
+## Checkpoint 12/11/2026 — MVP público, conta e fluxo comercial
+
+**STATUS ATUAL** (evidência código GitHub + Vercel env + metadados Supabase + Cloudflare deployment; não substituir testes reais):
+- **Site oficial:** https://tonartstudio.com.br, projeto Vercel `tonart-studio-public`, código em `tonecosstudio/tonecosstudio/main`; PRs de site até **#24** integradas (merge `bb661ab8088cdfbdc071fa8d798f42fb0d772163`). Site visual permanece **pré-lançamento/noindex**, sem GO de indexação.
+- **Catálogo:** Worker original `tonecos-catalogo-api` com D1/R2 canônicos; publicador ativo `washingtonmsdj/catalogo`. PRs de origem **#266–#269 integradas**; proteção de query direta, correção de media Range e teste de cache com rollback comprovados. Após o release de #269, versão Cloudflare **`0b6d0d02-58f6-4f99-9a9a-92a605a498ed`**, 100% tráfego. Migração do writer para `services/catalogo/` **não autorizada**; manifesto `releaseAuthorized=false`.
+- **Cache/custo D1:** primeira página admin 12 modelos; próximas páginas/galerias sob demanda. CDN Vercel 5 minutos para JSON público autorizado, Worker mantém cache e bloqueia cache-busters na origem. Sem cache paralelo/KV e sem scans D1/R2.
+- **Produção comercial confirmada:** Vercel `VITE_TONECOS_COMMERCIAL_MVP=true`, `VITE_CATALOG_QUOTES_ENABLED=true`, `VITE_PUBLIC_CATALOG_MVP=false`, `VITE_PREVIEW_READ_ONLY=false`. Supabase TONART `icmtmaakjucmuzxnofkd` ativo; `profiles` e `quotes` existentes com RLS; RPC `submit_catalog_quote_request` instalada. Isto **não prova envio/recebimento E2E com usuário real**.
+- **Minha Conta:** cadastro/login, confirmação conforme Auth, recuperação de senha, edição de nome/telefone, logout e link para Meus Orçamentos sob flag. **Não está 100% completa:** seções antigas de pagamentos/notificações/suporte/assinaturas aparecem como `Indisponível`; Coins e pagamentos sem GO. Separar MVP mínimo de orçamento de portal comercial completo.
+- **Orçamentos:** UI cliente, tabela única `quotes`, RLS, RPC autenticada, área admin para valor/status e histórico cliente. **Próxima ação funcional prioritária:** E2E real de cadastro/confirmar/login/recuperar → selecionar modelo → enviar orçamento com dados válidos → administração autorizada responder → cliente verificar status/valor; incluir testes negativos de RBAC. Não criar tabela, endpoint, login ou portal paralelos.
+- **GO público pendente:** QA visual desktop/mobile e formulários em produção, revisão jurídica/LGPD, licenças/créditos e identificação do operador, proteção das **264 mídias SpecialSTL** sem desbloqueio presumido, autorização expressa para indexação. Não afirmar checkout/assinaturas/pagamentos operacionais.
+
+**NEXT_ACTION:** validar jornada autenticada cliente/admin sem usar dados pessoais ou cadastros reais como fixtures; corrigir falhas no owner existente e cumprir gates proporcionais. **DO_NOT_REPEAT:** não criar outro SSOT, Writer, banco, Worker, cache, doc de status, workflow ou build desnecessário; não consultar/varrer D1/R2 para medir custo. Os checkpoints antigos abaixo são evidências datadas e **não prevalecem** sobre este estado e código atual.
+
 
 ## Checkpoint 09/11 — catálogo visual em pré-lançamento no domínio oficial
 
