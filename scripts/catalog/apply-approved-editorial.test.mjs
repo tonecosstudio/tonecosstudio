@@ -180,9 +180,21 @@ test('approval requires a distinct reviewer on the current PR head',()=>{
       repo:{full_name:'tonecosstudio/tonecosstudio'}},
     user:{login:'submitter'},merge_commit_sha:merge,
   };
-  const reviewers=[{state:'APPROVED',commit_id:head,user:{login:'reviewer'}}];
+  const reviewers=[{state:'APPROVED',commit_id:head,user:{login:'reviewer'},
+    id:10,submitted_at:'2026-11-12T12:01:00Z'}];
   assert.doesNotThrow(()=>assertMergedReview(pr,reviewers,7,merge));
   assert.throws(()=>assertMergedReview(pr,[{...reviewers[0],commit_id:'c'.repeat(40)}],7,merge));
   assert.throws(()=>assertMergedReview(pr,[{...reviewers[0],user:{login:'submitter'}}],7,merge));
   assert.throws(()=>assertMergedReview({...pr,merged:false},reviewers,7,merge));
+  const revoked=[...reviewers, {state:'CHANGES_REQUESTED',commit_id:head,
+    id:11,user:{login:'reviewer'},submitted_at:'2026-11-12T12:02:00Z'}];
+  assert.throws(()=>assertMergedReview(pr,revoked,7,merge),
+    /editorial_review_not_approved_on_current_head/,
+    'A later changes-requested decision must supersede an older approval');
+  const reapproved=[...revoked, {state:'APPROVED',commit_id:head,
+    id:12,user:{login:'reviewer'},submitted_at:'2026-11-12T12:03:00Z'}];
+  assert.doesNotThrow(()=>assertMergedReview(pr,reapproved,7,merge));
+  const dismissed=[...reviewers, {state:'DISMISSED',commit_id:head,
+    id:14,user:{login:'reviewer'},submitted_at:'2026-11-12T12:04:00Z'}];
+  assert.throws(()=>assertMergedReview(pr,dismissed,7,merge));
 });

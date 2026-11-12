@@ -7,6 +7,11 @@ on:
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
     paths:
       - 'services/catalogo/**'
       - 'config/catalog-code-consolidation.json'
@@ -39,18 +44,12 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Existing Worker release or reviewed catalog name update
+        description: Deploy an approved version of the existing Worker
         required: true
         type: choice
         options:
           - worker-release
-          - editorial-apply
         default: worker-release
-      editorial_pr:
-        description: Merged, independently approved editorial PR number (editorial-apply only)
-        required: false
-        type: number
-        default: 0
 
 permissions:
   contents: read
@@ -218,7 +217,7 @@ jobs:
 
   catalog-offline:
     name: Catalog Worker offline / no deploy
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -287,6 +286,9 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'worker-release'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency:
+      group: tonart-catalog-production-writer
+      cancel-in-progress: false
     environment: production
     permissions:
       contents: read
@@ -405,9 +407,18 @@ jobs:
   # Worker or D1/R2 resources are created and migrations are never invoked.
   catalog-editorial-apply:
     name: Approved editorial names — existing D1
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'editorial-apply'
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.repo.full_name == 'tonecosstudio/tonecosstudio' &&
+      github.event.pull_request.head.repo.full_name == 'tonecosstudio/tonecosstudio' &&
+      github.event.pull_request.head.ref == 'editorial/tonart-admin-review'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: tonart-catalog-production-writer
+      cancel-in-progress: false
     environment: production
     permissions:
       contents: read
@@ -420,6 +431,7 @@ jobs:
       - name: Checkout reviewed canonical TONART main
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -443,4 +455,4 @@ jobs:
         run: |
           set -euo pipefail
           node --test scripts/catalog/apply-approved-editorial.test.mjs
-          node scripts/catalog/apply-approved-editorial.mjs --pr "${{ inputs.editorial_pr }}" --apply
+          node scripts/catalog/apply-approved-editorial.mjs --pr "${{ github.event.pull_request.number }}" --apply

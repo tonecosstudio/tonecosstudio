@@ -126,6 +126,22 @@ async function githubJson(url, token) {
   return response.json();
 }
 
+function latestDecisiveReviews(reviews) {
+  const latest = new Map();
+  for (const review of reviews) {
+    if (!review?.user?.login ||
+        !['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'].includes(review.state)) continue;
+    const submitted = Date.parse(review.submitted_at ?? '');
+    if (!Number.isFinite(submitted)) continue;
+    const prior = latest.get(review.user.login);
+    if (!prior || submitted > prior.submitted ||
+        (submitted === prior.submitted && (review.id ?? 0) > (prior.id ?? 0))) {
+      latest.set(review.user.login, { review, submitted, id: review.id ?? 0 });
+    }
+  }
+  return [...latest.values()].map(row => row.review);
+}
+
 export function assertMergedReview(pr, reviews, number, currentSha) {
   requireCondition(pr?.number === number && pr?.merged === true && pr?.merged_at &&
     pr?.base?.ref === 'main' && pr?.base?.repo?.full_name === REPO &&
@@ -133,10 +149,24 @@ export function assertMergedReview(pr, reviews, number, currentSha) {
     pr?.head?.ref === 'editorial/tonart-admin-review' &&
     SHA.test(pr.merge_commit_sha ?? '') && pr.merge_commit_sha === currentSha &&
     Array.isArray(reviews) &&
-    reviews.some(review => review.state === 'APPROVED' &&
+    latestDecisiveReviews(reviews).some(review =>
+      review.state === 'APPROVED' &&
       review.commit_id === pr.head.sha &&
-      review.user?.login && review.user.login !== pr.user?.login),
+      review.user.login !== pr.user?.login),
   'editorial_review_not_approved_on_current_head');
+}
+
+async function allReviewDecisions(number, token) {
+  const collected = [];
+  for (let page = 1; page <= 10; page++) {
+    const segment = await githubJson('https://api.github.com/repos/' + REPO +
+      '/pulls/' + number + '/reviews?per_page=100&page=' + page, token);
+    requireCondition(Array.isArray(segment) && segment.length <= 100,
+      'editorial_review_list_unverified');
+    collected.push(...segment);
+    if (segment.length < 100) return collected;
+  }
+  throw new Error('editorial_review_list_truncated');
 }
 
 async function d1Query(sql, params, env) {
@@ -205,8 +235,7 @@ async function main() {
   const token = process.env.GITHUB_TOKEN;
   requireCondition(typeof token === 'string' && token.length > 0, 'editorial_github_token_missing');
   const pr = await githubJson('https://api.github.com/repos/' + REPO + '/pulls/' + prNumber, token);
-  const reviews = await githubJson('https://api.github.com/repos/' + REPO +
-    '/pulls/' + prNumber + '/reviews?per_page=100', token);
+  const reviews = await allReviewDecisions(prNumber, token);
   requireCondition(SHA.test(pr?.merge_commit_sha ?? ''), 'editorial_merge_commit_missing');
   const sha = pr.merge_commit_sha;
   // A reviewed older PR cannot silently overwrite a later contract revision.

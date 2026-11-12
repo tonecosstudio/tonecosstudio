@@ -241,7 +241,11 @@ test('an approved catalog edit is applied only in the existing serial release wo
   const workflow = source('.github/workflows/quality.yml');
   const release = workflow.split('  catalog-editorial-apply:')[1];
   assert.ok(release, 'D1 editorial writer must use existing quality workflow');
-  assert.match(release, /inputs.operation == 'editorial-apply'/);
+  assert.match(release, /github.event.action == 'closed'/);
+  assert.match(release, /github.event.pull_request.merged == true/);
+  assert.match(release, /github.event.pull_request.head.ref == 'editorial\/tonart-admin-review'/);
+  assert.match(release, /tonart-catalog-production-writer/);
+  assert.match(release, /cancel-in-progress: false/);
   assert.match(release, /cutover-readiness\.mjs --live/);
   assert.match(release, /apply-approved-editorial\.mjs --pr/);
   assert.match(release, /environment: production/);
