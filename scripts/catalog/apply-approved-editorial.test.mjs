@@ -157,10 +157,11 @@ test('gallery members can change a variant while retaining the name', () => {
   const db=database();
   db.prepare('INSERT INTO model_gallery_members(canonical_model_id,source_model_id) VALUES(?,?)')
     .run(base.models[0].id,base.models[1].id);
-  assert.equal(classifyLiveRows(edits,rows(db)),'ready');
+  const selectedRows = () => rows(db).filter(row => row.id === edits[0].id);
+  assert.equal(classifyLiveRows(edits,selectedRows()),'ready');
   const {sql,params}=makeAtomicEditorialStatement(edits);
   assert.equal(db.prepare(sql).all(...params).length,1);
-  assert.equal(classifyLiveRows(edits,rows(db)),'already_applied');
+  assert.equal(classifyLiveRows(edits,selectedRows()),'already_applied');
 });
 
 test('missing gallery membership evidence cannot authorize an edit', () => {
