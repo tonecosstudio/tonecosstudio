@@ -246,7 +246,7 @@ export default function TonartAdminCatalogReview() {
   function updateEditorialDraft(model: PublicCatalogModel, field: "name" | "variant", value: string) {
     setEditorialDrafts((current) => {
       const next = new Map(current);
-      const draft = { ...(next.get(model.id) ?? {}), [field]: value };
+      const draft: TonartCatalogEditorialProposal = { ...(next.get(model.id) ?? {}), [field]: value };
       if (!draft.name?.trim() && !draft.variant?.trim()) next.delete(model.id);
       else next.set(model.id, draft);
       return next;
