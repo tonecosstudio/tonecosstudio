@@ -1,8 +1,11 @@
 /** Opt-in Tonecos commercial MVP. No public Pages preview enables this entry. */
-import { lazy, type ReactNode } from "react";
-import { Route } from "react-router-dom";
+import { lazy, useEffect, useState, type ReactNode } from "react";
+import { Link, Navigate, Route, useLocation } from "react-router-dom";
 import { CatalogMvpShell } from "@/CatalogMvpShell";
-import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES, loginReturnToPath } from "@/config/routes";
+import { hasTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
+import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
+import { CommercialPage, secondaryClass } from "@/pages/commercial/CommercialPage";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import TonecosCommercialNav from "@/pages/commercial/TonecosCommercialNav";
 
@@ -11,8 +14,50 @@ const Recovery = lazy(() => import("@/pages/commercial/TonecosPasswordRecoveryPa
 const Request = lazy(() => import("@/pages/commercial/TonecosQuoteRequestPage"));
 const Quotes = lazy(() => import("@/pages/commercial/TonecosMyQuotesPage"));
 const AdminQuotes = lazy(() => import("@/pages/commercial/TonecosAdminQuotesPage"));
+const AdminHome = lazy(() => import("@/pages/commercial/TonecosAdminHomePage"));
 const Coins = lazy(() => import("@/pages/commercial/TonecosCoinsPage"));
 const AdminCoins = lazy(() => import("@/pages/commercial/TonecosAdminCoinsPage"));
+
+/** Central UI gate; the database remains the only authority for admin operations. */
+function AdminAccessGate({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const [status, setStatus] = useState<"checking" | "guest" | "allowed" | "denied" | "error">("checking");
+
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      try {
+        const current = await getTonecosCurrentUser();
+        if (!current) {
+          if (mounted) setStatus("guest");
+          return;
+        }
+        const allowed = await hasTonecosAdminAccess();
+        if (mounted) setStatus(allowed ? "allowed" : "denied");
+      } catch {
+        if (mounted) setStatus("error");
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  if (status === "checking") {
+    return <CommercialPage title="Administração" intro="Verificando as permissões da conta...">
+      <p role="status">Verificando acesso administrativo...</p>
+    </CommercialPage>;
+  }
+  if (status === "guest") {
+    return <Navigate to={loginReturnToPath(location.pathname + location.search)} replace />;
+  }
+  if (status === "allowed") return <>{children}</>;
+  return <CommercialPage title="Acesso administrativo" intro={
+    status === "denied"
+      ? "Sua conta não possui autorização administrativa ativa."
+      : "Não foi possível validar a autorização neste momento."
+  }>
+    <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.account}>Minha conta</Link>
+  </CommercialPage>;
+}
 
 const commercialRoutes: ReactNode = (
   <>
@@ -22,12 +67,13 @@ const commercialRoutes: ReactNode = (
     {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" && <>
       <Route path={PUBLIC_ROUTES.quoteRequest} element={<Request />} />
       <Route path={TONECOS_COMMERCIAL_ROUTES.history} element={<Quotes />} />
-      <Route path={TONECOS_COMMERCIAL_ROUTES.adminQuotes} element={<AdminQuotes />} />
+      <Route path={TONECOS_COMMERCIAL_ROUTES.adminHome} element={<AdminAccessGate><AdminHome /></AdminAccessGate>} />
+      <Route path={TONECOS_COMMERCIAL_ROUTES.adminQuotes} element={<AdminAccessGate><AdminQuotes /></AdminAccessGate>} />
     </>}
     {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
       <Route path={TONECOS_COMMERCIAL_ROUTES.coins} element={<Coins />} />}
     {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
-      <Route path={TONECOS_COMMERCIAL_ROUTES.adminCoins} element={<AdminCoins />} />}
+      <Route path={TONECOS_COMMERCIAL_ROUTES.adminCoins} element={<AdminAccessGate><AdminCoins /></AdminAccessGate>} />}
   </>
 );
 
