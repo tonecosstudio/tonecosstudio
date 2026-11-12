@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PublicCatalogModel } from "./public-catalog-gateway";
-import { buildTonartCatalogReviewCsv } from "./tonart-catalog-review-export";
+import { buildTonartCatalogReviewCsv, validateTonartCatalogEditorialProposal } from "./tonart-catalog-review-export";
 
 const model: PublicCatalogModel = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -48,6 +48,42 @@ describe("TONART one-page editorial review export", () => {
     expect(csv).toContain('"\'@SUM(1)"');
     expect(csv).toContain('"\'+malicious cell"');
     expect(csv.split("\r\n")).toHaveLength(3); // Header, one row and final CRLF.
+  });
+
+  it("exports validated name and variant proposals in the original canonical row", () => {
+    const proposals = new Map([[model.id, { name: "Boneco edição revisada", variant: "V3" }]]);
+    const csv = buildTonartCatalogReviewCsv([model], proposals);
+    const row = csv.trimEnd().split("\r\n")[1];
+    expect(row).toContain('"Boneco, edição especial"');
+    expect(row).toContain('"V2"');
+    expect(row).toMatch(/;"Boneco edição revisada";"V3"$/);
+    expect(validateTonartCatalogEditorialProposal(model, proposals.get(model.id))).toEqual({
+      name: "Boneco edição revisada", variant: "V3",
+    });
+  });
+
+  it("does not propose changing an unchanged value or a blank optional field", () => {
+    const csv = buildTonartCatalogReviewCsv([model], new Map([
+      [model.id, { name: "  Boneco, edição especial  ", variant: "   " }],
+    ]));
+    expect(csv.trimEnd().split("\r\n")[1]).toMatch(/;"";""$/);
+  });
+
+  it("rejects out-of-page drafts rather than exporting the wrong page", () => {
+    expect(() => buildTonartCatalogReviewCsv([model], new Map([
+      ["mdl_missing", { name: "Novo nome" }],
+    ]))).toThrow("tonart_catalog_editorial_out_of_page");
+  });
+
+  it("rejects unsafe proposed labels before creating a CSV", () => {
+    for (const name of ['=SUM(1)', "<script>", "Inadequado\nOutra linha", "A".repeat(121)]) {
+      expect(() => buildTonartCatalogReviewCsv([model], new Map([
+        [model.id, { name }],
+      ]))).toThrow("tonart_catalog_editorial_invalid_label");
+    }
+    expect(() => buildTonartCatalogReviewCsv([model], new Map([
+      [model.id, { variant: "@SUM(1)" }],
+    ]))).toThrow("tonart_catalog_editorial_invalid_label");
   });
 
   it("refuses empty or excessive pages instead of silently scanning the catalog", () => {
