@@ -24,7 +24,7 @@ const coinLabels: Record<TonartAdminCoinEntry["type"], string> = {
 
 function moduleState(id: string): "active" | "read-only" | "off" {
   if (id === "dashboard") return "active";
-  if (id === "users" || id === "orders" || id === "financial-hub") return "read-only";
+  if (id === "users" || id === "orders" || id === "financial-hub" || id === "communication") return "read-only";
   if (id === "credits-hub") return coinsEnabled ? "active" : "read-only";
   if (id === "catalog-hub") return "read-only";
   return "off";
@@ -62,6 +62,7 @@ export default function TonecosAdminHomePage() {
   const isCatalog = sectionId === "catalog-hub";
   const isOrders = sectionId === "orders";
   const isFinancial = sectionId === "financial-hub";
+  const isCommunication = sectionId === "communication";
   const users = overview?.recentProfiles.filter((profile) =>
     [profile.email, profile.fullName ?? ""].some((value) => value.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))),
   ) ?? [];
@@ -378,6 +379,80 @@ export default function TonecosAdminHomePage() {
             </section>
           )}
 
+          {isCommunication && (
+            <section className={panelClass}>
+              <h3 className="text-lg font-semibold">Central de Comunicação</h3>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-white/65">
+                Acompanhamento das solicitações do catálogo usando os dados de atendimento existentes.
+                Esta página não armazena mensagens e não envia e-mails automaticamente.
+              </p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <Metric label="Aguardando atendimento" value={overview?.pendingQuoteCount} detail="Solicitações recebidas" />
+                <Metric label="Em análise" value={overview?.reviewingQuoteCount} detail="Solicitações em atendimento" />
+              </div>
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-5">
+                <h4 className="text-base font-semibold">Contatos com atendimento em aberto</h4>
+                {quotesEnabled && (
+                  <Link to={TONECOS_COMMERCIAL_ROUTES.adminQuotes} className={secondaryClass}>
+                    Ver todos os orçamentos
+                  </Link>
+                )}
+              </div>
+              <p className="mt-2 text-xs text-white/50">
+                Exibindo solicitações pendentes ou em análise entre as 25 solicitações recentes.
+                As quantidades acima consideram a base completa.
+              </p>
+              {overview && overview.recentQuotes.filter((q) =>
+                q.status === "pending" || q.status === "reviewing").length === 0 && (
+                <p className="mt-5 text-sm text-white/60">
+                  Não há atendimentos em aberto entre as últimas solicitações.
+                </p>
+              )}
+              {overview?.recentQuotes.filter((q) =>
+                q.status === "pending" || q.status === "reviewing").map((q) => (
+                <article key={q.id} className="mt-4 border border-white/15 p-4 sm:p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">Solicitação #{q.id.slice(0, 8)}</p>
+                      <p className="mt-1 text-xs text-white/55">
+                        {dates.format(new Date(q.createdAt))} · {integer.format(q.modelCount)} {q.modelCount === 1 ? "modelo" : "modelos"}
+                      </p>
+                    </div>
+                    <span className="border border-white/20 px-3 py-1 text-xs">
+                      {quoteLabels[q.status]}
+                    </span>
+                  </div>
+                  <p className="mt-4 break-all text-sm text-white/80">
+                    {q.customerEmail ?? "E-mail de contato indisponível"}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {quotesEnabled && (
+                      <Link
+                        className={secondaryClass}
+                        to={TONECOS_COMMERCIAL_ROUTES.adminQuotes + "?quote=" + encodeURIComponent(q.id)}
+                      >
+                        Abrir solicitação #{q.id.slice(0, 8)}
+                      </Link>
+                    )}
+                    {q.customerEmail && (
+                      <a
+                        className={secondaryClass}
+                        href={"mailto:" + encodeURIComponent(q.customerEmail) +
+                          "?subject=" + encodeURIComponent("TONART Studio — orçamento #" + q.id.slice(0, 8))}
+                      >
+                        Preparar e-mail para {q.customerEmail}
+                      </a>
+                    )}
+                  </div>
+                </article>
+              ))}
+              <p className="mt-6 text-xs text-white/45">
+                Preparar e-mail abre o aplicativo de correio do dispositivo. Envio e resposta não são
+                registrados automaticamente no sistema; confirme a situação pelo atendimento.
+              </p>
+            </section>
+          )}
+
           {isCatalog && (
             <section className={panelClass}>
               <h3 className="text-lg font-semibold">Catálogo de modelos</h3>
@@ -390,7 +465,7 @@ export default function TonecosAdminHomePage() {
             </section>
           )}
 
-          {!isDashboard && !isUsers && !isCoins && !isCatalog && !isOrders && !isFinancial && (
+          {!isDashboard && !isUsers && !isCoins && !isCatalog && !isOrders && !isFinancial && !isCommunication && (
             <section className={panelClass}>
               <h3 className="text-lg font-semibold">{displayName}</h3>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-white/65">
