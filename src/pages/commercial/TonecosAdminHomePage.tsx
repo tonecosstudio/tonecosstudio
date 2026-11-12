@@ -4,21 +4,24 @@
  * Live figures come only from the existing production tables via the protected RPC.
  */
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { adminNavigationConfig, type NavigationItem } from "@/config/admin-navigation.config";
-import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
-import { getTonartAdminOverview, type TonartAdminOverview } from "@/services/admin/tonart-admin-workspace-service";
+import { ADMIN_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import { getTonartAdminOverview, type TonartAdminCoinEntry, type TonartAdminOverview } from "@/services/admin/tonart-admin-workspace-service";
 import { panelClass, secondaryClass } from "./CommercialPage";
 
 const coinsEnabled = import.meta.env.VITE_TONECOS_COINS_ENABLED === "true";
 const quotesEnabled = import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true";
 const integer = new Intl.NumberFormat("pt-BR");
 const dates = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
+const coinLabels: Record<TonartAdminCoinEntry["type"], string> = {
+  admin_credit: "Crédito", purchase_spend: "Utilização", refund: "Estorno",
+};
 
 function moduleState(id: string): "active" | "read-only" | "off" {
   if (id === "dashboard") return "active";
   if (id === "users") return "read-only";
-  if (id === "credits-hub") return coinsEnabled ? "active" : "off";
+  if (id === "credits-hub") return coinsEnabled ? "active" : "read-only";
   if (id === "catalog-hub") return "read-only";
   return "off";
 }
@@ -35,15 +38,20 @@ function Metric({ label, value, detail }: {label: string; value: number | undefi
 }
 
 export default function TonecosAdminHomePage() {
-  const [sectionId, setSectionId] = useState("dashboard");
+  const location = useLocation();
+  const navigate = useNavigate();
   const [overview, setOverview] = useState<TonartAdminOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
   const [search, setSearch] = useState("");
   const allItems = adminNavigationConfig.flatMap((section) => section.items);
-  const activeItem = allItems.find((item) => item.id === sectionId);
-  const displayName = activeItem?.label ?? "Painel";
+  const pathname = location.pathname.replace(/\/+$/, "") || "/";
+  const activeItem = allItems.find((item) => item.path === pathname);
+  const sectionId = pathname === TONECOS_COMMERCIAL_ROUTES.adminCoins
+    ? "credits-hub"
+    : activeItem?.id ?? (pathname === TONECOS_COMMERCIAL_ROUTES.adminHome ? "dashboard" : "unknown");
+  const displayName = sectionId === "unknown" ? "Página não encontrada" : activeItem?.label ?? "Painel";
   const isUsers = sectionId === "users";
   const isDashboard = sectionId === "dashboard";
   const isCoins = sectionId === "credits-hub";
@@ -64,7 +72,7 @@ export default function TonecosAdminHomePage() {
   }, [reload]);
 
   const showItem = (item: NavigationItem) => {
-    setSectionId(item.id);
+    navigate(item.path);
     setSearch("");
   };
 
@@ -175,11 +183,12 @@ export default function TonecosAdminHomePage() {
                   <p className="mt-2 text-sm text-white/60">
                     A estrutura de créditos permanece preservada. Não há liberação automática de compra, conversão ou emissão.
                   </p>
-                  <div className="mt-5">
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <Link to={ADMIN_ROUTES.credits} className={secondaryClass}>Consultar movimentações</Link>
                     {coinsEnabled ? (
-                      <Link to={TONECOS_COMMERCIAL_ROUTES.adminCoins} className={secondaryClass}>Administração de moedas</Link>
+                      <Link to={TONECOS_COMMERCIAL_ROUTES.adminCoins} className={secondaryClass}>Operações autorizadas</Link>
                     ) : (
-                      <span className="text-sm text-white/50">Operações desativadas · disponível para consulta</span>
+                      <span className="text-xs text-white/50">Emissão e utilização desativadas</span>
                     )}
                   </div>
                 </section>
@@ -187,7 +196,7 @@ export default function TonecosAdminHomePage() {
               <section className={panelClass + " mt-6"}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h3 className="text-lg font-semibold">Contas recentes</h3>
-                  <button className="text-sm text-[hsl(var(--gold-accent))] underline underline-offset-4" onClick={() => setSectionId("users")} type="button">
+                  <button className="text-sm text-[hsl(var(--gold-accent))] underline underline-offset-4" onClick={() => navigate(ADMIN_ROUTES.users)} type="button">
                     Ver usuários
                   </button>
                 </div>
@@ -250,10 +259,37 @@ export default function TonecosAdminHomePage() {
               <p className="mt-5 text-2xl font-semibold tabular-nums text-[hsl(var(--gold-accent))]">
                 {overview ? integer.format(overview.coinEntryCount) : "—"} <span className="text-sm font-normal text-white/50">movimentações</span>
               </p>
+              <div className="mt-6 border-t border-white/15 pt-5">
+                <h4 className="mb-2 text-base font-semibold">Histórico de movimentações</h4>
+                <p className="mb-4 text-xs text-white/55">Últimos 25 registros do livro canônico, somente para consulta administrativa.</p>
+                {overview && overview.recentCoinEntries.length === 0 && (
+                  <p className="py-3 text-sm text-white/60">Nenhuma movimentação registrada.</p>
+                )}
+                {overview && overview.recentCoinEntries.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[540px] border-collapse text-left text-sm">
+                      <thead className="border-b border-white/20 text-xs text-white/60">
+                        <tr><th className="py-3 pr-3">Data</th><th className="py-3 pr-3">Cliente</th><th className="py-3 pr-3">Tipo</th><th className="py-3 pr-3">Motivo</th><th className="py-3 text-right">Moedas</th></tr>
+                      </thead>
+                      <tbody>
+                        {overview.recentCoinEntries.map((entry) => (
+                          <tr key={entry.id} className="border-b border-white/10">
+                            <td className="whitespace-nowrap py-3 pr-3 text-white/60">{dates.format(new Date(entry.createdAt))}</td>
+                            <td className="break-all py-3 pr-3">{entry.userEmail ?? "Conta sem e-mail"}</td>
+                            <td className="py-3 pr-3">{coinLabels[entry.type]}</td>
+                            <td className="max-w-[280px] break-words py-3 pr-3 text-white/65">{entry.reason}</td>
+                            <td className={"whitespace-nowrap py-3 text-right font-mono tabular-nums " + (entry.delta > 0 ? "text-[hsl(var(--gold-accent))]" : "text-white/80")}>{entry.delta > 0 ? "+" : ""}{integer.format(entry.delta)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
               {coinsEnabled ? (
                 <Link className={secondaryClass + " mt-5"} to={TONECOS_COMMERCIAL_ROUTES.adminCoins}>Abrir operações autorizadas</Link>
               ) : (
-                <p className="mt-5 border-t border-white/15 pt-5 text-sm text-white/60">
+                <p className="mt-5 text-sm text-white/60">
                   Operações de emissão, utilização e estorno desativadas nesta implantação. O módulo não foi excluído.
                 </p>
               )}
@@ -281,7 +317,7 @@ export default function TonecosAdminHomePage() {
                 nem foram criadas funções substitutas.
               </p>
               <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-white/45">Módulo desativado nesta implantação</p>
-              <button type="button" className={secondaryClass + " mt-5"} onClick={() => setSectionId("dashboard")}>Voltar ao painel</button>
+              <button type="button" className={secondaryClass + " mt-5"} onClick={() => navigate(ADMIN_ROUTES.home)}>Voltar ao painel</button>
             </section>
           )}
         </main>
