@@ -173,7 +173,17 @@
       "config/catalog-model-identity-aliases.json": "6d061618a2906400896be60433315636d6098ef7",
       "config/catalog-legacy-gallery-overrides.json": "d43d43ac005edfeffaeb5725d0fc1b1883bf7da7",
       "config/external-batches/external-source-001-batch-012.json": "d79ee1f5174ffb378dd91efcf11fcbd5b3852df0",
-      "config/external-sources/external-source-001.json": "0e45084398768cb2de9d8edd628659dbfba1efb7"
+      "config/external-sources/external-source-001.json": "0e45084398768cb2de9d8edd628659dbfba1efb7",
+      "tools/test_external_batch_release.py": "f913a68824bfad9f6f3bc8ef925e3112f79c0ed0",
+      "tools/test_external_batch_012_contract.py": "b1e7e5e20b404a82d552310c08f12cbe195d95d8",
+      "tools/test_external_release_verifier.py": "ee220e693cb94cae9b4054f0681ff54cb4791208",
+      "tools/test_new_only_released_preflight.py": "c5025e5afde855eac3ee7fe67c9829f0a5070693",
+      "tools/test_apply_existing_gallery_promotion.py": "7b09a97ca03dfddcee519782904407af4e675490",
+      "tools/test_apply_exact_source_gallery_promotion.py": "2d1b0418389c08f18930ec818df5a47022f8a6b3",
+      "tools/test_stage_external_media.py": "56f95c36c9b28dd1a052d272051a4e3cbde1b24e",
+      "tools/test_staging_checkpoint.py": "84d706dd2c80c31ba4f40f9765a879ae325be949",
+      "docs/evidence/external-source-001-malevola-dispatch-gallery-review-2026-10-16.json": "3ac57acfb8572f98a89bdabcf89be82ae2b7aaef",
+      "docs/evidence/external-source-001-malevola-dispatch-creator-attribution-release-2026-10-16.json": "e57613dc22859aff44cc7f06139cc2c7b133e0b4"
     }
   },
   "runtime": {
@@ -307,7 +317,17 @@
       "config/catalog-model-identity-aliases.json": "6d061618a2906400896be60433315636d6098ef7",
       "config/catalog-legacy-gallery-overrides.json": "d43d43ac005edfeffaeb5725d0fc1b1883bf7da7",
       "config/external-batches/external-source-001-batch-012.json": "d79ee1f5174ffb378dd91efcf11fcbd5b3852df0",
-      "config/external-sources/external-source-001.json": "0e45084398768cb2de9d8edd628659dbfba1efb7"
+      "config/external-sources/external-source-001.json": "0e45084398768cb2de9d8edd628659dbfba1efb7",
+      "tools/test_external_batch_release.py": "f913a68824bfad9f6f3bc8ef925e3112f79c0ed0",
+      "tools/test_external_batch_012_contract.py": "b1e7e5e20b404a82d552310c08f12cbe195d95d8",
+      "tools/test_external_release_verifier.py": "ee220e693cb94cae9b4054f0681ff54cb4791208",
+      "tools/test_new_only_released_preflight.py": "c5025e5afde855eac3ee7fe67c9829f0a5070693",
+      "tools/test_apply_existing_gallery_promotion.py": "7b09a97ca03dfddcee519782904407af4e675490",
+      "tools/test_apply_exact_source_gallery_promotion.py": "2d1b0418389c08f18930ec818df5a47022f8a6b3",
+      "tools/test_stage_external_media.py": "56f95c36c9b28dd1a052d272051a4e3cbde1b24e",
+      "tools/test_staging_checkpoint.py": "84d706dd2c80c31ba4f40f9765a879ae325be949",
+      "docs/evidence/external-source-001-malevola-dispatch-gallery-review-2026-10-16.json": "3ac57acfb8572f98a89bdabcf89be82ae2b7aaef",
+      "docs/evidence/external-source-001-malevola-dispatch-creator-attribution-release-2026-10-16.json": "e57613dc22859aff44cc7f06139cc2c7b133e0b4"
     },
     "localOverlays": {
       "tools/test_worker_folder_counts.mjs": {
@@ -433,16 +453,26 @@
       ],
       "editorialContract": "config/catalog-production-model-contract.json",
       "note": "Current Git blob identities copied; offline and production cutover gates remain required.",
-      "dataWriterToolchainFiles": 32,
+      "dataWriterToolchainFiles": 42,
       "dataWriterToolchainSourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7"
     },
     "dataWriterToolchain": {
       "phase": "staged-offline",
-      "fileCount": 32,
+      "fileCount": 42,
       "sourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
       "releaseAuthorized": false,
       "workflowWriterEnabled": false,
-      "note": "Exact source Python import closure plus required configuration; only staging, no production D1/R2 publisher activated."
+      "note": "Exact source Python import closure plus required configuration; only staging, no production D1/R2 publisher activated.",
+      "focusedSourceTests": [
+        "test_external_batch_release",
+        "test_external_batch_012_contract",
+        "test_external_release_verifier",
+        "test_new_only_released_preflight",
+        "test_apply_existing_gallery_promotion",
+        "test_apply_exact_source_gallery_promotion",
+        "test_stage_external_media",
+        "test_staging_checkpoint"
+      ]
     }
   },
   "productionObservation": {

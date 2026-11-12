@@ -298,6 +298,27 @@ jobs:
           print(f'PASS: {len(files)} Python scripts have a complete local import graph')
           PY
 
+      - name: Use Python 3.13 for source D1/R2 writer tests
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: services/catalogo/tools/requirements.txt
+
+      - name: Run focused source publishing contracts without Cloudflare writes
+        working-directory: services/catalogo/tools
+        run: |
+          python -m pip install -r requirements.txt
+          python -m unittest -v \
+            test_external_batch_release \
+            test_external_batch_012_contract \
+            test_external_release_verifier \
+            test_new_only_released_preflight \
+            test_apply_existing_gallery_promotion \
+            test_apply_exact_source_gallery_promotion \
+            test_stage_external_media \
+            test_staging_checkpoint
+
       # Test the changed catalog/admin boundaries and production build.
       # The full monorepo suite belongs to the existing main-push jobs;
       # do not re-run 3,500 unrelated tests for every candidate correction.
