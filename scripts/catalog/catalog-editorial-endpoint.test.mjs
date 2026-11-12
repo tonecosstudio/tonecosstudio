@@ -105,3 +105,89 @@ test("even approved admin cannot write without scoped GitHub App credentials", a
   assert.equal(res.payload.error, "editorial_backend_not_configured");
   assert.equal(called.length, 2);
 });
+
+test("authorized submission edits original contract in one reviewed GitHub PR", async (t) => {
+  environment(t);
+  const { generateKeyPairSync } = await import("node:crypto");
+  const pem = generateKeyPairSync("rsa", { modulusLength: 2048 })
+    .privateKey.export({ type: "pkcs8", format: "pem" });
+  process.env.TONART_CATALOG_GITHUB_APP_ID = "111";
+  process.env.TONART_CATALOG_GITHUB_INSTALLATION_ID = "222";
+  process.env.TONART_CATALOG_GITHUB_APP_PRIVATE_KEY = pem;
+  const id = "mdl_aaaaaaaaaaaaaaaaaaaa";
+  const model = {
+    id, slug: "espresso", code: "ESP01",
+    displayName: "Espresso", variantName: "Pequeno",
+    categoryName: "Bebidas", categorySlug: "bebidas",
+    franchiseName: "Cafe", franchiseSlug: "cafe",
+    folderPathKey: "menu", published: 1,
+  };
+  const lines = Object.entries(model).map(([key, value]) =>
+    "      " + JSON.stringify(key) + ": " + JSON.stringify(value));
+  const source = '{\n  "version": 1,\n  "source": {"productionModels":1,"publishedModels":1},\n' +
+    '  "models": [\n    {\n' + lines.join(",\n") + '\n    }\n  ]\n}';
+  const sha = "a".repeat(40);
+  const actions = [];
+  globalThis.fetch = async (input, options = {}) => {
+    const u = new URL(input);
+    actions.push({ path: u.pathname, method: options.method ?? "GET" });
+    if (u.pathname.endsWith("/auth/v1/user")) {
+      return Response.json({ id: "00000000-0000-4000-8000-000000000001" });
+    }
+    if (u.pathname.endsWith("/rest/v1/rpc/has_role")) return Response.json(true);
+    if (u.pathname === "/app/installations/222/access_tokens") {
+      assert.equal(options.method, "POST");
+      return Response.json({ token: "ghs_test" });
+    }
+    if (u.pathname.endsWith("/git/ref/heads/main")) {
+      return Response.json({ object: { sha: "b".repeat(40) } });
+    }
+    if (u.pathname.endsWith("/pulls") && options.method === undefined) {
+      return Response.json([]);
+    }
+    if (u.pathname.endsWith("/git/ref/heads/editorial/tonart-admin-review")) {
+      return Response.json({ message: "Not Found" }, { status: 404 });
+    }
+    if (u.pathname.endsWith("/contents/config/catalog-production-model-contract.json") &&
+        options.method === undefined) {
+      return Response.json({ sha, size: Buffer.byteLength(source) });
+    }
+    if (u.pathname.endsWith("/git/blobs/" + sha)) {
+      return Response.json({ encoding: "base64", content: Buffer.from(source).toString("base64") });
+    }
+    if (u.pathname.endsWith("/git/refs") && options.method === "POST") {
+      assert.equal(JSON.parse(options.body).sha, "b".repeat(40));
+      return Response.json({ ref: "refs/heads/editorial/tonart-admin-review" }, { status: 201 });
+    }
+    if (u.pathname.endsWith("/contents/config/catalog-production-model-contract.json") &&
+        options.method === "PUT") {
+      const submitted = JSON.parse(options.body);
+      assert.equal(submitted.branch, "editorial/tonart-admin-review");
+      assert.equal(submitted.sha, sha);
+      const updated = JSON.parse(Buffer.from(submitted.content, "base64").toString("utf8"));
+      assert.equal(updated.models[0].displayName, "Espresso Especial");
+      return Response.json({ content: { sha: "c".repeat(40) } });
+    }
+    if (u.pathname.endsWith("/pulls") && options.method === "POST") {
+      assert.equal(JSON.parse(options.body).base, "main");
+      return Response.json({
+        html_url: "https://github.com/washingtonmsdj/catalogo/pull/270",
+      }, { status: 201 });
+    }
+    throw new Error("Unexpected endpoint " + u.pathname);
+  };
+  const res = response();
+  await handler(request({
+    body: { edits: [{
+      id, slug: "espresso", code: "ESP01", name: "Espresso",
+      variantName: "Pequeno", category: "Bebidas", franchise: "Cafe",
+      newName: "Espresso Especial", newVariant: "",
+    }] },
+  }), res);
+  assert.equal(res.code, 202);
+  assert.equal(res.payload.state, "awaiting_review");
+  assert.equal(res.payload.receipt, "https://github.com/washingtonmsdj/catalogo/pull/270");
+  assert.equal(actions.filter((x) => x.method === "PUT").length, 1);
+  assert.equal(actions.filter((x) => x.method === "POST" &&
+    x.path.endsWith("/pulls")).length, 1);
+});
