@@ -51,6 +51,14 @@ describe("TONART admin workspace", () => {
     }
   });
 
+  it("does not query Supabase aggregates when opening the Cloudflare catalog", async () => {
+    show("/admin/catalogo");
+    expect(await screen.findByRole("heading", { name: "Catálogo de modelos" })).toBeInTheDocument();
+    expect(mocks.overview).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Atualizar dados" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Consultando dados administrativos...")).not.toBeInTheDocument();
+  });
+
   it("opens the read-only users list without creating or granting accounts", async () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: /Usuários/ }));
