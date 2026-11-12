@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   getModel: vi.fn(),
   listGallery: vi.fn(),
   mediaUrl: vi.fn(),
-  probe: vi.fn(),
   createGateway: vi.fn(),
 }));
 vi.mock("@/config/canonical-catalog-endpoint", () => ({
@@ -15,7 +14,6 @@ vi.mock("@/config/canonical-catalog-endpoint", () => ({
 }));
 vi.mock("@/services/catalog/public-catalog-gateway", () => ({
   createPublicCatalogGateway: mocks.createGateway,
-  probeCanonicalCatalogMediaByte: mocks.probe,
 }));
 
 import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
@@ -42,7 +40,6 @@ beforeEach(() => {
     mediaUrl: mocks.mediaUrl,
   });
   mocks.mediaUrl.mockReturnValue("https://tonartstudio.com.br/catalogo-api/media/test/modelo/card.webp");
-  mocks.probe.mockResolvedValue(undefined);
   mocks.getModel.mockResolvedValue({
     ...withCover, description: null, material: null, heightCm: null,
   });
@@ -125,8 +122,13 @@ describe("TONART canonical admin catalog review", () => {
     expect(mocks.getModel).not.toHaveBeenCalled();
     expect(mocks.listGallery).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Verificar mídia" })[0]);
-    expect(await screen.findByRole("heading", { name: "Revisão: Modelo de teste" })).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
+    expect(screen.getByRole("img", { name: "Capa do modelo Modelo de teste" })).toBeInTheDocument();
+    expect(mocks.getModel).not.toHaveBeenCalled();
+    expect(mocks.listGallery).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Informações técnicas (opcional)" }));
+    expect(await screen.findByRole("heading", { name: "Informações da mídia: Modelo de teste" })).toBeInTheDocument();
     expect(mocks.getModel).toHaveBeenCalledTimes(1);
     expect(mocks.getModel.mock.calls[0][0]).toBe("modelo-teste");
     expect(mocks.listGallery).toHaveBeenCalledTimes(1);
@@ -135,7 +137,7 @@ describe("TONART canonical admin catalog review", () => {
       limit: 4,
     });
     expect(screen.getByText(/não comprova a entrega física dos arquivos/)).toBeInTheDocument();
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Capa do modelo Modelo de teste" })).toBeInTheDocument();
     expect(mocks.listPage).toHaveBeenCalledTimes(1);
   });
 
@@ -146,8 +148,11 @@ describe("TONART canonical admin catalog review", () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo sem capa");
-    fireEvent.click(screen.getAllByRole("button", { name: "Verificar mídia" })[1]);
-    expect(await screen.findByRole("heading", { name: "Revisão: Modelo sem capa" })).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[1]);
+    expect(screen.getByText("Este modelo não possui capa cadastrada.")).toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Informações técnicas (opcional)" }));
+    expect(await screen.findByRole("heading", { name: "Informações da mídia: Modelo sem capa" })).toBeInTheDocument();
     expect(mocks.listGallery).not.toHaveBeenCalled();
     expect(screen.getAllByText(/sem chave de capa/i).length).toBeGreaterThan(0);
   });
@@ -160,41 +165,51 @@ describe("TONART canonical admin catalog review", () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
-    fireEvent.click(screen.getAllByRole("button", { name: "Verificar mídia" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Informações técnicas (opcional)" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível verificar os metadados");
     expect(mocks.listGallery).not.toHaveBeenCalled();
-    expect(screen.queryByRole("heading", { name: /Revisão:/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Informações da mídia:/ })).not.toBeInTheDocument();
   });
 
-  it("checks a cover byte only after an explicit click on an approved model", async () => {
+  it("shows the real cover from the shared image component without any new D1 lookup", async () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
-    expect(mocks.probe).not.toHaveBeenCalled();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(mocks.getModel).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Verificar mídia" })[0]);
-    await screen.findByRole("heading", { name: "Revisão: Modelo de teste" });
-    expect(mocks.probe).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole("button", { name: "Testar entrega da capa (1 byte)" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Entrega parcial confirmada (1 byte)");
-    expect(mocks.mediaUrl).toHaveBeenCalledExactlyOnceWith(withCover.coverStorageKey);
-    expect(mocks.probe).toHaveBeenCalledTimes(1);
-    expect(mocks.probe.mock.calls[0][0]).toBe("https://tonartstudio.com.br/catalogo-api/");
-    expect(mocks.probe.mock.calls[0][1]).toContain("catalogo-api/media/");
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
+    const image = screen.getByRole("img", { name: "Capa do modelo Modelo de teste" });
+    expect(image).toHaveAttribute(
+      "src", "https://tonartstudio.com.br/catalogo-api/media/test/modelo/card.webp",
+    );
+    expect(mocks.mediaUrl).toHaveBeenCalledWith(withCover.coverStorageKey);
+    expect(mocks.getModel).not.toHaveBeenCalled();
+    expect(mocks.listGallery).not.toHaveBeenCalled();
     expect(mocks.listPage).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Fechar visualização" }));
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
-  it("shows an explicit error rather than claiming full image availability on a broken partial fetch", async () => {
-    mocks.probe.mockRejectedValueOnce(new Error("invalid response"));
+  it("displays a clear image-unavailable state when the approved image cannot load", async () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
-    fireEvent.click(screen.getAllByRole("button", { name: "Verificar mídia" })[0]);
-    await screen.findByRole("heading", { name: "Revisão: Modelo de teste" });
-    fireEvent.click(screen.getByRole("button", { name: "Testar entrega da capa (1 byte)" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível validar a entrega parcial da capa");
-    expect(screen.queryByText(/Entrega parcial confirmada/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
+    fireEvent.error(screen.getByRole("img", { name: "Capa do modelo Modelo de teste" }));
+    expect(await screen.findByText("Imagem indisponível. Não foi possível carregar a capa.")).toBeInTheDocument();
+    expect(mocks.getModel).not.toHaveBeenCalled();
+  });
+
+  it("does not request media if the canonical gateway disallows the cover URL", async () => {
+    mocks.mediaUrl.mockReturnValueOnce(null);
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo de teste");
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
+    expect(screen.getByText("Esta capa não está disponível para visualização pública.")).toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
   it("rejects short searches locally without hitting the catalog", async () => {
