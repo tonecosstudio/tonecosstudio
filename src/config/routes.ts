@@ -35,6 +35,7 @@ export const TONECOS_COMMERCIAL_ROUTES = {
   request: PUBLIC_ROUTES.quoteRequest,
   history: "/meus-orcamentos",
   coins: "/moedas",
+  adminHome: "/admin",
   adminQuotes: "/admin/orcamentos",
   adminCoins: "/admin/moedas",
 } as const;
