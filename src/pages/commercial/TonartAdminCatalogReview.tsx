@@ -4,8 +4,8 @@
  * SSOT: the public, read-only Cloudflare catalog gateway already used by
  * /modelos. No Supabase mirror, no write credential, no second publisher.
  *
- * D1-friendly: the admin must explicitly request each bounded page; no
- * total-count scan, automatic polling, prefetch, or image downloads.
+ * D1-friendly: the first bounded page loads on entry; every later page and
+ * search is explicit. No total-count scan, polling, prefetch or image downloads.
  */
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -120,6 +120,15 @@ export default function TonartAdminCatalogReview() {
       if (!controller.signal.aborted) setBusy(false);
     }
   }
+
+  // On opening the catalog, request only the first bounded page once.
+  // Reuse the exact same canonical query as manual search/pagination,
+  // not a separate catalog loader or mirrored data source.
+  const initialLoad = useRef(load);
+  initialLoad.current = load;
+  useEffect(() => {
+    if (gateway) void initialLoad.current("", undefined, [undefined], 0);
+  }, [gateway]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -282,8 +291,9 @@ export default function TonartAdminCatalogReview() {
       <h3 className="text-lg font-semibold">Catálogo de modelos</h3>
       <p className="mt-3 max-w-3xl text-sm leading-6 text-white/65">
         Consulta dos modelos publicados na mesma origem utilizada pelo catálogo dos clientes:
-        Cloudflare D1/R2, através do gateway canônico da TONART. Nenhum modelo é copiado
-        para o Supabase ou para outro inventário.
+        Cloudflare D1/R2, através do gateway canônico da TONART. Os primeiros 12 modelos
+        aparecem automaticamente; outras páginas e buscas são consultadas somente quando você solicitar.
+        Nenhum modelo é copiado para o Supabase ou para outro inventário.
       </p>
       <form onSubmit={submit} className="mt-6 flex flex-wrap items-end gap-3" role="search">
         <label className="min-w-[220px] flex-1 text-xs text-white/75">
@@ -299,7 +309,7 @@ export default function TonartAdminCatalogReview() {
           />
         </label>
         <button className={actionClass} type="submit" disabled={busy || gateway === null || editorialDrafts.size > 0}>
-          {busy ? "Consultando..." : page ? "Pesquisar" : "Carregar modelos"}
+          {busy ? "Consultando..." : "Pesquisar"}
         </button>
       </form>
 
