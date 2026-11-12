@@ -9,11 +9,11 @@
  */
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { catalogModelDetailsPath } from "@/config/routes";
 import {
   createPublicCatalogGateway,
-  probeCanonicalCatalogMediaByte,
   type PublicCatalogPage,
   type PublicCatalogModel,
   type PublicCatalogDetail,
@@ -34,8 +34,8 @@ export default function TonartAdminCatalogReview() {
   const [error, setError] = useState("");
   const requestRef = useRef<AbortController | null>(null);
   const reviewRef = useRef<AbortController | null>(null);
-  const probeRef = useRef<AbortController | null>(null);
-  const [probeStatus, setProbeStatus] = useState<"idle" | "checking" | "ok" | "error">("idle");
+  const [selectedModel, setSelectedModel] = useState<PublicCatalogModel | null>(null);
+  const previewRef = useRef<HTMLElement | null>(null);
   const [review, setReview] = useState<{
     model: PublicCatalogDetail;
     gallery: PublicCatalogGalleryPage | null;
@@ -55,8 +55,13 @@ export default function TonartAdminCatalogReview() {
   useEffect(() => () => {
     requestRef.current?.abort();
     reviewRef.current?.abort();
-    probeRef.current?.abort();
   }, []);
+
+  useEffect(() => {
+    // Preview is below the bounded table; bring it into view after an explicit
+    // row action, without any additional catalog or media request.
+    if (selectedModel) previewRef.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [selectedModel]);
 
   async function load(
     search: string,
@@ -70,9 +75,8 @@ export default function TonartAdminCatalogReview() {
     }
     requestRef.current?.abort();
     reviewRef.current?.abort();
-    probeRef.current?.abort();
-    setProbeStatus("idle");
     setReview(null);
+    setSelectedModel(null);
     setReviewError("");
     setReviewingId(null);
     const controller = new AbortController();
@@ -113,8 +117,6 @@ export default function TonartAdminCatalogReview() {
   async function inspectModel(model: PublicCatalogModel) {
     if (!gateway) return;
     reviewRef.current?.abort();
-    probeRef.current?.abort();
-    setProbeStatus("idle");
     const controller = new AbortController();
     reviewRef.current = controller;
     setReview(null);
@@ -145,24 +147,26 @@ export default function TonartAdminCatalogReview() {
     }
   }
 
-  async function verifyCoverDelivery() {
-    if (!gateway || !review?.model.coverStorageKey) return;
-    probeRef.current?.abort();
-    const controller = new AbortController();
-    probeRef.current = controller;
-    setProbeStatus("checking");
-    try {
-      await probeCanonicalCatalogMediaByte(
-        CANONICAL_CATALOG_API_BASE,
-        gateway.mediaUrl(review.model.coverStorageKey),
-        fetch,
-        controller.signal,
-      );
-      if (!controller.signal.aborted) setProbeStatus("ok");
-    } catch {
-      if (!controller.signal.aborted) setProbeStatus("error");
-    }
+  function showCover(model: PublicCatalogModel) {
+    reviewRef.current?.abort();
+    setReview(null);
+    setReviewingId(null);
+    setReviewError("");
+    setSelectedModel((current) => current?.id === model.id ? null : model);
   }
+
+  function closeCover() {
+    reviewRef.current?.abort();
+    setReview(null);
+    setReviewingId(null);
+    setReviewError("");
+    setSelectedModel(null);
+  }
+
+  // Construct exactly one approved first-party image URL from the same
+  // gateway as /modelos. No D1 lookup occurs when previewing a loaded row.
+  const coverUrl = selectedModel?.coverStorageKey && gateway
+    ? gateway.mediaUrl(selectedModel.coverStorageKey) : null;
 
   const visible = onlyWithoutCover
     ? page?.items.filter((model) => !model.coverStorageKey) ?? []
@@ -265,9 +269,9 @@ export default function TonartAdminCatalogReview() {
                           className="mb-2 block w-full text-right text-xs text-[hsl(var(--gold-accent))] underline underline-offset-4 disabled:opacity-50"
                           type="button"
                           disabled={busy || reviewingId !== null}
-                          onClick={() => { void inspectModel(model); }}
+                          onClick={() => showCover(model)}
                         >
-                          {reviewingId === model.id ? "Verificando..." : "Verificar mídia"}
+                          {selectedModel?.id === model.id ? "Fechar imagem" : "Ver imagem"}
                         </button>
                         <Link
                           className="text-xs text-[hsl(var(--gold-accent))] underline underline-offset-4"
@@ -282,11 +286,65 @@ export default function TonartAdminCatalogReview() {
               </table>
             </div>
           )}
+          {selectedModel && (
+            <section ref={previewRef} aria-label="Visualização da capa" className="mt-6 border border-white/20 p-4 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h4 className="text-lg font-semibold">Capa: {selectedModel.name}</h4>
+                <button type="button" className={secondaryClass} onClick={closeCover}>
+                  Fechar visualização
+                </button>
+              </div>
+              <div className="mt-5 grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(180px,0.75fr)]">
+                <div className="flex min-h-[260px] items-center justify-center overflow-hidden rounded-sm border border-white/15 bg-black/40 p-3">
+                  {coverUrl ? (
+                    <CanonicalCatalogImage
+                      src={coverUrl}
+                      alt={"Capa do modelo " + selectedModel.name}
+                      loading="eager"
+                      imageClassName="block max-h-[420px] w-full object-contain"
+                      fallbackClassName="flex min-h-[240px] w-full flex-col items-center justify-center gap-3 text-center text-sm text-white/60"
+                      fallbackLabel="Imagem indisponível. Não foi possível carregar a capa."
+                    />
+                  ) : (
+                    <p role="status" className="px-4 text-center text-sm text-white/65">
+                      {selectedModel.coverStorageKey
+                        ? "Esta capa não está disponível para visualização pública."
+                        : "Este modelo não possui capa cadastrada."}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col items-start gap-3 text-sm text-white/70">
+                  <p>
+                    Prévia da capa publicada no catálogo. Se a imagem não aparecer, você verá
+                    uma mensagem de indisponibilidade no lugar dela.
+                  </p>
+                  <p className="text-xs text-white/55">
+                    A imagem é carregada somente após clicar em “Ver imagem”, sem consultar
+                    novamente a lista de modelos.
+                  </p>
+                  <Link
+                    className="text-sm text-[hsl(var(--gold-accent))] underline underline-offset-4"
+                    to={catalogModelDetailsPath(selectedModel.id, selectedModel.name)}
+                  >
+                    Abrir ficha pública do modelo
+                  </Link>
+                  <button
+                    type="button"
+                    className={secondaryClass}
+                    disabled={busy || reviewingId !== null}
+                    onClick={() => { void inspectModel(selectedModel); }}
+                  >
+                    {reviewingId === selectedModel.id ? "Consultando dados..." : "Informações técnicas (opcional)"}
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
           {reviewingId && <p role="status" className="mt-5 text-sm text-white/65">Verificando apenas o modelo selecionado...</p>}
           {reviewError && <p role="alert" className="mt-5 border border-amber-500/40 p-4 text-sm">{reviewError}</p>}
           {review && (
             <section aria-label="Resultado da verificação individual" className="mt-6 border border-white/20 p-5">
-              <h4 className="text-base font-semibold">Revisão: {review.model.name}</h4>
+              <h4 className="text-base font-semibold">Informações da mídia: {review.model.name}</h4>
               <p className="mt-2 text-sm text-white/65">
                 Ficha atual consultada na origem canônica. {review.model.imageCount} imagens declaradas;
                 {" "}{review.gallery ? review.gallery.items.length : 0} registros da galeria examinados
@@ -296,28 +354,6 @@ export default function TonartAdminCatalogReview() {
                 Capa no índice: {review.model.coverStorageKey ? "chave cadastrada" : "sem chave de capa"}.
                 {" "}Versão da galeria: {review.model.galleryVersion}.
               </p>
-              {review.model.coverStorageKey && (
-                <div className="mt-5 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    className={secondaryClass}
-                    disabled={probeStatus === "checking" || busy || reviewingId !== null}
-                    onClick={() => { void verifyCoverDelivery(); }}
-                  >
-                    {probeStatus === "checking" ? "Testando entrega..." : "Testar entrega da capa (1 byte)"}
-                  </button>
-                  {probeStatus === "ok" && (
-                    <span role="status" className="text-sm text-white/70">
-                      Entrega parcial confirmada (1 byte). Imagem completa não verificada.
-                    </span>
-                  )}
-                  {probeStatus === "error" && (
-                    <span role="alert" className="text-sm text-amber-200">
-                      Não foi possível validar a entrega parcial da capa. Confira a ficha pública.
-                    </span>
-                  )}
-                </div>
-              )}
               {review.gallery && (
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full min-w-[430px] border-collapse text-left text-xs">
@@ -340,8 +376,8 @@ export default function TonartAdminCatalogReview() {
                 </div>
               )}
               <p className="mt-4 text-xs leading-5 text-white/50">
-                Esta verificação confere metadados e a consistência do índice.
-                Não comprova a entrega física dos arquivos, ausência de marcas d’água ou direitos de uso.
+                Estas informações vêm do índice publicado e não substituem a visualização da capa.
+                Não comprovam ausência de marcas d’água ou direitos de uso.
                 A publicação e a correção de mídia continuam com o único publicador canônico.
               </p>
               <Link className="mt-3 inline-block text-sm text-[hsl(var(--gold-accent))] underline" to={catalogModelDetailsPath(review.model.id, review.model.name)}>
@@ -352,7 +388,7 @@ export default function TonartAdminCatalogReview() {
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <p className="max-w-xl text-xs text-white/50">
               Somente a página solicitada é consultada. Os totais acima não representam o acervo inteiro.
-              A presença de uma chave de capa não comprova que a imagem carrega corretamente.
+              Use “Ver imagem” para conferir a capa real de cada modelo.
             </p>
             <div className="flex gap-2">
               <button
