@@ -357,6 +357,87 @@ describe("TONART canonical admin catalog review", () => {
     }
   });
 
+  it("prepares a local name and variant proposal without an extra catalog request", async () => {
+    const create = URL.createObjectURL;
+    const revoke = URL.revokeObjectURL;
+    const newCreate = vi.fn((_blob: Blob) => "blob:tonart-proposals");
+    const newRevoke = vi.fn();
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, writable: true, value: newCreate });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, writable: true, value: newRevoke });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    try {
+      show();
+      fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+      await screen.findByText("Modelo de teste");
+      fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
+      fireEvent.change(screen.getByRole("textbox", { name: "Novo nome de Modelo de teste" }), {
+        target: { value: "Modelo revisado" },
+      });
+      fireEvent.change(screen.getByRole("textbox", { name: "Nova variante de Modelo de teste" }), {
+        target: { value: "Colecionador" },
+      });
+      expect(screen.getByText(/1 modelo\\(s\\) com proposta local nesta página/)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Baixar planilha de revisão (CSV)" })).toBeEnabled();
+      fireEvent.click(screen.getByRole("button", { name: "Baixar planilha de revisão (CSV)" }));
+      expect(click).toHaveBeenCalledOnce();
+      expect(newCreate).toHaveBeenCalledOnce();
+      expect(newCreate.mock.calls[0][0]).toBeInstanceOf(Blob);
+      expect(newRevoke).toHaveBeenCalledWith("blob:tonart-proposals");
+      expect(mocks.listPage).toHaveBeenCalledOnce();
+      expect(mocks.getModel).not.toHaveBeenCalled();
+      expect(mocks.listGallery).not.toHaveBeenCalled();
+    } finally {
+      click.mockRestore();
+      Object.defineProperty(URL, "createObjectURL", { configurable: true, writable: true, value: create });
+      Object.defineProperty(URL, "revokeObjectURL", { configurable: true, writable: true, value: revoke });
+    }
+  });
+
+  it("blocks invalid proposal text without exporting or consulting D1", async () => {
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo de teste");
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
+    fireEvent.change(screen.getByRole("textbox", { name: "Novo nome de Modelo de teste" }), {
+      target: { value: "=SUM(1)" },
+    });
+    expect(screen.getByText(/não use fórmulas/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Baixar planilha de revisão (CSV)" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Pesquisar" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Limpar proposta deste modelo" }));
+    expect(screen.getByRole("button", { name: "Pesquisar" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Baixar planilha de revisão (CSV)" })).toBeEnabled();
+    expect(mocks.listPage).toHaveBeenCalledOnce();
+  });
+
+  it("keeps drafts on the current bounded page until explicitly discarded", async () => {
+    mocks.listPage.mockResolvedValueOnce({
+      items: [withCover, withoutCover], nextCursor: "next-page",
+    }).mockResolvedValueOnce({ items: [withCover], nextCursor: null });
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo de teste");
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
+    fireEvent.change(screen.getByRole("textbox", { name: "Novo nome de Modelo de teste" }), {
+      target: { value: "Modelo novo" },
+    });
+    expect(screen.getByRole("button", { name: "Próxima página" })).toBeDisabled();
+    expect(screen.getByRole("checkbox", {
+      name: "Mostrar apenas modelos sem capa nesta página",
+    })).toBeDisabled();
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[1]);
+    fireEvent.change(screen.getByRole("textbox", { name: "Nova variante de Modelo sem capa" }), {
+      target: { value: "Alternativa" },
+    });
+    expect(screen.getByText(/2 modelo\\(s\\) com proposta local nesta página/)).toBeInTheDocument();
+    expect(mocks.listPage).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "Descartar todas as propostas locais" }));
+    expect(screen.getByRole("button", { name: "Próxima página" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Próxima página" }));
+    await waitFor(() => expect(mocks.listPage).toHaveBeenCalledTimes(2));
+    expect(screen.getByText(/0 modelo\\(s\\) com proposta local nesta página/)).toBeInTheDocument();
+  });
+
   it("rejects short searches locally without hitting the catalog", async () => {
     show();
     fireEvent.change(screen.getByRole("searchbox", { name: "Buscar modelos do catálogo" }), {
