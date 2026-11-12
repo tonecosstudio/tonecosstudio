@@ -325,6 +325,38 @@ describe("TONART canonical admin catalog review", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
+  it("downloads only the current filtered page without another D1 request", async () => {
+    const create = URL.createObjectURL;
+    const revoke = URL.revokeObjectURL;
+    const newCreate = vi.fn(() => "blob:tonart-editorial-review");
+    const newRevoke = vi.fn();
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, writable: true, value: newCreate });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, writable: true, value: newRevoke });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    try {
+      show();
+      expect(screen.queryByRole("button", { name: "Baixar relação desta página (CSV)" })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+      await screen.findByText("Modelo sem capa");
+      fireEvent.click(screen.getByRole("checkbox", {
+        name: "Mostrar apenas modelos sem capa nesta página",
+      }));
+      expect(screen.getByText(/A relação inclui apenas 1 modelo/)).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Baixar relação desta página (CSV)" }));
+      expect(click).toHaveBeenCalledTimes(1);
+      expect(newCreate).toHaveBeenCalledTimes(1);
+      expect(newCreate.mock.calls[0][0]).toBeInstanceOf(Blob);
+      expect(newRevoke).toHaveBeenCalledWith("blob:tonart-editorial-review");
+      expect(mocks.listPage).toHaveBeenCalledTimes(1);
+      expect(mocks.getModel).not.toHaveBeenCalled();
+      expect(mocks.listGallery).not.toHaveBeenCalled();
+    } finally {
+      click.mockRestore();
+      Object.defineProperty(URL, "createObjectURL", { configurable: true, writable: true, value: create });
+      Object.defineProperty(URL, "revokeObjectURL", { configurable: true, writable: true, value: revoke });
+    }
+  });
+
   it("rejects short searches locally without hitting the catalog", async () => {
     show();
     fireEvent.change(screen.getByRole("searchbox", { name: "Buscar modelos do catálogo" }), {
