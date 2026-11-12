@@ -129,6 +129,7 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
   const sha = "a".repeat(40);
   const actions = [];
   let recovery = "none";
+  let updatedSource = null;
   globalThis.fetch = async (input, options = {}) => {
     const u = new URL(input);
     actions.push({ path: u.pathname, method: options.method ?? "GET" });
@@ -164,10 +165,17 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
     }
     if (u.pathname.endsWith("/contents/services/catalogo/config/catalog-production-model-contract.json") &&
         options.method === "GET") {
-      return Response.json({ sha, size: Buffer.byteLength(source) });
+      const inBranch = u.searchParams.get("ref") === "editorial/tonart-admin-review";
+      const contractText = inBranch && recovery !== "none" ? updatedSource : source;
+      assert.ok(contractText);
+      return Response.json({ sha: inBranch && recovery !== "none" ? "c".repeat(40) : sha,
+        size: Buffer.byteLength(contractText) });
     }
-    if (u.pathname.endsWith("/git/blobs/" + sha)) {
-      return Response.json({ encoding: "base64", content: Buffer.from(source).toString("base64") });
+    if (u.pathname.endsWith("/git/blobs/" + sha) ||
+        u.pathname.endsWith("/git/blobs/" + "c".repeat(40))) {
+      const contractText = u.pathname.endsWith("c".repeat(40)) ? updatedSource : source;
+      assert.ok(contractText);
+      return Response.json({ encoding: "base64", content: Buffer.from(contractText).toString("base64") });
     }
     if (u.pathname.endsWith("/git/refs") && options.method === "POST") {
       assert.equal(JSON.parse(options.body).sha, "b".repeat(40));
@@ -178,7 +186,8 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
       const submitted = JSON.parse(options.body);
       assert.equal(submitted.branch, "editorial/tonart-admin-review");
       assert.equal(submitted.sha, sha);
-      const updated = JSON.parse(Buffer.from(submitted.content, "base64").toString("utf8"));
+      updatedSource = Buffer.from(submitted.content, "base64").toString("utf8");
+      const updated = JSON.parse(updatedSource);
       assert.equal(updated.models[0].displayName, "Espresso Especial");
       return Response.json({ content: { sha: "c".repeat(40) } });
     }
@@ -222,6 +231,8 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
     x.path.endsWith("/git/refs")).length, 1);
   assert.equal(actions.filter(x => x.method === "POST" &&
     x.path.endsWith("/pulls")).length, 2);
+  assert.equal(actions.filter(x => x.method === "PUT").length, 1,
+    "Retrying an already committed orphan must not create another commit");
 
   // A stale, diverged or previously merged branch must remain fail-closed.
   recovery = "diverged";

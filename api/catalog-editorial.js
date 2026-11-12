@@ -146,33 +146,61 @@ async function saveForReview(edits) {
       }
     }
   }
+  async function readContract(ref) {
+    const file = await gh(repoPath + "/contents/" + CONTRACT + "?ref=" + encodeURIComponent(ref));
+    if (!/^[0-9a-f]{40}$/.test(file?.sha ?? "") ||
+        !Number.isInteger(file?.size) || file.size > 4000000) {
+      reject("editorial_contract_unavailable", 503);
+    }
+    const blob = await gh(repoPath + "/git/blobs/" + file.sha);
+    if (blob?.encoding !== "base64" || typeof blob.content !== "string") {
+      reject("editorial_contract_unavailable", 503);
+    }
+    return {
+      sha: file.sha,
+      text: Buffer.from(blob.content.replace(/\s+/g, ""), "base64").toString("utf8"),
+    };
+  }
+
+  const orphan = Boolean(priorRef && existingPrs.length === 0);
   const readRef = priorRef ? BRANCH : "main";
-  const file = await gh(repoPath + "/contents/" + CONTRACT + "?ref=" + encodeURIComponent(readRef));
-  if (!/^[0-9a-f]{40}$/.test(file?.sha ?? "") ||
-      !Number.isInteger(file?.size) || file.size > 4000000) {
-    reject("editorial_contract_unavailable", 503);
+  const file = await readContract(readRef);
+  let change;
+  let alreadyWritten = false;
+  try {
+    change = patchCanonicalEditorialContract(file.text, edits);
+  } catch (error) {
+    // A previous request might have committed the exact edit but failed
+    // between GitHub's PUT and PR creation. Compare the COMPLETE expected
+    // file from current main; retry only if it equals the orphan blob byte
+    // for byte, otherwise fail closed. No duplicate commit or second branch.
+    if (!orphan || !(error instanceof EditorialReviewError) ||
+        error.message !== "editorial_stale_model_snapshot") throw error;
+    const mainContract = await readContract("main");
+    const replay = patchCanonicalEditorialContract(mainContract.text, edits);
+    if (replay.content !== file.text) {
+      reject("editorial_review_branch_needs_reconciliation", 409);
+    }
+    change = replay;
+    alreadyWritten = true;
   }
-  const blob = await gh(repoPath + "/git/blobs/" + file.sha);
-  if (blob?.encoding !== "base64" || typeof blob.content !== "string") {
-    reject("editorial_contract_unavailable", 503);
-  }
-  const original = Buffer.from(blob.content.replace(/\s+/g, ""), "base64").toString("utf8");
-  const change = patchCanonicalEditorialContract(original, edits);
   if (!priorRef) {
     await gh(repoPath + "/git/refs", {
       method: "POST",
       body: { ref: "refs/heads/" + BRANCH, sha: mainSha },
     });
   }
-  await gh(repoPath + "/contents/" + CONTRACT, {
-    method: "PUT",
-    body: {
-      message: "editorial: aplicar revisao autenticada de " + change.ids.length + " modelo(s)",
-      branch: BRANCH,
-      sha: file.sha,
-      content: Buffer.from(change.content, "utf8").toString("base64"),
-    },
-  });
+  if (!alreadyWritten) {
+    await gh(repoPath + "/contents/" + CONTRACT, {
+      method: "PUT",
+      body: {
+        message: "editorial: aplicar revisao autenticada de " + change.ids.length + " modelo(s)",
+        branch: BRANCH,
+        sha: file.sha,
+        content: Buffer.from(change.content, "utf8").toString("base64"),
+      },
+    });
+  }
   let pr = existingPrs[0];
   if (!pr) {
     pr = await gh(repoPath + "/pulls", {
