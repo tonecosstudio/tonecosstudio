@@ -188,6 +188,49 @@ test('staged Wrangler and runtime manifest must name the same D1, R2 and Worker'
   assert.ok(result.blockers.includes('staged_worker_config_mismatch'))
 })
 
+test('after completed cutover, future releases require only TONART and the existing Cloudflare runtime', () => {
+  const c = approvedContract()
+  c.migration.phase = 'cutover-complete'
+  c.productionObservation.runtimeCutoverPerformed = true
+  const state = fullState()
+  delete state.workflow
+  for (const key of ['sourceRepositoryId', 'sourceRepositoryName', 'sourceMainRef', 'sourceMainSha', 'sourceFix', 'sourceMediaBlobSha', 'running', 'queued', 'requested', 'waiting', 'pending']) {
+    delete state[key]
+  }
+  state.deployment.versions[0].version_id = '11111111-2222-4333-8444-555555555555'
+  assert.deepEqual(assessCutoverReadiness(c, state), { ready: true, blockers: [] })
+  c.productionObservation.runtimeCutoverPerformed = false
+  assert.ok(assessCutoverReadiness(c, state).blockers.includes('completed_target_authority_unverified'))
+  c.productionObservation.runtimeCutoverPerformed = true
+  state.bindings = []
+  assert.ok(assessCutoverReadiness(c, state).blockers.includes('existing_d1_binding_unverified'))
+})
+
+test('completed TONART release preflight never queries Washington', async () => {
+  const c = approvedContract()
+  c.migration.phase = 'cutover-complete'
+  c.productionObservation.runtimeCutoverPerformed = true
+  const previous = globalThis.fetch
+  const calls = []
+  globalThis.fetch = async (url) => {
+    calls.push(String(url))
+    assert.equal(String(url), 'https://api.github.com/repos/' + c.target.repository)
+    return Response.json({
+      id: c.target.repositoryId,
+      full_name: c.target.repository,
+      default_branch: 'main',
+    })
+  }
+  try {
+    const state = await inspectLiveReadOnly({}, c)
+    assert.equal(state.targetRepositoryId, c.target.repositoryId)
+    assert.equal(calls.length, 1)
+    assert.equal(state.sourceRepositoryId, undefined)
+  } finally {
+    globalThis.fetch = previous
+  }
+})
+
 test('the source workflow ID must match the single canonical manifest', () => {
   const changed = approvedContract()
   changed.origin.apiDeployWorkflowId = 0

@@ -36,12 +36,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: quality-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Release runs are serial and cannot be cancelled by a push to main.
+  group: ${{ github.event_name == 'workflow_dispatch' && 'tonart-catalog-worker-release' || format('quality-{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
   quality:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push'
     name: Build, test and security
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -92,7 +93,7 @@ jobs:
           npx prettier --check "${prettier_files[@]}"
 
   unit:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push'
     name: Unit coverage
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -116,7 +117,7 @@ jobs:
         run: npm run test:coverage
 
   build:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push'
     name: Production build and dependency audit
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -143,7 +144,7 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
   authority:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push'
     name: Authority audits
     runs-on: ubuntu-latest
     timeout-minutes: 30

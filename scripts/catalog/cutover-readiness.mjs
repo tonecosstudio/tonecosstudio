@@ -33,7 +33,9 @@ export function assessCutoverReadiness(contract, state) {
   const observed = state ?? {}
   const workflow = observed.workflow
   const add = (condition, reason) => { if (!condition) blockers.push(reason) }
+  const continuingRelease = m.phase === 'cutover-complete'
 
+  if (!continuingRelease) {
   add(contract?.origin?.repository === SOURCE_REPO, 'origin_repository_mismatch')
   // GitHub repository identity and exact source HEAD must be observed, not inferred
   // from a stale import manifest. No D1/R2 request is made by these checks.
@@ -71,6 +73,7 @@ export function assessCutoverReadiness(contract, state) {
     'source_media_patch_not_merged_or_unverified',
   )
   add(contract?.origin?.apiDeployWorkflowId === SOURCE_WORKFLOW_ID && contract?.origin?.apiDeployPipeline === SOURCE_WORKFLOW_PATH, 'github_workflow_identity_unverified')
+  }
   add(
     contract?.target?.repository === TARGET_REPO &&
       contract?.target?.repositoryId === TARGET_REPO_ID &&
@@ -87,13 +90,24 @@ export function assessCutoverReadiness(contract, state) {
       WORKER_CONFIG.main === 'worker/entry.ts',
     'staged_worker_config_mismatch',
   )
-  add(m.phase === 'cutover-approved', 'cutover_not_approved')
-  add(m.releaseAuthorized === true && o.releaseGoApproved === true, 'explicit_release_go_missing')
-  add(m.sourceWriterDisabled === true && o.sourceWorkflowDisabledVerified === true, 'source_writer_not_confirmed_disabled')
-  add(m.targetWorkerReleaseEnabled === true && contract.activeWorkerPublisher === contract.target?.repository, 'target_not_unique_publisher')
+  if (continuingRelease) {
+    // Once M5 has been verified and committed, Washington is historical
+    // provenance only. No future release may need its GitHub availability.
+    add(m.releaseAuthorized === true && o.releaseGoApproved === true &&
+      m.sourceWriterDisabled === true && o.sourceWorkflowDisabledVerified === true &&
+      m.targetWorkerReleaseEnabled === true && o.runtimeCutoverPerformed === true &&
+      contract.activeWorkerPublisher === TARGET_REPO,
+    'completed_target_authority_unverified')
+  } else {
+    add(m.phase === 'cutover-approved', 'cutover_not_approved')
+    add(m.releaseAuthorized === true && o.releaseGoApproved === true, 'explicit_release_go_missing')
+    add(m.sourceWriterDisabled === true && o.sourceWorkflowDisabledVerified === true, 'source_writer_not_confirmed_disabled')
+    add(m.targetWorkerReleaseEnabled === true && contract.activeWorkerPublisher === contract.target?.repository, 'target_not_unique_publisher')
+  }
   add(m.targetD1MigrationEnabled === false, 'remote_d1_migrations_must_remain_disabled')
   add(o.targetProductionCredentialsVerified === true, 'target_credentials_unverified')
   add(o.rollbackTestedAgainstProduction === true, 'rollback_not_verified')
+  if (!continuingRelease) {
   add(workflow?.id === SOURCE_WORKFLOW_ID && workflow?.path === SOURCE_WORKFLOW_PATH, 'github_workflow_identity_unverified')
   add(workflow?.state === 'disabled_manually', 'source_github_workflow_still_enabled')
   add(Number.isInteger(observed.running) && observed.running === 0, 'source_workflow_runs_in_progress_or_unverified')
@@ -101,6 +115,7 @@ export function assessCutoverReadiness(contract, state) {
   add(Number.isInteger(observed.requested) && observed.requested === 0, 'source_workflow_runs_requested_or_unverified')
   add(Number.isInteger(observed.waiting) && observed.waiting === 0, 'source_workflow_runs_waiting_or_unverified')
   add(Number.isInteger(observed.pending) && observed.pending === 0, 'source_workflow_runs_pending_or_unverified')
+  }
   add(observed.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID, 'cloudflare_account_unverified')
 
   const deployment = observed.deployment
@@ -108,7 +123,8 @@ export function assessCutoverReadiness(contract, state) {
   add(
     Array.isArray(traffic) && traffic.length === 1 &&
       traffic[0]?.percentage === 100 &&
-      traffic[0]?.version_id === o.currentVersionId,
+      (continuingRelease ? /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(traffic[0]?.version_id ?? '')
+        : traffic[0]?.version_id === o.currentVersionId),
     'cloudflare_active_version_unverified_or_changed',
   )
 
@@ -140,7 +156,7 @@ async function getJSON(url, headers = {}) {
   return response.json()
 }
 
-export async function inspectLiveReadOnly(env = process.env) {
+export async function inspectLiveReadOnly(env = process.env, contract = CANONICAL) {
   const workflowName = SOURCE_WORKFLOW_PATH.split('/').at(-1)
   const sourceUrl = 'https://api.github.com/repos/' + SOURCE_REPO
   const prefix = sourceUrl + '/actions/workflows/' + workflowName
@@ -149,6 +165,17 @@ export async function inspectLiveReadOnly(env = process.env) {
   // for the live release preflight. Never use a Cloudflare token for GitHub.
   const githubToken = env.GITHUB_TOKEN || env.GH_TOKEN
   if (githubToken) ghHeaders.Authorization = 'Bearer ' + githubToken
+  let state
+  if (contract?.migration?.phase === 'cutover-complete') {
+    // The definitive owner is TONART. Do not query the retired publisher on
+    // routine releases, even to test its availability.
+    const targetRepo = await getJSON('https://api.github.com/repos/' + TARGET_REPO, ghHeaders)
+    state = {
+      targetRepositoryId: targetRepo.id,
+      targetRepositoryName: targetRepo.full_name,
+      targetDefaultBranch: targetRepo.default_branch,
+    }
+  } else {
   const [sourceRepo, targetRepo, sourceMain, mediaPatch, mediaFile, workflow, active, queued, requested, waiting, pending] = await Promise.all([
     getJSON(sourceUrl, ghHeaders),
     getJSON('https://api.github.com/repos/' + TARGET_REPO, ghHeaders),
@@ -162,7 +189,7 @@ export async function inspectLiveReadOnly(env = process.env) {
     getJSON(prefix + '/runs?status=waiting&per_page=1', ghHeaders),
     getJSON(prefix + '/runs?status=pending&per_page=1', ghHeaders),
   ])
-  const state = {
+  state = {
     sourceRepositoryId: sourceRepo.id, sourceRepositoryName: sourceRepo.full_name,
     targetRepositoryId: targetRepo.id, targetRepositoryName: targetRepo.full_name,
     targetDefaultBranch: targetRepo.default_branch,
@@ -176,6 +203,7 @@ export async function inspectLiveReadOnly(env = process.env) {
     sourceMediaBlobSha: mediaFile.sha,
     workflow, running: active.total_count, queued: queued.total_count,
     requested: requested.total_count, waiting: waiting.total_count, pending: pending.total_count,
+  }
   }
   // No token: still report actual GitHub state, but never infer Cloudflare readiness.
   if (!env.CLOUDFLARE_API_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) return state
