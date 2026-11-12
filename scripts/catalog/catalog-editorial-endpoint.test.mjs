@@ -128,6 +128,7 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
     '  "models": [\n    {\n' + lines.join(",\n") + '\n    }\n  ]\n}';
   const sha = "a".repeat(40);
   const actions = [];
+  let recovery = "none";
   globalThis.fetch = async (input, options = {}) => {
     const u = new URL(input);
     actions.push({ path: u.pathname, method: options.method ?? "GET" });
@@ -146,7 +147,20 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
       return Response.json([]);
     }
     if (u.pathname.endsWith("/git/ref/heads/editorial/tonart-admin-review")) {
-      return Response.json({ message: "Not Found" }, { status: 404 });
+      if (recovery === "none") {
+        return Response.json({ message: "Not Found" }, { status: 404 });
+      }
+      return Response.json({ object: { sha: "d".repeat(40) } });
+    }
+    if (u.pathname.endsWith("/compare/main...editorial%2Ftonart-admin-review")) {
+      assert.notEqual(recovery, "none");
+      return Response.json({
+        status: recovery === "recover" ? "ahead" : "diverged",
+        behind_by: recovery === "recover" ? 0 : 1,
+        ahead_by: 1,
+        files: [{ filename: "services/catalogo/config/catalog-production-model-contract.json",
+          status: "modified" }],
+      });
     }
     if (u.pathname.endsWith("/contents/services/catalogo/config/catalog-production-model-contract.json") &&
         options.method === "GET") {
@@ -190,4 +204,37 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
   assert.equal(actions.filter((x) => x.method === "PUT").length, 1);
   assert.equal(actions.filter((x) => x.method === "POST" &&
     x.path.endsWith("/pulls")).length, 1);
+
+  // A failed POST /pulls leaves a single branch with the edited contract.
+  // It must be recoverable on the next admin submission, without a new
+  // branch, force-push, Git mirror, or intervention in the GitHub UI.
+  recovery = "recover";
+  const recovered = response();
+  await handler(request({
+    body: { edits: [{
+      id, slug: "espresso", code: "ESP01", name: "Espresso",
+      variantName: "Pequeno", category: "Bebidas", franchise: "Cafe",
+      newName: "Espresso Especial", newVariant: "",
+    }] },
+  }), recovered);
+  assert.equal(recovered.code, 202);
+  assert.equal(actions.filter(x => x.method === "POST" &&
+    x.path.endsWith("/git/refs")).length, 1);
+  assert.equal(actions.filter(x => x.method === "POST" &&
+    x.path.endsWith("/pulls")).length, 2);
+
+  // A stale, diverged or previously merged branch must remain fail-closed.
+  recovery = "diverged";
+  const denied = response();
+  const priorWrites = actions.filter(x => x.method === "PUT").length;
+  await handler(request({
+    body: { edits: [{
+      id, slug: "espresso", code: "ESP01", name: "Espresso",
+      variantName: "Pequeno", category: "Bebidas", franchise: "Cafe",
+      newName: "Espresso Especial", newVariant: "",
+    }] },
+  }), denied);
+  assert.equal(denied.code, 409);
+  assert.equal(denied.payload.error, "editorial_review_branch_needs_reconciliation");
+  assert.equal(actions.filter(x => x.method === "PUT").length, priorWrites);
 });

@@ -127,8 +127,24 @@ async function saveForReview(edits) {
     reject("editorial_review_state_conflict", 409);
   }
   if (priorRef && existingPrs.length === 0) {
-    // Never silently reuse an orphaned or already merged branch.
-    reject("editorial_review_branch_needs_reconciliation", 409);
+    // Recover a branch created immediately before a failed PR creation.
+    // Reuse ONLY the one canonical branch. Never delete/force-push or
+    // silently overwrite commits from a different workflow/review.
+    const branchSha = priorRef.object?.sha;
+    if (!/^[0-9a-f]{40}$/.test(branchSha ?? "")) {
+      reject("editorial_review_branch_needs_reconciliation", 409);
+    }
+    if (branchSha !== mainSha) {
+      const delta = await gh(repoPath + "/compare/main..." + encodeURIComponent(BRANCH));
+      const isSingleEditorialCommit = delta?.status === "ahead" &&
+        delta?.behind_by === 0 && delta?.ahead_by === 1 &&
+        delta?.files?.length === 1 &&
+        delta.files[0]?.filename === CONTRACT &&
+        delta.files[0]?.status === "modified";
+      if (!isSingleEditorialCommit) {
+        reject("editorial_review_branch_needs_reconciliation", 409);
+      }
+    }
   }
   const readRef = priorRef ? BRANCH : "main";
   const file = await gh(repoPath + "/contents/" + CONTRACT + "?ref=" + encodeURIComponent(readRef));

@@ -1,7 +1,7 @@
 /**
  * Canonical catalog editorial contract patcher.
  * Pure, offline and side-effect free. The published identity JSON in
- * washingtonmsdj/catalogo is the only source of editable names.
+ * tonecosstudio/tonecosstudio is the only source of editable names.
  * Never writes to D1, R2, Supabase or a second editorial ledger.
  */
 export class EditorialReviewError extends Error {
