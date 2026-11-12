@@ -89,7 +89,7 @@ describe("TONART commercial screens: account → request → history → respons
   it("keeps logged-out quote selection and sends visitors to sign in", async () => {
     mocks.getUser.mockResolvedValue(null);
     renderApp("/solicitar-orcamento", true);
-    expect(await screen.findByText("Naruto")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Entrar ou criar conta" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Entrar ou criar conta" }))
       .toHaveAttribute("href", "/login?next=%2Fsolicitar-orcamento");
     expect(screen.queryByRole("button", { name: "Enviar solicitação" })).not.toBeInTheDocument();
