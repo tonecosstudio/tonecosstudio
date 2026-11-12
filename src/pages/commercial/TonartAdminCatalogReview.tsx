@@ -13,6 +13,7 @@ import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint"
 import { catalogModelDetailsPath } from "@/config/routes";
 import {
   createPublicCatalogGateway,
+  probeCanonicalCatalogMediaByte,
   type PublicCatalogPage,
   type PublicCatalogModel,
   type PublicCatalogDetail,
@@ -33,6 +34,8 @@ export default function TonartAdminCatalogReview() {
   const [error, setError] = useState("");
   const requestRef = useRef<AbortController | null>(null);
   const reviewRef = useRef<AbortController | null>(null);
+  const probeRef = useRef<AbortController | null>(null);
+  const [probeStatus, setProbeStatus] = useState<"idle" | "checking" | "ok" | "error">("idle");
   const [review, setReview] = useState<{
     model: PublicCatalogDetail;
     gallery: PublicCatalogGalleryPage | null;
@@ -52,6 +55,7 @@ export default function TonartAdminCatalogReview() {
   useEffect(() => () => {
     requestRef.current?.abort();
     reviewRef.current?.abort();
+    probeRef.current?.abort();
   }, []);
 
   async function load(
@@ -66,6 +70,8 @@ export default function TonartAdminCatalogReview() {
     }
     requestRef.current?.abort();
     reviewRef.current?.abort();
+    probeRef.current?.abort();
+    setProbeStatus("idle");
     setReview(null);
     setReviewError("");
     setReviewingId(null);
@@ -107,6 +113,8 @@ export default function TonartAdminCatalogReview() {
   async function inspectModel(model: PublicCatalogModel) {
     if (!gateway) return;
     reviewRef.current?.abort();
+    probeRef.current?.abort();
+    setProbeStatus("idle");
     const controller = new AbortController();
     reviewRef.current = controller;
     setReview(null);
@@ -134,6 +142,25 @@ export default function TonartAdminCatalogReview() {
       }
     } finally {
       if (!controller.signal.aborted) setReviewingId(null);
+    }
+  }
+
+  async function verifyCoverDelivery() {
+    if (!gateway || !review?.model.coverStorageKey) return;
+    probeRef.current?.abort();
+    const controller = new AbortController();
+    probeRef.current = controller;
+    setProbeStatus("checking");
+    try {
+      await probeCanonicalCatalogMediaByte(
+        CANONICAL_CATALOG_API_BASE,
+        gateway.mediaUrl(review.model.coverStorageKey),
+        fetch,
+        controller.signal,
+      );
+      if (!controller.signal.aborted) setProbeStatus("ok");
+    } catch {
+      if (!controller.signal.aborted) setProbeStatus("error");
     }
   }
 
@@ -269,6 +296,28 @@ export default function TonartAdminCatalogReview() {
                 Capa no índice: {review.model.coverStorageKey ? "chave cadastrada" : "sem chave de capa"}.
                 {" "}Versão da galeria: {review.model.galleryVersion}.
               </p>
+              {review.model.coverStorageKey && (
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    className={secondaryClass}
+                    disabled={probeStatus === "checking" || busy || reviewingId !== null}
+                    onClick={() => { void verifyCoverDelivery(); }}
+                  >
+                    {probeStatus === "checking" ? "Testando entrega..." : "Testar entrega da capa (1 byte)"}
+                  </button>
+                  {probeStatus === "ok" && (
+                    <span role="status" className="text-sm text-white/70">
+                      Entrega parcial confirmada (1 byte). Imagem completa não verificada.
+                    </span>
+                  )}
+                  {probeStatus === "error" && (
+                    <span role="alert" className="text-sm text-amber-200">
+                      Não foi possível validar a entrega parcial da capa. Confira a ficha pública.
+                    </span>
+                  )}
+                </div>
+              )}
               {review.gallery && (
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full min-w-[430px] border-collapse text-left text-xs">

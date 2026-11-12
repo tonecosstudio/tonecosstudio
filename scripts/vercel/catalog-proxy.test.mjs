@@ -151,6 +151,80 @@ test("Vercel proxy serves a normal catalog image without a publication allowlist
   }
 });
 
+test("Vercel forwards one-byte media range only through canonical GET and returns validated 206", async () => {
+  const initialFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url: String(url), init });
+    return new Response(new Uint8Array([0x52]), {
+      status: 206,
+      headers: { "Content-Type": "image/webp", "Content-Range": "bytes 0-0/200" },
+    });
+  };
+  try {
+    const res = responseSink();
+    await handler({
+      method: "GET",
+      url: "/api/catalogo-proxy?path=media%2Fmdl-ordinary%2Fimage%2Fcard.webp",
+      query: { path: "media/mdl-ordinary/image/card.webp" },
+      headers: { range: "bytes=0-0", cookie: "session=never-forward" },
+    }, res);
+    assert.equal(res.statusCode, 206);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].init.method, "GET");
+    assert.equal(calls[0].init.headers.get("Range"), "bytes=0-0");
+    assert.equal(calls[0].init.headers.get("Cookie"), null);
+    assert.equal(res.headers.get("content-range"), "bytes 0-0/200");
+    assert.equal(res.body.byteLength, 1);
+  } finally {
+    globalThis.fetch = initialFetch;
+  }
+});
+
+test("Vercel cancels the upstream body if a one-byte range request is ignored", async () => {
+  const initialFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return new Response("entire-image-must-not-reach-browser", {
+      status: 200, headers: { "Content-Type": "image/webp" },
+    });
+  };
+  try {
+    const res = responseSink();
+    await handler({
+      method: "GET",
+      url: "/api/catalogo-proxy?path=media%2Fmdl-ordinary%2Fimage%2Fcard.webp",
+      query: { path: "media/mdl-ordinary/image/card.webp" },
+      headers: { range: "bytes=0-0" },
+    }, res);
+    assert.equal(calls, 1);
+    assert.equal(res.statusCode, 502);
+    assert.equal(res.body.toString(), "Upstream media range ignored");
+  } finally {
+    globalThis.fetch = initialFetch;
+  }
+});
+
+test("Vercel refuses malformed/multiple media ranges without upstream reads", async () => {
+  const initialFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; throw new Error("unexpected upstream read"); };
+  try {
+    const res = responseSink();
+    await handler({
+      method: "GET",
+      url: "/api/catalogo-proxy?path=media%2Fmdl-ordinary%2Fimage%2Fcard.webp",
+      query: { path: "media/mdl-ordinary/image/card.webp" },
+      headers: { range: "bytes=0-1,2-3" },
+    }, res);
+    assert.equal(res.statusCode, 416);
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = initialFetch;
+  }
+});
+
 test("Vercel catalog proxy forwards only a bounded read through the canonical proxy", async () => {
   const initialFetch = globalThis.fetch;
   const calls = [];
@@ -166,7 +240,7 @@ test("Vercel catalog proxy forwards only a bounded read through the canonical pr
       method: "GET",
       url: "/api/catalogo-proxy?path=api%2Fcatalog&limit=12",
       query: { path: "api/catalog" },
-      headers: { accept: "application/json", cookie: "private=should-not-forward" },
+      headers: { accept: "application/json", cookie: "private=should-not-forward", range: "bytes=0-0" },
     }, res);
     assert.equal(res.statusCode, 200);
     assert.equal(calls.length, 1);
@@ -175,6 +249,7 @@ test("Vercel catalog proxy forwards only a bounded read through the canonical pr
     assert.equal(calls[0].init.method, "GET");
     assert.equal(calls[0].init.headers.get("Accept"), "application/json");
     assert.equal(calls[0].init.headers.get("cookie"), null);
+    assert.equal(calls[0].init.headers.get("range"), null);
     assert.equal(res.headers.has("set-cookie"), false);
     assert.match(String(res.body), /"items":\[\]/);
   } finally {

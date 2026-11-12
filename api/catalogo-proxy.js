@@ -42,6 +42,12 @@ export default async function handler(req, res) {
       const value = req.headers?.[name];
       if (typeof value === "string") headers.set(name, value);
     }
+    // Range is supported by the existing canonical Pages/Worker proxy.
+    // Forward it only for media; that adapter validates one-range syntax
+    // before any upstream R2 read, and rejects malformed/multi-range values.
+    if (path.startsWith("media/") && typeof req.headers?.range === "string") {
+      headers.set("Range", req.headers.range);
+    }
 
     const response = await proxyCatalogRequest(
       new Request(url, { method: "GET", headers }),
