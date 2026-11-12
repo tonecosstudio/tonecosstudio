@@ -57,6 +57,7 @@ function renderApp(entry: string | { pathname: string; state?: { recovered?: boo
         {seed && <SelectModel />}
         <Routes>
           <Route path="/login" element={<TonecosAccountPage />} />
+          <Route path="/admin" element={<div>Painel administrativo TONART</div>} />
           <Route path="/perfil" element={<TonecosAccountPage />} />
           <Route path="/solicitar-orcamento" element={<TonecosQuoteRequestPage />} />
           <Route path="/meus-orcamentos" element={<TonecosMyQuotesPage />} />
@@ -196,6 +197,19 @@ describe("TONART commercial screens: account → request → history → respons
     });
   });
 
+  it("routes verified administrators to the existing /admin entry rather than quote-only intake", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    mocks.signIn.mockResolvedValue(USER);
+    mocks.hasAdmin.mockResolvedValue(true);
+    renderApp("/login");
+    expect(await screen.findByRole("button", { name: "Entrar" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("E-mail"), { target: { value: "admin@example.com" } });
+    fireEvent.change(screen.getByLabelText("Senha"), { target: { value: "StrongPass123!" } });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(await screen.findByText("Painel administrativo TONART")).toBeInTheDocument();
+    expect(mocks.hasAdmin).toHaveBeenCalled();
+  });
+
   it("shows admin navigation only after the server verifies membership", async () => {
     mocks.hasAdmin.mockResolvedValue(false);
     renderApp("/perfil");
@@ -214,8 +228,8 @@ describe("TONART commercial screens: account → request → history → respons
   it("shows only a real administrator's console link", async () => {
     mocks.hasAdmin.mockResolvedValue(true);
     renderApp("/perfil");
-    expect(await screen.findByRole("link", { name: "Atendimento TONART" }))
-      .toHaveAttribute("href", "/admin/orcamentos");
+    expect(await screen.findByRole("link", { name: "Painel administrativo" }))
+      .toHaveAttribute("href", "/admin");
   });
 
   it("admin page uses the restricted service and does not submit prices for unauthorized users", async () => {
