@@ -7,20 +7,24 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { adminNavigationConfig, type NavigationItem } from "@/config/admin-navigation.config";
 import { ADMIN_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
-import { getTonartAdminOverview, type TonartAdminCoinEntry, type TonartAdminOverview } from "@/services/admin/tonart-admin-workspace-service";
+import { getTonartAdminOverview, type TonartAdminCoinEntry, type TonartAdminQuote, type TonartAdminOverview } from "@/services/admin/tonart-admin-workspace-service";
 import { panelClass, secondaryClass } from "./CommercialPage";
 
 const coinsEnabled = import.meta.env.VITE_TONECOS_COINS_ENABLED === "true";
 const quotesEnabled = import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true";
 const integer = new Intl.NumberFormat("pt-BR");
 const dates = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
+const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const quoteLabels: Record<TonartAdminQuote["status"], string> = {
+  pending: "Recebido", reviewing: "Em análise", answered: "Respondido", archived: "Arquivado",
+};
 const coinLabels: Record<TonartAdminCoinEntry["type"], string> = {
   admin_credit: "Crédito", purchase_spend: "Utilização", refund: "Estorno",
 };
 
 function moduleState(id: string): "active" | "read-only" | "off" {
   if (id === "dashboard") return "active";
-  if (id === "users") return "read-only";
+  if (id === "users" || id === "orders" || id === "financial-hub") return "read-only";
   if (id === "credits-hub") return coinsEnabled ? "active" : "read-only";
   if (id === "catalog-hub") return "read-only";
   return "off";
@@ -56,6 +60,8 @@ export default function TonecosAdminHomePage() {
   const isDashboard = sectionId === "dashboard";
   const isCoins = sectionId === "credits-hub";
   const isCatalog = sectionId === "catalog-hub";
+  const isOrders = sectionId === "orders";
+  const isFinancial = sectionId === "financial-hub";
   const users = overview?.recentProfiles.filter((profile) =>
     [profile.email, profile.fullName ?? ""].some((value) => value.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))),
   ) ?? [];
@@ -296,6 +302,82 @@ export default function TonecosAdminHomePage() {
             </section>
           )}
 
+          {isOrders && (
+            <section className={panelClass}>
+              <h3 className="text-lg font-semibold">Solicitações recebidas</h3>
+              <p className="mt-2 text-sm leading-6 text-white/65">
+                Esta área mostra as solicitações de orçamento já existentes. Solicitar um orçamento
+                não equivale a confirmar um pedido ou realizar uma compra. Não há pedidos pagos cadastrados por este fluxo.
+              </p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <Metric label="Solicitações" value={overview?.quoteCount} detail="Total recebido" />
+                <Metric label="Em atendimento" value={overview ? overview.pendingQuoteCount + overview.reviewingQuoteCount : undefined} detail="Aguardando ou em análise" />
+                <Metric label="Respondidas" value={overview?.answeredQuoteCount} detail="Orçamentos com resposta registrada" />
+              </div>
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-5">
+                <h4 className="text-base font-semibold">Últimas solicitações</h4>
+                {quotesEnabled ? (
+                  <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}>Abrir atendimento</Link>
+                ) : (
+                  <span className="text-xs text-white/55">Atendimento desativado</span>
+                )}
+              </div>
+              {overview && overview.recentQuotes.length === 0 && (
+                <p className="mt-4 text-sm text-white/60">Nenhuma solicitação recebida.</p>
+              )}
+              {overview && overview.recentQuotes.length > 0 && (
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full min-w-[580px] border-collapse text-left text-sm">
+                    <thead className="border-b border-white/20 text-xs text-white/55">
+                      <tr><th className="py-3 pr-3">Solicitação</th><th className="py-3 pr-3">Cliente</th><th className="py-3 pr-3">Modelos</th><th className="py-3 pr-3">Estado</th><th className="py-3 text-right">Valor informado</th></tr>
+                    </thead>
+                    <tbody>
+                      {overview.recentQuotes.map((q) => (
+                        <tr key={q.id} className="border-b border-white/10">
+                          <td className="py-3 pr-3"><span className="block">#{q.id.slice(0, 8)}</span><span className="text-xs text-white/50">{dates.format(new Date(q.createdAt))}</span></td>
+                          <td className="break-all py-3 pr-3">{q.customerEmail ?? "E-mail não disponível"}</td>
+                          <td className="py-3 pr-3 tabular-nums">{integer.format(q.modelCount)}</td>
+                          <td className="py-3 pr-3">{quoteLabels[q.status]}</td>
+                          <td className="whitespace-nowrap py-3 text-right tabular-nums">{q.quotedAmountCents === null ? "Em análise" : brl.format(q.quotedAmountCents / 100)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <p className="mt-5 text-xs text-white/45">Consulta limitada às 25 solicitações mais recentes. Os totais abrangem toda a base de orçamentos do catálogo.</p>
+            </section>
+          )}
+
+          {isFinancial && (
+            <section className={panelClass}>
+              <h3 className="text-lg font-semibold">Visão de valores orçados</h3>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-white/65">
+                Valores extraídos das respostas a orçamentos, não de vendas. Não existe integração de
+                recebimentos nesta implantação; valores informados não são faturamento, caixa,
+                pagamentos aprovados nem receita realizada.
+              </p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="border border-white/15 p-5">
+                  <p className="text-xs uppercase tracking-wider text-white/55">Soma dos valores orçados</p>
+                  <p className="mt-3 text-2xl font-semibold tabular-nums text-[hsl(var(--gold-accent))]">
+                    {overview ? brl.format(overview.quotedTotalCents / 100) : "—"}
+                  </p>
+                  <p className="mt-2 text-xs text-white/50">Sem contabilização de pagamentos</p>
+                </div>
+                <Metric label="Orçamentos com valor" value={overview?.pricedQuoteCount} detail="Respondidos ou arquivados com preço" />
+                <Metric label="Respondidos" value={overview?.answeredQuoteCount} detail="Respostas comerciais atuais" />
+                <Metric label="Arquivados" value={overview?.archivedQuoteCount} detail="Solicitações encerradas ou descartadas" />
+              </div>
+              <div className="mt-6 flex flex-wrap gap-3 border-t border-white/15 pt-5">
+                <button type="button" className={secondaryClass} onClick={() => navigate(ADMIN_ROUTES.orders)}>
+                  Ver solicitações
+                </button>
+                <span className="self-center text-xs text-white/50">Pagamentos, assinaturas e conciliação bancária permanecem desativados.</span>
+              </div>
+            </section>
+          )}
+
           {isCatalog && (
             <section className={panelClass}>
               <h3 className="text-lg font-semibold">Catálogo de modelos</h3>
@@ -308,7 +390,7 @@ export default function TonecosAdminHomePage() {
             </section>
           )}
 
-          {!isDashboard && !isUsers && !isCoins && !isCatalog && (
+          {!isDashboard && !isUsers && !isCoins && !isCatalog && !isOrders && !isFinancial && (
             <section className={panelClass}>
               <h3 className="text-lg font-semibold">{displayName}</h3>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-white/65">

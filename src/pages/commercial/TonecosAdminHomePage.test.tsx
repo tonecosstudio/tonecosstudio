@@ -14,6 +14,11 @@ const fixture = {
   pendingQuoteCount: 1,
   reviewingQuoteCount: 1,
   coinEntryCount: 0,
+  answeredQuoteCount: 1,
+  archivedQuoteCount: 0,
+  pricedQuoteCount: 1,
+  quotedTotalCents: 24990,
+  recentQuotes: [],
   recentCoinEntries: [],
   recentProfiles: [{
     id: "11111111-1111-4111-8111-111111111111",
@@ -99,6 +104,33 @@ describe("TONART admin workspace", () => {
     if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
       expect(screen.queryByRole("link", { name: "Abrir operações autorizadas" })).not.toBeInTheDocument();
     }
+  });
+
+  it("shows actual quote requests under Pedidos without presenting them as paid orders", async () => {
+    mocks.overview.mockResolvedValueOnce({
+      ...fixture,
+      recentQuotes: [{
+        id: "33333333-3333-4333-8333-333333333333",
+        customerEmail: "comprador@example.com",
+        createdAt: "2026-11-11T18:00:00Z",
+        modelCount: 2,
+        status: "answered",
+        quotedAmountCents: 24990,
+      }],
+    });
+    show("/admin/pedidos");
+    expect(await screen.findByRole("heading", { name: "Solicitações recebidas" })).toBeInTheDocument();
+    expect(await screen.findByText("comprador@example.com")).toBeInTheDocument();
+    expect(screen.getByText("R$ 249,90")).toBeInTheDocument();
+    expect(screen.getByText(/não equivale a confirmar um pedido/)).toBeInTheDocument();
+  });
+
+  it("shows a financial quote summary without calling quotations revenue or payments", async () => {
+    show("/admin/financeiro");
+    expect(await screen.findByRole("heading", { name: "Visão de valores orçados" })).toBeInTheDocument();
+    expect(await screen.findByText("R$ 249,90")).toBeInTheDocument();
+    expect(screen.getByText(/valores informados não são faturamento/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /cobrar|confirmar pagamento/i })).not.toBeInTheDocument();
   });
 
   it("shows preserved modules without pretending to enable missing operations", async () => {

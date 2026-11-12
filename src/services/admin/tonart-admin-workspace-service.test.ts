@@ -19,6 +19,11 @@ const payload = {
   pendingQuoteCount: 0,
   reviewingQuoteCount: 0,
   coinEntryCount: 0,
+  answeredQuoteCount: 0,
+  archivedQuoteCount: 0,
+  pricedQuoteCount: 0,
+  quotedTotalCents: 0,
+  recentQuotes: [],
   recentCoinEntries: [],
   recentProfiles: [{
     id: "11111111-1111-4111-8111-111111111111",
@@ -76,6 +81,40 @@ describe("canonical TONART admin overview", () => {
 
     mocks.rpc.mockResolvedValueOnce({
       data: { ...payload, coinEntryCount: 0, recentCoinEntries: [coin] }, error: null,
+    });
+    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_overview_invalid");
+  });
+
+  it("accepts priced quotations but never turns them into sales", async () => {
+    const quote = {
+      id: "33333333-3333-4333-8333-333333333333",
+      customerEmail: "comprador@example.com",
+      createdAt: "2026-11-11T18:00:00Z",
+      modelCount: 2,
+      status: "answered",
+      quotedAmountCents: 24990,
+    };
+    mocks.rpc.mockResolvedValueOnce({
+      data: {
+        ...payload, quoteCount: 1, answeredQuoteCount: 1, pricedQuoteCount: 1,
+        quotedTotalCents: 24990, recentQuotes: [quote],
+      }, error: null,
+    });
+    await expect(getTonartAdminOverview()).resolves.toMatchObject({
+      quotedTotalCents: 24990, recentQuotes: [quote],
+    });
+    mocks.rpc.mockResolvedValueOnce({
+      data: { ...payload, quoteCount: 1, answeredQuoteCount: 1, pricedQuoteCount: 1,
+        quotedTotalCents: 24990, recentQuotes: [{ ...quote, modelCount: 0 }] }, error: null,
+    });
+    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_quote_history_invalid");
+    mocks.rpc.mockResolvedValueOnce({
+      data: { ...payload, quoteCount: 1, pendingQuoteCount: 1, pricedQuoteCount: 1,
+        quotedTotalCents: 24990, recentQuotes: [{ ...quote, status: "pending" }] }, error: null,
+    });
+    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_quote_history_invalid");
+    mocks.rpc.mockResolvedValueOnce({
+      data: { ...payload, quoteCount: 1, pricedQuoteCount: 1, quotedTotalCents: 24990 }, error: null,
     });
     await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_overview_invalid");
   });
