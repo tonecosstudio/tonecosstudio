@@ -181,6 +181,31 @@ test("Vercel forwards one-byte media range only through canonical GET and return
   }
 });
 
+test("Vercel cancels the upstream body if a one-byte range request is ignored", async () => {
+  const initialFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return new Response("entire-image-must-not-reach-browser", {
+      status: 200, headers: { "Content-Type": "image/webp" },
+    });
+  };
+  try {
+    const res = responseSink();
+    await handler({
+      method: "GET",
+      url: "/api/catalogo-proxy?path=media%2Fmdl-ordinary%2Fimage%2Fcard.webp",
+      query: { path: "media/mdl-ordinary/image/card.webp" },
+      headers: { range: "bytes=0-0" },
+    }, res);
+    assert.equal(calls, 1);
+    assert.equal(res.statusCode, 502);
+    assert.equal(res.body.toString(), "Upstream media range ignored");
+  } finally {
+    globalThis.fetch = initialFetch;
+  }
+});
+
 test("Vercel refuses malformed/multiple media ranges without upstream reads", async () => {
   const initialFetch = globalThis.fetch;
   let calls = 0;
