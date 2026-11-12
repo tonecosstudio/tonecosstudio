@@ -25,12 +25,14 @@ const payload = {
   quotedTotalCents: 0,
   recentQuotes: [],
   recentCoinEntries: [],
-  recentProfiles: [{
-    id: "11111111-1111-4111-8111-111111111111",
-    email: "cliente@example.com",
-    fullName: null,
-    createdAt: "2026-11-11T12:00:00Z",
-  }],
+  recentProfiles: [
+    {
+      id: "11111111-1111-4111-8111-111111111111",
+      email: "cliente@example.com",
+      fullName: null,
+      createdAt: "2026-11-11T12:00:00Z",
+    },
+  ],
 };
 
 beforeEach(() => {
@@ -42,13 +44,17 @@ beforeEach(() => {
 describe("canonical TONART admin overview", () => {
   it("requires server-admin membership before loading any private figures", async () => {
     mocks.access.mockRejectedValue(new Error("Admin access required"));
-    await expect(getTonartAdminOverview()).rejects.toThrow("Admin access required");
+    await expect(getTonartAdminOverview()).rejects.toThrow(
+      "Admin access required",
+    );
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("reads a bounded projection from the existing protected database RPC", async () => {
     const result = await getTonartAdminOverview();
-    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("tonart_admin_workspace_overview");
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "tonart_admin_workspace_overview",
+    );
     expect(result).toEqual(payload);
   });
 
@@ -63,26 +69,45 @@ describe("canonical TONART admin overview", () => {
       createdAt: "2026-11-11T14:30:00Z",
     };
     mocks.rpc.mockResolvedValueOnce({
-      data: { ...payload, coinEntryCount: 1, recentCoinEntries: [coin] }, error: null,
+      data: { ...payload, coinEntryCount: 1, recentCoinEntries: [coin] },
+      error: null,
     });
     await expect(getTonartAdminOverview()).resolves.toMatchObject({
-      coinEntryCount: 1, recentCoinEntries: [coin],
+      coinEntryCount: 1,
+      recentCoinEntries: [coin],
     });
 
     mocks.rpc.mockResolvedValueOnce({
-      data: { ...payload, coinEntryCount: 1, recentCoinEntries: [{ ...coin, delta: 0 }] }, error: null,
+      data: {
+        ...payload,
+        coinEntryCount: 1,
+        recentCoinEntries: [{ ...coin, delta: 0 }],
+      },
+      error: null,
     });
-    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_coin_history_invalid");
+    await expect(getTonartAdminOverview()).rejects.toThrow(
+      "tonart_admin_coin_history_invalid",
+    );
 
     mocks.rpc.mockResolvedValueOnce({
-      data: { ...payload, coinEntryCount: 1, recentCoinEntries: [{ ...coin, type: "purchase_spend", delta: 4 }] }, error: null,
+      data: {
+        ...payload,
+        coinEntryCount: 1,
+        recentCoinEntries: [{ ...coin, type: "purchase_spend", delta: 4 }],
+      },
+      error: null,
     });
-    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_coin_history_invalid");
+    await expect(getTonartAdminOverview()).rejects.toThrow(
+      "tonart_admin_coin_history_invalid",
+    );
 
     mocks.rpc.mockResolvedValueOnce({
-      data: { ...payload, coinEntryCount: 0, recentCoinEntries: [coin] }, error: null,
+      data: { ...payload, coinEntryCount: 0, recentCoinEntries: [coin] },
+      error: null,
     });
-    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_overview_invalid");
+    await expect(getTonartAdminOverview()).rejects.toThrow(
+      "tonart_admin_overview_invalid",
+    );
   });
 
   it("accepts priced quotations but never turns them into sales", async () => {
@@ -96,35 +121,80 @@ describe("canonical TONART admin overview", () => {
     };
     mocks.rpc.mockResolvedValueOnce({
       data: {
-        ...payload, quoteCount: 1, answeredQuoteCount: 1, pricedQuoteCount: 1,
-        quotedTotalCents: 24990, recentQuotes: [quote],
-      }, error: null,
+        ...payload,
+        quoteCount: 1,
+        answeredQuoteCount: 1,
+        pricedQuoteCount: 1,
+        quotedTotalCents: 24990,
+        recentQuotes: [quote],
+      },
+      error: null,
     });
     await expect(getTonartAdminOverview()).resolves.toMatchObject({
-      quotedTotalCents: 24990, recentQuotes: [quote],
+      quotedTotalCents: 24990,
+      recentQuotes: [quote],
     });
     mocks.rpc.mockResolvedValueOnce({
-      data: { ...payload, quoteCount: 1, answeredQuoteCount: 1, pricedQuoteCount: 1,
-        quotedTotalCents: 24990, recentQuotes: [{ ...quote, modelCount: 0 }] }, error: null,
+      data: {
+        ...payload,
+        quoteCount: 1,
+        answeredQuoteCount: 1,
+        pricedQuoteCount: 1,
+        quotedTotalCents: 24990,
+        recentQuotes: [{ ...quote, modelCount: 0 }],
+      },
+      error: null,
     });
-    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_quote_history_invalid");
+    await expect(getTonartAdminOverview()).rejects.toThrow(
+      "tonart_admin_quote_history_invalid",
+    );
     mocks.rpc.mockResolvedValueOnce({
-      data: { ...payload, quoteCount: 1, pendingQuoteCount: 1, pricedQuoteCount: 1,
-        quotedTotalCents: 24990, recentQuotes: [{ ...quote, status: "pending" }] }, error: null,
+      data: {
+        ...payload,
+        quoteCount: 1,
+        pendingQuoteCount: 1,
+        pricedQuoteCount: 1,
+        quotedTotalCents: 24990,
+        recentQuotes: [{ ...quote, status: "pending" }],
+      },
+      error: null,
     });
-    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_quote_history_invalid");
+    await expect(getTonartAdminOverview()).rejects.toThrow(
+      "tonart_admin_quote_history_invalid",
+    );
     mocks.rpc.mockResolvedValueOnce({
-      data: { ...payload, quoteCount: 1, pricedQuoteCount: 1, quotedTotalCents: 24990 }, error: null,
+      data: {
+        ...payload,
+        quoteCount: 1,
+        pricedQuoteCount: 1,
+        quotedTotalCents: 24990,
+      },
+      error: null,
     });
-    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_overview_invalid");
+    await expect(getTonartAdminOverview()).rejects.toThrow(
+      "tonart_admin_overview_invalid",
+    );
   });
 
   it("fails closed on malformed data and provider failures", async () => {
-    mocks.rpc.mockResolvedValueOnce({ data: { ...payload, coinEntryCount: -2 }, error: null });
-    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_overview_invalid");
-    mocks.rpc.mockResolvedValueOnce({ data: { ...payload, recentProfiles: [{}] }, error: null });
-    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_profile_invalid");
-    mocks.rpc.mockResolvedValueOnce({ data: null, error: new Error("Unavailable") });
+    mocks.rpc.mockResolvedValueOnce({
+      data: { ...payload, coinEntryCount: -2 },
+      error: null,
+    });
+    await expect(getTonartAdminOverview()).rejects.toThrow(
+      "tonart_admin_overview_invalid",
+    );
+    mocks.rpc.mockResolvedValueOnce({
+      data: { ...payload, recentProfiles: [{}] },
+      error: null,
+    });
+    await expect(getTonartAdminOverview()).rejects.toThrow(
+      "tonart_admin_profile_invalid",
+    );
+    mocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: new Error("Unavailable"),
+    });
     await expect(getTonartAdminOverview()).rejects.toThrow("Unavailable");
   });
 });

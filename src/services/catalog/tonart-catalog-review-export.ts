@@ -20,15 +20,22 @@ function isAsciiControl(character: string): boolean {
 }
 
 /** Keep browser validation aligned with the source contract applier. */
-function cleanProposal(value: string | undefined, original: string, limit: number): string {
+function cleanProposal(
+  value: string | undefined,
+  original: string,
+  limit: number,
+): string {
   if (value === undefined || value === "") return "";
   if (typeof value !== "string" || Array.from(value).some(isAsciiControl)) {
     throw new Error("tonart_catalog_editorial_invalid_label");
   }
   const normalized = value.trim();
   if (!normalized || normalized === original) return "";
-  if (Array.from(normalized).length > limit || /^[=+@-]/.test(normalized) ||
-      /[<>]/.test(normalized)) {
+  if (
+    Array.from(normalized).length > limit ||
+    /^[=+@-]/.test(normalized) ||
+    /[<>]/.test(normalized)
+  ) {
     throw new Error("tonart_catalog_editorial_invalid_label");
   }
   return normalized;
@@ -45,15 +52,28 @@ export function validateTonartCatalogEditorialProposal(
 }
 
 const HEADERS = [
-  "ID canônico", "Slug", "Código", "Modelo", "Variante", "Categoria",
-  "Franquia", "Imagens declaradas", "Chave da capa", "Estado da capa",
-  "Novo nome", "Nova variante",
+  "ID canônico",
+  "Slug",
+  "Código",
+  "Modelo",
+  "Variante",
+  "Categoria",
+  "Franquia",
+  "Imagens declaradas",
+  "Chave da capa",
+  "Estado da capa",
+  "Novo nome",
+  "Nova variante",
 ] as const;
 
 function cell(value: string | number): string {
   // Spreadsheet tools interpret =,+,-,@ as formulas, even in quoted CSV.
   // Strip C0 controls and neutralize formula-like cells before escaping.
-  const text = Array.from(String(value), (character) => isAsciiControl(character) ? " " : character).join("").trim();
+  const text = Array.from(String(value), (character) =>
+    isAsciiControl(character) ? " " : character,
+  )
+    .join("")
+    .trim();
   const safe = /^[=+\-@]/.test(text) ? "'" + text : text;
   return '"' + safe.replace(/"/g, '""') + '"';
 }
@@ -72,19 +92,41 @@ export function buildTonartCatalogReviewCsv(
   }
   const lines = [HEADERS.map(cell).join(";")];
   for (const model of models) {
-    if (!model || typeof model.id !== "string" || !model.id ||
-        typeof model.slug !== "string" || !model.slug ||
-        !Number.isSafeInteger(model.imageCount) || model.imageCount < 0) {
+    if (
+      !model ||
+      typeof model.id !== "string" ||
+      !model.id ||
+      typeof model.slug !== "string" ||
+      !model.slug ||
+      !Number.isSafeInteger(model.imageCount) ||
+      model.imageCount < 0
+    ) {
       throw new Error("tonart_catalog_export_model_invalid");
     }
-    const proposal = validateTonartCatalogEditorialProposal(model, proposals.get(model.id));
-    lines.push([
-      model.id, model.slug, model.code, model.name, model.variantName,
-      model.category, model.franchise, model.imageCount,
-      model.coverStorageKey ?? "",
-      model.coverStorageKey ? "Chave cadastrada; entrega não verificada" : "Sem chave de capa",
-      proposal.name, proposal.variant, // Blank unless explicitly proposed.
-    ].map(cell).join(";"));
+    const proposal = validateTonartCatalogEditorialProposal(
+      model,
+      proposals.get(model.id),
+    );
+    lines.push(
+      [
+        model.id,
+        model.slug,
+        model.code,
+        model.name,
+        model.variantName,
+        model.category,
+        model.franchise,
+        model.imageCount,
+        model.coverStorageKey ?? "",
+        model.coverStorageKey
+          ? "Chave cadastrada; entrega não verificada"
+          : "Sem chave de capa",
+        proposal.name,
+        proposal.variant, // Blank unless explicitly proposed.
+      ]
+        .map(cell)
+        .join(";"),
+    );
   }
   return lines.join("\r\n") + "\r\n";
 }
