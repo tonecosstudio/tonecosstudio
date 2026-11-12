@@ -55,9 +55,12 @@ permissions:
   contents: read
 
 concurrency:
-  # Release runs are serial and cannot be cancelled by a push to main.
-  group: ${{ github.event_name == 'workflow_dispatch' && 'tonart-catalog-worker-release' || format('quality-{0}-{1}', github.workflow, github.ref) }}
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+  # A merged editorial PR and a manual Worker deploy share ONE writer lock.
+  # A regular main push can never cancel or interleave a production write.
+  group: >-
+    ${{ (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'editorial/tonart-admin-review')) && 'tonart-catalog-production-writer' || format('quality-{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: >-
+    ${{ github.event_name != 'workflow_dispatch' && !(github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'editorial/tonart-admin-review') }}
 
 jobs:
   quality:
@@ -286,9 +289,6 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'worker-release'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    concurrency:
-      group: tonart-catalog-production-writer
-      cancel-in-progress: false
     environment: production
     permissions:
       contents: read
@@ -416,9 +416,6 @@ jobs:
       github.event.pull_request.head.ref == 'editorial/tonart-admin-review'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    concurrency:
-      group: tonart-catalog-production-writer
-      cancel-in-progress: false
     environment: production
     permissions:
       contents: read

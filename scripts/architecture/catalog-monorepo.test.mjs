@@ -244,8 +244,9 @@ test('an approved catalog edit is applied only in the existing serial release wo
   assert.match(release, /github.event.action == 'closed'/);
   assert.match(release, /github.event.pull_request.merged == true/);
   assert.match(release, /github.event.pull_request.head.ref == 'editorial\/tonart-admin-review'/);
-  assert.match(release, /tonart-catalog-production-writer/);
-  assert.match(release, /cancel-in-progress: false/);
+  // One workflow-level production writer lock shared by both operations.
+  assert.match(workflow, /tonart-catalog-production-writer/);
+  assert.match(workflow, /cancel-in-progress:[\s\S]*github.event.action == 'closed'/);
   assert.match(release, /cutover-readiness\.mjs --live/);
   assert.match(release, /apply-approved-editorial\.mjs --pr/);
   assert.match(release, /environment: production/);
