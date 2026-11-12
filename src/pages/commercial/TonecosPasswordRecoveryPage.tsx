@@ -1,9 +1,10 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { isPasswordPolicyCompliant } from "@/config/auth";
 import {
   completeTonecosPasswordRecovery, getTonecosCurrentUser, requestTonecosPasswordReset,
+  verifyTonecosPasswordRecoveryToken,
 } from "@/services/customer/tonecos-account-service";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
 import PasswordField from "./PasswordField";
@@ -12,6 +13,9 @@ export default function TonecosPasswordRecoveryPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const update = params.get("action") === "update";
+  const recoveryToken = params.get("token_hash");
+  const recoveryType = params.get("type");
+  const validationStarted = useRef(false);
   const [verified, setVerified] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,16 +25,27 @@ export default function TonecosPasswordRecoveryPage() {
   const [notice, setNotice] = useState("");
 
   async function refreshSession() {
+    setError("");
     try {
+      if (recoveryToken) {
+        // Clear the single-use token from browser history before exchanging it.
+        navigate({ pathname: TONECOS_COMMERCIAL_ROUTES.recovery, search: "?action=update" }, { replace: true });
+        if (recoveryType !== "recovery") throw new Error("tonecos_recovery_link_invalid");
+        await verifyTonecosPasswordRecoveryToken(recoveryToken);
+      }
       const user = await getTonecosCurrentUser();
       setVerified(Boolean(user));
-    } catch (err) {
+      if (!user) setError("Não foi possível validar o link. Solicite um novo e-mail de recuperação.");
+    } catch {
       setVerified(false);
-      setError(err instanceof Error ? err.message : "Não foi possível verificar o acesso.");
+      setError("Não foi possível validar o link. Ele pode ter expirado ou já ter sido utilizado.");
     }
   }
   useEffect(() => {
-    if (update) void refreshSession();
+    if (update && !validationStarted.current) {
+      validationStarted.current = true;
+      void refreshSession();
+    }
   }, [update]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {

@@ -3,11 +3,12 @@ import {
   registerTonecosAccount, signInTonecosAccount, signOutTonecosAccount,
   getMyTonecosProfile, updateMyTonecosProfile,
   requestTonecosPasswordReset, completeTonecosPasswordRecovery,
+  verifyTonecosPasswordRecoveryToken,
 } from "./tonecos-account-service";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const mocks = vi.hoisted(() => ({
-  getUser: vi.fn(), from: vi.fn(), updateUser: vi.fn(),
+  getUser: vi.fn(), from: vi.fn(), updateUser: vi.fn(), verifyOtp: vi.fn(),
   sendPasswordResetEmail: vi.fn(), signUpWithPasswordCredentials: vi.fn(),
   signInWithPasswordCredentials: vi.fn(), signOutCurrentSession: vi.fn(),
 }));
@@ -15,6 +16,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { auth: {
     getUser: mocks.getUser,
     updateUser: mocks.updateUser,
+    verifyOtp: mocks.verifyOtp,
   }, from: mocks.from },
 }));
 vi.mock("@/services/auth/auth-session-service", () => ({
@@ -42,6 +44,21 @@ describe("Tonecos authenticated MVP account", () => {
       email: "client@example.com",
       redirectTo: expect.stringMatching(/\/recuperar-senha\?action=update$/),
     });
+  });
+
+  it("exchanges recovery token hash with Supabase Auth for cross-browser password recovery", async () => {
+    const tokenHash = "a".repeat(64);
+    mocks.verifyOtp.mockResolvedValue({ data: { user: { id: USER }, session: { access_token: "test" } }, error: null });
+    await expect(verifyTonecosPasswordRecoveryToken(tokenHash)).resolves.toBeUndefined();
+    expect(mocks.verifyOtp).toHaveBeenCalledExactlyOnceWith({ token_hash: tokenHash, type: "recovery" });
+  });
+
+  it("rejects malformed, expired and sessionless recovery tokens without updating a password", async () => {
+    await expect(verifyTonecosPasswordRecoveryToken("invalid")).rejects.toThrow("tonecos_recovery_link_invalid");
+    expect(mocks.verifyOtp).not.toHaveBeenCalled();
+    mocks.verifyOtp.mockResolvedValueOnce({ data: { user: null, session: null }, error: { message: "Expired" } });
+    await expect(verifyTonecosPasswordRecoveryToken("b".repeat(64))).rejects.toThrow("tonecos_recovery_link_invalid");
+    expect(mocks.updateUser).not.toHaveBeenCalled();
   });
 
   it("rejects password recovery without a verified Supabase session", async () => {

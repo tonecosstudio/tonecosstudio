@@ -128,6 +128,23 @@ export async function requestTonecosPasswordReset(email: string): Promise<void> 
   });
 }
 
+/** Validate the one-time recovery token directly with Supabase Auth.
+ * Unlike the PKCE callback code, this works across browsers/devices without a stored verifier.
+ */
+export async function verifyTonecosPasswordRecoveryToken(tokenHash: string): Promise<void> {
+  assertTonecosCommercialEnabled();
+  if (typeof tokenHash !== "string" || !/^[A-Za-z0-9_-]{32,512}$/.test(tokenHash)) {
+    throw new Error("tonecos_recovery_link_invalid");
+  }
+  const { data, error } = await tonecos.auth.verifyOtp({
+    token_hash: tokenHash,
+    type: "recovery",
+  });
+  if (error || !data?.user || !data.session) {
+    throw new Error("tonecos_recovery_link_invalid");
+  }
+}
+
 /** Recovered sessions are verified by Supabase Auth, never by browser query params. */
 export async function completeTonecosPasswordRecovery(password: string): Promise<void> {
   assertTonecosCommercialEnabled();

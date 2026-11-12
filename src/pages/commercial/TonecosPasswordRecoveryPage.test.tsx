@@ -3,11 +3,12 @@ import { fireEvent, render, screen, waitFor, cleanup } from "@testing-library/re
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import Recovery from "./TonecosPasswordRecoveryPage";
 
-const mocks = vi.hoisted(() => ({ user: vi.fn(), request: vi.fn(), complete: vi.fn() }));
+const mocks = vi.hoisted(() => ({ user: vi.fn(), request: vi.fn(), complete: vi.fn(), verify: vi.fn() }));
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.user,
   requestTonecosPasswordReset: mocks.request,
   completeTonecosPasswordRecovery: mocks.complete,
+  verifyTonecosPasswordRecoveryToken: mocks.verify,
 }));
 function show(url: string) {
   return render(<MemoryRouter initialEntries={[url]}><Routes>
@@ -36,6 +37,26 @@ describe("Tonecos password recovery screen", () => {
     expect(screen.queryByRole("button", { name: "Salvar nova senha" })).not.toBeInTheDocument();
     expect(mocks.complete).not.toHaveBeenCalled();
   });
+  it("validates recovery links across browsers using the token hash, then shows a new password form", async () => {
+    const tokenHash = "a".repeat(64);
+    mocks.verify.mockResolvedValue(undefined);
+    mocks.user.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111", email: "cliente@example.com" });
+    show(`/recuperar-senha?action=update&token_hash=${tokenHash}&type=recovery`);
+    expect(await screen.findByRole("button", { name: "Salvar nova senha" })).toBeInTheDocument();
+    expect(mocks.verify).toHaveBeenCalledExactlyOnceWith(tokenHash);
+    expect(mocks.user).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks password changes when recovery token verification fails", async () => {
+    mocks.verify.mockRejectedValue(new Error("tonecos_recovery_link_invalid"));
+    show(`/recuperar-senha?action=update&token_hash=${"b".repeat(64)}&type=recovery`);
+    expect(await screen.findByText(/link não possui uma sessão válida/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Salvar nova senha" })).not.toBeInTheDocument();
+    expect(mocks.complete).not.toHaveBeenCalled();
+    expect(mocks.user).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível validar o link");
+  });
+
   it("shows and hides the new password independently of confirmation", async () => {
     mocks.user.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111", email: "cliente@example.com" });
     show("/recuperar-senha?action=update");
