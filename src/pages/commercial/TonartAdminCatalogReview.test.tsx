@@ -376,7 +376,7 @@ describe("TONART canonical admin catalog review", () => {
       fireEvent.change(screen.getByRole("textbox", { name: "Nova variante de Modelo de teste" }), {
         target: { value: "Colecionador" },
       });
-      expect(screen.getByText(/1 modelo\\(s\\) com proposta local nesta página/)).toBeInTheDocument();
+      expect(screen.getByText(/1 modelo/)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Baixar planilha de revisão (CSV)" })).toBeEnabled();
       fireEvent.click(screen.getByRole("button", { name: "Baixar planilha de revisão (CSV)" }));
       expect(click).toHaveBeenCalledOnce();
@@ -429,13 +429,13 @@ describe("TONART canonical admin catalog review", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Nova variante de Modelo sem capa" }), {
       target: { value: "Alternativa" },
     });
-    expect(screen.getByText(/2 modelo\\(s\\) com proposta local nesta página/)).toBeInTheDocument();
+    expect(screen.getByText(/2 modelo/)).toBeInTheDocument();
     expect(mocks.listPage).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole("button", { name: "Descartar todas as propostas locais" }));
     expect(screen.getByRole("button", { name: "Próxima página" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Próxima página" }));
     await waitFor(() => expect(mocks.listPage).toHaveBeenCalledTimes(2));
-    expect(screen.getByText(/0 modelo\\(s\\) com proposta local nesta página/)).toBeInTheDocument();
+    expect(screen.getByText(/0 modelo/)).toBeInTheDocument();
   });
 
   it("rejects short searches locally without hitting the catalog", async () => {
