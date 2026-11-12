@@ -64,10 +64,10 @@ const commercialRoutes: ReactNode = (
     <Route path={TONECOS_COMMERCIAL_ROUTES.login} element={<Account />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.account} element={<Account />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.recovery} element={<Recovery />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.adminHome} element={<AdminAccessGate><AdminHome /></AdminAccessGate>} />
     {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" && <>
       <Route path={PUBLIC_ROUTES.quoteRequest} element={<Request />} />
       <Route path={TONECOS_COMMERCIAL_ROUTES.history} element={<Quotes />} />
-      <Route path={TONECOS_COMMERCIAL_ROUTES.adminHome} element={<AdminAccessGate><AdminHome /></AdminAccessGate>} />
       <Route path={TONECOS_COMMERCIAL_ROUTES.adminQuotes} element={<AdminAccessGate><AdminQuotes /></AdminAccessGate>} />
     </>}
     {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
