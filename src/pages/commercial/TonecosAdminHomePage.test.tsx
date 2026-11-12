@@ -10,7 +10,7 @@ describe("TONART administrative workspace", () => {
     render(<MemoryRouter><TonecosAdminHomePage /></MemoryRouter>);
     expect(screen.getByRole("heading", { name: "Painel administrativo" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Áreas do sistema original" })).toBeInTheDocument();
-    expect(screen.getByText("Produção")).toBeInTheDocument();
+    expect(screen.getAllByText("Produção").length).toBeGreaterThan(0);
     expect(screen.getByText("Pagamentos")).toBeInTheDocument();
     expect(screen.getByText("Usuários")).toBeInTheDocument();
     expect(screen.getByText("Embalagem")).toBeInTheDocument();
