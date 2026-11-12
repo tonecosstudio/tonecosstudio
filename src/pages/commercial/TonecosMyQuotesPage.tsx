@@ -16,6 +16,8 @@ const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" 
 export default function TonecosMyQuotesPage() {
   const location = useLocation();
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
+  const [authError, setAuthError] = useState(false);
+  const [authAttempt, setAuthAttempt] = useState(0);
   const [rows, setRows] = useState<CustomerCatalogQuote[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -23,11 +25,13 @@ export default function TonecosMyQuotesPage() {
 
   useEffect(() => {
     let active = true;
+    setUserId(undefined);
+    setAuthError(false);
     getTonecosCurrentUser()
       .then((user) => { if (active) setUserId(user?.id ?? null); })
-      .catch(() => { if (active) setUserId(null); });
+      .catch(() => { if (active) { setAuthError(true); setUserId(null); } });
     return () => { active = false; };
-  }, []);
+  }, [authAttempt]);
 
   useEffect(() => {
     if (!userId) return;
@@ -49,7 +53,12 @@ export default function TonecosMyQuotesPage() {
     <CommercialPage title="Meus orçamentos" intro="Acompanhe as solicitações enviadas e os valores respondidos pela TONART Studio. Orçamento não é confirmação de compra.">
       {justSent && <p role="status" className="mb-5 max-w-3xl border border-white/20 p-4 text-sm text-white/80">Solicitação enviada. Você poderá acompanhar a resposta aqui.</p>}
       {userId === undefined || loading ? <p role="status">Carregando seus orçamentos...</p> : null}
-      {userId === null ? (
+      {authError ? (
+        <div role="alert" className={panelClass}>
+          <p className="mb-4 text-sm text-white/70">Não foi possível verificar sua sessão.</p>
+          <button type="button" className={secondaryClass} onClick={() => setAuthAttempt((n) => n + 1)}>Tentar novamente</button>
+        </div>
+      ) : userId === null ? (
         <div className={panelClass}>
           <p className="mb-4 text-sm text-white/70">Entre na sua conta para consultar suas solicitações.</p>
           <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.history)}>Entrar</Link>
