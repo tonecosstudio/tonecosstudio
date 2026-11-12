@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import { buildTonartCatalogReviewCsv } from "@/services/catalog/tonart-catalog-review-export";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { catalogModelDetailsPath } from "@/config/routes";
 import {
@@ -32,6 +33,7 @@ export default function TonartAdminCatalogReview() {
   const [onlyWithoutCover, setOnlyWithoutCover] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [downloadError, setDownloadError] = useState("");
   const requestRef = useRef<AbortController | null>(null);
   const reviewRef = useRef<AbortController | null>(null);
   const [selectedModel, setSelectedModel] = useState<PublicCatalogModel | null>(null);
@@ -84,6 +86,7 @@ export default function TonartAdminCatalogReview() {
     const controller = new AbortController();
     requestRef.current = controller;
     setError("");
+    setDownloadError("");
     setBusy(true);
     try {
       const response = await gateway.listPage(
@@ -216,6 +219,25 @@ export default function TonartAdminCatalogReview() {
     ? page?.items.filter((model) => !model.coverStorageKey) ?? []
     : page?.items ?? [];
   const withoutCover = page?.items.filter((model) => !model.coverStorageKey).length ?? 0;
+
+  function downloadCurrentReview() {
+    if (!page || !visible.length || busy) return;
+    setDownloadError("");
+    let objectUrl: string | null = null;
+    try {
+      const csv = buildTonartCatalogReviewCsv(visible);
+      const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+      objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `tonart-revisao-catalogo-pagina-${pageIndex + 1}.csv`;
+      link.click();
+    } catch {
+      setDownloadError("Não foi possível gerar o relatório desta página.");
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    }
+  }
 
   return (
     <section aria-label="Revisão do catálogo canônico">
@@ -519,7 +541,15 @@ export default function TonartAdminCatalogReview() {
               Somente a página solicitada é consultada. Os totais acima não representam o acervo inteiro.
               Use “Ver imagem” para conferir a capa real de cada modelo.
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={secondaryClass}
+                disabled={busy || visible.length === 0}
+                onClick={downloadCurrentReview}
+              >
+                Baixar relação desta página (CSV)
+              </button>
               <button
                 type="button"
                 className={secondaryClass}
@@ -546,6 +576,11 @@ export default function TonartAdminCatalogReview() {
               </button>
             </div>
           </div>
+          <p className="mt-3 text-xs text-white/50">
+            A relação inclui apenas {visible.length} modelo(s) desta página{onlyWithoutCover ? " sem chave de capa" : ""}.
+            É um arquivo de consulta; não altera modelos nem publica mídias.
+          </p>
+          {downloadError && <p role="alert" className="mt-3 text-sm text-amber-200">{downloadError}</p>}
         </>
       )}
       <div className="mt-7 border-t border-white/15 pt-5">
