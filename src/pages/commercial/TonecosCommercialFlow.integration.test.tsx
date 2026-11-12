@@ -214,7 +214,8 @@ describe("TONART commercial screens: account → request → history → respons
     mocks.hasAdmin.mockResolvedValue(false);
     renderApp("/perfil");
     await screen.findByText(/Conectado como cliente@example.com/);
-    expect(screen.queryByRole("link", { name: "Atendimento TONART" })).not.toBeInTheDocument();
+    await waitFor(() => expect(mocks.hasAdmin).toHaveBeenCalled());
+    expect(screen.queryByRole("link", { name: "Painel administrativo" })).not.toBeInTheDocument();
   });
 
   it("never permits admin self-promotion through a browser button", async () => {
