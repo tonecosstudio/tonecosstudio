@@ -4,6 +4,8 @@ import { MemoryRouter } from "react-router-dom";
 
 const mocks = vi.hoisted(() => ({
   listPage: vi.fn(),
+  getModel: vi.fn(),
+  listGallery: vi.fn(),
   createGateway: vi.fn(),
 }));
 vi.mock("@/config/canonical-catalog-endpoint", () => ({
@@ -30,7 +32,25 @@ const withoutCover = {
 };
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.createGateway.mockReturnValue({ listPage: mocks.listPage });
+  mocks.createGateway.mockReturnValue({
+    listPage: mocks.listPage,
+    getModel: mocks.getModel,
+    listGallery: mocks.listGallery,
+  });
+  mocks.getModel.mockResolvedValue({
+    ...withCover, description: null, material: null, heightCm: null,
+  });
+  mocks.listGallery.mockResolvedValue({
+    items: [{
+      id: "media-1", role: "cover", width: 900, height: 1400, bytes: 83000,
+      mime: "image/webp", qualityScore: 0.98, sourceSha256: "testsha",
+      variantKeys: {
+        thumb: null, card: withCover.coverStorageKey,
+        detail: null, original: null,
+      },
+    }],
+    total: 4, version: 1, nextCursor: "gallery-next",
+  });
   mocks.listPage.mockResolvedValue({
     items: [withCover, withoutCover], nextCursor: null,
   });
@@ -46,6 +66,8 @@ describe("TONART canonical admin catalog review", () => {
     expect(screen.getByRole("heading", { name: "Catálogo de modelos" })).toBeInTheDocument();
     expect(mocks.createGateway).toHaveBeenCalledTimes(1);
     expect(mocks.listPage).not.toHaveBeenCalled();
+    expect(mocks.getModel).not.toHaveBeenCalled();
+    expect(mocks.listGallery).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     expect(await screen.findByText("Modelo sem capa")).toBeInTheDocument();
     expect(mocks.listPage).toHaveBeenCalledTimes(1);
@@ -88,6 +110,54 @@ describe("TONART canonical admin catalog review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Página anterior" }));
     await waitFor(() => expect(mocks.listPage).toHaveBeenCalledTimes(3));
     expect(mocks.listPage.mock.calls[2][0].cursor).toBeUndefined();
+  });
+
+  it("checks one selected model and first six gallery records only on request", async () => {
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo de teste");
+    expect(mocks.getModel).not.toHaveBeenCalled();
+    expect(mocks.listGallery).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Verificar mídia" })[0]);
+    expect(await screen.findByRole("heading", { name: "Revisão: Modelo de teste" })).toBeInTheDocument();
+    expect(mocks.getModel).toHaveBeenCalledTimes(1);
+    expect(mocks.getModel.mock.calls[0][0]).toBe("modelo-teste");
+    expect(mocks.listGallery).toHaveBeenCalledTimes(1);
+    expect(mocks.listGallery.mock.calls[0][1]).toMatchObject({
+      version: 1, expectedTotal: 4, expectedCoverStorageKey: withCover.coverStorageKey,
+      limit: 4,
+    });
+    expect(screen.getByText(/não comprova a entrega física dos arquivos/)).toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(mocks.listPage).toHaveBeenCalledTimes(1);
+  });
+
+  it("checks an image-less entry without requesting its gallery", async () => {
+    mocks.getModel.mockResolvedValueOnce({
+      ...withoutCover, imageCount: 0, description: null, material: null, heightCm: null,
+    });
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo sem capa");
+    fireEvent.click(screen.getAllByRole("button", { name: "Verificar mídia" })[1]);
+    expect(await screen.findByRole("heading", { name: "Revisão: Modelo sem capa" })).toBeInTheDocument();
+    expect(mocks.listGallery).not.toHaveBeenCalled();
+    expect(screen.getAllByText(/sem chave de capa/i).length).toBeGreaterThan(0);
+  });
+
+  it("fails closed when the detail no longer corresponds to the selected model", async () => {
+    mocks.getModel.mockResolvedValueOnce({
+      ...withCover, id: "55555555-5555-4555-8555-555555555555",
+      description: null, material: null, heightCm: null,
+    });
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo de teste");
+    fireEvent.click(screen.getAllByRole("button", { name: "Verificar mídia" })[0]);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível verificar os metadados");
+    expect(mocks.listGallery).not.toHaveBeenCalled();
+    expect(screen.queryByRole("heading", { name: /Revisão:/ })).not.toBeInTheDocument();
   });
 
   it("rejects short searches locally without hitting the catalog", async () => {
