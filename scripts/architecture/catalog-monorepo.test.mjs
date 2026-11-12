@@ -92,6 +92,8 @@ test('only the existing Cloudflare resources may serve requests', () => {
   assert.equal(contract.runtime.r2, 'tonecos-catalogo-media');
   const worker = JSON.parse(source('services/catalogo/wrangler.jsonc'));
   assert.equal(worker.name, contract.runtime.worker);
+  assert.ok(worker.vars.CORS_ORIGINS.split(',').includes('https://tonartstudio.com.br'));
+  assert.equal(new Set(worker.vars.CORS_ORIGINS.split(',')).size, worker.vars.CORS_ORIGINS.split(',').length);
   assert.equal(worker.main, 'worker/entry.ts');
   assert.equal(worker.d1_databases?.length, 1);
   assert.equal(worker.d1_databases[0].binding, 'DB');
@@ -180,7 +182,7 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   }
   const overlays = contract.staging.localOverlays ?? {};
   assert.deepEqual(Object.keys(overlays).sort(), [
-    'tools/test_worker_folder_counts.mjs', 'worker/index.ts', 'worker/publicQueryBudget.ts',
+    'tools/test_worker_folder_counts.mjs', 'worker/index.ts', 'worker/publicQueryBudget.ts', 'wrangler.jsonc',
   ]);
   // The immutable import snapshot gates the INITIAL M5 release, not later
   // improvements published exclusively from TONART after M5 completes.
