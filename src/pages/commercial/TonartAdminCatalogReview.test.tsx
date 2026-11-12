@@ -161,6 +161,9 @@ describe("TONART canonical admin catalog review", () => {
   });
 
   it("fetches at most six gallery records and reuses approved low-resolution URLs", async () => {
+    mocks.listPage.mockResolvedValueOnce({
+      items: [{ ...withCover, imageCount: 15, galleryVersion: 3 }], nextCursor: null,
+    });
     mocks.getModel.mockResolvedValueOnce({ ...withCover, imageCount: 15, galleryVersion: 3 });
     mocks.listGallery.mockResolvedValueOnce({
       items: Array.from({ length: 6 }, (_, index) => ({
