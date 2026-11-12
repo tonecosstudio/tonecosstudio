@@ -133,6 +133,39 @@ describe("TONART admin workspace", () => {
     expect(screen.queryByRole("button", { name: /cobrar|confirmar pagamento/i })).not.toBeInTheDocument();
   });
 
+  it("connects the existing communication section to real pending quotes without automatic email sending", async () => {
+    const id = "33333333-3333-4333-8333-333333333333";
+    mocks.overview.mockResolvedValueOnce({
+      ...fixture,
+      recentQuotes: [{
+        id, customerEmail: "cliente@example.com",
+        createdAt: "2026-11-11T18:00:00Z", modelCount: 2,
+        status: "pending", quotedAmountCents: null,
+      }],
+    });
+    show("/admin/comunicacao");
+    expect(await screen.findByText("Solicitação #33333333")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Preparar e-mail para cliente@example.com" }))
+      .toHaveAttribute("href", expect.stringMatching(/^mailto:/));
+    const link = screen.queryByRole("link", { name: "Abrir solicitação #33333333" });
+    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true") {
+      expect(link).toHaveAttribute("href", "/admin/orcamentos?quote=" + id);
+    } else {
+      expect(link).not.toBeInTheDocument();
+    }
+    expect(screen.getByText(/não envia e-mails automaticamente/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /enviar e-mail/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps the communication module usable when no recent contact exists", async () => {
+    mocks.overview.mockResolvedValueOnce({
+      ...fixture, recentQuotes: [],
+    });
+    show("/admin/comunicacao");
+    expect(await screen.findByText("Não há atendimentos em aberto entre as últimas solicitações.")).toBeInTheDocument();
+    expect(screen.getByText(/As quantidades acima consideram a base completa/)).toBeInTheDocument();
+  });
+
   it("shows preserved modules without pretending to enable missing operations", async () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: /Produção/ }));
