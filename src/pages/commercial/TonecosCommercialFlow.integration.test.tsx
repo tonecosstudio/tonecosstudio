@@ -96,6 +96,29 @@ describe("TONART commercial screens: account → request → history → respons
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
+  it("retries a failed session check without treating the visitor as signed out", async () => {
+    mocks.getUser.mockRejectedValueOnce(new Error("network unavailable"))
+      .mockResolvedValueOnce({ id: USER, email: "cliente@example.com" });
+    renderApp("/solicitar-orcamento", true);
+    expect(await screen.findByText("Não foi possível verificar sua sessão. Tente novamente antes de entrar na conta."))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Entrar ou criar conta" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(await screen.findByRole("button", { name: "Enviar solicitação" })).toBeEnabled();
+    expect(mocks.getUser).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries a failed quote history session check before requesting quotes", async () => {
+    mocks.getUser.mockRejectedValueOnce(new Error("network unavailable"))
+      .mockResolvedValueOnce({ id: USER, email: "cliente@example.com" });
+    renderApp("/meus-orcamentos");
+    expect(await screen.findByText("Não foi possível verificar sua sessão.")).toBeInTheDocument();
+    expect(mocks.listMine).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    await waitFor(() => expect(mocks.listMine).toHaveBeenCalledWith(USER));
+    expect(mocks.getUser).toHaveBeenCalledTimes(2);
+  });
+
   it("submits quantities and notes, then navigates to the customer's history", async () => {
     mocks.submit.mockResolvedValue(QUOTE);
     renderApp("/solicitar-orcamento", true);
