@@ -8,6 +8,36 @@
  */
 import type { PublicCatalogModel } from "./public-catalog-gateway";
 
+export type TonartCatalogEditorialProposal = {
+  name?: string;
+  variant?: string;
+};
+
+/** Keep browser validation aligned with the source contract applier. */
+function cleanProposal(value: string | undefined, original: string, limit: number): string {
+  if (value === undefined || value === "") return "";
+  if (typeof value !== "string" || /[\u0000-\u001f\u007f]/.test(value)) {
+    throw new Error("tonart_catalog_editorial_invalid_label");
+  }
+  const normalized = value.trim();
+  if (!normalized || normalized === original) return "";
+  if (Array.from(normalized).length > limit || /^[=+@-]/.test(normalized) ||
+      /[<>]/.test(normalized)) {
+    throw new Error("tonart_catalog_editorial_invalid_label");
+  }
+  return normalized;
+}
+
+export function validateTonartCatalogEditorialProposal(
+  model: PublicCatalogModel,
+  proposal: TonartCatalogEditorialProposal | undefined,
+): { name: string; variant: string } {
+  return {
+    name: cleanProposal(proposal?.name, model.name, 120),
+    variant: cleanProposal(proposal?.variant, model.variantName, 160),
+  };
+}
+
 const HEADERS = [
   "ID canônico", "Slug", "Código", "Modelo", "Variante", "Categoria",
   "Franquia", "Imagens declaradas", "Chave da capa", "Estado da capa",
@@ -23,9 +53,16 @@ function cell(value: string | number): string {
 }
 
 /** Exactly the loaded page (max 12 models), never a D1 scan or another fetch. */
-export function buildTonartCatalogReviewCsv(models: readonly PublicCatalogModel[]): string {
+export function buildTonartCatalogReviewCsv(
+  models: readonly PublicCatalogModel[],
+  proposals: ReadonlyMap<string, TonartCatalogEditorialProposal> = new Map(),
+): string {
   if (!Array.isArray(models) || models.length < 1 || models.length > 12) {
     throw new Error("tonart_catalog_export_page_invalid");
+  }
+  const ids = new Set(models.map((model) => model.id));
+  for (const id of proposals.keys()) {
+    if (!ids.has(id)) throw new Error("tonart_catalog_editorial_out_of_page");
   }
   const lines = [HEADERS.map(cell).join(";")];
   for (const model of models) {
@@ -34,12 +71,13 @@ export function buildTonartCatalogReviewCsv(models: readonly PublicCatalogModel[
         !Number.isSafeInteger(model.imageCount) || model.imageCount < 0) {
       throw new Error("tonart_catalog_export_model_invalid");
     }
+    const proposal = validateTonartCatalogEditorialProposal(model, proposals.get(model.id));
     lines.push([
       model.id, model.slug, model.code, model.name, model.variantName,
       model.category, model.franchise, model.imageCount,
       model.coverStorageKey ?? "",
       model.coverStorageKey ? "Chave cadastrada; entrega não verificada" : "Sem chave de capa",
-      "", "", // Empty editorial proposals: never overwrite a published name by default.
+      proposal.name, proposal.variant, // Blank unless explicitly proposed.
     ].map(cell).join(";"));
   }
   return lines.join("\r\n") + "\r\n";
