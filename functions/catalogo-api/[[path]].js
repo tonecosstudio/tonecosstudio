@@ -140,6 +140,15 @@ export async function proxyCatalogRequest(request, fetcher) {
       // Avoid unnecessary upstream work when navigation or an in-flight read stops.
       signal: request.signal,
     });
+    // If the upstream ignores an explicit Range, cancel the potentially full
+    // object before the Vercel adapter/Pages response can buffer it. This is
+    // essential for the admin's one-byte media probe and saves R2 bandwidth.
+    if (route.startsWith("media/") && headers.has("Range") && response.status === 200) {
+      await response.body?.cancel().catch(() => undefined);
+      return new Response("Upstream media range ignored", {
+        status: 502, headers: { "Cache-Control": "no-store" },
+      });
+    }
     // A complete R2 object from an older Worker may be incorrectly labelled
     // 206. Normalize *only* an exact 0..size-1 span when no Range was sent.
     const completeLegacyMedia = response.status === 206 &&
