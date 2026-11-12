@@ -148,7 +148,7 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
     if (u.pathname.endsWith("/git/ref/heads/editorial/tonart-admin-review")) {
       return Response.json({ message: "Not Found" }, { status: 404 });
     }
-    if (u.pathname.endsWith("/contents/config/catalog-production-model-contract.json") &&
+    if (u.pathname.endsWith("/contents/services/catalogo/config/catalog-production-model-contract.json") &&
         options.method === "GET") {
       return Response.json({ sha, size: Buffer.byteLength(source) });
     }
@@ -159,7 +159,7 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
       assert.equal(JSON.parse(options.body).sha, "b".repeat(40));
       return Response.json({ ref: "refs/heads/editorial/tonart-admin-review" }, { status: 201 });
     }
-    if (u.pathname.endsWith("/contents/config/catalog-production-model-contract.json") &&
+    if (u.pathname.endsWith("/contents/services/catalogo/config/catalog-production-model-contract.json") &&
         options.method === "PUT") {
       const submitted = JSON.parse(options.body);
       assert.equal(submitted.branch, "editorial/tonart-admin-review");
@@ -171,7 +171,7 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
     if (u.pathname.endsWith("/pulls") && options.method === "POST") {
       assert.equal(JSON.parse(options.body).base, "main");
       return Response.json({
-        html_url: "https://github.com/washingtonmsdj/catalogo/pull/270",
+        html_url: "https://github.com/tonecosstudio/tonecosstudio/pull/270",
       }, { status: 201 });
     }
     throw new Error("Unexpected endpoint " + u.pathname);
@@ -186,7 +186,7 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
   }), res);
   assert.equal(res.code, 202);
   assert.equal(res.payload.state, "awaiting_review");
-  assert.equal(res.payload.receipt, "https://github.com/washingtonmsdj/catalogo/pull/270");
+  assert.equal(res.payload.receipt, "https://github.com/tonecosstudio/tonecosstudio/pull/270");
   assert.equal(actions.filter((x) => x.method === "PUT").length, 1);
   assert.equal(actions.filter((x) => x.method === "POST" &&
     x.path.endsWith("/pulls")).length, 1);
