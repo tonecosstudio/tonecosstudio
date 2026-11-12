@@ -4,9 +4,9 @@ import {
   EditorialReviewError,
 } from "../scripts/catalog/catalog-editorial-contract.mjs";
 
-const REPOSITORY = "washingtonmsdj/catalogo";
+const REPOSITORY = "tonecosstudio/tonecosstudio";
 const BRANCH = "editorial/tonart-admin-review";
-const CONTRACT = "config/catalog-production-model-contract.json";
+const CONTRACT = "services/catalogo/config/catalog-production-model-contract.json";
 const GH = "https://api.github.com";
 const SUPABASE = "https://icmtmaakjucmuzxnofkd.supabase.co";
 const MAX_BODY_BYTES = 16384;
@@ -75,7 +75,7 @@ async function githubSession() {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      repositories: ["catalogo"],
+      repositories: ["tonecosstudio"],
       permissions: { contents: "write", pull_requests: "write" },
     }),
   });
@@ -116,7 +116,7 @@ async function saveForReview(edits) {
     reject("editorial_main_unavailable", 503);
   }
   const existingPrs = await gh(repoPath + "/pulls?state=open&head=" +
-    encodeURIComponent("washingtonmsdj:" + BRANCH) + "&base=main&per_page=2");
+    encodeURIComponent("tonecosstudio:" + BRANCH) + "&base=main&per_page=2");
   if (!Array.isArray(existingPrs) || existingPrs.length > 1) {
     reject("editorial_review_state_conflict", 409);
   }
@@ -171,7 +171,7 @@ async function saveForReview(edits) {
       },
     });
   }
-  if (!/^https:\/\/github\.com\/washingtonmsdj\/catalogo\/pull\/\d+$/.test(pr?.html_url ?? "")) {
+  if (!/^https:\/\/github\.com\/tonecosstudio\/tonecosstudio\/pull\/\d+$/.test(pr?.html_url ?? "")) {
     reject("editorial_review_receipt_unavailable", 503);
   }
   return { receipt: pr.html_url, changed: change.ids.length, modelIds: change.ids };
