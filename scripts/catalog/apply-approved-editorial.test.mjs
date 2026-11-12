@@ -19,6 +19,7 @@ function model(n) {
 function contract(models) {
   return { version:1, source:{productionModels:models.length,publishedModels:models.filter(x=>x.published).length},models };
 }
+const canonicalText = value => JSON.stringify(value,null,2);
 const base = contract([model('a'),model('b')]);
 const changed = structuredClone(base);
 changed.models[0].displayName = 'Modelo novo';
@@ -26,7 +27,7 @@ changed.models[0].variantName = 'Edição especial';
 changed.models[1].displayName = 'Outro modelo';
 
 test('only edited labels from the approved immutable model contract are published', () => {
-  const changes = planReviewedEditorial(JSON.stringify(base), JSON.stringify(changed));
+  const changes = planReviewedEditorial(canonicalText(base), canonicalText(changed));
   assert.equal(changes.length, 2);
   assert.deepEqual(changes.map(x=>x.id), base.models.map(x=>x.id));
   assert.equal(changes[0].toVariant, 'Edição especial');
@@ -50,16 +51,20 @@ test('structural metadata, unpublished changes and unsupported names fail closed
   ]) {
     const c=structuredClone(changed);
     mutation(c);
-    assert.throws(()=>planReviewedEditorial(JSON.stringify(base),JSON.stringify(c)));
+    assert.throws(()=>planReviewedEditorial(canonicalText(base),canonicalText(c)));
   }
   const unchanged=structuredClone(base);
-  assert.throws(()=>planReviewedEditorial(JSON.stringify(base),JSON.stringify(unchanged)),
+  assert.throws(()=>planReviewedEditorial(canonicalText(base),canonicalText(unchanged)),
     /editorial_change_count_invalid/);
+  const collision = structuredClone(base);
+  collision.models[0].displayName = base.models[1].displayName;
+  assert.throws(() => planReviewedEditorial(canonicalText(base),canonicalText(collision)),
+    /editorial_public_name_collision/);
   const large=contract(Array.from({length:13},(_,i)=>model((i+1).toString(16).padStart(2,'0').slice(0,1))));
   // duplicate ids from 13-to-1 digit mapping never allow a bulk release
   const next=structuredClone(large);
   next.models.forEach(m=>{m.displayName='Renomeado';});
-  assert.throws(()=>planReviewedEditorial(JSON.stringify(large),JSON.stringify(next)));
+  assert.throws(()=>planReviewedEditorial(canonicalText(large),canonicalText(next)));
 });
 
 function database() {
@@ -82,7 +87,7 @@ function database() {
 }
 function rows(db){return db.prepare('SELECT id,slug,code,name,variant_name,published FROM models ORDER BY id').all();}
 test('D1/SQLite atomic UPDATE changes all approved names and refreshes FTS', () => {
-  const changes=planReviewedEditorial(JSON.stringify(base),JSON.stringify(changed));
+  const changes=planReviewedEditorial(canonicalText(base),canonicalText(changed));
   const db=database(), before=rows(db);
   assert.equal(classifyLiveRows(changes,before),'ready');
   const {sql,params}=makeAtomicEditorialStatement(changes);
@@ -97,7 +102,7 @@ test('D1/SQLite atomic UPDATE changes all approved names and refreshes FTS', () 
   assert.equal(classifyLiveRows(changes,rows(db)),'already_applied');
 });
 test('one stale row aborts every write; no partial update is ever applied', () => {
-  const changes=planReviewedEditorial(JSON.stringify(base),JSON.stringify(changed));
+  const changes=planReviewedEditorial(canonicalText(base),canonicalText(changed));
   const db=database(), {sql,params}=makeAtomicEditorialStatement(changes);
   db.prepare('UPDATE models SET name=? WHERE id=?').run('Edição externa',base.models[1].id);
   const original=rows(db);

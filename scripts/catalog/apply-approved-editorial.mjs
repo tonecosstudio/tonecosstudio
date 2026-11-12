@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { join } from 'node:path';
+import { patchCanonicalEditorialContract } from './catalog-editorial-contract.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const CONTRACT = 'services/catalogo/config/catalog-production-model-contract.json';
@@ -58,6 +59,21 @@ export function planReviewedEditorial(beforeText, afterText) {
     });
   }
   requireCondition(changes.length > 0 && changes.length <= 12, 'editorial_change_count_invalid');
+  // Reuse the ONE production contract validator also used by admin submission.
+  // This protects name collisions, exact model identity and canonical layout,
+  // instead of maintaining a weaker publication-side interpretation.
+  const expected = patchCanonicalEditorialContract(beforeText, changes.map(change => {
+    const prior = before.models.find(model => model.id === change.id);
+    return {
+      id: change.id, slug: prior.slug, code: prior.code,
+      name: prior.displayName, variantName: prior.variantName,
+      category: prior.categoryName, franchise: prior.franchiseName,
+      newName: change.fromName === change.toName ? '' : change.toName,
+      newVariant: change.fromVariant === change.toVariant ? '' : change.toVariant,
+    };
+  }));
+  requireCondition(expected.content.trimEnd() === afterText.trimEnd(),
+    'editorial_revision_does_not_match_canonical_patcher');
   return changes;
 }
 
