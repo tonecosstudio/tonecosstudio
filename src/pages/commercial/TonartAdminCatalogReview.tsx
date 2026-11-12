@@ -14,6 +14,9 @@ import { catalogModelDetailsPath } from "@/config/routes";
 import {
   createPublicCatalogGateway,
   type PublicCatalogPage,
+  type PublicCatalogModel,
+  type PublicCatalogDetail,
+  type PublicCatalogGalleryPage,
 } from "@/services/catalog/public-catalog-gateway";
 import { actionClass, secondaryClass } from "./CommercialPage";
 
@@ -29,6 +32,13 @@ export default function TonartAdminCatalogReview() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const requestRef = useRef<AbortController | null>(null);
+  const reviewRef = useRef<AbortController | null>(null);
+  const [review, setReview] = useState<{
+    model: PublicCatalogDetail;
+    gallery: PublicCatalogGalleryPage | null;
+  } | null>(null);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState("");
 
   const gateway = useMemo(() => {
     if (!CANONICAL_CATALOG_API_BASE) return null;
@@ -39,7 +49,10 @@ export default function TonartAdminCatalogReview() {
     }
   }, []);
 
-  useEffect(() => () => requestRef.current?.abort(), []);
+  useEffect(() => () => {
+    requestRef.current?.abort();
+    reviewRef.current?.abort();
+  }, []);
 
   async function load(
     search: string,
@@ -52,6 +65,10 @@ export default function TonartAdminCatalogReview() {
       return;
     }
     requestRef.current?.abort();
+    reviewRef.current?.abort();
+    setReview(null);
+    setReviewError("");
+    setReviewingId(null);
     const controller = new AbortController();
     requestRef.current = controller;
     setError("");
@@ -85,6 +102,39 @@ export default function TonartAdminCatalogReview() {
       return;
     }
     void load(search, undefined, [undefined], 0);
+  }
+
+  async function inspectModel(model: PublicCatalogModel) {
+    if (!gateway) return;
+    reviewRef.current?.abort();
+    const controller = new AbortController();
+    reviewRef.current = controller;
+    setReview(null);
+    setReviewError("");
+    setReviewingId(model.id);
+    try {
+      // One user-requested detail and at most one six-item gallery page.
+      // Never query the entire collection, download images or write to D1/R2.
+      const detail = await gateway.getModel(model.slug, controller.signal);
+      if (detail.id !== model.id || detail.galleryVersion !== model.galleryVersion) {
+        throw new Error("catalog_model_changed");
+      }
+      const gallery = detail.imageCount > 0
+        ? await gateway.listGallery(detail.slug, {
+            version: detail.galleryVersion,
+            limit: Math.min(6, detail.imageCount),
+            expectedTotal: detail.imageCount,
+            expectedCoverStorageKey: detail.coverStorageKey ?? undefined,
+          }, controller.signal)
+        : null;
+      if (!controller.signal.aborted) setReview({ model: detail, gallery });
+    } catch {
+      if (!controller.signal.aborted) {
+        setReviewError("Não foi possível verificar os metadados dessa ficha. Ela pode ter sido atualizada ou estar com mídia inconsistente.");
+      }
+    } finally {
+      if (!controller.signal.aborted) setReviewingId(null);
+    }
   }
 
   const visible = onlyWithoutCover
@@ -184,6 +234,14 @@ export default function TonartAdminCatalogReview() {
                         {model.coverStorageKey ? "Chave cadastrada" : "Sem chave de capa"}
                       </td>
                       <td className="py-4 text-right">
+                        <button
+                          className="mb-2 block w-full text-right text-xs text-[hsl(var(--gold-accent))] underline underline-offset-4 disabled:opacity-50"
+                          type="button"
+                          disabled={busy || reviewingId !== null}
+                          onClick={() => { void inspectModel(model); }}
+                        >
+                          {reviewingId === model.id ? "Verificando..." : "Verificar mídia"}
+                        </button>
                         <Link
                           className="text-xs text-[hsl(var(--gold-accent))] underline underline-offset-4"
                           to={catalogModelDetailsPath(model.id, model.name)}
@@ -196,6 +254,51 @@ export default function TonartAdminCatalogReview() {
                 </tbody>
               </table>
             </div>
+          )}
+          {reviewingId && <p role="status" className="mt-5 text-sm text-white/65">Verificando apenas o modelo selecionado...</p>}
+          {reviewError && <p role="alert" className="mt-5 border border-amber-500/40 p-4 text-sm">{reviewError}</p>}
+          {review && (
+            <section aria-label="Resultado da verificação individual" className="mt-6 border border-white/20 p-5">
+              <h4 className="text-base font-semibold">Revisão: {review.model.name}</h4>
+              <p className="mt-2 text-sm text-white/65">
+                Ficha atual consultada na origem canônica. {review.model.imageCount} imagens declaradas;
+                {" "}{review.gallery ? review.gallery.items.length : 0} registros da galeria examinados
+                (máximo de 6).
+              </p>
+              <p className="mt-2 text-sm text-white/70">
+                Capa no índice: {review.model.coverStorageKey ? "chave cadastrada" : "sem chave de capa"}.
+                {" "}Versão da galeria: {review.model.galleryVersion}.
+              </p>
+              {review.gallery && (
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full min-w-[430px] border-collapse text-left text-xs">
+                    <thead className="border-b border-white/20 text-white/55">
+                      <tr><th className="py-2 pr-3">Papel</th><th className="py-2 pr-3">Formato</th><th className="py-2 pr-3">Dimensões</th><th className="py-2">Versões disponíveis</th></tr>
+                    </thead>
+                    <tbody>
+                      {review.gallery.items.map((image) => (
+                        <tr key={image.id} className="border-b border-white/10">
+                          <td className="py-3 pr-3">{image.role === "cover" ? "Capa" : "Galeria"}</td>
+                          <td className="py-3 pr-3">{image.mime}</td>
+                          <td className="py-3 pr-3">{image.width} × {image.height}</td>
+                          <td className="py-3">{Object.entries(image.variantKeys)
+                            .filter(([, key]) => Boolean(key))
+                            .map(([kind]) => kind).join(", ") || "Nenhuma"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <p className="mt-4 text-xs leading-5 text-white/50">
+                Esta verificação confere metadados e a consistência do índice.
+                Não comprova a entrega física dos arquivos, ausência de marcas d’água ou direitos de uso.
+                A publicação e a correção de mídia continuam com o único publicador canônico.
+              </p>
+              <Link className="mt-3 inline-block text-sm text-[hsl(var(--gold-accent))] underline" to={catalogModelDetailsPath(review.model.id, review.model.name)}>
+                Abrir ficha para revisão visual
+              </Link>
+            </section>
           )}
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <p className="max-w-xl text-xs text-white/50">
