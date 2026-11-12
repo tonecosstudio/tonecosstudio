@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import {
   creditTonecosCoins, findTonecosCoinRecipient,
   type TonecosCoinRecipient,
@@ -53,6 +55,7 @@ export default function TonecosAdminCoinsPage() {
   return <CommercialPage title="Administração de moedas"
     intro="Área restrita da TONART Studio. Os créditos são lançamentos virtuais auditáveis, não pagamentos, compras, transferências nem dinheiro.">
     <div className="max-w-3xl space-y-6">
+      <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminHome}>Voltar ao painel administrativo</Link>
       {error && <p role="alert" className="border border-red-500/40 p-4 text-sm text-red-200">{error}</p>}
       {notice && <p role="status" className="border border-white/20 p-4 text-sm text-white/80">{notice}</p>}
       <form className={panelClass + " space-y-4"} onSubmit={(event) => { void find(event); }}>
