@@ -158,8 +158,9 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   // contract. Keep only the reviewed SQLite regression test overlay.
   const overlays = contract.staging.localOverlays ?? {};
   assert.deepEqual(Object.keys(overlays).sort(), ['tools/test_worker_folder_counts.mjs']);
-  assert.equal(contract.migration.phase, 'staged-offline',
-    'Release authorization remains blocked pending live readiness');
+  // The separate M5 test validates both pre-cutover and approved states.
+  // Staged source-integrity checks must keep running after the owner switch.
+  assert.ok(['staged-offline', 'cutover-approved', 'cutover-complete'].includes(contract.migration.phase));
   assert.equal(contract.migration.releaseAuthorized, false);
   for (const [path, local] of Object.entries(overlays)) {
     assert.equal(local.sourceBlob, stage[path], 'Original import pin changed: ' + path);
@@ -213,6 +214,20 @@ test('M5 snapshot is a pinned observation, not production approval', () => {
   ]) assert.equal(typeof o[key], 'boolean', key)
   assert.equal(o.observationIsApproval, false, 'A snapshot cannot be an authorization')
   assert.equal(contract.migration.targetD1MigrationEnabled, false)
+});
+
+test('target can release only from the existing manual gated workflow', () => {
+  const workflow = source('.github/workflows/quality.yml');
+  const release = workflow.split('  catalog-cutover-release:')[1];
+  assert.ok(release, 'M5 must reuse the existing workflow, not add another publisher');
+  assert.match(release, /github\.event_name == 'workflow_dispatch'/);
+  assert.match(release, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(release, /cutover-readiness\.mjs --live/);
+  assert.match(release, /STAGED_WORKER_VERSION_ID@0%/);
+  assert.match(release, /STAGED_WORKER_VERSION_ID@100%/);
+  assert.match(release, /wrangler rollback/);
+  assert.doesNotMatch(release, /wrangler d1 (migrations|execute)/);
+  assert.doesNotMatch(release, /wrangler r2 object put/);
 });
 
 test('the canonical plan is discoverable and supersedes the old transfer proposal', () => {
