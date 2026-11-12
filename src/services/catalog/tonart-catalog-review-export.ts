@@ -3,7 +3,7 @@
  *
  * The Cloudflare Worker/D1/R2 remains the sole source of catalog data and
  * the sole writer. Exporting a CSV does not create a second editorial ledger.
- * The two blank proposal columns are applied only by the original repository\x27s
+ * The two blank proposal columns are applied only by the original repository's
  * existing production identity contract after offline review and explicit approval.
  */
 import type { PublicCatalogModel } from "./public-catalog-gateway";
