@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import { profileNavigationConfig } from "@/config/profile-navigation.config";
 import { hasTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
 import {
   getTonecosCurrentUser, getMyTonecosProfile, registerTonecosAccount,
@@ -12,10 +13,11 @@ import PasswordField from "./PasswordField";
 type Identity = { id: string; email: string | null };
 const safeNext = new Set<string>([
   TONECOS_COMMERCIAL_ROUTES.account,
+  TONECOS_COMMERCIAL_ROUTES.adminHome,
   ...(import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true"
-    ? [TONECOS_COMMERCIAL_ROUTES.request, TONECOS_COMMERCIAL_ROUTES.history] : []),
+    ? [TONECOS_COMMERCIAL_ROUTES.request, TONECOS_COMMERCIAL_ROUTES.history, TONECOS_COMMERCIAL_ROUTES.adminQuotes] : []),
   ...(import.meta.env.VITE_TONECOS_COINS_ENABLED === "true"
-    ? [TONECOS_COMMERCIAL_ROUTES.coins] : []),
+    ? [TONECOS_COMMERCIAL_ROUTES.coins, TONECOS_COMMERCIAL_ROUTES.adminCoins] : []),
 ]);
 
 function errorText(value: unknown) {
@@ -102,9 +104,8 @@ export default function TonecosAccountPage() {
         setIdentity({ id, email });
         const admin = await hasTonecosAdminAccess().catch(() => false);
         setIsAdmin(admin);
-        navigate(next === TONECOS_COMMERCIAL_ROUTES.account && admin &&
-          import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true"
-          ? TONECOS_COMMERCIAL_ROUTES.adminQuotes : next);
+        navigate(next === TONECOS_COMMERCIAL_ROUTES.account && admin
+          ? TONECOS_COMMERCIAL_ROUTES.adminHome : next);
       }
     } catch (err) {
       setError(errorText(err));
@@ -162,15 +163,19 @@ export default function TonecosAccountPage() {
             <div className="mt-7 flex flex-wrap gap-3 border-t border-white/15 pt-6">
               {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" &&
                 <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.history}>Meus orçamentos</Link>}
-              {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
-                <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.coins}>Minhas moedas</Link>}
+              {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" ? (
+                <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.coins}>Minhas moedas</Link>
+              ) : (
+                <span className={secondaryClass + " cursor-not-allowed opacity-60"} aria-disabled="true">
+                  Minhas moedas · indisponível
+                </span>
+              )}
               <Link className={secondaryClass} to="/modelos">Explorar modelos</Link>
-              {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" &&
-                isAdmin &&
-                <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}>
-                  Atendimento TONART
+              {isAdmin && (
+                <Link className={actionClass} to={TONECOS_COMMERCIAL_ROUTES.adminHome}>
+                  Painel administrativo
                 </Link>
-              }
+              )}
               {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
                 isAdmin &&
                 <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminCoins}>
@@ -180,6 +185,22 @@ export default function TonecosAccountPage() {
               <button type="button" onClick={() => { void signOut(); }} disabled={busy}
                 className={secondaryClass}>Sair da conta</button>
             </div>
+            <section className="mt-7 border-t border-white/15 pt-6" aria-label="Recursos da área do cliente">
+              <h2 className="mb-2 text-base font-semibold">Área do cliente</h2>
+              <p className="mb-4 text-xs text-white/55">
+                As funções do sistema anterior permanecem preservadas; as não integradas
+                ainda não recebem pedidos ou pagamentos.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {profileNavigationConfig.flatMap((section) => section.subSections)
+                  .filter((item) => item.id !== "info").map((item) => (
+                    <div key={item.id} className="flex items-center justify-between gap-3 border border-white/15 px-3 py-3 text-xs">
+                      <span>{item.label}</span>
+                      <span className="text-white/45">Indisponível</span>
+                    </div>
+                  ))}
+              </div>
+            </section>
           </div>
         ) : (
           <div className={panelClass}>
