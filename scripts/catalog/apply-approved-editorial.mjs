@@ -99,6 +99,11 @@ export function makeAtomicEditorialStatement(changes) {
       'AND m.slug=p.slug AND m.code=p.code ' +
       'AND m.name=p.old_name AND m.variant_name=p.old_variant ' +
       'AND m.published=1)=' + changes.length + ' ' +
+    // The D1 production trigger prohibits changing names for any member of a
+    // gallery. Refuse the ENTIRE batch when a protected name is changed.
+    'AND NOT EXISTS (SELECT 1 FROM patch p JOIN model_gallery_members g ' +
+      'ON (g.canonical_model_id=p.id OR g.source_model_id=p.id) ' +
+      'WHERE p.old_name<>p.new_name) ' +
     'RETURNING id,name,variant_name';
   return { sql, params: changes.flatMap(c =>
     [c.id,c.slug,c.code,c.fromName,c.fromVariant,c.toName,c.toVariant]) };
@@ -165,6 +170,10 @@ async function d1Query(sql, params, env) {
 export function classifyLiveRows(changes, rows) {
   if (!Array.isArray(rows) || rows.length !== changes.length) return 'conflict';
   const byId = new Map(rows.map(row => [row.id, row]));
+  if (byId.size !== changes.length ||
+      rows.some(row => row.gallery_name_locked !== 0 && row.gallery_name_locked !== 1)) {
+    return 'conflict';
+  }
   const is = (variant) => changes.every(c => {
     const row = byId.get(c.id);
     return row && row.slug === c.slug && row.code === c.code &&
@@ -172,7 +181,11 @@ export function classifyLiveRows(changes, rows) {
       row.name === (variant === 'before' ? c.fromName : c.toName) &&
       row.variant_name === (variant === 'before' ? c.fromVariant : c.toVariant);
   });
-  return is('after') ? 'already_applied' : is('before') ? 'ready' : 'conflict';
+  if (is('after')) return 'already_applied';
+  if (!is('before')) return 'conflict';
+  return changes.some(c => c.fromName !== c.toName &&
+    byId.get(c.id).gallery_name_locked === 1)
+    ? 'gallery_name_protected' : 'ready';
 }
 
 async function main() {
@@ -207,10 +220,15 @@ async function main() {
   const beforeText = git('show',sha + '^:' + CONTRACT);
   const changes = planReviewedEditorial(beforeText, afterText);
   const placeholders = changes.map(() => '?').join(',');
-  const readSQL = 'SELECT id,slug,code,name,variant_name,published FROM models WHERE id IN (' + placeholders + ')';
+  const readSQL =
+    'SELECT m.id,m.slug,m.code,m.name,m.variant_name,m.published, ' +
+    'EXISTS (SELECT 1 FROM model_gallery_members g WHERE ' +
+      'g.canonical_model_id=m.id OR g.source_model_id=m.id) AS gallery_name_locked ' +
+    'FROM models m WHERE m.id IN (' + placeholders + ')';
   const live = await d1Query(readSQL, changes.map(x => x.id), process.env);
   const state = classifyLiveRows(changes, live);
   requireCondition(state !== 'conflict', 'editorial_live_snapshot_drift');
+  requireCondition(state !== 'gallery_name_protected', 'editorial_gallery_name_protected');
   if (state === 'already_applied') {
     console.log(JSON.stringify({ status:'ALREADY_APPLIED', approvedPr:prNumber, count:changes.length }));
     return;
