@@ -45,7 +45,7 @@ test('structural metadata, unpublished changes and unsupported names fail closed
     c=>{c.models[0].id='mdl_'+'f'.repeat(20)},
     c=>{c.models[0].displayName='<unsafe>'},
     c=>{c.models[0].variantName='=spreadsheet'},
-    c=>{c.models[0].variantName=''},
+    c=>{c.models[0].variantName='>unsafe'},
     c=>{c.models[0].published=0},
   ]) {
     const c=structuredClone(changed);
