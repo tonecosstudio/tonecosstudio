@@ -351,8 +351,8 @@ export default function TonartAdminCatalogReview() {
                 Página {pageIndex + 1} · {page.items.length} modelos publicáveis nesta página
               </p>
               <p className="mt-1 text-xs text-white/55">
-                {activeSearch ? "Busca: " + activeSearch : "Sem filtro de busca"} ·
-                {" "} {withoutCover} sem chave de capa nesta página
+                {activeSearch ? "Busca: " + activeSearch : "Sem filtro de busca"} ·{" "}
+                <span>{withoutCover} sem chave de capa nesta página</span>
               </p>
             </div>
             <label className="flex items-center gap-2 text-xs text-white/75">

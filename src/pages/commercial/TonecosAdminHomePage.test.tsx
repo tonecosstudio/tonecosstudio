@@ -129,14 +129,14 @@ describe("TONART admin workspace", () => {
     show("/admin/pedidos");
     expect(await screen.findByRole("heading", { name: "Solicitações recebidas" })).toBeInTheDocument();
     expect(await screen.findByText("comprador@example.com")).toBeInTheDocument();
-    expect(screen.getByText("R$ 249,90")).toBeInTheDocument();
+    expect(screen.getByText(new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(249.90))).toBeInTheDocument();
     expect(screen.getByText(/não equivale a confirmar um pedido/)).toBeInTheDocument();
   });
 
   it("shows a financial quote summary without calling quotations revenue or payments", async () => {
     show("/admin/financeiro");
     expect(await screen.findByRole("heading", { name: "Visão de valores orçados" })).toBeInTheDocument();
-    expect(await screen.findByText("R$ 249,90")).toBeInTheDocument();
+    expect(await screen.findByText(new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(249.90))).toBeInTheDocument();
     expect(screen.getByText(/valores informados não são faturamento/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /cobrar|confirmar pagamento/i })).not.toBeInTheDocument();
   });
