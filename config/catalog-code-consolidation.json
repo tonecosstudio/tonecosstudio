@@ -184,7 +184,10 @@
       "tools/test_staging_checkpoint.py": "84d706dd2c80c31ba4f40f9765a879ae325be949",
       "docs/evidence/external-source-001-malevola-dispatch-gallery-review-2026-10-16.json": "3ac57acfb8572f98a89bdabcf89be82ae2b7aaef",
       "docs/evidence/external-source-001-malevola-dispatch-creator-attribution-release-2026-10-16.json": "e57613dc22859aff44cc7f06139cc2c7b133e0b4",
-      "docs/evidence/external-source-001-batch-012-media.jsonl": "a36534ae8299d384d135db5da61963e1c5ea3e63"
+      "docs/evidence/external-source-001-batch-012-media.jsonl": "a36534ae8299d384d135db5da61963e1c5ea3e63",
+      "tools/check_d1_editorial_audit_budget.py": "c7a55151b32d0bb217e69b7781e37159f7bcf170",
+      "tools/audit_external_source_coverage.py": "6734d35901f35d1f8a7793cd11f65ef2d06c66f2",
+      "tools/discover_external_staging_candidates.py": "6acfe0940c022ef4bee2163092e2f67925a09f5d"
     }
   },
   "runtime": {
@@ -329,7 +332,10 @@
       "tools/test_staging_checkpoint.py": "84d706dd2c80c31ba4f40f9765a879ae325be949",
       "docs/evidence/external-source-001-malevola-dispatch-gallery-review-2026-10-16.json": "3ac57acfb8572f98a89bdabcf89be82ae2b7aaef",
       "docs/evidence/external-source-001-malevola-dispatch-creator-attribution-release-2026-10-16.json": "e57613dc22859aff44cc7f06139cc2c7b133e0b4",
-      "docs/evidence/external-source-001-batch-012-media.jsonl": "a36534ae8299d384d135db5da61963e1c5ea3e63"
+      "docs/evidence/external-source-001-batch-012-media.jsonl": "a36534ae8299d384d135db5da61963e1c5ea3e63",
+      "tools/check_d1_editorial_audit_budget.py": "c7a55151b32d0bb217e69b7781e37159f7bcf170",
+      "tools/audit_external_source_coverage.py": "6734d35901f35d1f8a7793cd11f65ef2d06c66f2",
+      "tools/discover_external_staging_candidates.py": "6acfe0940c022ef4bee2163092e2f67925a09f5d"
     },
     "localOverlays": {
       "tools/test_worker_folder_counts.mjs": {
@@ -460,12 +466,12 @@
       ],
       "editorialContract": "config/catalog-production-model-contract.json",
       "note": "Current Git blob identities copied; offline and production cutover gates remain required.",
-      "dataWriterToolchainFiles": 43,
+      "dataWriterToolchainFiles": 46,
       "dataWriterToolchainSourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7"
     },
     "dataWriterToolchain": {
       "phase": "staged-offline",
-      "fileCount": 43,
+      "fileCount": 46,
       "sourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
       "releaseAuthorized": false,
       "workflowWriterEnabled": false,
@@ -479,7 +485,9 @@
         "test_apply_exact_source_gallery_promotion",
         "test_stage_external_media",
         "test_staging_checkpoint"
-      ]
+      ],
+      "releaseJobPrepared": true,
+      "cutoverPrerequisite": "cutover-complete"
     }
   },
   "productionObservation": {

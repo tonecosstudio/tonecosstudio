@@ -45,3 +45,9 @@ Estes arquivos **não publicam automaticamente**: ainda não há um segundo work
 ### CORS de produção
 
 O Worker atual serve a lista histórica de origens; a configuração candidata acrescenta **somente** `https://tonartstudio.com.br`. O primeiro deploy exige que as origens remotas antigas sejam subconjunto exato da lista candidata (`--allow-cors-expansion`) e, após a promoção, exige igualdade exata. O overlay SHA em `config/catalog-code-consolidation.json` registra esta diferença sem forçar atualização em produção durante `staged-offline`.
+
+### Publicação de lotes com um único writer preparado (inativo até M5)
+
+O **mesmo** workflow `.github/workflows/quality.yml` recebeu a operação manual `data-batch-release` com dois jobs canônicos: `catalog-batch-preflight` (avaliação/dry-run) e `catalog-batch-apply` (reapresenta e valida os bytes da staging, publica R2 e faz a inclusão atômica no D1 existente). A sequência preserva a lógica e os testes do antigo `external-batch-release.yml`, usa somente ferramentas do `services/catalogo` e mantém a aprovação do ambiente `production` para o job de escrita. O descritor é limitado a `config/external-batches/*.json`, com staging e produção R2 atestadas. Não há migrações D1, novos buckets, Workers ou repositórios.
+
+**Bloqueio intencional:** os jobs abortam antes de qualquer acesso aos dados se `cutover-readiness --live` não comprovar `cutover-complete` e o único owner TONART. A origem ainda é publicadora ativa; não disparar `apply` antes do corte e da validação das credenciais. Restam portar as rotas especializadas de promoção de galerias e staging de mídia antes de poder desativar todos os cinco writers Washington.

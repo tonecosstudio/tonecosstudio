@@ -165,12 +165,12 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   assert.match(contract.staging.sourceFixMergeCommit, sha);
   assert.equal(contract.staging.reconciliation.sourceMainSha, contract.staging.sourceMain);
   const stage = contract.staging.fileBlobs;
-  assert.equal(Object.keys(stage).length, 108);
+  assert.equal(Object.keys(stage).length, 111);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 10);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('migrations/')).length, 22);
-  // Verify all 108 exact source Git blobs, including query budget and editorial
+  // Verify all 111 exact source Git blobs, including query budget and editorial
   // contract. Keep only the reviewed folder-cover overlay and SQLite regression test.
-  assert.equal(Object.keys(contract.origin.dataWriterToolchainBlobs ?? {}).length, 43,
+  assert.equal(Object.keys(contract.origin.dataWriterToolchainBlobs ?? {}).length, 46,
     'Import one complete, source-pinned data-writer toolchain (no second pipeline)');
   assert.equal(contract.staging.dataWriterToolchain?.phase, 'staged-offline');
   assert.equal(contract.staging.dataWriterToolchain?.releaseAuthorized, false);
@@ -264,6 +264,20 @@ test('an approved catalog edit is applied only in the existing serial release wo
   assert.match(release, /environment: production/);
   assert.doesNotMatch(release, /wrangler d1 migrations/);
   assert.doesNotMatch(release, /wrangler r2 object put/);
+});
+
+test('reviewed batch release reuses Quality Gate and can never bypass completed M5', () => {
+  const workflow = source('.github/workflows/quality.yml');
+  assert.match(workflow, /  catalog-batch-preflight:/);
+  assert.match(workflow, /  catalog-batch-apply:/);
+  assert.match(workflow, /inputs.operation == 'data-batch-release'/);
+  assert.match(workflow, /needs: catalog-batch-preflight/);
+  assert.match(workflow, /cutover-readiness\.mjs/);
+  assert.match(workflow, /m\.migration\.phase!=='cutover-complete'/);
+  assert.match(workflow, /working-directory: services\/catalogo/);
+  assert.match(workflow, /python tools\/publish_d1_new_models\.py/);
+  assert.match(workflow, /python tools\/publish_r2_wrangler\.py/);
+  assert.match(workflow, /environment: production/);
 });
 
 test('target can release only from the existing manual gated workflow', () => {
