@@ -203,7 +203,23 @@
       "tools/test_worker_catalog_scale_sqlite.mjs": "b4dca481759d53448f31aaaff879b01546c3c74f",
       "worker/publicQueryBudget.ts": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
       "tools/test_worker_public_query_budget.mjs": "4354b2b5eaf696d8af440baa1eabb8915de0a9cd",
-      "config/catalog-production-model-contract.json": "e9057d363e51e0f5701311db44429da18a3a7f04"
+      "config/catalog-production-model-contract.json": "e9057d363e51e0f5701311db44429da18a3a7f04",
+      "tools/bounded_retry.mjs": "1c1c8320fcaf4139c18ab3c2533155213893620e",
+      "tools/check_migration_deploy_policy.py": "a1f9de00ea22bd82ff38ed80fb9d0275db670bd5",
+      "tools/check_promoted_worker_version.mjs": "2d92742b39ff08c17e05846e45ce86b605770520",
+      "tools/check_public_catalog_hierarchy.mjs": "3b1bbda5b696842abf1762dcb1ba7aee3972f4d0",
+      "tools/check_remote_worker_config.mjs": "71673045554c227c071c5741b72fb3824ca9401d",
+      "tools/check_staged_worker_version.mjs": "390fc85d827a80122cf1dfa19eec4e4a63056cea",
+      "tools/check_worker_cache_hit.mjs": "5c26e239fa3be7faac5972521d45fdbbf743bece",
+      "tools/check_worker_health.mjs": "857b139069d0917c9fd98d071f1034df788c7c0e",
+      "tools/cloudflare_deploy_state.mjs": "8c3bf22fbb3aca9c8fd3491c309e8610f3d5b50f",
+      "tools/read_wrangler_d1_id.mjs": "9144e74418b3394efaf58119d8e1b6666c5b4b60",
+      "tools/render_wrangler_config.mjs": "f66c69e313a8fd8974e86eb747e4ad6296a1de22",
+      "tools/verify_public_catalog.py": "34c1986b9e68602fa60881e6c656355767716b3b",
+      "tools/worker_release_smoke.mjs": "a16fcc51cc30d5b959df3bc75b00e41f15fc2a5e",
+      "tools/wrangler_config_contract.mjs": "59821cfda7350afbf3c8ee5fb3a0c715264d7eac",
+      "tools/catalog_schema_contract.py": "aedfade4a3bdb7e805669c4300e221ca33f69a9b",
+      "config/migration-deploy-policy.json": "e8f0cc455058e38c9accd98cf7ed67b3e5d79a14"
     },
     "localOverlays": {
       "tools/test_worker_folder_counts.mjs": {

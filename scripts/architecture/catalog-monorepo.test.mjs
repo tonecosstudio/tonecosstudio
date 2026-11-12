@@ -151,10 +151,10 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   assert.match(contract.staging.sourceFixMergeCommit, sha);
   assert.equal(contract.staging.reconciliation.sourceMainSha, contract.staging.sourceMain);
   const stage = contract.staging.fileBlobs;
-  assert.equal(Object.keys(stage).length, 49);
+  assert.equal(Object.keys(stage).length, 65);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 10);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('migrations/')).length, 22);
-  // Verify all 49 exact source Git blobs, including query budget and editorial
+  // Verify all 65 exact source Git blobs, including query budget and editorial
   // contract. Keep only the reviewed SQLite regression test overlay.
   const overlays = contract.staging.localOverlays ?? {};
   assert.deepEqual(Object.keys(overlays).sort(), ['tools/test_worker_folder_counts.mjs']);
