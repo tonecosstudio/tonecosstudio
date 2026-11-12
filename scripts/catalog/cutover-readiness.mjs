@@ -173,16 +173,20 @@ export async function inspectLiveReadOnly(env = process.env, contract = CANONICA
   const workflowName = SOURCE_WORKFLOW_PATH.split('/').at(-1)
   const sourceUrl = 'https://api.github.com/repos/' + SOURCE_REPO
   const prefix = sourceUrl + '/actions/workflows/' + workflowName
-  const ghHeaders = { 'User-Agent': 'tonecos-readonly-cutover-check' }
-  // The target repository is private: read-only GitHub credentials are required
-  // for the live release preflight. Never use a Cloudflare token for GitHub.
+  // The GITHUB_TOKEN provided to TONART Actions is scoped to the private
+  // target repo and may be denied access to unrelated repository resources.
+  // Read the public source using GitHub's anonymous API and send the scoped
+  // installation token ONLY to TONART. Do not leak target credentials to a
+  // retiring publisher or require permanent Washington credentials.
+  const sourceHeaders = { 'User-Agent': 'tonart-source-cutover-readonly' }
+  const targetHeaders = { 'User-Agent': 'tonart-target-cutover-readonly' }
   const githubToken = env.GITHUB_TOKEN || env.GH_TOKEN
-  if (githubToken) ghHeaders.Authorization = 'Bearer ' + githubToken
+  if (githubToken) targetHeaders.Authorization = 'Bearer ' + githubToken
   let state
   if (contract?.migration?.phase === 'cutover-complete') {
     // The definitive owner is TONART. Do not query the retired publisher on
     // routine releases, even to test its availability.
-    const targetRepo = await getJSON('https://api.github.com/repos/' + TARGET_REPO, ghHeaders)
+    const targetRepo = await getJSON('https://api.github.com/repos/' + TARGET_REPO, targetHeaders)
     state = {
       targetRepositoryId: targetRepo.id,
       targetRepositoryName: targetRepo.full_name,
@@ -190,17 +194,17 @@ export async function inspectLiveReadOnly(env = process.env, contract = CANONICA
     }
   } else {
   const [sourceRepo, targetRepo, sourceMain, mediaPatch, mediaFile, workflow, active, queued, requested, waiting, pending] = await Promise.all([
-    getJSON(sourceUrl, ghHeaders),
-    getJSON('https://api.github.com/repos/' + TARGET_REPO, ghHeaders),
-    getJSON(sourceUrl + '/git/ref/heads/main', ghHeaders),
-    getJSON(sourceUrl + '/pulls/' + SOURCE_FIX_PR, ghHeaders),
-    getJSON(sourceUrl + '/contents/worker/media.ts?ref=main', ghHeaders),
-    getJSON(prefix, ghHeaders),
-    getJSON(prefix + '/runs?status=in_progress&per_page=1', ghHeaders),
-    getJSON(prefix + '/runs?status=queued&per_page=1', ghHeaders),
-    getJSON(prefix + '/runs?status=requested&per_page=1', ghHeaders),
-    getJSON(prefix + '/runs?status=waiting&per_page=1', ghHeaders),
-    getJSON(prefix + '/runs?status=pending&per_page=1', ghHeaders),
+    getJSON(sourceUrl, sourceHeaders),
+    getJSON('https://api.github.com/repos/' + TARGET_REPO, targetHeaders),
+    getJSON(sourceUrl + '/git/ref/heads/main', sourceHeaders),
+    getJSON(sourceUrl + '/pulls/' + SOURCE_FIX_PR, sourceHeaders),
+    getJSON(sourceUrl + '/contents/worker/media.ts?ref=main', sourceHeaders),
+    getJSON(prefix, sourceHeaders),
+    getJSON(prefix + '/runs?status=in_progress&per_page=1', sourceHeaders),
+    getJSON(prefix + '/runs?status=queued&per_page=1', sourceHeaders),
+    getJSON(prefix + '/runs?status=requested&per_page=1', sourceHeaders),
+    getJSON(prefix + '/runs?status=waiting&per_page=1', sourceHeaders),
+    getJSON(prefix + '/runs?status=pending&per_page=1', sourceHeaders),
   ])
   state = {
     sourceRepositoryId: sourceRepo.id, sourceRepositoryName: sourceRepo.full_name,
@@ -225,9 +229,9 @@ export async function inspectLiveReadOnly(env = process.env, contract = CANONICA
     const writerApi = sourceUrl + '/actions/workflows/' +
       encodeURIComponent(writer.path.split('/').at(-1))
     const [metadata, ...runs] = await Promise.all([
-      getJSON(writerApi, ghHeaders),
+      getJSON(writerApi, sourceHeaders),
       ...['in_progress', 'queued', 'requested', 'waiting', 'pending'].map(status =>
-        getJSON(writerApi + '/runs?status=' + status + '&per_page=1', ghHeaders)),
+        getJSON(writerApi + '/runs?status=' + status + '&per_page=1', sourceHeaders)),
     ])
     return {
       id: metadata.id, path: metadata.path, state: metadata.state,

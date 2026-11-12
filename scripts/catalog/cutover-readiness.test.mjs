@@ -375,7 +375,13 @@ test('a read-only GitHub token is used only for metadata GET requests', async ()
     const state = await inspectLiveReadOnly({ GITHUB_TOKEN: 'test-github-token' })
     assert.equal(state.targetRepositoryId, original.target.repositoryId)
     assert.equal(requests.length, 35)
-    assert.ok(requests.every(r => r.method === 'GET' && r.token === 'Bearer test-github-token'))
+    assert.ok(requests.every(r => r.method === 'GET'))
+    const privateRequests = requests.filter(r => r.url ===
+      'https://api.github.com/repos/' + original.target.repository)
+    assert.equal(privateRequests.length, 1)
+    assert.equal(privateRequests[0].token, 'Bearer test-github-token')
+    assert.ok(requests.filter(r => r.url !== privateRequests[0].url)
+      .every(r => r.token === undefined), 'No installation token may leak to Washington')
     assert.ok(requests.every(r => r.url.startsWith('https://api.github.com/')))
   } finally {
     globalThis.fetch = savedFetch
