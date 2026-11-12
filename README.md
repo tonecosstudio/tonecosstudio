@@ -1,45 +1,48 @@
 # TONART Studio
 
-O site público oficial TONART Studio está em **https://tonartstudio.com.br**, hospedado manualmente no projeto Vercel `tonart-studio-public` da equipe Washington, com GitHub `tonecosstudio/tonecosstudio` como fonte única. **Cloudflare permanece como backend canônico** (Worker, D1/R2) e preview protegido. Em 09/11/2026 o catálogo visual foi publicado manualmente no domínio oficial como **pré-lançamento somente leitura/noindex**, no deployment Vercel `dpl_HF9PbdGxtke3cdg981yhFEauZP2B` (`READY`), SHA `0d7cc5dd957215672c328187215035fb162c7322`. Renders comuns estão visíveis e os 264 modelos SpecialSTL identificados permanecem em quarentena, sem substituições aprovadas. **Lançamento comercial e indexação continuam NO-GO**. A regra permanente está em [AGENTS.md](AGENTS.md).
+**Estado verificado em 12/11/2026.** O frontend oficial está no projeto Vercel `tonart-studio-public`, domínio **https://tonartstudio.com.br**, com o código-fonte do site em `tonecosstudio/tonecosstudio/main`. O catálogo público continua usando **um único Worker** `tonecos-catalogo-api` da conta Cloudflare Tonecos (D1 + R2); o publicador ativo do Worker permanece no repositório `washingtonmsdj/catalogo`. A cópia em `services/catalogo/` está **staged-offline**, não é um segundo publicador. O Cloudflare Pages é somente uma prévia protegida.
 
-## Quem é dono de quê
+**Não confundir os dois marcos:** a vitrine visual está publicada em pré-lançamento, mas a **indexação e o lançamento público definitivo ainda não têm GO**. A implantação comercial Vercel atual habilita conta e orçamentos; isso **não** significa checkout, pagamentos ou conta completa.
 
-| Recurso | Conta e origem | Estado |
+## Autoridades únicas (SSOT)
+
+| Camada | Autoridade vigente | Limite |
 | --- | --- | --- |
-| Repositório do site | GitHub tonecosstudio/tonecosstudio (ID 1163825583) | Único código-fonte do site; PR #4 integrada à main em 11/11/2026 |
-| Hospedagem do frontend oficial | Vercel `tonart-studio-public`, equipe Washington | `tonartstudio.com.br` e `www`, deploy manual controlado, site pré-lançamento/noindex |
-| Prévia | Cloudflare Pages + Cloudflare Access | Testes privados, sem segundo frontend público oficial |
-| API de modelos e imagens | Cloudflare Worker tonecos-catalogo-api, mesma conta Tonecos | Autoridade única dos modelos; D1/R2 somente via Worker |
-| Código do backend da API | Código importado inativo em **services/catalogo/**; publicador atual permanece no Worker existente | Código importado inativo; sem cutover/publicação de novo Worker |
-| Publicação | PR #4 integrada à main → CI e QA → Vercel projeto oficial (deploy manual) | Git auto deploy desligado; nenhum GO de mídia sem aprovação |
-| Supabase, Stripe, clientes, pedidos | Aplicação comercial futura | Excluídos do MVP público somente leitura |
+| Site e experiência TONART | `tonecosstudio/tonecosstudio/main`; Vercel `tonart-studio-public` | Deploy controlado de SHA aprovado; não criar frontend paralelo |
+| Catálogo e imagens | Worker `tonecos-catalogo-api` / D1 `tonecos-catalogo` / R2 `tonecos-catalogo-media` | Writer atual: `washingtonmsdj/catalogo`; não consultar ou migrar D1 em massa |
+| Identidade e orçamentos comerciais | Projeto Supabase TONART `icmtmaakjucmuzxnofkd`: Auth, `profiles`, `quotes`, RLS e RPCs | Não armazenar modelos no Supabase; não criar fluxo paralelo de solicitação |
+| Prévia alternativa | Cloudflare Pages protegido por Access | Não é o site oficial público |
+| Futura consolidação Worker | `services/catalogo/` e [manifesto de migração](config/catalog-code-consolidation.json) | `releaseAuthorized=false`; sem cutover nem segundo pipeline |
 
-O endereço GitHub antigo washingtonmsdj/tonecosstudio redireciona ao mesmo repositório institucional ID 1163825583. Isso **não** transfere a Vercel antiga para a conta Tonecos.
+A API é consumida por `/catalogo-api/` e pelo proxy GET restrito existente na Vercel; o navegador **não recebe** credenciais de escrita D1/R2. Cache compartilhado e CDN já ativos. Em 12/11, PRs Worker [#268](https://github.com/washingtonmsdj/catalogo/pull/268) e [#269](https://github.com/washingtonmsdj/catalogo/pull/269) foram integradas; a segunda corrigiu o smoke de cache. Versão Worker validada a 100%: `0b6d0d02-58f6-4f99-9a9a-92a605a498ed`. Na Vercel, a proteção de parâmetros de cache chegou à main pela PR [#24](https://github.com/tonecosstudio/tonecosstudio/pull/24), commit `bb661ab`. Estes são **checkpoints históricos**, não versões que devem ser fixadas automaticamente em novos deploys.
 
-**Decisão canônica:** o frontend e o backend ficarão no **mesmo repositório tonecosstudio/tonecosstudio**. O serviço Worker, os dados D1 e imagens R2 continuam únicos na Cloudflare Tonecos. A implementação segue o [plano canônico de consolidação](docs/MIGRACAO_CATALOGO_MONOREPO.md), sem criar outro GitHub repo nem importar a antiga interface React.
+## Recursos implementados e limites do MVP
 
-**Migração em andamento:** a API pública foi copiada **inativa** para [`services/catalogo/`](services/catalogo/README.md), com 22 migrations D1 versionadas e testes offline. O publicador ativo e o banco **continuam na origem atual**; nenhuma versão nova do Worker foi publicada. Plano: [MIGRACAO_CATALOGO_MONOREPO.md](docs/MIGRACAO_CATALOGO_MONOREPO.md).
+| Recurso | Estado observado no código/configuração | O que falta validar ou concluir |
+| --- | --- | --- |
+| Catálogo visual (Home, Universo, busca/filtros, ficha, galeria) | Publicado em pré-lançamento; 12 modelos carregados automaticamente na administração; cache CDN e Worker protegidos | QA visual autenticado desktop/mobile, licenças/créditos, conteúdos e aprovação editorial |
+| Capas | Imagens comuns visíveis; **264 identidades SpecialSTL** em quarentena | Substituir **somente** mídias SpecialSTL com prova de direitos e identidade exata, se aplicável; nunca esconder todo o catálogo |
+| **Minha Conta** (`/perfil` / `/login`) | Cadastro por e-mail, login, confirmação de e-mail conforme Auth, recuperação de senha, edição de nome/telefone, sair; modos comerciais Vercel ativos | E2E real de cadastro/confirmar e-mail/login/recuperação/perfil no domínio oficial; módulos legados ainda exibidos como indisponíveis |
+| Orçamento do cliente | `/solicitar-orcamento` e `/meus-orcamentos`; seleção de modelos, quantidades, observações, WhatsApp opcional, CEP, escala/acabamento; escrita na tabela única `quotes` por RPC autenticada | E2E real cliente → RLS → administrador → resposta → histórico do cliente; operação humana/aviso de novas solicitações |
+| Administração | Login único com autorização por função Supabase; atendimento de orçamentos com status e valor; visão geral/users/Coins histórico/financeiro em leitura; revisão do catálogo com CSV | E2E de RBAC cliente/admin; edição direta do catálogo ainda não salva, requer processo editorial source-first |
+| Pagamentos, assinaturas, pedidos físicos, Coins e suporte completos | **Não habilitados para lançamento**. A área da conta mostra seções anteriores como `Indisponível`. Orçamento não é venda | Fora do MVP de orçamento até decisão e implementação próprias; não simular saldo, recebimentos ou pedidos reais |
 
-## Arquitetura e escopo
+O ambiente Vercel produção foi verificado em 12/11: `VITE_TONECOS_COMMERCIAL_MVP=true`, `VITE_CATALOG_QUOTES_ENABLED=true`, `VITE_PUBLIC_CATALOG_MVP=false` e `VITE_PREVIEW_READ_ONLY=false`. As tabelas `profiles` e `quotes` e a RPC `submit_catalog_quote_request` foram constatadas no Supabase ativo; ambas as tabelas têm RLS ativa. **Presença de código, flags e esquema não substitui um teste autenticado de usuário real.**
 
-Navegador → Vercel React/Vite (`tonartstudio.com.br`) → `/catalogo-api/` na mesma origem → adaptador Vercel GET restrito → Worker canônico `tonecos-catalogo-api` → D1/R2. Prévia privada alternativa: Cloudflare Pages → Pages Function GET → Worker canônico. O Pages não controla o banco nem mantém outro catálogo. O site público mostra Home, Universo, listagem/busca, fichas/galerias, Sobre, Contato por e-mail, Termos e Privacidade. Sem cadastro, login, orçamento confirmado, checkout, pagamento ou admin nesta fase.
+## Critérios pendentes para GO público
 
-A aplicação comercial antiga continua no repositório para uma fase posterior, mas não foi incluída nos chunks do MVP readonly homologado. Preservar a identidade visual escura/dourada Arcade existente, sem outro frontend ou design system.
+1. Validar integralmente **conta e orçamento** com cliente de teste e administrador real no domínio oficial, incluindo autorização, RLS, e-mails de confirmação/recuperação e atualização do status.
+2. Executar QA de navegação e imagens em desktop/mobile, estados de erro/vazio, formulários, links, envio e confirmação de orçamento.
+3. Revisar licença e crédito dos renders, manter quarentena SpecialSTL, confirmar conteúdo, Termos/Privacidade, dados do operador e LGPD.
+4. Obter autorização expressa para lançar e indexar (robots/sitemap/canonical); sem GO, manter `noindex`.
+5. Não associar este MVP de catálogo + orçamento a pagamentos ou assinaturas não implementados.
 
-## Desenvolvimento e validação
+## Execução e documentação
 
-Requer Node.js 24 LTS e npm. Usar **npm ci** e **npm run release:verify** em ambiente configurado para validar TypeScript, lint, auditorias, testes/cobertura, build e dependências. Copiar .env.example para .env.local apenas em desenvolvimento; segredos não podem entrar em VITE_* nem no Git. O proxy first-party é configurado no Cloudflare Pages, não em uma nova API do site.
+Node 24+, `npm ci`, `npm run release:verify` quando aplicável. Verificar CI, configuração de produção e gates proporcionais ao risco; não tratar compilação como E2E. Nunca executar scan integral no D1, migrações ou importações apenas para conferir estado e **não criar cache, Writer, API, banco ou frontends paralelos**.
 
-O workflow GitHub `quality.yml` valida as alterações da PR por impacto; a produção Vercel só é atualizada manualmente com SHA aprovado. Compilação verde não comprova QA visual, origem de mídia, revisão jurídica ou GO do MVP.
-
-## Documentação vigente
-
-- [AGENTS.md](AGENTS.md): regras de execução, conta e SSOT.
-- [URGENTE.md](URGENTE.md): checkpoint operacional e bloqueios.
-- [docs/README.md](docs/README.md): índice da documentação ativa e do arquivo histórico.
-- [docs/TONECOS-STUDIO-CONSOLIDACAO.md](docs/TONECOS-STUDIO-CONSOLIDACAO.md): autoridade de cada camada.
-- [docs/TONECOS_CATALOG_FIRST_PARTY_PROXY.md](docs/TONECOS_CATALOG_FIRST_PARTY_PROXY.md): caminho do Worker.
-- [docs/TONECOS_SAFE_PREVIEW.md](docs/TONECOS_SAFE_PREVIEW.md): proteção do preview.
-- [docs/OPERACAO_CLOUDFLARE_PAGES.md](docs/OPERACAO_CLOUDFLARE_PAGES.md): publicação, rollback e limite gratuito.
-
-O catálogo visual já está publicado em pré-lançamento na Vercel com renders comuns visíveis. **Não liberar imagens SpecialSTL em quarentena, indexação, contas, pedidos ou pagamentos**, nem declarar lançamento comercial concluído, sem direitos verificados, revisão pertinente e autorização explícita. A PR #4 foi integrada à main em 11/11/2026 (merge `c1e19d900da5e4d59f16d9c651b45251aba2a87b`). O deploy manual anterior não equivale à publicação desse novo SHA; indexação e lançamento comercial permanecem NO-GO.
+- [AGENTS.md](AGENTS.md): regras e owners.
+- [URGENTE.md](URGENTE.md): checkpoint operacional de maior prioridade, atualizado por evidências.
+- [docs/README.md](docs/README.md): índice da documentação operacional.
+- [docs/MIGRACAO_CATALOGO_MONOREPO.md](docs/MIGRACAO_CATALOGO_MONOREPO.md): plano de migração *ainda não autorizada*; seções com SHA ou PR antiga são históricas.
+- [docs/TONECOS_CATALOG_FIRST_PARTY_PROXY.md](docs/TONECOS_CATALOG_FIRST_PARTY_PROXY.md): proxy first-party e cache.
