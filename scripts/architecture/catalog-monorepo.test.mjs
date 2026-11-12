@@ -223,8 +223,8 @@ test('target can release only from the existing manual gated workflow', () => {
   assert.match(release, /github\.event_name == 'workflow_dispatch'/);
   assert.match(release, /github\.ref == 'refs\/heads\/main'/);
   assert.match(release, /cutover-readiness\.mjs --live/);
-  assert.match(release, /STAGED_WORKER_VERSION_ID@0%/);
-  assert.match(release, /STAGED_WORKER_VERSION_ID@100%/);
+  assert.match(release, /STAGED_WORKER_VERSION_ID\}@0%/);
+  assert.match(release, /STAGED_WORKER_VERSION_ID\}@100%/);
   assert.match(release, /wrangler rollback/);
   assert.doesNotMatch(release, /wrangler d1 (migrations|execute)/);
   assert.doesNotMatch(release, /wrangler r2 object put/);
