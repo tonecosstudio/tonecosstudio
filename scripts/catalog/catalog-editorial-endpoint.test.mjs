@@ -142,14 +142,14 @@ test("authorized submission edits original contract in one reviewed GitHub PR", 
     if (u.pathname.endsWith("/git/ref/heads/main")) {
       return Response.json({ object: { sha: "b".repeat(40) } });
     }
-    if (u.pathname.endsWith("/pulls") && options.method === undefined) {
+    if (u.pathname.endsWith("/pulls") && options.method === "GET") {
       return Response.json([]);
     }
     if (u.pathname.endsWith("/git/ref/heads/editorial/tonart-admin-review")) {
       return Response.json({ message: "Not Found" }, { status: 404 });
     }
     if (u.pathname.endsWith("/contents/config/catalog-production-model-contract.json") &&
-        options.method === undefined) {
+        options.method === "GET") {
       return Response.json({ sha, size: Buffer.byteLength(source) });
     }
     if (u.pathname.endsWith("/git/blobs/" + sha)) {
