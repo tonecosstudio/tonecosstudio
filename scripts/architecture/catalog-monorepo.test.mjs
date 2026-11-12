@@ -158,7 +158,7 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   // contract. Keep only the reviewed folder-cover overlay and SQLite regression test.
   const overlays = contract.staging.localOverlays ?? {};
   assert.deepEqual(Object.keys(overlays).sort(), [
-    'tools/test_worker_folder_counts.mjs', 'worker/index.ts',
+    'tools/test_worker_folder_counts.mjs', 'worker/index.ts', 'worker/publicQueryBudget.ts',
   ]);
   // The separate M5 test validates both pre-cutover and approved states.
   // Staged source-integrity checks must keep running after the owner switch.

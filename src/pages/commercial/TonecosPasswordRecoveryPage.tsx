@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { isPasswordPolicyCompliant } from "@/config/auth";
@@ -24,7 +24,7 @@ export default function TonecosPasswordRecoveryPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  async function refreshSession() {
+  const refreshSession = useCallback(async () => {
     setError("");
     try {
       if (recoveryToken) {
@@ -40,13 +40,13 @@ export default function TonecosPasswordRecoveryPage() {
       setVerified(false);
       setError("Não foi possível validar o link. Ele pode ter expirado ou já ter sido utilizado.");
     }
-  }
+  }, [navigate, recoveryToken, recoveryType]);
   useEffect(() => {
     if (update && !validationStarted.current) {
       validationStarted.current = true;
       void refreshSession();
     }
-  }, [update]);
+  }, [update, refreshSession]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

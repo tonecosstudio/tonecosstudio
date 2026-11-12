@@ -59,7 +59,7 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
   let maxHeight: number | null = null
   for (const [key, value] of url.searchParams) {
     if (!names.has(key) || seen.has(key) || value.length < 1 ||
-        value.length > 2048 || /[\x00-\x1f\x7f]/.test(value)) return false
+        value.length > 2048 || Array.from(value).some(char => char.charCodeAt(0) <= 31 || char.charCodeAt(0) === 127)) return false
     seen.add(key)
     if (key === "limit") {
       const max = path === "/api/recent" ? 24 : path === "/api/franchises" ? 48 : 60

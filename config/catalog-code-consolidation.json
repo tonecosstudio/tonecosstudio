@@ -231,6 +231,11 @@
         "sourceBlob": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
         "localBlob": "7f1ad04b181e6affba1fb118d5a06dbb25caf146",
         "reason": "Preserve TONART indexed folder cover lookup and avoid unused gallery import while integrating the original Worker query-budget security fix"
+      },
+      "worker/publicQueryBudget.ts": {
+        "sourceBlob": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
+        "localBlob": "0230ed12b0fd054da6cc6ae53ecd9efb10f26d69",
+        "reason": "Preserve canonical Worker query-budget behavior while validating ASCII controls with char codes; satisfy target lint policy without disabling security checks."
       }
     },
     "excludedModules": [
