@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { answerCatalogQuoteRequest, changeCatalogQuoteStatus, listAdminCatalogQuotes, type AdminCatalogQuote } from "@/services/admin/config/catalog-quote-admin-service";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
 
@@ -57,6 +58,7 @@ export default function TonecosAdminQuotesPage() {
 
   return (
     <CommercialPage title="Atendimento de orçamentos" intro="Área restrita da TONART Studio. Verifique os modelos no catálogo antes de informar um valor. Nenhuma cobrança é iniciada automaticamente.">
+      <Link className={secondaryClass + " mb-6"} to={TONECOS_COMMERCIAL_ROUTES.adminHome}>Voltar ao painel administrativo</Link>
       {notice && <p role="status" className="mb-5 max-w-3xl border border-white/20 p-4 text-sm">{notice}</p>}
       {error && <div role="alert" className="mb-5 max-w-3xl border border-red-500/40 p-4 text-sm text-red-200">
         <p>{error}</p>
