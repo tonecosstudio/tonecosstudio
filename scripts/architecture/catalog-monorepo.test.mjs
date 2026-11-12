@@ -24,7 +24,7 @@ test('a single GitHub code owner is specified; current external publisher is exp
 });
 
 test('source inventory has immutable blob identities and no missing migration sequence', () => {
-  assert.equal(Object.keys(contract.origin.workerFiles).length, 12);
+  assert.equal(Object.keys(contract.origin.workerFiles).length, 13);
   assert.equal(Object.keys(contract.origin.migrationFiles).length, 22);
   for (const [path, blob] of Object.entries(contract.origin.workerFiles)) {
     assert.match(path, /^worker\/[a-zA-Z][a-zA-Z0-9]*\.ts$/);
@@ -34,9 +34,9 @@ test('source inventory has immutable blob identities and no missing migration se
   assert.deepEqual(migrationPaths.map(p => Number(p.match(/^migrations\/(\d{4})_[^/]+\.sql$/)?.[1])),
     Array.from({length:22}, (_, i) => i + 1));
   for (const blob of Object.values(contract.origin.migrationFiles)) assert.match(blob, sha);
-  assert.equal(contract.origin.fileCounts.worker, 12);
+  assert.equal(contract.origin.fileCounts.worker, 13);
   assert.equal(contract.origin.fileCounts.migrations, 22);
-  assert.equal(contract.origin.fileCounts.totalTrackedBlobs, 652);
+  assert.equal(contract.origin.fileCounts.totalTrackedBlobs, 656);
 });
 
 test('M1 import graph distinguishes public Worker from disconnected commercial modules', () => {
@@ -44,11 +44,11 @@ test('M1 import graph distinguishes public Worker from disconnected commercial m
   const graph = contract.origin.staticImportGraph;
   assert.equal(graph.entrypoint, 'worker/entry.ts');
   assert.equal(graph.observedAtSha, contract.origin.observedMainSha);
-  assert.equal(graph.reachableWorkerPaths.length, 9);
+  assert.equal(graph.reachableWorkerPaths.length, 10);
   assert.equal(graph.notImportedByEntrypoint.length, 3);
   assert.deepEqual(graph.nonWorkerImportPaths, ['config/catalog-schema-contract.json']);
   const union = [...graph.reachableWorkerPaths, ...graph.notImportedByEntrypoint];
-  assert.equal(new Set(union).size, 12);
+  assert.equal(new Set(union).size, 13);
   assert.deepEqual([...union].sort(), [...workerPaths].sort());
   for (const path of graph.notImportedByEntrypoint) assert.match(path, /quote(Admin|Workflow)/);
 });
@@ -147,19 +147,19 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   assert.equal(contract.staging.sourceMain, contract.origin.observedMainSha);
   assert.equal(contract.staging.sourceFixPullRequest, 266);
   assert.match(contract.staging.sourceFixHead, sha);
+  assert.equal(contract.staging.sourceFixStatusAtReconciliation, 'merged-in-main');
+  assert.match(contract.staging.sourceFixMergeCommit, sha);
+  assert.equal(contract.staging.reconciliation.sourceMainSha, contract.staging.sourceMain);
   const stage = contract.staging.fileBlobs;
-  assert.equal(Object.keys(stage).length, 46);
-  assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 9);
+  assert.equal(Object.keys(stage).length, 49);
+  assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 10);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('migrations/')).length, 22);
-  // Preserve the 46 immutable source Git pins; allow only two separately
-  // pinned, reviewed Tonecos-local changes while cutover remains blocked.
+  // Verify all 49 exact source Git blobs, including query budget and editorial
+  // contract. Keep only the reviewed SQLite regression test overlay.
   const overlays = contract.staging.localOverlays ?? {};
-  assert.deepEqual(Object.keys(overlays).sort(), [
-    'tools/test_worker_folder_counts.mjs',
-    'worker/index.ts',
-  ]);
+  assert.deepEqual(Object.keys(overlays).sort(), ['tools/test_worker_folder_counts.mjs']);
   assert.equal(contract.migration.phase, 'staged-offline',
-    'Reconcile local overlays before authorizing cutover');
+    'Release authorization remains blocked pending live readiness');
   assert.equal(contract.migration.releaseAuthorized, false);
   for (const [path, local] of Object.entries(overlays)) {
     assert.equal(local.sourceBlob, stage[path], 'Original import pin changed: ' + path);
