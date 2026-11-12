@@ -247,7 +247,7 @@ jobs:
       # production promotion. Reuse this existing PR job instead of creating
       # additional workflows or running the full suite on unrelated PRs.
       - name: Verify canonical TONART release candidate
-        if: github.event.pull_request.number == 4 && github.head_ref == 'integration/tonecosstudio-canonical-20261101'
+        if: github.event.pull_request.number == 26 && github.head_ref == 'feat/catalog-editorial-authenticated-submission-20261112'
         run: npm run release:verify
 
   # The same quality workflow owns the target release; no parallel writer.
