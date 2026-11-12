@@ -25,6 +25,8 @@ describe("TONART one-page editorial review export", () => {
     const lines = csv.trimEnd().split("\r\n");
     expect(lines).toHaveLength(2);
     expect(lines[0]).toContain('"ID canônico"');
+    expect(lines[0]).toContain('"Novo nome";"Nova variante"');
+    expect(lines[1]).toMatch(/;"";""$/);
     expect(lines[1]).toContain('"11111111-1111-4111-8111-111111111111"');
     expect(lines[1]).toContain('"Boneco, edição especial"');
     expect(lines[1]).toContain('"media/boneco/card.webp"');

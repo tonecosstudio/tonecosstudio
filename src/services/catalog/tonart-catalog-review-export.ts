@@ -3,12 +3,15 @@
  *
  * The Cloudflare Worker/D1/R2 remains the sole source of catalog data and
  * the sole writer. Exporting a CSV does not create a second editorial ledger.
+ * The two blank proposal columns are applied only by the original repository's
+ * existing production identity contract after offline review and explicit approval.
  */
 import type { PublicCatalogModel } from "./public-catalog-gateway";
 
 const HEADERS = [
   "ID canônico", "Slug", "Código", "Modelo", "Variante", "Categoria",
   "Franquia", "Imagens declaradas", "Chave da capa", "Estado da capa",
+  "Novo nome", "Nova variante",
 ] as const;
 
 function cell(value: string | number): string {
@@ -36,6 +39,7 @@ export function buildTonartCatalogReviewCsv(models: readonly PublicCatalogModel[
       model.category, model.franchise, model.imageCount,
       model.coverStorageKey ?? "",
       model.coverStorageKey ? "Chave cadastrada; entrega não verificada" : "Sem chave de capa",
+      "", "", // Empty editorial proposals: never overwrite a published name by default.
     ].map(cell).join(";"));
   }
   return lines.join("\r\n") + "\r\n";

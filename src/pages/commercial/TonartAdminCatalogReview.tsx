@@ -548,7 +548,7 @@ export default function TonartAdminCatalogReview() {
                 disabled={busy || visible.length === 0}
                 onClick={downloadCurrentReview}
               >
-                Baixar relação desta página (CSV)
+                Baixar planilha de revisão (CSV)
               </button>
               <button
                 type="button"
@@ -578,7 +578,9 @@ export default function TonartAdminCatalogReview() {
           </div>
           <p className="mt-3 text-xs text-white/50">
             A relação inclui apenas {visible.length} modelo(s) desta página{onlyWithoutCover ? " sem chave de capa" : ""}.
-            É um arquivo de consulta; não altera modelos nem publica mídias.
+            Preencha apenas “Novo nome” ou “Nova variante” para propor uma correção no contrato
+            original do catálogo. O download não altera o site: a aplicação e a publicação
+            continuam sujeitas à validação e à integração no repositório canônico.
           </p>
           {downloadError && <p role="alert" className="mt-3 text-sm text-amber-200">{downloadError}</p>}
         </>

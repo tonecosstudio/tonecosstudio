@@ -335,14 +335,14 @@ describe("TONART canonical admin catalog review", () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     try {
       show();
-      expect(screen.queryByRole("button", { name: "Baixar relação desta página (CSV)" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Baixar planilha de revisão (CSV)" })).not.toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
       await screen.findByText("Modelo sem capa");
       fireEvent.click(screen.getByRole("checkbox", {
         name: "Mostrar apenas modelos sem capa nesta página",
       }));
       expect(screen.getByText(/A relação inclui apenas 1 modelo/)).toBeInTheDocument();
-      fireEvent.click(screen.getByRole("button", { name: "Baixar relação desta página (CSV)" }));
+      fireEvent.click(screen.getByRole("button", { name: "Baixar planilha de revisão (CSV)" }));
       expect(click).toHaveBeenCalledTimes(1);
       expect(newCreate).toHaveBeenCalledTimes(1);
       expect(newCreate.mock.calls[0][0]).toBeInstanceOf(Blob);
