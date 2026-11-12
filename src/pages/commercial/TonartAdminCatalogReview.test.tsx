@@ -64,14 +64,13 @@ function show() {
 }
 
 describe("TONART canonical admin catalog review", () => {
-  it("never triggers a D1 request until the administrator explicitly asks for a page", async () => {
+  it("loads exactly one bounded first catalog page on entering admin without a click", async () => {
     show();
     expect(screen.getByRole("heading", { name: "Catálogo de modelos" })).toBeInTheDocument();
     expect(mocks.createGateway).toHaveBeenCalledTimes(1);
-    expect(mocks.listPage).not.toHaveBeenCalled();
+    expect(mocks.listPage).toHaveBeenCalledTimes(1);
     expect(mocks.getModel).not.toHaveBeenCalled();
     expect(mocks.listGallery).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     expect(await screen.findByText("Modelo sem capa")).toBeInTheDocument();
     expect(mocks.listPage).toHaveBeenCalledTimes(1);
     expect(mocks.listPage.mock.calls[0][0]).toEqual({
@@ -81,7 +80,6 @@ describe("TONART canonical admin catalog review", () => {
 
   it("reviews missing cover metadata locally without further catalog or image queries", async () => {
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo sem capa");
     const originalCalls = mocks.listPage.mock.calls.length;
     fireEvent.click(screen.getByRole("checkbox", {
@@ -102,7 +100,6 @@ describe("TONART canonical admin catalog review", () => {
       .mockResolvedValueOnce({ items: [withoutCover], nextCursor: null })
       .mockResolvedValueOnce({ items: [withCover], nextCursor: "next-page-token" });
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     expect(mocks.listPage).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Próxima página" }));
@@ -117,7 +114,6 @@ describe("TONART canonical admin catalog review", () => {
 
   it("checks one selected model and first six gallery records only on request", async () => {
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     expect(mocks.getModel).not.toHaveBeenCalled();
     expect(mocks.listGallery).not.toHaveBeenCalled();
@@ -149,7 +145,6 @@ describe("TONART canonical admin catalog review", () => {
       ...withoutCover, imageCount: 0, description: null, material: null, heightCm: null,
     });
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo sem capa");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[1]);
     expect(screen.getByText("Este modelo não possui capa cadastrada.")).toBeInTheDocument();
@@ -178,7 +173,6 @@ describe("TONART canonical admin catalog review", () => {
       total: 15, version: 3, nextCursor: "more",
     });
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
     expect(mocks.listGallery).not.toHaveBeenCalled();
@@ -214,7 +208,6 @@ describe("TONART canonical admin catalog review", () => {
       .mockResolvedValueOnce({ items: Array.from({ length: 3 }, (_, i) => img(i + 6)), total: 9, version: 3, nextCursor: null })
       .mockResolvedValueOnce({ items: Array.from({ length: 6 }, (_, i) => img(i)), total: 9, version: 3, nextCursor: "page-two" });
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getByRole("button", { name: "Ver imagem" }));
     fireEvent.click(screen.getByRole("button", { name: "Ver galeria (6 fotos por página)" }));
@@ -243,7 +236,6 @@ describe("TONART canonical admin catalog review", () => {
       total: 7, version: 2, nextCursor: "next",
     }).mockRejectedValueOnce(new Error("cursor expired"));
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getByRole("button", { name: "Ver imagem" }));
     fireEvent.click(screen.getByRole("button", { name: "Ver galeria (6 fotos por página)" }));
@@ -260,7 +252,6 @@ describe("TONART canonical admin catalog review", () => {
       description: null, material: null, heightCm: null,
     });
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Ver galeria (6 fotos por página)" }));
@@ -271,7 +262,6 @@ describe("TONART canonical admin catalog review", () => {
 
   it("shows the real cover from the shared image component without any new D1 lookup", async () => {
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(mocks.getModel).not.toHaveBeenCalled();
@@ -291,7 +281,6 @@ describe("TONART canonical admin catalog review", () => {
 
   it("clears the previously selected image whenever a new catalog search starts", async () => {
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
     expect(screen.getByRole("img", { name: "Capa do modelo Modelo de teste" })).toBeInTheDocument();
@@ -307,7 +296,6 @@ describe("TONART canonical admin catalog review", () => {
 
   it("displays a clear image-unavailable state when the approved image cannot load", async () => {
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
     fireEvent.error(screen.getByRole("img", { name: "Capa do modelo Modelo de teste" }));
@@ -318,7 +306,6 @@ describe("TONART canonical admin catalog review", () => {
   it("does not request media if the canonical gateway disallows the cover URL", async () => {
     mocks.mediaUrl.mockReturnValueOnce(null);
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
     expect(screen.getByText("Esta capa não está disponível para visualização pública.")).toBeInTheDocument();
@@ -336,8 +323,7 @@ describe("TONART canonical admin catalog review", () => {
     try {
       show();
       expect(screen.queryByRole("button", { name: "Baixar planilha de revisão (CSV)" })).not.toBeInTheDocument();
-      fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
-      await screen.findByText("Modelo sem capa");
+        await screen.findByText("Modelo sem capa");
       fireEvent.click(screen.getByRole("checkbox", {
         name: "Mostrar apenas modelos sem capa nesta página",
       }));
@@ -367,8 +353,7 @@ describe("TONART canonical admin catalog review", () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     try {
       show();
-      fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
-      await screen.findByText("Modelo de teste");
+        await screen.findByText("Modelo de teste");
       fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
       fireEvent.change(screen.getByRole("textbox", { name: "Novo nome de Modelo de teste" }), {
         target: { value: "Modelo revisado" },
@@ -395,7 +380,6 @@ describe("TONART canonical admin catalog review", () => {
 
   it("blocks invalid proposal text without exporting or consulting D1", async () => {
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
     fireEvent.change(screen.getByRole("textbox", { name: "Novo nome de Modelo de teste" }), {
@@ -415,7 +399,6 @@ describe("TONART canonical admin catalog review", () => {
       items: [withCover, withoutCover], nextCursor: "next-page",
     }).mockResolvedValueOnce({ items: [withCover], nextCursor: null });
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
     fireEvent.change(screen.getByRole("textbox", { name: "Novo nome de Modelo de teste" }), {
@@ -440,11 +423,12 @@ describe("TONART canonical admin catalog review", () => {
 
   it("rejects short searches locally without hitting the catalog", async () => {
     show();
+    await screen.findByText("Modelo de teste");
     fireEvent.change(screen.getByRole("searchbox", { name: "Buscar modelos do catálogo" }), {
       target: { value: "ab" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pesquisar" }));
     expect(screen.getByRole("alert")).toHaveTextContent("3 a 80 caracteres");
-    expect(mocks.listPage).not.toHaveBeenCalled();
+    expect(mocks.listPage).toHaveBeenCalledTimes(1);
   });
 });
