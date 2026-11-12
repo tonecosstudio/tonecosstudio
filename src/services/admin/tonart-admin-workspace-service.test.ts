@@ -19,6 +19,7 @@ const payload = {
   pendingQuoteCount: 0,
   reviewingQuoteCount: 0,
   coinEntryCount: 0,
+  recentCoinEntries: [],
   recentProfiles: [{
     id: "11111111-1111-4111-8111-111111111111",
     email: "cliente@example.com",
@@ -44,6 +45,39 @@ describe("canonical TONART admin overview", () => {
     const result = await getTonartAdminOverview();
     expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("tonart_admin_workspace_overview");
     expect(result).toEqual(payload);
+  });
+
+  it("accepts authentic ledger rows and rejects unbounded or inconsistent Coins histories", async () => {
+    const coin = {
+      id: "22222222-2222-4222-8222-222222222222",
+      userId: "11111111-1111-4111-8111-111111111111",
+      userEmail: "cliente@example.com",
+      type: "admin_credit",
+      delta: 12,
+      reason: "Crédito aprovado",
+      createdAt: "2026-11-11T14:30:00Z",
+    };
+    mocks.rpc.mockResolvedValueOnce({
+      data: { ...payload, coinEntryCount: 1, recentCoinEntries: [coin] }, error: null,
+    });
+    await expect(getTonartAdminOverview()).resolves.toMatchObject({
+      coinEntryCount: 1, recentCoinEntries: [coin],
+    });
+
+    mocks.rpc.mockResolvedValueOnce({
+      data: { ...payload, coinEntryCount: 1, recentCoinEntries: [{ ...coin, delta: 0 }] }, error: null,
+    });
+    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_coin_history_invalid");
+
+    mocks.rpc.mockResolvedValueOnce({
+      data: { ...payload, coinEntryCount: 1, recentCoinEntries: [{ ...coin, type: "purchase_spend", delta: 4 }] }, error: null,
+    });
+    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_coin_history_invalid");
+
+    mocks.rpc.mockResolvedValueOnce({
+      data: { ...payload, coinEntryCount: 0, recentCoinEntries: [coin] }, error: null,
+    });
+    await expect(getTonartAdminOverview()).rejects.toThrow("tonart_admin_overview_invalid");
   });
 
   it("fails closed on malformed data and provider failures", async () => {

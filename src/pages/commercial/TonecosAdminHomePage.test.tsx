@@ -14,6 +14,7 @@ const fixture = {
   pendingQuoteCount: 1,
   reviewingQuoteCount: 1,
   coinEntryCount: 0,
+  recentCoinEntries: [],
   recentProfiles: [{
     id: "11111111-1111-4111-8111-111111111111",
     email: "cliente@example.com",
@@ -25,8 +26,8 @@ beforeEach(() => { vi.clearAllMocks(); mocks.overview.mockResolvedValue(fixture)
 afterEach(() => cleanup());
 
 describe("TONART admin workspace", () => {
-  function show() {
-    render(<MemoryRouter><TonecosAdminHomePage /></MemoryRouter>);
+  function show(path = "/admin") {
+    render(<MemoryRouter initialEntries={[path]}><TonecosAdminHomePage /></MemoryRouter>);
   }
 
   it("uses the original administrative navigation and shows real protected numbers", async () => {
@@ -53,6 +54,18 @@ describe("TONART admin workspace", () => {
     expect(screen.queryByRole("button", { name: /promover|conceder permissão|excluir/i })).not.toBeInTheDocument();
   });
 
+  it("supports direct original admin URLs and browser reload on the same section", async () => {
+    show("/admin/users");
+    expect(await screen.findByRole("heading", { name: "Usuários cadastrados" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Usuários/ })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("opens original Coins route directly without enabling emission", async () => {
+    show("/admin/creditos");
+    expect(await screen.findByRole("heading", { name: "Sistema de créditos · Coins" })).toBeInTheDocument();
+    expect(await screen.findByText("Nenhuma movimentação registrada.")).toBeInTheDocument();
+  });
+
   it("preserves the existing Coins module even with operations turned off", async () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: /Créditos/ }));
@@ -60,6 +73,31 @@ describe("TONART admin workspace", () => {
     if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
       expect(screen.getByText(/Operações de emissão, utilização e estorno desativadas/)).toBeInTheDocument();
       expect(screen.queryByRole("link", { name: /Abrir operações autorizadas/ })).not.toBeInTheDocument();
+    }
+  });
+
+  it("shows a read-only ledger for original Coins even while crediting is disabled", async () => {
+    mocks.overview.mockResolvedValueOnce({
+      ...fixture,
+      coinEntryCount: 1,
+      recentCoinEntries: [{
+        id: "22222222-2222-4222-8222-222222222222",
+        userId: "11111111-1111-4111-8111-111111111111",
+        userEmail: "cliente@example.com",
+        type: "admin_credit",
+        delta: 12,
+        reason: "Crédito administrativo confirmado",
+        createdAt: "2026-11-11T13:00:00Z",
+      }],
+    });
+    show();
+    fireEvent.click(screen.getByRole("button", { name: /Créditos/ }));
+    expect(await screen.findByText("Crédito administrativo confirmado")).toBeInTheDocument();
+    expect(screen.getByText("cliente@example.com")).toBeInTheDocument();
+    expect(screen.getByText("+12")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Histórico de movimentações" })).toBeInTheDocument();
+    if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
+      expect(screen.queryByRole("link", { name: "Abrir operações autorizadas" })).not.toBeInTheDocument();
     }
   });
 
