@@ -127,7 +127,7 @@ describe("TONART canonical admin catalog review", () => {
     expect(mocks.getModel).not.toHaveBeenCalled();
     expect(mocks.listGallery).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (até 6 fotos)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (6 fotos por página)" }));
     expect(await screen.findByRole("heading", { name: "Galeria: Modelo de teste" })).toBeInTheDocument();
     expect(mocks.getModel).toHaveBeenCalledTimes(1);
     expect(mocks.getModel.mock.calls[0][0]).toBe("modelo-teste");
@@ -154,7 +154,7 @@ describe("TONART canonical admin catalog review", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[1]);
     expect(screen.getByText("Este modelo não possui capa cadastrada.")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (até 6 fotos)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (6 fotos por página)" }));
     expect(await screen.findByRole("heading", { name: "Galeria: Modelo sem capa" })).toBeInTheDocument();
     expect(mocks.listGallery).not.toHaveBeenCalled();
     expect(screen.getAllByText(/sem chave de capa/i).length).toBeGreaterThan(0);
@@ -182,7 +182,7 @@ describe("TONART canonical admin catalog review", () => {
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
     expect(mocks.listGallery).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (até 6 fotos)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (6 fotos por página)" }));
     expect(await screen.findByRole("heading", { name: "Galeria: Modelo de teste" })).toBeInTheDocument();
     expect(mocks.listGallery).toHaveBeenCalledExactlyOnceWith(
       "modelo-teste",
@@ -194,6 +194,66 @@ describe("TONART canonical admin catalog review", () => {
     expect(mocks.listPage).toHaveBeenCalledTimes(1);
   });
 
+  it("loads next and previous six-photo pages only on explicit clicks, with canonical cursors", async () => {
+    mocks.listPage.mockResolvedValueOnce({
+      items: [{ ...withCover, imageCount: 9, galleryVersion: 3 }], nextCursor: null,
+    });
+    mocks.getModel.mockResolvedValueOnce({ ...withCover, imageCount: 9, galleryVersion: 3 });
+    const img = (i: number) => ({
+      id: "image-" + i, role: i === 0 ? "cover" : "gallery",
+      width: 400, height: 400, bytes: 10000, mime: "image/webp",
+      qualityScore: 1, sourceSha256: "approved",
+      variantKeys: {
+        thumb: i === 0 ? null : "media/test/thumb-" + i + ".webp",
+        card: i === 0 ? withCover.coverStorageKey : "media/test/card-" + i + ".webp",
+        detail: null, original: null,
+      },
+    });
+    mocks.listGallery
+      .mockResolvedValueOnce({ items: Array.from({ length: 6 }, (_, i) => img(i)), total: 9, version: 3, nextCursor: "page-two" })
+      .mockResolvedValueOnce({ items: Array.from({ length: 3 }, (_, i) => img(i + 6)), total: 9, version: 3, nextCursor: null })
+      .mockResolvedValueOnce({ items: Array.from({ length: 6 }, (_, i) => img(i)), total: 9, version: 3, nextCursor: "page-two" });
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo de teste");
+    fireEvent.click(screen.getByRole("button", { name: "Ver imagem" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (6 fotos por página)" }));
+    expect(await screen.findByRole("heading", { name: "Galeria: Modelo de teste" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Fotos anteriores" })).toBeDisabled();
+    expect(mocks.listGallery).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Próximas fotos" }));
+    expect(await screen.findByRole("img", { name: "Foto 7 do modelo Modelo de teste" })).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "Foto 1 do modelo Modelo de teste" })).not.toBeInTheDocument();
+    expect(mocks.listGallery.mock.calls[1][1]).toMatchObject({ cursor: "page-two", limit: 6, expectedTotal: 9, version: 3 });
+    expect(mocks.listGallery).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("button", { name: "Próximas fotos" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Fotos anteriores" }));
+    expect(await screen.findByRole("img", { name: "Foto 1 do modelo Modelo de teste" })).toBeInTheDocument();
+    expect(mocks.listGallery.mock.calls[2][1]).toMatchObject({ cursor: undefined, limit: 6, expectedTotal: 9, version: 3 });
+    expect(mocks.listGallery).toHaveBeenCalledTimes(3);
+  });
+
+  it("preserves the current photos if the next gallery page fails", async () => {
+    mocks.listPage.mockResolvedValueOnce({ items: [{ ...withCover, imageCount: 7, galleryVersion: 2 }], nextCursor: null });
+    mocks.getModel.mockResolvedValueOnce({ ...withCover, imageCount: 7, galleryVersion: 2 });
+    mocks.listGallery.mockResolvedValueOnce({
+      items: [{ id: "one", role: "cover", width: 400, height: 400, bytes: 100,
+        mime: "image/webp", qualityScore: 1, sourceSha256: "approved",
+        variantKeys: { thumb: null, card: withCover.coverStorageKey, detail: null, original: null } }],
+      total: 7, version: 2, nextCursor: "next",
+    }).mockRejectedValueOnce(new Error("cursor expired"));
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo de teste");
+    fireEvent.click(screen.getByRole("button", { name: "Ver imagem" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (6 fotos por página)" }));
+    await screen.findByRole("heading", { name: "Galeria: Modelo de teste" });
+    fireEvent.click(screen.getByRole("button", { name: "Próximas fotos" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("A página anterior foi preservada");
+    expect(screen.getByRole("img", { name: "Foto 1 do modelo Modelo de teste" })).toBeInTheDocument();
+    expect(mocks.listGallery).toHaveBeenCalledTimes(2);
+  });
+
   it("fails closed when the detail no longer corresponds to the selected model", async () => {
     mocks.getModel.mockResolvedValueOnce({
       ...withCover, id: "55555555-5555-4555-8555-555555555555",
@@ -203,7 +263,7 @@ describe("TONART canonical admin catalog review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
     await screen.findByText("Modelo de teste");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver imagem" })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (até 6 fotos)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver galeria (6 fotos por página)" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível verificar os metadados");
     expect(mocks.listGallery).not.toHaveBeenCalled();
     expect(screen.queryByRole("heading", { name: /Galeria:/ })).not.toBeInTheDocument();
