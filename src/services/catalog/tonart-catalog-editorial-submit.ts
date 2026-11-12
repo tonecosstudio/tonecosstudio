@@ -68,7 +68,7 @@ export async function submitTonartCatalogEditorialReview(
   }
   if (payload.state !== "awaiting_review" ||
       typeof payload.receipt !== "string" ||
-      !/^https:\/\/github\.com\/washingtonmsdj\/catalogo\/pull\/\d+$/.test(payload.receipt) ||
+      !/^https:\/\/github\.com\/tonecosstudio\/tonecosstudio\/pull\/\d+$/.test(payload.receipt) ||
       !Number.isSafeInteger(payload.changed) ||
       !Array.isArray(payload.modelIds)) {
     throw new Error("O servidor não confirmou o recibo de revisão. Verifique o repositório antes de repetir.");
