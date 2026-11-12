@@ -64,11 +64,20 @@ export default function TonecosAdminHomePage() {
   const isOrders = sectionId === "orders";
   const isFinancial = sectionId === "financial-hub";
   const isCommunication = sectionId === "communication";
+  // The catalog has its own Cloudflare authority. Do not fetch account,
+  // quote or Coins aggregates when inspecting catalog media.
+  const requiresOverview = isDashboard || isUsers || isCoins ||
+    isOrders || isFinancial || isCommunication;
   const users = overview?.recentProfiles.filter((profile) =>
     [profile.email, profile.fullName ?? ""].some((value) => value.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))),
   ) ?? [];
 
   useEffect(() => {
+    if (!requiresOverview) {
+      setLoading(false);
+      setError("");
+      return;
+    }
     let active = true;
     setLoading(true);
     setError("");
@@ -77,7 +86,7 @@ export default function TonecosAdminHomePage() {
       .catch(() => { if (active) { setOverview(null); setError("Não foi possível carregar os dados administrativos. Confira a conexão e tente novamente."); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [reload]);
+  }, [reload, requiresOverview]);
 
   const showItem = (item: NavigationItem) => {
     navigate(item.path);
@@ -152,17 +161,19 @@ export default function TonecosAdminHomePage() {
               <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-white/45">Administração / {displayName}</p>
               <h2 className="text-2xl font-semibold">{isDashboard ? "Visão operacional" : displayName}</h2>
             </div>
-            <button className={secondaryClass} type="button" disabled={loading} onClick={() => setReload((v) => v + 1)}>
-              Atualizar dados
-            </button>
+            {requiresOverview && (
+              <button className={secondaryClass} type="button" disabled={loading} onClick={() => setReload((v) => v + 1)}>
+                Atualizar dados
+              </button>
+            )}
           </div>
 
-          {error && (
+          {requiresOverview && error && (
             <div role="alert" className="mb-6 rounded-sm border border-red-500/40 bg-red-950/20 p-4 text-sm text-red-100">
               {error}
             </div>
           )}
-          {loading && <p role="status" className="mb-6 text-sm text-white/60">Consultando dados administrativos...</p>}
+          {requiresOverview && loading && <p role="status" className="mb-6 text-sm text-white/60">Consultando dados administrativos...</p>}
 
           {isDashboard && (
             <>
