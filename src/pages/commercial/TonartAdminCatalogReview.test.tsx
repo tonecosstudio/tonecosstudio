@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   listPage: vi.fn(),
   getModel: vi.fn(),
   listGallery: vi.fn(),
+  mediaUrl: vi.fn(),
+  probe: vi.fn(),
   createGateway: vi.fn(),
 }));
 vi.mock("@/config/canonical-catalog-endpoint", () => ({
@@ -13,6 +15,7 @@ vi.mock("@/config/canonical-catalog-endpoint", () => ({
 }));
 vi.mock("@/services/catalog/public-catalog-gateway", () => ({
   createPublicCatalogGateway: mocks.createGateway,
+  probeCanonicalCatalogMediaByte: mocks.probe,
 }));
 
 import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
@@ -36,7 +39,10 @@ beforeEach(() => {
     listPage: mocks.listPage,
     getModel: mocks.getModel,
     listGallery: mocks.listGallery,
+    mediaUrl: mocks.mediaUrl,
   });
+  mocks.mediaUrl.mockReturnValue("https://tonartstudio.com.br/catalogo-api/media/test/modelo/card.webp");
+  mocks.probe.mockResolvedValue(undefined);
   mocks.getModel.mockResolvedValue({
     ...withCover, description: null, material: null, heightCm: null,
   });
@@ -158,6 +164,37 @@ describe("TONART canonical admin catalog review", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível verificar os metadados");
     expect(mocks.listGallery).not.toHaveBeenCalled();
     expect(screen.queryByRole("heading", { name: /Revisão:/ })).not.toBeInTheDocument();
+  });
+
+  it("checks a cover byte only after an explicit click on an approved model", async () => {
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo de teste");
+    expect(mocks.probe).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Verificar mídia" })[0]);
+    await screen.findByRole("heading", { name: "Revisão: Modelo de teste" });
+    expect(mocks.probe).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Testar entrega da capa (1 byte)" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Entrega parcial confirmada (1 byte)");
+    expect(mocks.mediaUrl).toHaveBeenCalledExactlyOnceWith(withCover.coverStorageKey);
+    expect(mocks.probe).toHaveBeenCalledTimes(1);
+    expect(mocks.probe.mock.calls[0][0]).toBe("https://tonartstudio.com.br/catalogo-api/");
+    expect(mocks.probe.mock.calls[0][1]).toContain("catalogo-api/media/");
+    expect(mocks.listPage).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows an explicit error rather than claiming full image availability on a broken partial fetch", async () => {
+    mocks.probe.mockRejectedValueOnce(new Error("invalid response"));
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Carregar modelos" }));
+    await screen.findByText("Modelo de teste");
+    fireEvent.click(screen.getAllByRole("button", { name: "Verificar mídia" })[0]);
+    await screen.findByRole("heading", { name: "Revisão: Modelo de teste" });
+    fireEvent.click(screen.getByRole("button", { name: "Testar entrega da capa (1 byte)" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível validar a entrega parcial da capa");
+    expect(screen.queryByText(/Entrega parcial confirmada/)).not.toBeInTheDocument();
   });
 
   it("rejects short searches locally without hitting the catalog", async () => {
