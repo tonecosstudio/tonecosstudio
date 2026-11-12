@@ -50,7 +50,26 @@ on:
         options:
           - worker-release
           - data-batch-release
+          - gallery-promotion
         default: worker-release
+      gallery_mode:
+        description: Generic gallery promotion contract, exact-source or existing
+        required: false
+        type: choice
+        options:
+          - existing
+          - exact
+        default: existing
+      gallery_evidence:
+        description: Reviewed evidence JSON under services/catalogo/docs/evidence
+        required: false
+        type: string
+        default: ''
+      gallery_authorization:
+        description: Approved gallery preflight JSON under services/catalogo/docs/evidence
+        required: false
+        type: string
+        default: ''
       batch:
         description: Reviewed batch descriptor under services/catalogo/config/external-batches
         required: false
@@ -786,5 +805,176 @@ jobs:
             ${{ runner.temp }}/external-batch/bundle/models.jsonl
             ${{ runner.temp }}/external-batch/bundle/publish-summary.json
             ${{ runner.temp }}/external-batch/r2-proof.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  # Genericizes the two source gallery promotion workflows into one reviewed
+  # path. Both modes use the same canonical Python tools and existing D1/R2.
+  catalog-gallery-preflight:
+    name: Gallery promotion — reviewed dry run
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'gallery-promotion'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: services/catalogo
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CATALOG_API_URL: ${{ vars.VITE_API_BASE_URL }}
+      GALLERY_EVIDENCE: ${{ inputs.gallery_evidence }}
+      GALLERY_AUTHORIZATION: ${{ inputs.gallery_authorization }}
+      GALLERY_MODE: ${{ inputs.gallery_mode }}
+    steps:
+      - name: Checkout canonical TONART main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Use Python 3.13
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.13'
+      - name: Verify completed M5 and reviewed evidence scope before any remote call
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node "$GITHUB_WORKSPACE/scripts/catalog/cutover-readiness.mjs" --live
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          m=json.loads((Path(os.environ["GITHUB_WORKSPACE"])/'config/catalog-code-consolidation.json').read_text(encoding='utf-8'))
+          assert m['migration']['phase']=='cutover-complete'
+          assert m['activeWorkerPublisher']=='tonecosstudio/tonecosstudio'
+          root=Path.cwd().resolve()/'docs/evidence'
+          for key in ('GALLERY_EVIDENCE','GALLERY_AUTHORIZATION'):
+              value=os.environ[key]
+              assert value and '\n' not in value and '\r' not in value
+              p=Path(value).resolve()
+              assert p.is_relative_to(root) and p.suffix=='.json' and p.is_file(), key
+          assert os.environ['GALLERY_MODE'] in ('existing','exact')
+          PY
+      - name: Resolve the existing D1 binding and Python dependencies
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$CLOUDFLARE_API_TOKEN"
+          echo "CLOUDFLARE_D1_DATABASE_ID=$(node tools/read_wrangler_d1_id.mjs)" >> "$GITHUB_ENV"
+          python -m pip install -r tools/requirements.txt
+      - name: Verify gallery publication contracts and protect D1 budget
+        working-directory: services/catalogo/tools
+        run: |
+          python -m unittest -v test_apply_existing_gallery_promotion test_apply_exact_source_gallery_promotion
+          python check_d1_editorial_audit_budget.py
+      - name: Dry run selected gallery against existing resources
+        run: |
+          set -euo pipefail
+          if [[ "$GALLERY_MODE" == exact ]]; then
+            script=tools/apply_exact_source_gallery_promotion.py
+          else
+            script=tools/apply_existing_gallery_promotion.py
+          fi
+          python "$script" "$GALLERY_EVIDENCE" \
+            --authorization "$GALLERY_AUTHORIZATION" \
+            --source-contract config/external-sources/external-source-001.json \
+            --production-bucket tonecos-catalogo-media \
+            --summary "$RUNNER_TEMP/tonart-gallery-preflight.json"
+          python - "$RUNNER_TEMP/tonart-gallery-preflight.json" <<'PY'
+          import json,sys
+          summary=json.load(open(sys.argv[1],encoding='utf-8'))
+          assert summary['productionDeletes']==0
+          assert summary['state'] in {'dry_run_ready','already_applied'}
+          assert summary['d1Writes']==0
+          PY
+
+  catalog-gallery-apply:
+    name: Gallery promotion — apply existing D1/R2
+    needs: catalog-gallery-preflight
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'gallery-promotion' && inputs.apply == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    defaults:
+      run:
+        working-directory: services/catalogo
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CATALOG_API_URL: ${{ vars.VITE_API_BASE_URL }}
+      GALLERY_EVIDENCE: ${{ inputs.gallery_evidence }}
+      GALLERY_AUTHORIZATION: ${{ inputs.gallery_authorization }}
+      GALLERY_MODE: ${{ inputs.gallery_mode }}
+    steps:
+      - name: Checkout canonical TONART main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Use Python 3.13
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.13'
+      - name: Reverify M5 and exact reviewed input path
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node "$GITHUB_WORKSPACE/scripts/catalog/cutover-readiness.mjs" --live
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          m=json.loads((Path(os.environ["GITHUB_WORKSPACE"])/'config/catalog-code-consolidation.json').read_text(encoding='utf-8'))
+          assert m['migration']['phase']=='cutover-complete'
+          assert m['activeWorkerPublisher']=='tonecosstudio/tonecosstudio'
+          root=Path.cwd().resolve()/'docs/evidence'
+          for key in ('GALLERY_EVIDENCE','GALLERY_AUTHORIZATION'):
+              value=os.environ[key]
+              assert value and '\n' not in value and '\r' not in value
+              p=Path(value).resolve()
+              assert p.is_relative_to(root) and p.suffix=='.json' and p.is_file(), key
+          assert os.environ['GALLERY_MODE'] in ('existing','exact')
+          PY
+      - name: Resolve existing D1 and Python dependencies
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CATALOG_API_URL"
+          echo "CLOUDFLARE_D1_DATABASE_ID=$(node tools/read_wrangler_d1_id.mjs)" >> "$GITHUB_ENV"
+          python -m pip install -r tools/requirements.txt
+      - name: Protect D1 budget and atomically publish reviewed gallery
+        run: |
+          set -euo pipefail
+          python tools/check_d1_editorial_audit_budget.py
+          if [[ "$GALLERY_MODE" == exact ]]; then
+            script=tools/apply_exact_source_gallery_promotion.py
+          else
+            script=tools/apply_existing_gallery_promotion.py
+          fi
+          python "$script" "$GALLERY_EVIDENCE" \
+            --authorization "$GALLERY_AUTHORIZATION" \
+            --source-contract config/external-sources/external-source-001.json \
+            --production-bucket tonecos-catalogo-media \
+            --summary "$RUNNER_TEMP/tonart-gallery-release.json" --apply
+          python - "$RUNNER_TEMP/tonart-gallery-release.json" <<'PY'
+          import json,sys
+          s=json.load(open(sys.argv[1],encoding='utf-8'))
+          assert s['productionDeletes']==0
+          assert s['state'] in {'applied_verified','already_applied'}
+          PY
+          python tools/verify_public_catalog.py --api-base "$CATALOG_API_URL"
+      - name: Keep official promotion evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: tonart-gallery-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tonart-gallery-release.json
           if-no-files-found: warn
           retention-days: 7

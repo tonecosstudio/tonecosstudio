@@ -266,6 +266,20 @@ test('an approved catalog edit is applied only in the existing serial release wo
   assert.doesNotMatch(release, /wrangler r2 object put/);
 });
 
+test('both gallery promotion modes reuse the same M5-gated workflow and resources', () => {
+  const workflow = source('.github/workflows/quality.yml');
+  assert.match(workflow, /  catalog-gallery-preflight:/);
+  assert.match(workflow, /  catalog-gallery-apply:/);
+  assert.match(workflow, /inputs.operation == 'gallery-promotion'/);
+  assert.match(workflow, /needs: catalog-gallery-preflight/);
+  assert.match(workflow, /cutover-readiness\.mjs/);
+  assert.match(workflow, /m\['migration'\]\['phase'\]=='cutover-complete'/);
+  assert.match(workflow, /apply_exact_source_gallery_promotion\.py/);
+  assert.match(workflow, /apply_existing_gallery_promotion\.py/);
+  assert.match(workflow, /--production-bucket tonecos-catalogo-media/);
+  assert.match(workflow, /environment: production/);
+});
+
 test('reviewed batch release reuses Quality Gate and can never bypass completed M5', () => {
   const workflow = source('.github/workflows/quality.yml');
   assert.match(workflow, /  catalog-batch-preflight:/);
