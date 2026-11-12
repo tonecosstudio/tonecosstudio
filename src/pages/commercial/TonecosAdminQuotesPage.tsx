@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { answerCatalogQuoteRequest, changeCatalogQuoteStatus, listAdminCatalogQuotes, type AdminCatalogQuote } from "@/services/admin/config/catalog-quote-admin-service";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
@@ -10,6 +10,11 @@ const statusLabels: Record<string,string> = {
   answered: "Respondido", archived: "Arquivado",
 };
 export default function TonecosAdminQuotesPage() {
+  const [params] = useSearchParams();
+  const requestedId = params.get("quote");
+  const selectedId = requestedId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedId)
+    ? requestedId.toLowerCase() : null;
+  const invalidSelection = requestedId !== null && !selectedId;
   const [quotes, setQuotes] = useState<AdminCatalogQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
@@ -17,6 +22,8 @@ export default function TonecosAdminQuotesPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const visibleQuotes = invalidSelection ? [] : selectedId
+    ? quotes.filter((quote) => quote.id.toLowerCase() === selectedId) : quotes;
 
   useEffect(() => {
     let active = true;
@@ -58,7 +65,10 @@ export default function TonecosAdminQuotesPage() {
 
   return (
     <CommercialPage title="Atendimento de orçamentos" intro="Área restrita da TONART Studio. Verifique os modelos no catálogo antes de informar um valor. Nenhuma cobrança é iniciada automaticamente.">
-      <Link className={secondaryClass + " mb-6"} to={TONECOS_COMMERCIAL_ROUTES.adminHome}>Voltar ao painel administrativo</Link>
+      <div className="mb-6 flex flex-wrap gap-3">
+        <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminHome}>Voltar ao painel administrativo</Link>
+        {requestedId !== null && <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}>Ver todos os orçamentos</Link>}
+      </div>
       {notice && <p role="status" className="mb-5 max-w-3xl border border-white/20 p-4 text-sm">{notice}</p>}
       {error && <div role="alert" className="mb-5 max-w-3xl border border-red-500/40 p-4 text-sm text-red-200">
         <p>{error}</p>
@@ -70,9 +80,17 @@ export default function TonecosAdminQuotesPage() {
           onClick={() => setAttempt((n) => n + 1)}>Tentar novamente</button>
       </div>}
       {loading ? <p role="status">Verificando autorização e orçamentos...</p> : null}
-      {!loading && !error && quotes.length === 0 ? <p className={panelClass}>Nenhuma solicitação recebida.</p> : null}
+      {!loading && !error && invalidSelection && (
+        <p role="alert" className={panelClass}>Referência de orçamento inválida. Consulte a lista completa.</p>
+      )}
+      {!loading && !error && !invalidSelection && selectedId && visibleQuotes.length === 0 && (
+        <p role="status" className={panelClass}>
+          Esta solicitação não está entre as 50 mais recentes carregadas. Consulte todos os orçamentos.
+        </p>
+      )}
+      {!loading && !error && !requestedId && quotes.length === 0 && <p className={panelClass}>Nenhuma solicitação recebida.</p>}
       {!loading && !error && <ul className="grid max-w-4xl gap-4">
-        {quotes.map((quote) => (
+        {visibleQuotes.map((quote) => (
           <li key={quote.id} className={panelClass}>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-semibold">Solicitação #{quote.id.slice(0, 8)}</h2>
