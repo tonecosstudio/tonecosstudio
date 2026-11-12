@@ -13,10 +13,16 @@ export type TonartCatalogEditorialProposal = {
   variant?: string;
 };
 
+/** The same ASCII control-character policy as the original editorial applier. */
+function isAsciiControl(character: string): boolean {
+  const code = character.charCodeAt(0);
+  return code <= 31 || code === 127;
+}
+
 /** Keep browser validation aligned with the source contract applier. */
 function cleanProposal(value: string | undefined, original: string, limit: number): string {
   if (value === undefined || value === "") return "";
-  if (typeof value !== "string" || /[\u0000-\u001f\u007f]/.test(value)) {
+  if (typeof value !== "string" || Array.from(value).some(isAsciiControl)) {
     throw new Error("tonart_catalog_editorial_invalid_label");
   }
   const normalized = value.trim();
@@ -47,7 +53,7 @@ const HEADERS = [
 function cell(value: string | number): string {
   // Spreadsheet tools interpret =,+,-,@ as formulas, even in quoted CSV.
   // Strip C0 controls and neutralize formula-like cells before escaping.
-  const text = String(value).replace(/[\u0000-\u001f\u007f]/g, " ").trim();
+  const text = Array.from(String(value), (character) => isAsciiControl(character) ? " " : character).join("").trim();
   const safe = /^[=+\-@]/.test(text) ? "'" + text : text;
   return '"' + safe.replace(/"/g, '""') + '"';
 }

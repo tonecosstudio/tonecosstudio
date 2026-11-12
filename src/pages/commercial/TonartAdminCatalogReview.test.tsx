@@ -87,7 +87,7 @@ describe("TONART canonical admin catalog review", () => {
     }));
     expect(screen.queryByText("Modelo de teste")).not.toBeInTheDocument();
     expect(screen.getByText("Modelo sem capa")).toBeInTheDocument();
-    expect(screen.getByText("1 sem chave de capa nesta página")).toBeInTheDocument();
+    expect(screen.getByText(/1 sem chave de capa nesta página/)).toBeInTheDocument();
     expect(mocks.listPage).toHaveBeenCalledTimes(originalCalls);
     expect(screen.getByRole("link", { name: "Abrir ficha" })).toHaveAttribute(
       "href", expect.stringContaining("22222222-2222-4222-8222-222222222222"),

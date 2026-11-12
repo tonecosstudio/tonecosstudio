@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { adminNavigationConfig, type NavigationItem } from "@/config/admin-navigation.config";
 import { ADMIN_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
-import { getTonartAdminOverview, type TonartAdminCoinEntry, type TonartAdminQuote, type TonartAdminOverview } from "@/services/admin/tonart-admin-workspace-service";
+import { getTonartAdminOverview, type TonartAdminCoinEntry, type TonartAdminQuote, type TonartAdminOverview } from "@/services/admin/overview/tonart-admin-workspace-service";
 import { panelClass, secondaryClass } from "./CommercialPage";
 import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
 

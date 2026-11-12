@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter } from "react-router-dom";
 
 const mocks = vi.hoisted(() => ({ overview: vi.fn() }));
-vi.mock("@/services/admin/tonart-admin-workspace-service", () => ({
+vi.mock("@/services/admin/overview/tonart-admin-workspace-service", () => ({
   getTonartAdminOverview: mocks.overview,
 }));
 import TonecosAdminHomePage from "./TonecosAdminHomePage";
@@ -129,14 +129,14 @@ describe("TONART admin workspace", () => {
     show("/admin/pedidos");
     expect(await screen.findByRole("heading", { name: "Solicitações recebidas" })).toBeInTheDocument();
     expect(await screen.findByText("comprador@example.com")).toBeInTheDocument();
-    expect(screen.getByText("R$ 249,90")).toBeInTheDocument();
+    expect(screen.getByText("comprador@example.com").closest("tr")).toHaveTextContent(/R\$\s*249,90/);
     expect(screen.getByText(/não equivale a confirmar um pedido/)).toBeInTheDocument();
   });
 
   it("shows a financial quote summary without calling quotations revenue or payments", async () => {
     show("/admin/financeiro");
     expect(await screen.findByRole("heading", { name: "Visão de valores orçados" })).toBeInTheDocument();
-    expect(await screen.findByText("R$ 249,90")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Soma dos valores orçados").parentElement).toHaveTextContent(/R\$\s*249,90/));
     expect(screen.getByText(/valores informados não são faturamento/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /cobrar|confirmar pagamento/i })).not.toBeInTheDocument();
   });
