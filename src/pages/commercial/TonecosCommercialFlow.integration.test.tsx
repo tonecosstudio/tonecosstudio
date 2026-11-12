@@ -92,7 +92,7 @@ describe("TONART commercial screens: account → request → history → respons
     expect(await screen.findByText("Naruto")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Entrar ou criar conta" }))
       .toHaveAttribute("href", "/login?next=%2Fsolicitar-orcamento");
-    expect(screen.getByRole("button", { name: "Enviar solicitação" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Enviar solicitação" })).not.toBeInTheDocument();
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
