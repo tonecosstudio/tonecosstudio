@@ -94,7 +94,9 @@ function isPublicCatalogRoute(path) {
 // allowing accidental or abusive cache misses. Validate before ANY D1 read.
 // Media routes keep their existing independent key/range protections.
 function isBoundedPublicQuery(route, searchParams) {
-  if (route.startsWith("media/")) return true;
+  // Media keys are immutable; irrelevant query arguments merely fragment
+  // CDN caches and can cause new R2 reads with no change in image content.
+  if (route.startsWith("media/")) return searchParams.size === 0;
   const routeKeys = route === "api/catalog"
     ? ["category", "franchise", "folder", "q", "material", "collection", "minHeight", "maxHeight", "limit", "cursor"]
     : route === "api/franchises"
@@ -166,9 +168,8 @@ export async function proxyCatalogRequest(request, fetcher) {
   if (!isPublicCatalogRoute(route)) {
     return new Response("Not found", { status: 404 });
   }
-  if (!route.startsWith("media/") &&
-      (incoming.search.length > 2048 ||
-       !isBoundedPublicQuery(route, incoming.searchParams))) {
+  if (incoming.search.length > 2048 ||
+      !isBoundedPublicQuery(route, incoming.searchParams)) {
     return new Response("Invalid catalog query", {
       status: 400, headers: { "Cache-Control": "no-store" },
     });
