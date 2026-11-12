@@ -61,7 +61,7 @@ export default function TonartAdminCatalogReview() {
     // Preview is below the bounded table; bring it into view after an explicit
     // row action, without any additional catalog or media request.
     if (selectedModel) previewRef.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
-  }, [selectedModel?.id]);
+  }, [selectedModel]);
 
   async function load(
     search: string,
