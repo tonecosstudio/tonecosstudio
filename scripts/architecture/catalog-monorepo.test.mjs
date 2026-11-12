@@ -237,6 +237,18 @@ test('M5 snapshot is a pinned observation, not production approval', () => {
   assert.equal(contract.migration.targetD1MigrationEnabled, false)
 });
 
+test('an approved catalog edit is applied only in the existing serial release workflow', () => {
+  const workflow = source('.github/workflows/quality.yml');
+  const release = workflow.split('  catalog-editorial-apply:')[1];
+  assert.ok(release, 'D1 editorial writer must use existing quality workflow');
+  assert.match(release, /inputs.operation == 'editorial-apply'/);
+  assert.match(release, /cutover-readiness\.mjs --live/);
+  assert.match(release, /apply-approved-editorial\.mjs --pr/);
+  assert.match(release, /environment: production/);
+  assert.doesNotMatch(release, /wrangler d1 migrations/);
+  assert.doesNotMatch(release, /wrangler r2 object put/);
+});
+
 test('target can release only from the existing manual gated workflow', () => {
   const workflow = source('.github/workflows/quality.yml');
   const release = workflow.split('  catalog-cutover-release:')[1];

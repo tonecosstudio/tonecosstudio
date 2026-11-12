@@ -31,6 +31,20 @@ on:
       - 'package-lock.json'
       - '.github/workflows/quality.yml'
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Existing Worker release or reviewed catalog name update
+        required: true
+        type: choice
+        options:
+          - worker-release
+          - editorial-apply
+        default: worker-release
+      editorial_pr:
+        description: Merged, independently approved editorial PR number (editorial-apply only)
+        required: false
+        type: number
+        default: 0
 
 permissions:
   contents: read
@@ -244,6 +258,9 @@ jobs:
       - name: Validate cutover gate fail-closed without network
         run: node --test scripts/catalog/cutover-readiness.test.mjs
 
+      - name: Test approved editorial D1 plan and atomic SQL offline
+        run: node --test scripts/catalog/apply-approved-editorial.test.mjs
+
       # Test the changed catalog/admin boundaries and production build.
       # The full monorepo suite belongs to the existing main-push jobs;
       # do not re-run 3,500 unrelated tests for every candidate correction.
@@ -261,7 +278,7 @@ jobs:
   # the original Washington workflow is disabled and all gates are attested.
   catalog-cutover-release:
     name: Existing Cloudflare Worker — controlled M5 handoff
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'worker-release'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
@@ -376,3 +393,48 @@ jobs:
           npx wrangler rollback "$PREVIOUS_WORKER_VERSION_ID"
           --message "tonart rollback after failed validation ${GITHUB_SHA}"
           --config .wrangler.deploy.jsonc
+
+  # The existing quality workflow is the only production writer in TONART.
+  # Approved labels change D1 in one conditional SQLite statement; no new
+  # Worker or D1/R2 resources are created and migrations are never invoked.
+  catalog-editorial-apply:
+    name: Approved editorial names — existing D1
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'editorial-apply'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CATALOG_API_URL: ${{ vars.VITE_API_BASE_URL }}
+    steps:
+      - name: Checkout reviewed canonical TONART main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+
+      - name: Verify cutover, single authority and exact D1 bindings
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$CLOUDFLARE_API_TOKEN"
+          node scripts/catalog/cutover-readiness.mjs --live
+
+      - name: Atomically apply the reviewed and approved editorial PR
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node --test scripts/catalog/apply-approved-editorial.test.mjs
+          node scripts/catalog/apply-approved-editorial.mjs --pr "${{ inputs.editorial_pr }}" --apply

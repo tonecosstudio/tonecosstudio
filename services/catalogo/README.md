@@ -25,3 +25,9 @@ O código de runtime do Worker e o contrato editorial versionado pertencem a `to
 ### Writers da origem que impedem o M5
 
 Além do deploy `cloudflare.yml`, existem quatro workflows GitHub Actions na origem com capacidade de publicar D1/R2: `external-batch-release.yml`, `exact-source-gallery-promotion.yml`, `existing-gallery-promotion.yml` e `external-media-staging.yml` (staging R2). O primeiro corte exige os cinco fluxos `disabled_manually` e sem `in_progress`, `queued`, `requested`, `waiting` ou `pending`. IDs e caminhos estão fixados no manifesto e no guard offline. Depois do corte, os releases TONART não consultam Washington.
+
+### Edição editorial aprovada → D1 existente (após M5)
+
+O endpoint administrativo cria uma PR no **único repositório** TONART. A integração da PR não altera o D1 automaticamente. O workflow `.github/workflows/quality.yml` possui a operação manual `editorial-apply` com entrada `editorial_pr` e o ambiente `production`. O job verifica o corte M5, a PR integrada na `main`, uma aprovação independente no SHA da revisão, a alteração **exclusiva** do contrato editorial e um máximo de 12 modelos publicados com identidade intacta. Compara a versão revisada com o estado real do D1 e executa um único `UPDATE` parametrizado, transacional e condicionado à igualdade integral dos estados anteriores; concorrência ou divergência bloqueiam todas as atualizações. Confirma as linhas resultantes e relê o banco. Reexecução do mesmo PR já aplicado é idempotente.
+
+A verificação offline é `npm run catalog:editorial:d1:test`. **Não executar `editorial-apply` antes de `cutover-complete` e de ter um único writer TONART.** Não há nova API administrativa de escrita D1, segundo Worker ou duplicação de nomes em Supabase.
