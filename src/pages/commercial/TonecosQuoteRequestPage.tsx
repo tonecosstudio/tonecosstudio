@@ -12,6 +12,8 @@ export default function TonecosQuoteRequestPage() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
   const navigate = useNavigate();
   const [user, setUser] = useState<Identity | null | undefined>(undefined);
+  const [authError, setAuthError] = useState(false);
+  const [authAttempt, setAuthAttempt] = useState(0);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -23,11 +25,13 @@ export default function TonecosQuoteRequestPage() {
 
   useEffect(() => {
     let active = true;
+    setUser(undefined);
+    setAuthError(false);
     getTonecosCurrentUser()
       .then((identity) => { if (active) setUser(identity); })
-      .catch(() => { if (active) setUser(null); });
+      .catch(() => { if (active) { setAuthError(true); setUser(null); } });
     return () => { active = false; };
-  }, []);
+  }, [authAttempt]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,7 +56,12 @@ export default function TonecosQuoteRequestPage() {
       <div className="max-w-3xl">
         {error && <p role="alert" className="mb-5 border border-red-500/40 p-4 text-sm text-red-200">{error}</p>}
         {user === undefined ? <p role="status">Verificando sua conta...</p> : null}
-        {user === null ? (
+        {authError ? (
+          <div role="alert" className={panelClass}>
+            <p className="mb-4 text-sm text-white/70">Não foi possível verificar sua sessão. Tente novamente antes de entrar na conta.</p>
+            <button type="button" className={secondaryClass} onClick={() => setAuthAttempt((n) => n + 1)}>Tentar novamente</button>
+          </div>
+        ) : user === null ? (
           <div className={panelClass}>
             <p className="mb-5 text-sm leading-relaxed text-white/70">Entre ou crie uma conta para enviar a seleção e acompanhar a resposta da TONART Studio.</p>
             <Link className={actionClass} to={TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)}>Entrar ou criar conta</Link>
@@ -63,7 +72,7 @@ export default function TonecosQuoteRequestPage() {
             <p className="mb-5 text-white/70">Nenhum modelo selecionado nesta visita.</p>
             <Link className={secondaryClass} to="/modelos">Escolher modelos</Link>
           </div>
-        ) : user ? (
+        ) : user && !authError ? (
           <form className={panelClass + " space-y-6"} onSubmit={(event) => { void submit(event); }}>
             <div>
               <h2 className="text-lg font-semibold">{selectedModels.length} {selectedModels.length === 1 ? "modelo selecionado" : "modelos selecionados"}</h2>
