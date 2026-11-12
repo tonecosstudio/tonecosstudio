@@ -9,34 +9,35 @@
   "origin": {
     "repository": "washingtonmsdj/catalogo",
     "repositoryId": 1398242143,
-    "observedMainSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "observedMainSha": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
     "openPullRequestsAtAudit": [
       266,
       264,
       263
     ],
     "fileCounts": {
-      "totalTrackedBlobs": 652,
-      "worker": 12,
+      "totalTrackedBlobs": 656,
+      "worker": 13,
       "migrations": 22,
-      "tools": 211,
+      "tools": 214,
       "config": 26,
       "docs": 280,
       "legacySrc": 68
     },
     "workerFiles": {
-      "worker/entry.ts": "a628fce19ce0b84f76760a716eab0152668e2290",
+      "worker/entry.ts": "d24757d5260047fe363f11279dd81a74d7697912",
       "worker/galleryAggregation.ts": "0d52583d6f76e4c01c139c12636e5e593b315271",
       "worker/galleryValidation.ts": "2222446f7a182e611708aa72f7e2a026b8f3681a",
-      "worker/index.ts": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
-      "worker/media.ts": "e6e083f25d5f15a28667976df9b3e9104fbeacba",
+      "worker/index.ts": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
+      "worker/media.ts": "7206038ed5029b39a6e4249f0e772b794eb1b2a7",
       "worker/modelAliases.ts": "b354bc6ab4dad3d12f07ee6b6c43af60aac87d38",
       "worker/quoteAdminAccess.ts": "30c01b4dbbbde77a25daf471fdd89b12b80a846b",
       "worker/quoteAdminApi.ts": "63c663cc63c8bc7096514be6a92518328daf3bcb",
       "worker/quoteWorkflow.ts": "2c95e211e3a5ed7d275258f4f1a503c67f0284ac",
       "worker/schemaContract.ts": "6e9f77269e844849653b9314517c28df7ef3c976",
       "worker/sharedCollections.ts": "bd66879a41798f2e2695273b30d9b562c44dd53a",
-      "worker/turnstile.ts": "6dc1f8f779a9b5ff8b1a5c0d4c11b24c9d5917a3"
+      "worker/turnstile.ts": "6dc1f8f779a9b5ff8b1a5c0d4c11b24c9d5917a3",
+      "worker/publicQueryBudget.ts": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74"
     },
     "migrationFiles": {
       "migrations/0001_catalog.sql": "818d21a4f0ce4de8236208ce42c734bbd0f8c6d2",
@@ -64,7 +65,7 @@
     },
     "staticImportGraph": {
       "entrypoint": "worker/entry.ts",
-      "observedAtSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+      "observedAtSha": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
       "reachableWorkerPaths": [
         "worker/entry.ts",
         "worker/galleryAggregation.ts",
@@ -72,6 +73,7 @@
         "worker/index.ts",
         "worker/media.ts",
         "worker/modelAliases.ts",
+        "worker/publicQueryBudget.ts",
         "worker/schemaContract.ts",
         "worker/sharedCollections.ts",
         "worker/turnstile.ts"
@@ -97,17 +99,17 @@
       "tools/check_public_catalog_hierarchy.mjs": "3b1bbda5b696842abf1762dcb1ba7aee3972f4d0",
       "tools/check_remote_worker_config.mjs": "71673045554c227c071c5741b72fb3824ca9401d",
       "tools/check_staged_worker_version.mjs": "390fc85d827a80122cf1dfa19eec4e4a63056cea",
-      "tools/check_worker_cache_hit.mjs": "28144b9c3f77516829b8a7a1542d4adea02ec046",
+      "tools/check_worker_cache_hit.mjs": "5c26e239fa3be7faac5972521d45fdbbf743bece",
       "tools/check_worker_health.mjs": "857b139069d0917c9fd98d071f1034df788c7c0e",
       "tools/cloudflare_deploy_state.mjs": "8c3bf22fbb3aca9c8fd3491c309e8610f3d5b50f",
       "tools/read_wrangler_d1_id.mjs": "9144e74418b3394efaf58119d8e1b6666c5b4b60",
       "tools/render_wrangler_config.mjs": "f66c69e313a8fd8974e86eb747e4ad6296a1de22",
       "tools/verify_public_catalog.py": "34c1986b9e68602fa60881e6c656355767716b3b",
-      "tools/worker_release_smoke.mjs": "1d1187f78eca424d4f0d8e0c14af9faa9677470b",
+      "tools/worker_release_smoke.mjs": "a16fcc51cc30d5b959df3bc75b00e41f15fc2a5e",
       "tools/wrangler_config_contract.mjs": "59821cfda7350afbf3c8ee5fb3a0c715264d7eac"
     },
     "transitiveApiToolCandidates": {
-      "tools/check_worker_gallery_contract.mjs": "27f17721805afc21c24d017170b19e4fbf678733"
+      "tools/check_worker_gallery_contract.mjs": "0062b570b97c5e8de12deea06d8ff47a367a6d3d"
     },
     "apiBuildConfigBlobs": {
       "wrangler.jsonc": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
@@ -145,7 +147,7 @@
   "lastVerifiedDate": "2026-11-04",
   "notes": "Snapshot audit only. Revalidate source main and open PRs immediately before copying; this historical SHA is not authority for a future deploy.",
   "staging": {
-    "sourceMain": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "sourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
     "sourceFixPullRequest": 266,
     "sourceFixHead": "59983806acb7a338ae3b9c1ddfd524561ff8a02f",
     "sourceFixStatusAtImport": "open-draft-not-merged",
@@ -176,21 +178,21 @@
       "migrations/0020_gallery_member_explicit_approvals.sql": "449fbb85c45acd4ad641607133943d9e514dfb25",
       "migrations/0021_quote_admin_audit_events.sql": "027af727eb1220f0f9a288d5245e696efc7737b5",
       "migrations/0022_catalog_height_filter_index.sql": "35e91a6533777acd6220fe692a84107456cde09f",
-      "tools/check_worker_gallery_contract.mjs": "27f17721805afc21c24d017170b19e4fbf678733",
+      "tools/check_worker_gallery_contract.mjs": "0062b570b97c5e8de12deea06d8ff47a367a6d3d",
       "tools/test_gallery_aggregation.mjs": "6a3f737d3aba19e9b5127152da7bc77c1d7d0cf5",
       "tools/test_gallery_validation.mjs": "afdd7a23d3264c1a04a22f4c0e11f08c19d059e5",
       "tools/test_model_aliases.mjs": "d4b725448efdcc5c76c85d11f789f732306ba567",
       "tools/test_public_gallery_revision.mjs": "e90df0b47fded4a4755485a5f7ccce3d48fa6444",
       "tools/test_schema_contract.mjs": "fc6335a7c3e2458d8a3d81cecdcc24c4d7a3e34a",
       "tools/test_worker_folder_counts.mjs": "dc3e68ebc5f0cd73132fb55e4173c129c06ecb47",
-      "tools/test_worker_gallery_contract.mjs": "36ff750a7ac3a4e1f05db9b452256af23d8c9c57",
+      "tools/test_worker_gallery_contract.mjs": "fdbde5307d87f05e499b38e6e2bbb93cf791082a",
       "tools/test_worker_media_contract.mjs": "6d57dc241a405ee6743a92d6a25c6f8f5a6f67d0",
       "tools/test_worker_turnstile.mjs": "d71b83ee74f08ae97110eebdf393c93b8bcd26fa",
       "tsconfig.worker.json": "7c5455357b873f9514fa5cfae9f88f9d652140e0",
-      "worker/entry.ts": "a628fce19ce0b84f76760a716eab0152668e2290",
+      "worker/entry.ts": "d24757d5260047fe363f11279dd81a74d7697912",
       "worker/galleryAggregation.ts": "0d52583d6f76e4c01c139c12636e5e593b315271",
       "worker/galleryValidation.ts": "2222446f7a182e611708aa72f7e2a026b8f3681a",
-      "worker/index.ts": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
+      "worker/index.ts": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
       "worker/media.ts": "7206038ed5029b39a6e4249f0e772b794eb1b2a7",
       "worker/modelAliases.ts": "b354bc6ab4dad3d12f07ee6b6c43af60aac87d38",
       "worker/schemaContract.ts": "6e9f77269e844849653b9314517c28df7ef3c976",
@@ -198,18 +200,16 @@
       "worker/turnstile.ts": "6dc1f8f779a9b5ff8b1a5c0d4c11b24c9d5917a3",
       "wrangler.jsonc": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
       "tools/test_worker_catalog_facets.mjs": "bd7ede29ce84a68fb26fb67a5aca02b696f85d0b",
-      "tools/test_worker_catalog_scale_sqlite.mjs": "b4dca481759d53448f31aaaff879b01546c3c74f"
+      "tools/test_worker_catalog_scale_sqlite.mjs": "b4dca481759d53448f31aaaff879b01546c3c74f",
+      "worker/publicQueryBudget.ts": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
+      "tools/test_worker_public_query_budget.mjs": "4354b2b5eaf696d8af440baa1eabb8915de0a9cd",
+      "config/catalog-production-model-contract.json": "e9057d363e51e0f5701311db44429da18a3a7f04"
     },
     "localOverlays": {
       "tools/test_worker_folder_counts.mjs": {
         "sourceBlob": "dc3e68ebc5f0cd73132fb55e4173c129c06ecb47",
         "localBlob": "45303c880cb701457faeb9ac220783f9798f6fa9",
         "reason": "Extended offline SQLite folder regression test in Tonecos; source pin remains immutable"
-      },
-      "worker/index.ts": {
-        "sourceBlob": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
-        "localBlob": "bca4114e7b7aa61f58b3d2b48b87570a8817feb8",
-        "reason": "Staged Tonecos folder cover lookup plus removal of unused gallery import for full release lint; source blob remains immutable and production Worker stays untouched"
       }
     },
     "excludedModules": [
@@ -296,25 +296,48 @@
       "runUrl": "https://github.com/tonecosstudio/tonecosstudio/actions/runs/41789856366",
       "generalJobs": "skipped-on-pull-request",
       "catalogSteps": "all-success"
+    },
+    "sourceFixStatusAtReconciliation": "merged-in-main",
+    "sourceFixMergedHead": "bc766f75579691d9cbff933fef46dff0af87dee3",
+    "sourceFixMergeCommit": "7444cce0db67c0dca9ec5ec7fd1608d473c0cee2",
+    "lastReconciledAtDate": "2026-11-12",
+    "reconciliation": {
+      "sourceMainSha": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
+      "sourceMediaFixPr": 266,
+      "sourceMediaFixStatus": "merged-in-main",
+      "sourceMediaFixMergeCommit": "7444cce0db67c0dca9ec5ec7fd1608d473c0cee2",
+      "checkedAt": "2026-11-12",
+      "workerBehavior": [
+        "worker/entry.ts",
+        "worker/index.ts",
+        "worker/publicQueryBudget.ts"
+      ],
+      "tests": [
+        "tools/test_worker_gallery_contract.mjs",
+        "tools/test_worker_public_query_budget.mjs",
+        "tools/check_worker_gallery_contract.mjs"
+      ],
+      "editorialContract": "config/catalog-production-model-contract.json",
+      "note": "Current Git blob identities copied; offline and production cutover gates remain required."
     }
   },
   "productionObservation": {
-    "observedDate": "2026-11-04",
+    "observedDate": "2026-11-12",
     "worker": "tonecos-catalogo-api",
     "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
-    "currentDeploymentId": "a9f13dd7-537d-4106-bfcf-30510cca388b",
-    "currentVersionId": "a32b09a0-377d-4ff7-b313-4e5a7bf994b6",
-    "currentVersionNumber": 28,
+    "currentDeploymentId": "81898941-bc28-4543-8f34-c20b68fe8a7d",
+    "currentVersionId": "0b6d0d02-58f6-4f99-9a9a-92a605a498ed",
+    "currentVersionNumber": 31,
     "currentTrafficPercent": 100,
-    "currentVersionSourceCommit": "77ff9b0559c911de992ae9c84b78fdaa5e0fed6b",
-    "currentVersionDeployedAt": "2026-11-01T10:35:46.410856Z",
-    "previousVersionId": "3fdef475-a483-4439-a778-bd87f9f76bb1",
-    "previousVersionNumber": 27,
+    "currentVersionSourceCommit": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
+    "currentVersionDeployedAt": "2026-11-12T05:40:39.146575Z",
+    "previousVersionId": "a32b09a0-377d-4ff7-b313-4e5a7bf994b6",
+    "previousVersionNumber": 28,
     "previousVersionMayBeRollbackCandidate": true,
     "rollbackTestedAgainstProduction": false,
-    "observedMainAheadOfProductionByCommits": 21,
+    "observedMainAheadOfProductionByCommits": 0,
     "runtimeFileChangesBetweenProductionSourceAndObservedMain": 0,
-    "observedSourceMainSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "observedSourceMainSha": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
     "sourceDeployWorkflow": ".github/workflows/cloudflare.yml",
     "sourceWorkflowTriggers": [
       "push/main with runtime paths",
@@ -332,6 +355,6 @@
     "targetProductionCredentialsVerified": false,
     "runtimeCutoverPerformed": false,
     "observationIsApproval": false,
-    "note": "Read-only metadata and Git compare snapshot. Recheck remote active version, source workflow status, in-progress releases, credential presence and rollback viability immediately before cutover. Do not treat former version as tested rollback."
+    "note": "Read-only verified Cloudflare deployment and Git source on 2026-11-12; no M5 GO, source writer is still active, target deployment not authorized."
   }
 }
