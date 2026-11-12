@@ -26,8 +26,8 @@ beforeEach(() => { vi.clearAllMocks(); mocks.overview.mockResolvedValue(fixture)
 afterEach(() => cleanup());
 
 describe("TONART admin workspace", () => {
-  function show() {
-    render(<MemoryRouter><TonecosAdminHomePage /></MemoryRouter>);
+  function show(path = "/admin") {
+    render(<MemoryRouter initialEntries={[path]}><TonecosAdminHomePage /></MemoryRouter>);
   }
 
   it("uses the original administrative navigation and shows real protected numbers", async () => {
@@ -52,6 +52,18 @@ describe("TONART admin workspace", () => {
     expect(await screen.findByRole("heading", { name: "Usuários cadastrados" })).toBeInTheDocument();
     expect(await screen.findByText("cliente@example.com")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /promover|conceder permissão|excluir/i })).not.toBeInTheDocument();
+  });
+
+  it("supports direct original admin URLs and browser reload on the same section", async () => {
+    show("/admin/users");
+    expect(await screen.findByRole("heading", { name: "Usuários cadastrados" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Usuários/ })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("opens original Coins route directly without enabling emission", async () => {
+    show("/admin/creditos");
+    expect(await screen.findByRole("heading", { name: "Sistema de créditos · Coins" })).toBeInTheDocument();
+    expect(await screen.findByText("Nenhuma movimentação registrada.")).toBeInTheDocument();
   });
 
   it("preserves the existing Coins module even with operations turned off", async () => {
