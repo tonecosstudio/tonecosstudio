@@ -35,6 +35,7 @@ export default function TonartAdminCatalogReview() {
   const requestRef = useRef<AbortController | null>(null);
   const reviewRef = useRef<AbortController | null>(null);
   const [selectedModel, setSelectedModel] = useState<PublicCatalogModel | null>(null);
+  const previewRef = useRef<HTMLElement | null>(null);
   const [review, setReview] = useState<{
     model: PublicCatalogDetail;
     gallery: PublicCatalogGalleryPage | null;
@@ -56,6 +57,12 @@ export default function TonartAdminCatalogReview() {
     reviewRef.current?.abort();
   }, []);
 
+  useEffect(() => {
+    // Preview is below the bounded table; bring it into view after an explicit
+    // row action, without any additional catalog or media request.
+    if (selectedModel) previewRef.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [selectedModel?.id]);
+
   async function load(
     search: string,
     cursor: string | undefined,
@@ -69,6 +76,7 @@ export default function TonartAdminCatalogReview() {
     requestRef.current?.abort();
     reviewRef.current?.abort();
     setReview(null);
+    setSelectedModel(null);
     setReviewError("");
     setReviewingId(null);
     const controller = new AbortController();
@@ -279,7 +287,7 @@ export default function TonartAdminCatalogReview() {
             </div>
           )}
           {selectedModel && (
-            <section aria-label="Visualização da capa" className="mt-6 border border-white/20 p-4 sm:p-6">
+            <section ref={previewRef} aria-label="Visualização da capa" className="mt-6 border border-white/20 p-4 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h4 className="text-lg font-semibold">Capa: {selectedModel.name}</h4>
                 <button type="button" className={secondaryClass} onClick={closeCover}>
