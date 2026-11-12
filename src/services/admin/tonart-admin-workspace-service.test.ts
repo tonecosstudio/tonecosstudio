@@ -11,7 +11,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { rpc: mocks.rpc },
 }));
 
-import { getTonartAdminOverview } from "./tonart-admin-workspace-service";
+import { getTonartAdminOverview } from "./overview/tonart-admin-workspace-service";
 
 const payload = {
   profileCount: 2,

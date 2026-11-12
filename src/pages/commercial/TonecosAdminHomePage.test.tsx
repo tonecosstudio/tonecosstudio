@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter } from "react-router-dom";
 
 const mocks = vi.hoisted(() => ({ overview: vi.fn() }));
-vi.mock("@/services/admin/tonart-admin-workspace-service", () => ({
+vi.mock("@/services/admin/overview/tonart-admin-workspace-service", () => ({
   getTonartAdminOverview: mocks.overview,
 }));
 import TonecosAdminHomePage from "./TonecosAdminHomePage";

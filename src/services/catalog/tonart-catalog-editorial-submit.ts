@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentAuthSession } from "@/services/auth/auth-session-service";
 import type { PublicCatalogModel } from "./public-catalog-gateway";
 import {
   validateTonartCatalogEditorialProposal,
@@ -37,9 +37,9 @@ export async function submitTonartCatalogEditorialReview(
   }).filter((change) => Boolean(change.newName || change.newVariant));
   if (!edits.length) throw new Error("Não há mudanças válidas para enviar.");
 
-  const { data, error } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (error || !token) throw new Error("Sua sessão expirou. Entre novamente como administrador.");
+  const session = await getCurrentAuthSession();
+  const token = session?.access_token;
+  if (!token) throw new Error("Sua sessão expirou. Entre novamente como administrador.");
 
   const response = await fetch("/api/catalog-editorial", {
     method: "POST",
