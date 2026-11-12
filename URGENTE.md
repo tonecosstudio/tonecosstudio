@@ -1,5 +1,13 @@
 # TONART Studio — checkpoint operacional
 
+## Adendo 12/11/2026 — submissão editorial autenticada (PR #26 draft, NÃO publicada)
+
+- **Owner e base:** `tonecosstudio/tonecosstudio`, `main` base `f6825ef87aa807b0760d25aebd85cb38b0c42cff`; branch única `feat/catalog-editorial-authenticated-submission-20261112`, [PR #26](https://github.com/tonecosstudio/tonecosstudio/pull/26) **draft**. HEAD funcional validado `ffe5637261dc93d0c9ee35ce861db10d18a8d1b2`. Não confundir com versão publicada.
+- **Entrega candidata:** painel de administração submete até 12 propostas da página carregada a `api/catalog-editorial.js`; token Supabase é verificado server-side por Auth e `has_role(admin)`; apenas os campos `displayName`/`variantName` do contrato original `washingtonmsdj/catalogo/config/catalog-production-model-contract.json` podem ser alterados, com snapshot e colisões verificados. O GitHub App deverá abrir/reusar uma PR única no repositório original. Não há segundo banco, Worker, writer de D1 ou espelho de catálogo; revisão Git não é publicação.
+- **Provas reais sem escrita externa:** desktop Windows Node 24: 5/5 testes offline do patch e 6/6 testes de autorização/fluxo simulado, incluindo rejeições e recibo. Patch hipotético do contrato Git original com **2.596 registros** validado integralmente em memória, sem persistir nada. Quality Gate da PR #26 no SHA `ffe5637` **SUCCESS**. Esta evidência NÃO é E2E com Supabase e GitHub reais.
+- **Bloqueio objetivo:** a Vercel de produção ainda **não** possui `TONART_CATALOG_GITHUB_APP_ID`, `TONART_CATALOG_GITHUB_INSTALLATION_ID` e `TONART_CATALOG_GITHUB_APP_PRIVATE_KEY`. Não usar PAT pessoal como substituto; requer App instalado somente em `washingtonmsdj/catalogo` com `contents:write` e `pull_requests:write`. Sem esses segredos, endpoint falha fechado e produção permanece na versão anterior.
+- **NEXT_ACTION:** provisionar GitHub App de escopo mínimo, executar E2E real com sessão administrativa e negações RBAC; validar release:verify e revisar PR #26 antes de merge/publicação manual do SHA. **DO_NOT_REPEAT:** não gravar D1 diretamente, não publicar ao receber proposta, não duplicar contratos, caches ou tabelas, não acionar M5/cutover. Não remover a revisão Git nem fingir que o botão já está ativo em produção.
+
 ## Checkpoint 12/11/2026 — MVP público, conta e fluxo comercial
 
 **STATUS ATUAL** (evidência código GitHub + Vercel env + metadados Supabase + Cloudflare deployment; não substituir testes reais):
