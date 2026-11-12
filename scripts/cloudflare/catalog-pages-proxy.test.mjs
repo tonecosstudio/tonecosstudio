@@ -24,7 +24,7 @@ test("only same-origin public catalog GET is forwarded", async () => {
     "api/folders?category=figuras&franchise=marvel",
     "api/recent?limit=6",
     "api/models/model-one",
-    "api/models/model-one/images?version=1",
+    "api/models/model-one/images?limit=6&v=1",
   ]) {
     const io = mockFetch();
     const response = await proxyCatalogRequest(

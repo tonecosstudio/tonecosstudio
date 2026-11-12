@@ -89,6 +89,61 @@ function isPublicCatalogRoute(path) {
     isSafeMediaPath(path);
 }
 
+// Budget guard on public D1-backed routes. Extra/duplicate query arguments
+// do not change the canonical Worker query but otherwise create new CDN keys,
+// allowing accidental or abusive cache misses. Validate before ANY D1 read.
+// Media routes keep their existing independent key/range protections.
+function isBoundedPublicQuery(route, searchParams) {
+  // Media keys are immutable; irrelevant query arguments merely fragment
+  // CDN caches and can cause new R2 reads with no change in image content.
+  if (route.startsWith("media/")) return searchParams.size === 0;
+  const routeKeys = route === "api/catalog"
+    ? ["category", "franchise", "folder", "q", "material", "collection", "minHeight", "maxHeight", "limit", "cursor"]
+    : route === "api/franchises"
+      ? ["category", "q", "limit"]
+      : route === "api/folders"
+        ? ["category", "franchise", "parent"]
+        : route === "api/recent"
+          ? ["limit"]
+          : route === "api/categories" || /^api\/models\/[a-z0-9][a-z0-9-]{0,239}$/.test(route)
+            ? []
+            : /^api\/models\/[a-z0-9][a-z0-9-]{0,239}\/images$/.test(route)
+              ? ["limit", "cursor", "v"]
+              : null;
+  if (!routeKeys) return false;
+  const allowed = new Set(routeKeys);
+  const seen = new Set();
+  for (const [key, value] of searchParams) {
+    if (!allowed.has(key) || seen.has(key) || !value ||
+        value.length > 2048 || /[\x00-\x1f\x7f]/.test(value)) return false;
+    seen.add(key);
+    if (key === "limit") {
+      const max = route === "api/recent" ? 24 : route === "api/franchises" ? 48 : 60;
+      if (!/^[1-9][0-9]?$/.test(value) || Number(value) > max) return false;
+    } else if (key === "minHeight" || key === "maxHeight") {
+      if (!/^[1-9][0-9]{0,2}$/.test(value) || Number(value) > 300) return false;
+    } else if (key === "v") {
+      if (!/^[1-9][0-9]{0,14}$/.test(value) ||
+          !Number.isSafeInteger(Number(value))) return false;
+    } else if (key === "cursor") {
+      // Gallery cursors use padded base64 (e.g. "Ng=="); model list
+      // cursors use unpadded base64url. Preserve both canonical encodings.
+      if (!/^[A-Za-z0-9+/_-]{1,2048}={0,2}$/.test(value)) return false;
+    } else if (key === "category" || key === "franchise") {
+      if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(value)) return false;
+    } else if (key === "folder" || key === "parent") {
+      if (value.length > 240 || value.includes("\\") ||
+          value.split("/").some((part) => !part || part === "." || part === "..")) return false;
+    } else if (key === "q") {
+      const length = Array.from(value.trim()).length;
+      if (length < 3 || length > 120) return false;
+    } else if (key === "material" || key === "collection") {
+      if (Array.from(value).length > 120) return false;
+    }
+  }
+  return true;
+}
+
 export async function proxyCatalogRequest(request, fetcher) {
   if (request.method !== "GET") {
     return new Response("Method not allowed", {
@@ -112,6 +167,12 @@ export async function proxyCatalogRequest(request, fetcher) {
   const route = incoming.pathname.slice(PREFIX.length);
   if (!isPublicCatalogRoute(route)) {
     return new Response("Not found", { status: 404 });
+  }
+  if (incoming.search.length > 2048 ||
+      !isBoundedPublicQuery(route, incoming.searchParams)) {
+    return new Response("Invalid catalog query", {
+      status: 400, headers: { "Cache-Control": "no-store" },
+    });
   }
 
   const upstream = new URL("/" + route + incoming.search, CATALOG_ORIGIN);
