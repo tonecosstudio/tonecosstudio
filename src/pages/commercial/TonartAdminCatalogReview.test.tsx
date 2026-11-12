@@ -143,7 +143,7 @@ describe("TONART canonical admin catalog review", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Verificar mídia" })[1]);
     expect(await screen.findByRole("heading", { name: "Revisão: Modelo sem capa" })).toBeInTheDocument();
     expect(mocks.listGallery).not.toHaveBeenCalled();
-    expect(screen.getByText(/sem chave de capa/)).toBeInTheDocument();
+    expect(screen.getAllByText(/sem chave de capa/i).length).toBeGreaterThan(0);
   });
 
   it("fails closed when the detail no longer corresponds to the selected model", async () => {
