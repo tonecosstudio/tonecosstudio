@@ -183,7 +183,8 @@
       "tools/test_stage_external_media.py": "56f95c36c9b28dd1a052d272051a4e3cbde1b24e",
       "tools/test_staging_checkpoint.py": "84d706dd2c80c31ba4f40f9765a879ae325be949",
       "docs/evidence/external-source-001-malevola-dispatch-gallery-review-2026-10-16.json": "3ac57acfb8572f98a89bdabcf89be82ae2b7aaef",
-      "docs/evidence/external-source-001-malevola-dispatch-creator-attribution-release-2026-10-16.json": "e57613dc22859aff44cc7f06139cc2c7b133e0b4"
+      "docs/evidence/external-source-001-malevola-dispatch-creator-attribution-release-2026-10-16.json": "e57613dc22859aff44cc7f06139cc2c7b133e0b4",
+      "docs/evidence/external-source-001-batch-012-media.jsonl": "a36534ae8299d384d135db5da61963e1c5ea3e63"
     }
   },
   "runtime": {
@@ -327,7 +328,8 @@
       "tools/test_stage_external_media.py": "56f95c36c9b28dd1a052d272051a4e3cbde1b24e",
       "tools/test_staging_checkpoint.py": "84d706dd2c80c31ba4f40f9765a879ae325be949",
       "docs/evidence/external-source-001-malevola-dispatch-gallery-review-2026-10-16.json": "3ac57acfb8572f98a89bdabcf89be82ae2b7aaef",
-      "docs/evidence/external-source-001-malevola-dispatch-creator-attribution-release-2026-10-16.json": "e57613dc22859aff44cc7f06139cc2c7b133e0b4"
+      "docs/evidence/external-source-001-malevola-dispatch-creator-attribution-release-2026-10-16.json": "e57613dc22859aff44cc7f06139cc2c7b133e0b4",
+      "docs/evidence/external-source-001-batch-012-media.jsonl": "a36534ae8299d384d135db5da61963e1c5ea3e63"
     },
     "localOverlays": {
       "tools/test_worker_folder_counts.mjs": {
@@ -453,12 +455,12 @@
       ],
       "editorialContract": "config/catalog-production-model-contract.json",
       "note": "Current Git blob identities copied; offline and production cutover gates remain required.",
-      "dataWriterToolchainFiles": 42,
+      "dataWriterToolchainFiles": 43,
       "dataWriterToolchainSourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7"
     },
     "dataWriterToolchain": {
       "phase": "staged-offline",
-      "fileCount": 42,
+      "fileCount": 43,
       "sourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
       "releaseAuthorized": false,
       "workflowWriterEnabled": false,

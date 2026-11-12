@@ -163,12 +163,12 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   assert.match(contract.staging.sourceFixMergeCommit, sha);
   assert.equal(contract.staging.reconciliation.sourceMainSha, contract.staging.sourceMain);
   const stage = contract.staging.fileBlobs;
-  assert.equal(Object.keys(stage).length, 107);
+  assert.equal(Object.keys(stage).length, 108);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 10);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('migrations/')).length, 22);
-  // Verify all 107 exact source Git blobs, including query budget and editorial
+  // Verify all 108 exact source Git blobs, including query budget and editorial
   // contract. Keep only the reviewed folder-cover overlay and SQLite regression test.
-  assert.equal(Object.keys(contract.origin.dataWriterToolchainBlobs ?? {}).length, 42,
+  assert.equal(Object.keys(contract.origin.dataWriterToolchainBlobs ?? {}).length, 43,
     'Import one complete, source-pinned data-writer toolchain (no second pipeline)');
   assert.equal(contract.staging.dataWriterToolchain?.phase, 'staged-offline');
   assert.equal(contract.staging.dataWriterToolchain?.releaseAuthorized, false);
