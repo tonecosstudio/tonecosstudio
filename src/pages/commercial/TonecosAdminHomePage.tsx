@@ -9,6 +9,7 @@ import { adminNavigationConfig, type NavigationItem } from "@/config/admin-navig
 import { ADMIN_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { getTonartAdminOverview, type TonartAdminCoinEntry, type TonartAdminQuote, type TonartAdminOverview } from "@/services/admin/tonart-admin-workspace-service";
 import { panelClass, secondaryClass } from "./CommercialPage";
+import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
 
 const coinsEnabled = import.meta.env.VITE_TONECOS_COINS_ENABLED === "true";
 const quotesEnabled = import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true";
@@ -455,13 +456,7 @@ export default function TonecosAdminHomePage() {
 
           {isCatalog && (
             <section className={panelClass}>
-              <h3 className="text-lg font-semibold">Catálogo de modelos</h3>
-              <p className="mt-3 max-w-2xl text-sm text-white/65">
-                O catálogo público continua conectado à sua origem canônica. A antiga edição administrativa
-                de modelos depende da reconciliação de seus serviços de gestão; não será simulada.
-              </p>
-              <Link className={secondaryClass + " mt-5"} to="/modelos">Abrir catálogo</Link>
-              <p className="mt-5 text-xs text-white/45">Gestão de produtos preservada no projeto · edição desativada</p>
+              <TonartAdminCatalogReview />
             </section>
           )}
 
