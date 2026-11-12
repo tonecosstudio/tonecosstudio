@@ -8,7 +8,7 @@ import type { PublicCatalogModel } from "./public-catalog-gateway";
 
 const HEADERS = [
   "ID canônico", "Slug", "Código", "Modelo", "Variante", "Categoria",
-  "Franquia", "Imagens declaradas", "Chave da capa", "Revisão necessária",
+  "Franquia", "Imagens declaradas", "Chave da capa", "Estado da capa",
 ] as const;
 
 function cell(value: string | number): string {
