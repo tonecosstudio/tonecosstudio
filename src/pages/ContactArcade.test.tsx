@@ -62,6 +62,7 @@ function mount() {
 beforeEach(() => {
   vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
   vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+  vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "false");
   auth.user = null;
   submission.onError = null;
   submission.onSuccess = null;
@@ -116,6 +117,28 @@ describe("Tonecos public contact entry", () => {
     expect(submission.submit).not.toHaveBeenCalled();
   });
 
+
+  it("uses the canonical email channel for the commercial MVP even with an authenticated session", () => {
+    auth.user = { id: "existing-session" };
+    vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+    mount();
+
+    expect(
+      screen.getByRole("heading", { name: "FALE COM A TONART" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "ENVIAR E-MAIL" }),
+    ).toHaveAttribute(
+      "href",
+      expect.stringContaining("mailto:tonecosstudio%40gmail.com"),
+    );
+    expect(screen.queryByPlaceholderText("Seu nome completo")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Enviar Transmissao" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Chat no Perfil")).not.toBeInTheDocument();
+    expect(submission.submit).not.toHaveBeenCalled();
+  });
 
   it("prompts guests to authenticate before collecting a support message", () => {
     mount();
