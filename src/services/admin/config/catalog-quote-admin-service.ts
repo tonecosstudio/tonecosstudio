@@ -19,6 +19,7 @@ export type AdminCatalogQuote = {
   items: CatalogQuoteItem[];
   /** Pending records are unpriced; zero is never displayed as an offer. */
   quotedAmount: number | null;
+  responseMessage: string | null;
   whatsapp: string | null; postalCode: string | null;
   scale: string; finishing: string;
 };
@@ -53,6 +54,7 @@ type QuoteRow = {
   created_at: string;
   notes: string | null;
   total_amount: number | null;
+  admin_response: string | null;
   requested_catalog_models: unknown;
   customer_whatsapp: string | null; postal_code: string | null;
   desired_scale: string; finishing: string;
@@ -67,7 +69,7 @@ export async function listAdminCatalogQuotes(limit = 50): Promise<AdminCatalogQu
   await requireTonecosAdminAccess();
   const { data, error } = await tonecos
     .from("quotes")
-    .select("id,user_id,status,created_at,notes,total_amount,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing")
+    .select("id,user_id,status,created_at,notes,total_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing")
     .not("catalog_requested_at", "is", null)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -84,6 +86,10 @@ export async function listAdminCatalogQuotes(limit = 50): Promise<AdminCatalogQu
   return rows.map((row) => {
     const contact = byId.get(row.user_id);
     if (!contact?.email) throw new Error("admin_catalog_quote_contact_missing");
+    if (row.admin_response !== null &&
+        (typeof row.admin_response !== "string" || row.admin_response.length > 2000)) {
+      throw new Error("admin_catalog_quote_response_invalid");
+    }
     return {
       id: row.id,
       userId: row.user_id,
@@ -95,6 +101,7 @@ export async function listAdminCatalogQuotes(limit = 50): Promise<AdminCatalogQu
       items: row.items,
       quotedAmount: ["answered", "archived"].includes(row.status) && row.total_amount !== null && row.total_amount > 0
         ? row.total_amount : null,
+      responseMessage: row.admin_response,
       whatsapp: row.customer_whatsapp, postalCode: row.postal_code,
       scale: row.desired_scale, finishing: row.finishing,
     };
@@ -102,17 +109,24 @@ export async function listAdminCatalogQuotes(limit = 50): Promise<AdminCatalogQu
 }
 
 /** Only the privileged server RPC may change the quote's monetary amount. */
-export async function answerCatalogQuoteRequest(quoteId: string, amount: number): Promise<string> {
+export async function answerCatalogQuoteRequest(
+  quoteId: string,
+  amount: number,
+  message: string,
+): Promise<string> {
   assertCommercialMode();
+  const responseMessage = typeof message === "string" ? message.trim() : "";
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(quoteId) ||
       !Number.isFinite(amount) || amount <= 0 || amount > 99999999.99 ||
-      Math.abs(amount * 100 - Math.round(amount * 100)) > 0.00001) {
+      Math.abs(amount * 100 - Math.round(amount * 100)) > 0.00001 ||
+      responseMessage.length < 1 || responseMessage.length > 2000) {
     throw new Error("admin_catalog_quote_response_invalid");
   }
   await requireTonecosAdminAccess();
   const { data, error } = await tonecos.rpc("answer_catalog_quote_request", {
     p_quote_id: quoteId,
     p_amount: amount,
+    p_message: responseMessage,
   });
   if (error) throw error;
   if (data !== quoteId) throw new Error("admin_catalog_quote_result_invalid");

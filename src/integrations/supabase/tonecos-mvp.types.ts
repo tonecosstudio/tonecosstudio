@@ -50,6 +50,7 @@ export type Database = {
           from_status: string | null
           id: number
           quote_id: string
+          response_text: string | null
           to_status: string
         }
         Insert: {
@@ -60,6 +61,7 @@ export type Database = {
           from_status?: string | null
           id?: never
           quote_id: string
+          response_text?: string | null
           to_status: string
         }
         Update: {
@@ -70,6 +72,7 @@ export type Database = {
           from_status?: string | null
           id?: never
           quote_id?: string
+          response_text?: string | null
           to_status?: string
         }
         Relationships: [
@@ -84,6 +87,7 @@ export type Database = {
       }
       quotes: {
         Row: {
+          admin_response: string | null
           catalog_requested_at: string
           created_at: string
           customer_whatsapp: string | null
@@ -100,6 +104,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_response?: string | null
           catalog_requested_at?: string
           created_at?: string
           customer_whatsapp?: string | null
@@ -116,6 +121,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          admin_response?: string | null
           catalog_requested_at?: string
           created_at?: string
           customer_whatsapp?: string | null
@@ -201,7 +207,7 @@ export type Database = {
         Returns: string
       }
       answer_catalog_quote_request: {
-        Args: { p_amount: number; p_quote_id: string }
+        Args: { p_amount: number; p_message?: string; p_quote_id: string }
         Returns: string
       }
       find_tonecos_coin_recipient: { Args: { p_email: string }; Returns: Json }

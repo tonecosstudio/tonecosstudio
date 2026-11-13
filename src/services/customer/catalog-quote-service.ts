@@ -27,6 +27,7 @@ export type CustomerCatalogQuote = {
   items: CatalogQuoteItem[];
   /** No price is supplied or approved by the customer. */
   quotedAmount: number | null;
+  responseMessage: string | null;
   whatsapp: string | null;
   postalCode: string | null;
   scale: string;
@@ -127,6 +128,7 @@ type QuoteDbRow = {
   deadline: string | null;
   notes: string | null;
   total_amount: number | null;
+  admin_response: string | null;
   requested_catalog_models: unknown;
   catalog_requested_at: string | null;
   customer_whatsapp: string | null;
@@ -148,7 +150,7 @@ export async function listMyCatalogQuotes(
   const { data, error } = await tonecos
     .from("quotes")
     .select(
-      "id,status,created_at,deadline,notes,total_amount,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing",
+      "id,status,created_at,deadline,notes,total_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing",
     )
     .eq("user_id", userId)
     .not("catalog_requested_at", "is", null)
@@ -163,7 +165,9 @@ export async function listMyCatalogQuotes(
       typeof row.status !== "string" ||
       typeof row.created_at !== "string" ||
       typeof row.catalog_requested_at !== "string" ||
-      !row.catalog_requested_at
+      !row.catalog_requested_at ||
+      (row.admin_response !== null &&
+        (typeof row.admin_response !== "string" || row.admin_response.length > 2000))
     ) {
       throw new Error("catalog_quote_row_invalid");
     }
@@ -180,6 +184,7 @@ export async function listMyCatalogQuotes(
         row.total_amount > 0
           ? row.total_amount
           : null,
+      responseMessage: row.admin_response,
       whatsapp: row.customer_whatsapp,
       postalCode: row.postal_code,
       scale: row.desired_scale,

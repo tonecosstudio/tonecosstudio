@@ -16,6 +16,7 @@ export type CatalogQuoteEvent = {
   fromStatus: string | null;
   toStatus: string;
   amount: number | null;
+  responseText: string | null;
   createdAt: string;
 };
 
@@ -41,7 +42,7 @@ export async function loadCatalogQuoteHistory(
   const query = tonecos
     .from("quote_events")
     .select(
-      "id,quote_id,event_type,from_status,to_status,amount,created_at",
+      "id,quote_id,event_type,from_status,to_status,amount,response_text,created_at",
     )
     .in("quote_id", ids)
     .order("created_at", { ascending: true })
@@ -66,7 +67,10 @@ export async function loadCatalogQuoteHistory(
       Number.isNaN(Date.parse(row.created_at)) ||
       (row.event_type === "answered"
         ? row.amount === null || !Number.isFinite(row.amount) || row.amount <= 0
-        : row.amount !== null)
+        : row.amount !== null) ||
+      !(row.response_text === null ||
+        (typeof row.response_text === "string" && row.response_text.length <= 2000)) ||
+      (row.event_type !== "answered" && row.response_text !== null)
     ) {
       throw new Error("catalog_quote_history_row_invalid");
     }
@@ -77,6 +81,7 @@ export async function loadCatalogQuoteHistory(
       fromStatus: row.from_status,
       toStatus: row.to_status,
       amount: row.amount,
+      responseText: row.response_text,
       createdAt: row.created_at,
     });
   }
