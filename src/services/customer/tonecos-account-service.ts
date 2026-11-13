@@ -4,7 +4,6 @@ import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/ton
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import { isPasswordPolicyCompliant } from "@/config/auth";
 import {
-  TONECOS_COMMERCIAL_ROUTES,
   resolveTonecosCustomerReturnPath,
   tonecosLoginReturnPath,
   tonecosRecoveryPath,

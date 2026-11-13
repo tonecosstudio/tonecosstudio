@@ -7,7 +7,6 @@ import {
 } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  TONECOS_COMMERCIAL_ROUTES,
   resolveTonecosCustomerReturnPath,
   tonecosLoginReturnPath,
   tonecosRecoveryPath,
