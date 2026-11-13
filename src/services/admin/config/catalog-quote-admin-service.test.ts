@@ -31,32 +31,36 @@ afterEach(() => vi.unstubAllEnvs());
 
 describe("admin catalog quote response boundary", () => {
   it("checks the Tonecos-specific role before invoking the pricing RPC", async () => {
-    await expect(answerCatalogQuoteRequest(QUOTE, 279.9)).resolves.toBe(QUOTE);
+    await expect(answerCatalogQuoteRequest(QUOTE, 279.9, "Proposta válida por 7 dias.")).resolves.toBe(QUOTE);
     expect(mocks.requireAuthenticatedUserId).toHaveBeenCalledTimes(1);
     expect(mocks.rpc).toHaveBeenNthCalledWith(1, "is_tonecos_admin");
     expect(mocks.rpc).toHaveBeenNthCalledWith(2, "answer_catalog_quote_request", {
-      p_quote_id: QUOTE, p_amount: 279.9,
+      p_quote_id: QUOTE, p_amount: 279.9, p_message: "Proposta válida por 7 dias.",
     });
     expect(mocks.from).not.toHaveBeenCalled();
   });
 
   it("never contacts Supabase for read-only preview or disabled feature", async () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
-    await expect(answerCatalogQuoteRequest(QUOTE, 279)).rejects.toThrow("catalog_quotes_not_enabled");
+    await expect(answerCatalogQuoteRequest(QUOTE, 279, "Proposta")).rejects.toThrow("catalog_quotes_not_enabled");
     await expect(listAdminCatalogQuotes()).rejects.toThrow("catalog_quotes_not_enabled");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
     vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "false");
-    await expect(answerCatalogQuoteRequest(QUOTE, 279)).rejects.toThrow("catalog_quotes_not_enabled");
+    await expect(answerCatalogQuoteRequest(QUOTE, 279, "Proposta")).rejects.toThrow("catalog_quotes_not_enabled");
     expect(mocks.rpc).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalled();
   });
 
   it("rejects invalid quote IDs and amounts before authentication", async () => {
     for (const amount of [0, -1, NaN, Infinity, 1.001, 100000000]) {
-      await expect(answerCatalogQuoteRequest(QUOTE, amount))
+      await expect(answerCatalogQuoteRequest(QUOTE, amount, "Proposta"))
         .rejects.toThrow("admin_catalog_quote_response_invalid");
     }
-    await expect(answerCatalogQuoteRequest("../other", 100))
+    await expect(answerCatalogQuoteRequest("../other", 100, "Proposta"))
+      .rejects.toThrow("admin_catalog_quote_response_invalid");
+    await expect(answerCatalogQuoteRequest(QUOTE, 100, "   "))
+      .rejects.toThrow("admin_catalog_quote_response_invalid");
+    await expect(answerCatalogQuoteRequest(QUOTE, 100, "x".repeat(2001)))
       .rejects.toThrow("admin_catalog_quote_response_invalid");
     expect(mocks.requireAuthenticatedUserId).not.toHaveBeenCalled();
     expect(mocks.rpc).not.toHaveBeenCalled();
@@ -64,22 +68,22 @@ describe("admin catalog quote response boundary", () => {
 
   it("fails closed for unauthenticated user and for false admin role", async () => {
     mocks.requireAuthenticatedUserId.mockRejectedValueOnce(new Error("User not authenticated"));
-    await expect(answerCatalogQuoteRequest(QUOTE, 200)).rejects.toThrow("User not authenticated");
+    await expect(answerCatalogQuoteRequest(QUOTE, 200, "Proposta")).rejects.toThrow("User not authenticated");
     expect(mocks.rpc).not.toHaveBeenCalled();
     mocks.rpc.mockResolvedValueOnce({ data: false, error: null });
-    await expect(answerCatalogQuoteRequest(QUOTE, 200)).rejects.toThrow("Admin access required");
+    await expect(answerCatalogQuoteRequest(QUOTE, 200, "Proposta")).rejects.toThrow("Admin access required");
     expect(mocks.rpc).toHaveBeenCalledTimes(1);
   });
 
   it("propagates role and pricing RPC failures without browser DML", async () => {
     mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "not authorized" } });
-    await expect(answerCatalogQuoteRequest(QUOTE, 200)).rejects.toMatchObject({ message: "not authorized" });
+    await expect(answerCatalogQuoteRequest(QUOTE, 200, "Proposta")).rejects.toMatchObject({ message: "not authorized" });
     mocks.rpc.mockResolvedValueOnce({ data: true, error: null });
     mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "pricing denied" } });
-    await expect(answerCatalogQuoteRequest(QUOTE, 200)).rejects.toMatchObject({ message: "pricing denied" });
+    await expect(answerCatalogQuoteRequest(QUOTE, 200, "Proposta")).rejects.toMatchObject({ message: "pricing denied" });
     mocks.rpc.mockResolvedValueOnce({ data: true, error: null });
     mocks.rpc.mockResolvedValueOnce({ data: "other", error: null });
-    await expect(answerCatalogQuoteRequest(QUOTE, 200))
+    await expect(answerCatalogQuoteRequest(QUOTE, 200, "Proposta"))
       .rejects.toThrow("admin_catalog_quote_result_invalid");
     expect(mocks.from).not.toHaveBeenCalled();
   });
@@ -90,7 +94,7 @@ describe("admin catalog quote response boundary", () => {
     query.order.mockReturnValue(query);
     query.limit.mockResolvedValue({ data: [{
       id: QUOTE, user_id: "client-1", status: "pending", created_at: "2026-11-05T00:00:00Z",
-      notes: "1/5", total_amount: null,
+      notes: "1/5", total_amount: null, admin_response: null,
       requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
     }], error: null });
     const contacts = { select: vi.fn(), in: vi.fn() };
@@ -107,7 +111,7 @@ describe("admin catalog quote response boundary", () => {
     expect(query.not).toHaveBeenCalledWith("catalog_requested_at", "is", null);
     expect(query.limit).toHaveBeenCalledWith(10);
     expect(rows).toMatchObject([{
-      id: QUOTE, status: "pending", quotedAmount: null,
+      id: QUOTE, status: "pending", quotedAmount: null, responseMessage: null,
       customerEmail: "client@example.test", customerName: "Cliente Exemplo",
       items: [{ slug: "naruto", quantity: 1 }],
     }]);
@@ -120,7 +124,7 @@ describe("admin catalog quote response boundary", () => {
     query.order.mockReturnValue(query);
     query.limit.mockResolvedValue({ data: [{
       id: QUOTE, user_id: "client-1", status: "pending", created_at: "2026-11-05T00:00:00Z",
-      notes: null, total_amount: null,
+      notes: null, total_amount: null, admin_response: null,
       requested_catalog_models: [{ slug: "../admin", quantity: 1 }],
     }], error: null });
     mocks.from.mockReturnValue(query);

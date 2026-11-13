@@ -22,7 +22,7 @@ const quoteA = {
   customerName: "Cliente A", customerEmail: "clientea@example.com",
   status: "pending", createdAt: "2026-11-11T18:00:00Z",
   notes: null, items: [{ slug: "modelo-a", quantity: 1 }],
-  quotedAmount: null, whatsapp: null, postalCode: null,
+  quotedAmount: null, responseMessage: null, whatsapp: null, postalCode: null,
   scale: "1/10", finishing: "pintado",
 };
 const quoteB = {
@@ -69,6 +69,7 @@ describe("TONART administrative quote deep links", () => {
           fromStatus: "pending",
           toStatus: "reviewing",
           amount: null,
+          responseText: null,
           createdAt: "2026-11-13T09:00:00Z",
         },
       ],

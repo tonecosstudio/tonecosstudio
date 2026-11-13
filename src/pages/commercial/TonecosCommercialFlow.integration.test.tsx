@@ -251,6 +251,7 @@ describe("TONART commercial screens: account → request → history → respons
         createdAt: "2026-11-05T00:00:00Z",
         notes: null,
         quotedAmount: 249.9,
+        responseMessage: "Proposta válida por 7 dias.",
         deadline: null,
         items: [{ slug: "naruto", quantity: 1 }],
         whatsapp: null,
@@ -268,6 +269,7 @@ describe("TONART commercial screens: account → request → history → respons
           fromStatus: null,
           toStatus: "pending",
           amount: null,
+          responseText: null,
           createdAt: "2026-11-05T00:00:00Z",
         },
         {
@@ -277,6 +279,7 @@ describe("TONART commercial screens: account → request → history → respons
           fromStatus: "reviewing",
           toStatus: "answered",
           amount: 249.9,
+          responseText: "Proposta válida por 7 dias.",
           createdAt: "2026-11-05T01:00:00Z",
         },
       ],
@@ -284,6 +287,7 @@ describe("TONART commercial screens: account → request → history → respons
     renderApp("/meus-orcamentos");
     expect(await screen.findByText("Solicitação enviada")).toBeInTheDocument();
     expect(screen.getByText(/Orçamento respondido:/)).toHaveTextContent("R$");
+    expect(screen.getByText("Proposta válida por 7 dias.")).toBeInTheDocument();
     expect(mocks.history).toHaveBeenCalledWith([QUOTE]);
   });
 
@@ -536,7 +540,7 @@ describe("TONART commercial screens: account → request → history → respons
     mocks.answerAdmin.mockResolvedValue(QUOTE);
     renderApp("/admin/orcamentos");
     expect(
-      await screen.findByRole("button", { name: "Responder com valor" }),
+      await screen.findByRole("button", { name: "Enviar resposta" }),
     ).toBeInTheDocument();
     fireEvent.change(
       screen.getByRole("textbox", {
@@ -547,10 +551,20 @@ describe("TONART commercial screens: account → request → history → respons
       },
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Responder com valor" }),
+      screen.getByRole("textbox", {
+        name: "Mensagem ao cliente " + QUOTE.slice(0, 8),
+      }),
+      { target: { value: "Proposta válida por 7 dias." } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enviar resposta" }),
     );
     await waitFor(() =>
-      expect(mocks.answerAdmin).toHaveBeenCalledWith(QUOTE, 249.9),
+      expect(mocks.answerAdmin).toHaveBeenCalledWith(
+        QUOTE,
+        249.9,
+        "Proposta válida por 7 dias.",
+      ),
     );
   });
   it("updates the canonical quote workflow only through the authorized admin service", async () => {
