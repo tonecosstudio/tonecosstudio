@@ -115,6 +115,18 @@ export default function TonecosMyQuotesPage() {
         <p>{error}</p>
         <button type="button" className={secondaryClass + " mt-3"} onClick={() => setAttempt((n) => n + 1)}>Tentar novamente</button>
       </div>}
+      {userId && !authError && (
+        <div className="mb-5">
+          <button
+            type="button"
+            className={secondaryClass}
+            disabled={loading}
+            onClick={() => setAttempt((current) => current + 1)}
+          >
+            {loading ? "Atualizando..." : "Atualizar orçamentos"}
+          </button>
+        </div>
+      )}
       {userId && !loading && !error && total > 0 && (
         <p className="mb-4 max-w-3xl text-xs text-white/55">
           Mostrando {offset + 1}–{Math.min(offset + rows.length, total)} de {total}
