@@ -156,6 +156,16 @@ describe("TONART administrative quote directory", () => {
     expect(await screen.findByRole("alert")).toBeInTheDocument();
   });
 
+  it("refreshes the administrator queue to show newly submitted requests", async () => {
+    show();
+    await screen.findByText("Solicitação #33333333");
+    await waitFor(() => expect(mocks.page).toHaveBeenCalledTimes(1));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Atualizar solicitações" }),
+    );
+    await waitFor(() => expect(mocks.page).toHaveBeenCalledTimes(2));
+  });
+
   it("filters the complete protected queue by status", async () => {
     show();
     await screen.findByText("Solicitação #33333333");
