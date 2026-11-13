@@ -36,6 +36,14 @@ const statusLabels: Record<string,string> = {
   pending: "Novo", reviewing: "Em análise",
   answered: "Respondido", archived: "Arquivado",
 };
+/** Accept Brazilian currency grouping without silently turning R$ 1.234,56 into R$ 1,23. */
+function parseQuoteAmount(input: string): number {
+  const raw = input.trim();
+  const br = /^(?:[1-9]\\d{0,2}(?:\\.\\d{3})+|(?:0|[1-9]\\d*))(?:,\\d{1,2})?$/;
+  const plain = /^(?:0|[1-9]\\d*)(?:\\.\\d{1,2})?$/;
+  if (!br.test(raw) && !plain.test(raw)) return NaN;
+  return Number(br.test(raw) ? raw.replace(/\\./g, "").replace(",", ".") : raw);
+}
 const PAGE_SIZE = 25;
 type StatusFilter = "all" | "pending" | "reviewing" | "answered" | "archived";
 export default function TonecosAdminQuotesPage() {
@@ -118,7 +126,7 @@ export default function TonecosAdminQuotesPage() {
     if (busyId) return;
     setBusyId(id); setError(""); setNotice("");
     try {
-      const amount = Number((price[id] ?? "").trim().replace(",", "."));
+      const amount = parseQuoteAmount(price[id] ?? "");
       const message = (responseMessage[id] ?? "").trim();
       await answerCatalogQuoteRequest(id, amount, message);
       setPrice((current) => ({ ...current, [id]: "" }));
@@ -276,7 +284,7 @@ export default function TonecosAdminQuotesPage() {
                     <span>Valor total (R$)</span>
                     <input aria-label={"Valor do orçamento " + quote.id.slice(0, 8)}
                       className={fieldClass} type="text" inputMode="decimal" required maxLength={12}
-                      placeholder="Ex.: 249,90" value={price[quote.id] ?? ""}
+                      placeholder="Ex.: 1.249,90" value={price[quote.id] ?? ""}
                       onChange={(event) => setPrice((current) => ({ ...current, [quote.id]: event.target.value }))} />
                   </label>
                   <label className="block space-y-2 text-sm">
