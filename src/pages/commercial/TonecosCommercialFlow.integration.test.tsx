@@ -312,7 +312,8 @@ describe("TONART commercial screens: account → request → history → respons
         scale: "a definir",
         finishing: "a definir",
       },
-    ]);
+      ],
+    });
     mocks.history.mockResolvedValue({
       [QUOTE]: [
         {
