@@ -130,7 +130,9 @@ describe("Tonecos password recovery screen", () => {
       id: "11111111-1111-4111-8111-111111111111",
       email: "cliente@example.com",
     });
-    show(`/recuperar-senha?action=update&token_hash=${"c".repeat(64)}&type=recovery`);
+    show(
+      `/recuperar-senha?action=update&token_hash=${"c".repeat(64)}&type=recovery`,
+    );
     const newPassword = (await screen.findByLabelText(
       "Nova senha",
     )) as HTMLInputElement;
@@ -158,7 +160,9 @@ describe("Tonecos password recovery screen", () => {
       email: "cliente@example.com",
     });
     mocks.complete.mockResolvedValue(undefined);
-    show(`/recuperar-senha?action=update&next=%2Fsolicitar-orcamento&token_hash=${"d".repeat(64)}&type=recovery`);
+    show(
+      `/recuperar-senha?action=update&next=%2Fsolicitar-orcamento&token_hash=${"d".repeat(64)}&type=recovery`,
+    );
     const field = await screen.findByLabelText("Nova senha");
     fireEvent.change(field, { target: { value: "StrongPass123!" } });
     fireEvent.change(screen.getByLabelText("Confirmar nova senha"), {
