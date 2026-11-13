@@ -185,7 +185,7 @@ function persistSelection(items: readonly PublicCatalogModel[]): void {
   try {
     const raw = JSON.stringify({
       expiresAt: Date.now() + COMMERCIAL_SELECTION_TTL_MS,
-      items,
+      items: [...items],
     } satisfies PersistedSelection);
     if (raw.length > MAX_PERSISTED_SELECTION_CHARS) {
       clearPersistedSelection();
