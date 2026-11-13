@@ -39,10 +39,10 @@ const statusLabels: Record<string,string> = {
 /** Accept Brazilian currency grouping without silently turning R$ 1.234,56 into R$ 1,23. */
 function parseQuoteAmount(input: string): number {
   const raw = input.trim();
-  const br = /^(?:[1-9]\\d{0,2}(?:\\.\\d{3})+|(?:0|[1-9]\\d*))(?:,\\d{1,2})?$/;
-  const plain = /^(?:0|[1-9]\\d*)(?:\\.\\d{1,2})?$/;
+  const br = /^(?:[1-9]\d{0,2}(?:\.\d{3})+|(?:0|[1-9]\d*))(?:,\d{1,2})?$/;
+  const plain = /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/;
   if (!br.test(raw) && !plain.test(raw)) return NaN;
-  return Number(br.test(raw) ? raw.replace(/\\./g, "").replace(",", ".") : raw);
+  return Number(br.test(raw) ? raw.replace(/\./g, "").replace(",", ".") : raw);
 }
 const PAGE_SIZE = 25;
 type StatusFilter = "all" | "pending" | "reviewing" | "answered" | "archived";
