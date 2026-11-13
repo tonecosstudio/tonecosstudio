@@ -123,10 +123,10 @@ export default function TonecosMyQuotesPage() {
       : null;
   const justSent = Boolean(
     sentId &&
-      userId &&
-      !loading &&
-      !error &&
-      rows.some((row) => row.id === sentId),
+    userId &&
+    !loading &&
+    !error &&
+    rows.some((row) => row.id === sentId),
   );
 
   return (
@@ -208,7 +208,9 @@ export default function TonecosMyQuotesPage() {
           {total}
         </p>
       )}
-      {userId && !loading && !error &&
+      {userId &&
+        !loading &&
+        !error &&
         (rows.length === 0 ? (
           <div className={panelClass + " max-w-3xl"}>
             <p className="mb-5 text-white/70">
@@ -300,14 +302,13 @@ export default function TonecosMyQuotesPage() {
             type="button"
             className={secondaryClass}
             disabled={offset === 0}
-            onClick={() =>
-              setOffset((value) => Math.max(0, value - PAGE_SIZE))
-            }
+            onClick={() => setOffset((value) => Math.max(0, value - PAGE_SIZE))}
           >
             Anterior
           </button>
           <span className="text-xs text-white/55">
-            Página {Math.floor(offset / PAGE_SIZE) + 1} de {Math.ceil(total / PAGE_SIZE)}
+            Página {Math.floor(offset / PAGE_SIZE) + 1} de{" "}
+            {Math.ceil(total / PAGE_SIZE)}
           </span>
           <button
             type="button"

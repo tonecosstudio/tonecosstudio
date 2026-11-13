@@ -82,10 +82,12 @@ function SelectModel() {
   }, [setSelectedModels]);
   return null;
 }
-type RouteEntry = string | {
-  pathname: string;
-  state?: { recovered?: boolean; sent?: string };
-};
+type RouteEntry =
+  | string
+  | {
+      pathname: string;
+      state?: { recovered?: boolean; sent?: string };
+    };
 function renderApp(entry: RouteEntry, seed = false) {
   return render(
     <MemoryRouter initialEntries={[entry]}>
@@ -320,7 +322,9 @@ describe("TONART commercial screens: account → request → history → respons
       await screen.findByRole("button", { name: "Atualizar orçamentos" }),
     ).toBeEnabled();
     await waitFor(() => expect(mocks.listMine).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole("button", { name: "Atualizar orçamentos" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Atualizar orçamentos" }),
+    );
     await waitFor(() => expect(mocks.listMine).toHaveBeenCalledTimes(2));
   });
 
