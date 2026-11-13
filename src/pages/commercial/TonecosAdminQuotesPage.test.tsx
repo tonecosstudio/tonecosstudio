@@ -156,6 +156,33 @@ describe("TONART administrative quote directory", () => {
     expect(await screen.findByRole("alert")).toBeInTheDocument();
   });
 
+  it("prepares the recorded quote response in the existing email client", async () => {
+    mocks.page.mockResolvedValueOnce({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [
+        {
+          ...quoteA,
+          status: "answered",
+          quotedAmount: 1249.9,
+          responseMessage: "Proposta válida por 7 dias.",
+        },
+      ],
+    });
+    show();
+    const link = await screen.findByRole("link", {
+      name: "Preparar e-mail de resposta",
+    });
+    const href = link.getAttribute("href") ?? "";
+    expect(href).toContain("mailto:clientea%40example.com");
+    const decoded = decodeURIComponent(href);
+    expect(decoded).toContain("R$ 1.249,90");
+    expect(decoded).toContain("Proposta válida por 7 dias.");
+    expect(decoded).toContain("tonartstudio.com.br/meus-orcamentos");
+    expect(screen.getByText(/Confirme o envio manualmente/)).toBeInTheDocument();
+  });
+
   it("refreshes the administrator queue to show newly submitted requests", async () => {
     show();
     await screen.findByText("Solicitação #33333333");
