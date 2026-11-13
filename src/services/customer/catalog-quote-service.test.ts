@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   listMyCatalogQuotes,
+  loadMyCatalogQuotePage,
   quoteItemsFromSelection,
   submitCatalogQuoteRequest,
 } from "./catalog-quote-service";
@@ -206,13 +207,13 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       eq: vi.fn(),
       not: vi.fn(),
       order: vi.fn(),
-      limit: vi.fn(),
+      range: vi.fn(),
     };
     query.select.mockReturnValue(query);
     query.eq.mockReturnValue(query);
     query.not.mockReturnValue(query);
     query.order.mockReturnValue(query);
-    query.limit.mockResolvedValue({
+    query.range.mockResolvedValue({
       data: [
         {
           id: QUOTE,
@@ -238,6 +239,7 @@ describe("authenticated Tonecos catalog quote boundary", () => {
         },
       ],
       error: null,
+      count: 2,
     });
     mocks.from.mockReturnValue(query);
     const quotes = await listMyCatalogQuotes(USER);
@@ -247,7 +249,7 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       "is",
       null,
     );
-    expect(query.limit).toHaveBeenCalledWith(20);
+    expect(query.range).toHaveBeenCalledWith(0, 19);
     expect(quotes[0]).toMatchObject({
       id: QUOTE,
       status: "pending",
@@ -260,6 +262,16 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       items: [{ slug: "nier-2b", quantity: 2 }],
     });
     expect(mocks.assertCurrentUserId).toHaveBeenCalledWith(USER);
+
+    query.range.mockResolvedValueOnce({
+      data: [],
+      error: null,
+      count: 42,
+    });
+    await expect(
+      loadMyCatalogQuotePage(USER, { limit: 20, offset: 20 }),
+    ).resolves.toEqual({ total: 42, limit: 20, offset: 20, rows: [] });
+    expect(query.range).toHaveBeenLastCalledWith(20, 39);
   });
 
   it("refuses legacy quotes and empty item sets if a query unexpectedly returns them", async () => {
@@ -268,7 +280,7 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       eq: vi.fn(),
       not: vi.fn(),
       order: vi.fn(),
-      limit: vi.fn(),
+      range: vi.fn(),
     };
     for (const method of ["select", "eq", "not", "order"] as const) {
       query[method].mockReturnValue(query);
@@ -282,11 +294,11 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
       total_amount: 249.9,
     };
-    query.limit.mockResolvedValueOnce({ data: [oldRow], error: null });
+    query.range.mockResolvedValueOnce({ data: [oldRow], error: null });
     await expect(listMyCatalogQuotes(USER)).rejects.toThrow(
       "catalog_quote_row_invalid",
     );
-    query.limit.mockResolvedValueOnce({
+    query.range.mockResolvedValueOnce({
       data: [
         {
           ...oldRow,
@@ -295,6 +307,7 @@ describe("authenticated Tonecos catalog quote boundary", () => {
         },
       ],
       error: null,
+      count: 1,
     });
     await expect(listMyCatalogQuotes(USER)).rejects.toThrow(
       "catalog_quote_selection_invalid",
@@ -302,9 +315,12 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     expect(query.not).toHaveBeenCalledWith("catalog_requested_at", "is", null);
   });
 
-  it("rejects invalid quote list limits and read errors without fallback", async () => {
-    await expect(listMyCatalogQuotes(USER, 200)).rejects.toThrow(
-      "catalog_quote_list_limit_invalid",
+  it("rejects invalid quote page bounds and read errors without fallback", async () => {
+    await expect(loadMyCatalogQuotePage(USER, { limit: 200 })).rejects.toThrow(
+      "catalog_quote_list_query_invalid",
+    );
+    await expect(loadMyCatalogQuotePage(USER, { offset: -1 })).rejects.toThrow(
+      "catalog_quote_list_query_invalid",
     );
     expect(mocks.from).not.toHaveBeenCalled();
     const query = {
@@ -312,19 +328,19 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       eq: vi.fn(),
       not: vi.fn(),
       order: vi.fn(),
-      limit: vi.fn(),
+      range: vi.fn(),
     };
     query.select.mockReturnValue(query);
     query.eq.mockReturnValue(query);
     query.not.mockReturnValue(query);
     query.order.mockReturnValue(query);
-    query.limit.mockResolvedValue({
+    query.range.mockResolvedValue({
       data: null,
       error: { message: "offline" },
     });
     mocks.from.mockReturnValue(query);
-    await expect(listMyCatalogQuotes(USER, 3)).rejects.toMatchObject({
-      message: "offline",
-    });
+    await expect(loadMyCatalogQuotePage(USER, { limit: 3, offset: 6 }))
+      .rejects.toMatchObject({ message: "offline" });
+    expect(query.range).toHaveBeenCalledWith(6, 8);
   });
 });

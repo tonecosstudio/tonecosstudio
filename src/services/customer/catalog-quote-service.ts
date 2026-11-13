@@ -34,6 +34,13 @@ export type CustomerCatalogQuote = {
   finishing: string;
 };
 
+export type CustomerCatalogQuotePage = {
+  total: number;
+  limit: number;
+  offset: number;
+  rows: CustomerCatalogQuote[];
+};
+
 const requireCommercialQuoteMode = assertTonecosQuotesEnabled;
 
 function validateItems(items: readonly CatalogQuoteItem[]): CatalogQuoteItem[] {
@@ -138,27 +145,46 @@ type QuoteDbRow = {
 };
 
 /** Own records only; the quotes RLS policy remains the database's authority. */
-export async function listMyCatalogQuotes(
+export async function loadMyCatalogQuotePage(
   userId: string,
-  limit = 20,
-): Promise<CustomerCatalogQuote[]> {
+  options: { limit?: number; offset?: number } = {},
+): Promise<CustomerCatalogQuotePage> {
   requireCommercialQuoteMode();
-  if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
-    throw new Error("catalog_quote_list_limit_invalid");
+  const limit = options.limit ?? 20;
+  const offset = options.offset ?? 0;
+  if (
+    !Number.isSafeInteger(limit) ||
+    limit < 1 ||
+    limit > 50 ||
+    !Number.isSafeInteger(offset) ||
+    offset < 0 ||
+    offset > 100000
+  ) {
+    throw new Error("catalog_quote_list_query_invalid");
   }
+
   await assertCurrentUserId(userId);
-  const { data, error } = await tonecos
+  const { data, error, count } = await tonecos
     .from("quotes")
     .select(
       "id,status,created_at,deadline,notes,total_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing",
+      { count: "exact" },
     )
     .eq("user_id", userId)
     .not("catalog_requested_at", "is", null)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
+
   if (error) throw error;
-  const rows = (data ?? []) as QuoteDbRow[];
-  return rows.map((row) => {
+  if (
+    typeof count !== "number" ||
+    !Number.isSafeInteger(count) ||
+    count < 0
+  ) {
+    throw new Error("catalog_quote_count_invalid");
+  }
+
+  const rows = ((data ?? []) as QuoteDbRow[]).map((row) => {
     const items = validateListedItems(row.requested_catalog_models);
     if (
       typeof row.id !== "string" ||
@@ -167,7 +193,8 @@ export async function listMyCatalogQuotes(
       typeof row.catalog_requested_at !== "string" ||
       !row.catalog_requested_at ||
       (row.admin_response !== null &&
-        (typeof row.admin_response !== "string" || row.admin_response.length > 2000))
+        (typeof row.admin_response !== "string" ||
+          row.admin_response.length > 2000))
     ) {
       throw new Error("catalog_quote_row_invalid");
     }
@@ -191,6 +218,20 @@ export async function listMyCatalogQuotes(
       finishing: row.finishing,
     };
   });
+
+  if (rows.length > Math.max(0, count - offset)) {
+    throw new Error("catalog_quote_count_invalid");
+  }
+
+  return { total: count, limit, offset, rows };
+}
+
+/** Compatibility helper returning only the newest bounded rows. */
+export async function listMyCatalogQuotes(
+  userId: string,
+  limit = 20,
+): Promise<CustomerCatalogQuote[]> {
+  return (await loadMyCatalogQuotePage(userId, { limit, offset: 0 })).rows;
 }
 
 function validateListedItems(value: unknown): CatalogQuoteItem[] {
