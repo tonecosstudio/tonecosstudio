@@ -181,16 +181,29 @@ export default function TonecosMyQuotesPage() {
           className="mb-5 max-w-3xl border border-red-500/30 p-4 text-sm text-red-200"
         >
           <p>{error}</p>
-          <button
-            type="button"
-            className={secondaryClass + " mt-3"}
-            onClick={() => setAttempt((n) => n + 1)}
-          >
-            Tentar novamente
-          </button>
+          {error === "Sua sessão expirou. Entre novamente para continuar." ? (
+            <Link
+              className={secondaryClass + " mt-3"}
+              to={
+                TONECOS_COMMERCIAL_ROUTES.login +
+                "?next=" +
+                encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.history)
+              }
+            >
+              Entrar novamente
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className={secondaryClass + " mt-3"}
+              onClick={() => setAttempt((n) => n + 1)}
+            >
+              Tentar novamente
+            </button>
+          )}
         </div>
       )}
-      {userId && !authError && (
+      {userId && !authError && !error && (
         <div className="mb-5">
           <button
             type="button"

@@ -316,6 +316,22 @@ describe("TONART commercial screens: account → request → history → respons
     ).not.toBeInTheDocument();
   });
 
+  it("offers sign-in instead of an ineffective retry after quote-session expiry", async () => {
+    mocks.listMine.mockRejectedValueOnce(new Error("User not authenticated"));
+    renderApp("/meus-orcamentos");
+    expect(
+      await screen.findByText(
+        "Sua sessão expirou. Entre novamente para continuar.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Entrar novamente" }),
+    ).toHaveAttribute("href", "/login?next=%2Fmeus-orcamentos");
+    expect(
+      screen.queryByRole("button", { name: "Tentar novamente" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("refreshes customer quotes after an administrator responds", async () => {
     renderApp("/meus-orcamentos");
     expect(
