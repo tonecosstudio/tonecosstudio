@@ -517,6 +517,25 @@ describe("TONART commercial screens: account → request → history → respons
     expect(mocks.signIn).not.toHaveBeenCalled();
   });
 
+  it("lets a returning customer resend email confirmation from login", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    renderApp("/login");
+    await screen.findByRole("button", { name: "Entrar" });
+    fireEvent.change(screen.getByLabelText("E-mail"), {
+      target: { value: "cliente@example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Reenviar confirmação" }));
+    await waitFor(() =>
+      expect(mocks.resendConfirmation).toHaveBeenCalledWith(
+        "cliente@example.com",
+        "/perfil",
+      ),
+    );
+    expect(
+      await screen.findByText(/Nova confirmação solicitada/),
+    ).toBeInTheDocument();
+  });
+
   it("shows account confirmation instead of claiming that signup is already active", async () => {
     mocks.getUser.mockResolvedValue(null);
     mocks.signUp.mockResolvedValue({
