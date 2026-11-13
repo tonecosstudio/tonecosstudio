@@ -577,11 +577,12 @@ const safeNext = new Set<string>([
                     : "Entrar"}
               </button>
             </form>
-            {mode === "login" && confirmationPending && (
+            {mode === "login" && (
               <div className="mt-5 border-t border-white/15 pt-5">
                 <p className="mb-3 text-xs text-white/60">
-                  Não recebeu a confirmação? Você pode solicitar um novo envio
-                  para o e-mail informado acima.
+                  {confirmationPending
+                    ? "Não recebeu a confirmação? Solicite um novo envio para o e-mail informado acima."
+                    : "Ainda não confirmou seu e-mail? Informe seu endereço acima e solicite um novo link de confirmação."}
                 </p>
                 <button
                   type="button"
