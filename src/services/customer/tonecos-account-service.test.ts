@@ -1,6 +1,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import {
-  changeTonecosPassword, registerTonecosAccount, signInTonecosAccount, signOutTonecosAccount,
+  changeTonecosPassword, registerTonecosAccount, resendTonecosSignupConfirmation,
+  signInTonecosAccount, signOutTonecosAccount,
   getTonecosCurrentUser, getMyTonecosProfile, updateMyTonecosProfile,
   requestTonecosPasswordReset, completeTonecosPasswordRecovery,
   verifyTonecosPasswordRecoveryToken,
@@ -9,7 +10,8 @@ import {
 const USER = "11111111-1111-4111-8111-111111111111";
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(), getSession: vi.fn(), from: vi.fn(), updateUser: vi.fn(), verifyOtp: vi.fn(),
-  sendPasswordResetEmail: vi.fn(), signUpWithPasswordCredentials: vi.fn(),
+  resendSignupConfirmation: vi.fn(), sendPasswordResetEmail: vi.fn(),
+  signUpWithPasswordCredentials: vi.fn(),
   signInWithPasswordCredentials: vi.fn(), signOutCurrentSession: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
@@ -21,6 +23,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   }, from: mocks.from },
 }));
 vi.mock("@/services/auth/auth-session-service", () => ({
+  resendSignupConfirmation: mocks.resendSignupConfirmation,
   sendPasswordResetEmail: mocks.sendPasswordResetEmail,
   signUpWithPasswordCredentials: mocks.signUpWithPasswordCredentials,
   signInWithPasswordCredentials: mocks.signInWithPasswordCredentials,
@@ -118,6 +121,17 @@ describe("Tonecos authenticated MVP account", () => {
       fullName: "Cliente", emailRedirectTo: expect.stringMatching(/\/login$/),
     });
     expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("resends signup confirmation through the same Auth authority and redirect", async () => {
+    mocks.resendSignupConfirmation.mockResolvedValue(undefined);
+    await expect(
+      resendTonecosSignupConfirmation("  CLIENT@EXAMPLE.COM "),
+    ).resolves.toBeUndefined();
+    expect(mocks.resendSignupConfirmation).toHaveBeenCalledExactlyOnceWith({
+      email: "client@example.com",
+      emailRedirectTo: expect.stringMatching(/\/login$/),
+    });
   });
 
   it("does not sign in unless Auth actually returned user and session", async () => {

@@ -7,7 +7,11 @@ import {
 } from "@/lib/security/rate-limiter";
 import type { Session } from "@supabase/supabase-js";
 
-type AuthRateLimitedAction = "login" | "signup" | "password-reset";
+type AuthRateLimitedAction =
+  | "login"
+  | "signup"
+  | "password-reset"
+  | "confirmation-resend";
 
 function normalizeAuthSubject(email: string): string {
   return email.trim().toLowerCase();
@@ -106,6 +110,27 @@ export async function signUpWithPasswordCredentials(params: {
 
   resetRateLimit(rateLimitKey);
   return { userId: data.user?.id ?? null, emailConfirmationRequired: !data.session };
+}
+
+export async function resendSignupConfirmation(params: {
+  email: string;
+  emailRedirectTo: string;
+}): Promise<void> {
+  const rateLimitKey = assertAuthRateLimit(
+    "confirmation-resend",
+    params.email,
+    RATE_LIMITS.passwordReset,
+  );
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: normalizeAuthSubject(params.email),
+    options: {
+      emailRedirectTo: params.emailRedirectTo,
+    },
+  });
+
+  if (error) throw normalizeAuthError(error);
+  resetRateLimit(rateLimitKey);
 }
 
 export async function signInWithGoogleOAuth(redirectTo: string) {

@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => {
     getUser: vi.fn(),
     signIn: vi.fn(),
     signUp: vi.fn(),
+    resendConfirmation: vi.fn(),
     signOut: vi.fn(),
     getProfile: vi.fn(),
     updateProfile: vi.fn(),
@@ -44,6 +45,7 @@ vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.getUser,
   signInTonecosAccount: mocks.signIn,
   registerTonecosAccount: mocks.signUp,
+  resendTonecosSignupConfirmation: mocks.resendConfirmation,
   signOutTonecosAccount: mocks.signOut,
   getMyTonecosProfile: mocks.getProfile,
   updateMyTonecosProfile: mocks.updateProfile,
@@ -138,6 +140,7 @@ beforeEach(() => {
     rows: [],
   });
   mocks.changePassword.mockResolvedValue(undefined);
+  mocks.resendConfirmation.mockResolvedValue(undefined);
   mocks.history.mockResolvedValue({});
 });
 afterEach(() => {
@@ -490,6 +493,18 @@ describe("TONART commercial screens: account → request → history → respons
       password: "StrongPass123!",
       fullName: "Cliente",
     });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Reenviar confirmação" }),
+    );
+    await waitFor(() =>
+      expect(mocks.resendConfirmation).toHaveBeenCalledWith(
+        "cliente@example.com",
+      ),
+    );
+    expect(
+      await screen.findByText(/Nova confirmação solicitada/),
+    ).toBeInTheDocument();
   });
 
   it("routes verified administrators to the existing /admin entry rather than quote-only intake", async () => {

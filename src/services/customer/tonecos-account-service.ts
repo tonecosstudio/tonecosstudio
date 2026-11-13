@@ -5,7 +5,10 @@ import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-auth
 import { isPasswordPolicyCompliant } from "@/config/auth";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import {
-  sendPasswordResetEmail, signInWithPasswordCredentials, signOutCurrentSession,
+  resendSignupConfirmation,
+  sendPasswordResetEmail,
+  signInWithPasswordCredentials,
+  signOutCurrentSession,
   signUpWithPasswordCredentials,
 } from "@/services/auth/auth-session-service";
 
@@ -62,6 +65,17 @@ export async function registerTonecosAccount(input: {
   const fullName = cleanText(input.fullName, 160, true)!;
   return signUpWithPasswordCredentials({
     ...credentials, fullName,
+    emailRedirectTo: originRedirect(TONECOS_COMMERCIAL_ROUTES.login),
+  });
+}
+
+export async function resendTonecosSignupConfirmation(
+  email: string,
+): Promise<void> {
+  assertTonecosCommercialEnabled();
+  const normalized = validateEmail(email);
+  await resendSignupConfirmation({
+    email: normalized,
     emailRedirectTo: originRedirect(TONECOS_COMMERCIAL_ROUTES.login),
   });
 }

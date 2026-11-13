@@ -12,6 +12,7 @@ import {
   getTonecosCurrentUser,
   getMyTonecosProfile,
   registerTonecosAccount,
+  resendTonecosSignupConfirmation,
   signInTonecosAccount,
   signOutTonecosAccount,
   updateMyTonecosProfile,
@@ -68,6 +69,7 @@ const safeNext = new Set<string>([
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirmationPending, setConfirmationPending] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState(() =>
@@ -156,6 +158,7 @@ const safeNext = new Set<string>([
         });
         setPassword("");
         if (result.emailConfirmationRequired) {
+          setConfirmationPending(true);
           setNotice(
             "Solicitação processada. Se esta for uma nova conta, verifique o e-mail de confirmação, inclusive no spam. Se já tem cadastro, entre com sua senha ou use a recuperação de acesso.",
           );
@@ -170,6 +173,7 @@ const safeNext = new Set<string>([
       } else {
         const id = await signInTonecosAccount(email, password);
         setPassword("");
+        setConfirmationPending(false);
         setIdentity({ id, email });
         const admin = await hasTonecosAdminAccess().catch(() => false);
         setIsAdmin(admin);
@@ -179,6 +183,23 @@ const safeNext = new Set<string>([
             : next,
         );
       }
+    } catch (err) {
+      setError(commercialAccountErrorText(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendConfirmation() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await resendTonecosSignupConfirmation(email);
+      setNotice(
+        "Nova confirmação solicitada. Verifique seu e-mail e a pasta de spam. O envio está sujeito aos limites de segurança do serviço.",
+      );
     } catch (err) {
       setError(commercialAccountErrorText(err));
     } finally {
@@ -452,6 +473,7 @@ const safeNext = new Set<string>([
                 type="button"
                 onClick={() => {
                   setMode("login");
+                  setConfirmationPending(false);
                   setError("");
                   setNotice("");
                 }}
@@ -463,6 +485,7 @@ const safeNext = new Set<string>([
                 type="button"
                 onClick={() => {
                   setMode("signup");
+                  setConfirmationPending(false);
                   setError("");
                   setNotice("");
                 }}
@@ -536,6 +559,24 @@ const safeNext = new Set<string>([
                     : "Entrar"}
               </button>
             </form>
+            {mode === "login" && confirmationPending && (
+              <div className="mt-5 border-t border-white/15 pt-5">
+                <p className="mb-3 text-xs text-white/60">
+                  Não recebeu a confirmação? Você pode solicitar um novo envio
+                  para o e-mail informado acima.
+                </p>
+                <button
+                  type="button"
+                  className={secondaryClass}
+                  disabled={busy || !email.trim()}
+                  onClick={() => {
+                    void resendConfirmation();
+                  }}
+                >
+                  {busy ? "Processando..." : "Reenviar confirmação"}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

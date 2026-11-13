@@ -10,6 +10,7 @@ const { authMock } = vi.hoisted(() => ({
     signOut: vi.fn(),
     signUp: vi.fn(),
     resetPasswordForEmail: vi.fn(),
+    resend: vi.fn(),
   },
 }));
 
@@ -20,6 +21,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import {
+  resendSignupConfirmation,
   sendPasswordResetEmail,
   signInWithPasswordCredentials,
   signUpWithPasswordCredentials,
@@ -145,6 +147,39 @@ describe("auth-session-service rate limits", () => {
     ).rejects.toThrow(RATE_LIMITS.register.message);
 
     expect(authMock.signUp).toHaveBeenCalledTimes(RATE_LIMITS.register.maxRequests);
+  });
+
+  it("resends signup confirmation through Supabase Auth with the canonical redirect", async () => {
+    authMock.resend.mockResolvedValue({ data: {}, error: null });
+
+    await expect(
+      resendSignupConfirmation({
+        email: " Pending@Example.com ",
+        emailRedirectTo: "https://tonartstudio.com.br/login",
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(authMock.resend).toHaveBeenCalledExactlyOnceWith({
+      type: "signup",
+      email: "pending@example.com",
+      options: {
+        emailRedirectTo: "https://tonartstudio.com.br/login",
+      },
+    });
+  });
+
+  it("normalizes resend rate-limit failures without creating another mail authority", async () => {
+    authMock.resend.mockResolvedValue({
+      data: null,
+      error: new Error("Email rate limit exceeded"),
+    });
+
+    await expect(
+      resendSignupConfirmation({
+        email: "pending@example.com",
+        emailRedirectTo: "https://tonartstudio.com.br/login",
+      }),
+    ).rejects.toThrow("Muitas tentativas. Aguarde alguns minutos.");
   });
 
   it("rate limits password reset requests by normalized email", async () => {
