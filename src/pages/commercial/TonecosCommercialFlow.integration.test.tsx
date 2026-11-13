@@ -660,9 +660,7 @@ describe("TONART commercial screens: account → request → history → respons
       }),
       { target: { value: "Proposta válida por 7 dias." } },
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Enviar resposta" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Enviar resposta" }));
     await waitFor(() =>
       expect(mocks.answerAdmin).toHaveBeenCalledWith(
         QUOTE,
@@ -678,13 +676,13 @@ describe("TONART commercial screens: account → request → history → respons
       offset: 0,
       rows: [
         {
-        id: QUOTE,
-        userId: USER,
-        status: "pending",
-        createdAt: "2026-11-05T00:00:00Z",
-        notes: null,
-        quotedAmount: null,
-        items: [{ slug: "naruto", quantity: 1 }],
+          id: QUOTE,
+          userId: USER,
+          status: "pending",
+          createdAt: "2026-11-05T00:00:00Z",
+          notes: null,
+          quotedAmount: null,
+          items: [{ slug: "naruto", quantity: 1 }],
         },
       ],
     });
