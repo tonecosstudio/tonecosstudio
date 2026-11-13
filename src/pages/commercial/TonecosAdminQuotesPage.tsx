@@ -44,6 +44,27 @@ function parseQuoteAmount(input: string): number {
   if (!br.test(raw) && !plain.test(raw)) return NaN;
   return Number(br.test(raw) ? raw.replace(/\./g, "").replace(",", ".") : raw);
 }
+function quotedResponseEmail(quote: AdminCatalogQuote): string {
+  if (quote.quotedAmount === null || !quote.responseMessage) {
+    throw new Error("admin_catalog_quote_response_invalid");
+  }
+  const subject = `TONART Studio — resposta ao orçamento #${quote.id.slice(0, 8)}`;
+  const body = [
+    "Olá,",
+    "",
+    "Sua solicitação de orçamento foi analisada pela TONART Studio.",
+    `Valor informado: ${brl.format(quote.quotedAmount)}`,
+    "",
+    quote.responseMessage,
+    "",
+    "Consulte o histórico na sua conta:",
+    "https://tonartstudio.com.br/meus-orcamentos",
+    "",
+    "Atenciosamente,",
+    "TONART Studio",
+  ].join("\n");
+  return `mailto:${encodeURIComponent(quote.customerEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
 const PAGE_SIZE = 25;
 type StatusFilter = "all" | "pending" | "reviewing" | "answered" | "archived";
 export default function TonecosAdminQuotesPage() {
@@ -283,10 +304,21 @@ export default function TonecosAdminQuotesPage() {
                 <div className="space-y-3">
                   <p className="text-sm font-semibold">Valor informado: {brl.format(quote.quotedAmount)}</p>
                   {quote.responseMessage && (
-                    <div className="border-l-2 border-[hsl(var(--gold-accent)/0.55)] pl-3">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-white/55">Mensagem ao cliente</p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm text-white/80">{quote.responseMessage}</p>
-                    </div>
+                    <>
+                      <div className="border-l-2 border-[hsl(var(--gold-accent)/0.55)] pl-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-white/55">Mensagem ao cliente</p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-white/80">{quote.responseMessage}</p>
+                      </div>
+                      <a
+                        className={secondaryClass}
+                        href={quotedResponseEmail(quote)}
+                      >
+                        Preparar e-mail de resposta
+                      </a>
+                      <p className="text-xs text-white/55">
+                        O e-mail abre no aplicativo configurado. Confirme o envio manualmente; o sistema não registra esse e-mail como enviado.
+                      </p>
+                    </>
                   )}
                 </div>
               ) : (
