@@ -11,6 +11,7 @@ import {
   type CatalogQuoteEvent,
 } from "@/services/quotes/catalog-quote-history-service";
 import { CommercialPage, panelClass, secondaryClass } from "./CommercialPage";
+import { commercialQuoteErrorText } from "./commercial-quote-error-text";
 
 const labels: Record<string, string> = {
   pending: "Recebido",
@@ -86,7 +87,7 @@ export default function TonecosMyQuotesPage() {
         setHistory(quoteHistory);
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : "Não foi possível consultar seus orçamentos.");
+        if (active) setError(commercialQuoteErrorText(err));
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };

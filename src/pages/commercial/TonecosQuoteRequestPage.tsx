@@ -5,6 +5,7 @@ import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context"
 import { quoteItemsFromSelection, submitCatalogQuoteRequest } from "@/services/customer/catalog-quote-service";
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
+import { commercialQuoteErrorText } from "./commercial-quote-error-text";
 
 type Identity = { id: string; email: string | null };
 
@@ -47,7 +48,7 @@ export default function TonecosQuoteRequestPage() {
       setSelectedModels([]);
       navigate(TONECOS_COMMERCIAL_ROUTES.history, { replace: true, state: { sent: quoteId } });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível enviar o orçamento.");
+      setError(commercialQuoteErrorText(err));
     } finally { setBusy(false); }
   }
 

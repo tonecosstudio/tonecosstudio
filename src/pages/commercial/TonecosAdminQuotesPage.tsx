@@ -13,6 +13,7 @@ import {
   type CatalogQuoteEvent,
 } from "@/services/quotes/catalog-quote-history-service";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
+import { commercialQuoteErrorText } from "./commercial-quote-error-text";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const eventDate = new Intl.DateTimeFormat("pt-BR", {
@@ -101,11 +102,7 @@ export default function TonecosAdminQuotesPage() {
       })
       .catch((err: unknown) => {
         if (active) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Acesso administrativo indisponível.",
-          );
+          setError(commercialQuoteErrorText(err, "admin"));
         }
       })
       .finally(() => {
@@ -129,7 +126,7 @@ export default function TonecosAdminQuotesPage() {
       setNotice("Resposta e valor registrados. A solicitação foi marcada como respondida.");
       setAttempt((current) => current + 1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível responder ao orçamento.");
+      setError(commercialQuoteErrorText(err, "admin"));
     } finally { setBusyId(null); }
   }
 
@@ -141,7 +138,7 @@ export default function TonecosAdminQuotesPage() {
       setNotice("Situação do orçamento atualizada.");
       setAttempt((current) => current + 1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível atualizar a situação.");
+      setError(commercialQuoteErrorText(err, "admin"));
     } finally { setBusyId(null); }
   }
 
@@ -181,7 +178,7 @@ export default function TonecosAdminQuotesPage() {
       {notice && <p role="status" className="mb-5 max-w-3xl border border-white/20 p-4 text-sm">{notice}</p>}
       {error && <div role="alert" className="mb-5 max-w-3xl border border-red-500/40 p-4 text-sm text-red-200">
         <p>{error}</p>
-        {error === "Admin access required" && <p className="mt-3 text-xs text-white/70">
+        {error === "Acesso administrativo não autorizado." && <p className="mt-3 text-xs text-white/70">
           Acesso administrativo restrito. A autorização deve ser provisionada
           pela equipe após verificar a titularidade da conta.
         </p>}

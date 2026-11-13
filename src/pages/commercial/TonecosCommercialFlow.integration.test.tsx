@@ -241,6 +241,31 @@ describe("TONART commercial screens: account → request → history → respons
     ).toBeInTheDocument();
   });
 
+  it("shows clear customer quote errors without exposing internal codes", async () => {
+    mocks.submit.mockRejectedValueOnce(new Error("catalog_quote_contact_invalid"));
+    renderApp("/solicitar-orcamento", true);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Enviar solicitação" }),
+    );
+    expect(
+      await screen.findByText(
+        "Revise WhatsApp, CEP, escala e acabamento antes de enviar.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("catalog_quote_contact_invalid")).not.toBeInTheDocument();
+  });
+
+  it("shows clear history errors without exposing backend details", async () => {
+    mocks.listMine.mockRejectedValueOnce(new Error("postgres internal detail xyz"));
+    renderApp("/meus-orcamentos");
+    expect(
+      await screen.findByText(
+        "Não foi possível concluir a operação de orçamento. Tente novamente.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/postgres internal detail/i)).not.toBeInTheDocument();
+  });
+
   it("shows a priced request but never renders an unpriced quote as R$ 0", async () => {
     mocks.listMine.mockResolvedValue({
       total: 1,
@@ -562,7 +587,7 @@ describe("TONART commercial screens: account → request → history → respons
     mocks.listAdmin.mockRejectedValue(new Error("Admin access required"));
     renderApp("/admin/orcamentos");
     expect(
-      await screen.findByText("Admin access required"),
+      await screen.findByText("Acesso administrativo não autorizado."),
     ).toBeInTheDocument();
     expect(mocks.answerAdmin).not.toHaveBeenCalled();
   });
