@@ -71,6 +71,51 @@ export async function signInTonecosAccount(email: string, password: string): Pro
   return signInWithPasswordCredentials(validateSignInCredentials(email, password));
 }
 
+/** Changes an authenticated account password only after re-verifying the current password.
+ * A successful change signs the account out so the new credential must be used immediately.
+ */
+export async function changeTonecosPassword(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<void> {
+  assertTonecosCommercialEnabled();
+  if (
+    typeof input.currentPassword !== "string" ||
+    input.currentPassword.length === 0 ||
+    input.currentPassword.length > 1024
+  ) {
+    throw new Error("tonecos_current_password_invalid");
+  }
+  if (
+    typeof input.newPassword !== "string" ||
+    input.newPassword.length > 1024 ||
+    !isPasswordPolicyCompliant(input.newPassword) ||
+    input.newPassword === input.currentPassword
+  ) {
+    throw new Error("tonecos_new_password_invalid");
+  }
+
+  const current = await getTonecosCurrentUser();
+  if (!current?.email) throw new Error("tonecos_login_required");
+
+  const verifiedUserId = await signInWithPasswordCredentials({
+    email: current.email,
+    password: input.currentPassword,
+  });
+  if (verifiedUserId !== current.id) {
+    throw new Error("tonecos_account_session_mismatch");
+  }
+
+  const { data, error } = await tonecos.auth.updateUser({
+    password: input.newPassword,
+  });
+  if (error) throw error;
+  if (!data.user || data.user.id !== current.id) {
+    throw new Error("tonecos_password_update_incomplete");
+  }
+  await signOutCurrentSession();
+}
+
 export async function signOutTonecosAccount(): Promise<void> {
   assertTonecosCommercialEnabled();
   await signOutCurrentSession();

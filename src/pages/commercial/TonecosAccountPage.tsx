@@ -8,6 +8,7 @@ import {
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { hasTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
 import {
+  changeTonecosPassword,
   getTonecosCurrentUser,
   getMyTonecosProfile,
   registerTonecosAccount,
@@ -68,6 +69,9 @@ export default function TonecosAccountPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState("");
@@ -203,6 +207,36 @@ export default function TonecosAccountPage() {
     }
   }
 
+  async function changePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    setError("");
+    setNotice("");
+    if (newPassword !== confirmPassword) {
+      setError("As novas senhas não coincidem.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await changeTonecosPassword({
+        currentPassword,
+        newPassword,
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPassword("");
+      setIdentity(null);
+      setIsAdmin(false);
+      setNotice("Senha alterada com sucesso. Entre novamente com a nova senha.");
+      navigate(TONECOS_COMMERCIAL_ROUTES.login, { replace: true });
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function signOut() {
     setBusy(true);
     setError("");
@@ -315,6 +349,57 @@ export default function TonecosAccountPage() {
                 </button>
               </form>
             ) : null}
+            <section
+              className="mt-7 border-t border-white/15 pt-6"
+              aria-labelledby="account-security-title"
+            >
+              <h2 id="account-security-title" className="text-base font-semibold">
+                Segurança da conta
+              </h2>
+              <p className="mt-2 text-xs text-white/55">
+                Para trocar a senha, confirme a senha atual. Após a alteração,
+                será necessário entrar novamente.
+              </p>
+              <form
+                className="mt-5 space-y-4"
+                onSubmit={(event) => {
+                  void changePassword(event);
+                }}
+              >
+                <PasswordField
+                  label="Senha atual"
+                  value={currentPassword}
+                  onChange={setCurrentPassword}
+                  required
+                  minLength={1}
+                  autoComplete="current-password"
+                />
+                <PasswordField
+                  label="Nova senha"
+                  value={newPassword}
+                  onChange={setNewPassword}
+                  required
+                  minLength={12}
+                  autoComplete="new-password"
+                />
+                <PasswordField
+                  label="Confirmar nova senha"
+                  visibilityLabel="confirmação da nova senha"
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                  required
+                  minLength={12}
+                  autoComplete="new-password"
+                />
+                <p className="text-xs text-white/55">
+                  Use pelo menos 12 caracteres com maiúscula, minúscula, número
+                  e símbolo.
+                </p>
+                <button type="submit" disabled={busy} className={secondaryClass}>
+                  {busy ? "Processando..." : "Alterar senha"}
+                </button>
+              </form>
+            </section>
             <div className="mt-7 flex flex-wrap gap-3 border-t border-white/15 pt-6">
               {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" && (
                 <Link

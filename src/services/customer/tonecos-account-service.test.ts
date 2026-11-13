@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import {
-  registerTonecosAccount, signInTonecosAccount, signOutTonecosAccount,
+  changeTonecosPassword, registerTonecosAccount, signInTonecosAccount, signOutTonecosAccount,
   getTonecosCurrentUser, getMyTonecosProfile, updateMyTonecosProfile,
   requestTonecosPasswordReset, completeTonecosPasswordRecovery,
   verifyTonecosPasswordRecoveryToken,
@@ -136,6 +136,42 @@ describe("Tonecos authenticated MVP account", () => {
     });
     await expect(signInTonecosAccount("client@example.com", ""))
       .rejects.toThrow("tonecos_account_credentials_invalid");
+  });
+
+  it("changes a password only after verifying the current credential and then signs out", async () => {
+    mocks.getUser.mockResolvedValue({
+      data: { user: { id: USER, email: "client@example.com" } },
+      error: null,
+    });
+    mocks.signInWithPasswordCredentials.mockResolvedValue(USER);
+    mocks.updateUser.mockResolvedValue({
+      data: { user: { id: USER } },
+      error: null,
+    });
+    mocks.signOutCurrentSession.mockResolvedValue(undefined);
+
+    await expect(
+      changeTonecosPassword({
+        currentPassword: "OldPassword123!",
+        newPassword: "NewPassword123!",
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(mocks.signInWithPasswordCredentials).toHaveBeenCalledExactlyOnceWith({
+      email: "client@example.com",
+      password: "OldPassword123!",
+    });
+    expect(mocks.updateUser).toHaveBeenCalledExactlyOnceWith({
+      password: "NewPassword123!",
+    });
+    expect(mocks.signOutCurrentSession).toHaveBeenCalledTimes(1);
+
+    await expect(
+      changeTonecosPassword({
+        currentPassword: "SamePassword123!",
+        newPassword: "SamePassword123!",
+      }),
+    ).rejects.toThrow("tonecos_new_password_invalid");
   });
 
   it("allows private accounts without enabling quotes, using the same Auth SSOT", async () => {

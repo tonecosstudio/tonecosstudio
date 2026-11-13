@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => {
     signOut: vi.fn(),
     getProfile: vi.fn(),
     updateProfile: vi.fn(),
+    changePassword: vi.fn(),
     quoteItems: vi.fn(),
     submit: vi.fn(),
     listMine: vi.fn(),
@@ -45,6 +46,7 @@ vi.mock("@/services/customer/tonecos-account-service", () => ({
   signOutTonecosAccount: mocks.signOut,
   getMyTonecosProfile: mocks.getProfile,
   updateMyTonecosProfile: mocks.updateProfile,
+  changeTonecosPassword: mocks.changePassword,
 }));
 vi.mock("@/services/auth/tonecos-admin-access", () => ({
   hasTonecosAdminAccess: mocks.hasAdmin,
@@ -121,6 +123,7 @@ beforeEach(() => {
   );
   mocks.listMine.mockResolvedValue([]);
   mocks.listAdmin.mockResolvedValue([]);
+  mocks.changePassword.mockResolvedValue(undefined);
 });
 afterEach(() => {
   cleanup();
@@ -301,6 +304,34 @@ describe("TONART commercial screens: account → request → history → respons
     expect(screen.getByLabelText("Nome completo")).toHaveValue("Cliente");
     expect(mocks.getProfile).toHaveBeenCalledTimes(2);
     expect(mocks.updateProfile).not.toHaveBeenCalled();
+  });
+
+  it("lets an authenticated customer change the password only with the current credential and requires a fresh login", async () => {
+    renderApp("/perfil");
+    await screen.findByText(/Conectado como cliente@example.com/);
+    fireEvent.change(screen.getByLabelText("Senha atual"), {
+      target: { value: "OldPassword123!" },
+    });
+    fireEvent.change(screen.getByLabelText("Nova senha"), {
+      target: { value: "NewPassword123!" },
+    });
+    fireEvent.change(screen.getByLabelText("Confirmar nova senha"), {
+      target: { value: "NewPassword123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Alterar senha" }));
+
+    await waitFor(() =>
+      expect(mocks.changePassword).toHaveBeenCalledWith({
+        currentPassword: "OldPassword123!",
+        newPassword: "NewPassword123!",
+      }),
+    );
+    expect(
+      await screen.findByText(
+        "Senha alterada com sucesso. Entre novamente com a nova senha.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
   });
 
   it("requires account sign-in and preserves a return-to path", async () => {
