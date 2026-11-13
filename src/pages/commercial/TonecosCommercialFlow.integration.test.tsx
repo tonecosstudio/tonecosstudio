@@ -83,7 +83,9 @@ function SelectModel() {
   return null;
 }
 function renderApp(
-  entry: string | { pathname: string; state?: { recovered?: boolean; sent?: string } },
+  entry:
+    | string
+    | { pathname: string; state?: { recovered?: boolean; sent?: string } },
   seed = false,
 ) {
   return render(
