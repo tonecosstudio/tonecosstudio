@@ -75,8 +75,12 @@ describe("Tonecos password recovery screen", () => {
       email: "cliente@example.com",
     });
     show("/recuperar-senha?action=update");
-    expect(await screen.findByText(/link não possui uma sessão válida/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Salvar nova senha" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/link não possui uma sessão válida/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Salvar nova senha" }),
+    ).not.toBeInTheDocument();
     expect(mocks.verify).not.toHaveBeenCalled();
     expect(mocks.user).not.toHaveBeenCalled();
     expect(mocks.complete).not.toHaveBeenCalled();
