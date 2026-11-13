@@ -279,6 +279,16 @@ describe("TONART commercial screens: account → request → history → respons
     ).not.toBeInTheDocument();
   });
 
+  it("refreshes customer quotes after an administrator responds", async () => {
+    renderApp("/meus-orcamentos");
+    expect(
+      await screen.findByRole("button", { name: "Atualizar orçamentos" }),
+    ).toBeEnabled();
+    await waitFor(() => expect(mocks.listMine).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "Atualizar orçamentos" }));
+    await waitFor(() => expect(mocks.listMine).toHaveBeenCalledTimes(2));
+  });
+
   it("shows a priced request but never renders an unpriced quote as R$ 0", async () => {
     mocks.listMine.mockResolvedValue({
       total: 1,
