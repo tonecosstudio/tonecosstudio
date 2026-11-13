@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { hasTonecosAdminAccess, requireTonecosAdminAccess } from "./tonecos-admin-access";
+import {
+  hasTonecosAdminAccess,
+  requireTonecosAdminAccess,
+} from "./tonecos-admin-access";
 
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), user: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({
@@ -28,14 +31,18 @@ describe("Tonecos administrative access SSOT", () => {
 
   it("fails closed for nonadmins and unexpected null response", async () => {
     mocks.rpc.mockResolvedValueOnce({ data: false, error: null });
-    await expect(requireTonecosAdminAccess()).rejects.toThrow("Admin access required");
+    await expect(requireTonecosAdminAccess()).rejects.toThrow(
+      "Admin access required",
+    );
     mocks.rpc.mockResolvedValueOnce({ data: null, error: null });
     await expect(hasTonecosAdminAccess()).resolves.toBe(false);
   });
 
   it("does not query Supabase without a current authenticated identity", async () => {
     mocks.user.mockRejectedValue(new Error("User not authenticated"));
-    await expect(hasTonecosAdminAccess()).rejects.toThrow("User not authenticated");
+    await expect(hasTonecosAdminAccess()).rejects.toThrow(
+      "User not authenticated",
+    );
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
@@ -53,12 +60,16 @@ describe("Tonecos administrative access SSOT", () => {
 
   it("cannot check administrator access in readonly public preview", async () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
-    await expect(requireTonecosAdminAccess()).rejects.toThrow("tonecos_commercial_mvp_disabled");
+    await expect(requireTonecosAdminAccess()).rejects.toThrow(
+      "tonecos_commercial_mvp_disabled",
+    );
     expect(mocks.user).not.toHaveBeenCalled();
   });
 
   it("propagates database failures rather than treating them as a valid admin", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { message: "offline" } });
-    await expect(requireTonecosAdminAccess()).rejects.toMatchObject({ message: "offline" });
+    await expect(requireTonecosAdminAccess()).rejects.toMatchObject({
+      message: "offline",
+    });
   });
 });

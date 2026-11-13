@@ -710,7 +710,9 @@ describe("TONART commercial screens: account → request → history → respons
       .mockResolvedValueOnce(true);
     renderApp("/perfil");
     expect(
-      await screen.findByText(/Não foi possível verificar o acesso administrativo/),
+      await screen.findByText(
+        /Não foi possível verificar o acesso administrativo/,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("link", { name: "Painel administrativo" }),

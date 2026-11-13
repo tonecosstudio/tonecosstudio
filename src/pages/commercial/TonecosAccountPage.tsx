@@ -46,7 +46,7 @@ const safeNext = new Set<string>([
     : []),
 ]);
 
- export default function TonecosAccountPage() {
+export default function TonecosAccountPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
@@ -143,7 +143,8 @@ const safeNext = new Set<string>([
       !identity ||
       (location.pathname === TONECOS_COMMERCIAL_ROUTES.login &&
         next !== TONECOS_COMMERCIAL_ROUTES.account)
-    ) return;
+    )
+      return;
     let active = true;
     setProfileLoading(true);
     setProfileError(false);
@@ -270,7 +271,9 @@ const safeNext = new Set<string>([
       setPassword("");
       setIdentity(null);
       setIsAdmin(false);
-      setNotice("Senha alterada com sucesso. Entre novamente com a nova senha.");
+      setNotice(
+        "Senha alterada com sucesso. Entre novamente com a nova senha.",
+      );
       navigate(TONECOS_COMMERCIAL_ROUTES.login, { replace: true });
     } catch (err) {
       setError(commercialAccountErrorText(err));
@@ -348,9 +351,7 @@ const safeNext = new Set<string>([
                 <button
                   type="button"
                   className={secondaryClass}
-                  onClick={() =>
-                    setAdminCheckAttempt((current) => current + 1)
-                  }
+                  onClick={() => setAdminCheckAttempt((current) => current + 1)}
                 >
                   Verificar acesso novamente
                 </button>
@@ -412,7 +413,10 @@ const safeNext = new Set<string>([
               className="mt-7 border-t border-white/15 pt-6"
               aria-labelledby="account-security-title"
             >
-              <h2 id="account-security-title" className="text-base font-semibold">
+              <h2
+                id="account-security-title"
+                className="text-base font-semibold"
+              >
                 Segurança da conta
               </h2>
               <p className="mt-2 text-xs text-white/55">
@@ -454,7 +458,11 @@ const safeNext = new Set<string>([
                   Use pelo menos 12 caracteres com maiúscula, minúscula, número
                   e símbolo.
                 </p>
-                <button type="submit" disabled={busy} className={secondaryClass}>
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className={secondaryClass}
+                >
                   {busy ? "Processando..." : "Alterar senha"}
                 </button>
               </form>

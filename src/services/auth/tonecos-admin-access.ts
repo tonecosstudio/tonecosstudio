@@ -17,5 +17,6 @@ export async function hasTonecosAdminAccess(): Promise<boolean> {
 }
 
 export async function requireTonecosAdminAccess(): Promise<void> {
-  if (!await hasTonecosAdminAccess()) throw new Error("Admin access required");
+  if (!(await hasTonecosAdminAccess()))
+    throw new Error("Admin access required");
 }
