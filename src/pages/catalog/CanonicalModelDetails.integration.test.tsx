@@ -60,6 +60,7 @@ const image = {
 };
 
 afterEach(() => {
+  window.localStorage.clear();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
 });
@@ -546,6 +547,56 @@ describe("published model/gallery identity on the public detail page", () => {
       expect(url).toContain("/api/models/animal-original");
       expect(options).toMatchObject({ method: "GET", credentials: "omit" });
     }
+  });
+
+  it("does not navigate to a quote when a new model cannot fit in the full selection", async () => {
+    vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+
+    const items: PublicCatalogModel[] = Array.from({ length: 50 }, (_, index) => ({
+      id: "selected-" + index,
+      slug: "selected-" + index,
+      code: "TS-SEL-" + index,
+      name: "Selecionado " + index,
+      variantName: "",
+      category: "Games",
+      categorySlug: "games",
+      franchise: "Exemplo",
+      franchiseSlug: "exemplo",
+      collection: null,
+      folderPath: null,
+      imageCount: 0,
+      galleryVersion: 0,
+      coverStorageKey: null,
+    }));
+    window.localStorage.setItem(
+      "tonart:pending-quote-selection:v1",
+      JSON.stringify({
+        expiresAt: Date.now() + 60_000,
+        items,
+      }),
+    );
+
+    mountGallery({ total: 1 });
+
+    const add = await screen.findByRole("button", {
+      name: "Adicionar à seleção",
+    });
+    expect(add).toBeDisabled();
+    expect(
+      screen.queryByRole("link", {
+        name: "Solicitar orçamento deste modelo",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Solicitar orçamento deste modelo",
+      }),
+    ).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Sua seleção já tem 50 modelos. Remova um modelo antes de incluir esta referência no orçamento.",
+    );
   });
 
   it("uses published card/thumbnail variants only if their image requests fail", async () => {

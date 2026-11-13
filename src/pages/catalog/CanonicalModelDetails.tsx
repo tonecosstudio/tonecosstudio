@@ -208,6 +208,8 @@ export default function CanonicalModelDetails() {
   const isSelected = Boolean(
     model && selectedModels.some((entry) => entry.id === model.id),
   );
+  const selectionAtCapacity =
+    !isSelected && selectedModels.length >= MAX_CANONICAL_SELECTION;
   const galleryQuery = useInfiniteQuery({
     queryKey: ["tonecos-catalog-gallery", model?.slug, model?.galleryVersion],
     initialPageParam: "",
@@ -682,16 +684,42 @@ export default function CanonicalModelDetails() {
                         ? "Remover da seleção"
                         : "Adicionar à seleção"}
                     </button>
-                    {import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" && (
-                      <Link
-                        to={PUBLIC_ROUTES.quoteRequest}
-                        onClick={() => setSelectedModels((current) => current.some((entry) => entry.id === model.id)
-                          ? current : toggleCanonicalSelection(current, model))}
-                        className="inline-flex min-h-11 w-full items-center justify-center bg-[hsl(var(--gold-accent))] px-4 py-3 text-sm font-semibold text-black hover:brightness-110"
+                    {import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
+                      (selectionAtCapacity ? (
+                        <button
+                          type="button"
+                          disabled
+                          aria-describedby="catalog-selection-capacity"
+                          className="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center bg-[hsl(var(--gold-accent))] px-4 py-3 text-sm font-semibold text-black opacity-50"
+                        >
+                          Solicitar orçamento deste modelo
+                        </button>
+                      ) : (
+                        <Link
+                          to={PUBLIC_ROUTES.quoteRequest}
+                          onClick={() =>
+                            setSelectedModels((current) =>
+                              current.some((entry) => entry.id === model.id)
+                                ? current
+                                : toggleCanonicalSelection(current, model),
+                            )
+                          }
+                          className="inline-flex min-h-11 w-full items-center justify-center bg-[hsl(var(--gold-accent))] px-4 py-3 text-sm font-semibold text-black hover:brightness-110"
+                        >
+                          Solicitar orçamento deste modelo
+                        </Link>
+                      ))}
+                    {selectionAtCapacity ? (
+                      <p
+                        id="catalog-selection-capacity"
+                        role="status"
+                        className="text-xs leading-relaxed text-[hsl(0,0%,66%)]"
                       >
-                        Solicitar orçamento deste modelo
-                      </Link>
-                    )}
+                        Sua seleção já tem {MAX_CANONICAL_SELECTION} modelos.
+                        Remova um modelo antes de incluir esta referência no
+                        orçamento.
+                      </p>
+                    ) : null}
                     <p
                       role="status"
                       aria-live="polite"
