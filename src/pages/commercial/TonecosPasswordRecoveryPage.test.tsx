@@ -69,6 +69,19 @@ describe("Tonecos password recovery screen", () => {
     ).not.toBeInTheDocument();
     expect(mocks.complete).not.toHaveBeenCalled();
   });
+  it("refuses password reset through a normal signed-in session without email proof", async () => {
+    mocks.user.mockResolvedValue({
+      id: "11111111-1111-4111-8111-111111111111",
+      email: "cliente@example.com",
+    });
+    show("/recuperar-senha?action=update");
+    expect(await screen.findByText(/link não possui uma sessão válida/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Salvar nova senha" })).not.toBeInTheDocument();
+    expect(mocks.verify).not.toHaveBeenCalled();
+    expect(mocks.user).not.toHaveBeenCalled();
+    expect(mocks.complete).not.toHaveBeenCalled();
+  });
+
   it("validates recovery links across browsers using the token hash, then shows a new password form", async () => {
     const tokenHash = "a".repeat(64);
     mocks.verify.mockResolvedValue(undefined);
@@ -108,11 +121,12 @@ describe("Tonecos password recovery screen", () => {
   });
 
   it("shows and hides the new password independently of confirmation", async () => {
+    mocks.verify.mockResolvedValue(undefined);
     mocks.user.mockResolvedValue({
       id: "11111111-1111-4111-8111-111111111111",
       email: "cliente@example.com",
     });
-    show("/recuperar-senha?action=update");
+    show(`/recuperar-senha?action=update&token_hash=${"c".repeat(64)}&type=recovery`);
     const newPassword = (await screen.findByLabelText(
       "Nova senha",
     )) as HTMLInputElement;
@@ -134,12 +148,13 @@ describe("Tonecos password recovery screen", () => {
     expect(mocks.complete).not.toHaveBeenCalled();
   });
   it("requires matching strong passwords with verified session before submitting", async () => {
+    mocks.verify.mockResolvedValue(undefined);
     mocks.user.mockResolvedValue({
       id: "11111111-1111-4111-8111-111111111111",
       email: "cliente@example.com",
     });
     mocks.complete.mockResolvedValue(undefined);
-    show("/recuperar-senha?action=update&next=%2Fsolicitar-orcamento");
+    show(`/recuperar-senha?action=update&next=%2Fsolicitar-orcamento&token_hash=${"d".repeat(64)}&type=recovery`);
     const field = await screen.findByLabelText("Nova senha");
     fireEvent.change(field, { target: { value: "StrongPass123!" } });
     fireEvent.change(screen.getByLabelText("Confirmar nova senha"), {
