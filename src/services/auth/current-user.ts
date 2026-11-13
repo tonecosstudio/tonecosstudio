@@ -8,7 +8,9 @@ export async function getCurrentAuthUser(): Promise<User | null> {
   } = await supabase.auth.getUser();
 
   if (error) {
-    return null;
+    // Missing sessions are legitimate guests. Service failures are not sign-outs.
+    if (error.name === "AuthSessionMissingError") return null;
+    throw error;
   }
 
   return user ?? null;
