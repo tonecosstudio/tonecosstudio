@@ -240,7 +240,11 @@ test("Vercel catalog proxy forwards only a bounded read through the canonical pr
     await handler({
       method: "GET",
       url: "/api/catalogo-proxy?path=api%2Fcatalog&limit=12",
-      query: { path: "api/catalog", limit: "12" },
+      query: {
+        path: "api/catalog",
+        limit: "12",
+        _vercel_share: "preview-token",
+      },
       headers: { accept: "application/json", cookie: "private=should-not-forward", range: "bytes=0-0" },
     }, res);
     assert.equal(res.statusCode, 200);
@@ -272,8 +276,8 @@ test("Vercel proxy builds the public query from request.query after a rewrite", 
     await handler({
       method: "GET",
       // Runtime/rewrite transport metadata in req.url is not a client query.
-      url: "/api/catalogo-proxy?path=api%2Fcategories&rewrite_marker=internal",
-      query: { path: "api/categories" },
+      url: "/api/catalogo-proxy?path=api%2Fcategories&_vercel_share=preview-token",
+      query: { path: "api/categories", _vercel_share: "preview-token" },
       headers: { accept: "application/json" },
     }, categories);
     assert.equal(categories.statusCode, 200);
@@ -285,7 +289,7 @@ test("Vercel proxy builds the public query from request.query after a rewrite", 
     const catalog = responseSink();
     await handler({
       method: "GET",
-      url: "/api/catalogo-proxy?path=api%2Fcatalog&rewrite_marker=internal",
+      url: "/api/catalogo-proxy?path=api%2Fcatalog&_vercel_share=preview-token",
       query: { path: "api/catalog", limit: "12" },
       headers: { accept: "application/json" },
     }, catalog);

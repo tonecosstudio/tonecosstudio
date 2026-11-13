@@ -12,15 +12,21 @@ const PUBLIC_MODEL_EDGE_TTL = "public, s-maxage=300";
  * Vercel rewrites expose destination/client query parameters through
  * request.query. req.url may contain runtime/rewrite transport metadata that
  * is not part of the public catalog query; copying it can make every bounded
- * catalog request fail closed. Preserve every public query value (including
- * duplicates represented as arrays) so the canonical proxy can still reject
+ * catalog request fail closed. Ignore only the rewrite path and Vercel's
+ * protected-preview share token. Preserve every other public query value
+ * (including duplicates represented as arrays) so the canonical proxy rejects
  * unknown, duplicated or cache-busting parameters.
  */
 function publicQueryFromVercelRequest(req, incoming) {
   if (req.query && typeof req.query === "object") {
     const search = new URLSearchParams();
     for (const [key, raw] of Object.entries(req.query)) {
-      if (key === "path" || raw === undefined || raw === null) continue;
+      if (
+        key === "path" ||
+        key === "_vercel_share" ||
+        raw === undefined ||
+        raw === null
+      ) continue;
       const values = Array.isArray(raw) ? raw : [raw];
       for (const value of values) {
         if (typeof value !== "string") return null;
@@ -33,6 +39,7 @@ function publicQueryFromVercelRequest(req, incoming) {
   // Local/direct invocation fallback where VercelRequest helpers are absent.
   const search = new URLSearchParams(incoming.searchParams);
   search.delete("path");
+  search.delete("_vercel_share");
   return search;
 }
 
