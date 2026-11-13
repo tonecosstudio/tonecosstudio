@@ -177,7 +177,7 @@ describe("TONART administrative quote directory", () => {
     const href = link.getAttribute("href") ?? "";
     expect(href).toContain("mailto:clientea%40example.com");
     const decoded = decodeURIComponent(href);
-    expect(decoded).toContain("R$ 1.249,90");
+    expect(decoded.replace(/\u00a0/g, " ")).toContain("R$ 1.249,90");
     expect(decoded).toContain("Proposta válida por 7 dias.");
     expect(decoded).toContain("tonartstudio.com.br/meus-orcamentos");
     expect(screen.getByText(/Confirme o envio manualmente/)).toBeInTheDocument();
