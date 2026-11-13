@@ -1,4 +1,11 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
@@ -16,8 +23,14 @@ import {
   toggleCanonicalSelection,
 } from "@/services/catalog/public-catalog-selection";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
-import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
-import { findApprovedPublicRender, isApprovedPublicCover } from "@/services/catalog/approved-public-renders";
+import {
+  isCatalogMediaUnderReview,
+  isCatalogPublicMvpEnabled,
+} from "@/config/catalog-public-mvp";
+import {
+  findApprovedPublicRender,
+  isApprovedPublicCover,
+} from "@/services/catalog/approved-public-renders";
 import {
   createPublicCatalogGateway,
   validCatalogFolder,
@@ -71,37 +84,58 @@ function catalogReturnPath(state: unknown): string {
   const category = filters.get("category");
   const franchise = filters.get("franchise");
   const folder = filters.get("folder");
-  if (category && category !== "all" && !validCatalogSlug(category)) return base;
+  if (category && category !== "all" && !validCatalogSlug(category))
+    return base;
   if (franchise && !validCatalogSlug(franchise)) return base;
-  if (folder && (!category || !franchise || !validCatalogFolder(folder))) return base;
+  if (folder && (!category || !franchise || !validCatalogFolder(folder)))
+    return base;
   const search = filters.toString();
   return search ? `${base}?${search}` : base;
 }
 
-
 /** Use only a bounded same-page snapshot for adjacent-model links. */
 function adjacentCatalogModels(
-  state: unknown, current: string | undefined, returnPath: string,
+  state: unknown,
+  current: string | undefined,
+  returnPath: string,
 ): {
   previous: string | null;
   next: string | null;
 } {
   const absent = { previous: null, next: null };
-  if (!current || !validCatalogSlug(current) ||
-      !state || typeof state !== "object" || Array.isArray(state)) return absent;
+  if (
+    !current ||
+    !validCatalogSlug(current) ||
+    !state ||
+    typeof state !== "object" ||
+    Array.isArray(state)
+  )
+    return absent;
   const values = state as Record<string, unknown>;
   // Catalog pages and Universe folders have separate validated navigation
   // scopes, but reuse the same algorithm and never fetch adjacent pages.
   const fromUniverse = values.catalogReturnUniverse !== undefined;
   if (fromUniverse) {
-    if (!returnPath.startsWith(PUBLIC_ROUTES.catalog + "/") ||
-        values.catalogSiblingSlugs !== undefined) return absent;
+    if (
+      !returnPath.startsWith(PUBLIC_ROUTES.catalog + "/") ||
+      values.catalogSiblingSlugs !== undefined
+    )
+      return absent;
   } else if (values.universeSiblingSlugs !== undefined) return absent;
-  const entries = fromUniverse ? values.universeSiblingSlugs : values.catalogSiblingSlugs;
+  const entries = fromUniverse
+    ? values.universeSiblingSlugs
+    : values.catalogSiblingSlugs;
   const maximum = fromUniverse ? 8 : 36;
-  if (!Array.isArray(entries) || entries.length < 2 || entries.length > maximum ||
-      !entries.every((item): item is string =>
-        typeof item === "string" && validCatalogSlug(item))) return absent;
+  if (
+    !Array.isArray(entries) ||
+    entries.length < 2 ||
+    entries.length > maximum ||
+    !entries.every(
+      (item): item is string =>
+        typeof item === "string" && validCatalogSlug(item),
+    )
+  )
+    return absent;
   if (new Set(entries).size !== entries.length) return absent;
   const index = entries.indexOf(current);
   if (index < 0) return absent;
@@ -115,15 +149,25 @@ export default function CanonicalModelDetails() {
   const { id: slug } = useParams<{ id: string }>();
   const location = useLocation();
   const catalogReturnTo = catalogReturnPath(location.state);
-  const adjacentModels = adjacentCatalogModels(location.state, slug, catalogReturnTo);
-  const previousRelatedModel = (
-    location.state && typeof location.state === "object" &&
+  const adjacentModels = adjacentCatalogModels(
+    location.state,
+    slug,
+    catalogReturnTo,
+  );
+  const previousRelatedModel =
+    location.state &&
+    typeof location.state === "object" &&
     !Array.isArray(location.state) &&
-    typeof (location.state as Record<string, unknown>).catalogRelatedFrom === "string"
-  ) ? (location.state as Record<string, string>).catalogRelatedFrom : null;
-  const backToRelatedModel = previousRelatedModel &&
-    validCatalogSlug(previousRelatedModel) && previousRelatedModel !== slug
-    ? previousRelatedModel : null;
+    typeof (location.state as Record<string, unknown>).catalogRelatedFrom ===
+      "string"
+      ? (location.state as Record<string, string>).catalogRelatedFrom
+      : null;
+  const backToRelatedModel =
+    previousRelatedModel &&
+    validCatalogSlug(previousRelatedModel) &&
+    previousRelatedModel !== slug
+      ? previousRelatedModel
+      : null;
   // React Router retains the old scroll position between detail links.
   // A recommendation is opened from near the foot of the previous page:
   // start the new model at the top, without affecting normal back/catalog flow.
@@ -135,24 +179,39 @@ export default function CanonicalModelDetails() {
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const galleryKeyboardHelpId = useId();
   const {
-    selectedModels, setSelectedModels, setPaging, setUniverseReturnFocus,
+    selectedModels,
+    setSelectedModels,
+    setPaging,
+    setUniverseReturnFocus,
   } = useCatalogBrowsing();
   // Record the return target AFTER navigation, not on the outgoing link:
   // otherwise a same-turn render can consume it before the list unmounts.
   // Catalog return filters were already validated by catalogReturnPath.
   useEffect(() => {
-    if (!slug || !validCatalogSlug(slug) ||
-        !location.state || typeof location.state !== "object" ||
-        Array.isArray(location.state)) return;
+    if (
+      !slug ||
+      !validCatalogSlug(slug) ||
+      !location.state ||
+      typeof location.state !== "object" ||
+      Array.isArray(location.state)
+    )
+      return;
     const raw = (location.state as Record<string, unknown>).catalogReturnSearch;
-    if (typeof raw !== "string" || raw.length > 1024 ||
-        !catalogReturnTo.startsWith(PUBLIC_ROUTES.catalogModels)) return;
+    if (
+      typeof raw !== "string" ||
+      raw.length > 1024 ||
+      !catalogReturnTo.startsWith(PUBLIC_ROUTES.catalogModels)
+    )
+      return;
     const params = new URLSearchParams(catalogReturnTo.split("?")[1] ?? "");
     const scope = JSON.stringify(
-      ["q", "category", "franchise", "folder"].map((key) => params.get(key)?.trim() ?? ""),
+      ["q", "category", "franchise", "folder"].map(
+        (key) => params.get(key)?.trim() ?? "",
+      ),
     );
     setPaging((current) => {
-      if (current.scope === scope && current.returnFocusSlug === slug) return current;
+      if (current.scope === scope && current.returnFocusSlug === slug)
+        return current;
       return current.scope === scope
         ? { ...current, returnFocusSlug: slug }
         : { scope, cursors: [undefined], index: 0, returnFocusSlug: slug };
@@ -162,11 +221,16 @@ export default function CanonicalModelDetails() {
   // browsing context. Capture only a validated first-party folder route,
   // after the detail has mounted (not on the outgoing preview Link).
   useEffect(() => {
-    if (!slug || !validCatalogSlug(slug) ||
-        !catalogReturnTo.startsWith(PUBLIC_ROUTES.catalog + "/") ||
-        !location.state || typeof location.state !== "object" ||
-        Array.isArray(location.state) ||
-        !(location.state as Record<string, unknown>).catalogReturnUniverse) return;
+    if (
+      !slug ||
+      !validCatalogSlug(slug) ||
+      !catalogReturnTo.startsWith(PUBLIC_ROUTES.catalog + "/") ||
+      !location.state ||
+      typeof location.state !== "object" ||
+      Array.isArray(location.state) ||
+      !(location.state as Record<string, unknown>).catalogReturnUniverse
+    )
+      return;
     setUniverseReturnFocus((current) =>
       current?.path === catalogReturnTo && current.slug === slug
         ? current
@@ -183,7 +247,10 @@ export default function CanonicalModelDetails() {
   }, []);
 
   const mediaUnderReview = isCatalogMediaUnderReview();
-  const publicMediaHold = mediaUnderReview && isCatalogPublicMvpEnabled() && import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  const publicMediaHold =
+    mediaUnderReview &&
+    isCatalogPublicMvpEnabled() &&
+    import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
   const publicationBlocked = publicMediaHold && !findApprovedPublicRender(slug);
   const modelQuery = useQuery({
     queryKey: ["tonecos-catalog-detail", slug],
@@ -202,7 +269,8 @@ export default function CanonicalModelDetails() {
       relatedModelTitleRef.current?.focus({ preventScroll: true });
     }
   }, [backToRelatedModel, model?.slug, slug]);
-  const imageUnderReview = modelQuery.isError &&
+  const imageUnderReview =
+    modelQuery.isError &&
     modelQuery.error instanceof Error &&
     modelQuery.error.message === "catalog_model_media_restricted";
   const isSelected = Boolean(
@@ -235,7 +303,10 @@ export default function CanonicalModelDetails() {
       return next && !pageParams.includes(next) ? next : undefined;
     },
     enabled:
-      !mediaUnderReview && gateway !== null && model !== undefined && model.galleryVersion > 0,
+      !mediaUnderReview &&
+      gateway !== null &&
+      model !== undefined &&
+      model.galleryVersion > 0,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
@@ -253,22 +324,22 @@ export default function CanonicalModelDetails() {
       }),
     ),
   );
-  const receivedGalleryCount = galleryData?.pages.reduce(
-    (sum, page) => sum + page.items.length, 0,
-  ) ?? 0;
+  const receivedGalleryCount =
+    galleryData?.pages.reduce((sum, page) => sum + page.items.length, 0) ?? 0;
   const publishedGalleryTotal = galleryData?.pages[0]?.total;
   const lastGalleryPage = galleryData?.pages[galleryData.pages.length - 1];
   const inconsistentGalleryCount = Boolean(
-    galleryData && publishedGalleryTotal !== undefined && (
-      receivedGalleryCount > publishedGalleryTotal ||
+    galleryData &&
+    publishedGalleryTotal !== undefined &&
+    (receivedGalleryCount > publishedGalleryTotal ||
       galleryData.pages.some((page) => page.total !== publishedGalleryTotal) ||
       (receivedGalleryCount < publishedGalleryTotal &&
-        lastGalleryPage?.nextCursor === null)
-    ),
+        lastGalleryPage?.nextCursor === null)),
   );
-  const images = duplicateGalleryIdentity || inconsistentGalleryCount
-    ? []
-    : galleryData?.pages.flatMap((page) => page.items) ?? [];
+  const images =
+    duplicateGalleryIdentity || inconsistentGalleryCount
+      ? []
+      : (galleryData?.pages.flatMap((page) => page.items) ?? []);
   const galleryCursorCycle = Boolean(
     galleryData?.pages.some(
       (page) =>
@@ -283,36 +354,52 @@ export default function CanonicalModelDetails() {
     : -1;
   function moveGalleryImage(direction: -1 | 1) {
     if (images.length < 2 || activeImageIndex < 0) return;
-    const nextIndex = (activeImageIndex + direction + images.length) % images.length;
+    const nextIndex =
+      (activeImageIndex + direction + images.length) % images.length;
     setActiveImageId(images[nextIndex].id);
   }
   function handleGalleryKeyboard(event: KeyboardEvent<HTMLElement>) {
     if (
-      images.length < 2 || event.altKey || event.ctrlKey ||
-      event.metaKey || event.shiftKey
-    ) return;
+      images.length < 2 ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey
+    )
+      return;
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
 
     // For focused thumbnails use their position; navigation controls use the
     // selected image. The handler is attached only inside this gallery.
-    const focusedThumbnail = (event.target as HTMLElement)
-      .closest<HTMLButtonElement>("button[data-gallery-thumbnail]");
+    const focusedThumbnail = (
+      event.target as HTMLElement
+    ).closest<HTMLButtonElement>("button[data-gallery-thumbnail]");
     const fromIndex = focusedThumbnail
       ? Number(focusedThumbnail.dataset.galleryIndex)
       : activeImageIndex;
-    if (!Number.isInteger(fromIndex) || fromIndex < 0 || fromIndex >= images.length)
+    if (
+      !Number.isInteger(fromIndex) ||
+      fromIndex < 0 ||
+      fromIndex >= images.length
+    )
       return;
-    const targetIndex = event.key === "Home" ? 0
-      : event.key === "End" ? images.length - 1
-      : (fromIndex + (event.key === "ArrowRight" ? 1 : -1) + images.length) % images.length;
+    const targetIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? images.length - 1
+          : (fromIndex +
+              (event.key === "ArrowRight" ? 1 : -1) +
+              images.length) %
+            images.length;
     event.preventDefault();
     setActiveImageId(images[targetIndex].id);
     // Roving focus within the thumbnail grid; no focus jumps when the user
     // operates the previous/next buttons or other controls.
     if (focusedThumbnail) {
-      event.currentTarget.querySelectorAll<HTMLButtonElement>(
-        "button[data-gallery-thumbnail]",
-      )[targetIndex]?.focus();
+      event.currentTarget
+        .querySelectorAll<HTMLButtonElement>("button[data-gallery-thumbnail]")
+        [targetIndex]?.focus();
     }
   }
   const activeImageKey = activeImage
@@ -322,26 +409,31 @@ export default function CanonicalModelDetails() {
     : (model?.coverStorageKey ?? null);
   const activeImageUrl = gateway?.mediaUrl(activeImageKey) ?? null;
   const activeImageFallbackKey = activeImage
-    ? [activeImage.variantKeys.card, activeImage.variantKeys.thumb].find(
+    ? ([activeImage.variantKeys.card, activeImage.variantKeys.thumb].find(
         (key) => key && key !== activeImageKey,
-      ) ?? null
+      ) ?? null)
     : null;
-  const activeImageFallbackUrl = gateway?.mediaUrl(activeImageFallbackKey) ?? null;
+  const activeImageFallbackUrl =
+    gateway?.mediaUrl(activeImageFallbackKey) ?? null;
 
   function thumbnailFallbackUrl(image: PublicCatalogImage): string | null {
     // A missing thumbnail may use the published card variant. No unrelated
     // fallback photos or remote storage probes are permitted.
     return image.variantKeys.thumb
-      ? gateway?.mediaUrl(image.variantKeys.card ?? image.variantKeys.detail) ?? null
+      ? (gateway?.mediaUrl(
+          image.variantKeys.card ?? image.variantKeys.detail,
+        ) ?? null)
       : null;
   }
 
   function imageUrl(image: PublicCatalogImage): string | null {
-    return gateway?.mediaUrl(
-      image.variantKeys.thumb ??
-        image.variantKeys.card ??
-        image.variantKeys.detail,
-    ) ?? null;
+    return (
+      gateway?.mediaUrl(
+        image.variantKeys.thumb ??
+          image.variantKeys.card ??
+          image.variantKeys.detail,
+      ) ?? null
+    );
   }
 
   // Direct links cannot bypass the public visual publication embargo.
@@ -352,12 +444,21 @@ export default function CanonicalModelDetails() {
         description="Esta referência não está disponível para consulta no momento."
       >
         <section className="min-h-[70svh] bg-[hsl(0,0%,4%)] px-4 py-16 text-[hsl(0,0%,94%)] sm:px-8">
-          <div role="status" className="mx-auto max-w-2xl border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] p-7 sm:p-10">
-            <h1 className="text-2xl font-semibold uppercase tracking-wide">Modelo indisponível</h1>
+          <div
+            role="status"
+            className="mx-auto max-w-2xl border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,7%)] p-7 sm:p-10"
+          >
+            <h1 className="text-2xl font-semibold uppercase tracking-wide">
+              Modelo indisponível
+            </h1>
             <p className="mt-5 text-sm leading-7 text-[hsl(0,0%,73%)]">
-              Este modelo não está disponível para consulta no momento. Explore as demais referências do acervo.
+              Este modelo não está disponível para consulta no momento. Explore
+              as demais referências do acervo.
             </p>
-            <Link to={PUBLIC_ROUTES.catalogModels} className="mt-7 inline-flex min-h-11 items-center gap-2 border border-[hsl(var(--gold-accent))] px-5 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]">
+            <Link
+              to={PUBLIC_ROUTES.catalogModels}
+              className="mt-7 inline-flex min-h-11 items-center gap-2 border border-[hsl(var(--gold-accent))] px-5 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]"
+            >
               <ArrowLeft size={16} aria-hidden="true" /> Voltar ao acervo
             </Link>
           </div>
@@ -402,14 +503,18 @@ export default function CanonicalModelDetails() {
           ) : null}
           {adjacentModels.previous || adjacentModels.next ? (
             <nav
-              aria-label={catalogReturnTo.startsWith(PUBLIC_ROUTES.catalog + "/")
-                ? "Navegação entre modelos desta pasta do Universo"
-                : "Navegação entre modelos desta página do catálogo"}
+              aria-label={
+                catalogReturnTo.startsWith(PUBLIC_ROUTES.catalog + "/")
+                  ? "Navegação entre modelos desta pasta do Universo"
+                  : "Navegação entre modelos desta página do catálogo"
+              }
               className="mt-3 flex flex-wrap gap-3 text-sm"
             >
               {adjacentModels.previous ? (
                 <Link
-                  to={PUBLIC_ROUTES.catalogModels + "/" + adjacentModels.previous}
+                  to={
+                    PUBLIC_ROUTES.catalogModels + "/" + adjacentModels.previous
+                  }
                   state={location.state}
                   className="inline-flex min-h-11 items-center gap-2 border border-[hsl(0,0%,20%)] px-4 hover:bg-[hsl(0,0%,10%)]"
                 >
@@ -434,7 +539,8 @@ export default function CanonicalModelDetails() {
             <section className="mt-8 rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-6">
               <h1 className="text-2xl font-medium">Ficha indisponível</h1>
               <p role="alert" className="mt-2 text-sm text-[hsl(0,0%,56%)]">
-                Não foi possível acessar o catálogo agora. Tente novamente mais tarde.
+                Não foi possível acessar o catálogo agora. Tente novamente mais
+                tarde.
               </p>
             </section>
           ) : modelQuery.isPending ? (
@@ -444,7 +550,9 @@ export default function CanonicalModelDetails() {
           ) : modelQuery.isError || !model ? (
             <section className="mt-8 rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-6">
               <h1 className="text-2xl font-medium">
-                {imageUnderReview ? "Modelo indisponível" : "Ficha indisponível"}
+                {imageUnderReview
+                  ? "Modelo indisponível"
+                  : "Ficha indisponível"}
               </h1>
               <p role="alert" className="mt-2 text-sm text-[hsl(0,0%,56%)]">
                 {imageUnderReview
@@ -463,279 +571,308 @@ export default function CanonicalModelDetails() {
             </section>
           ) : (
             <>
-            <article className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-              <section aria-label="Imagens do modelo">
-                {mediaUnderReview && !coverReleased ? (
-                  <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] pl-4 text-sm text-[hsl(0,0%,72%)]">
-                    Algumas imagens deste modelo não estão disponíveis no momento.
-                  </p>
-                ) : null}
-                <ArcadeCard className="flex min-h-[280px] items-center justify-center sm:min-h-[360px] md:min-h-[560px]">
-                  <CanonicalCatalogImage
-                    src={activeImageUrl}
-                    fallbackSrc={activeImageFallbackUrl}
-                    alt={"Referência visual de " + model.name}
-                    imageClassName="max-h-[75vh] w-full object-contain p-4"
-                    loading="eager"
-                    fetchPriority="high"
-                  />
-                </ArcadeCard>
-                {images.length > 1 ? (
-                  <nav
-                    aria-label="Navegação das imagens carregadas"
-                    aria-describedby={galleryKeyboardHelpId}
-                    onKeyDown={handleGalleryKeyboard}
-                    className="mt-3 flex items-center justify-between gap-3"
-                  >
-                    <span id={galleryKeyboardHelpId} className="sr-only">
-                      Use as setas esquerda e direita para trocar a foto,
-                      Home para a primeira e End para a última foto carregada.
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => moveGalleryImage(-1)}
-                      aria-label="Imagem anterior"
-                      className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 border border-[hsl(0,0%,20%)] px-3 text-sm hover:bg-[hsl(0,0%,10%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                    >
-                      <ChevronLeft aria-hidden="true" size={18} />
-                      <span className="hidden sm:inline">Anterior</span>
-                    </button>
-                    <span
-                      className="text-center text-xs text-[hsl(0,0%,65%)]"
-                      aria-live="polite"
-                      aria-atomic="true"
-                    >
-                      Imagem {activeImageIndex + 1} de {images.length} carregadas
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => moveGalleryImage(1)}
-                      aria-label="Próxima imagem"
-                      className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 border border-[hsl(0,0%,20%)] px-3 text-sm hover:bg-[hsl(0,0%,10%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                    >
-                      <span className="hidden sm:inline">Próxima</span>
-                      <ChevronRight aria-hidden="true" size={18} />
-                    </button>
-                  </nav>
-                ) : null}
-
-                {mediaUnderReview ? null : model.galleryVersion > 0 && galleryQuery.isPending ? (
-                  <p
-                    role="status"
-                    className="mt-4 text-sm text-[hsl(0,0%,56%)]"
-                  >
-                    Carregando galeria…
-                  </p>
-                ) : galleryQuery.isError || duplicateGalleryIdentity || inconsistentGalleryCount ? (
-                  <div className="mt-4 flex flex-wrap items-center gap-3">
-                    <p role="alert" className="text-sm text-[hsl(0,0%,56%)]">
-                      A galeria não pôde ser carregada.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => void galleryQuery.refetch()}
-                      className="min-h-11 rounded-none border border-[hsl(0,0%,15%)] px-4 text-sm font-medium"
-                    >
-                      Tentar novamente
-                    </button>
-                  </div>
-                ) : images.length > 0 ? (
-                  <>
-                    <div
-                      role="group"
-                      aria-label="Miniaturas da galeria"
-                      aria-describedby={images.length > 1 ? galleryKeyboardHelpId : undefined}
-                      onKeyDown={handleGalleryKeyboard}
-                      className="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-6"
-                    >
-                      {images.map((image, index) => {
-                        const src = imageUrl(image);
-                        return (
-                          <button
-                            key={image.id}
-                            type="button"
-                            data-gallery-thumbnail
-                            data-gallery-index={index}
-                            onClick={() => setActiveImageId(image.id)}
-                            aria-label={
-                              "Ver imagem " + (index + 1) + " de " + model.name
-                            }
-                            aria-pressed={activeImage?.id === image.id}
-                            className="aspect-square overflow-hidden rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] aria-pressed:border-[hsl(var(--gold-accent))]"
-                          >
-                            <CanonicalCatalogImage
-                              src={src}
-                              fallbackSrc={thumbnailFallbackUrl(image)}
-                              alt=""
-                              imageClassName="h-full w-full object-cover"
-                              fallbackLabel="Sem prévia"
-                              fetchPriority="low"
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {galleryQuery.hasNextPage ? (
-                      <button
-                        type="button"
-                        onClick={() => void galleryQuery.fetchNextPage()}
-                        disabled={galleryQuery.isFetchingNextPage}
-                        className="mt-4 min-h-11 rounded-none border border-[hsl(0,0%,15%)] px-4 text-sm font-medium hover:bg-[hsl(0,0%,9%)] disabled:opacity-60"
-                      >
-                        {galleryQuery.isFetchingNextPage
-                          ? "Carregando…"
-                          : "Carregar mais imagens"}
-                      </button>
-                    ) : null}
-                    {galleryCursorCycle ? (
-                      <p role="status" className="mt-4 text-sm text-[hsl(0,0%,56%)]">
-                        A sequência da galeria retornou a uma página já visitada.
-                        O carregamento adicional foi interrompido.
-                      </p>
-                    ) : null}
-                  </>
-                ) : (
-                  <p className="mt-4 text-sm text-[hsl(0,0%,56%)]">
-                    Nenhuma imagem publicada nesta galeria.
-                  </p>
-                )}
-              </section>
-
-              <ArcadeCard className="self-start p-5 md:p-7">
-                <div className="space-y-6">
-                  <header>
-                    <ArcadeSectionTitle>FICHA DO MODELO</ArcadeSectionTitle>
-                    <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-[hsl(var(--gold-accent))]">
-                      {model.category} · {model.franchise}
-                    </p>
-                    <h1 ref={relatedModelTitleRef} tabIndex={-1} className="mt-3 text-2xl font-black uppercase tracking-[0.08em] leading-tight sm:text-3xl md:text-4xl">
-                      {model.name}
-                    </h1>
-                    {model.variantName ? (
-                      <p className="mt-2 text-base text-[hsl(0,0%,56%)]">
-                        {model.variantName}
-                      </p>
-                    ) : null}
-                  </header>
-
-                  {model.description ? (
-                    <p className="whitespace-pre-line leading-relaxed text-[hsl(0,0%,56%)]">
-                      {model.description}
+              <article className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+                <section aria-label="Imagens do modelo">
+                  {mediaUnderReview && !coverReleased ? (
+                    <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] pl-4 text-sm text-[hsl(0,0%,72%)]">
+                      Algumas imagens deste modelo não estão disponíveis no
+                      momento.
                     </p>
                   ) : null}
-
-                  <dl className="grid grid-cols-2 gap-3 border-y border-[hsl(0,0%,15%)] py-5 text-sm">
-                    <div>
-                      <dt className="text-[hsl(0,0%,56%)]">Código</dt>
-                      <dd className="mt-1 min-w-0 break-all font-medium">{model.code}</dd>
-                    </div>
-                    {model.material ? (
-                      <div>
-                        <dt className="text-[hsl(0,0%,56%)]">Material</dt>
-                        <dd className="mt-1 font-medium">{model.material}</dd>
-                      </div>
-                    ) : null}
-                    {model.heightCm !== null ? (
-                      <div>
-                        <dt className="text-[hsl(0,0%,56%)]">
-                          Altura informada
-                        </dt>
-                        <dd className="mt-1 font-medium">
-                          {model.heightCm} cm
-                        </dd>
-                      </div>
-                    ) : null}
-                    <div>
-                      <dt className="text-[hsl(0,0%,56%)]">
-                        Imagens publicadas
-                      </dt>
-                      <dd className="mt-1 font-medium">
-                        {mediaUnderReview ? (coverReleased ? "1 imagem disponível" : "Indisponível") : galleryQuery.isError || duplicateGalleryIdentity || inconsistentGalleryCount
-                          ? "Indisponível"
-                          : galleryQuery.data?.pages[0]?.total ??
-                            (model.galleryVersion > 0
-                              ? "Verificando…"
-                              : "Indisponível")}
-                      </dd>
-                    </div>
-                  </dl>
-
-                  <p className="text-sm leading-relaxed text-[hsl(0,0%,56%)]">
-                    {publicMediaHold
-                      ? "Imagem digital de referência. Este catálogo é somente para consulta e não recebe pedidos ou pagamentos."
-                      : "Disponibilidade e preço são confirmados pela equipe na etapa de orçamento. Esta ficha apresenta somente os dados publicados no catálogo."}
-                  </p>
-                  <div className="space-y-3">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedModels((current) =>
-                          toggleCanonicalSelection(current, model),
-                        )
-                      }
-                      aria-pressed={isSelected}
-                      disabled={
-                        !isSelected &&
-                        selectedModels.length >= MAX_CANONICAL_SELECTION
-                      }
-                      className="inline-flex min-h-11 w-full items-center justify-center rounded-none border border-[hsl(var(--gold-accent))] px-4 py-3 text-sm font-semibold text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(0,0%,9%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+                  <ArcadeCard className="flex min-h-[280px] items-center justify-center sm:min-h-[360px] md:min-h-[560px]">
+                    <CanonicalCatalogImage
+                      src={activeImageUrl}
+                      fallbackSrc={activeImageFallbackUrl}
+                      alt={"Referência visual de " + model.name}
+                      imageClassName="max-h-[75vh] w-full object-contain p-4"
+                      loading="eager"
+                      fetchPriority="high"
+                    />
+                  </ArcadeCard>
+                  {images.length > 1 ? (
+                    <nav
+                      aria-label="Navegação das imagens carregadas"
+                      aria-describedby={galleryKeyboardHelpId}
+                      onKeyDown={handleGalleryKeyboard}
+                      className="mt-3 flex items-center justify-between gap-3"
                     >
-                      {isSelected
-                        ? "Remover da seleção"
-                        : "Adicionar à seleção"}
-                    </button>
-                    {import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
-                      (selectionAtCapacity ? (
-                        <button
-                          type="button"
-                          disabled
-                          aria-describedby="catalog-selection-capacity"
-                          className="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center bg-[hsl(var(--gold-accent))] px-4 py-3 text-sm font-semibold text-black opacity-50"
-                        >
-                          Solicitar orçamento deste modelo
-                        </button>
-                      ) : (
-                        <Link
-                          to={PUBLIC_ROUTES.quoteRequest}
-                          onClick={() =>
-                            setSelectedModels((current) =>
-                              current.some((entry) => entry.id === model.id)
-                                ? current
-                                : toggleCanonicalSelection(current, model),
-                            )
-                          }
-                          className="inline-flex min-h-11 w-full items-center justify-center bg-[hsl(var(--gold-accent))] px-4 py-3 text-sm font-semibold text-black hover:brightness-110"
-                        >
-                          Solicitar orçamento deste modelo
-                        </Link>
-                      ))}
-                    {selectionAtCapacity ? (
-                      <p
-                        id="catalog-selection-capacity"
-                        role="status"
-                        className="text-xs leading-relaxed text-[hsl(0,0%,66%)]"
+                      <span id={galleryKeyboardHelpId} className="sr-only">
+                        Use as setas esquerda e direita para trocar a foto, Home
+                        para a primeira e End para a última foto carregada.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => moveGalleryImage(-1)}
+                        aria-label="Imagem anterior"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 border border-[hsl(0,0%,20%)] px-3 text-sm hover:bg-[hsl(0,0%,10%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                       >
-                        Sua seleção já tem {MAX_CANONICAL_SELECTION} modelos.
-                        Remova um modelo antes de incluir esta referência no
-                        orçamento.
-                      </p>
-                    ) : null}
+                        <ChevronLeft aria-hidden="true" size={18} />
+                        <span className="hidden sm:inline">Anterior</span>
+                      </button>
+                      <span
+                        className="text-center text-xs text-[hsl(0,0%,65%)]"
+                        aria-live="polite"
+                        aria-atomic="true"
+                      >
+                        Imagem {activeImageIndex + 1} de {images.length}{" "}
+                        carregadas
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => moveGalleryImage(1)}
+                        aria-label="Próxima imagem"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 border border-[hsl(0,0%,20%)] px-3 text-sm hover:bg-[hsl(0,0%,10%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                      >
+                        <span className="hidden sm:inline">Próxima</span>
+                        <ChevronRight aria-hidden="true" size={18} />
+                      </button>
+                    </nav>
+                  ) : null}
+
+                  {mediaUnderReview ? null : model.galleryVersion > 0 &&
+                    galleryQuery.isPending ? (
                     <p
                       role="status"
-                      aria-live="polite"
-                      className="text-xs text-[hsl(0,0%,56%)]"
+                      className="mt-4 text-sm text-[hsl(0,0%,56%)]"
                     >
-                      Minha seleção: {selectedModels.length} de{" "}
-                      {MAX_CANONICAL_SELECTION} modelos. Nenhum pedido é enviado
-                      automaticamente.
+                      Carregando galeria…
                     </p>
+                  ) : galleryQuery.isError ||
+                    duplicateGalleryIdentity ||
+                    inconsistentGalleryCount ? (
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <p role="alert" className="text-sm text-[hsl(0,0%,56%)]">
+                        A galeria não pôde ser carregada.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void galleryQuery.refetch()}
+                        className="min-h-11 rounded-none border border-[hsl(0,0%,15%)] px-4 text-sm font-medium"
+                      >
+                        Tentar novamente
+                      </button>
+                    </div>
+                  ) : images.length > 0 ? (
+                    <>
+                      <div
+                        role="group"
+                        aria-label="Miniaturas da galeria"
+                        aria-describedby={
+                          images.length > 1 ? galleryKeyboardHelpId : undefined
+                        }
+                        onKeyDown={handleGalleryKeyboard}
+                        className="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-6"
+                      >
+                        {images.map((image, index) => {
+                          const src = imageUrl(image);
+                          return (
+                            <button
+                              key={image.id}
+                              type="button"
+                              data-gallery-thumbnail
+                              data-gallery-index={index}
+                              onClick={() => setActiveImageId(image.id)}
+                              aria-label={
+                                "Ver imagem " +
+                                (index + 1) +
+                                " de " +
+                                model.name
+                              }
+                              aria-pressed={activeImage?.id === image.id}
+                              className="aspect-square overflow-hidden rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] aria-pressed:border-[hsl(var(--gold-accent))]"
+                            >
+                              <CanonicalCatalogImage
+                                src={src}
+                                fallbackSrc={thumbnailFallbackUrl(image)}
+                                alt=""
+                                imageClassName="h-full w-full object-cover"
+                                fallbackLabel="Sem prévia"
+                                fetchPriority="low"
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {galleryQuery.hasNextPage ? (
+                        <button
+                          type="button"
+                          onClick={() => void galleryQuery.fetchNextPage()}
+                          disabled={galleryQuery.isFetchingNextPage}
+                          className="mt-4 min-h-11 rounded-none border border-[hsl(0,0%,15%)] px-4 text-sm font-medium hover:bg-[hsl(0,0%,9%)] disabled:opacity-60"
+                        >
+                          {galleryQuery.isFetchingNextPage
+                            ? "Carregando…"
+                            : "Carregar mais imagens"}
+                        </button>
+                      ) : null}
+                      {galleryCursorCycle ? (
+                        <p
+                          role="status"
+                          className="mt-4 text-sm text-[hsl(0,0%,56%)]"
+                        >
+                          A sequência da galeria retornou a uma página já
+                          visitada. O carregamento adicional foi interrompido.
+                        </p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="mt-4 text-sm text-[hsl(0,0%,56%)]">
+                      Nenhuma imagem publicada nesta galeria.
+                    </p>
+                  )}
+                </section>
+
+                <ArcadeCard className="self-start p-5 md:p-7">
+                  <div className="space-y-6">
+                    <header>
+                      <ArcadeSectionTitle>FICHA DO MODELO</ArcadeSectionTitle>
+                      <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-[hsl(var(--gold-accent))]">
+                        {model.category} · {model.franchise}
+                      </p>
+                      <h1
+                        ref={relatedModelTitleRef}
+                        tabIndex={-1}
+                        className="mt-3 text-2xl font-black uppercase tracking-[0.08em] leading-tight sm:text-3xl md:text-4xl"
+                      >
+                        {model.name}
+                      </h1>
+                      {model.variantName ? (
+                        <p className="mt-2 text-base text-[hsl(0,0%,56%)]">
+                          {model.variantName}
+                        </p>
+                      ) : null}
+                    </header>
+
+                    {model.description ? (
+                      <p className="whitespace-pre-line leading-relaxed text-[hsl(0,0%,56%)]">
+                        {model.description}
+                      </p>
+                    ) : null}
+
+                    <dl className="grid grid-cols-2 gap-3 border-y border-[hsl(0,0%,15%)] py-5 text-sm">
+                      <div>
+                        <dt className="text-[hsl(0,0%,56%)]">Código</dt>
+                        <dd className="mt-1 min-w-0 break-all font-medium">
+                          {model.code}
+                        </dd>
+                      </div>
+                      {model.material ? (
+                        <div>
+                          <dt className="text-[hsl(0,0%,56%)]">Material</dt>
+                          <dd className="mt-1 font-medium">{model.material}</dd>
+                        </div>
+                      ) : null}
+                      {model.heightCm !== null ? (
+                        <div>
+                          <dt className="text-[hsl(0,0%,56%)]">
+                            Altura informada
+                          </dt>
+                          <dd className="mt-1 font-medium">
+                            {model.heightCm} cm
+                          </dd>
+                        </div>
+                      ) : null}
+                      <div>
+                        <dt className="text-[hsl(0,0%,56%)]">
+                          Imagens publicadas
+                        </dt>
+                        <dd className="mt-1 font-medium">
+                          {mediaUnderReview
+                            ? coverReleased
+                              ? "1 imagem disponível"
+                              : "Indisponível"
+                            : galleryQuery.isError ||
+                                duplicateGalleryIdentity ||
+                                inconsistentGalleryCount
+                              ? "Indisponível"
+                              : (galleryQuery.data?.pages[0]?.total ??
+                                (model.galleryVersion > 0
+                                  ? "Verificando…"
+                                  : "Indisponível"))}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <p className="text-sm leading-relaxed text-[hsl(0,0%,56%)]">
+                      {publicMediaHold
+                        ? "Imagem digital de referência. Este catálogo é somente para consulta e não recebe pedidos ou pagamentos."
+                        : "Disponibilidade e preço são confirmados pela equipe na etapa de orçamento. Esta ficha apresenta somente os dados publicados no catálogo."}
+                    </p>
+                    <div className="space-y-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedModels((current) =>
+                            toggleCanonicalSelection(current, model),
+                          )
+                        }
+                        aria-pressed={isSelected}
+                        disabled={
+                          !isSelected &&
+                          selectedModels.length >= MAX_CANONICAL_SELECTION
+                        }
+                        className="inline-flex min-h-11 w-full items-center justify-center rounded-none border border-[hsl(var(--gold-accent))] px-4 py-3 text-sm font-semibold text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(0,0%,9%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {isSelected
+                          ? "Remover da seleção"
+                          : "Adicionar à seleção"}
+                      </button>
+                      {import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
+                        (selectionAtCapacity ? (
+                          <button
+                            type="button"
+                            disabled
+                            aria-describedby="catalog-selection-capacity"
+                            className="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center bg-[hsl(var(--gold-accent))] px-4 py-3 text-sm font-semibold text-black opacity-50"
+                          >
+                            Solicitar orçamento deste modelo
+                          </button>
+                        ) : (
+                          <Link
+                            to={PUBLIC_ROUTES.quoteRequest}
+                            onClick={() =>
+                              setSelectedModels((current) =>
+                                current.some((entry) => entry.id === model.id)
+                                  ? current
+                                  : toggleCanonicalSelection(current, model),
+                              )
+                            }
+                            className="inline-flex min-h-11 w-full items-center justify-center bg-[hsl(var(--gold-accent))] px-4 py-3 text-sm font-semibold text-black hover:brightness-110"
+                          >
+                            Solicitar orçamento deste modelo
+                          </Link>
+                        ))}
+                      {selectionAtCapacity ? (
+                        <p
+                          id="catalog-selection-capacity"
+                          role="status"
+                          className="text-xs leading-relaxed text-[hsl(0,0%,66%)]"
+                        >
+                          Sua seleção já tem {MAX_CANONICAL_SELECTION} modelos.
+                          Remova um modelo antes de incluir esta referência no
+                          orçamento.
+                        </p>
+                      ) : null}
+                      <p
+                        role="status"
+                        aria-live="polite"
+                        className="text-xs text-[hsl(0,0%,56%)]"
+                      >
+                        Minha seleção: {selectedModels.length} de{" "}
+                        {MAX_CANONICAL_SELECTION} modelos. Nenhum pedido é
+                        enviado automaticamente.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </ArcadeCard>
-            </article>
-            {!mediaUnderReview ? (
-              <RelatedModels model={model} gateway={gateway} returnPath={catalogReturnTo} />
-            ) : null}
+                </ArcadeCard>
+              </article>
+              {!mediaUnderReview ? (
+                <RelatedModels
+                  model={model}
+                  gateway={gateway}
+                  returnPath={catalogReturnTo}
+                />
+              ) : null}
             </>
           )}
         </div>
