@@ -524,7 +524,9 @@ describe("TONART commercial screens: account → request → history → respons
     fireEvent.change(screen.getByLabelText("E-mail"), {
       target: { value: "cliente@example.com" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Reenviar confirmação" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Reenviar confirmação" }),
+    );
     await waitFor(() =>
       expect(mocks.resendConfirmation).toHaveBeenCalledWith(
         "cliente@example.com",
