@@ -12,10 +12,19 @@ import {
   loadCatalogQuoteHistory,
   type CatalogQuoteEvent,
 } from "@/services/quotes/catalog-quote-history-service";
-import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
+import {
+  actionClass,
+  CommercialPage,
+  fieldClass,
+  panelClass,
+  secondaryClass,
+} from "./CommercialPage";
 import { commercialQuoteErrorText } from "./commercial-quote-error-text";
 
-const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const brl = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 const eventDate = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "short",
@@ -32,9 +41,11 @@ function adminEventLabel(event: CatalogQuoteEvent): string {
   if (event.toStatus === "pending") return "Retornado para novo";
   return "Situação atualizada";
 }
-const statusLabels: Record<string,string> = {
-  pending: "Novo", reviewing: "Em análise",
-  answered: "Respondido", archived: "Arquivado",
+const statusLabels: Record<string, string> = {
+  pending: "Novo",
+  reviewing: "Em análise",
+  answered: "Respondido",
+  archived: "Arquivado",
 };
 /** Accept Brazilian currency grouping without silently turning R$ 1.234,56 into R$ 1,23. */
 function parseQuoteAmount(input: string): number {
@@ -88,18 +99,27 @@ type StatusFilter = "all" | "pending" | "reviewing" | "answered" | "archived";
 export default function TonecosAdminQuotesPage() {
   const [params] = useSearchParams();
   const requestedId = params.get("quote");
-  const selectedId = requestedId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedId)
-    ? requestedId.toLowerCase() : null;
+  const selectedId =
+    requestedId &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      requestedId,
+    )
+      ? requestedId.toLowerCase()
+      : null;
   const invalidSelection = requestedId !== null && !selectedId;
   const [quotes, setQuotes] = useState<AdminCatalogQuote[]>([]);
-  const [history, setHistory] = useState<Record<string, CatalogQuoteEvent[]>>({});
+  const [history, setHistory] = useState<Record<string, CatalogQuoteEvent[]>>(
+    {},
+  );
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [price, setPrice] = useState<Record<string, string>>({});
-  const [responseMessage, setResponseMessage] = useState<Record<string, string>>({});
+  const [responseMessage, setResponseMessage] = useState<
+    Record<string, string>
+  >({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -138,9 +158,7 @@ export default function TonecosAdminQuotesPage() {
       .then(({ result, history: quoteHistory }) => {
         if (!active) return;
         if (!selectedId && result.total > 0 && offset >= result.total) {
-          setOffset(
-            Math.floor((result.total - 1) / PAGE_SIZE) * PAGE_SIZE,
-          );
+          setOffset(Math.floor((result.total - 1) / PAGE_SIZE) * PAGE_SIZE);
           return;
         }
         setQuotes(result.rows);
@@ -163,7 +181,9 @@ export default function TonecosAdminQuotesPage() {
   async function reply(event: FormEvent<HTMLFormElement>, id: string) {
     event.preventDefault();
     if (busyId) return;
-    setBusyId(id); setError(""); setNotice("");
+    setBusyId(id);
+    setError("");
+    setNotice("");
     try {
       const amount = parseQuoteAmount(price[id] ?? "");
       const message = (responseMessage[id] ?? "").trim();
@@ -173,29 +193,48 @@ export default function TonecosAdminQuotesPage() {
       await answerCatalogQuoteRequest(id, amount, message);
       setPrice((current) => ({ ...current, [id]: "" }));
       setResponseMessage((current) => ({ ...current, [id]: "" }));
-      setNotice("Resposta registrada e disponível na conta do cliente. Para avisá-lo, abra o e-mail ou WhatsApp e confirme o envio manualmente.");
+      setNotice(
+        "Resposta registrada e disponível na conta do cliente. Para avisá-lo, abra o e-mail ou WhatsApp e confirme o envio manualmente.",
+      );
       setAttempt((current) => current + 1);
     } catch (err) {
       setError(commercialQuoteErrorText(err, "admin"));
-    } finally { setBusyId(null); }
+    } finally {
+      setBusyId(null);
+    }
   }
 
-  async function updateStatus(quoteId: string, status: "pending" | "reviewing" | "archived") {
+  async function updateStatus(
+    quoteId: string,
+    status: "pending" | "reviewing" | "archived",
+  ) {
     if (busyId) return;
-    setBusyId(quoteId); setError(""); setNotice("");
+    setBusyId(quoteId);
+    setError("");
+    setNotice("");
     try {
       await changeCatalogQuoteStatus(quoteId, status);
       setNotice("Situação do orçamento atualizada.");
       setAttempt((current) => current + 1);
     } catch (err) {
       setError(commercialQuoteErrorText(err, "admin"));
-    } finally { setBusyId(null); }
+    } finally {
+      setBusyId(null);
+    }
   }
 
   return (
-    <CommercialPage title="Atendimento de orçamentos" intro="Área restrita da TONART Studio. Verifique os modelos no catálogo antes de informar um valor. Nenhuma cobrança é iniciada automaticamente.">
+    <CommercialPage
+      title="Atendimento de orçamentos"
+      intro="Área restrita da TONART Studio. Verifique os modelos no catálogo antes de informar um valor. Nenhuma cobrança é iniciada automaticamente."
+    >
       <div className="mb-6 flex flex-wrap gap-3">
-        <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminHome}>Voltar ao painel administrativo</Link>
+        <Link
+          className={secondaryClass}
+          to={TONECOS_COMMERCIAL_ROUTES.adminHome}
+        >
+          Voltar ao painel administrativo
+        </Link>
         <button
           type="button"
           className={secondaryClass}
@@ -204,12 +243,21 @@ export default function TonecosAdminQuotesPage() {
         >
           {loading ? "Atualizando..." : "Atualizar solicitações"}
         </button>
-        {requestedId !== null && <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}>Ver todos os orçamentos</Link>}
+        {requestedId !== null && (
+          <Link
+            className={secondaryClass}
+            to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}
+          >
+            Ver todos os orçamentos
+          </Link>
+        )}
       </div>
       {!requestedId && (
         <div className="mb-6 flex max-w-4xl flex-wrap items-end justify-between gap-3 border border-white/15 p-4">
           <label className="space-y-2 text-sm">
-            <span className="block text-xs text-white/60">Filtrar por situação</span>
+            <span className="block text-xs text-white/60">
+              Filtrar por situação
+            </span>
             <select
               aria-label="Filtrar orçamentos por situação"
               className={fieldClass}
@@ -233,152 +281,280 @@ export default function TonecosAdminQuotesPage() {
           </p>
         </div>
       )}
-      {notice && <p role="status" className="mb-5 max-w-3xl border border-white/20 p-4 text-sm">{notice}</p>}
-      {error && <div role="alert" className="mb-5 max-w-3xl border border-red-500/40 p-4 text-sm text-red-200">
-        <p>{error}</p>
-        {error === "Acesso administrativo não autorizado." && <p className="mt-3 text-xs text-white/70">
-          Acesso administrativo restrito. A autorização deve ser provisionada
-          pela equipe após verificar a titularidade da conta.
-        </p>}
-        <button type="button" className={secondaryClass + " mt-3"}
-          onClick={() => setAttempt((n) => n + 1)}>Tentar novamente</button>
-      </div>}
-      {loading ? <p role="status">Verificando autorização e orçamentos...</p> : null}
-      {!loading && !error && invalidSelection && (
-        <p role="alert" className={panelClass}>Referência de orçamento inválida. Consulte a lista completa.</p>
-      )}
-      {!loading && !error && !invalidSelection && selectedId && quotes.length === 0 && (
-        <p role="status" className={panelClass}>
-          Solicitação não encontrada.
+      {notice && (
+        <p
+          role="status"
+          className="mb-5 max-w-3xl border border-white/20 p-4 text-sm"
+        >
+          {notice}
         </p>
       )}
+      {error && (
+        <div
+          role="alert"
+          className="mb-5 max-w-3xl border border-red-500/40 p-4 text-sm text-red-200"
+        >
+          <p>{error}</p>
+          {error === "Acesso administrativo não autorizado." && (
+            <p className="mt-3 text-xs text-white/70">
+              Acesso administrativo restrito. A autorização deve ser
+              provisionada pela equipe após verificar a titularidade da conta.
+            </p>
+          )}
+          <button
+            type="button"
+            className={secondaryClass + " mt-3"}
+            onClick={() => setAttempt((n) => n + 1)}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      {loading ? (
+        <p role="status">Verificando autorização e orçamentos...</p>
+      ) : null}
+      {!loading && !error && invalidSelection && (
+        <p role="alert" className={panelClass}>
+          Referência de orçamento inválida. Consulte a lista completa.
+        </p>
+      )}
+      {!loading &&
+        !error &&
+        !invalidSelection &&
+        selectedId &&
+        quotes.length === 0 && (
+          <p role="status" className={panelClass}>
+            Solicitação não encontrada.
+          </p>
+        )}
       {!loading && !error && !requestedId && quotes.length === 0 && (
         <p className={panelClass}>Nenhuma solicitação recebida.</p>
       )}
-      {!loading && !error && <ul className="grid max-w-4xl gap-4">
-        {quotes.map((quote) => (
-          <li key={quote.id} className={panelClass}>
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-semibold">Solicitação #{quote.id.slice(0, 8)}</h2>
-              <span className="border border-white/20 px-3 py-1 text-xs">{statusLabels[quote.status] ?? "Em atualização"}</span>
-            </div>
-            <p className="mb-1 text-sm text-white/80">{quote.customerName || "Cliente"}</p>
-            <p className="mb-3 text-xs text-white/65">
-              <a href={"mailto:" + encodeURIComponent(quote.customerEmail)} className="underline underline-offset-2 hover:text-white">
-                {quote.customerEmail}
-              </a>
-              {" · "}{new Date(quote.createdAt).toLocaleDateString("pt-BR")}
-            </p>
-            <ul className="space-y-2 text-sm">
-              {quote.items.map((item) => (
-                <li key={item.slug}>
-                  <Link to={"/modelos/" + encodeURIComponent(item.slug)} className="text-[hsl(var(--gold-accent))] hover:underline">
-                    {item.slug.replace(/-/g, " ")}
-                  </Link> · {item.quantity} {item.quantity === 1 ? "unidade" : "unidades"}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-2 text-xs text-white/65">
-              WhatsApp: {quote.whatsapp || "Não informado"} · CEP: {quote.postalCode || "Não informado"}
-            </p>
-            <p className="mt-1 text-xs text-white/65">
-              Escala: {quote.scale || "A definir"} · Acabamento: {quote.finishing || "A definir"}
-            </p>
-            {quote.notes && <p className="mt-3 whitespace-pre-wrap text-sm text-white/65">{quote.notes}</p>}
-            {(history[quote.id] ?? []).length > 0 && (
-              <section className="mt-4 border-t border-white/15 pt-4">
-                <h3 className="text-sm font-semibold">Histórico do atendimento</h3>
-                <ol className="mt-3 space-y-2">
-                  {(history[quote.id] ?? []).map((event) => (
-                    <li key={event.id} className="text-xs text-white/65">
-                      <span className="text-white/85">{adminEventLabel(event)}</span>
-                      {" · "}
-                      <time dateTime={event.createdAt}>
-                        {eventDate.format(new Date(event.createdAt))}
-                      </time>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
-            <div className="mt-4 flex flex-wrap gap-2" aria-label={"Andamento do orçamento " + quote.id.slice(0,8)}>
-              {quote.status === "pending" && (
-                <button type="button" className={secondaryClass} disabled={busyId !== null}
-                  onClick={() => { void updateStatus(quote.id, "reviewing"); }}>Marcar em análise</button>
+      {!loading && !error && (
+        <ul className="grid max-w-4xl gap-4">
+          {quotes.map((quote) => (
+            <li key={quote.id} className={panelClass}>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-semibold">
+                  Solicitação #{quote.id.slice(0, 8)}
+                </h2>
+                <span className="border border-white/20 px-3 py-1 text-xs">
+                  {statusLabels[quote.status] ?? "Em atualização"}
+                </span>
+              </div>
+              <p className="mb-1 text-sm text-white/80">
+                {quote.customerName || "Cliente"}
+              </p>
+              <p className="mb-3 text-xs text-white/65">
+                <a
+                  href={"mailto:" + encodeURIComponent(quote.customerEmail)}
+                  className="underline underline-offset-2 hover:text-white"
+                >
+                  {quote.customerEmail}
+                </a>
+                {" · "}
+                {new Date(quote.createdAt).toLocaleDateString("pt-BR")}
+              </p>
+              <ul className="space-y-2 text-sm">
+                {quote.items.map((item) => (
+                  <li key={item.slug}>
+                    <Link
+                      to={"/modelos/" + encodeURIComponent(item.slug)}
+                      className="text-[hsl(var(--gold-accent))] hover:underline"
+                    >
+                      {item.slug.replace(/-/g, " ")}
+                    </Link>{" "}
+                    · {item.quantity}{" "}
+                    {item.quantity === 1 ? "unidade" : "unidades"}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-white/65">
+                WhatsApp: {quote.whatsapp || "Não informado"} · CEP:{" "}
+                {quote.postalCode || "Não informado"}
+              </p>
+              <p className="mt-1 text-xs text-white/65">
+                Escala: {quote.scale || "A definir"} · Acabamento:{" "}
+                {quote.finishing || "A definir"}
+              </p>
+              {quote.notes && (
+                <p className="mt-3 whitespace-pre-wrap text-sm text-white/65">
+                  {quote.notes}
+                </p>
               )}
-              {quote.status === "reviewing" && (
-                <button type="button" className={secondaryClass} disabled={busyId !== null}
-                  onClick={() => { void updateStatus(quote.id, "pending"); }}>Voltar para novo</button>
+              {(history[quote.id] ?? []).length > 0 && (
+                <section className="mt-4 border-t border-white/15 pt-4">
+                  <h3 className="text-sm font-semibold">
+                    Histórico do atendimento
+                  </h3>
+                  <ol className="mt-3 space-y-2">
+                    {(history[quote.id] ?? []).map((event) => (
+                      <li key={event.id} className="text-xs text-white/65">
+                        <span className="text-white/85">
+                          {adminEventLabel(event)}
+                        </span>
+                        {" · "}
+                        <time dateTime={event.createdAt}>
+                          {eventDate.format(new Date(event.createdAt))}
+                        </time>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
               )}
-              {quote.status !== "archived" && (
-                <button type="button" className={secondaryClass} disabled={busyId !== null}
-                  onClick={() => { void updateStatus(quote.id, "archived"); }}>Arquivar</button>
-              )}
-            </div>
-            <div className="mt-5 border-t border-white/15 pt-4">
-              {quote.status === "archived" && quote.quotedAmount === null ? (
-                <p className="text-sm text-white/60">Solicitação arquivada sem valor.</p>
-              ) : quote.quotedAmount !== null ? (
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold">Valor informado: {brl.format(quote.quotedAmount)}</p>
-                  {quote.responseMessage && (
-                    <>
-                      <div className="border-l-2 border-[hsl(var(--gold-accent)/0.55)] pl-3">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-white/55">Mensagem ao cliente</p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm text-white/80">{quote.responseMessage}</p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <a
-                          className={secondaryClass}
-                          href={quotedResponseEmail(quote)}
-                        >
-                          Preparar e-mail de resposta
-                        </a>
-                        {quotedResponseWhatsApp(quote) && (
+              <div
+                className="mt-4 flex flex-wrap gap-2"
+                aria-label={"Andamento do orçamento " + quote.id.slice(0, 8)}
+              >
+                {quote.status === "pending" && (
+                  <button
+                    type="button"
+                    className={secondaryClass}
+                    disabled={busyId !== null}
+                    onClick={() => {
+                      void updateStatus(quote.id, "reviewing");
+                    }}
+                  >
+                    Marcar em análise
+                  </button>
+                )}
+                {quote.status === "reviewing" && (
+                  <button
+                    type="button"
+                    className={secondaryClass}
+                    disabled={busyId !== null}
+                    onClick={() => {
+                      void updateStatus(quote.id, "pending");
+                    }}
+                  >
+                    Voltar para novo
+                  </button>
+                )}
+                {quote.status !== "archived" && (
+                  <button
+                    type="button"
+                    className={secondaryClass}
+                    disabled={busyId !== null}
+                    onClick={() => {
+                      void updateStatus(quote.id, "archived");
+                    }}
+                  >
+                    Arquivar
+                  </button>
+                )}
+              </div>
+              <div className="mt-5 border-t border-white/15 pt-4">
+                {quote.status === "archived" && quote.quotedAmount === null ? (
+                  <p className="text-sm text-white/60">
+                    Solicitação arquivada sem valor.
+                  </p>
+                ) : quote.quotedAmount !== null ? (
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold">
+                      Valor informado: {brl.format(quote.quotedAmount)}
+                    </p>
+                    {quote.responseMessage && (
+                      <>
+                        <div className="border-l-2 border-[hsl(var(--gold-accent)/0.55)] pl-3">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-white/55">
+                            Mensagem ao cliente
+                          </p>
+                          <p className="mt-2 whitespace-pre-wrap text-sm text-white/80">
+                            {quote.responseMessage}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
                           <a
                             className={secondaryClass}
-                            href={quotedResponseWhatsApp(quote)!}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={quotedResponseEmail(quote)}
                           >
-                            Preparar mensagem no WhatsApp
+                            Preparar e-mail de resposta
                           </a>
-                        )}
-                      </div>
-                      <p className="text-xs text-white/55">
-                        As mensagens abrem no aplicativo escolhido. Confirme o envio manualmente; a TONART não registra notificações não enviadas.
-                      </p>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <form onSubmit={(event) => { void reply(event, quote.id); }} className="grid gap-3 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
-                  <label className="block space-y-2 text-sm">
-                    <span>Valor total (R$)</span>
-                    <input aria-label={"Valor do orçamento " + quote.id.slice(0, 8)}
-                      className={fieldClass} type="text" inputMode="decimal" required maxLength={12}
-                      placeholder="Ex.: 1.249,90" value={price[quote.id] ?? ""}
-                      onChange={(event) => setPrice((current) => ({ ...current, [quote.id]: event.target.value }))} />
-                  </label>
-                  <label className="block space-y-2 text-sm">
-                    <span>Mensagem ao cliente</span>
-                    <textarea aria-label={"Mensagem ao cliente " + quote.id.slice(0, 8)}
-                      className={fieldClass + " min-h-24 py-3"} required maxLength={2000} rows={3}
-                      placeholder="Informe validade, prazo estimado ou observações relevantes."
-                      value={responseMessage[quote.id] ?? ""}
-                      onChange={(event) => setResponseMessage((current) => ({ ...current, [quote.id]: event.target.value }))} />
-                  </label>
-                  <div className="sm:col-span-2">
-                    <button type="submit" disabled={busyId !== null} className={actionClass}>
-                      {busyId === quote.id ? "Salvando..." : "Registrar resposta"}
-                    </button>
+                          {quotedResponseWhatsApp(quote) && (
+                            <a
+                              className={secondaryClass}
+                              href={quotedResponseWhatsApp(quote)!}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Preparar mensagem no WhatsApp
+                            </a>
+                          )}
+                        </div>
+                        <p className="text-xs text-white/55">
+                          As mensagens abrem no aplicativo escolhido. Confirme o
+                          envio manualmente; a TONART não registra notificações
+                          não enviadas.
+                        </p>
+                      </>
+                    )}
                   </div>
-                </form>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>}
+                ) : (
+                  <form
+                    onSubmit={(event) => {
+                      void reply(event, quote.id);
+                    }}
+                    className="grid gap-3 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)]"
+                  >
+                    <label className="block space-y-2 text-sm">
+                      <span>Valor total (R$)</span>
+                      <input
+                        aria-label={
+                          "Valor do orçamento " + quote.id.slice(0, 8)
+                        }
+                        className={fieldClass}
+                        type="text"
+                        inputMode="decimal"
+                        required
+                        maxLength={12}
+                        placeholder="Ex.: 1.249,90"
+                        value={price[quote.id] ?? ""}
+                        onChange={(event) =>
+                          setPrice((current) => ({
+                            ...current,
+                            [quote.id]: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="block space-y-2 text-sm">
+                      <span>Mensagem ao cliente</span>
+                      <textarea
+                        aria-label={
+                          "Mensagem ao cliente " + quote.id.slice(0, 8)
+                        }
+                        className={fieldClass + " min-h-24 py-3"}
+                        required
+                        maxLength={2000}
+                        rows={3}
+                        placeholder="Informe validade, prazo estimado ou observações relevantes."
+                        value={responseMessage[quote.id] ?? ""}
+                        onChange={(event) =>
+                          setResponseMessage((current) => ({
+                            ...current,
+                            [quote.id]: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                    <div className="sm:col-span-2">
+                      <button
+                        type="submit"
+                        disabled={busyId !== null}
+                        className={actionClass}
+                      >
+                        {busyId === quote.id
+                          ? "Salvando..."
+                          : "Registrar resposta"}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
       {!loading && !error && !requestedId && total > PAGE_SIZE && (
         <div className="mt-6 flex max-w-4xl items-center justify-between gap-3">
           <button
@@ -390,7 +566,8 @@ export default function TonecosAdminQuotesPage() {
             Anterior
           </button>
           <span className="text-xs text-white/55">
-            Página {Math.floor(offset / PAGE_SIZE) + 1} de {Math.ceil(total / PAGE_SIZE)}
+            Página {Math.floor(offset / PAGE_SIZE) + 1} de{" "}
+            {Math.ceil(total / PAGE_SIZE)}
           </span>
           <button
             type="button"
