@@ -41,6 +41,47 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_events: {
+        Row: {
+          actor_user_id: string | null
+          amount: number | null
+          created_at: string
+          event_type: string
+          from_status: string | null
+          id: number
+          quote_id: string
+          to_status: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          amount?: number | null
+          created_at?: string
+          event_type: string
+          from_status?: string | null
+          id?: never
+          quote_id: string
+          to_status: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          amount?: number | null
+          created_at?: string
+          event_type?: string
+          from_status?: string | null
+          id?: never
+          quote_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_events_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           catalog_requested_at: string
@@ -177,6 +218,7 @@ export type Database = {
         }
         Returns: string
       }
+      tonart_admin_workspace_overview: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never

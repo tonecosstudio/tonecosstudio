@@ -3,7 +3,10 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 const mocks = vi.hoisted(() => ({
-  list: vi.fn(), answer: vi.fn(), status: vi.fn(),
+  list: vi.fn(), answer: vi.fn(), status: vi.fn(), history: vi.fn(),
+}));
+vi.mock("@/services/quotes/catalog-quote-history-service", () => ({
+  loadCatalogQuoteHistory: mocks.history,
 }));
 vi.mock("@/services/admin/config/catalog-quote-admin-service", () => ({
   listAdminCatalogQuotes: mocks.list,
@@ -32,6 +35,7 @@ const quoteB = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.list.mockResolvedValue([quoteA, quoteB]);
+  mocks.history.mockResolvedValue({});
 });
 afterEach(cleanup);
 
@@ -53,6 +57,26 @@ describe("TONART administrative quote deep links", () => {
     expect(mocks.list).toHaveBeenCalledTimes(1);
     expect(mocks.status).not.toHaveBeenCalled();
     expect(mocks.answer).not.toHaveBeenCalled();
+  });
+
+  it("shows the persisted service history for the selected canonical quote", async () => {
+    mocks.history.mockResolvedValue({
+      [quoteB.id]: [
+        {
+          id: 7,
+          quoteId: quoteB.id,
+          type: "status_changed",
+          fromStatus: "pending",
+          toStatus: "reviewing",
+          amount: null,
+          createdAt: "2026-11-13T09:00:00Z",
+        },
+      ],
+    });
+    show("/admin/orcamentos?quote=" + quoteB.id);
+    expect(await screen.findByText("Histórico do atendimento")).toBeInTheDocument();
+    expect(screen.getByText("Marcado em análise")).toBeInTheDocument();
+    expect(mocks.history).toHaveBeenCalledWith([quoteA.id, quoteB.id]);
   });
 
   it("does not return unrelated quote details when reference is invalid", async () => {

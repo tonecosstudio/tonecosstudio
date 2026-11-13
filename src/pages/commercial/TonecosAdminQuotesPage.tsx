@@ -2,9 +2,29 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { answerCatalogQuoteRequest, changeCatalogQuoteStatus, listAdminCatalogQuotes, type AdminCatalogQuote } from "@/services/admin/config/catalog-quote-admin-service";
+import {
+  loadCatalogQuoteHistory,
+  type CatalogQuoteEvent,
+} from "@/services/quotes/catalog-quote-history-service";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const eventDate = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
+function adminEventLabel(event: CatalogQuoteEvent): string {
+  if (event.type === "submitted") return "Solicitação recebida";
+  if (event.type === "answered")
+    return event.amount === null
+      ? "Orçamento respondido"
+      : `Valor respondido: ${brl.format(event.amount)}`;
+  if (event.toStatus === "reviewing") return "Marcado em análise";
+  if (event.toStatus === "archived") return "Atendimento arquivado";
+  if (event.toStatus === "pending") return "Retornado para novo";
+  return "Situação atualizada";
+}
 const statusLabels: Record<string,string> = {
   pending: "Novo", reviewing: "Em análise",
   answered: "Respondido", archived: "Arquivado",
@@ -16,6 +36,7 @@ export default function TonecosAdminQuotesPage() {
     ? requestedId.toLowerCase() : null;
   const invalidSelection = requestedId !== null && !selectedId;
   const [quotes, setQuotes] = useState<AdminCatalogQuote[]>([]);
+  const [history, setHistory] = useState<Record<string, CatalogQuoteEvent[]>>({});
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [price, setPrice] = useState<Record<string, string>>({});
@@ -27,9 +48,20 @@ export default function TonecosAdminQuotesPage() {
 
   useEffect(() => {
     let active = true;
+    setQuotes([]);
+    setHistory({});
     setLoading(true); setError("");
     listAdminCatalogQuotes()
-      .then((rows) => { if (active) setQuotes(rows); })
+      .then(async (rows) => ({
+        rows,
+        history: await loadCatalogQuoteHistory(rows.map((quote) => quote.id)),
+      }))
+      .then(({ rows, history: quoteHistory }) => {
+        if (active) {
+          setQuotes(rows);
+          setHistory(quoteHistory);
+        }
+      })
       .catch((err: unknown) => {
         if (active) setError(err instanceof Error ? err.message : "Acesso administrativo indisponível.");
       })
@@ -119,6 +151,22 @@ export default function TonecosAdminQuotesPage() {
               Escala: {quote.scale || "A definir"} · Acabamento: {quote.finishing || "A definir"}
             </p>
             {quote.notes && <p className="mt-3 whitespace-pre-wrap text-sm text-white/65">{quote.notes}</p>}
+            {(history[quote.id] ?? []).length > 0 && (
+              <section className="mt-4 border-t border-white/15 pt-4">
+                <h3 className="text-sm font-semibold">Histórico do atendimento</h3>
+                <ol className="mt-3 space-y-2">
+                  {(history[quote.id] ?? []).map((event) => (
+                    <li key={event.id} className="text-xs text-white/65">
+                      <span className="text-white/85">{adminEventLabel(event)}</span>
+                      {" · "}
+                      <time dateTime={event.createdAt}>
+                        {eventDate.format(new Date(event.createdAt))}
+                      </time>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
             <div className="mt-4 flex flex-wrap gap-2" aria-label={"Andamento do orçamento " + quote.id.slice(0,8)}>
               {quote.status === "pending" && (
                 <button type="button" className={secondaryClass} disabled={busyId !== null}

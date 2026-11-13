@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => {
     getProfile: vi.fn(),
     updateProfile: vi.fn(),
     changePassword: vi.fn(),
+    history: vi.fn(),
     quoteItems: vi.fn(),
     submit: vi.fn(),
     listMine: vi.fn(),
@@ -47,6 +48,9 @@ vi.mock("@/services/customer/tonecos-account-service", () => ({
   getMyTonecosProfile: mocks.getProfile,
   updateMyTonecosProfile: mocks.updateProfile,
   changeTonecosPassword: mocks.changePassword,
+}));
+vi.mock("@/services/quotes/catalog-quote-history-service", () => ({
+  loadCatalogQuoteHistory: mocks.history,
 }));
 vi.mock("@/services/auth/tonecos-admin-access", () => ({
   hasTonecosAdminAccess: mocks.hasAdmin,
@@ -124,6 +128,7 @@ beforeEach(() => {
   mocks.listMine.mockResolvedValue([]);
   mocks.listAdmin.mockResolvedValue([]);
   mocks.changePassword.mockResolvedValue(undefined);
+  mocks.history.mockResolvedValue({});
 });
 afterEach(() => {
   cleanup();
@@ -236,6 +241,50 @@ describe("TONART commercial screens: account → request → history → respons
     expect(await screen.findByText("Valor em análise")).toBeInTheDocument();
     expect(screen.queryByText(/R\$ 0,00/)).not.toBeInTheDocument();
     expect(mocks.listMine).toHaveBeenCalledWith(USER);
+  });
+
+  it("shows the canonical quote timeline returned through RLS", async () => {
+    mocks.listMine.mockResolvedValue([
+      {
+        id: QUOTE,
+        status: "answered",
+        createdAt: "2026-11-05T00:00:00Z",
+        notes: null,
+        quotedAmount: 249.9,
+        deadline: null,
+        items: [{ slug: "naruto", quantity: 1 }],
+        whatsapp: null,
+        postalCode: null,
+        scale: "a definir",
+        finishing: "a definir",
+      },
+    ]);
+    mocks.history.mockResolvedValue({
+      [QUOTE]: [
+        {
+          id: 1,
+          quoteId: QUOTE,
+          type: "submitted",
+          fromStatus: null,
+          toStatus: "pending",
+          amount: null,
+          createdAt: "2026-11-05T00:00:00Z",
+        },
+        {
+          id: 2,
+          quoteId: QUOTE,
+          type: "answered",
+          fromStatus: "reviewing",
+          toStatus: "answered",
+          amount: 249.9,
+          createdAt: "2026-11-05T01:00:00Z",
+        },
+      ],
+    });
+    renderApp("/meus-orcamentos");
+    expect(await screen.findByText("Solicitação enviada")).toBeInTheDocument();
+    expect(screen.getByText(/Orçamento respondido:/)).toHaveTextContent("R$");
+    expect(mocks.history).toHaveBeenCalledWith([QUOTE]);
   });
 
   it("does not display another person's history without a session", async () => {

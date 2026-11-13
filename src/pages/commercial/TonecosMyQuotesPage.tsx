@@ -3,6 +3,10 @@ import { Link, useLocation } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { listMyCatalogQuotes, type CustomerCatalogQuote } from "@/services/customer/catalog-quote-service";
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
+import {
+  loadCatalogQuoteHistory,
+  type CatalogQuoteEvent,
+} from "@/services/quotes/catalog-quote-history-service";
 import { CommercialPage, panelClass, secondaryClass } from "./CommercialPage";
 
 const labels: Record<string, string> = {
@@ -12,6 +16,22 @@ const labels: Record<string, string> = {
   archived: "Arquivado",
 };
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const eventDate = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
+function customerEventLabel(event: CatalogQuoteEvent): string {
+  if (event.type === "submitted") return "Solicitação enviada";
+  if (event.type === "answered")
+    return event.amount === null
+      ? "Orçamento respondido"
+      : `Orçamento respondido: ${brl.format(event.amount)}`;
+  if (event.toStatus === "reviewing") return "Em análise pela TONART";
+  if (event.toStatus === "archived") return "Atendimento arquivado";
+  if (event.toStatus === "pending") return "Solicitação retornou para análise";
+  return "Situação atualizada";
+}
 
 export default function TonecosMyQuotesPage() {
   const location = useLocation();
@@ -19,6 +39,7 @@ export default function TonecosMyQuotesPage() {
   const [authError, setAuthError] = useState(false);
   const [authAttempt, setAuthAttempt] = useState(0);
   const [rows, setRows] = useState<CustomerCatalogQuote[]>([]);
+  const [history, setHistory] = useState<Record<string, CatalogQuoteEvent[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
@@ -36,9 +57,20 @@ export default function TonecosMyQuotesPage() {
   useEffect(() => {
     if (!userId) return;
     let active = true;
+    setRows([]);
+    setHistory({});
     setLoading(true); setError("");
     listMyCatalogQuotes(userId)
-      .then((data) => { if (active) setRows(data); })
+      .then(async (data) => ({
+        data,
+        history: await loadCatalogQuoteHistory(data.map((quote) => quote.id)),
+      }))
+      .then(({ data, history: quoteHistory }) => {
+        if (active) {
+          setRows(data);
+          setHistory(quoteHistory);
+        }
+      })
       .catch((err: unknown) => {
         if (active) setError(err instanceof Error ? err.message : "Não foi possível consultar seus orçamentos.");
       })
@@ -97,6 +129,24 @@ export default function TonecosMyQuotesPage() {
                 Escala: {row.scale || "A definir"} · Acabamento: {row.finishing || "A definir"}
               </p>
               {row.notes && <p className="mt-4 whitespace-pre-wrap text-sm text-white/60">{row.notes}</p>}
+              {(history[row.id] ?? []).length > 0 && (
+                <section className="mt-5 border-t border-white/15 pt-4">
+                  <h3 className="text-sm font-semibold">Andamento</h3>
+                  <ol className="mt-3 space-y-2">
+                    {(history[row.id] ?? []).map((event) => (
+                      <li key={event.id} className="text-xs text-white/65">
+                        <span className="text-white/85">
+                          {customerEventLabel(event)}
+                        </span>
+                        {" · "}
+                        <time dateTime={event.createdAt}>
+                          {eventDate.format(new Date(event.createdAt))}
+                        </time>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
               <div className="mt-5 border-t border-white/15 pt-4 text-sm font-semibold">
                 {row.quotedAmount === null ? "Valor em análise" : brl.format(row.quotedAmount)}
               </div>
