@@ -8,6 +8,34 @@ import { isRestrictedCatalogMediaPath } from "../scripts/security/catalog-public
 const PUBLIC_MODEL_METADATA_ROUTE = /^(?:api\/catalog|api\/recent|api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?)$/;
 const PUBLIC_MODEL_EDGE_TTL = "public, s-maxage=300";
 
+/**
+ * Vercel rewrites expose destination/client query parameters through
+ * request.query. req.url may contain runtime/rewrite transport metadata that
+ * is not part of the public catalog query; copying it can make every bounded
+ * catalog request fail closed. Preserve every public query value (including
+ * duplicates represented as arrays) so the canonical proxy can still reject
+ * unknown, duplicated or cache-busting parameters.
+ */
+function publicQueryFromVercelRequest(req, incoming) {
+  if (req.query && typeof req.query === "object") {
+    const search = new URLSearchParams();
+    for (const [key, raw] of Object.entries(req.query)) {
+      if (key === "path" || raw === undefined || raw === null) continue;
+      const values = Array.isArray(raw) ? raw : [raw];
+      for (const value of values) {
+        if (typeof value !== "string") return null;
+        search.append(key, value);
+      }
+    }
+    return search;
+  }
+
+  // Local/direct invocation fallback where VercelRequest helpers are absent.
+  const search = new URLSearchParams(incoming.searchParams);
+  search.delete("path");
+  return search;
+}
+
 // Vercel is the public site. The existing Worker stays the only catalog API.
 // Adapt the reviewed Pages read-only proxy; no parallel catalog implementation.
 export default async function handler(req, res) {
@@ -38,8 +66,12 @@ export default async function handler(req, res) {
       return;
     }
 
-    const search = new URLSearchParams(incoming.searchParams);
-    search.delete("path");
+    const search = publicQueryFromVercelRequest(req, incoming);
+    if (!search) {
+      res.statusCode = 400;
+      res.end("Invalid catalog query");
+      return;
+    }
     const url = new URL(
       "/catalogo-api/" + path + (search.size ? "?" + search.toString() : ""),
       "https://tonart.local",

@@ -240,7 +240,7 @@ test("Vercel catalog proxy forwards only a bounded read through the canonical pr
     await handler({
       method: "GET",
       url: "/api/catalogo-proxy?path=api%2Fcatalog&limit=12",
-      query: { path: "api/catalog" },
+      query: { path: "api/catalog", limit: "12" },
       headers: { accept: "application/json", cookie: "private=should-not-forward", range: "bytes=0-0" },
     }, res);
     assert.equal(res.statusCode, 200);
@@ -253,6 +253,67 @@ test("Vercel catalog proxy forwards only a bounded read through the canonical pr
     assert.equal(calls[0].init.headers.get("range"), null);
     assert.equal(res.headers.has("set-cookie"), false);
     assert.match(String(res.body), /"items":\[\]/);
+  } finally {
+    globalThis.fetch = initialFetch;
+  }
+});
+
+test("Vercel proxy builds the public query from request.query after a rewrite", async () => {
+  const initialFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    calls.push(String(url));
+    return Response.json({ items: [] }, {
+      headers: { "Cache-Control": "public, max-age=30" },
+    });
+  };
+  try {
+    const categories = responseSink();
+    await handler({
+      method: "GET",
+      // Runtime/rewrite transport metadata in req.url is not a client query.
+      url: "/api/catalogo-proxy?path=api%2Fcategories&rewrite_marker=internal",
+      query: { path: "api/categories" },
+      headers: { accept: "application/json" },
+    }, categories);
+    assert.equal(categories.statusCode, 200);
+    assert.equal(
+      calls[0],
+      "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/categories",
+    );
+
+    const catalog = responseSink();
+    await handler({
+      method: "GET",
+      url: "/api/catalogo-proxy?path=api%2Fcatalog&rewrite_marker=internal",
+      query: { path: "api/catalog", limit: "12" },
+      headers: { accept: "application/json" },
+    }, catalog);
+    assert.equal(catalog.statusCode, 200);
+    assert.equal(
+      calls[1],
+      "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/catalog?limit=12",
+    );
+
+    const duplicate = responseSink();
+    await handler({
+      method: "GET",
+      url: "/api/catalogo-proxy?path=api%2Fcatalog",
+      query: { path: "api/catalog", limit: ["12", "12"] },
+      headers: { accept: "application/json" },
+    }, duplicate);
+    assert.equal(duplicate.statusCode, 400);
+    assert.equal(calls.length, 2);
+
+    const unknown = responseSink();
+    await handler({
+      method: "GET",
+      url: "/api/catalogo-proxy?path=api%2Fcategories",
+      query: { path: "api/categories", offset: "0" },
+      headers: { accept: "application/json" },
+    }, unknown);
+    assert.equal(unknown.statusCode, 400);
+    assert.equal(calls.length, 2);
   } finally {
     globalThis.fetch = initialFetch;
   }
