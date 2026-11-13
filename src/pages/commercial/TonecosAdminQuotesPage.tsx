@@ -128,6 +128,9 @@ export default function TonecosAdminQuotesPage() {
     try {
       const amount = parseQuoteAmount(price[id] ?? "");
       const message = (responseMessage[id] ?? "").trim();
+      if (!Number.isFinite(amount) || amount <= 0 || amount > 99999999.99) {
+        throw new Error("admin_catalog_quote_response_invalid");
+      }
       await answerCatalogQuoteRequest(id, amount, message);
       setPrice((current) => ({ ...current, [id]: "" }));
       setResponseMessage((current) => ({ ...current, [id]: "" }));
