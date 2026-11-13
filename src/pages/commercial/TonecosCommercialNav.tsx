@@ -1,6 +1,6 @@
 /** Commercial navigation is isolated from the public catalog's read-only bundle. */
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { BRAND_SHORT_NAME } from "@/config/brand";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
@@ -25,7 +25,12 @@ if (import.meta.env.VITE_TONECOS_COINS_ENABLED === "true") {
 
 export default function TonecosCommercialNav() {
   const { selectedModels } = useCatalogBrowsing();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname, location.search]);
   return (
     <nav
       aria-label="Navegação TONART Studio"

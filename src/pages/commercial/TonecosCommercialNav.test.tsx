@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { Link, MemoryRouter } from "react-router-dom";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import TonecosCommercialNav from "./TonecosCommercialNav";
 
@@ -15,6 +15,7 @@ describe("TONART responsive commercial navigation", () => {
       <MemoryRouter>
         <CatalogBrowsingProvider>
           <TonecosCommercialNav />
+          <Link to="/externo">Navegação externa</Link>
         </CatalogBrowsingProvider>
       </MemoryRouter>,
     );
@@ -46,5 +47,25 @@ describe("TONART responsive commercial navigation", () => {
       "false",
     );
     expect(links).toHaveClass("hidden");
+  });
+
+  it("closes the mobile menu when navigation happens outside its own links", () => {
+    show();
+
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu" }));
+    expect(screen.getByRole("button", { name: "Fechar menu" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+
+    fireEvent.click(screen.getByRole("link", { name: "Navegação externa" }));
+
+    expect(screen.getByRole("button", { name: "Abrir menu" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(document.getElementById("tonart-commercial-nav-links")).toHaveClass(
+      "hidden",
+    );
   });
 });
