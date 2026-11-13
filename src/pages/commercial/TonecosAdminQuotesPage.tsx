@@ -6,6 +6,7 @@ import {
   changeCatalogQuoteStatus,
   loadAdminCatalogQuotePage,
   type AdminCatalogQuote,
+  type AdminCatalogQuoteQuery,
 } from "@/services/admin/config/catalog-quote-admin-service";
 import {
   loadCatalogQuoteHistory,
@@ -71,7 +72,7 @@ export default function TonecosAdminQuotesPage() {
     setLoading(true);
     setError("");
 
-    const query = selectedId
+    const query: AdminCatalogQuoteQuery = selectedId
       ? { quoteId: selectedId, limit: 1, offset: 0 }
       : {
           status: statusFilter === "all" ? null : statusFilter,
