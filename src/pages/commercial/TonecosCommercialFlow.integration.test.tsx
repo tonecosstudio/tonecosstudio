@@ -171,6 +171,17 @@ describe("TONART commercial screens: account → request → history → respons
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
+  it("shows only the catalog chooser when a visitor has selected no models", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    renderApp("/solicitar-orcamento");
+    expect(
+      await screen.findByText("Nenhum modelo selecionado nesta visita."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Entrar ou criar conta" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("retries a failed session check without treating the visitor as signed out", async () => {
     mocks.getUser
       .mockRejectedValueOnce(new Error("network unavailable"))
@@ -280,6 +291,23 @@ describe("TONART commercial screens: account → request → history → respons
       screen.queryByText(
         "Solicitação enviada. Você poderá acompanhar a resposta aqui.",
       ),
+    ).not.toBeInTheDocument();
+  });
+
+  it("preserves selected models and offers login if the session expires during submission", async () => {
+    mocks.submit.mockRejectedValueOnce(new Error("User not authenticated"));
+    renderApp("/solicitar-orcamento", true);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Enviar solicitação" }),
+    );
+    expect(
+      await screen.findByText("Sua sessão expirou. Entre novamente para continuar."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Entrar ou criar conta" }),
+    ).toHaveAttribute("href", "/login?next=%2Fsolicitar-orcamento");
+    expect(
+      screen.queryByText("Nenhum modelo selecionado nesta visita."),
     ).not.toBeInTheDocument();
   });
 

@@ -48,7 +48,12 @@ export default function TonecosQuoteRequestPage() {
       setSelectedModels([]);
       navigate(TONECOS_COMMERCIAL_ROUTES.history, { replace: true, state: { sent: quoteId } });
     } catch (err) {
-      setError(commercialQuoteErrorText(err));
+      const errorText = commercialQuoteErrorText(err);
+      setError(errorText);
+      if (errorText === "Sua sessão expirou. Entre novamente para continuar.") {
+        // Keep the selected catalog models for the resumed authenticated flow.
+        setUser(null);
+      }
     } finally { setBusy(false); }
   }
 
@@ -62,7 +67,7 @@ export default function TonecosQuoteRequestPage() {
             <p className="mb-4 text-sm text-white/70">Não foi possível verificar sua sessão. Tente novamente antes de entrar na conta.</p>
             <button type="button" className={secondaryClass} onClick={() => setAuthAttempt((n) => n + 1)}>Tentar novamente</button>
           </div>
-        ) : user === null ? (
+        ) : user === null && selectedModels.length > 0 ? (
           <div className={panelClass}>
             <p className="mb-5 text-sm leading-relaxed text-white/70">Entre ou crie uma conta para enviar a seleção e acompanhar a resposta da TONART Studio.</p>
             <Link className={actionClass} to={TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)}>Entrar ou criar conta</Link>
