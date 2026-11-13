@@ -118,29 +118,42 @@ describe("TONART administrative quote directory", () => {
     mocks.answer.mockResolvedValue(quoteA.id);
     show();
     await screen.findByText("Solicitação #33333333");
-    fireEvent.change(screen.getByRole("textbox", { name: "Valor do orçamento 33333333" }), {
-      target: { value: "1.249,90" },
-    });
-    fireEvent.change(screen.getByRole("textbox", { name: "Mensagem ao cliente 33333333" }), {
-      target: { value: "Proposta válida por sete dias." },
-    });
-    fireEvent.click(screen.getAllByRole("button", { name: "Enviar resposta" })[0]);
-    await waitFor(() => expect(mocks.answer).toHaveBeenCalledWith(
-      quoteA.id, 1249.9, "Proposta válida por sete dias.",
-    ));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Valor do orçamento 33333333" }),
+      { target: { value: "1.249,90" } },
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Mensagem ao cliente 33333333" }),
+      { target: { value: "Proposta válida por sete dias." } },
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Enviar resposta" })[0],
+    );
+    await waitFor(() =>
+      expect(mocks.answer).toHaveBeenCalledWith(
+        quoteA.id,
+        1249.9,
+        "Proposta válida por sete dias.",
+      ),
+    );
   });
 
   it("rejects malformed currency input before calling the privileged quote service", async () => {
     show();
     await screen.findByText("Solicitação #33333333");
-    fireEvent.change(screen.getByRole("textbox", { name: "Valor do orçamento 33333333" }), {
-      target: { value: "1.249,999" },
-    });
-    fireEvent.change(screen.getByRole("textbox", { name: "Mensagem ao cliente 33333333" }), {
-      target: { value: "Confirmação de preço" },
-    });
-    fireEvent.click(screen.getAllByRole("button", { name: "Enviar resposta" })[0]);
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Valor do orçamento 33333333" }),
+      { target: { value: "1.249,999" } },
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Mensagem ao cliente 33333333" }),
+      { target: { value: "Confirmação de preço" } },
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Enviar resposta" })[0],
+    );
     expect(mocks.answer).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
   });
 
   it("filters the complete protected queue by status", async () => {
