@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
-import { listMyCatalogQuotes, type CustomerCatalogQuote } from "@/services/customer/catalog-quote-service";
+import {
+  loadMyCatalogQuotePage,
+  type CustomerCatalogQuote,
+} from "@/services/customer/catalog-quote-service";
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
 import {
   loadCatalogQuoteHistory,
@@ -20,6 +23,7 @@ const eventDate = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "short",
 });
+const PAGE_SIZE = 20;
 
 function customerEventLabel(event: CatalogQuoteEvent): string {
   if (event.type === "submitted") return "Solicitação enviada";
@@ -40,6 +44,8 @@ export default function TonecosMyQuotesPage() {
   const [authAttempt, setAuthAttempt] = useState(0);
   const [rows, setRows] = useState<CustomerCatalogQuote[]>([]);
   const [history, setHistory] = useState<Record<string, CatalogQuoteEvent[]>>({});
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
@@ -60,23 +66,31 @@ export default function TonecosMyQuotesPage() {
     setRows([]);
     setHistory({});
     setLoading(true); setError("");
-    listMyCatalogQuotes(userId)
-      .then(async (data) => ({
-        data,
-        history: await loadCatalogQuoteHistory(data.map((quote) => quote.id)),
+    loadMyCatalogQuotePage(userId, { limit: PAGE_SIZE, offset })
+      .then(async (result) => ({
+        result,
+        history: await loadCatalogQuoteHistory(
+          result.rows.map((quote) => quote.id),
+        ),
       }))
-      .then(({ data, history: quoteHistory }) => {
-        if (active) {
-          setRows(data);
-          setHistory(quoteHistory);
+      .then(({ result, history: quoteHistory }) => {
+        if (!active) return;
+        if (result.total > 0 && offset >= result.total) {
+          setOffset(
+            Math.floor((result.total - 1) / PAGE_SIZE) * PAGE_SIZE,
+          );
+          return;
         }
+        setRows(result.rows);
+        setTotal(result.total);
+        setHistory(quoteHistory);
       })
       .catch((err: unknown) => {
         if (active) setError(err instanceof Error ? err.message : "Não foi possível consultar seus orçamentos.");
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [userId, attempt]);
+  }, [userId, attempt, offset]);
 
   const justSent = Boolean(location.state && typeof location.state === "object" &&
     "sent" in location.state && typeof location.state.sent === "string");
@@ -100,6 +114,11 @@ export default function TonecosMyQuotesPage() {
         <p>{error}</p>
         <button type="button" className={secondaryClass + " mt-3"} onClick={() => setAttempt((n) => n + 1)}>Tentar novamente</button>
       </div>}
+      {userId && !loading && !error && total > 0 && (
+        <p className="mb-4 max-w-3xl text-xs text-white/55">
+          Mostrando {offset + 1}–{Math.min(offset + rows.length, total)} de {total}
+        </p>
+      )}
       {userId && !loading && !error && (
         rows.length === 0 ? (
           <div className={panelClass + " max-w-3xl"}>
@@ -159,6 +178,29 @@ export default function TonecosMyQuotesPage() {
             </li>
           ))}
         </ul>
+      )}
+      {userId && !loading && !error && total > PAGE_SIZE && (
+        <div className="mt-6 flex max-w-3xl items-center justify-between gap-3">
+          <button
+            type="button"
+            className={secondaryClass}
+            disabled={offset === 0}
+            onClick={() => setOffset((value) => Math.max(0, value - PAGE_SIZE))}
+          >
+            Anterior
+          </button>
+          <span className="text-xs text-white/55">
+            Página {Math.floor(offset / PAGE_SIZE) + 1} de {Math.ceil(total / PAGE_SIZE)}
+          </span>
+          <button
+            type="button"
+            className={secondaryClass}
+            disabled={offset + rows.length >= total}
+            onClick={() => setOffset((value) => value + PAGE_SIZE)}
+          >
+            Próxima
+          </button>
+        </div>
       )}
     </CommercialPage>
   );

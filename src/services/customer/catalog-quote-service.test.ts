@@ -294,7 +294,11 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
       total_amount: 249.9,
     };
-    query.range.mockResolvedValueOnce({ data: [oldRow], error: null });
+    query.range.mockResolvedValueOnce({
+      data: [oldRow],
+      error: null,
+      count: 1,
+    });
     await expect(listMyCatalogQuotes(USER)).rejects.toThrow(
       "catalog_quote_row_invalid",
     );

@@ -58,7 +58,7 @@ vi.mock("@/services/auth/tonecos-admin-access", () => ({
 vi.mock("@/services/customer/catalog-quote-service", () => ({
   quoteItemsFromSelection: mocks.quoteItems,
   submitCatalogQuoteRequest: mocks.submit,
-  listMyCatalogQuotes: mocks.listMine,
+  loadMyCatalogQuotePage: mocks.listMine,
 }));
 vi.mock("@/services/admin/config/catalog-quote-admin-service", () => ({
   loadAdminCatalogQuotePage: mocks.listAdmin,
@@ -125,7 +125,12 @@ beforeEach(() => {
   mocks.quoteItems.mockImplementation((models: PublicCatalogModel[]) =>
     models.map(({ slug }) => ({ slug, quantity: 1 })),
   );
-  mocks.listMine.mockResolvedValue([]);
+  mocks.listMine.mockResolvedValue({
+    total: 0,
+    limit: 20,
+    offset: 0,
+    rows: [],
+  });
   mocks.listAdmin.mockResolvedValue({
     total: 0,
     limit: 25,
@@ -187,7 +192,10 @@ describe("TONART commercial screens: account → request → history → respons
     ).toBeInTheDocument();
     expect(mocks.listMine).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
-    await waitFor(() => expect(mocks.listMine).toHaveBeenCalledWith(USER));
+    await waitFor(() => expect(mocks.listMine).toHaveBeenCalledWith(USER, {
+      limit: 20,
+      offset: 0,
+    }));
     expect(mocks.getUser).toHaveBeenCalledTimes(2);
   });
 
@@ -231,7 +239,11 @@ describe("TONART commercial screens: account → request → history → respons
   });
 
   it("shows a priced request but never renders an unpriced quote as R$ 0", async () => {
-    mocks.listMine.mockResolvedValue([
+    mocks.listMine.mockResolvedValue({
+      total: 1,
+      limit: 20,
+      offset: 0,
+      rows: [
       {
         id: QUOTE,
         status: "pending",
@@ -241,15 +253,23 @@ describe("TONART commercial screens: account → request → history → respons
         deadline: null,
         items: [{ slug: "naruto", quantity: 1 }],
       },
-    ]);
+      ],
+    });
     renderApp("/meus-orcamentos");
     expect(await screen.findByText("Valor em análise")).toBeInTheDocument();
     expect(screen.queryByText(/R\$ 0,00/)).not.toBeInTheDocument();
-    expect(mocks.listMine).toHaveBeenCalledWith(USER);
+    expect(mocks.listMine).toHaveBeenCalledWith(USER, {
+      limit: 20,
+      offset: 0,
+    });
   });
 
   it("shows the canonical quote timeline returned through RLS", async () => {
-    mocks.listMine.mockResolvedValue([
+    mocks.listMine.mockResolvedValue({
+      total: 1,
+      limit: 20,
+      offset: 0,
+      rows: [
       {
         id: QUOTE,
         status: "answered",
