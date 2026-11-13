@@ -5,8 +5,8 @@ const mocks = vi.hoisted(() => ({ rpc: vi.fn(), user: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { rpc: mocks.rpc },
 }));
-vi.mock("@/services/auth/current-user", () => ({
-  requireAuthenticatedUserId: mocks.user,
+vi.mock("@/services/customer/tonecos-account-service", () => ({
+  getTonecosCurrentUser: mocks.user,
 }));
 beforeEach(() => {
   vi.clearAllMocks();
@@ -14,7 +14,7 @@ beforeEach(() => {
   vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
   vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
   vi.stubEnv("VITE_SUPABASE_URL", "https://icmtmaakjucmuzxnofkd.supabase.co");
-  mocks.user.mockResolvedValue("user-1");
+  mocks.user.mockResolvedValue({ id: "user-1", email: "admin@example.com" });
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -36,6 +36,18 @@ describe("Tonecos administrative access SSOT", () => {
   it("does not query Supabase without a current authenticated identity", async () => {
     mocks.user.mockRejectedValue(new Error("User not authenticated"));
     await expect(hasTonecosAdminAccess()).rejects.toThrow("User not authenticated");
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes a verification outage from an actual signed-out session", async () => {
+    mocks.user.mockRejectedValueOnce(new Error("network unavailable"));
+    await expect(hasTonecosAdminAccess()).rejects.toThrow(
+      "network unavailable",
+    );
+    mocks.user.mockResolvedValueOnce(null);
+    await expect(hasTonecosAdminAccess()).rejects.toThrow(
+      "User not authenticated",
+    );
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 

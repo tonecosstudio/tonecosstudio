@@ -64,6 +64,8 @@ const safeNext = new Set<string>([
   const [profileError, setProfileError] = useState(false);
   const [profileAttempt, setProfileAttempt] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminCheckError, setAdminCheckError] = useState(false);
+  const [adminCheckAttempt, setAdminCheckAttempt] = useState(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -105,20 +107,26 @@ const safeNext = new Set<string>([
   useEffect(() => {
     if (!identity) {
       setIsAdmin(false);
+      setAdminCheckError(false);
       return;
     }
     let active = true;
+    setIsAdmin(false);
+    setAdminCheckError(false);
     hasTonecosAdminAccess()
       .then((allowed) => {
         if (active) setIsAdmin(allowed);
       })
       .catch(() => {
-        if (active) setIsAdmin(false);
+        if (active) {
+          setIsAdmin(false);
+          setAdminCheckError(true);
+        }
       });
     return () => {
       active = false;
     };
-  }, [identity]);
+  }, [identity, adminCheckAttempt]);
 
   useEffect(() => {
     if (
@@ -331,6 +339,23 @@ const safeNext = new Set<string>([
             <p className="mb-4 text-sm text-white/60">
               Conectado como {identity.email ?? "cliente"}
             </p>
+            {adminCheckError && (
+              <div role="status" className="mb-5 border border-white/20 p-4">
+                <p className="mb-3 text-sm text-white/70">
+                  Não foi possível verificar o acesso administrativo. Tente
+                  novamente para confirmar suas permissões.
+                </p>
+                <button
+                  type="button"
+                  className={secondaryClass}
+                  onClick={() =>
+                    setAdminCheckAttempt((current) => current + 1)
+                  }
+                >
+                  Verificar acesso novamente
+                </button>
+              </div>
+            )}
             {profileLoading ? (
               <p role="status" className="mb-4 text-white/60">
                 Carregando dados...

@@ -704,6 +704,26 @@ describe("TONART commercial screens: account → request → history → respons
     expect(mocks.hasAdmin).toHaveBeenCalled();
   });
 
+  it("does not silently hide administrative access during an outage and supports retry", async () => {
+    mocks.hasAdmin
+      .mockRejectedValueOnce(new Error("network unavailable"))
+      .mockResolvedValueOnce(true);
+    renderApp("/perfil");
+    expect(
+      await screen.findByText(/Não foi possível verificar o acesso administrativo/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Painel administrativo" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Verificar acesso novamente" }),
+    );
+    expect(
+      await screen.findByRole("link", { name: "Painel administrativo" }),
+    ).toHaveAttribute("href", "/admin");
+    expect(mocks.hasAdmin).toHaveBeenCalledTimes(2);
+  });
+
   it("shows admin navigation only after the server verifies membership", async () => {
     mocks.hasAdmin.mockResolvedValue(false);
     renderApp("/perfil");
