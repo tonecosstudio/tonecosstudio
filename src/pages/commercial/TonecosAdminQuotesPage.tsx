@@ -157,6 +157,14 @@ export default function TonecosAdminQuotesPage() {
     <CommercialPage title="Atendimento de orçamentos" intro="Área restrita da TONART Studio. Verifique os modelos no catálogo antes de informar um valor. Nenhuma cobrança é iniciada automaticamente.">
       <div className="mb-6 flex flex-wrap gap-3">
         <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminHome}>Voltar ao painel administrativo</Link>
+        <button
+          type="button"
+          className={secondaryClass}
+          disabled={loading || busyId !== null}
+          onClick={() => setAttempt((current) => current + 1)}
+        >
+          {loading ? "Atualizando..." : "Atualizar solicitações"}
+        </button>
         {requestedId !== null && <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}>Ver todos os orçamentos</Link>}
       </div>
       {!requestedId && (
