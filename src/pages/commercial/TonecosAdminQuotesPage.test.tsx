@@ -127,7 +127,7 @@ describe("TONART administrative quote directory", () => {
       { target: { value: "Proposta válida por sete dias." } },
     );
     fireEvent.click(
-      screen.getAllByRole("button", { name: "Enviar resposta" })[0],
+      screen.getAllByRole("button", { name: "Registrar resposta" })[0],
     );
     await waitFor(() =>
       expect(mocks.answer).toHaveBeenCalledWith(
@@ -183,6 +183,58 @@ describe("TONART administrative quote directory", () => {
     expect(
       screen.getByText(/Confirme o envio manualmente/),
     ).toBeInTheDocument();
+  });
+
+  it("offers a WhatsApp reply only for a valid recorded customer number", async () => {
+    mocks.page.mockResolvedValueOnce({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [
+        {
+          ...quoteA,
+          whatsapp: "71999887766",
+          status: "answered",
+          quotedAmount: 1249.9,
+          responseMessage: "Proposta válida por 7 dias.",
+        },
+      ],
+    });
+    show();
+    const link = await screen.findByRole("link", {
+      name: "Preparar mensagem no WhatsApp",
+    });
+    const href = link.getAttribute("href") ?? "";
+    expect(href).toMatch(/^https:\/\/wa\.me\/5571999887766\?text=/);
+    expect(decodeURIComponent(href).replace(/\u00a0/g, " ")).toContain(
+      "R$ 1.249,90",
+    );
+    expect(decodeURIComponent(href)).toContain("Proposta válida por 7 dias.");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("never offers a WhatsApp link for an invalid stored number", async () => {
+    mocks.page.mockResolvedValueOnce({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [
+        {
+          ...quoteA,
+          whatsapp: "phone-invalid",
+          status: "answered",
+          quotedAmount: 1249.9,
+          responseMessage: "Proposta válida por 7 dias.",
+        },
+      ],
+    });
+    show();
+    expect(
+      await screen.findByRole("link", { name: "Preparar e-mail de resposta" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Preparar mensagem no WhatsApp" }),
+    ).not.toBeInTheDocument();
   });
 
   it("refreshes the administrator queue to show newly submitted requests", async () => {

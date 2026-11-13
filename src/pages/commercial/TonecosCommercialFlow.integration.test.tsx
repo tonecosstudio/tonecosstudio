@@ -785,7 +785,7 @@ describe("TONART commercial screens: account → request → history → respons
     mocks.answerAdmin.mockResolvedValue(QUOTE);
     renderApp("/admin/orcamentos");
     expect(
-      await screen.findByRole("button", { name: "Enviar resposta" }),
+      await screen.findByRole("button", { name: "Registrar resposta" }),
     ).toBeInTheDocument();
     fireEvent.change(
       screen.getByRole("textbox", {
@@ -801,7 +801,7 @@ describe("TONART commercial screens: account → request → history → respons
       }),
       { target: { value: "Proposta válida por 7 dias." } },
     );
-    fireEvent.click(screen.getByRole("button", { name: "Enviar resposta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar resposta" }));
     await waitFor(() =>
       expect(mocks.answerAdmin).toHaveBeenCalledWith(
         QUOTE,

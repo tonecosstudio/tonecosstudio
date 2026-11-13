@@ -65,6 +65,24 @@ function quotedResponseEmail(quote: AdminCatalogQuote): string {
   ].join("\n");
   return `mailto:${encodeURIComponent(quote.customerEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
+function quotedResponseWhatsApp(quote: AdminCatalogQuote): string | null {
+  if (quote.quotedAmount === null || !quote.responseMessage) return null;
+  const digits = (quote.whatsapp ?? "").replace(/\D/g, "");
+  const phone = /^55[1-9][0-9]{9,10}$/.test(digits)
+    ? digits
+    : /^[1-9][0-9]{9,10}$/.test(digits)
+      ? `55${digits}`
+      : null;
+  if (!phone) return null;
+  const body = [
+    "Olá! Aqui é a TONART Studio.",
+    `Respondemos ao orçamento #${quote.id.slice(0, 8)}.`,
+    `Valor: ${brl.format(quote.quotedAmount)}`,
+    quote.responseMessage,
+    "Detalhes disponíveis em https://tonartstudio.com.br/meus-orcamentos",
+  ].join("\n");
+  return `https://wa.me/${phone}?text=${encodeURIComponent(body)}`;
+}
 const PAGE_SIZE = 25;
 type StatusFilter = "all" | "pending" | "reviewing" | "answered" | "archived";
 export default function TonecosAdminQuotesPage() {
@@ -155,7 +173,7 @@ export default function TonecosAdminQuotesPage() {
       await answerCatalogQuoteRequest(id, amount, message);
       setPrice((current) => ({ ...current, [id]: "" }));
       setResponseMessage((current) => ({ ...current, [id]: "" }));
-      setNotice("Resposta e valor registrados. A solicitação foi marcada como respondida.");
+      setNotice("Resposta registrada e disponível na conta do cliente. Para avisá-lo, abra o e-mail ou WhatsApp e confirme o envio manualmente.");
       setAttempt((current) => current + 1);
     } catch (err) {
       setError(commercialQuoteErrorText(err, "admin"));
@@ -309,14 +327,26 @@ export default function TonecosAdminQuotesPage() {
                         <p className="text-xs font-semibold uppercase tracking-wider text-white/55">Mensagem ao cliente</p>
                         <p className="mt-2 whitespace-pre-wrap text-sm text-white/80">{quote.responseMessage}</p>
                       </div>
-                      <a
-                        className={secondaryClass}
-                        href={quotedResponseEmail(quote)}
-                      >
-                        Preparar e-mail de resposta
-                      </a>
+                      <div className="flex flex-wrap gap-2">
+                        <a
+                          className={secondaryClass}
+                          href={quotedResponseEmail(quote)}
+                        >
+                          Preparar e-mail de resposta
+                        </a>
+                        {quotedResponseWhatsApp(quote) && (
+                          <a
+                            className={secondaryClass}
+                            href={quotedResponseWhatsApp(quote)!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Preparar mensagem no WhatsApp
+                          </a>
+                        )}
+                      </div>
                       <p className="text-xs text-white/55">
-                        O e-mail abre no aplicativo configurado. Confirme o envio manualmente; o sistema não registra esse e-mail como enviado.
+                        As mensagens abrem no aplicativo escolhido. Confirme o envio manualmente; a TONART não registra notificações não enviadas.
                       </p>
                     </>
                   )}
@@ -340,7 +370,7 @@ export default function TonecosAdminQuotesPage() {
                   </label>
                   <div className="sm:col-span-2">
                     <button type="submit" disabled={busyId !== null} className={actionClass}>
-                      {busyId === quote.id ? "Salvando..." : "Enviar resposta"}
+                      {busyId === quote.id ? "Salvando..." : "Registrar resposta"}
                     </button>
                   </div>
                 </form>
