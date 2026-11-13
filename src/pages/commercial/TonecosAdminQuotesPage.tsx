@@ -1,7 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
-import { answerCatalogQuoteRequest, changeCatalogQuoteStatus, listAdminCatalogQuotes, type AdminCatalogQuote } from "@/services/admin/config/catalog-quote-admin-service";
+import {
+  answerCatalogQuoteRequest,
+  changeCatalogQuoteStatus,
+  loadAdminCatalogQuotePage,
+  type AdminCatalogQuote,
+} from "@/services/admin/config/catalog-quote-admin-service";
 import {
   loadCatalogQuoteHistory,
   type CatalogQuoteEvent,
@@ -29,6 +34,8 @@ const statusLabels: Record<string,string> = {
   pending: "Novo", reviewing: "Em análise",
   answered: "Respondido", archived: "Arquivado",
 };
+const PAGE_SIZE = 25;
+type StatusFilter = "all" | "pending" | "reviewing" | "answered" | "archived";
 export default function TonecosAdminQuotesPage() {
   const [params] = useSearchParams();
   const requestedId = params.get("quote");
@@ -37,6 +44,9 @@ export default function TonecosAdminQuotesPage() {
   const invalidSelection = requestedId !== null && !selectedId;
   const [quotes, setQuotes] = useState<AdminCatalogQuote[]>([]);
   const [history, setHistory] = useState<Record<string, CatalogQuoteEvent[]>>({});
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [price, setPrice] = useState<Record<string, string>>({});
@@ -44,31 +54,66 @@ export default function TonecosAdminQuotesPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const visibleQuotes = invalidSelection ? [] : selectedId
-    ? quotes.filter((quote) => quote.id.toLowerCase() === selectedId) : quotes;
 
   useEffect(() => {
+    if (invalidSelection) {
+      setQuotes([]);
+      setHistory({});
+      setTotal(0);
+      setLoading(false);
+      setError("");
+      return;
+    }
+
     let active = true;
     setQuotes([]);
     setHistory({});
-    setLoading(true); setError("");
-    listAdminCatalogQuotes()
-      .then(async (rows) => ({
-        rows,
-        history: await loadCatalogQuoteHistory(rows.map((quote) => quote.id)),
+    setLoading(true);
+    setError("");
+
+    const query = selectedId
+      ? { quoteId: selectedId, limit: 1, offset: 0 }
+      : {
+          status: statusFilter === "all" ? null : statusFilter,
+          limit: PAGE_SIZE,
+          offset,
+        };
+
+    loadAdminCatalogQuotePage(query)
+      .then(async (result) => ({
+        result,
+        history: await loadCatalogQuoteHistory(
+          result.rows.map((quote) => quote.id),
+        ),
       }))
-      .then(({ rows, history: quoteHistory }) => {
-        if (active) {
-          setQuotes(rows);
-          setHistory(quoteHistory);
+      .then(({ result, history: quoteHistory }) => {
+        if (!active) return;
+        if (!selectedId && result.total > 0 && offset >= result.total) {
+          setOffset(
+            Math.floor((result.total - 1) / PAGE_SIZE) * PAGE_SIZE,
+          );
+          return;
         }
+        setQuotes(result.rows);
+        setTotal(result.total);
+        setHistory(quoteHistory);
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : "Acesso administrativo indisponível.");
+        if (active) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Acesso administrativo indisponível.",
+          );
+        }
       })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [attempt]);
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [attempt, invalidSelection, offset, selectedId, statusFilter]);
 
   async function reply(event: FormEvent<HTMLFormElement>, id: string) {
     event.preventDefault();
@@ -105,6 +150,33 @@ export default function TonecosAdminQuotesPage() {
         <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminHome}>Voltar ao painel administrativo</Link>
         {requestedId !== null && <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.adminQuotes}>Ver todos os orçamentos</Link>}
       </div>
+      {!requestedId && (
+        <div className="mb-6 flex max-w-4xl flex-wrap items-end justify-between gap-3 border border-white/15 p-4">
+          <label className="space-y-2 text-sm">
+            <span className="block text-xs text-white/60">Filtrar por situação</span>
+            <select
+              aria-label="Filtrar orçamentos por situação"
+              className={fieldClass}
+              value={statusFilter}
+              onChange={(event) => {
+                setStatusFilter(event.target.value as StatusFilter);
+                setOffset(0);
+              }}
+            >
+              <option value="all">Todas</option>
+              <option value="pending">Novas</option>
+              <option value="reviewing">Em análise</option>
+              <option value="answered">Respondidas</option>
+              <option value="archived">Arquivadas</option>
+            </select>
+          </label>
+          <p className="text-xs text-white/55">
+            {total === 0
+              ? "Nenhuma solicitação"
+              : `Mostrando ${offset + 1}–${Math.min(offset + quotes.length, total)} de ${total}`}
+          </p>
+        </div>
+      )}
       {notice && <p role="status" className="mb-5 max-w-3xl border border-white/20 p-4 text-sm">{notice}</p>}
       {error && <div role="alert" className="mb-5 max-w-3xl border border-red-500/40 p-4 text-sm text-red-200">
         <p>{error}</p>
@@ -119,14 +191,16 @@ export default function TonecosAdminQuotesPage() {
       {!loading && !error && invalidSelection && (
         <p role="alert" className={panelClass}>Referência de orçamento inválida. Consulte a lista completa.</p>
       )}
-      {!loading && !error && !invalidSelection && selectedId && visibleQuotes.length === 0 && (
+      {!loading && !error && !invalidSelection && selectedId && quotes.length === 0 && (
         <p role="status" className={panelClass}>
-          Esta solicitação não está entre as 50 mais recentes carregadas. Consulte todos os orçamentos.
+          Solicitação não encontrada.
         </p>
       )}
-      {!loading && !error && !requestedId && quotes.length === 0 && <p className={panelClass}>Nenhuma solicitação recebida.</p>}
+      {!loading && !error && !requestedId && quotes.length === 0 && (
+        <p className={panelClass}>Nenhuma solicitação recebida.</p>
+      )}
       {!loading && !error && <ul className="grid max-w-4xl gap-4">
-        {visibleQuotes.map((quote) => (
+        {quotes.map((quote) => (
           <li key={quote.id} className={panelClass}>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-semibold">Solicitação #{quote.id.slice(0, 8)}</h2>
@@ -226,6 +300,29 @@ export default function TonecosAdminQuotesPage() {
           </li>
         ))}
       </ul>}
+      {!loading && !error && !requestedId && total > PAGE_SIZE && (
+        <div className="mt-6 flex max-w-4xl items-center justify-between gap-3">
+          <button
+            type="button"
+            className={secondaryClass}
+            disabled={offset === 0}
+            onClick={() => setOffset((value) => Math.max(0, value - PAGE_SIZE))}
+          >
+            Anterior
+          </button>
+          <span className="text-xs text-white/55">
+            Página {Math.floor(offset / PAGE_SIZE) + 1} de {Math.ceil(total / PAGE_SIZE)}
+          </span>
+          <button
+            type="button"
+            className={secondaryClass}
+            disabled={offset + quotes.length >= total}
+            onClick={() => setOffset((value) => value + PAGE_SIZE)}
+          >
+            Próxima
+          </button>
+        </div>
+      )}
     </CommercialPage>
   );
 }

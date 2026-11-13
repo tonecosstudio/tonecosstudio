@@ -61,7 +61,7 @@ vi.mock("@/services/customer/catalog-quote-service", () => ({
   listMyCatalogQuotes: mocks.listMine,
 }));
 vi.mock("@/services/admin/config/catalog-quote-admin-service", () => ({
-  listAdminCatalogQuotes: mocks.listAdmin,
+  loadAdminCatalogQuotePage: mocks.listAdmin,
   answerCatalogQuoteRequest: mocks.answerAdmin,
   changeCatalogQuoteStatus: mocks.changeStatus,
 }));
@@ -126,7 +126,12 @@ beforeEach(() => {
     models.map(({ slug }) => ({ slug, quantity: 1 })),
   );
   mocks.listMine.mockResolvedValue([]);
-  mocks.listAdmin.mockResolvedValue([]);
+  mocks.listAdmin.mockResolvedValue({
+    total: 0,
+    limit: 25,
+    offset: 0,
+    rows: [],
+  });
   mocks.changePassword.mockResolvedValue(undefined);
   mocks.history.mockResolvedValue({});
 });
@@ -528,7 +533,11 @@ describe("TONART commercial screens: account → request → history → respons
   });
 
   it("admin page answers with a validated quote price through its service", async () => {
-    mocks.listAdmin.mockResolvedValue([
+    mocks.listAdmin.mockResolvedValue({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [
       {
         id: QUOTE,
         userId: USER,
@@ -538,7 +547,8 @@ describe("TONART commercial screens: account → request → history → respons
         quotedAmount: null,
         items: [{ slug: "naruto", quantity: 1 }],
       },
-    ]);
+      ],
+    });
     mocks.answerAdmin.mockResolvedValue(QUOTE);
     renderApp("/admin/orcamentos");
     expect(
@@ -570,7 +580,11 @@ describe("TONART commercial screens: account → request → history → respons
     );
   });
   it("updates the canonical quote workflow only through the authorized admin service", async () => {
-    mocks.listAdmin.mockResolvedValue([
+    mocks.listAdmin.mockResolvedValue({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [
       {
         id: QUOTE,
         userId: USER,
@@ -580,7 +594,8 @@ describe("TONART commercial screens: account → request → history → respons
         quotedAmount: null,
         items: [{ slug: "naruto", quantity: 1 }],
       },
-    ]);
+      ],
+    });
     mocks.changeStatus.mockResolvedValue(QUOTE);
     renderApp("/admin/orcamentos");
     fireEvent.click(
