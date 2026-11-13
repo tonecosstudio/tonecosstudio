@@ -195,10 +195,12 @@ describe("TONART commercial screens: account → request → history → respons
     ).toBeInTheDocument();
     expect(mocks.listMine).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
-    await waitFor(() => expect(mocks.listMine).toHaveBeenCalledWith(USER, {
-      limit: 20,
-      offset: 0,
-    }));
+    await waitFor(() =>
+      expect(mocks.listMine).toHaveBeenCalledWith(USER, {
+        limit: 20,
+        offset: 0,
+      }),
+    );
     expect(mocks.getUser).toHaveBeenCalledTimes(2);
   });
 
@@ -242,7 +244,9 @@ describe("TONART commercial screens: account → request → history → respons
   });
 
   it("shows clear customer quote errors without exposing internal codes", async () => {
-    mocks.submit.mockRejectedValueOnce(new Error("catalog_quote_contact_invalid"));
+    mocks.submit.mockRejectedValueOnce(
+      new Error("catalog_quote_contact_invalid"),
+    );
     renderApp("/solicitar-orcamento", true);
     fireEvent.click(
       await screen.findByRole("button", { name: "Enviar solicitação" }),
@@ -252,18 +256,24 @@ describe("TONART commercial screens: account → request → history → respons
         "Revise WhatsApp, CEP, escala e acabamento antes de enviar.",
       ),
     ).toBeInTheDocument();
-    expect(screen.queryByText("catalog_quote_contact_invalid")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("catalog_quote_contact_invalid"),
+    ).not.toBeInTheDocument();
   });
 
   it("shows clear history errors without exposing backend details", async () => {
-    mocks.listMine.mockRejectedValueOnce(new Error("postgres internal detail xyz"));
+    mocks.listMine.mockRejectedValueOnce(
+      new Error("postgres internal detail xyz"),
+    );
     renderApp("/meus-orcamentos");
     expect(
       await screen.findByText(
         "Não foi possível concluir a operação de orçamento. Tente novamente.",
       ),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/postgres internal detail/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/postgres internal detail/i),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a priced request but never renders an unpriced quote as R$ 0", async () => {
@@ -272,7 +282,7 @@ describe("TONART commercial screens: account → request → history → respons
       limit: 20,
       offset: 0,
       rows: [
-      {
+        {
         id: QUOTE,
         status: "pending",
         createdAt: "2026-11-05T00:00:00Z",
@@ -280,7 +290,7 @@ describe("TONART commercial screens: account → request → history → respons
         quotedAmount: null,
         deadline: null,
         items: [{ slug: "naruto", quantity: 1 }],
-      },
+        },
       ],
     });
     renderApp("/meus-orcamentos");
@@ -298,7 +308,7 @@ describe("TONART commercial screens: account → request → history → respons
       limit: 20,
       offset: 0,
       rows: [
-      {
+        {
         id: QUOTE,
         status: "answered",
         createdAt: "2026-11-05T00:00:00Z",
@@ -311,7 +321,7 @@ describe("TONART commercial screens: account → request → history → respons
         postalCode: null,
         scale: "a definir",
         finishing: "a definir",
-      },
+        },
       ],
     });
     mocks.history.mockResolvedValue({
@@ -335,7 +345,7 @@ describe("TONART commercial screens: account → request → history → respons
           amount: 249.9,
           responseText: "Proposta válida por 7 dias.",
           createdAt: "2026-11-05T01:00:00Z",
-        },
+          },
       ],
     });
     renderApp("/meus-orcamentos");
@@ -482,10 +492,7 @@ describe("TONART commercial screens: account → request → history → respons
     renderApp("/login?next=%2Fsolicitar-orcamento");
     expect(
       await screen.findByRole("link", { name: "Esqueci minha senha" }),
-    ).toHaveAttribute(
-      "href",
-      "/recuperar-senha?next=%2Fsolicitar-orcamento",
-    );
+    ).toHaveAttribute("href", "/recuperar-senha?next=%2Fsolicitar-orcamento");
   });
 
   it("toggles password visibility without changing the typed password or submitting the login", async () => {
@@ -623,7 +630,7 @@ describe("TONART commercial screens: account → request → history → respons
       limit: 25,
       offset: 0,
       rows: [
-      {
+        {
         id: QUOTE,
         userId: USER,
         status: "pending",
@@ -631,7 +638,7 @@ describe("TONART commercial screens: account → request → history → respons
         notes: null,
         quotedAmount: null,
         items: [{ slug: "naruto", quantity: 1 }],
-      },
+        },
       ],
     });
     mocks.answerAdmin.mockResolvedValue(QUOTE);
@@ -670,7 +677,7 @@ describe("TONART commercial screens: account → request → history → respons
       limit: 25,
       offset: 0,
       rows: [
-      {
+        {
         id: QUOTE,
         userId: USER,
         status: "pending",
@@ -678,7 +685,7 @@ describe("TONART commercial screens: account → request → history → respons
         notes: null,
         quotedAmount: null,
         items: [{ slug: "naruto", quantity: 1 }],
-      },
+        },
       ],
     });
     mocks.changeStatus.mockResolvedValue(QUOTE);
