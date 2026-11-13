@@ -89,7 +89,14 @@ jobs:
           fi
 
           printf 'Checking formatting for:\n - %s\n' "${prettier_files[@]}"
-          npx prettier --check "${prettier_files[@]}"
+          if ! npx prettier --check "${prettier_files[@]}"; then
+            echo "::group::Suggested formatting changes (first 200 lines)"
+            npx prettier --write "${prettier_files[@]}" > /dev/null
+            git --no-pager diff -- "${prettier_files[@]}" | sed -n '1,200p'
+            echo "::endgroup::"
+            echo "::error::Format the listed files with npx prettier --write before merging."
+            exit 1
+          fi
 
   unit:
     if: github.event_name != 'pull_request'

@@ -110,6 +110,7 @@ export default function TonecosMyQuotesPage() {
     };
   }, [userId, attempt, offset]);
 
+  // Navigation state is not proof until the authenticated quote directory returns it.
   const sentId =
     location.state &&
     typeof location.state === "object" &&

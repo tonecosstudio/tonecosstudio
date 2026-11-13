@@ -210,6 +210,7 @@ describe("TONART commercial screens: account → request → history → respons
 
   it("submits quantities and notes, then navigates to the customer's history", async () => {
     mocks.submit.mockResolvedValue(QUOTE);
+    // The read side confirms the newly persisted quote before the success notice.
     mocks.listMine.mockResolvedValueOnce({
       total: 1,
       limit: 20,
