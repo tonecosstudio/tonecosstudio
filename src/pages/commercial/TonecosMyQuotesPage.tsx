@@ -129,6 +129,12 @@ export default function TonecosMyQuotesPage() {
                 Escala: {row.scale || "A definir"} · Acabamento: {row.finishing || "A definir"}
               </p>
               {row.notes && <p className="mt-4 whitespace-pre-wrap text-sm text-white/60">{row.notes}</p>}
+              {row.responseMessage && (
+                <section className="mt-5 border-l-2 border-[hsl(var(--gold-accent)/0.55)] pl-4">
+                  <h3 className="text-sm font-semibold">Resposta da TONART</h3>
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-white/80">{row.responseMessage}</p>
+                </section>
+              )}
               {(history[row.id] ?? []).length > 0 && (
                 <section className="mt-5 border-t border-white/15 pt-4">
                   <h3 className="text-sm font-semibold">Andamento</h3>

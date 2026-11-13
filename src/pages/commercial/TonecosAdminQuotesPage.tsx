@@ -40,6 +40,7 @@ export default function TonecosAdminQuotesPage() {
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [price, setPrice] = useState<Record<string, string>>({});
+  const [responseMessage, setResponseMessage] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -75,8 +76,11 @@ export default function TonecosAdminQuotesPage() {
     setBusyId(id); setError(""); setNotice("");
     try {
       const amount = Number((price[id] ?? "").trim().replace(",", "."));
-      await answerCatalogQuoteRequest(id, amount);
-      setNotice("Valor registrado. A solicitação foi marcada como respondida.");
+      const message = (responseMessage[id] ?? "").trim();
+      await answerCatalogQuoteRequest(id, amount, message);
+      setPrice((current) => ({ ...current, [id]: "" }));
+      setResponseMessage((current) => ({ ...current, [id]: "" }));
+      setNotice("Resposta e valor registrados. A solicitação foi marcada como respondida.");
       setAttempt((current) => current + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível responder ao orçamento.");
@@ -185,9 +189,17 @@ export default function TonecosAdminQuotesPage() {
               {quote.status === "archived" && quote.quotedAmount === null ? (
                 <p className="text-sm text-white/60">Solicitação arquivada sem valor.</p>
               ) : quote.quotedAmount !== null ? (
-                <p className="text-sm font-semibold">Valor informado: {brl.format(quote.quotedAmount)}</p>
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold">Valor informado: {brl.format(quote.quotedAmount)}</p>
+                  {quote.responseMessage && (
+                    <div className="border-l-2 border-[hsl(var(--gold-accent)/0.55)] pl-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-white/55">Mensagem ao cliente</p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-white/80">{quote.responseMessage}</p>
+                    </div>
+                  )}
+                </div>
               ) : (
-                <form onSubmit={(event) => { void reply(event, quote.id); }} className="flex flex-wrap items-end gap-3">
+                <form onSubmit={(event) => { void reply(event, quote.id); }} className="grid gap-3 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
                   <label className="block space-y-2 text-sm">
                     <span>Valor total (R$)</span>
                     <input aria-label={"Valor do orçamento " + quote.id.slice(0, 8)}
@@ -195,9 +207,19 @@ export default function TonecosAdminQuotesPage() {
                       placeholder="Ex.: 249,90" value={price[quote.id] ?? ""}
                       onChange={(event) => setPrice((current) => ({ ...current, [quote.id]: event.target.value }))} />
                   </label>
-                  <button type="submit" disabled={busyId !== null} className={actionClass}>
-                    {busyId === quote.id ? "Salvando..." : "Responder com valor"}
-                  </button>
+                  <label className="block space-y-2 text-sm">
+                    <span>Mensagem ao cliente</span>
+                    <textarea aria-label={"Mensagem ao cliente " + quote.id.slice(0, 8)}
+                      className={fieldClass + " min-h-24 py-3"} required maxLength={2000} rows={3}
+                      placeholder="Informe validade, prazo estimado ou observações relevantes."
+                      value={responseMessage[quote.id] ?? ""}
+                      onChange={(event) => setResponseMessage((current) => ({ ...current, [quote.id]: event.target.value }))} />
+                  </label>
+                  <div className="sm:col-span-2">
+                    <button type="submit" disabled={busyId !== null} className={actionClass}>
+                      {busyId === quote.id ? "Salvando..." : "Enviar resposta"}
+                    </button>
+                  </div>
                 </form>
               )}
             </div>
