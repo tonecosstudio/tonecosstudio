@@ -22,6 +22,7 @@ import {
   secondaryClass,
 } from "./CommercialPage";
 import PasswordField from "./PasswordField";
+import { commercialAccountErrorText } from "./commercial-account-error-text";
 
 export default function TonecosPasswordRecoveryPage() {
   const [params] = useSearchParams();
@@ -100,11 +101,7 @@ export default function TonecosPasswordRecoveryPage() {
         );
       }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Não foi possível concluir a solicitação.",
-      );
+      setError(commercialAccountErrorText(err));
     } finally {
       setSending(false);
     }

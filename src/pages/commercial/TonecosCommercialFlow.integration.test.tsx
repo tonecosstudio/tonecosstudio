@@ -325,7 +325,9 @@ describe("TONART commercial screens: account → request → history → respons
     expect(
       screen.queryByRole("button", { name: "Entrar" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("session offline");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Não foi possível conectar ao serviço. Verifique sua conexão e tente novamente.",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(
       await screen.findByRole("button", { name: "Entrar" }),

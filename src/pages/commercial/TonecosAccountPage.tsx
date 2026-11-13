@@ -24,6 +24,7 @@ import {
   secondaryClass,
 } from "./CommercialPage";
 import PasswordField from "./PasswordField";
+import { commercialAccountErrorText } from "./commercial-account-error-text";
 
 type Identity = { id: string; email: string | null };
 const safeNext = new Set<string>([
@@ -41,13 +42,7 @@ const safeNext = new Set<string>([
     : []),
 ]);
 
-function errorText(value: unknown) {
-  return value instanceof Error
-    ? value.message
-    : "Não foi possível completar a operação.";
-}
-
-export default function TonecosAccountPage() {
+ export default function TonecosAccountPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
@@ -94,7 +89,7 @@ export default function TonecosAccountPage() {
         if (active) {
           setIdentity(null);
           setSessionError(true);
-          setError(errorText(err));
+          setError(commercialAccountErrorText(err));
         }
       });
     return () => {
@@ -135,7 +130,7 @@ export default function TonecosAccountPage() {
       .catch((err: unknown) => {
         if (active) {
           setProfileError(true);
-          setError(errorText(err));
+          setError(commercialAccountErrorText(err));
         }
       })
       .finally(() => {
@@ -185,7 +180,7 @@ export default function TonecosAccountPage() {
         );
       }
     } catch (err) {
-      setError(errorText(err));
+      setError(commercialAccountErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -201,7 +196,7 @@ export default function TonecosAccountPage() {
       await updateMyTonecosProfile({ fullName: name, phone });
       setNotice("Dados da conta atualizados.");
     } catch (err) {
-      setError(errorText(err));
+      setError(commercialAccountErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -231,7 +226,7 @@ export default function TonecosAccountPage() {
       setNotice("Senha alterada com sucesso. Entre novamente com a nova senha.");
       navigate(TONECOS_COMMERCIAL_ROUTES.login, { replace: true });
     } catch (err) {
-      setError(errorText(err));
+      setError(commercialAccountErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -248,7 +243,7 @@ export default function TonecosAccountPage() {
       setPassword("");
       navigate(TONECOS_COMMERCIAL_ROUTES.login, { replace: true });
     } catch (err) {
-      setError(errorText(err));
+      setError(commercialAccountErrorText(err));
     } finally {
       setBusy(false);
     }
