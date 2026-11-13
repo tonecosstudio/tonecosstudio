@@ -90,9 +90,9 @@ jobs:
 
           printf 'Checking formatting for:\n - %s\n' "${prettier_files[@]}"
           if ! npx prettier --check "${prettier_files[@]}"; then
-            echo "::group::Suggested formatting changes (first 200 lines)"
+            echo "::group::Suggested formatting changes (first 1000 lines)"
             npx prettier --write "${prettier_files[@]}" > /dev/null
-            git --no-pager diff -- "${prettier_files[@]}" | sed -n '1,200p'
+            git --no-pager diff -- "${prettier_files[@]}" | sed -n '1,1000p'
             echo "::endgroup::"
             echo "::error::Format the listed files with npx prettier --write before merging."
             exit 1

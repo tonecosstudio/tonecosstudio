@@ -301,7 +301,9 @@ describe("TONART commercial screens: account → request → history → respons
       await screen.findByRole("button", { name: "Enviar solicitação" }),
     );
     expect(
-      await screen.findByText("Sua sessão expirou. Entre novamente para continuar."),
+      await screen.findByText(
+        "Sua sessão expirou. Entre novamente para continuar.",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Entrar ou criar conta" }),

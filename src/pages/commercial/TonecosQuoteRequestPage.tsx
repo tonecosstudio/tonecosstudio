@@ -51,7 +51,7 @@ export default function TonecosQuoteRequestPage() {
       const errorText = commercialQuoteErrorText(err);
       setError(errorText);
       if (errorText === "Sua sessão expirou. Entre novamente para continuar.") {
-        // Keep the selected catalog models for the resumed authenticated flow.
+        // Keep the catalog selection intact while the customer signs in again.
         setUser(null);
       }
     } finally { setBusy(false); }

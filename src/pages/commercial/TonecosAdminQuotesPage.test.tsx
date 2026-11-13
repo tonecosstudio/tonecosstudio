@@ -180,7 +180,9 @@ describe("TONART administrative quote directory", () => {
     expect(decoded.replace(/\u00a0/g, " ")).toContain("R$ 1.249,90");
     expect(decoded).toContain("Proposta válida por 7 dias.");
     expect(decoded).toContain("tonartstudio.com.br/meus-orcamentos");
-    expect(screen.getByText(/Confirme o envio manualmente/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Confirme o envio manualmente/),
+    ).toBeInTheDocument();
   });
 
   it("refreshes the administrator queue to show newly submitted requests", async () => {
