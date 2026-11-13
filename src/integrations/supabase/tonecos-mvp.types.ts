@@ -228,6 +228,15 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
         Returns: Json
       }
+      tonart_admin_quotes_directory: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_quote_id?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
       tonart_admin_workspace_overview: { Args: never; Returns: Json }
     }
     Enums: {
