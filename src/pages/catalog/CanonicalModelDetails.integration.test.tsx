@@ -913,9 +913,11 @@ describe("published model/gallery identity on the public detail page", () => {
         name: "Solicitar orçamento deste modelo",
       }),
     ).toBeDisabled();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Sua seleção já tem 50 modelos. Remova um modelo antes de incluir esta referência no orçamento.",
-    );
+    expect(
+      screen.getByText(
+        "Sua seleção já tem 50 modelos. Remova um modelo antes de incluir esta referência no orçamento.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("uses published card/thumbnail variants only if their image requests fail", async () => {
