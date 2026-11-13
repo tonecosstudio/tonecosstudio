@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import { useEffect } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import {
   CatalogBrowsingProvider,
   useCatalogBrowsing,
@@ -87,27 +88,29 @@ function renderApp(
 ) {
   return render(
     <MemoryRouter initialEntries={[entry]}>
-      <CatalogBrowsingProvider>
-        {seed && <SelectModel />}
-        <Routes>
-          <Route path="/login" element={<TonecosAccountPage />} />
-          <Route
-            path="/admin"
-            element={<div>Painel administrativo TONART</div>}
-          />
-          <Route path="/perfil" element={<TonecosAccountPage />} />
-          <Route
-            path="/solicitar-orcamento"
-            element={<TonecosQuoteRequestPage />}
-          />
-          <Route path="/meus-orcamentos" element={<TonecosMyQuotesPage />} />
-          <Route
-            path="/admin/orcamentos"
-            element={<TonecosAdminQuotesPage />}
-          />
-          <Route path="/modelos" element={<div>Catálogo público</div>} />
-        </Routes>
-      </CatalogBrowsingProvider>
+      <HelmetProvider>
+        <CatalogBrowsingProvider>
+          {seed && <SelectModel />}
+          <Routes>
+            <Route path="/login" element={<TonecosAccountPage />} />
+            <Route
+              path="/admin"
+              element={<div>Painel administrativo TONART</div>}
+            />
+            <Route path="/perfil" element={<TonecosAccountPage />} />
+            <Route
+              path="/solicitar-orcamento"
+              element={<TonecosQuoteRequestPage />}
+            />
+            <Route path="/meus-orcamentos" element={<TonecosMyQuotesPage />} />
+            <Route
+              path="/admin/orcamentos"
+              element={<TonecosAdminQuotesPage />}
+            />
+            <Route path="/modelos" element={<div>Catálogo público</div>} />
+          </Routes>
+        </CatalogBrowsingProvider>
+      </HelmetProvider>
     </MemoryRouter>,
   );
 }

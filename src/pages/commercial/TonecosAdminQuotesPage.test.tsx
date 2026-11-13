@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 
 const mocks = vi.hoisted(() => ({
   page: vi.fn(),
@@ -58,7 +65,9 @@ afterEach(cleanup);
 function show(url = "/admin/orcamentos") {
   return render(
     <MemoryRouter initialEntries={[url]}>
-      <TonecosAdminQuotesPage />
+      <HelmetProvider>
+        <TonecosAdminQuotesPage />
+      </HelmetProvider>
     </MemoryRouter>,
   );
 }
@@ -72,7 +81,9 @@ describe("TONART administrative quote directory", () => {
       rows: [quoteB],
     });
     show("/admin/orcamentos?quote=" + quoteB.id);
-    expect(await screen.findByText("Solicitação #44444444")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Solicitação #44444444"),
+    ).toBeInTheDocument();
     expect(mocks.page).toHaveBeenCalledWith({
       quoteId: quoteB.id,
       limit: 1,
@@ -97,17 +108,18 @@ describe("TONART administrative quote directory", () => {
       rows: [],
     });
     show("/admin/orcamentos?quote=55555555-5555-4555-8555-555555555555");
-    expect(await screen.findByText("Solicitação não encontrada.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Solicitação não encontrada."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Solicitação #33333333")).not.toBeInTheDocument();
   });
 
   it("filters the complete protected queue by status", async () => {
     show();
     await screen.findByText("Solicitação #33333333");
-    fireEvent.change(
-      screen.getByLabelText("Filtrar orçamentos por situação"),
-      { target: { value: "reviewing" } },
-    );
+    fireEvent.change(screen.getByLabelText("Filtrar orçamentos por situação"), {
+      target: { value: "reviewing" },
+    });
     await waitFor(() =>
       expect(mocks.page).toHaveBeenLastCalledWith({
         status: "reviewing",
@@ -125,7 +137,9 @@ describe("TONART administrative quote directory", () => {
       rows: [quoteA, quoteB],
     });
     show();
-    expect(await screen.findByRole("button", { name: "Próxima" })).toBeEnabled();
+    expect(
+      await screen.findByRole("button", { name: "Próxima" }),
+    ).toBeEnabled();
 
     mocks.page.mockResolvedValueOnce({
       total: 30,
