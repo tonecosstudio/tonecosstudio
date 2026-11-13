@@ -1,6 +1,6 @@
 # TONART Studio
 
-**Estado verificado em 12/11/2026.** O frontend oficial está no projeto Vercel `tonart-studio-public`, domínio **https://tonartstudio.com.br**, com o código-fonte do site em `tonecosstudio/tonecosstudio/main`. O catálogo público continua usando **um único Worker** `tonecos-catalogo-api` da conta Cloudflare Tonecos (D1 + R2); o publicador ativo do Worker permanece no repositório `washingtonmsdj/catalogo`. A cópia em `services/catalogo/` está **staged-offline**, não é um segundo publicador. O Cloudflare Pages é somente uma prévia protegida.
+**Estado verificado em 13/11/2026.** O frontend oficial está no projeto Vercel `tonart-studio-public`, domínio **https://tonartstudio.com.br**, com o código-fonte do site em `tonecosstudio/tonecosstudio/main`. O catálogo público continua usando **um único Worker** `tonecos-catalogo-api` da conta Cloudflare Tonecos (D1 + R2); o publicador ativo do Worker permanece no repositório `washingtonmsdj/catalogo`. A cópia em `services/catalogo/` está **staged-offline**, não é um segundo publicador. O Cloudflare Pages é somente uma prévia protegida.
 
 **Não confundir os dois marcos:** a vitrine visual está publicada em pré-lançamento, mas a **indexação e o lançamento público definitivo ainda não têm GO**. A implantação comercial Vercel atual habilita conta e orçamentos; isso **não** significa checkout, pagamentos ou conta completa.
 
@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | Site e experiência TONART | `tonecosstudio/tonecosstudio/main`; Vercel `tonart-studio-public` | Deploy controlado de SHA aprovado; não criar frontend paralelo |
 | Catálogo e imagens | Worker `tonecos-catalogo-api` / D1 `tonecos-catalogo` / R2 `tonecos-catalogo-media` | Writer atual: `washingtonmsdj/catalogo`; não consultar ou migrar D1 em massa |
-| Identidade e orçamentos comerciais | Projeto Supabase TONART `icmtmaakjucmuzxnofkd`: Auth, `profiles`, `quotes`, RLS e RPCs | Não armazenar modelos no Supabase; não criar fluxo paralelo de solicitação |
+| Identidade e orçamentos comerciais | Projeto Supabase TONART `icmtmaakjucmuzxnofkd`: Auth, `profiles`, `quotes`, `quote_events`, RLS e RPCs | Não armazenar modelos no Supabase; não criar fluxo paralelo de solicitação |
 | Prévia alternativa | Cloudflare Pages protegido por Access | Não é o site oficial público |
 | Futura consolidação Worker | `services/catalogo/` e [manifesto de migração](config/catalog-code-consolidation.json) | `releaseAuthorized=false`; sem cutover nem segundo pipeline |
 
@@ -22,18 +22,18 @@ A API é consumida por `/catalogo-api/` e pelo proxy GET restrito existente na V
 | --- | --- | --- |
 | Catálogo visual (Home, Universo, busca/filtros, ficha, galeria) | Publicado em pré-lançamento; 12 modelos carregados automaticamente na administração; cache CDN e Worker protegidos | QA visual autenticado desktop/mobile, licenças/créditos, conteúdos e aprovação editorial |
 | Capas | Imagens comuns visíveis; **264 identidades SpecialSTL** em quarentena | Substituir **somente** mídias SpecialSTL com prova de direitos e identidade exata, se aplicável; nunca esconder todo o catálogo |
-| **Minha Conta** (`/perfil` / `/login`) | Cadastro por e-mail, login, confirmação de e-mail conforme Auth, recuperação de senha, edição de nome/telefone, sair; modos comerciais Vercel ativos | E2E real de cadastro/confirmar e-mail/login/recuperação/perfil no domínio oficial; módulos legados ainda exibidos como indisponíveis |
-| Orçamento do cliente | `/solicitar-orcamento` e `/meus-orcamentos`; seleção de modelos, quantidades, observações, WhatsApp opcional, CEP, escala/acabamento; escrita na tabela única `quotes` por RPC autenticada | E2E real cliente → RLS → administrador → resposta → histórico do cliente; operação humana/aviso de novas solicitações |
-| Administração | Login único com autorização por função Supabase; atendimento de orçamentos com status e valor; visão geral/users/Coins histórico/financeiro em leitura; revisão do catálogo com CSV | E2E de RBAC cliente/admin; edição direta do catálogo ainda não salva, requer processo editorial source-first |
+| **Minha Conta** (`/perfil` / `/login`) | Cadastro por e-mail, login, confirmação de e-mail conforme Auth, recuperação de senha, edição de nome/telefone, troca de senha com revalidação da senha atual e logout, sair | E2E real de cadastro/confirmar e-mail/login/recuperação/perfil no domínio oficial; proteção de senhas vazadas ainda deve ser habilitada no Supabase Auth |
+| Orçamento do cliente | `/solicitar-orcamento` e `/meus-orcamentos`; seleção de modelos, quantidades, observações, WhatsApp opcional, CEP, escala/acabamento; escrita em `quotes` por RPC autenticada e histórico imutável em `quote_events` | Backend cliente → admin → resposta e histórico foi provado de forma reversível em produção; falta homologar a jornada completa no frontend oficial após o deploy do SHA atual |
+| Administração | Login único com autorização por função Supabase; atendimento de orçamentos com status, valor e histórico persistido; visão geral/users/Coins histórico/financeiro em leitura; Central de Comunicação reutiliza a fila canônica; revisão do catálogo com CSV | Homologar telas do histórico e RBAC no deploy oficial; edição direta do catálogo ainda não salva, requer processo editorial source-first |
 | Pagamentos, assinaturas, pedidos físicos, Coins e suporte completos | **Não habilitados para lançamento**. A área da conta mostra seções anteriores como `Indisponível`. Orçamento não é venda | Fora do MVP de orçamento até decisão e implementação próprias; não simular saldo, recebimentos ou pedidos reais |
 
 O ambiente Vercel produção foi verificado em 12/11: `VITE_TONECOS_COMMERCIAL_MVP=true`, `VITE_CATALOG_QUOTES_ENABLED=true`, `VITE_PUBLIC_CATALOG_MVP=false` e `VITE_PREVIEW_READ_ONLY=false`. As tabelas `profiles` e `quotes` e a RPC `submit_catalog_quote_request` foram constatadas no Supabase ativo; ambas as tabelas têm RLS ativa. **Presença de código, flags e esquema não substitui um teste autenticado de usuário real.**
 
 ## Critérios pendentes para GO público
 
-1. Validar integralmente **conta e orçamento** com cliente de teste e administrador real no domínio oficial, incluindo autorização, RLS, e-mails de confirmação/recuperação e atualização do status.
-2. Executar QA de navegação e imagens em desktop/mobile, estados de erro/vazio, formulários, links, envio e confirmação de orçamento.
-3. Revisar licença e crédito dos renders, manter quarentena SpecialSTL, confirmar conteúdo, Termos/Privacidade, dados do operador e LGPD.
+1. Validar integralmente **conta e orçamento** com cliente de teste e administrador real no domínio oficial, incluindo e-mails de confirmação/recuperação, troca de senha e as telas do histórico já persistido por RLS.
+2. Concluir o deploy/homologação do SHA atual e executar QA de navegação e imagens em desktop/mobile, estados de erro/vazio, formulários, links, envio e confirmação de orçamento.
+3. Habilitar a proteção de senhas vazadas no Supabase Auth e revisar licença/crédito dos renders, mantendo a quarentena SpecialSTL; confirmar conteúdo, Termos/Privacidade, dados do operador e LGPD.
 4. Obter autorização expressa para lançar e indexar (robots/sitemap/canonical); sem GO, manter `noindex`.
 5. Não associar este MVP de catálogo + orçamento a pagamentos ou assinaturas não implementados.
 
