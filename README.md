@@ -60,8 +60,10 @@ Em 13/11/2026, a `main` canônica foi clonada e construída pelo projeto oficial
 - Smoke no preview completo retornou HTTP 200 para Home, Modelos, Login, Recuperação de senha, Solicitar orçamento, Meus orçamentos, Admin, Privacidade e Termos.
 - O mesmo preview confirmou HTTP 200 no proxy real para categorias, catálogo e ficha de modelo; query pública não permitida permaneceu HTTP 400.
 - O projeto Vercel oficial foi alinhado ao `engines.node = 24.x` do repositório. Produção não foi promovida.
-- O Quality Gate completo `npm run release:verify` **não foi executado**: tentativas de sobrescrever temporariamente o build command foram ignoradas pela configuração canônica e rodaram novamente o build padrão. Nenhuma dessas execuções é tratada como release verification.
-- O workflow `.github/workflows/quality.yml` continua canônico; commits recentes não geraram runs/status e o conector disponível não expõe `workflow_dispatch`. Não criar workflow alternativo apenas para contornar isso.
+- O workflow canônico `.github/workflows/quality.yml` voltou a disparar normalmente em `push main`. O run **#1403** (`43476785298`) concluiu **SUCCESS** no SHA `13c15711`, com build/audit de produção, Authority Audits, typecheck, lint, Prettier e coverage aprovados. Não criar workflow alternativo.
+- O agregado `npm run release:verify` não foi invocado separadamente nesta homologação; os gates que o Quality Gate executa diretamente foram comprovados pelo run #1403 e o build do preview oficial.
+- Preview runtime atual validado: `dpl_5kiAVPNbJ92KpMvj1AC9RaDY9AFr`, SHA `13c15711`, **READY**, sem promoção. Home e `/modelos/nier-10h-nier` responderam HTTP 200 e `X-Robots-Tag: noindex, nofollow, noarchive` permaneceu ativo.
+- A ficha do modelo agora impede o CTA de orçamento quando a seleção já contém 50 referências e o modelo atual ainda não está selecionado; o limite continua protegido também pelo serviço de seleção e pelo serviço de orçamento.
 
 O proxy first-party também foi executado separadamente em sandbox efêmero, com rede bloqueada e o manifesto real de quarentena SpecialSTL: **14/14 testes aprovados, 0 falhas**. O sandbox foi removido após a validação.
 
@@ -76,7 +78,7 @@ A base Supabase ativa foi verificada e não contém tabelas/RPCs de conversation
 ## Critérios pendentes para GO público
 
 1. Validar integralmente **conta e orçamento** com cliente de teste e administrador real no domínio oficial, incluindo e-mails de confirmação/recuperação, troca de senha e as telas do histórico já persistido por RLS.
-2. Produzir o GO técnico final antes de promover o preview validado para produção: concluir os gates externos ainda pendentes (Auth contra senhas vazadas, E2E de e-mail controlado e dados legais reais) e, se o Quality Gate voltar a disparar, executar o `release:verify` canônico. O build completo e o proxy já estão homologados em preview.
+2. Produzir o GO técnico final antes de promover o preview validado para produção: concluir os gates externos ainda pendentes (Auth contra senhas vazadas, E2E de e-mail controlado e dados legais reais). O Quality Gate #1403, o build completo e o proxy já estão homologados; não repetir builds ou criar CI paralelo apenas para obter a mesma evidência.
 3. Habilitar a proteção de senhas vazadas no Supabase Auth; completar os dados legais do operador sem inventar razão social/endereço/DPO; revisar licença/crédito dos renders mantendo a quarentena SpecialSTL.
 4. Obter autorização expressa para lançar e indexar (robots/sitemap/canonical); sem GO, manter `noindex`.
 5. Não associar este MVP de catálogo + orçamento a pagamentos ou assinaturas não implementados.
