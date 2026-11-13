@@ -851,7 +851,7 @@ export default function TonecosAdminHomePage() {
                 de orçamentos. A resposta comercial e o valor ficam registrados no
                 orçamento e no histórico; esta página não cria uma caixa paralela.
               </p>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <Metric
                   label="Aguardando atendimento"
                   value={overview?.pendingQuoteCount}
