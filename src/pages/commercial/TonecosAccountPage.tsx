@@ -118,7 +118,21 @@ const safeNext = new Set<string>([
   }, [identity]);
 
   useEffect(() => {
-    if (!identity) return;
+    if (
+      identity &&
+      location.pathname === TONECOS_COMMERCIAL_ROUTES.login &&
+      next !== TONECOS_COMMERCIAL_ROUTES.account
+    ) {
+      navigate(next, { replace: true });
+    }
+  }, [identity, location.pathname, navigate, next]);
+
+  useEffect(() => {
+    if (
+      !identity ||
+      (location.pathname === TONECOS_COMMERCIAL_ROUTES.login &&
+        next !== TONECOS_COMMERCIAL_ROUTES.account)
+    ) return;
     let active = true;
     setProfileLoading(true);
     setProfileError(false);
@@ -141,7 +155,7 @@ const safeNext = new Set<string>([
     return () => {
       active = false;
     };
-  }, [identity, profileAttempt]);
+  }, [identity, location.pathname, next, profileAttempt]);
 
   async function submitAccess(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -155,6 +169,7 @@ const safeNext = new Set<string>([
           email,
           password,
           fullName: name,
+          returnTo: next,
         });
         setPassword("");
         if (result.emailConfirmationRequired) {
@@ -196,7 +211,7 @@ const safeNext = new Set<string>([
     setError("");
     setNotice("");
     try {
-      await resendTonecosSignupConfirmation(email);
+      await resendTonecosSignupConfirmation(email, next);
       setNotice(
         "Nova confirmação solicitada. Verifique seu e-mail e a pasta de spam. O envio está sujeito aos limites de segurança do serviço.",
       );

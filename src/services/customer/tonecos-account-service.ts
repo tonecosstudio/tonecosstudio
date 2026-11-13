@@ -56,27 +56,51 @@ function originRedirect(path: string): string {
   return new URL(path, window.location.origin).toString();
 }
 
+const confirmationReturnRoutes = new Set<string>([
+  TONECOS_COMMERCIAL_ROUTES.account,
+  TONECOS_COMMERCIAL_ROUTES.request,
+  TONECOS_COMMERCIAL_ROUTES.history,
+]);
+
+function confirmationRedirect(returnTo?: string): string {
+  const safeReturn =
+    typeof returnTo === "string" && confirmationReturnRoutes.has(returnTo)
+      ? returnTo
+      : null;
+  const loginPath =
+    safeReturn && safeReturn !== TONECOS_COMMERCIAL_ROUTES.account
+      ? TONECOS_COMMERCIAL_ROUTES.login +
+        "?next=" +
+        encodeURIComponent(safeReturn)
+      : TONECOS_COMMERCIAL_ROUTES.login;
+  return originRedirect(loginPath);
+}
+
 /** The only identity provider for Tonecos is Supabase Auth in the Tonecos project. */
 export async function registerTonecosAccount(input: {
-  email: string; password: string; fullName: string;
+  email: string;
+  password: string;
+  fullName: string;
+  returnTo?: string;
 }): Promise<{ userId: string | null; emailConfirmationRequired: boolean }> {
   assertTonecosCommercialEnabled();
   const credentials = validateRegistrationCredentials(input.email, input.password);
   const fullName = cleanText(input.fullName, 160, true)!;
   return signUpWithPasswordCredentials({
     ...credentials, fullName,
-    emailRedirectTo: originRedirect(TONECOS_COMMERCIAL_ROUTES.login),
+    emailRedirectTo: confirmationRedirect(input.returnTo),
   });
 }
 
 export async function resendTonecosSignupConfirmation(
   email: string,
+  returnTo?: string,
 ): Promise<void> {
   assertTonecosCommercialEnabled();
   const normalized = validateEmail(email);
   await resendSignupConfirmation({
     email: normalized,
-    emailRedirectTo: originRedirect(TONECOS_COMMERCIAL_ROUTES.login),
+    emailRedirectTo: confirmationRedirect(returnTo),
   });
 }
 

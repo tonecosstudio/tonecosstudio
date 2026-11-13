@@ -465,6 +465,17 @@ describe("TONART commercial screens: account → request → history → respons
     expect(await screen.findByText("Meus orçamentos")).toBeInTheDocument();
   });
 
+  it("continues an already-confirmed session to the preserved quote destination", async () => {
+    mocks.getUser.mockResolvedValue({
+      id: USER,
+      email: "cliente@example.com",
+    });
+    renderApp("/login?next=%2Fsolicitar-orcamento");
+    expect(
+      await screen.findByText("Nenhum modelo selecionado nesta visita."),
+    ).toBeInTheDocument();
+  });
+
   it("toggles password visibility without changing the typed password or submitting the login", async () => {
     mocks.getUser.mockResolvedValue(null);
     renderApp("/login");
@@ -490,7 +501,7 @@ describe("TONART commercial screens: account → request → history → respons
       userId: USER,
       emailConfirmationRequired: true,
     });
-    renderApp("/login?mode=signup");
+    renderApp("/login?mode=signup&next=%2Fsolicitar-orcamento");
     expect(
       await screen.findByRole("button", { name: "Criar conta" }),
     ).toBeInTheDocument();
@@ -517,6 +528,7 @@ describe("TONART commercial screens: account → request → history → respons
       email: "cliente@example.com",
       password: "StrongPass123!",
       fullName: "Cliente",
+      returnTo: "/solicitar-orcamento",
     });
 
     fireEvent.click(
@@ -525,6 +537,7 @@ describe("TONART commercial screens: account → request → history → respons
     await waitFor(() =>
       expect(mocks.resendConfirmation).toHaveBeenCalledWith(
         "cliente@example.com",
+        "/solicitar-orcamento",
       ),
     );
     expect(

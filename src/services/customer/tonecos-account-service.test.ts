@@ -114,11 +114,18 @@ describe("Tonecos authenticated MVP account", () => {
   it("registers with Supabase Auth only; confirmation is explicit", async () => {
     mocks.signUpWithPasswordCredentials.mockResolvedValue({ userId: USER, emailConfirmationRequired: true });
     await expect(registerTonecosAccount({
-      email: "  Client@example.com ", password: "StrongPass123!", fullName: "  Cliente  ",
+      email: "  Client@example.com ",
+      password: "StrongPass123!",
+      fullName: "  Cliente  ",
+      returnTo: "/solicitar-orcamento",
     })).resolves.toEqual({ userId: USER, emailConfirmationRequired: true });
     expect(mocks.signUpWithPasswordCredentials).toHaveBeenCalledWith({
-      email: "client@example.com", password: "StrongPass123!",
-      fullName: "Cliente", emailRedirectTo: expect.stringMatching(/\/login$/),
+      email: "client@example.com",
+      password: "StrongPass123!",
+      fullName: "Cliente",
+      emailRedirectTo: expect.stringMatching(
+        /\/login\?next=%2Fsolicitar-orcamento$/,
+      ),
     });
     expect(mocks.from).not.toHaveBeenCalled();
   });
@@ -126,12 +133,35 @@ describe("Tonecos authenticated MVP account", () => {
   it("resends signup confirmation through the same Auth authority and redirect", async () => {
     mocks.resendSignupConfirmation.mockResolvedValue(undefined);
     await expect(
-      resendTonecosSignupConfirmation("  CLIENT@EXAMPLE.COM "),
+      resendTonecosSignupConfirmation(
+        "  CLIENT@EXAMPLE.COM ",
+        "/solicitar-orcamento",
+      ),
     ).resolves.toBeUndefined();
     expect(mocks.resendSignupConfirmation).toHaveBeenCalledExactlyOnceWith({
       email: "client@example.com",
-      emailRedirectTo: expect.stringMatching(/\/login$/),
+      emailRedirectTo: expect.stringMatching(
+        /\/login\?next=%2Fsolicitar-orcamento$/,
+      ),
     });
+  });
+
+  it("never accepts an external signup confirmation return path", async () => {
+    mocks.signUpWithPasswordCredentials.mockResolvedValue({
+      userId: USER,
+      emailConfirmationRequired: true,
+    });
+    await registerTonecosAccount({
+      email: "client@example.com",
+      password: "StrongPass123!",
+      fullName: "Cliente",
+      returnTo: "https://evil.example/phish",
+    });
+    expect(mocks.signUpWithPasswordCredentials).toHaveBeenCalledWith(
+      expect.objectContaining({
+        emailRedirectTo: expect.stringMatching(/\/login$/),
+      }),
+    );
   });
 
   it("does not sign in unless Auth actually returned user and session", async () => {
