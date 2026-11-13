@@ -797,7 +797,7 @@ export default function TonecosAdminHomePage() {
                 informados não são faturamento, caixa, pagamentos aprovados nem
                 receita realizada.
               </p>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 <div className="border border-white/15 p-5">
                   <p className="text-xs uppercase tracking-wider text-white/55">
                     Soma dos valores orçados
@@ -847,9 +847,9 @@ export default function TonecosAdminHomePage() {
             <section className={panelClass}>
               <h3 className="text-lg font-semibold">Central de Comunicação</h3>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-white/65">
-                Acompanhamento das solicitações do catálogo usando os dados de
-                atendimento existentes. Esta página não armazena mensagens e não
-                envia e-mails automaticamente.
+                Acompanhamento das solicitações do catálogo usando a própria fila
+                de orçamentos. A resposta comercial e o valor ficam registrados no
+                orçamento e no histórico; esta página não cria uma caixa paralela.
               </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <Metric
@@ -862,10 +862,15 @@ export default function TonecosAdminHomePage() {
                   value={overview?.reviewingQuoteCount}
                   detail="Solicitações em atendimento"
                 />
+                <Metric
+                  label="Respondidos"
+                  value={overview?.answeredQuoteCount}
+                  detail="Respostas comerciais disponíveis ao cliente"
+                />
               </div>
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-5">
                 <h4 className="text-base font-semibold">
-                  Contatos com atendimento em aberto
+                  Atividade comercial recente
                 </h4>
                 {quotesEnabled && (
                   <Link
@@ -877,21 +882,27 @@ export default function TonecosAdminHomePage() {
                 )}
               </div>
               <p className="mt-2 text-xs text-white/50">
-                Exibindo solicitações pendentes ou em análise entre as 25
-                solicitações recentes. As quantidades acima consideram a base
+                Exibindo solicitações pendentes, em análise ou respondidas entre as
+                25 solicitações recentes. As quantidades acima consideram a base
                 completa.
               </p>
               {overview &&
                 overview.recentQuotes.filter(
-                  (q) => q.status === "pending" || q.status === "reviewing",
+                  (q) =>
+                    q.status === "pending" ||
+                    q.status === "reviewing" ||
+                    q.status === "answered",
                 ).length === 0 && (
                   <p className="mt-5 text-sm text-white/60">
-                    Não há atendimentos em aberto entre as últimas solicitações.
+                    Não há atividade recente de orçamento entre as últimas solicitações.
                   </p>
                 )}
               {overview?.recentQuotes
                 .filter(
-                  (q) => q.status === "pending" || q.status === "reviewing",
+                  (q) =>
+                    q.status === "pending" ||
+                    q.status === "reviewing" ||
+                    q.status === "answered",
                 )
                 .map((q) => (
                   <article
@@ -948,9 +959,9 @@ export default function TonecosAdminHomePage() {
                   </article>
                 ))}
               <p className="mt-6 text-xs text-white/45">
-                Preparar e-mail abre o aplicativo de correio do dispositivo.
-                Envio e resposta não são registrados automaticamente no sistema;
-                confirme a situação pelo atendimento.
+                Preparar e-mail abre o aplicativo de correio do dispositivo e é
+                opcional. A resposta comercial canônica deve ser registrada no
+                próprio orçamento para permanecer visível ao cliente e no histórico.
               </p>
             </section>
           )}

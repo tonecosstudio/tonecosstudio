@@ -273,7 +273,7 @@ describe("TONART admin workspace", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("connects the existing communication section to real pending quotes without automatic email sending", async () => {
+  it("connects the existing communication section to real quote activity without a parallel inbox", async () => {
     const id = "33333333-3333-4333-8333-333333333333";
     mocks.overview.mockResolvedValueOnce({
       ...fixture,
@@ -285,6 +285,14 @@ describe("TONART admin workspace", () => {
           modelCount: 2,
           status: "pending",
           quotedAmountCents: null,
+        },
+        {
+          id: "44444444-4444-4444-8444-444444444444",
+          customerEmail: "respondido@example.com",
+          createdAt: "2026-11-11T19:00:00Z",
+          modelCount: 1,
+          status: "answered",
+          quotedAmountCents: 24990,
         },
       ],
     });
@@ -308,8 +316,9 @@ describe("TONART admin workspace", () => {
     } else {
       expect(link).not.toBeInTheDocument();
     }
+    expect(screen.getByText("Respondido")).toBeInTheDocument();
     expect(
-      screen.getByText(/não envia e-mails automaticamente/),
+      screen.getByText(/resposta comercial e o valor ficam registrados/i),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /enviar e-mail/i }),
@@ -324,7 +333,7 @@ describe("TONART admin workspace", () => {
     show("/admin/comunicacao");
     expect(
       await screen.findByText(
-        "Não há atendimentos em aberto entre as últimas solicitações.",
+        "Não há atividade recente de orçamento entre as últimas solicitações.",
       ),
     ).toBeInTheDocument();
     expect(
