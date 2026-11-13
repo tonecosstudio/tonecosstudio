@@ -397,9 +397,11 @@ export default function CanonicalModelDetails() {
     // Roving focus within the thumbnail grid; no focus jumps when the user
     // operates the previous/next buttons or other controls.
     if (focusedThumbnail) {
-      event.currentTarget
-        .querySelectorAll<HTMLButtonElement>("button[data-gallery-thumbnail]")
-        [targetIndex]?.focus();
+      const thumbnails =
+        event.currentTarget.querySelectorAll<HTMLButtonElement>(
+          "button[data-gallery-thumbnail]",
+        );
+      thumbnails[targetIndex]?.focus();
     }
   }
   const activeImageKey = activeImage
