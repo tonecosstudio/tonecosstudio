@@ -93,8 +93,23 @@ export default function TonecosMyQuotesPage() {
     return () => { active = false; };
   }, [userId, attempt, offset]);
 
-  const justSent = Boolean(location.state && typeof location.state === "object" &&
-    "sent" in location.state && typeof location.state.sent === "string");
+  const sentId =
+    location.state &&
+    typeof location.state === "object" &&
+    "sent" in location.state &&
+    typeof location.state.sent === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      location.state.sent,
+    )
+      ? location.state.sent
+      : null;
+  const justSent = Boolean(
+    sentId &&
+      userId &&
+      !loading &&
+      !error &&
+      rows.some((row) => row.id === sentId),
+  );
 
   return (
     <CommercialPage title="Meus orçamentos" intro="Acompanhe as solicitações enviadas e os valores respondidos pela TONART Studio. Orçamento não é confirmação de compra.">

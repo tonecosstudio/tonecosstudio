@@ -83,7 +83,7 @@ function SelectModel() {
   return null;
 }
 function renderApp(
-  entry: string | { pathname: string; state?: { recovered?: boolean } },
+  entry: string | { pathname: string; state?: { recovered?: boolean; sent?: string } },
   seed = false,
 ) {
   return render(
@@ -209,6 +209,27 @@ describe("TONART commercial screens: account → request → history → respons
 
   it("submits quantities and notes, then navigates to the customer's history", async () => {
     mocks.submit.mockResolvedValue(QUOTE);
+    mocks.listMine.mockResolvedValueOnce({
+      total: 1,
+      limit: 20,
+      offset: 0,
+      rows: [
+        {
+          id: QUOTE,
+          status: "pending",
+          createdAt: "2026-11-13T00:00:00Z",
+          notes: "Escala 1/5",
+          quotedAmount: null,
+          responseMessage: null,
+          deadline: null,
+          items: [{ slug: "naruto", quantity: 2 }],
+          whatsapp: null,
+          postalCode: null,
+          scale: "a definir",
+          finishing: "a definir",
+        },
+      ],
+    });
     renderApp("/solicitar-orcamento", true);
     expect(await screen.findByText("Naruto")).toBeInTheDocument();
     fireEvent.change(
@@ -244,6 +265,18 @@ describe("TONART commercial screens: account → request → history → respons
         "Solicitação enviada. Você poderá acompanhar a resposta aqui.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("never claims an unverified navigation-state quote was submitted", async () => {
+    renderApp({ pathname: "/meus-orcamentos", state: { sent: QUOTE } });
+    expect(
+      await screen.findByText("Você ainda não enviou solicitações."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Solicitação enviada. Você poderá acompanhar a resposta aqui.",
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it("shows clear customer quote errors without exposing internal codes", async () => {
