@@ -168,6 +168,71 @@ describe("auth-session-service rate limits", () => {
     });
   });
 
+  it("limits repeated successful confirmation email sends", async () => {
+    authMock.resend.mockResolvedValue({ data: {}, error: null });
+
+    for (let attempt = 0; attempt < RATE_LIMITS.passwordReset.maxRequests; attempt++) {
+      await resendSignupConfirmation({
+        email: "pending@example.com",
+        emailRedirectTo: "https://tonartstudio.com.br/login",
+      });
+    }
+    await expect(
+      resendSignupConfirmation({
+        email: " PENDING@EXAMPLE.COM ",
+        emailRedirectTo: "https://tonartstudio.com.br/login",
+      }),
+    ).rejects.toThrow(RATE_LIMITS.passwordReset.message);
+    expect(authMock.resend).toHaveBeenCalledTimes(
+      RATE_LIMITS.passwordReset.maxRequests,
+    );
+  });
+
+  it("limits repeated successful recovery emails instead of resetting the counter", async () => {
+    authMock.resetPasswordForEmail.mockResolvedValue({ error: null });
+
+    for (let attempt = 0; attempt < RATE_LIMITS.passwordReset.maxRequests; attempt++) {
+      await sendPasswordResetEmail({
+        email: "recover@example.com",
+        redirectTo: "https://tonartstudio.com.br/recuperar-senha",
+      });
+    }
+    await expect(
+      sendPasswordResetEmail({
+        email: "RECOVER@example.com ",
+        redirectTo: "https://tonartstudio.com.br/recuperar-senha",
+      }),
+    ).rejects.toThrow(RATE_LIMITS.passwordReset.message);
+    expect(authMock.resetPasswordForEmail).toHaveBeenCalledTimes(
+      RATE_LIMITS.passwordReset.maxRequests,
+    );
+  });
+
+  it("limits repeated successful registrations without blocking authenticated login", async () => {
+    authMock.signUp.mockResolvedValue({
+      data: { user: { id: "pending-user" }, session: null },
+      error: null,
+    });
+    const registration = {
+      email: "newuser@example.com",
+      password: "Aaaaaaaa111!",
+      fullName: "Cliente TONART",
+      emailRedirectTo: "https://tonartstudio.com.br/login",
+    };
+    for (let attempt = 0; attempt < RATE_LIMITS.register.maxRequests; attempt++) {
+      await signUpWithPasswordCredentials(registration);
+    }
+    await expect(
+      signUpWithPasswordCredentials({
+        ...registration,
+        email: "NEWUSER@example.com",
+      }),
+    ).rejects.toThrow(RATE_LIMITS.register.message);
+    expect(authMock.signUp).toHaveBeenCalledTimes(
+      RATE_LIMITS.register.maxRequests,
+    );
+  });
+
   it("normalizes resend rate-limit failures without creating another mail authority", async () => {
     authMock.resend.mockResolvedValue({
       data: null,

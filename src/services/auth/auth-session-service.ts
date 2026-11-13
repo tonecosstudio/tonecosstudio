@@ -91,7 +91,7 @@ export async function signUpWithPasswordCredentials(params: {
   phone?: string;
   emailRedirectTo: string;
 }) {
-  const rateLimitKey = assertAuthRateLimit("signup", params.email, RATE_LIMITS.register);
+  assertAuthRateLimit("signup", params.email, RATE_LIMITS.register);
   const { data, error } = await supabase.auth.signUp({
     email: normalizeAuthSubject(params.email),
     password: params.password,
@@ -108,7 +108,7 @@ export async function signUpWithPasswordCredentials(params: {
     throw normalizeAuthError(error);
   }
 
-  resetRateLimit(rateLimitKey);
+  // A successful registration must still count toward the per-email limit.
   return { userId: data.user?.id ?? null, emailConfirmationRequired: !data.session };
 }
 
@@ -116,7 +116,7 @@ export async function resendSignupConfirmation(params: {
   email: string;
   emailRedirectTo: string;
 }): Promise<void> {
-  const rateLimitKey = assertAuthRateLimit(
+  assertAuthRateLimit(
     "confirmation-resend",
     params.email,
     RATE_LIMITS.passwordReset,
@@ -130,7 +130,7 @@ export async function resendSignupConfirmation(params: {
   });
 
   if (error) throw normalizeAuthError(error);
-  resetRateLimit(rateLimitKey);
+  // Sending a message successfully is not permission to bypass the next cooldown.
 }
 
 export async function signInWithGoogleOAuth(redirectTo: string) {
@@ -154,7 +154,7 @@ export async function sendPasswordResetEmail(params: {
   email: string;
   redirectTo: string;
 }): Promise<void> {
-  const rateLimitKey = assertAuthRateLimit(
+  assertAuthRateLimit(
     "password-reset",
     params.email,
     RATE_LIMITS.passwordReset,
@@ -166,6 +166,5 @@ export async function sendPasswordResetEmail(params: {
   if (error) {
     throw normalizeAuthError(error);
   }
-
-  resetRateLimit(rateLimitKey);
+  // Preserve successful reset requests in the cooldown; Supabase also limits sends.
 }
