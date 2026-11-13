@@ -51,10 +51,32 @@ Validações concluídas sem promover produção:
 **Estado:** código e proxy homologados em preview; o domínio de produção continua no deployment anterior. A observação inicial de 400 não deve ser interpretada como prova de que todo visitante público recebia 400, pois o checker Vercel acrescentava `_vercel_share`. Não tocar no Worker/D1/R2 nem ampliar a amostra para contornar esse defeito já corrigido no adaptador.
 
 
+## Homologação completa da main em preview
+
+Em 13/11/2026, a `main` canônica foi clonada e construída pelo projeto oficial Vercel `tonart-studio-public` em preview, sem promoção para produção.
+
+- Deployment completo validado: `dpl_6S3VKity1SPSpwLWkhDDmQwChsbR`.
+- O build oficial concluiu com Vite em cerca de 10 segundos e executou os gates de build já existentes: **44 testes aprovados, 0 falhas**.
+- Smoke no preview completo retornou HTTP 200 para Home, Modelos, Login, Recuperação de senha, Solicitar orçamento, Meus orçamentos, Admin, Privacidade e Termos.
+- O mesmo preview confirmou HTTP 200 no proxy real para categorias, catálogo e ficha de modelo; query pública não permitida permaneceu HTTP 400.
+- O projeto Vercel oficial foi alinhado ao `engines.node = 24.x` do repositório. Produção não foi promovida.
+- O Quality Gate completo `npm run release:verify` **não foi executado**: tentativas de sobrescrever temporariamente o build command foram ignoradas pela configuração canônica e rodaram novamente o build padrão. Nenhuma dessas execuções é tratada como release verification.
+- O workflow `.github/workflows/quality.yml` continua canônico; commits recentes não geraram runs/status e o conector disponível não expõe `workflow_dispatch`. Não criar workflow alternativo apenas para contornar isso.
+
+O proxy first-party também foi executado separadamente em sandbox efêmero, com rede bloqueada e o manifesto real de quarentena SpecialSTL: **14/14 testes aprovados, 0 falhas**. O sandbox foi removido após a validação.
+
+## Isolamento do MVP comercial
+
+O entrypoint é escolhido em build-time por `src/main.tsx`. Com `VITE_TONECOS_COMMERCIAL_MVP=true`, o bundle monta `TonecosCommercialApp` e **não monta o App legado**. Assim, rotas antigas de perfil, pagamentos, suporte e backoffice que pertencem ao App histórico não ficam expostas no MVP comercial.
+
+`TonecosCommercialApp` reutiliza `CatalogMvpShell` para Home, Universo, Modelos, ficha, Sobre, Contato e páginas legais, e adiciona apenas Conta, Recuperação, Solicitar orçamento, Meus orçamentos e Admin guardado. `/contato` usa `PublicCatalogContact`, que é somente e-mail e não depende de Supabase ou chat legado.
+
+A base Supabase ativa foi verificada e não contém tabelas/RPCs de conversations/messages/support/notification preferences. O commit `d4ddf98` também impede o formulário de suporte legado de ser apresentado caso `ContactArcade` seja carregado sob flags comerciais fora do entrypoint canônico.
+
 ## Critérios pendentes para GO público
 
 1. Validar integralmente **conta e orçamento** com cliente de teste e administrador real no domínio oficial, incluindo e-mails de confirmação/recuperação, troca de senha e as telas do histórico já persistido por RLS.
-2. Restabelecer a publicação do projeto oficial `tonart-studio-public` a partir da `main` canônica e homologar o build completo. O proxy já foi aprovado em preview real; após o deploy completo, repetir somente os smoke checks de categoria/catálogo/modelo/imagem e o QA desktop/mobile.
+2. Produzir o GO técnico final antes de promover o preview validado para produção: concluir os gates externos ainda pendentes (Auth contra senhas vazadas, E2E de e-mail controlado e dados legais reais) e, se o Quality Gate voltar a disparar, executar o `release:verify` canônico. O build completo e o proxy já estão homologados em preview.
 3. Habilitar a proteção de senhas vazadas no Supabase Auth; completar os dados legais do operador sem inventar razão social/endereço/DPO; revisar licença/crédito dos renders mantendo a quarentena SpecialSTL.
 4. Obter autorização expressa para lançar e indexar (robots/sitemap/canonical); sem GO, manter `noindex`.
 5. Não associar este MVP de catálogo + orçamento a pagamentos ou assinaturas não implementados.
