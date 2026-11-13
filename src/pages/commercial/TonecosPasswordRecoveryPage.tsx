@@ -47,16 +47,16 @@ export default function TonecosPasswordRecoveryPage() {
   const refreshSession = useCallback(async () => {
     setError("");
     try {
-      if (recoveryToken) {
-        // Clear the single-use token from browser history before exchanging it.
-        navigate(
-          tonecosRecoveryPath(returnTo, true),
-          { replace: true },
-        );
-        if (recoveryType !== "recovery")
-          throw new Error("tonecos_recovery_link_invalid");
-        await verifyTonecosPasswordRecoveryToken(recoveryToken);
+      // An ordinary signed-in session does not prove ownership of a recovery link.
+      // Do not permit the password-reset screen to bypass the current-password flow.
+      if (!recoveryToken || recoveryType !== "recovery") {
+        setVerified(false);
+        setError("Não foi possível validar o link. Solicite um novo e-mail de recuperação.");
+        return;
       }
+      // Clear the single-use token from browser history before exchanging it.
+      navigate(tonecosRecoveryPath(returnTo, true), { replace: true });
+      await verifyTonecosPasswordRecoveryToken(recoveryToken);
       const user = await getTonecosCurrentUser();
       setVerified(Boolean(user));
       if (!user)
