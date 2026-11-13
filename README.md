@@ -36,18 +36,25 @@ O ambiente Vercel produção foi revalidado em 13/11: `VITE_TONECOS_COMMERCIAL_M
 - A fila administrativa completa é consultada por RPC protegida `tonart_admin_quotes_directory`, com paginação/filtro e busca exata por UUID; o navegador não carrega toda a base.
 - `Meus orçamentos` pagina a própria base via RLS e `count=exact`, sem ampliar acesso do cliente.
 
-## Proxy first-party do catálogo — correção pronta, homologação pendente
+## Proxy first-party do catálogo — corrigido e homologado em preview
 
-Em 13/11/2026, a produção oficial respondeu `400 Invalid catalog query` para chamadas válidas como `/catalogo-api/api/categories`, `/api/recent?limit=1`, `/api/catalog?limit=1` e `/api/franchises?limit=1`. Home e `/modelos` continuam respondendo HTTP 200, mas o frontend depende dessas leituras JSON para carregar o catálogo.
+Em 13/11/2026, as verificações feitas pelo mecanismo de acesso da Vercel retornavam `400 Invalid catalog query` em chamadas válidas do proxy. Um preview diagnóstico mostrou a causa exata: a Vercel injeta o parâmetro de plataforma `_vercel_share` em requisições protegidas/compartilhadas, e o validador fail-closed o interpretava como query pública do catálogo.
 
-A causa foi isolada no adaptador Vercel `api/catalogo-proxy.js`: ele reconstruía a query pública a partir de `req.url`, enquanto o contrato de Vercel Functions expõe os parâmetros do request/rewrite por `request.query`. O commit `f36b84e` passou a usar `request.query`, removendo somente o parâmetro interno `path` e preservando parâmetros públicos, inclusive duplicatas, para o validador fail-closed. O teste canônico cobre rota sem query, query válida, duplicata e parâmetro desconhecido.
+O proxy foi corrigido em duas etapas: `f36b84e` passou a reconstruir a query a partir de `request.query`, conforme o contrato de Vercel Functions; `bdab4e2` passou a ignorar **somente** os parâmetros de transporte `path` e `_vercel_share`. Todos os demais parâmetros continuam preservados para validação, inclusive duplicatas, e queries desconhecidas/cache-busting continuam bloqueadas.
 
-**Estado:** correção integrada à `main`; produção ainda serve o SHA antigo e portanto continua com o 400 até um novo deploy oficial. Não tocar no Worker/D1/R2 para contornar esse defeito do frontend/proxy.
+Validações concluídas sem promover produção:
+- sandbox efêmero sem rede: teste do proxy real aprovado (`1/1`, zero falhas) e sandbox removido;
+- preview oficial sem alias/target, deployment `dpl_4TtDSivazjhKp1qMZHahkg2hzECQ`: `/api/categories`, `/api/recent?limit=1` e `/api/catalog?limit=1` retornaram HTTP 200 através do Worker real;
+- `/api/categories?offset=0` permaneceu HTTP 400, comprovando o fail-closed;
+- amostra mínima adicional: franquia, ficha `nier-10h-nier`, galeria de 1 item e o respectivo `card.webp` retornaram HTTP 200; a imagem respondeu `image/webp`, 71.276 bytes e suporte a Range.
+
+**Estado:** código e proxy homologados em preview; o domínio de produção continua no deployment anterior. A observação inicial de 400 não deve ser interpretada como prova de que todo visitante público recebia 400, pois o checker Vercel acrescentava `_vercel_share`. Não tocar no Worker/D1/R2 nem ampliar a amostra para contornar esse defeito já corrigido no adaptador.
+
 
 ## Critérios pendentes para GO público
 
 1. Validar integralmente **conta e orçamento** com cliente de teste e administrador real no domínio oficial, incluindo e-mails de confirmação/recuperação, troca de senha e as telas do histórico já persistido por RLS.
-2. Restabelecer a capacidade de publicação do projeto oficial `tonart-studio-public` a partir do repositório canônico; depois homologar o SHA atual e confirmar que `/catalogo-api/api/categories`, `/api/recent?limit=1` e `/api/catalog?limit=1` deixam de retornar 400, além do QA desktop/mobile.
+2. Restabelecer a publicação do projeto oficial `tonart-studio-public` a partir da `main` canônica e homologar o build completo. O proxy já foi aprovado em preview real; após o deploy completo, repetir somente os smoke checks de categoria/catálogo/modelo/imagem e o QA desktop/mobile.
 3. Habilitar a proteção de senhas vazadas no Supabase Auth; completar os dados legais do operador sem inventar razão social/endereço/DPO; revisar licença/crédito dos renders mantendo a quarentena SpecialSTL.
 4. Obter autorização expressa para lançar e indexar (robots/sitemap/canonical); sem GO, manter `noindex`.
 5. Não associar este MVP de catálogo + orçamento a pagamentos ou assinaturas não implementados.
