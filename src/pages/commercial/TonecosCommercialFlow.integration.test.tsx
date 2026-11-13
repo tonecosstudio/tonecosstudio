@@ -82,12 +82,11 @@ function SelectModel() {
   }, [setSelectedModels]);
   return null;
 }
-function renderApp(
-  entry:
-    | string
-    | { pathname: string; state?: { recovered?: boolean; sent?: string } },
-  seed = false,
-) {
+type RouteEntry = string | {
+  pathname: string;
+  state?: { recovered?: boolean; sent?: string };
+};
+function renderApp(entry: RouteEntry, seed = false) {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <HelmetProvider>

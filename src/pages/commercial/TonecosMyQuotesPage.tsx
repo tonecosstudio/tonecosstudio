@@ -92,9 +92,7 @@ export default function TonecosMyQuotesPage() {
       .then(({ result, history: quoteHistory }) => {
         if (!active) return;
         if (result.total > 0 && offset >= result.total) {
-          setOffset(
-            Math.floor((result.total - 1) / PAGE_SIZE) * PAGE_SIZE,
-          );
+          setOffset(Math.floor((result.total - 1) / PAGE_SIZE) * PAGE_SIZE);
           return;
         }
         setRows(result.rows);
