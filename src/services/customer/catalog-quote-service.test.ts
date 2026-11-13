@@ -256,6 +256,7 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     });
     expect(quotes[1]).toMatchObject({
       quotedAmount: 129.9,
+      responseMessage: "Proposta válida por 7 dias.",
       items: [{ slug: "nier-2b", quantity: 2 }],
     });
     expect(mocks.assertCurrentUserId).toHaveBeenCalledWith(USER);

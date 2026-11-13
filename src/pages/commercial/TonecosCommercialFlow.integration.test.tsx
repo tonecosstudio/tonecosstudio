@@ -550,7 +550,7 @@ describe("TONART commercial screens: account → request → history → respons
         target: { value: "249,90" },
       },
     );
-    fireEvent.click(
+    fireEvent.change(
       screen.getByRole("textbox", {
         name: "Mensagem ao cliente " + QUOTE.slice(0, 8),
       }),
