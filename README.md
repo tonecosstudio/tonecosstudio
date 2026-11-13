@@ -36,10 +36,18 @@ O ambiente Vercel produção foi revalidado em 13/11: `VITE_TONECOS_COMMERCIAL_M
 - A fila administrativa completa é consultada por RPC protegida `tonart_admin_quotes_directory`, com paginação/filtro e busca exata por UUID; o navegador não carrega toda a base.
 - `Meus orçamentos` pagina a própria base via RLS e `count=exact`, sem ampliar acesso do cliente.
 
+## Proxy first-party do catálogo — correção pronta, homologação pendente
+
+Em 13/11/2026, a produção oficial respondeu `400 Invalid catalog query` para chamadas válidas como `/catalogo-api/api/categories`, `/api/recent?limit=1`, `/api/catalog?limit=1` e `/api/franchises?limit=1`. Home e `/modelos` continuam respondendo HTTP 200, mas o frontend depende dessas leituras JSON para carregar o catálogo.
+
+A causa foi isolada no adaptador Vercel `api/catalogo-proxy.js`: ele reconstruía a query pública a partir de `req.url`, enquanto o contrato de Vercel Functions expõe os parâmetros do request/rewrite por `request.query`. O commit `f36b84e` passou a usar `request.query`, removendo somente o parâmetro interno `path` e preservando parâmetros públicos, inclusive duplicatas, para o validador fail-closed. O teste canônico cobre rota sem query, query válida, duplicata e parâmetro desconhecido.
+
+**Estado:** correção integrada à `main`; produção ainda serve o SHA antigo e portanto continua com o 400 até um novo deploy oficial. Não tocar no Worker/D1/R2 para contornar esse defeito do frontend/proxy.
+
 ## Critérios pendentes para GO público
 
 1. Validar integralmente **conta e orçamento** com cliente de teste e administrador real no domínio oficial, incluindo e-mails de confirmação/recuperação, troca de senha e as telas do histórico já persistido por RLS.
-2. Restabelecer a autorização Git do owner `tonecosstudio` na instalação Vercel e religar o projeto oficial `tonart-studio-public` ao repositório canônico; depois homologar o SHA atual e executar QA desktop/mobile.
+2. Restabelecer a capacidade de publicação do projeto oficial `tonart-studio-public` a partir do repositório canônico; depois homologar o SHA atual e confirmar que `/catalogo-api/api/categories`, `/api/recent?limit=1` e `/api/catalog?limit=1` deixam de retornar 400, além do QA desktop/mobile.
 3. Habilitar a proteção de senhas vazadas no Supabase Auth; completar os dados legais do operador sem inventar razão social/endereço/DPO; revisar licença/crédito dos renders mantendo a quarentena SpecialSTL.
 4. Obter autorização expressa para lançar e indexar (robots/sitemap/canonical); sem GO, manter `noindex`.
 5. Não associar este MVP de catálogo + orçamento a pagamentos ou assinaturas não implementados.
