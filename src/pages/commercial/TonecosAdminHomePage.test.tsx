@@ -8,9 +8,15 @@ import {
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
-const mocks = vi.hoisted(() => ({ overview: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  overview: vi.fn(),
+  profiles: vi.fn(),
+}));
 vi.mock("@/services/admin/overview/tonart-admin-workspace-service", () => ({
   getTonartAdminOverview: mocks.overview,
+}));
+vi.mock("@/services/admin/overview/tonart-admin-profiles-service", () => ({
+  listTonartAdminProfiles: mocks.profiles,
 }));
 import TonecosAdminHomePage from "./TonecosAdminHomePage";
 
@@ -38,6 +44,12 @@ const fixture = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.overview.mockResolvedValue(fixture);
+  mocks.profiles.mockResolvedValue({
+    total: 1,
+    limit: 25,
+    offset: 0,
+    rows: fixture.recentProfiles,
+  });
 });
 afterEach(() => cleanup());
 
@@ -99,6 +111,11 @@ describe("TONART admin workspace", () => {
       await screen.findByRole("heading", { name: "Usuários cadastrados" }),
     ).toBeInTheDocument();
     expect(await screen.findByText("cliente@example.com")).toBeInTheDocument();
+    expect(mocks.profiles).toHaveBeenCalledWith({
+      search: "",
+      limit: 25,
+      offset: 0,
+    });
     expect(
       screen.queryByRole("button", {
         name: /promover|conceder permissão|excluir/i,
@@ -115,6 +132,33 @@ describe("TONART admin workspace", () => {
       "aria-current",
       "page",
     );
+    await waitFor(() => expect(mocks.profiles).toHaveBeenCalledTimes(1));
+    expect(mocks.overview).not.toHaveBeenCalled();
+  });
+
+  it("searches the complete protected user directory instead of filtering only recent profiles", async () => {
+    show("/admin/users");
+    await screen.findByText("cliente@example.com");
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar em todos os perfis" }), {
+      target: { value: "Cliente" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+    await waitFor(() =>
+      expect(mocks.profiles).toHaveBeenLastCalledWith({
+        search: "Cliente",
+        limit: 25,
+        offset: 0,
+      }),
+    );
+  });
+
+  it("fails closed when the protected user directory is unavailable", async () => {
+    mocks.profiles.mockRejectedValueOnce(new Error("RLS blocked"));
+    show("/admin/users");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar a lista de usuários",
+    );
+    expect(screen.queryByText("cliente@example.com")).not.toBeInTheDocument();
   });
 
   it("opens original Coins route directly without enabling emission", async () => {

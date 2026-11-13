@@ -16,11 +16,16 @@ import {
   type TonartAdminQuote,
   type TonartAdminOverview,
 } from "@/services/admin/overview/tonart-admin-workspace-service";
+import {
+  listTonartAdminProfiles,
+  type TonartAdminProfilesPage,
+} from "@/services/admin/overview/tonart-admin-profiles-service";
 import { panelClass, secondaryClass } from "./CommercialPage";
 import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
 
 const coinsEnabled = import.meta.env.VITE_TONECOS_COINS_ENABLED === "true";
 const quotesEnabled = import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true";
+const USER_PAGE_SIZE = 25;
 const integer = new Intl.NumberFormat("pt-BR");
 const dates = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
 const brl = new Intl.NumberFormat("pt-BR", {
@@ -82,6 +87,13 @@ export default function TonecosAdminHomePage() {
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
   const [search, setSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+  const [userOffset, setUserOffset] = useState(0);
+  const [userReload, setUserReload] = useState(0);
+  const [userDirectory, setUserDirectory] =
+    useState<TonartAdminProfilesPage | null>(null);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState("");
   const allItems = adminNavigationConfig.flatMap((section) => section.items);
   const pathname = location.pathname.replace(/\/+$/, "") || "/";
   const activeItem = allItems.find((item) => item.path === pathname);
@@ -107,19 +119,11 @@ export default function TonecosAdminHomePage() {
   // quote or Coins aggregates when inspecting catalog media.
   const requiresOverview =
     isDashboard ||
-    isUsers ||
     isCoins ||
     isOrders ||
     isFinancial ||
     isCommunication;
-  const users =
-    overview?.recentProfiles.filter((profile) =>
-      [profile.email, profile.fullName ?? ""].some((value) =>
-        value
-          .toLocaleLowerCase("pt-BR")
-          .includes(search.toLocaleLowerCase("pt-BR")),
-      ),
-    ) ?? [];
+
 
   useEffect(() => {
     if (!requiresOverview) {
@@ -150,9 +154,51 @@ export default function TonecosAdminHomePage() {
     };
   }, [reload, requiresOverview]);
 
+  useEffect(() => {
+    if (!isUsers) {
+      setUsersLoading(false);
+      setUsersError("");
+      return;
+    }
+    let active = true;
+    setUsersLoading(true);
+    setUsersError("");
+    listTonartAdminProfiles({
+      search: appliedSearch,
+      limit: USER_PAGE_SIZE,
+      offset: userOffset,
+    })
+      .then((result) => {
+        if (!active) return;
+        if (result.total > 0 && userOffset >= result.total) {
+          setUserOffset(
+            Math.floor((result.total - 1) / USER_PAGE_SIZE) * USER_PAGE_SIZE,
+          );
+          return;
+        }
+        setUserDirectory(result);
+      })
+      .catch(() => {
+        if (active) {
+          setUserDirectory(null);
+          setUsersError(
+            "Não foi possível carregar a lista de usuários. Confira a conexão e tente novamente.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setUsersLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [appliedSearch, isUsers, userOffset, userReload]);
+
   const showItem = (item: NavigationItem) => {
     navigate(item.path);
     setSearch("");
+    setAppliedSearch("");
+    setUserOffset(0);
   };
 
   return (
@@ -393,53 +439,155 @@ export default function TonecosAdminHomePage() {
 
           {isUsers && (
             <section className={panelClass}>
-              <h3 className="text-lg font-semibold">Usuários cadastrados</h3>
-              <p className="mt-2 max-w-2xl text-sm text-white/60">
-                Consulta autorizada à base de perfis existente. Não cria contas
-                e não altera permissões.
-                {overview
-                  ? ` Total cadastrado: ${integer.format(overview.profileCount)}.`
-                  : ""}
-              </p>
-              <label className="mt-5 block max-w-md space-y-2 text-xs">
-                <span>Buscar nos 25 perfis mais recentes</span>
-                <input
-                  className="min-h-11 w-full rounded-sm border border-white/25 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[hsl(var(--gold-accent))]"
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Nome ou e-mail"
-                />
-              </label>
-              <div className="mt-5 overflow-x-auto">
-                <table className="w-full min-w-[440px] border-collapse text-left text-sm">
-                  <thead className="border-b border-white/20 text-xs text-white/60">
-                    <tr>
-                      <th className="py-3 pr-3">Nome</th>
-                      <th className="py-3 pr-3">E-mail</th>
-                      <th className="py-3">Cadastro</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((p) => (
-                      <tr key={p.id} className="border-b border-white/10">
-                        <td className="py-3 pr-3">
-                          {p.fullName || "Não informado"}
-                        </td>
-                        <td className="py-3 pr-3 break-all">{p.email}</td>
-                        <td className="py-3 whitespace-nowrap text-white/60">
-                          {dates.format(new Date(p.createdAt))}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {overview && users.length === 0 && (
-                  <p className="py-6 text-sm text-white/55">
-                    Nenhum perfil correspondente.
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold">Usuários cadastrados</h3>
+                  <p className="mt-2 max-w-2xl text-sm text-white/60">
+                    Consulta administrativa paginada à base completa de perfis.
+                    Não cria contas e não altera permissões.
+                    {userDirectory
+                      ? ` Total correspondente: ${integer.format(userDirectory.total)}.`
+                      : ""}
                   </p>
-                )}
+                </div>
+                <button
+                  type="button"
+                  className={secondaryClass}
+                  disabled={usersLoading}
+                  onClick={() => setUserReload((value) => value + 1)}
+                >
+                  Atualizar lista
+                </button>
               </div>
+
+              <form
+                className="mt-5 flex max-w-2xl flex-wrap items-end gap-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setAppliedSearch(search.trim());
+                  setUserOffset(0);
+                }}
+              >
+                <label className="min-w-[240px] flex-1 space-y-2 text-xs">
+                  <span>Buscar em todos os perfis</span>
+                  <input
+                    className="min-h-11 w-full rounded-sm border border-white/25 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[hsl(var(--gold-accent))]"
+                    type="search"
+                    value={search}
+                    maxLength={160}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Nome ou e-mail"
+                  />
+                </label>
+                <button type="submit" className={secondaryClass}>
+                  Buscar
+                </button>
+                {(search || appliedSearch) && (
+                  <button
+                    type="button"
+                    className={secondaryClass}
+                    onClick={() => {
+                      setSearch("");
+                      setAppliedSearch("");
+                      setUserOffset(0);
+                    }}
+                  >
+                    Limpar
+                  </button>
+                )}
+              </form>
+
+              {usersError && (
+                <div
+                  role="alert"
+                  className="mt-5 rounded-sm border border-red-500/40 bg-red-950/20 p-4 text-sm text-red-100"
+                >
+                  {usersError}
+                </div>
+              )}
+              {usersLoading && (
+                <p role="status" className="mt-5 text-sm text-white/60">
+                  Consultando usuários...
+                </p>
+              )}
+
+              {!usersLoading && !usersError && userDirectory && (
+                <>
+                  <div className="mt-5 overflow-x-auto">
+                    <table className="w-full min-w-[440px] border-collapse text-left text-sm">
+                      <thead className="border-b border-white/20 text-xs text-white/60">
+                        <tr>
+                          <th className="py-3 pr-3">Nome</th>
+                          <th className="py-3 pr-3">E-mail</th>
+                          <th className="py-3">Cadastro</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userDirectory.rows.map((profile) => (
+                          <tr key={profile.id} className="border-b border-white/10">
+                            <td className="py-3 pr-3">
+                              {profile.fullName || "Não informado"}
+                            </td>
+                            <td className="break-all py-3 pr-3">
+                              {profile.email}
+                            </td>
+                            <td className="whitespace-nowrap py-3 text-white/60">
+                              {dates.format(new Date(profile.createdAt))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {userDirectory.rows.length === 0 && (
+                      <p className="py-6 text-sm text-white/55">
+                        Nenhum perfil correspondente.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs text-white/55">
+                      {userDirectory.total === 0
+                        ? "Nenhum resultado"
+                        : `Mostrando ${integer.format(userDirectory.offset + 1)}–${integer.format(
+                            Math.min(
+                              userDirectory.offset + userDirectory.rows.length,
+                              userDirectory.total,
+                            ),
+                          )} de ${integer.format(userDirectory.total)}`}
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className={secondaryClass}
+                        disabled={userOffset === 0 || usersLoading}
+                        onClick={() =>
+                          setUserOffset((value) =>
+                            Math.max(0, value - USER_PAGE_SIZE),
+                          )
+                        }
+                      >
+                        Anterior
+                      </button>
+                      <button
+                        type="button"
+                        className={secondaryClass}
+                        disabled={
+                          usersLoading ||
+                          userDirectory.offset + userDirectory.rows.length >=
+                            userDirectory.total
+                        }
+                        onClick={() =>
+                          setUserOffset((value) => value + USER_PAGE_SIZE)
+                        }
+                      >
+                        Próxima
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <p className="mt-4 text-xs text-white/45">
                 Somente leitura · autorização administrativa exigida no Supabase
               </p>

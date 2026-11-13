@@ -218,6 +218,10 @@ export type Database = {
         }
         Returns: string
       }
+      tonart_admin_profiles_directory: {
+        Args: { p_limit?: number; p_offset?: number; p_search?: string }
+        Returns: Json
+      }
       tonart_admin_workspace_overview: { Args: never; Returns: Json }
     }
     Enums: {
