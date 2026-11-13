@@ -476,6 +476,17 @@ describe("TONART commercial screens: account → request → history → respons
     ).toBeInTheDocument();
   });
 
+  it("preserves the quote destination when the customer chooses password recovery", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    renderApp("/login?next=%2Fsolicitar-orcamento");
+    expect(
+      await screen.findByRole("link", { name: "Esqueci minha senha" }),
+    ).toHaveAttribute(
+      "href",
+      "/recuperar-senha?next=%2Fsolicitar-orcamento",
+    );
+  });
+
   it("toggles password visibility without changing the typed password or submitting the login", async () => {
     mocks.getUser.mockResolvedValue(null);
     renderApp("/login");

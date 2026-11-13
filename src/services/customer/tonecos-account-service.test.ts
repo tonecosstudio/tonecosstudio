@@ -72,7 +72,26 @@ describe("Tonecos authenticated MVP account", () => {
 
   it("sends password reset through existing rate-limited service to current Tonecos origin", async () => {
     mocks.sendPasswordResetEmail.mockResolvedValue(undefined);
-    await expect(requestTonecosPasswordReset("  CLIENT@EXAMPLE.COM ")).resolves.toBeUndefined();
+    await expect(
+      requestTonecosPasswordReset(
+        "  CLIENT@EXAMPLE.COM ",
+        "/solicitar-orcamento",
+      ),
+    ).resolves.toBeUndefined();
+    expect(mocks.sendPasswordResetEmail).toHaveBeenCalledWith({
+      email: "client@example.com",
+      redirectTo: expect.stringMatching(
+        /\/recuperar-senha\?action=update&next=%2Fsolicitar-orcamento$/,
+      ),
+    });
+  });
+
+  it("rejects external password-reset return destinations", async () => {
+    mocks.sendPasswordResetEmail.mockResolvedValue(undefined);
+    await requestTonecosPasswordReset(
+      "client@example.com",
+      "https://evil.example/phish",
+    );
     expect(mocks.sendPasswordResetEmail).toHaveBeenCalledWith({
       email: "client@example.com",
       redirectTo: expect.stringMatching(/\/recuperar-senha\?action=update$/),

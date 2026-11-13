@@ -40,6 +40,48 @@ export const TONECOS_COMMERCIAL_ROUTES = {
   adminCoins: "/admin/moedas",
 } as const;
 
+const TONECOS_CUSTOMER_RETURN_ROUTES = new Set<string>([
+  TONECOS_COMMERCIAL_ROUTES.account,
+  TONECOS_COMMERCIAL_ROUTES.request,
+  TONECOS_COMMERCIAL_ROUTES.history,
+]);
+
+/** Allow only customer-owned commercial destinations after email auth flows. */
+export function resolveTonecosCustomerReturnPath(
+  value: string | null | undefined,
+): string {
+  return typeof value === "string" && TONECOS_CUSTOMER_RETURN_ROUTES.has(value)
+    ? value
+    : TONECOS_COMMERCIAL_ROUTES.account;
+}
+
+export function tonecosLoginReturnPath(
+  value: string | null | undefined,
+): string {
+  const returnTo = resolveTonecosCustomerReturnPath(value);
+  return returnTo === TONECOS_COMMERCIAL_ROUTES.account
+    ? TONECOS_COMMERCIAL_ROUTES.login
+    : TONECOS_COMMERCIAL_ROUTES.login +
+        "?next=" +
+        encodeURIComponent(returnTo);
+}
+
+export function tonecosRecoveryPath(
+  value: string | null | undefined,
+  update = false,
+): string {
+  const returnTo = resolveTonecosCustomerReturnPath(value);
+  const params = new URLSearchParams();
+  if (update) params.set("action", "update");
+  if (returnTo !== TONECOS_COMMERCIAL_ROUTES.account) {
+    params.set("next", returnTo);
+  }
+  const query = params.toString();
+  return query
+    ? TONECOS_COMMERCIAL_ROUTES.recovery + "?" + query
+    : TONECOS_COMMERCIAL_ROUTES.recovery;
+}
+
 export const PUBLIC_COLLECTIONS_ENABLED = false;
 
 export const AUTH_ROUTES = {

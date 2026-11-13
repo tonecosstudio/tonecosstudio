@@ -22,13 +22,16 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 describe("Tonecos password recovery screen", () => {
   it("requests a link without leaking account existence", async () => {
     mocks.request.mockResolvedValue(undefined);
-    show("/recuperar-senha");
+    show("/recuperar-senha?next=%2Fsolicitar-orcamento");
     fireEvent.change(screen.getByRole("textbox", { name: "E-mail da conta" }), {
       target: { value: "cliente@example.com" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Enviar instruções" }));
     expect(await screen.findByText(/Se o e-mail estiver cadastrado/)).toBeInTheDocument();
-    expect(mocks.request).toHaveBeenCalledWith("cliente@example.com");
+    expect(mocks.request).toHaveBeenCalledWith(
+      "cliente@example.com",
+      "/solicitar-orcamento",
+    );
   });
   it("does not show reset password form for expired or invalid sessions", async () => {
     mocks.user.mockResolvedValue(null);
@@ -41,10 +44,15 @@ describe("Tonecos password recovery screen", () => {
     const tokenHash = "a".repeat(64);
     mocks.verify.mockResolvedValue(undefined);
     mocks.user.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111", email: "cliente@example.com" });
-    show(`/recuperar-senha?action=update&token_hash=${tokenHash}&type=recovery`);
+    show(
+      `/recuperar-senha?action=update&next=%2Fsolicitar-orcamento&token_hash=${tokenHash}&type=recovery`,
+    );
     expect(await screen.findByRole("button", { name: "Salvar nova senha" })).toBeInTheDocument();
     expect(mocks.verify).toHaveBeenCalledExactlyOnceWith(tokenHash);
     expect(mocks.user).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("link", { name: "Voltar ao login" }),
+    ).toHaveAttribute("href", "/login?next=%2Fsolicitar-orcamento");
   });
 
   it("blocks password changes when recovery token verification fails", async () => {
@@ -77,7 +85,7 @@ describe("Tonecos password recovery screen", () => {
   it("requires matching strong passwords with verified session before submitting", async () => {
     mocks.user.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111", email: "cliente@example.com" });
     mocks.complete.mockResolvedValue(undefined);
-    show("/recuperar-senha?action=update");
+    show("/recuperar-senha?action=update&next=%2Fsolicitar-orcamento");
     const field = await screen.findByLabelText("Nova senha");
     fireEvent.change(field, { target: { value: "StrongPass123!" } });
     fireEvent.change(screen.getByLabelText("Confirmar nova senha"), { target: { value: "AnotherPass123!" } });

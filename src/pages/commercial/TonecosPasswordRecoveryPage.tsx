@@ -6,7 +6,12 @@ import {
   type FormEvent,
 } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import {
+  TONECOS_COMMERCIAL_ROUTES,
+  resolveTonecosCustomerReturnPath,
+  tonecosLoginReturnPath,
+  tonecosRecoveryPath,
+} from "@/config/routes";
 import { isPasswordPolicyCompliant } from "@/config/auth";
 import {
   completeTonecosPasswordRecovery,
@@ -28,6 +33,7 @@ export default function TonecosPasswordRecoveryPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const update = params.get("action") === "update";
+  const returnTo = resolveTonecosCustomerReturnPath(params.get("next"));
   const recoveryToken = params.get("token_hash");
   const recoveryType = params.get("type");
   const validationStarted = useRef(false);
@@ -45,10 +51,7 @@ export default function TonecosPasswordRecoveryPage() {
       if (recoveryToken) {
         // Clear the single-use token from browser history before exchanging it.
         navigate(
-          {
-            pathname: TONECOS_COMMERCIAL_ROUTES.recovery,
-            search: "?action=update",
-          },
+          tonecosRecoveryPath(returnTo, true),
           { replace: true },
         );
         if (recoveryType !== "recovery")
@@ -67,7 +70,7 @@ export default function TonecosPasswordRecoveryPage() {
         "Não foi possível validar o link. Ele pode ter expirado ou já ter sido utilizado.",
       );
     }
-  }, [navigate, recoveryToken, recoveryType]);
+  }, [navigate, recoveryToken, recoveryType, returnTo]);
   useEffect(() => {
     if (update && !validationStarted.current) {
       validationStarted.current = true;
@@ -90,12 +93,12 @@ export default function TonecosPasswordRecoveryPage() {
         await completeTonecosPasswordRecovery(password);
         setPassword("");
         setConfirm("");
-        navigate(TONECOS_COMMERCIAL_ROUTES.login, {
+        navigate(tonecosLoginReturnPath(returnTo), {
           replace: true,
           state: { recovered: true },
         });
       } else {
-        await requestTonecosPasswordReset(email);
+        await requestTonecosPasswordReset(email, returnTo);
         setNotice(
           "Se o e-mail estiver cadastrado, enviaremos um link de recuperação. Confira sua caixa de entrada.",
         );
@@ -152,7 +155,7 @@ export default function TonecosPasswordRecoveryPage() {
             </button>
             <Link
               className={secondaryClass}
-              to={TONECOS_COMMERCIAL_ROUTES.recovery}
+              to={tonecosRecoveryPath(returnTo)}
             >
               Solicitar outro link
             </Link>
@@ -214,7 +217,7 @@ export default function TonecosPasswordRecoveryPage() {
         )}
         <Link
           className={secondaryClass + " mt-6"}
-          to={TONECOS_COMMERCIAL_ROUTES.login}
+          to={tonecosLoginReturnPath(returnTo)}
         >
           Voltar ao login
         </Link>

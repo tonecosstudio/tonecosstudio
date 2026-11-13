@@ -5,7 +5,10 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import {
+  TONECOS_COMMERCIAL_ROUTES,
+  tonecosRecoveryPath,
+} from "@/config/routes";
 import { hasTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
 import {
   changeTonecosPassword,
@@ -554,7 +557,7 @@ const safeNext = new Set<string>([
                 <div className="text-right">
                   <Link
                     className="text-xs text-[hsl(var(--gold-accent))] underline underline-offset-4"
-                    to={TONECOS_COMMERCIAL_ROUTES.recovery}
+                    to={tonecosRecoveryPath(next)}
                   >
                     Esqueci minha senha
                   </Link>

@@ -3,7 +3,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import { isPasswordPolicyCompliant } from "@/config/auth";
-import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import {
+  TONECOS_COMMERCIAL_ROUTES,
+  resolveTonecosCustomerReturnPath,
+  tonecosLoginReturnPath,
+  tonecosRecoveryPath,
+} from "@/config/routes";
 import {
   resendSignupConfirmation,
   sendPasswordResetEmail,
@@ -56,24 +61,8 @@ function originRedirect(path: string): string {
   return new URL(path, window.location.origin).toString();
 }
 
-const confirmationReturnRoutes = new Set<string>([
-  TONECOS_COMMERCIAL_ROUTES.account,
-  TONECOS_COMMERCIAL_ROUTES.request,
-  TONECOS_COMMERCIAL_ROUTES.history,
-]);
-
 function confirmationRedirect(returnTo?: string): string {
-  const safeReturn =
-    typeof returnTo === "string" && confirmationReturnRoutes.has(returnTo)
-      ? returnTo
-      : null;
-  const loginPath =
-    safeReturn && safeReturn !== TONECOS_COMMERCIAL_ROUTES.account
-      ? TONECOS_COMMERCIAL_ROUTES.login +
-        "?next=" +
-        encodeURIComponent(safeReturn)
-      : TONECOS_COMMERCIAL_ROUTES.login;
-  return originRedirect(loginPath);
+  return originRedirect(tonecosLoginReturnPath(returnTo));
 }
 
 /** The only identity provider for Tonecos is Supabase Auth in the Tonecos project. */
@@ -213,12 +202,16 @@ export async function updateMyTonecosProfile(input: {
 }
 
 /** Delegates rate-limiting to the existing canonical Supabase Auth service. */
-export async function requestTonecosPasswordReset(email: string): Promise<void> {
+export async function requestTonecosPasswordReset(
+  email: string,
+  returnTo?: string,
+): Promise<void> {
   assertTonecosCommercialEnabled();
   const normalized = validateEmail(email);
+  const safeReturn = resolveTonecosCustomerReturnPath(returnTo);
   await sendPasswordResetEmail({
     email: normalized,
-    redirectTo: originRedirect(TONECOS_COMMERCIAL_ROUTES.recovery + "?action=update"),
+    redirectTo: originRedirect(tonecosRecoveryPath(safeReturn, true)),
   });
 }
 
