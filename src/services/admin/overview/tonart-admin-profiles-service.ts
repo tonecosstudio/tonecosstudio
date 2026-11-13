@@ -57,9 +57,12 @@ export async function listTonartAdminProfiles(options: {
 
   const value = data as unknown as Record<string, unknown>;
   if (
+    typeof value.total !== "number" ||
     !Number.isSafeInteger(value.total) ||
-    (value.total as number) < 0 ||
+    value.total < 0 ||
+    typeof value.limit !== "number" ||
     value.limit !== limit ||
+    typeof value.offset !== "number" ||
     value.offset !== offset ||
     !Array.isArray(value.rows) ||
     value.rows.length > limit
@@ -67,6 +70,7 @@ export async function listTonartAdminProfiles(options: {
     throw new Error("tonart_admin_profiles_result_invalid");
   }
 
+  const total = value.total;
   const rows: TonartAdminDirectoryProfile[] = value.rows.map((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item)) {
       throw new Error("tonart_admin_profile_invalid");
@@ -95,12 +99,12 @@ export async function listTonartAdminProfiles(options: {
     };
   });
 
-  if (rows.length > Math.max(0, (value.total as number) - offset)) {
+  if (rows.length > Math.max(0, total - offset)) {
     throw new Error("tonart_admin_profiles_result_invalid");
   }
 
   return {
-    total: value.total as number,
+    total,
     limit,
     offset,
     rows,
