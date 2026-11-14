@@ -348,6 +348,87 @@ describe("TONART commercial screens: account → request → history → respons
     ).not.toBeInTheDocument();
   });
 
+  it("opens only the exact customer-owned quote from a validated deep link", async () => {
+    mocks.listMine.mockResolvedValueOnce({
+      total: 1,
+      limit: 1,
+      offset: 0,
+      rows: [{
+        id: QUOTE,
+        status: "reviewing",
+        createdAt: "2026-11-14T00:00:00Z",
+        notes: null,
+        quotedAmount: null,
+        responseMessage: null,
+        deadline: null,
+        items: [{ slug: "naruto", quantity: 1 }],
+        whatsapp: null,
+        postalCode: null,
+        scale: "a definir",
+        finishing: "a definir",
+      }],
+    });
+    renderApp("/meus-orcamentos?quote=" + QUOTE);
+    expect(
+      await screen.findByRole("heading", { name: "Orçamento #22222222" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver todos os orçamentos" }))
+      .toHaveAttribute("href", "/meus-orcamentos");
+    expect(mocks.listMine).toHaveBeenCalledWith(USER, {
+      quoteId: QUOTE,
+      limit: 1,
+      offset: 0,
+    });
+    expect(mocks.history).toHaveBeenCalledWith([QUOTE]);
+    expect(screen.queryByRole("button", { name: "Próxima" })).not.toBeInTheDocument();
+  });
+
+  it("does not claim an absent customer quote is an empty account", async () => {
+    renderApp("/meus-orcamentos?quote=" + QUOTE);
+    expect(
+      await screen.findByText("Esse orçamento não foi encontrado na sua conta."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Você ainda não enviou solicitações."),
+    ).not.toBeInTheDocument();
+    expect(mocks.listMine).toHaveBeenCalledWith(USER, {
+      quoteId: QUOTE,
+      limit: 1,
+      offset: 0,
+    });
+  });
+
+  it("rejects an invalid quote deep link without performing a protected lookup", async () => {
+    renderApp("/meus-orcamentos?quote=../../admin");
+    expect(
+      await screen.findByRole("alert"),
+    ).toHaveTextContent("O link do orçamento é inválido");
+    expect(mocks.listMine).not.toHaveBeenCalled();
+  });
+
+  it("restores the exact quote deep link after account sign-in", async () => {
+    mocks.getUser.mockResolvedValueOnce(null).mockResolvedValue({
+      id: USER,
+      email: "cliente@example.com",
+    });
+    mocks.signIn.mockResolvedValue(USER);
+    renderApp("/login?next=" + encodeURIComponent("/meus-orcamentos?quote=" + QUOTE));
+    fireEvent.change(await screen.findByLabelText("E-mail"), {
+      target: { value: "cliente@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Senha"), {
+      target: { value: "StrongPass123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await waitFor(() =>
+      expect(mocks.listMine).toHaveBeenCalledWith(USER, {
+        quoteId: QUOTE,
+        limit: 1,
+        offset: 0,
+      }),
+    );
+  });
+
   it("preserves selected models and offers login if the session expires during submission", async () => {
     mocks.submit.mockRejectedValueOnce(new Error("User not authenticated"));
     renderApp("/solicitar-orcamento", true);
