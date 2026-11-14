@@ -1,3 +1,13 @@
+## Checkpoint 14/11/2026 — endereço do perfil e lacuna de assinaturas
+
+- **Base → commit funcional:** `main@e5a20984` → `501c2a11` (`fix(account): correct delivery address autofill`).
+- **Implementado:** o autofill do endereço deixou de tratar Número como Complemento; Complemento recebe `address-line2`, e o CEP mostra o formato esperado. O endereço segue salvo no perfil canônico existente.
+- **Validação Windows:** teste direcionado do formulário passou (1); `npm run typecheck`, ESLint dos dois arquivos e `git diff --check` passaram.
+- **Coins:** regra canônica preservada, sem mudança de saldo, ledger ou resgate: 1 Coin = R$1 em orçamento respondido; não incide sobre a entrada da pré-venda.
+- **Bloqueio de integração real:** o serviço existente de assinaturas consulta `public.subscriptions`, mas o schema lido do projeto Supabase conectado não contém essa tabela; também não há branch isolada confirmada. Não foi criado esquema paralelo nem feita escrita remota. E2E com sessão cliente/admin continua pendente.
+- **NEXT_ACTION:** reconciliar qual subsistema de assinatura já existente é o canônico e preparar sua integração no ambiente isolado; manter uma única fonte de dados e validar com contas controladas.
+- **DO_NOT_REPEAT:** não duplicar `subscriptions`/`subscription_credit_subscriptions`, tabelas ou serviços; não inferir ausência de dados por mock; não escrever em produção.
+
 ## Checkpoint 14/11/2026 — revisão do contrato Coins e resumo financeiro admin
 
 - **Base → commit funcional:** `main@8c97d8f8` → `c4a8095a` (`test(commercial): align finance summary assertion`).
