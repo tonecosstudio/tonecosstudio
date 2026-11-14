@@ -1,3 +1,14 @@
+## Checkpoint 14/11/2026 — rotas de assinatura protegidas pela disponibilidade real
+
+- **Base → commit funcional:** `main@e9367a73` → `8c0c2fca` (`fix(commercial): gate subscriptions on data availability`).
+- **Implementado:** `/planos`, checkout de coleção, seção de assinatura da conta e fila admin `/admin/assinaturas` respeitam `PUBLIC_COLLECTIONS_ENABLED`. Quando o backend não está habilitado, a interface informa o estado e oferece orçamento, catálogo ou a administração de orçamentos; a fila legada não consulta `subscription_plans`/`subscriptions`. Os serviços de assinatura existentes foram preservados para quando a fonte estiver disponível.
+- **Validação Windows:** `TonecosCustomerSections.test.tsx` passou (31); `npm run typecheck`, ESLint dos quatro TSX alterados, Prettier dos quatro TSX e `git diff --check` passaram.
+- **Coins:** contrato existente preservado: 1 Coin = R$1 em orçamento respondido elegível, até saldo e valor devido; não se aplica à entrada de R$50 da pré-venda.
+- **Supabase (somente leitura):** só há o projeto conectado `tonecosstudio-site`; sem branches de desenvolvimento e sem `collections`, `subscription_plans` ou `subscriptions`. A criação de homologação foi recusada porque branching exige plano Pro ou superior. Nenhuma migração ou escrita remota foi feita.
+- **GitHub Actions:** run [43623029155](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43623029155), no HEAD `e9367a73`, falhou em quatro jobs com `runner_id=0` e zero steps; o job offline foi ignorado. A API não disponibiliza os logs (`BlobNotFound`), então não há evidência de falha na execução dos comandos do workflow.
+- **NEXT_ACTION:** aguardar a definição de unidade das assinaturas (franquia publicada do D1 ou agrupamento curado existente) e um ambiente de homologação apto a branches; seguir nas integrações locais independentes e validar o fluxo com sessão real assim que houver ambiente.
+- **DO_NOT_REPEAT:** não ativar as telas antigas contra tabelas ausentes, não recriar catálogo/coleções, não tratar mocks como integração Supabase real e não alterar banco ou serviços de produção.
+
 ## Checkpoint 14/11/2026 — pagamentos da conta ligados ao histórico canônico
 
 - **Base → commit funcional:** `main@3b5d4b30` → `2499a54d` (`fix(account): show canonical quote payments`).
