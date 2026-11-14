@@ -129,12 +129,6 @@ export const adminNavigationConfig: NavigationSection[] = [
         icon: "CreditCard",
         badge: "Central",
       },
-      {
-        id: "preorders",
-        label: "Pagamentos de pedidos",
-        path: ADMIN_ROUTES.preorders,
-        icon: "Package",
-      },
     ],
   },
   {

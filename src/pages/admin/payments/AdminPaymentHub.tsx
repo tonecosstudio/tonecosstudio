@@ -4,10 +4,10 @@ import {
   Wallet,
   CreditCard,
   Calculator,
-  Package,
   KeyRound,
+  History,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { matchPath, useLocation, useNavigate } from "react-router-dom";
 import { ADMIN_ROUTES } from "@/config/routes";
 import AdminPayments from "./AdminPayments";
 import AdminPaymentMethods from "./AdminPaymentMethods";
@@ -15,37 +15,34 @@ import PaymentCalculator from "./PaymentCalculator";
 import AdminPreorders from "./AdminPreorders";
 import AdminPaymentKeys from "./AdminPaymentKeys";
 
-type PaymentHubTab =
-  | "payments"
-  | "methods"
-  | "keys"
-  | "calculator"
-  | "preorders";
+type PaymentHubTab = "payments" | "methods" | "keys" | "calculator" | "legacy";
 
 const PAYMENT_TAB_PATHS: Record<PaymentHubTab, string> = {
   payments: ADMIN_ROUTES.payments,
   methods: ADMIN_ROUTES.paymentMethods,
   keys: ADMIN_ROUTES.paymentKeys,
   calculator: ADMIN_ROUTES.paymentCalculator,
-  preorders: ADMIN_ROUTES.preorders,
+  legacy: `${ADMIN_ROUTES.payments}?view=legacy`,
 };
 
 function isPaymentHubTab(value: string): value is PaymentHubTab {
   return value in PAYMENT_TAB_PATHS;
 }
 
-function getCurrentTab(pathname: string): PaymentHubTab {
+function getCurrentTab(pathname: string, search: string): PaymentHubTab {
   if (pathname === ADMIN_ROUTES.paymentMethods) return "methods";
   if (pathname === ADMIN_ROUTES.paymentKeys) return "keys";
   if (pathname === ADMIN_ROUTES.paymentCalculator) return "calculator";
-  if (pathname === ADMIN_ROUTES.preorders) return "preorders";
+  if (pathname === ADMIN_ROUTES.preorders) return "payments";
+  if (matchPath(ADMIN_ROUTES.paymentDetails, pathname)) return "legacy";
+  if (new URLSearchParams(search).get("view") === "legacy") return "legacy";
   return "payments";
 }
 
 export default function AdminPaymentHub() {
   const location = useLocation();
   const navigate = useNavigate();
-  const currentTab = getCurrentTab(location.pathname);
+  const currentTab = getCurrentTab(location.pathname, location.search);
 
   const handleTabChange = (value: string) => {
     if (isPaymentHubTab(value)) {
@@ -67,7 +64,7 @@ export default function AdminPaymentHub() {
             Central de Pagamentos
           </h1>
           <p className="text-[hsl(0,0%,45%)] text-xs tracking-wider font-mono uppercase mt-1">
-            Pagamentos, métodos, chaves, cálculos e pré-vendas
+            Orçamentos, pedidos, métodos, chaves e cálculos
           </p>
         </div>
 
@@ -93,14 +90,14 @@ export default function AdminPaymentHub() {
               <Calculator className="h-4 w-4 mr-2" />
               Cálculos
             </TabsTrigger>
-            <TabsTrigger value="preorders">
-              <Package className="mr-2 h-4 w-4" />
-              Pagamentos de pedidos
+            <TabsTrigger value="legacy">
+              <History className="mr-2 h-4 w-4" />
+              Histórico legado
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="payments" className="space-y-4">
-            <AdminPayments />
+            <AdminPreorders />
           </TabsContent>
 
           <TabsContent value="methods" className="space-y-4">
@@ -115,8 +112,8 @@ export default function AdminPaymentHub() {
             <PaymentCalculator />
           </TabsContent>
 
-          <TabsContent value="preorders" className="space-y-4">
-            <AdminPreorders />
+          <TabsContent value="legacy" className="space-y-4">
+            <AdminPayments />
           </TabsContent>
         </Tabs>
       </div>

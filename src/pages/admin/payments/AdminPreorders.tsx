@@ -39,7 +39,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 
 function isValidPaymentAmount(
@@ -57,13 +57,18 @@ function formatAmount(value: number | null | undefined): string {
 export default function AdminPreorders() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedTab, setSelectedTab] = useState<
     | "under_review"
     | "pending_deposit"
     | "in_production"
     | "ready_for_payment"
     | "completed"
-  >("under_review");
+  >(() =>
+    new URLSearchParams(location.search).get("status") === "pending"
+      ? "pending_deposit"
+      : "under_review",
+  );
   const [rejectionReasons, setRejectionReasons] = useState<
     Record<string, string>
   >({});
