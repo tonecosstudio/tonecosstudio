@@ -411,15 +411,29 @@ describe("TONART admin workspace", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows preserved modules without pretending to enable missing operations", async () => {
+  it("restores the production hub with protected pre-production figures, not fabricated production orders", async () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: /Produção/ }));
     expect(
-      await screen.findByText("Módulo desativado nesta implantação"),
+      await screen.findByText(
+        /Um orçamento não representa ordem de fabricação/,
+      ),
     ).toBeInTheDocument();
+    expect(screen.getByText("Solicitações recebidas")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /Iniciar produção/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it("uses the existing commercial overview for historical analytics without presenting quotes as revenue", async () => {
+    show("/admin/analytics");
+    expect(
+      await screen.findByText(
+        /Valores de propostas comerciais/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Valor total das propostas")).toBeInTheDocument();
+    expect(mocks.overview).toHaveBeenCalledTimes(1);
   });
 
   it("fails closed on dashboard query errors instead of inventing empty figures", async () => {

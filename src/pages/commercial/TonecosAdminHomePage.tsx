@@ -142,6 +142,8 @@ export default function TonecosAdminHomePage() {
   const isOrders = sectionId === "orders" && !selectedSubpage;
   const isFinancial = sectionId === "financial-hub" && !selectedSubpage;
   const isCommunication = sectionId === "communication" && !selectedSubpage;
+  const isProduction = sectionId === "production-dashboard" && !selectedSubpage;
+  const isAnalytics = sectionId === "analytics" && !selectedSubpage;
   // The catalog has its own Cloudflare authority. Do not fetch account,
   // quote or Coins aggregates when inspecting catalog media.
   const requiresOverview =
@@ -150,6 +152,8 @@ export default function TonecosAdminHomePage() {
     isOrders ||
     isFinancial ||
     isCommunication ||
+    isProduction ||
+    isAnalytics ||
     (selectedSubpage !== undefined &&
       ["production-dashboard", "communication", "financial-hub"].includes(
         selectedSubpage.parent,
@@ -383,6 +387,19 @@ export default function TonecosAdminHomePage() {
               loading={loading}
               quotesEnabled={quotesEnabled}
               parentPath={activeItem?.path ?? ADMIN_ROUTES.home}
+            />
+          )}
+          {(isProduction || isAnalytics) && (
+            <TonartAdminOriginalSection
+              section={{
+                parent: isProduction ? "production-dashboard" : "financial-hub",
+                path: isProduction ? ADMIN_ROUTES.production : ADMIN_ROUTES.analytics,
+                label: isProduction ? "Produção" : "Análises de orçamentos",
+              }}
+              overview={overview}
+              loading={loading}
+              quotesEnabled={quotesEnabled}
+              parentPath={ADMIN_ROUTES.home}
             />
           )}
           {isDashboard && (
@@ -1036,7 +1053,9 @@ export default function TonecosAdminHomePage() {
             !isCatalog &&
             !isOrders &&
             !isFinancial &&
-            !isCommunication && (
+            !isCommunication &&
+            !isProduction &&
+            !isAnalytics && (
               <section className={panelClass}>
                 <h3 className="text-lg font-semibold">{displayName}</h3>
                 <p className="mt-4 max-w-2xl text-sm leading-6 text-white/65">
