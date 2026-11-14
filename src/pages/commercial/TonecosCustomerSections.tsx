@@ -653,6 +653,11 @@ function CustomerSectionContent({
             type: "checkbox",
             description: "Não implica início de fabricação ou envio automático de mensagens.",
           },
+          {
+            label: "Novidades e campanhas",
+            type: "checkbox",
+            description: "Consentimento opcional do sistema original; nenhuma inscrição é efetuada.",
+          },
         ]}
         />
         <RecentQuoteContext userId={userId} section="preferencias" />
