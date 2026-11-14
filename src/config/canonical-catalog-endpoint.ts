@@ -13,7 +13,22 @@ export function resolveCanonicalCatalogApiBase(
   const explicit = configured?.trim();
   // Development may use a local/mock API. A production catalog must always
   // use the exact same-origin Pages Function, never an external override.
-  if (!production) return explicit ?? "";
+  if (!production) {
+    if (explicit) return explicit;
+    try {
+      const origin = new URL(pageOrigin ?? "");
+      if (
+        origin.protocol === "http:" &&
+        ["localhost", "127.0.0.1"].includes(origin.hostname) &&
+        origin.port === "8080"
+      ) {
+        return new URL(CANONICAL_CATALOG_PROXY_PATH, origin.origin).toString();
+      }
+    } catch {
+      // A missing or non-local page origin has no implicit development API.
+    }
+    return "";
+  }
   if (!pageOrigin) return "";
 
   try {

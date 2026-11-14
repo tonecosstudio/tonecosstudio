@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import os from "os";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import { catalogReadOnlyViteProxy } from "./scripts/dev/catalog-readonly-vite-proxy.mjs";
 
 const catalogWebpOutput = path.resolve(
   process.env.CATALOG_WEBP_OUTPUT ||
@@ -21,7 +22,11 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    mode === "development" && componentTagger(),
+    mode === "development" && catalogReadOnlyViteProxy(),
+  ].filter(Boolean),
   resolve: {
     dedupe: ["react", "react-dom", "react/jsx-runtime"],
     alias: {

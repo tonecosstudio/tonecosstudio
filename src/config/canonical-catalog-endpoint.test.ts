@@ -36,6 +36,12 @@ describe("Cloudflare Pages canonical public catalog", () => {
     expect(resolveCanonicalCatalogApiBase(
       undefined, "https://tonecosstudio.pages.dev", false,
     )).toBe("");
+    expect(resolveCanonicalCatalogApiBase(
+      undefined, "http://127.0.0.1:8080", false,
+    )).toBe("http://127.0.0.1:8080/catalogo-api/");
+    expect(resolveCanonicalCatalogApiBase(
+      "", "http://localhost:5173", false,
+    )).toBe("");
   });
 
   it("accepts only the exact first-party Pages endpoint in production", () => {
