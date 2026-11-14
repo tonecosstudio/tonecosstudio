@@ -1,153 +1,188 @@
-/**
- * Tests for Task 25.2: Add voucher upload to subscription creation
- * 
- * Requirements: 25.1, 25.3
- * 
- * Test Coverage:
- * - Voucher upload component integration
- * - Subscription creation with voucher URL
- * - Payment status handling
- */
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import SubscribeCollection from "@/pages/SubscribeCollection";
 
-import { describe, it, expect } from 'vitest';
+const mocks = vi.hoisted(() => ({
+  checkout: vi.fn(),
+  currentUser: vi.fn(),
+  getPaymentSettings: vi.fn(),
+  loadCatalogModels: vi.fn(),
+  useSubscribeCollectionCheckout: vi.fn(),
+}));
 
-describe('SubscribeCollection - Voucher Upload Integration (Task 25.2)', () => {
-  it('should have payment_voucher_url field in subscription creation', () => {
-    // This test validates that the subscription creation logic includes payment_voucher_url
-    // The actual implementation is in SubscribeCollection.tsx:
-    // 
-    // const { data: subscription, error: subError } = await supabase
-    //   .from("subscriptions")
-    //   .insert({
-    //     user_id: user.id,
-    //     plan_id: selectedPlan.id,
-    //     plan_type: selectedPlan.plan_type,
-    //     status: "pending_payment",
-    //     payment_voucher_url: paymentVoucherUrl,  // <-- Added field
-    //   })
-    
-    expect(true).toBe(true);
+vi.mock("@/components/SEOHead", () => ({ default: () => null }));
+vi.mock("@/hooks/subscription/useSubscribeCollectionCheckout", () => ({
+  useSubscribeCollectionCheckout: mocks.useSubscribeCollectionCheckout,
+}));
+vi.mock("@/services/subscriptions/subscription-checkout-service", () => ({
+  createSubscriptionCheckoutForCurrentUser: mocks.checkout,
+}));
+vi.mock("@/services/payments/payment-settings-service", () => ({
+  getPaymentSettings: mocks.getPaymentSettings,
+}));
+vi.mock("@/services/customer/tonecos-account-service", () => ({
+  getTonecosCurrentUser: mocks.currentUser,
+}));
+vi.mock("@/services/subscriptions/subscription-catalog-service", () => ({
+  loadSubscriptionCatalogModels: mocks.loadCatalogModels,
+}));
+vi.mock("@/config/canonical-catalog-endpoint", () => ({
+  CANONICAL_CATALOG_API_BASE: null,
+}));
+
+const COLLECTION_ID = "11111111-1111-4111-8111-111111111111";
+const PLAN_6_ID = "22222222-2222-4222-8222-222222222222";
+const PLAN_12_ID = "33333333-3333-4333-8333-333333333333";
+const MODEL_SLUGS = Array.from({ length: 20 }, (_, index) => `terror-model-${index + 1}`);
+const CATALOG_MODELS = MODEL_SLUGS.map((slug, index) => ({
+  id: `model-${index + 1}`,
+  slug,
+  code: `TM-${index + 1}`,
+  name: `Terror Model ${index + 1}`,
+  variantName: "",
+  category: "Terror",
+  categorySlug: "terror",
+  franchise: "Coleção Terror",
+  franchiseSlug: "colecao-terror",
+  collection: null,
+  folderPath: null,
+  imageCount: 1,
+  galleryVersion: 1,
+  coverStorageKey: null,
+  description: null,
+  material: null,
+  heightCm: null,
+  imageUrl: null,
+}));
+
+function plan(limit: 6 | 12) {
+  return {
+    id: limit === 6 ? PLAN_6_ID : PLAN_12_ID,
+    name: `Plano ${limit} modelos`,
+    description: null,
+    plan_type: "trimestral",
+    price_pix: 300,
+    price_full: 360,
+    deliveries_total: 3,
+    total_credits: null,
+    model_selection_limit: limit,
+    is_active: true,
+  };
+}
+
+function renderPage() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   });
 
-  it('should set payment status to under_review when voucher is uploaded', () => {
-    // This test validates the payment status logic:
-    // 
-    // const paymentStatus = paymentVoucherUrl ? "under_review" : "pending";
-    // 
-    // const { data: payment, error: payError } = await supabase
-    //   .from("manual_payments")
-    //   .insert({
-    //     ...
-    //     status: paymentStatus,  // <-- Conditional status
-    //     ...
-    //   })
-    
-    const paymentVoucherUrl = 'https://example.com/voucher.jpg';
-    const paymentStatus = paymentVoucherUrl ? "under_review" : "pending";
-    
-    expect(paymentStatus).toBe("under_review");
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={["/assinar/terror"]}>
+        <Routes>
+          <Route path="/assinar/:slug" element={<SubscribeCollection />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+async function attachVoucher(user: ReturnType<typeof userEvent.setup>) {
+  const input = screen.getByLabelText(/Escolher arquivo do comprovante/i);
+  await user.upload(input, new File(["pix recebido"], "comprovante.pdf", { type: "application/pdf" }));
+}
+
+async function modelButtons() {
+  await screen.findByText("Terror Model 1", { exact: true });
+  return screen.getAllByRole("button", { name: /^Terror Model \d+\b/i });
+}
+
+describe("SubscribeCollection curated model checkout", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mocks.useSubscribeCollectionCheckout.mockReturnValue({
+      plans: [plan(6), plan(12)],
+      plansLoading: false,
+      collections: [{
+        id: COLLECTION_ID,
+        name: "Coleção Terror",
+        slug: "terror",
+        description: "Modelos escolhidos para a coleção de terror.",
+        image_url: null,
+        is_active: true,
+        catalog_model_slugs: MODEL_SLUGS,
+      }],
+      collectionsLoading: false,
+      initialCollectionLoading: false,
+      loadError: null,
+      retryLoad: vi.fn(),
+    });
+    mocks.loadCatalogModels.mockResolvedValue(CATALOG_MODELS);
+    mocks.getPaymentSettings.mockResolvedValue({
+      payment_type: "subscription",
+      subscription_period: "quarterly",
+      pix_key: "tonart@example.com",
+      payment_link: "",
+    });
+    mocks.currentUser.mockResolvedValue({ id: "44444444-4444-4444-8444-444444444444" });
+    mocks.checkout.mockResolvedValue({
+      subscriptionId: "55555555-5555-4555-8555-555555555555",
+      paymentId: "66666666-6666-4666-8666-666666666666",
+      referenceNumber: "TON-TEST-12345",
+      amount: 300,
+      status: "under_review",
+    });
   });
 
-  it('should set payment status to pending when no voucher is uploaded', () => {
-    const paymentVoucherUrl = null;
-    const paymentStatus = paymentVoucherUrl ? "under_review" : "pending";
-    
-    expect(paymentStatus).toBe("pending");
-  });
+  it("submits exactly six selected models from the curated collection with the voucher", async () => {
+    const user = userEvent.setup();
+    renderPage();
 
-  it('should require voucher upload before submission', () => {
-    // This test validates the button disabled logic:
-    // 
-    // disabled={
-    //   subscribeMutation.isPending ||
-    //   !selectedPlanId ||
-    //   selectedCollections.length !== requiredCollections ||
-    //   !paymentVoucherUrl  // <-- Added condition
-    // }
-    
-    const paymentVoucherUrl = null;
-    const selectedPlanId = 'plan-1';
-    const selectedCollections = ['col-1'];
-    const requiredCollections = 1;
-    const isPending = false;
-    
-    const isDisabled = 
-      isPending ||
-      !selectedPlanId ||
-      selectedCollections.length !== requiredCollections ||
-      !paymentVoucherUrl;
-    
-    expect(isDisabled).toBe(true);
-  });
+    const models = await modelButtons();
+    await screen.findByText("Chave PIX");
 
-  it('should enable submission when voucher is uploaded', () => {
-    const paymentVoucherUrl = 'https://example.com/voucher.jpg';
-    const selectedPlanId = 'plan-1';
-    const selectedCollections = ['col-1'];
-    const requiredCollections = 1;
-    const isPending = false;
-    
-    const isDisabled = 
-      isPending ||
-      !selectedPlanId ||
-      selectedCollections.length !== requiredCollections ||
-      !paymentVoucherUrl;
-    
-    expect(isDisabled).toBe(false);
-  });
-
-  it('should show correct button text when voucher is not uploaded', () => {
-    const paymentVoucherUrl = null;
-    const isPending = false;
-    const selectedCollections = ['col-1'];
-    const requiredCollections = 1;
-    
-    let buttonText;
-    if (isPending) {
-      buttonText = "Processando...";
-    } else if (!paymentVoucherUrl) {
-      buttonText = "Envie o comprovante";
-    } else if (selectedCollections.length !== requiredCollections) {
-      buttonText = `Selecione ${requiredCollections} coleção`;
-    } else {
-      buttonText = "Confirmar Assinatura";
+    for (const model of models.slice(0, 6)) {
+      fireEvent.click(model);
     }
-    
-    expect(buttonText).toBe("Envie o comprovante");
+
+    expect(screen.getByText("6 de 6 selecionados")).toBeInTheDocument();
+    expect(models[6]).toBeDisabled();
+    await attachVoucher(user);
+    await user.click(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i }));
+
+    await waitFor(() => {
+      expect(mocks.checkout).toHaveBeenCalledWith({
+        planId: PLAN_6_ID,
+        collectionId: COLLECTION_ID,
+        selectedModelSlugs: MODEL_SLUGS.slice(0, 6),
+        modelSelectionLimit: 6,
+        voucher: expect.any(File),
+      });
+    });
+    expect(await screen.findByRole("heading", { name: "Sua solicitação está em análise" })).toBeInTheDocument();
   });
 
-  it('should show correct button text when voucher is uploaded', () => {
-    const paymentVoucherUrl = 'https://example.com/voucher.jpg';
-    const isPending = false;
-    const selectedCollections = ['col-1'];
-    const requiredCollections = 1;
-    
-    let buttonText;
-    if (isPending) {
-      buttonText = "Processando...";
-    } else if (!paymentVoucherUrl) {
-      buttonText = "Envie o comprovante";
-    } else if (selectedCollections.length !== requiredCollections) {
-      buttonText = `Selecione ${requiredCollections} coleção`;
-    } else {
-      buttonText = "Confirmar Assinatura";
+  it("switches to the twelve-model plan and prevents submitting an incomplete selection", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const models = await modelButtons();
+    await user.click(screen.getAllByRole("button", { name: "Selecionar plano" })[0]);
+
+    expect(screen.getByRole("heading", { name: "Escolha 12 modelos" })).toBeInTheDocument();
+    await attachVoucher(user);
+    expect(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i })).toBeDisabled();
+
+    for (const model of models.slice(0, 12)) {
+      fireEvent.click(model);
     }
-    
-    expect(buttonText).toBe("Confirmar Assinatura");
-  });
 
-  it('should show voucher status as pending when not uploaded', () => {
-    const paymentVoucherUrl = null;
-    const voucherStatus = paymentVoucherUrl ? "✓ Enviado" : "Pendente";
-    
-    expect(voucherStatus).toBe("Pendente");
-  });
-
-  it('should show voucher status as sent when uploaded', () => {
-    const paymentVoucherUrl = 'https://example.com/voucher.jpg';
-    const voucherStatus = paymentVoucherUrl ? "✓ Enviado" : "Pendente";
-    
-    expect(voucherStatus).toBe("✓ Enviado");
+    expect(screen.getByText("12 de 12 selecionados")).toBeInTheDocument();
+    expect(models[12]).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i })).toBeEnabled();
+    expect(mocks.checkout).not.toHaveBeenCalled();
   });
 });
-

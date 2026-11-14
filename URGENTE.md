@@ -1,3 +1,13 @@
+## Checkpoint 14/11/2026 — host local e checkout de modelos curados
+
+- **Base:** `main@962c5d45`; revisão e integração feitas no repositório canônico.
+- **Implementado:** substituídos os testes tautológicos de voucher por testes reais da tela de assinatura. O plano de 6 envia seis slugs da coleção curada; o plano de 12 exige doze, bloqueia a seleção excedente e só habilita o envio com voucher e seleção completa.
+- **Validação Windows:** `SubscribeCollection.voucher.test.tsx` passou (2); `npm run typecheck:app`, ESLint do teste e `git diff --check` passaram. A tela e o checkout foram testados com serviços simulados; isso não comprova gravação no Supabase.
+- **Host local:** Vite voltou a servir a home em `http://127.0.0.1:8080/` (HTTP 200). O navegador interno não respondeu à automação, mas o host está ativo e a URL já aberta pode ser recarregada.
+- **Bloqueio real:** o Supabase conectado ainda não expõe `collections`, `subscription_plans`, `subscriptions`, `manual_payments` nem `system_settings`; o projeto/branch não está comprovadamente isolado. Nenhuma escrita remota foi feita.
+- **NEXT_ACTION:** reconciliar o schema remoto com as migrações locais existentes e seguir as integrações locais independentes. Não aplicar DDL até confirmar homologação isolada; não publicar ou alterar serviços de produção.
+- **DO_NOT_REPEAT:** não duplicar catálogo, cadastro, ledger ou serviços; não tratar mocks como prova de Supabase; não escrever no projeto conectado sem identificar o ambiente.
+
 ## Checkpoint 14/11/2026 — prévia dos modelos na curadoria de assinaturas
 
 - **Base → commit funcional:** `main@606faa8f` → `957bba82` (`fix(subscriptions): retain curated model previews`).
