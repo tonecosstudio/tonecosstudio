@@ -171,7 +171,10 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   for (const [path, sourceBlob] of Object.entries(stage)) {
     assert.match(sourceBlob, sha, path);
     const buf = readFileSync(join(root, contract.target.serviceRoot, path));
-    const actual = createHash('sha1').update('blob ' + buf.byteLength).update(Buffer.from([0])).update(buf).digest('hex');
+    // Git's core.autocrlf can expand pinned LF blobs to CRLF in a Windows
+    // checkout. Normalize only that transport-level difference before hashing.
+    const canonical = Buffer.from(buf.toString('utf8').replace(/\r\n/g, '\n'));
+    const actual = createHash('sha1').update('blob ' + canonical.byteLength).update(Buffer.from([0])).update(canonical).digest('hex');
     assert.equal(actual, overlays[path]?.localBlob ?? sourceBlob,
       'Unexpected content drift in ' + path);
   }

@@ -1,5 +1,14 @@
 # TONART Studio — checkpoint operacional
 
+## Checkpoint 14/11/2026 — validação Windows e bloqueio de runner no Actions
+
+- **Base → commit:** `main@9ff599555e19a6e3187b34f318276c2e91a8e5a5` → commit local desta alteração (`fix(windows): normalize line endings in repository guards`). Ajustes restritos a `scripts/architecture/catalog-monorepo.test.mjs` e `src/test/delivery-choice-integrity.test.ts`: normalizam CRLF para LF ao comparar conteúdo versionado, para não confundir `core.autocrlf` do Windows com drift real. Nenhuma regra comercial, serviço, tabela ou fluxo de dados foi alterado neste ciclo.
+- **Validação local:** `npm run release:verify` passou no Windows: typecheck, ESLint (0 erros; avisos `no-explicit-any` preexistentes), auditorias de autoridade, cobertura completa (`304` arquivos passaram, `3` ignorados; `3.671` testes passaram, `32` ignorados), build Vite e `npm audit --omit=dev --audit-level=high` (0 vulnerabilidades). Os testes continuam usando mocks; não comprovam acesso real ao Supabase.
+- **Actions:** run [43557650643](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43557650643) falhou em quatro jobs antes dos steps; a API registra `runner_id: 0`, nome de runner vazio e nenhum step. GitHub não forneceu logs, portanto a causa operacional exata do runner permanece externa/indeterminada; não foi criado workflow paralelo.
+- **Fluxo comercial existente:** páginas e serviços canônicos de conta, perfil, endereços, preferências, solicitação de orçamento, administração e histórico foram cobertos pelos testes direcionados já executados (125 passaram). Ainda falta homologação ponta a ponta com sessões reais de cliente e administrador no ambiente autorizado.
+- **NEXT_ACTION:** concluir homologação autenticada com contas de cliente e administrador autorizadas e registrar evidências. Nenhuma produção foi publicada nem dados/infraestrutura Supabase foram alterados.
+- **DO_NOT_REPEAT:** não duplicar perfil, endereços, tabelas, autenticação, serviços ou workflows; não tratar mocks como prova de Supabase; não ativar Coins, pagamentos ou assinaturas; não alterar produção/Cloudflare/D1/R2/Supabase sem autorização específica.
+
 ## Checkpoint 14/11/2026 — cadastro complementar no Supabase canônico
 
 - **Implementado:** somente `public.profiles` do projeto TONART `icmtmaakjucmuzxnofkd` recebeu `whatsapp`, `delivery_address`, `preferred_contact_channel`, `quote_updates`, `production_updates` e `marketing_emails`, via migração aplicada `20261114043245_tonart_profile_complementary_fields`. A migração canônica foi alinhada à versão real no repositório. **Não foram criadas tabelas de cadastro paralelas.**

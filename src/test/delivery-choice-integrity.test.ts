@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const ROOT = process.cwd();
 
 function source(path: string): string {
-  return readFileSync(join(ROOT, path), "utf8");
+  return readFileSync(join(ROOT, path), "utf8").replace(/\r\n/g, "\n");
 }
 
 describe("delivery choice integrity", () => {
