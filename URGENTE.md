@@ -1,3 +1,13 @@
+## Checkpoint 14/11/2026 — prévia dos modelos na curadoria de assinaturas
+
+- **Base → commit funcional:** `main@606faa8f` → `957bba82` (`fix(subscriptions): retain curated model previews`).
+- **Implementado:** modelos escolhidos na curadoria administrativa mantêm nome, variante, franquia e imagem enquanto o rascunho é editado e a busca é limpa; o estado persistido continua guardando somente slugs do catálogo D1.
+- **Validação Windows:** `SubscriptionCollectionCuration.test.tsx` passou (1 teste); `npm run typecheck`, ESLint nos dois arquivos alterados e `git diff --check` passaram.
+- **GitHub Actions:** o run [43635677610](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43635677610) terminou sem executar steps nos quatro jobs de qualidade; a API retorna `steps: []` e logs `BlobNotFound`. O bloqueio permanece no provisionamento externo de runners.
+- **Bloqueio real:** checkout de assinatura ainda depende de homologação isolada com as tabelas legadas de assinatura existentes; a flag continua desativada e nenhum banco remoto ou produção foi alterado.
+- **NEXT_ACTION:** seguir nas integrações locais independentes; habilitar assinatura e validar checkout/admin com sessões controladas somente após homologação Supabase isolada estar disponível.
+- **DO_NOT_REPEAT:** não criar catálogo, tabelas ou ledger duplicados; não tratar mocks como prova de gravação Supabase; não aplicar a migração em produção.
+
 ## Checkpoint 14/11/2026 — navegação da conta e ciclo de orçamentos
 
 - **Base → commit funcional:** `main@955da98b` → `5d2b9dcf` (`fix(account): deduplicate subscription navigation`). A assinatura usa o agrupamento temático existente: administração escolhe até 20 modelos do catálogo canônico por coleção e o plano libera a seleção exata de 6 ou 12 pelo cliente.
