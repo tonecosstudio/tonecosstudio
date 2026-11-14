@@ -314,8 +314,10 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(await screen.findByText("1/6")).toBeInTheDocument();
     expect(screen.getByText("pintado")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Consultar meus orçamentos" }),
-    ).toHaveAttribute("href", "/meus-orcamentos");
+      screen.getByRole("link", { name: "Abrir orçamento de origem" }),
+    ).toHaveAttribute(
+      "href", "/meus-orcamentos?quote=22222222-2222-4222-8222-222222222222",
+    );
     expect(screen.getByRole("combobox", { name: "Canal preferido de contato" }))
       .toBeEnabled();
     expect(screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }))
