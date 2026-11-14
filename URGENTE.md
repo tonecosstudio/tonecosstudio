@@ -1,5 +1,13 @@
 # TONART Studio — checkpoint operacional
 
+## Checkpoint 14/11/2026 — Minha Conta: histórico sem duplicação
+
+- **Base/HEAD funcional:** `main` avançou de `1ae1464` para `0f9deb8a18d6e12609262daecae5159be2a90f89`; alterações em `src/pages/commercial/TonecosCustomerSections.tsx` e testes correspondentes. As seções recuperadas exibem dados históricos de orçamento (WhatsApp, CEP, escala e acabamento) consultados pela única `loadMyCatalogQuotePage` com sessão/RLS existente, sem promover campos de uma solicitação a perfil permanente. Falha não é confundida com vazio; há retry, limite explícito de cinco solicitações e a consulta não ocorre se orçamento estiver desabilitado.
+- **Backend/produção:** nenhuma alteração em Supabase, Worker, D1/R2, moedas, domínio ou deploy de produção. Preview anterior Vercel `dpl_4Ty8PUgjbRwV4QL6u7nfKd71rwYt` permanece no SHA `1ae1464`; **não** é prova visual do HEAD novo.
+- **Validação:** testes de regressão adicionados, mas **não executados**: Quality Gate [#43550866782](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43550866782) falhou antes de qualquer step (job sem steps), logo não valida nem reprova o código. Prova local e preview do HEAD ainda pendentes.
+- **NEXT_ACTION:** validar testes direcionados e build com runner disponível, gerar preview isolado do HEAD e revisar visualmente /perfil/dados-pessoais, /perfil/endereco e /perfil/preferencias com usuário autorizado; somente depois avaliar colunas adicionais no perfil e integração Supabase.
+- **DO_NOT_REPEAT:** não duplicar formulário, backend, tabela `profiles`, histórico `quotes` ou UI de cadastro. Não inventar persistência para endereço, WhatsApp separado e preferências, e não promover preview à produção sem gates/GO aplicáveis.
+
 ## Checkpoint 12/11/2026 — MVP público, conta e fluxo comercial
 
 **STATUS ATUAL** (evidência código GitHub + Vercel env + metadados Supabase + Cloudflare deployment; não substituir testes reais):
