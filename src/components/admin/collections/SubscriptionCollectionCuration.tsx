@@ -21,10 +21,15 @@ import {
 import {
   loadSubscriptionCatalogModels,
   searchSubscriptionCatalogModels,
+  type SubscriptionCatalogModel,
 } from "@/services/subscriptions/subscription-catalog-service";
 import { MAX_CURATED_SUBSCRIPTION_MODELS } from "@/services/subscriptions/subscription-model-selection";
 
 const QUERY_KEY = ["admin-subscription-collections"] as const;
+type CuratedModelPreview = Pick<
+  SubscriptionCatalogModel,
+  "slug" | "name" | "variantName" | "franchise" | "imageUrl"
+>;
 
 function modelLabel(model: { name: string; variantName: string }) {
   return model.variantName
@@ -48,10 +53,14 @@ export function SubscriptionCollectionCuration() {
   const sourceSlugs = collection?.catalog_model_slugs ?? [];
   const sourceKey = `${collection?.id ?? ""}:${sourceSlugs.join("|")}`;
   const [modelSlugs, setModelSlugs] = useState<string[]>([]);
+  const [draftModelPreviews, setDraftModelPreviews] = useState<
+    Record<string, CuratedModelPreview>
+  >({});
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     setModelSlugs(sourceSlugs);
+    setDraftModelPreviews({});
     // The string key tracks the persisted selection without depending on a new array instance.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceKey]);
@@ -72,11 +81,16 @@ export function SubscriptionCollectionCuration() {
     staleTime: 30_000,
   });
   const selectedBySlug = useMemo(
-    () =>
-      new Map(
+    () => {
+      const models = new Map<string, CuratedModelPreview>(
         (selectedModelsQuery.data ?? []).map((model) => [model.slug, model]),
-      ),
-    [selectedModelsQuery.data],
+      );
+      Object.values(draftModelPreviews).forEach((model) =>
+        models.set(model.slug, model),
+      );
+      return models;
+    },
+    [draftModelPreviews, selectedModelsQuery.data],
   );
   const isDirty =
     modelSlugs.length !== sourceSlugs.length ||
@@ -106,12 +120,25 @@ export function SubscriptionCollectionCuration() {
       }),
   });
 
-  const toggleModel = (slug: string) => {
-    setModelSlugs((current) => {
-      if (current.includes(slug))
-        return current.filter((item) => item !== slug);
-      if (current.length >= MAX_CURATED_SUBSCRIPTION_MODELS) return current;
-      return [...current, slug];
+  const toggleModel = (slug: string, preview?: CuratedModelPreview) => {
+    const isSelected = modelSlugs.includes(slug);
+    if (!isSelected && modelSlugs.length >= MAX_CURATED_SUBSCRIPTION_MODELS)
+      return;
+
+    setModelSlugs((current) =>
+      isSelected
+        ? current.filter((item) => item !== slug)
+        : current.includes(slug)
+          ? current
+          : [...current, slug],
+    );
+    setDraftModelPreviews((current) => {
+      if (isSelected) {
+        const next = { ...current };
+        delete next[slug];
+        return next;
+      }
+      return preview ? { ...current, [slug]: preview } : current;
     });
   };
 
@@ -263,7 +290,7 @@ export function SubscriptionCollectionCuration() {
                           variant="ghost"
                           size="icon"
                           aria-label={`Remover ${model?.name ?? slug}`}
-                          onClick={() => toggleModel(slug)}
+                          onClick={() => toggleModel(slug, model)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -319,7 +346,7 @@ export function SubscriptionCollectionCuration() {
                         type="button"
                         aria-pressed={selected}
                         disabled={!canAdd}
-                        onClick={() => toggleModel(model.slug)}
+                        onClick={() => toggleModel(model.slug, model)}
                         className="flex min-w-0 items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                       >
                         {model.imageUrl ? (
