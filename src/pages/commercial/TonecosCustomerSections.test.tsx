@@ -16,12 +16,18 @@ import TonecosCustomerSections, {
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   getProfile: vi.fn(),
+  updateWhatsapp: vi.fn(),
+  updateAddress: vi.fn(),
+  updatePreferences: vi.fn(),
   listMine: vi.fn(),
   history: vi.fn(),
 }));
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.getUser,
   getMyTonecosProfile: mocks.getProfile,
+  updateMyTonecosWhatsapp: mocks.updateWhatsapp,
+  updateMyTonecosDeliveryAddress: mocks.updateAddress,
+  updateMyTonecosContactPreferences: mocks.updatePreferences,
 }));
 vi.mock("@/services/customer/catalog-quote-service", () => ({
   loadMyCatalogQuotePage: mocks.listMine,
@@ -42,6 +48,12 @@ beforeEach(() => {
     email: "cliente@example.com",
     full_name: "Cliente Cadastrado",
     phone: "(71) 99988-7766",
+    whatsapp: null,
+    delivery_address: null,
+    preferred_contact_channel: null,
+    quote_updates: false,
+    production_updates: false,
+    marketing_emails: false,
     created_at: "2026-11-05T00:00:00Z",
     updated_at: "2026-11-05T00:00:00Z",
   });
@@ -52,6 +64,9 @@ beforeEach(() => {
     rows: [],
   });
   mocks.history.mockResolvedValue({});
+  mocks.updateWhatsapp.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" });
+  mocks.updateAddress.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" });
+  mocks.updatePreferences.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" });
 });
 afterEach(() => {
   cleanup();
@@ -137,7 +152,7 @@ describe("Original customer account navigation in the commercial app", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows the original customer address form without pretending to save unsupported data", async () => {
+  it("offers the canonical delivery form in the same authenticated profile", async () => {
     show("/perfil/endereco");
     expect(
       await screen.findByRole("heading", { name: "Endereços e entrega" }),
@@ -145,37 +160,37 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(
       screen.getByRole("navigation", { name: "Seções da Minha Conta" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "CEP" })).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "CEP" })).toBeEnabled();
     expect(screen.getByRole("textbox", { name: "CEP" })).toHaveAttribute(
       "autocomplete",
       "postal-code",
     );
     expect(
-      screen.getByText(/Nenhum dado inserido aqui é armazenado/),
+      screen.getByText(/Este endereço pertence à sua conta/),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Salvar endereço" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "Salvar endereço" }),
+    ).toBeEnabled();
   });
 
-  it("restores Brazilian address choices without any saving or independent address store", async () => {
+  it("restores Brazilian address choices without adding a second address store", async () => {
     show("/perfil/endereco");
     const uf = await screen.findByRole("combobox", { name: "UF" });
-    expect(uf).toBeDisabled();
+    expect(uf).toBeEnabled();
     expect(uf).toHaveValue("");
     expect(screen.getByRole("option", { name: "BA" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "SP" })).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /salvar endereço/i }),
-    ).not.toBeInTheDocument();
-    expect(mocks.getProfile).not.toHaveBeenCalled();
+      screen.getByRole("button", { name: /salvar endereço/i }),
+    ).toBeEnabled();
+    expect(mocks.getProfile).toHaveBeenCalledTimes(1);
   });
 
   it("preserves the original personal data fields as visible frontend without claiming persistence", async () => {
     show("/perfil/dados-pessoais");
     expect(
       await screen.findByRole("textbox", { name: "WhatsApp" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     expect(
       screen.getByRole("textbox", {
         name: "CPF (para emissão fiscal quando necessário)",
@@ -201,7 +216,7 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(screen.getByText("Cliente Cadastrado")).toBeInTheDocument();
     expect(screen.getByText("(71) 99988-7766")).toBeInTheDocument();
     expect(mocks.getProfile).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("textbox", { name: "WhatsApp" })).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "WhatsApp" })).toBeEnabled();
     expect(
       screen.queryByRole("button", { name: /Salvar dados pessoais/i }),
     ).not.toBeInTheDocument();
@@ -249,7 +264,7 @@ describe("Original customer account navigation in the commercial app", () => {
       "/meus-orcamentos?quote=22222222-2222-4222-8222-222222222222",
     );
     expect(screen.getByText(/não ao cadastro permanente da Minha Conta/)).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "WhatsApp" })).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "WhatsApp" })).toBeEnabled();
     expect(mocks.listMine).toHaveBeenCalledWith(
       "11111111-1111-4111-8111-111111111111",
       { limit: 5, offset: 0 },
@@ -278,7 +293,7 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(screen.queryByText("40100000")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(await screen.findByText("40100000")).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "CEP" })).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "CEP" })).toBeEnabled();
     expect(mocks.listMine).toHaveBeenCalledTimes(2);
   });
 
@@ -302,13 +317,64 @@ describe("Original customer account navigation in the commercial app", () => {
       screen.getByRole("link", { name: "Consultar meus orçamentos" }),
     ).toHaveAttribute("href", "/meus-orcamentos");
     expect(screen.getByRole("combobox", { name: "Canal preferido de contato" }))
-      .toBeDisabled();
+      .toBeEnabled();
     expect(screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }))
-      .toBeDisabled();
+      .toBeEnabled();
     expect(screen.getByRole("checkbox", { name: "Avisos de produção" }))
-      .toBeDisabled();
+      .toBeEnabled();
     expect(screen.getByRole("checkbox", { name: "Novidades e campanhas" }))
-      .toBeDisabled();
+      .toBeEnabled();
+  });
+
+  it("saves optional WhatsApp through the canonical profile service, never the quote service", async () => {
+    show("/perfil/dados-pessoais");
+    const field = await screen.findByRole("textbox", { name: "WhatsApp" });
+    fireEvent.change(field, { target: { value: "(71) 99999-9999" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar WhatsApp" }));
+    await screen.findByText("Informações salvas na sua conta.");
+    expect(mocks.updateWhatsapp).toHaveBeenCalledWith("(71) 99999-9999");
+    expect(mocks.listMine).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves delivery details to the same profile and never copies historic quote CEP", async () => {
+    show("/perfil/endereco");
+    await screen.findByRole("textbox", { name: "CEP" });
+    for (const [label, value] of [
+      ["CEP", "40000-000"], ["Rua", "Rua Exemplo"], ["Número", "10"],
+      ["Bairro", "Centro"], ["Cidade", "Salvador"],
+    ]) {
+      fireEvent.change(screen.getByRole("textbox", { name: label }), {
+        target: { value },
+      });
+    }
+    fireEvent.change(screen.getByRole("combobox", { name: "UF" }), {
+      target: { value: "BA" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar endereço" }));
+    await screen.findByText("Informações salvas na sua conta.");
+    expect(mocks.updateAddress).toHaveBeenCalledWith({
+      zipCode: "40000-000", street: "Rua Exemplo", number: "10",
+      complement: "", neighborhood: "Centro", city: "Salvador",
+      state: "BA", country: "BR",
+    });
+  });
+
+  it("persists opt-in decisions only as customer account preferences", async () => {
+    show("/perfil/preferencias");
+    const preferred = await screen.findByRole("combobox", {
+      name: "Canal preferido de contato",
+    });
+    fireEvent.change(preferred, { target: { value: "email" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Novidades e campanhas" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar preferências" }));
+    await screen.findByText("Informações salvas na sua conta.");
+    expect(mocks.updatePreferences).toHaveBeenCalledWith({
+      preferredContactChannel: "email",
+      quoteUpdates: true,
+      productionUpdates: false,
+      marketingEmails: true,
+    });
   });
 
   it("shows the existing catalog selection in the restored collection and removes items through the same store", async () => {
