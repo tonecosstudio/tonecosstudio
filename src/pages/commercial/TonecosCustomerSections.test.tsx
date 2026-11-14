@@ -210,6 +210,78 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(mocks.getProfile).toHaveBeenCalledTimes(2);
   });
 
+  it("reads the latest quote WhatsApp without mislabeling it as saved profile data", async () => {
+    mocks.listMine.mockResolvedValueOnce({
+      total: 1,
+      limit: 5,
+      offset: 0,
+      rows: [{
+        id: "22222222-2222-4222-8222-222222222222",
+        whatsapp: "71999887766",
+        postalCode: null,
+        scale: "a definir",
+        finishing: "a definir",
+      }],
+    });
+    show("/perfil/dados-pessoais");
+    expect(await screen.findByText("71999887766")).toBeInTheDocument();
+    expect(screen.getByText(/não ao cadastro permanente da Minha Conta/)).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "WhatsApp" })).toBeDisabled();
+    expect(mocks.listMine).toHaveBeenCalledWith(
+      "11111111-1111-4111-8111-111111111111",
+      { limit: 5, offset: 0 },
+    );
+  });
+
+  it("shows the quote-specific CEP and retries a failed protected query", async () => {
+    mocks.listMine
+      .mockRejectedValueOnce(new Error("temporarily unavailable"))
+      .mockResolvedValueOnce({
+        total: 1,
+        limit: 5,
+        offset: 0,
+        rows: [{
+          id: "22222222-2222-4222-8222-222222222222",
+          whatsapp: null,
+          postalCode: "40100000",
+          scale: "a definir",
+          finishing: "a definir",
+        }],
+      });
+    show("/perfil/endereco");
+    expect(
+      await screen.findByText(/Não foi possível consultar as informações anteriores/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("40100000")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(await screen.findByText("40100000")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "CEP" })).toBeDisabled();
+    expect(mocks.listMine).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows scale and finishing only as prior quote preferences", async () => {
+    mocks.listMine.mockResolvedValueOnce({
+      total: 1,
+      limit: 5,
+      offset: 0,
+      rows: [{
+        id: "22222222-2222-4222-8222-222222222222",
+        whatsapp: null,
+        postalCode: null,
+        scale: "1/6",
+        finishing: "pintado",
+      }],
+    });
+    show("/perfil/preferencias");
+    expect(await screen.findByText("1/6")).toBeInTheDocument();
+    expect(screen.getByText("pintado")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Consultar meus orçamentos" }),
+    ).toHaveAttribute("href", "/meus-orcamentos");
+    expect(screen.getByRole("textbox", { name: "Canal preferido de contato" }))
+      .toBeDisabled();
+  });
+
   it("shows the existing catalog selection in the restored collection and removes items through the same store", async () => {
     function SeedSelection() {
       const { setSelectedModels } = useCatalogBrowsing();
