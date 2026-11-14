@@ -132,6 +132,78 @@ describe("TONART admin workspace", () => {
     expect(metric).toHaveTextContent("Aguardando resposta ou em análise");
   });
 
+  it("links each recent pending quote to the same protected response page", async () => {
+    const pendingId = "22222222-2222-4222-8222-222222222222";
+    const reviewingId = "33333333-3333-4333-8333-333333333333";
+    mocks.overview.mockResolvedValueOnce({
+      ...fixture,
+      recentQuotes: [
+        {
+          id: reviewingId,
+          status: "reviewing",
+          customerEmail: "review@example.com",
+          createdAt: "2026-11-12T10:00:00Z",
+          quotedAmountCents: null,
+          modelCount: 1,
+        },
+        {
+          id: pendingId,
+          status: "pending",
+          customerEmail: "new@example.com",
+          createdAt: "2026-11-13T10:00:00Z",
+          quotedAmountCents: null,
+          modelCount: 2,
+        },
+        {
+          id: "44444444-4444-4444-8444-444444444444",
+          status: "answered",
+          customerEmail: "answered@example.com",
+          createdAt: "2026-11-11T10:00:00Z",
+          quotedAmountCents: 24990,
+          modelCount: 1,
+        },
+      ],
+    });
+    show();
+    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED !== "true") {
+      expect(
+        screen.queryByRole("list", {
+          name: "Solicitações para atendimento",
+        }),
+      ).not.toBeInTheDocument();
+      return;
+    }
+    const queue = await screen.findByRole("list", {
+      name: "Solicitações para atendimento",
+    });
+    expect(
+      within(queue).getAllByRole("link").map((link) => link.getAttribute("href")),
+    ).toEqual([
+      "/admin/orcamentos?quote=" + pendingId,
+      "/admin/orcamentos?quote=" + reviewingId,
+    ]);
+    expect(within(queue).queryByText("answered@example.com")).not.toBeInTheDocument();
+    expect(screen.getByText(/somente as 25 solicitações mais recentes/)).toBeInTheDocument();
+  });
+
+  it("does not claim the queue is empty when pending requests are outside the recent sample", async () => {
+    mocks.overview.mockResolvedValueOnce({
+      ...fixture,
+      recentQuotes: [],
+    });
+    show();
+    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true") {
+      expect(
+        await screen.findByText(/fora das 25 mais recentes/),
+      ).toBeInTheDocument();
+    }
+    expect(
+      screen.queryByRole("list", {
+        name: "Solicitações para atendimento",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not query Supabase aggregates when opening the Cloudflare catalog", async () => {
     show("/admin/catalogo");
     expect(

@@ -189,6 +189,7 @@ export default function TonecosAdminHomePage() {
     let active = true;
     setLoading(true);
     setError("");
+    setOverview(null);
     getTonartAdminOverview()
       .then((snapshot) => {
         if (active) setOverview(snapshot);
@@ -248,6 +249,21 @@ export default function TonecosAdminHomePage() {
       active = false;
     };
   }, [appliedSearch, isUsers, userOffset, userReload]);
+
+  // Only use the existing protected overview. Never treat this bounded list
+  // as the full queue or an independent source of quote state.
+  const attentionQuotes = (overview?.recentQuotes ?? [])
+    .filter((quote) => quote.status === "pending" || quote.status === "reviewing")
+    .sort(
+      (left, right) =>
+        (left.status === "pending" ? 0 : 1) -
+          (right.status === "pending" ? 0 : 1) ||
+        Date.parse(left.createdAt) - Date.parse(right.createdAt),
+    )
+    .slice(0, 4);
+  const attentionTotal = overview
+    ? overview.pendingQuoteCount + overview.reviewingQuoteCount
+    : 0;
 
   const showItem = (item: NavigationItem) => {
     navigate(item.path);
@@ -468,6 +484,65 @@ export default function TonecosAdminHomePage() {
                       ? `${integer.format(overview.reviewingQuoteCount)} em análise e ${integer.format(overview.pendingQuoteCount)} aguardando resposta.`
                       : "Acompanhe solicitações do catálogo."}
                   </p>
+                  {quotesEnabled && overview && (
+                    <div className="mt-5 border-t border-white/15 pt-4">
+                      <h4 className="text-sm font-semibold">
+                        Prioridades entre as solicitações recentes
+                      </h4>
+                      {attentionQuotes.length > 0 ? (
+                        <ul
+                          className="mt-3 space-y-2"
+                          aria-label="Solicitações para atendimento"
+                        >
+                          {attentionQuotes.map((quote) => (
+                            <li
+                              key={quote.id}
+                              className="flex flex-wrap items-center justify-between gap-3 border border-white/10 px-3 py-3 text-sm"
+                            >
+                              <div className="min-w-0">
+                                <p className="font-medium">
+                                  #{quote.id.slice(0, 8)} ·{" "}
+                                  {quoteLabels[quote.status]}
+                                </p>
+                                <p className="mt-1 break-all text-xs text-white/55">
+                                  {quote.customerEmail ??
+                                    "E-mail não disponível"}
+                                </p>
+                                <p className="mt-1 text-xs text-white/50">
+                                  {dates.format(new Date(quote.createdAt))}
+                                </p>
+                              </div>
+                              <Link
+                                to={
+                                  TONECOS_COMMERCIAL_ROUTES.adminQuotes +
+                                  "?quote=" +
+                                  encodeURIComponent(quote.id)
+                                }
+                                aria-label={
+                                  "Abrir orçamento #" + quote.id.slice(0, 8)
+                                }
+                                className="text-xs text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline"
+                              >
+                                Atender
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-3 text-xs text-white/60">
+                          {attentionTotal > 0
+                            ? "Existem solicitações em atendimento fora das 25 mais recentes. Consulte a fila completa."
+                            : "Nenhuma solicitação aguardando atendimento."}
+                        </p>
+                      )}
+                      {attentionQuotes.length > 0 && (
+                        <p className="mt-3 text-xs text-white/50">
+                          Esta lista usa somente as 25 solicitações mais recentes;
+                          consulte a fila completa para ver todas.
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <div className="mt-5">
                     {quotesEnabled ? (
                       <Link
