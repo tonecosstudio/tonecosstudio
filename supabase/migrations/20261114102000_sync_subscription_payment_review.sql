@@ -36,14 +36,25 @@ REVOKE ALL ON FUNCTION private_api.sync_subscription_manual_payment_status()
 GRANT EXECUTE ON FUNCTION private_api.sync_subscription_manual_payment_status()
   TO service_role;
 
-DROP TRIGGER IF EXISTS sync_subscription_manual_payment_status
-  ON public.subscriptions;
-
-CREATE TRIGGER sync_subscription_manual_payment_status
-AFTER UPDATE OF payment_status ON public.subscriptions
-FOR EACH ROW
-WHEN (OLD.payment_status IS DISTINCT FROM NEW.payment_status)
-EXECUTE FUNCTION private_api.sync_subscription_manual_payment_status();
+-- The canonical TONART quote MVP has no subscriptions relation. Keep the
+-- existing integration intact for deployments that already own that legacy
+-- subsystem, while allowing the quote migrations to proceed on the clean MVP.
+DO $block$
+BEGIN
+  IF to_regclass('public.subscriptions') IS NOT NULL
+     AND to_regclass('public.manual_payments') IS NOT NULL
+     AND to_regtype('public.payment_status') IS NOT NULL THEN
+    EXECUTE 'DROP TRIGGER IF EXISTS sync_subscription_manual_payment_status ON public.subscriptions';
+    EXECUTE $ddl$
+      CREATE TRIGGER sync_subscription_manual_payment_status
+      AFTER UPDATE OF payment_status ON public.subscriptions
+      FOR EACH ROW
+      WHEN (OLD.payment_status IS DISTINCT FROM NEW.payment_status)
+      EXECUTE FUNCTION private_api.sync_subscription_manual_payment_status()
+    $ddl$;
+  END IF;
+END;
+$block$;
 
 COMMENT ON FUNCTION private_api.sync_subscription_manual_payment_status() IS
   'Keeps the existing linked manual payment aligned with subscription voucher review outcomes.';

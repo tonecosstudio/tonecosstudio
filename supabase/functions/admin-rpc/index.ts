@@ -134,6 +134,16 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_upsert_system_settings",
 ]);
 
+// These RPCs validate auth.uid() and the canonical admin helper inside SQL.
+// Preserve the signed-in administrator JWT when calling them so auth.uid()
+// does not become NULL under the service-role client.
+const ADMIN_USER_CONTEXT_RPCS = new Set([
+  "admin_register_preorder_manual_payment",
+  "admin_reject_preorder_payment_voucher",
+  "admin_release_preorder_final_payment",
+  "admin_send_payment_link",
+]);
+
 function json(req: Request, body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -302,7 +312,10 @@ Deno.serve(async (req) => {
       return json(req, { ok: true, data });
     }
 
-    const { data, error } = await service.rpc(functionName, args);
+    const rpcClient = ADMIN_USER_CONTEXT_RPCS.has(functionName)
+      ? admin.client
+      : service;
+    const { data, error } = await rpcClient.rpc(functionName, args);
 
     if (error) {
       const mapped = mapRpcError(error.message || "");

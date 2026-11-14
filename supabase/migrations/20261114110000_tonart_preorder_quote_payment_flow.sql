@@ -1,16 +1,118 @@
 BEGIN;
 
--- Pre-orders stay on the existing authenticated quote record and use the existing
--- quote payment and private payment-voucher storage authorities.
+-- Keep the pre-order attached to the existing canonical quote and profile.
+-- The commercial MVP schema is smaller than the legacy monolith, so declare the
+-- optional payment columns and private storage bucket this flow actually uses.
 ALTER TABLE public.quotes
+  ADD COLUMN IF NOT EXISTS is_preorder boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS deposit_amount numeric(10,2),
+  ADD COLUMN IF NOT EXISTS remaining_amount numeric(10,2),
+  ADD COLUMN IF NOT EXISTS payment_status text,
+  ADD COLUMN IF NOT EXISTS payment_link text,
+  ADD COLUMN IF NOT EXISTS pix_key text,
+  ADD COLUMN IF NOT EXISTS payment_instructions text,
+  ADD COLUMN IF NOT EXISTS payment_link_sent_at timestamptz,
+  ADD COLUMN IF NOT EXISTS final_payment_notified_at timestamptz,
+  ADD COLUMN IF NOT EXISTS ready_for_final_payment boolean NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS payment_voucher_path text,
   ADD COLUMN IF NOT EXISTS payment_voucher_type text,
   ADD COLUMN IF NOT EXISTS payment_voucher_rejection_reason text,
   ADD COLUMN IF NOT EXISTS payment_voucher_reviewed_at timestamptz,
   ADD COLUMN IF NOT EXISTS payment_voucher_reviewed_by uuid REFERENCES public.profiles(id);
 
+CREATE TABLE IF NOT EXISTS public.quote_payments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  quote_id uuid NOT NULL REFERENCES public.quotes(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+  payment_type text NOT NULL CHECK (payment_type IN ('deposit', 'final')),
+  amount numeric(10,2) NOT NULL CHECK (amount > 0),
+  status text NOT NULL DEFAULT 'completed',
+  payment_method text NOT NULL DEFAULT 'manual',
+  paid_at timestamptz,
+  recorded_by uuid REFERENCES public.profiles(id),
+  payment_voucher_path text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 ALTER TABLE public.quote_payments
+  ADD COLUMN IF NOT EXISTS quote_id uuid REFERENCES public.quotes(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS payment_type text,
+  ADD COLUMN IF NOT EXISTS amount numeric(10,2),
+  ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'completed',
+  ADD COLUMN IF NOT EXISTS payment_method text NOT NULL DEFAULT 'manual',
+  ADD COLUMN IF NOT EXISTS paid_at timestamptz,
+  ADD COLUMN IF NOT EXISTS recorded_by uuid REFERENCES public.profiles(id),
   ADD COLUMN IF NOT EXISTS payment_voucher_path text;
+ALTER TABLE public.quote_payments
+  ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
+CREATE INDEX IF NOT EXISTS tonecos_quote_payments_quote_id_idx
+  ON public.quote_payments(quote_id);
+CREATE INDEX IF NOT EXISTS tonecos_quote_payments_user_id_idx
+  ON public.quote_payments(user_id);
+
+ALTER TABLE public.quote_payments ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.quote_payments FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE public.quote_payments TO service_role;
+GRANT SELECT ON TABLE public.quote_payments TO authenticated;
+DROP POLICY IF EXISTS tonecos_quote_payments_read_owner_or_admin ON public.quote_payments;
+CREATE POLICY tonecos_quote_payments_read_owner_or_admin
+  ON public.quote_payments FOR SELECT TO authenticated
+  USING (
+    (SELECT private_api.is_current_admin())
+    OR EXISTS (
+      SELECT 1 FROM public.quotes q
+       WHERE q.id = quote_payments.quote_id
+         AND q.user_id = (SELECT auth.uid())
+    )
+  );
+
+CREATE TABLE IF NOT EXISTS public.payment_links (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  quote_id uuid NOT NULL REFERENCES public.quotes(id) ON DELETE CASCADE,
+  payment_type text NOT NULL CHECK (payment_type IN ('deposit', 'final')),
+  amount numeric(10,2) NOT NULL CHECK (amount > 0),
+  payment_link text,
+  pix_key text,
+  instructions text NOT NULL,
+  sent_by uuid REFERENCES public.profiles(id),
+  status text NOT NULL DEFAULT 'sent' CHECK (status IN ('sent', 'cancelled')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.payment_links
+  ADD COLUMN IF NOT EXISTS quote_id uuid REFERENCES public.quotes(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS payment_type text,
+  ADD COLUMN IF NOT EXISTS amount numeric(10,2),
+  ADD COLUMN IF NOT EXISTS payment_link text,
+  ADD COLUMN IF NOT EXISTS pix_key text,
+  ADD COLUMN IF NOT EXISTS instructions text,
+  ADD COLUMN IF NOT EXISTS sent_by uuid REFERENCES public.profiles(id),
+  ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'sent',
+  ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
+CREATE INDEX IF NOT EXISTS tonecos_payment_links_quote_id_idx
+  ON public.payment_links(quote_id);
+
+ALTER TABLE public.payment_links ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.payment_links FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE public.payment_links TO service_role;
+
+INSERT INTO storage.buckets (
+  id, name, public, file_size_limit, allowed_mime_types
+) VALUES (
+  'payment-vouchers', 'payment-vouchers', false, 15728640,
+  ARRAY['image/jpeg', 'image/png', 'application/pdf']::text[]
+)
+ON CONFLICT (id) DO UPDATE
+  SET public = false,
+      file_size_limit = EXCLUDED.file_size_limit,
+      allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 ALTER TABLE public.quotes
   DROP CONSTRAINT IF EXISTS tonecos_quote_payment_voucher_path_safe,
@@ -28,6 +130,25 @@ ALTER TABLE public.quotes
   DROP CONSTRAINT IF EXISTS tonecos_quote_payment_voucher_rejection_reason_length,
   ADD CONSTRAINT tonecos_quote_payment_voucher_rejection_reason_length CHECK (
     payment_voucher_rejection_reason IS NULL OR char_length(payment_voucher_rejection_reason) <= 500
+  ) NOT VALID,
+  DROP CONSTRAINT IF EXISTS tonecos_preorder_deposit_fixed,
+  ADD CONSTRAINT tonecos_preorder_deposit_fixed CHECK (
+    NOT is_preorder OR (deposit_amount IS NOT NULL AND deposit_amount = 50)
+  ) NOT VALID,
+  DROP CONSTRAINT IF EXISTS tonecos_preorder_payment_status_valid,
+  ADD CONSTRAINT tonecos_preorder_payment_status_valid CHECK (
+    payment_status IS NULL OR payment_status IN ('pending', 'under_review', 'deposit_paid', 'fully_paid')
+  ) NOT VALID,
+  DROP CONSTRAINT IF EXISTS tonecos_preorder_amounts_positive,
+  ADD CONSTRAINT tonecos_preorder_amounts_positive CHECK (
+    (deposit_amount IS NULL OR deposit_amount > 0)
+    AND (remaining_amount IS NULL OR remaining_amount > 0)
+  ) NOT VALID,
+  DROP CONSTRAINT IF EXISTS tonecos_preorder_payment_instructions_length,
+  ADD CONSTRAINT tonecos_preorder_payment_instructions_length CHECK (
+    (payment_link IS NULL OR length(payment_link) <= 2000)
+    AND (pix_key IS NULL OR length(pix_key) <= 220)
+    AND (payment_instructions IS NULL OR length(payment_instructions) <= 4000)
   ) NOT VALID;
 
 ALTER TABLE public.quote_payments
@@ -39,6 +160,108 @@ ALTER TABLE public.quote_payments
         '^quotes/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9]{10,16}-[0-9a-f]{16}\.(jpg|jpeg|png|pdf)$'
     )
   ) NOT VALID;
+ALTER TABLE public.quote_payments
+  DROP CONSTRAINT IF EXISTS tonecos_quote_payments_type_valid,
+  ADD CONSTRAINT tonecos_quote_payments_type_valid CHECK (
+    payment_type IN ('deposit', 'final')
+  ) NOT VALID,
+  DROP CONSTRAINT IF EXISTS tonecos_quote_payments_amount_positive,
+  ADD CONSTRAINT tonecos_quote_payments_amount_positive CHECK (amount > 0) NOT VALID;
+
+CREATE OR REPLACE FUNCTION public.admin_send_payment_link(
+  p_quote_id uuid,
+  p_amount numeric,
+  p_payment_type text,
+  p_payment_link text DEFAULT NULL,
+  p_pix_key text DEFAULT NULL,
+  p_instructions text DEFAULT NULL
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $function$
+DECLARE
+  v_quote public.quotes%ROWTYPE;
+  v_payment_link text := NULLIF(btrim(COALESCE(p_payment_link, '')), '');
+  v_pix_key text := NULLIF(btrim(COALESCE(p_pix_key, '')), '');
+  v_instructions text := NULLIF(btrim(COALESCE(p_instructions, '')), '');
+  v_expected_amount numeric(10,2);
+  v_link_id uuid;
+BEGIN
+  IF (SELECT auth.uid()) IS NULL
+     OR NOT (SELECT private_api.is_current_admin()) THEN
+    RAISE EXCEPTION 'Admin access required' USING ERRCODE = '42501';
+  END IF;
+  IF p_quote_id IS NULL
+     OR p_payment_type IS NULL OR p_payment_type NOT IN ('deposit', 'final')
+     OR p_amount IS NULL OR p_amount <= 0 OR p_amount > 999999.99
+     OR p_amount <> round(p_amount, 2)
+     OR (v_payment_link IS NOT NULL AND (
+       length(v_payment_link) > 2000
+       OR v_payment_link !~* '^https://[^[:space:]]+$'
+       OR v_payment_link ~* '^https://[^/]*@'
+     ))
+     OR (v_pix_key IS NOT NULL AND length(v_pix_key) > 220)
+     OR v_instructions IS NULL OR length(v_instructions) > 4000
+     OR (v_payment_link IS NULL AND v_pix_key IS NULL) THEN
+    RAISE EXCEPTION 'Invalid pre-order payment instructions' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO v_quote
+    FROM public.quotes
+   WHERE id = p_quote_id
+   FOR UPDATE;
+  IF NOT FOUND OR NOT COALESCE(v_quote.is_preorder, false)
+     OR v_quote.status <> 'answered' THEN
+    RAISE EXCEPTION 'Pre-order quote is unavailable for payment instructions' USING ERRCODE = 'P0002';
+  END IF;
+
+  IF p_payment_type = 'deposit' THEN
+    IF v_quote.payment_status <> 'pending'
+       OR COALESCE(v_quote.deposit_amount, 0) <> 50
+       OR COALESCE(v_quote.total_amount, 0) <= 50 THEN
+      RAISE EXCEPTION 'Pre-order deposit is not payable' USING ERRCODE = '22023';
+    END IF;
+    v_expected_amount := v_quote.deposit_amount;
+  ELSE
+    IF v_quote.payment_status <> 'deposit_paid'
+       OR NOT COALESCE(v_quote.ready_for_final_payment, false)
+       OR COALESCE(v_quote.remaining_amount, 0) <= 0
+       OR COALESCE(v_quote.total_amount, 0) <= 50
+       OR v_quote.remaining_amount <> v_quote.total_amount - v_quote.deposit_amount THEN
+      RAISE EXCEPTION 'Pre-order balance is not payable' USING ERRCODE = '22023';
+    END IF;
+    v_expected_amount := v_quote.remaining_amount;
+  END IF;
+  IF p_amount <> v_expected_amount THEN
+    RAISE EXCEPTION 'Payment amount does not match the pre-order balance' USING ERRCODE = '22023';
+  END IF;
+
+  INSERT INTO public.payment_links (
+    quote_id, payment_type, amount, payment_link, pix_key,
+    instructions, sent_by, status, updated_at
+  ) VALUES (
+    p_quote_id, p_payment_type, v_expected_amount, v_payment_link, v_pix_key,
+    v_instructions, (SELECT auth.uid()), 'sent', clock_timestamp()
+  ) RETURNING id INTO v_link_id;
+
+  UPDATE public.quotes
+     SET payment_link = v_payment_link,
+         pix_key = v_pix_key,
+         payment_instructions = v_instructions,
+         payment_link_sent_at = clock_timestamp(),
+         updated_at = clock_timestamp()
+   WHERE id = p_quote_id;
+
+  RETURN v_link_id;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.admin_send_payment_link(uuid,numeric,text,text,text,text)
+  FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_send_payment_link(uuid,numeric,text,text,text,text)
+  TO authenticated, service_role;
 
 -- A customer can opt into the R$50 pre-order flow while creating the same quote
 -- record used by the catalog, admin response and customer history.
@@ -380,12 +603,15 @@ CREATE OR REPLACE FUNCTION public.admin_release_preorder_final_payment(p_quote_i
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $function$
 DECLARE
   v_quote public.quotes%ROWTYPE;
 BEGIN
-  PERFORM public.assert_admin_access();
+  IF (SELECT auth.uid()) IS NULL
+     OR NOT (SELECT private_api.is_current_admin()) THEN
+    RAISE EXCEPTION 'Admin access required' USING ERRCODE = '42501';
+  END IF;
   SELECT * INTO v_quote FROM public.quotes
    WHERE id = p_quote_id AND COALESCE(is_preorder, false) = true FOR UPDATE;
   IF NOT FOUND THEN
@@ -421,7 +647,7 @@ CREATE OR REPLACE FUNCTION public.admin_register_preorder_manual_payment(
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $function$
 DECLARE
   v_quote public.quotes%ROWTYPE;
@@ -431,7 +657,10 @@ DECLARE
   v_payment_id uuid;
   v_is_voucher_review boolean;
 BEGIN
-  PERFORM public.assert_admin_access();
+  IF (SELECT auth.uid()) IS NULL
+     OR NOT (SELECT private_api.is_current_admin()) THEN
+    RAISE EXCEPTION 'Admin access required' USING ERRCODE = '42501';
+  END IF;
   IF v_payment_type IS NULL OR v_payment_type NOT IN ('deposit', 'final') THEN
     RAISE EXCEPTION 'Invalid preorder payment type' USING ERRCODE = '22023';
   END IF;
@@ -506,13 +735,16 @@ CREATE OR REPLACE FUNCTION public.admin_reject_preorder_payment_voucher(
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $function$
 DECLARE
   v_quote public.quotes%ROWTYPE;
   v_reason text := NULLIF(btrim(COALESCE(p_rejection_reason, '')), '');
 BEGIN
-  PERFORM public.assert_admin_access();
+  IF (SELECT auth.uid()) IS NULL
+     OR NOT (SELECT private_api.is_current_admin()) THEN
+    RAISE EXCEPTION 'Admin access required' USING ERRCODE = '42501';
+  END IF;
   IF p_quote_id IS NULL OR v_reason IS NULL OR char_length(v_reason) > 500 THEN
     RAISE EXCEPTION 'A rejection reason of up to 500 characters is required' USING ERRCODE = '22023';
   END IF;
@@ -549,8 +781,7 @@ CREATE POLICY payment_vouchers_select_owner_or_admin
   USING (
     bucket_id = 'payment-vouchers'
     AND (
-      public.has_role(auth.uid(), 'admin')
-      OR public.has_role(auth.uid(), 'super_admin')
+      (SELECT private_api.is_current_admin())
       OR (
         split_part(name, '/', 1) = 'subscriptions'
         AND split_part(name, '/', 2) = auth.uid()::text
@@ -601,8 +832,7 @@ CREATE POLICY payment_vouchers_delete_owner_or_admin
   USING (
     bucket_id = 'payment-vouchers'
     AND (
-      public.has_role(auth.uid(), 'admin')
-      OR public.has_role(auth.uid(), 'super_admin')
+      (SELECT private_api.is_current_admin())
       OR (
         split_part(name, '/', 1) = 'subscriptions'
         AND split_part(name, '/', 2) = auth.uid()::text
