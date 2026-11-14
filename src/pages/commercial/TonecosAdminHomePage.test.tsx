@@ -103,6 +103,7 @@ describe("TONART admin workspace", () => {
       within(navigation).getByRole("button", { name: /Análises/ }),
     ).toHaveTextContent("Consulta");
     expect(within(navigation).getByRole("button", { name: /Créditos/ })).toBeInTheDocument();
+    expect(await screen.findByText("Cliente de teste")).toBeInTheDocument();
   });
 
   it("counts pending and reviewing quotes as work in progress", async () => {
@@ -400,7 +401,12 @@ describe("TONART admin workspace", () => {
       ).toHaveTextContent(/R\$\s*249,90/),
     );
     expect(
-      screen.getByText(/valores informados não são faturamento/),
+      screen.getByText(
+        /Valores extraídos das respostas a orçamentos, não de vendas/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Não representam caixa ou receita realizada/),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /cobrar|confirmar pagamento/i }),
