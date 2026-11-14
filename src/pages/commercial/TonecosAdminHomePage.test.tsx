@@ -79,6 +79,7 @@ describe("TONART admin workspace", () => {
     ).toBeInTheDocument();
     await waitFor(() => expect(mocks.overview).toHaveBeenCalledTimes(1));
     expect(await screen.findByText("Cliente de teste")).toBeInTheDocument();
+    expect(screen.getByText("cliente@example.com")).toBeInTheDocument();
     expect(screen.getByText("Orçamentos recebidos")).toBeInTheDocument();
     if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true") {
       expect(
@@ -115,7 +116,11 @@ describe("TONART admin workspace", () => {
     expect(
       within(navigation).getByRole("button", { name: /Análises/ }),
     ).toHaveTextContent("Consulta");
-    expect(screen.queryByRole("button", { name: /Créditos/ })).not.toBeInTheDocument();
+    if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
+      expect(
+        screen.queryByRole("button", { name: /Créditos/ }),
+      ).not.toBeInTheDocument();
+    }
   });
 
   it("counts pending and reviewing quotes as work in progress", async () => {

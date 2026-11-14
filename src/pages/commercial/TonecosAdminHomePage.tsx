@@ -529,9 +529,14 @@ export default function TonecosAdminHomePage() {
                     key={p.id}
                     className="mt-4 flex flex-wrap justify-between gap-2 border-t border-white/10 pt-4 text-sm"
                   >
-                    <span className="min-w-0 break-all">
-                      {p.fullName || p.email}
-                    </span>
+                    <div className="min-w-0">
+                      {p.fullName && (
+                        <p className="break-words font-medium">{p.fullName}</p>
+                      )}
+                      <p className="mt-1 break-all text-xs text-white/55">
+                        {p.email}
+                      </p>
+                    </div>
                     <span className="text-xs text-white/55">
                       {dates.format(new Date(p.createdAt))}
                     </span>
