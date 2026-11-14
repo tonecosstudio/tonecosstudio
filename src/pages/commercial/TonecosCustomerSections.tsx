@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { profileNavigationConfig } from "@/config/profile-navigation.config";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
-import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
+import {
+  getMyTonecosProfile,
+  getTonecosCurrentUser,
+} from "@/services/customer/tonecos-account-service";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import TonecosCustomerActivity from "./TonecosCustomerActivity";
+import TonecosCustomerContactSummary from "./TonecosCustomerContactSummary";
 import {
   actionClass,
   CommercialPage,
@@ -209,6 +213,57 @@ function PendingCustomerData({
   );
 }
 
+function CustomerRegisteredContacts() {
+  const [profile, setProfile] = useState<
+    Awaited<ReturnType<typeof getMyTonecosProfile>> | null
+  >(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    setProfile(null);
+    setLoading(true);
+    setError(false);
+    getMyTonecosProfile()
+      .then((value) => {
+        if (active) setProfile(value);
+      })
+      .catch(() => {
+        if (active) setError(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [attempt]);
+
+  if (loading) {
+    return <p role="status">Carregando seus dados cadastrados...</p>;
+  }
+  if (error || !profile) {
+    return (
+      <div role="alert" className={panelClass}>
+        <p className="mb-3 text-sm text-white/75">
+          Não foi possível consultar seus dados cadastrais. Nenhuma informação
+          foi alterada.
+        </p>
+        <button
+          type="button"
+          className={secondaryClass}
+          onClick={() => setAttempt((current) => current + 1)}
+        >
+          Tentar carregar dados
+        </button>
+      </div>
+    );
+  }
+  return <TonecosCustomerContactSummary profile={profile} variant="account" />;
+}
+
 function CurrentCatalogSelection() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
 
@@ -291,17 +346,20 @@ function CustomerSectionContent({
 }) {
   if (slug === "dados-pessoais") {
     return (
-      <PendingCustomerData
-        label="Cadastro pessoal adicional"
-        fields={[
-          { label: "WhatsApp", type: "tel", autoComplete: "tel" },
-          {
-            label: "CPF (para emissão fiscal quando necessário)",
-            inputMode: "numeric",
-          },
-          { label: "Data de nascimento", type: "date", autoComplete: "bday" },
-        ]}
-      />
+      <div className="space-y-6">
+        <CustomerRegisteredContacts />
+        <PendingCustomerData
+          label="Cadastro pessoal adicional"
+          fields={[
+            { label: "WhatsApp", type: "tel", autoComplete: "tel" },
+            {
+              label: "CPF (para emissão fiscal quando necessário)",
+              inputMode: "numeric",
+            },
+            { label: "Data de nascimento", type: "date", autoComplete: "bday" },
+          ]}
+        />
+      </div>
     );
   }
   if (slug === "endereco") {

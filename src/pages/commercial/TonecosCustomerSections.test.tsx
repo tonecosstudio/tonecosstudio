@@ -15,10 +15,12 @@ import TonecosCustomerSections, {
 
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
+  getProfile: vi.fn(),
   listMine: vi.fn(),
 }));
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.getUser,
+  getMyTonecosProfile: mocks.getProfile,
 }));
 vi.mock("@/services/customer/catalog-quote-service", () => ({
   loadMyCatalogQuotePage: mocks.listMine,
@@ -29,6 +31,14 @@ beforeEach(() => {
   mocks.getUser.mockResolvedValue({
     id: "11111111-1111-4111-8111-111111111111",
     email: "cliente@example.com",
+  });
+  mocks.getProfile.mockResolvedValue({
+    id: "11111111-1111-4111-8111-111111111111",
+    email: "cliente@example.com",
+    full_name: "Cliente Cadastrado",
+    phone: "(71) 99988-7766",
+    created_at: "2026-11-05T00:00:00Z",
+    updated_at: "2026-11-05T00:00:00Z",
   });
   mocks.listMine.mockResolvedValue({
     total: 0,
@@ -129,6 +139,42 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(
       screen.getByText(/Nenhum dado inserido aqui é armazenado/),
     ).toBeInTheDocument();
+  });
+
+  it("shows the canonical registered contact data alongside the old personal fields", async () => {
+    show("/perfil/dados-pessoais");
+    expect(
+      await screen.findByRole("region", {
+        name: "Dados cadastrais da conta",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Cliente Cadastrado")).toBeInTheDocument();
+    expect(screen.getByText("(71) 99988-7766")).toBeInTheDocument();
+    expect(mocks.getProfile).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("textbox", { name: "WhatsApp" })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: /Salvar dados pessoais/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("fails closed if the registered contact profile cannot be loaded", async () => {
+    mocks.getProfile
+      .mockRejectedValueOnce(new Error("connection unavailable"))
+      .mockResolvedValueOnce({
+        id: "11111111-1111-4111-8111-111111111111",
+        email: "cliente@example.com",
+        full_name: "Cliente Cadastrado",
+        phone: null,
+      });
+    show("/perfil/dados-pessoais");
+    expect(
+      await screen.findByText(/Não foi possível consultar seus dados cadastrais/),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Tentar carregar dados" }),
+    );
+    expect(await screen.findByText("Cliente Cadastrado")).toBeInTheDocument();
+    expect(mocks.getProfile).toHaveBeenCalledTimes(2);
   });
 
   it("shows the existing catalog selection in the restored collection and removes items through the same store", async () => {

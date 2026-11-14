@@ -15,6 +15,7 @@ import {
   secondaryClass,
 } from "./CommercialPage";
 import { commercialQuoteErrorText } from "./commercial-quote-error-text";
+import TonecosCustomerContactSummary from "./TonecosCustomerContactSummary";
 
 type Identity = { id: string; email: string | null };
 type CustomerProfile = Awaited<ReturnType<typeof getMyTonecosProfile>>;
@@ -257,25 +258,10 @@ export default function TonecosQuoteRequestPage() {
                 </li>
               ))}
             </ul>
-            <section
-              className="border-y border-white/15 py-4"
-              aria-label="Dados da conta utilizados no orçamento"
-            >
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold">Seus dados de contato</h3>
-                <Link className="text-xs text-[hsl(var(--gold-accent))] underline-offset-2 hover:underline" to={TONECOS_COMMERCIAL_ROUTES.account}>
-                  Editar na Minha Conta
-                </Link>
-              </div>
-              <p className="text-sm text-white/85">{profile.full_name}</p>
-              <p className="mt-1 text-xs text-white/60">{user.email ?? profile.email}</p>
-              <p className="mt-1 text-xs text-white/60">
-                Telefone: {profile.phone || "Não cadastrado — contato por e-mail"}
-              </p>
-              <p className="mt-2 text-xs text-white/50">
-                Dados pessoais da mesma conta. Dados de entrega serão mantidos na Minha Conta após a integração cadastral.
-              </p>
-            </section>
+            <TonecosCustomerContactSummary
+              profile={profile}
+              email={user.email}
+            />
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block space-y-2 text-sm">
                 <span>Escala desejada</span>
