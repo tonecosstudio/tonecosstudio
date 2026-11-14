@@ -1,5 +1,15 @@
 # TONART Studio — checkpoint operacional
 
+## Checkpoint 14/11/2026 — formulário complementar recuperado no frontend
+
+- **Base e HEAD de código:** `main@c59a35af043438987554b0fd458f020215eb63b0`; somente `src/pages/commercial/TonecosCustomerSections.tsx` e testes da mesma página foram alterados. O formulário complementar reutiliza `PendingCustomerData` e a mesma navegação/identidade existentes; restabelece WhatsApp adicional, CPF para finalidade fiscal, data de nascimento, endereço BR/UF e preferências (contato, avisos de orçamento/produção, campanhas), sem gravar dados nem simular consentimento.
+- **Preview Vercel:** deployment `dpl_BibyG3SW3AtFFMtcEkVRgCqcaKb4`, `READY`, URL `https://tonart-studio-public-f207kpbi0-jogo-brasils-projects.vercel.app`, build SHA `27087956f94f17448619079aae715db0a1aac54f` (código funcional idêntico ao HEAD `c59a35a`; commit posterior somente testes). O site permanece sem indexação e sem promoção ao domínio oficial.
+- **Testes:** regressão adicionada para seletores de UF, caixas desabilitadas e ausência de submissão. CI [#43555509768](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43555509768) falhou antes da execução de etapas, como nos commits anteriores. Logo, **build Vercel aprovado**, mas suíte/teste de tipos e QA visual autenticado **não homologados**.
+- **Fronteiras:** nenhuma alteração Supabase, RLS, Worker, D1, R2, moedas, pagamento ou produção oficial. `profiles` comercial só possui `full_name` e `phone` além de identidade/metadados; não usar os campos presentes no sistema histórico como autorização para gravar no projeto TONART antes da migração de schema.
+- **NEXT_ACTION:** validar os formulários no preview com usuário autorizado, depois conectar campos complementares à autoridade única do perfil em fase backend, com critérios de consentimento/necessidade e testes reais.
+- **DO_NOT_REPEAT:** não criar segundo cadastro, outra tabela, serviço ou workflow, não inventar dados de clientes nem armazenar CPF/dados de contato em browser/storage sem garantia de persistência adequada, não gerar build apenas para este checkpoint.
+
+
 ## Checkpoint 14/11/2026 — links diretos para orçamentos do cliente
 
 - **Base de código validada no preview:** `tonecosstudio/tonecosstudio/main@cd895c9b2d8b3b88016ee52b1422d7c73c4241dd`. Alterações: `src/services/customer/catalog-quote-service.ts` (filtro RLS por `user_id` e UUID exato), `TonecosMyQuotesPage.tsx` (detalhe pela rota existente `?quote=UUID`), `TonecosCustomerActivity.tsx`, `TonecosCustomerNotifications.tsx` e `TonecosCustomerSections.tsx` (atalhos), `src/config/routes.ts` (retorno de login restrito). Testes adicionados nos arquivos canônicos existentes.
