@@ -767,11 +767,11 @@ describe("Original customer account navigation in the commercial app", () => {
 
     show("/perfil/notificacoes");
     const emailSwitch = await screen.findByRole("switch", {
-      name: "Alertas por e-mail",
+      name: "Avisos de envio e entrega",
     });
     expect(emailSwitch).toHaveAttribute("data-state", "checked");
     expect(
-      screen.getByRole("switch", { name: "Atualizações de pedidos" }),
+      screen.getByRole("switch", { name: "Atualizações de produção" }),
     ).toHaveAttribute("data-state", "unchecked");
     expect(
       screen.getByRole("switch", { name: "Comunicados de lançamento" }),
@@ -779,7 +779,7 @@ describe("Original customer account navigation in the commercial app", () => {
 
     fireEvent.click(emailSwitch);
     fireEvent.click(
-      screen.getByRole("switch", { name: "Atualizações de pedidos" }),
+      screen.getByRole("switch", { name: "Atualizações de produção" }),
     );
     fireEvent.click(
       screen.getByRole("button", { name: "Salvar preferências" }),

@@ -132,8 +132,8 @@ export default function TonecosCustomerNotifications({
       <section className={panelClass} aria-label="Preferências de envio">
         <h2 className="text-lg font-semibold">Preferências de envio</h2>
         <p className="mt-3 text-sm leading-6 text-white/65">
-          Controle quais avisos operacionais e comerciais podem ser enviados
-          pelos canais já configurados na conta.
+          Escolha quais e-mails de produção, envio, entrega e campanhas deseja
+          receber. As preferências não desativam avisos essenciais da conta.
         </p>
         {preferencesLoadError && (
           <div role="alert" className="mt-4 space-y-3 text-sm text-red-200">
@@ -180,8 +180,8 @@ export default function TonecosCustomerNotifications({
         )}
       </section>
 
-      <section className={panelClass} aria-label="Atualizações dos orçamentos">
-        <h2 className="text-lg font-semibold">Atualizações da sua conta</h2>
+      <section className={panelClass} aria-label="Atualizações de orçamentos">
+        <h2 className="text-lg font-semibold">Atualizações de orçamentos</h2>
         <p className="mt-3 text-sm leading-6 text-white/65">
           Acompanhe os eventos registrados nas suas solicitações recentes.
           Este histórico mostra o que foi registrado na conta; ele não confirma

@@ -696,7 +696,7 @@ export function NotificationsSection({
     <div className="space-y-6">
       <div className="grid gap-3 md:grid-cols-3">
         <div className={`${profilePanelClassName} p-4`}>
-          <p className={profileTinyMutedTextClassName}>Canais ativos</p>
+          <p className={profileTinyMutedTextClassName}>Preferências ativas</p>
           <p className="mt-2 text-2xl font-semibold">{activeChannels}/3</p>
         </div>
         <div className={`${profilePanelClassName} p-4`}>
@@ -725,13 +725,13 @@ export function NotificationsSection({
       <div className="space-y-3">
         <div className={`${profilePanelClassName} flex items-start justify-between gap-4 p-4`}>
           <div className="space-y-1">
-            <Label>Alertas por e-mail</Label>
+            <Label>Avisos de envio e entrega</Label>
             <p className={`text-sm ${profileMutedTextClassName}`}>
-              Avisos gerais sobre a conta, retorno da equipe e interações relevantes.
+              E-mails quando o pedido for enviado ou a entrega for concluída.
             </p>
           </div>
           <Switch
-            aria-label="Alertas por e-mail"
+            aria-label="Avisos de envio e entrega"
             checked={emailNotifications}
             disabled={saveMutation.isPending}
             onCheckedChange={setEmailNotifications}
@@ -740,13 +740,13 @@ export function NotificationsSection({
 
         <div className={`${profilePanelClassName} flex items-start justify-between gap-4 p-4`}>
           <div className="space-y-1">
-            <Label>Atualizações de pedidos</Label>
+            <Label>Atualizações de produção</Label>
             <p className={`text-sm ${profileMutedTextClassName}`}>
-              Mudanças de produção, expedição, entrega e eventos que exigem ação da conta.
+              Etapas de design, produção, controle de qualidade e embalagem.
             </p>
           </div>
           <Switch
-            aria-label="Atualizações de pedidos"
+            aria-label="Atualizações de produção"
             checked={orderUpdates}
             disabled={saveMutation.isPending}
             onCheckedChange={setOrderUpdates}
