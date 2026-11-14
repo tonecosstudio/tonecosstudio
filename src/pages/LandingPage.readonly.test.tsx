@@ -48,4 +48,31 @@ describe("TONART public Home during image review", () => {
     view.unmount();
     client.clear();
   });
+
+  it("shows the campaign, R$50 pre-sale and active Coins wallet in the commercial MVP", () => {
+    vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+    vi.stubEnv("VITE_TONECOS_COINS_ENABLED", "false");
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ items: [] })));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter><LandingPage /></MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByRole("heading", { name: /Black Friday Até 50% de desconto/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Solicitar pré-venda/ })).toHaveAttribute(
+      "href",
+      "/contato?assunto=pre-venda",
+    );
+    expect(screen.getByRole("link", { name: /Acessar minha carteira/ })).toHaveAttribute(
+      "href",
+      "/moedas",
+    );
+
+    view.unmount();
+    client.clear();
+  });
 });
