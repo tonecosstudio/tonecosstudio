@@ -98,10 +98,29 @@ const previousSections = profileNavigationConfig.flatMap((group) =>
   })),
 );
 
+export function getCustomerNavigationLinks<T extends { path: string }>(
+  links: readonly T[],
+  subscriptionsEnabled: boolean,
+  accountPath: string,
+): T[] {
+  const legacySubscriptionPath = accountPath + "/assinatura";
+  const canonicalSubscriptionPath = accountPath + "/assinaturas";
+  const hasCanonicalSubscriptionPath = links.some(
+    (item) => item.path === canonicalSubscriptionPath,
+  );
+
+  return links.filter(
+    (item) =>
+      !subscriptionsEnabled ||
+      !hasCanonicalSubscriptionPath ||
+      item.path !== legacySubscriptionPath,
+  );
+}
+
 /** Keep one canonical destination per section even when the old profile registry
  * and the restored navigation expose the same path.
  */
-export const customerSectionLinks = [
+const uniqueCustomerSectionLinks = [
   ...new Map(
     [
       ...previousSections,
@@ -109,6 +128,11 @@ export const customerSectionLinks = [
     ].map((item) => [item.path, item] as const),
   ).values(),
 ];
+export const customerSectionLinks = getCustomerNavigationLinks(
+  uniqueCustomerSectionLinks,
+  PUBLIC_SUBSCRIPTIONS_ENABLED,
+  TONECOS_COMMERCIAL_ROUTES.account,
+);
 
 export function TonecosCustomerNavigation({
   layout = "inline",

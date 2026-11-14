@@ -23,6 +23,7 @@ import { TonecosSubscriptionUnavailablePanel } from "./TonecosSubscriptionUnavai
 let TonecosCustomerSections: typeof CustomerSectionsModule.default;
 let customerSectionLinks: typeof CustomerSectionsModule.customerSectionLinks;
 let TonecosCustomerNavigation: typeof CustomerSectionsModule.TonecosCustomerNavigation;
+let getCustomerNavigationLinks: typeof CustomerSectionsModule.getCustomerNavigationLinks;
 
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
@@ -71,6 +72,7 @@ beforeAll(async () => {
   TonecosCustomerSections = module.default;
   customerSectionLinks = module.customerSectionLinks;
   TonecosCustomerNavigation = module.TonecosCustomerNavigation;
+  getCustomerNavigationLinks = module.getCustomerNavigationLinks;
 });
 
 beforeEach(() => {
@@ -190,6 +192,21 @@ describe("Original customer account navigation in the commercial app", () => {
       screen.getByText("Solicitações e relacionamento"),
     ).toBeInTheDocument();
     expect(screen.getByText("Comunicação")).toBeInTheDocument();
+  });
+
+  it("shows one subscription destination when the feature and canonical route are enabled", () => {
+    const links = [
+      { path: "/perfil/assinatura", label: "Assinaturas" },
+      { path: "/perfil/assinaturas", label: "Minha assinatura" },
+    ];
+
+    expect(getCustomerNavigationLinks(links, true, "/perfil")).toEqual([
+      { path: "/perfil/assinaturas", label: "Minha assinatura" },
+    ]);
+    expect(getCustomerNavigationLinks(links, false, "/perfil")).toEqual(links);
+    expect(
+      getCustomerNavigationLinks([links[0]], true, "/perfil"),
+    ).toEqual([links[0]]);
   });
 
   it("keeps subscriptions fail-closed while their data source is disabled", async () => {
