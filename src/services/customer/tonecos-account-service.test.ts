@@ -341,9 +341,15 @@ describe("Tonecos authenticated MVP account", () => {
 
   it("rejects unsupported profile values before authentication or data writes", async () => {
     await expect(updateMyTonecosWhatsapp("123")).rejects.toThrow("tonecos_account_whatsapp_invalid");
+    await expect(updateMyTonecosWhatsapp("71abcd999999999")).rejects.toThrow("tonecos_account_whatsapp_invalid");
     await expect(updateMyTonecosDeliveryAddress({
       street: "Rua", number: "1", neighborhood: "Centro",
       city: "Salvador", state: "BA", zipCode: "123",
+      country: "BR",
+    })).rejects.toThrow("tonecos_account_address_invalid");
+    await expect(updateMyTonecosDeliveryAddress({
+      street: "Rua", number: "1", neighborhood: "Centro",
+      city: "Salvador", state: "BA", zipCode: "40000x000",
       country: "BR",
     })).rejects.toThrow("tonecos_account_address_invalid");
     await expect(updateMyTonecosContactPreferences({
