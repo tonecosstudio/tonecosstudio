@@ -54,10 +54,27 @@ export default function TonecosCustomerContactSummary({
             {profile.phone || "Não cadastrado — contato por e-mail"}
           </dd>
         </div>
+        <div>
+          <dt className="text-xs text-white/50">WhatsApp adicional</dt>
+          <dd className="text-white/75">
+            {profile.whatsapp || "Não cadastrado"}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-white/50">CEP de entrega cadastrado</dt>
+          <dd className="text-white/75">
+            {profile.delivery_address &&
+            typeof profile.delivery_address === "object" &&
+            !Array.isArray(profile.delivery_address) &&
+            typeof profile.delivery_address.zipCode === "string"
+              ? profile.delivery_address.zipCode
+              : "Não cadastrado"}
+          </dd>
+        </div>
       </dl>
       <p className="mt-3 text-xs text-white/50">
-        Os contatos vêm da Minha Conta. Os dados complementares de entrega
-        serão ligados ao mesmo cadastro quando a integração estiver pronta.
+        Estes dados vêm da Minha Conta. O WhatsApp e o CEP guardados em
+        orçamentos anteriores não são tratados como cadastro permanente.
       </p>
     </section>
   );
