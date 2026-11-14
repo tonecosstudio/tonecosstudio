@@ -23,6 +23,7 @@ export type ActiveSubscription = {
   deliveries_total: number | null;
   total_paid: number | null;
   payment_method: string | null;
+  selected_model_slugs?: string[];
 };
 
 export type SupportConversation = {

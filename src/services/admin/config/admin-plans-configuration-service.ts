@@ -16,6 +16,7 @@ export interface PricingTierPlan {
   deposit_amount: number | null;
   is_active: boolean;
   bonus_type: "pieces" | "coins" | null;
+  model_selection_limit: 6 | 12 | null;
 }
 
 export interface CoinExchangeRate {
@@ -36,6 +37,7 @@ export interface PricingTierPlanSaveData {
   deliveries_total: number;
   is_active: boolean;
   description: string;
+  model_selection_limit: 6 | 12 | null;
 }
 
 export interface SavePricingTierPlanInput {
@@ -58,6 +60,7 @@ interface SubscriptionPlanConfigurationRow {
   deliveries_total: number | null;
   is_active: boolean | null;
   description: string | null;
+  model_selection_limit: number | null;
 }
 
 interface SubscriptionPlansQueryBuilder {
@@ -102,6 +105,11 @@ function mapSubscriptionPlan(row: SubscriptionPlanConfigurationRow): PricingTier
   const deliveriesTotal = row.deliveries_total ?? row.deliveries_per_cycle;
   const coinsIncluded = normalizeNonNegativeInteger(row.coins_included, "coins_included", row.id);
   const totalCredits = normalizeNonNegativeInteger(row.total_credits, "total_credits", row.id);
+  const selectionLimit = row.model_selection_limit;
+
+  if (selectionLimit !== null && selectionLimit !== 6 && selectionLimit !== 12) {
+    throw new Error(`Limite de modelos invalido no plano ${row.id}.`);
+  }
 
   if (coinsIncluded !== totalCredits) {
     throw new Error(
@@ -121,6 +129,7 @@ function mapSubscriptionPlan(row: SubscriptionPlanConfigurationRow): PricingTier
     deposit_amount: 0,
     is_active: row.is_active ?? false,
     bonus_type: "coins",
+    model_selection_limit: selectionLimit,
   };
 }
 
@@ -140,7 +149,8 @@ export async function fetchAdminPricingTierPlans(): Promise<PricingTierPlan[]> {
       deliveries_per_cycle,
       deliveries_total,
       is_active,
-      description
+      description,
+      model_selection_limit
     `)
     .order("price", { ascending: true });
 
@@ -201,6 +211,8 @@ export async function savePricingTierPlan(input: SavePricingTierPlanInput): Prom
       deliveries_per_cycle: input.data.deliveries_total,
       deliveries_total: input.data.deliveries_total,
       is_active: input.data.is_active,
+      model_selection_limit:
+        input.planType === "avulso" ? null : input.data.model_selection_limit,
     },
   });
 }

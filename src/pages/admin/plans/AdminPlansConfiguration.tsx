@@ -137,6 +137,9 @@ function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }
   const [coinsIncluded, setCoinsIncluded] = useState(
     existingPlan?.base_credits != null ? String(existingPlan.base_credits) : "0",
   );
+  const [modelSelectionLimit, setModelSelectionLimit] = useState<6 | 12>(
+    existingPlan?.model_selection_limit === 12 ? 12 : 6,
+  );
   const [isActive, setIsActive] = useState(existingPlan?.is_active ?? false);
 
   useEffect(() => {
@@ -152,6 +155,7 @@ function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }
         : "",
     );
     setCoinsIncluded(existingPlan?.base_credits != null ? String(existingPlan.base_credits) : "0");
+    setModelSelectionLimit(existingPlan?.model_selection_limit === 12 ? 12 : 6);
     setIsActive(existingPlan?.is_active ?? false);
   }, [existingPlan, meta.label]);
 
@@ -169,6 +173,7 @@ function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }
     numericDeliveries > 0 &&
     Number.isInteger(numericCoins) &&
     numericCoins >= 0 &&
+    (meta.months === 0 || modelSelectionLimit === 6 || modelSelectionLimit === 12) &&
     Number.isFinite(pricePix) &&
     pricePix > 0 &&
     Number.isFinite(priceCoins) &&
@@ -198,6 +203,7 @@ function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }
           deposit_amount: 0,
           coins_included: numericCoins,
           deliveries_total: numericDeliveries,
+          model_selection_limit: meta.months === 0 ? null : modelSelectionLimit,
           is_active: isActive,
           description:
             meta.months > 0 ? `${meta.months} meses de assinatura` : "Compra avulsa",
@@ -297,6 +303,27 @@ function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }
                   placeholder="Obrigatório"
                 />
               </div>
+              {meta.months > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor={`plan-model-limit-${meta.key}`}>Modelos à escolha</Label>
+                  <select
+                    id={`plan-model-limit-${meta.key}`}
+                    value={modelSelectionLimit}
+                    onChange={(event) => {
+                      const value = Number(event.target.value);
+                      if (value === 6 || value === 12) setModelSelectionLimit(value);
+                    }}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-describedby={`plan-model-limit-help-${meta.key}`}
+                  >
+                    <option value={6}>6 modelos</option>
+                    <option value={12}>12 modelos</option>
+                  </select>
+                  <p id={`plan-model-limit-help-${meta.key}`} className="text-xs text-muted-foreground">
+                    O cliente escolhe essa quantidade entre os modelos curados da coleção.
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor={`plan-coins-${meta.key}`}>Coins incluídos</Label>
                 <Input
@@ -337,7 +364,7 @@ function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }
             </div>
           </>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div>
               <p className="text-xs text-muted-foreground">Preço cheio</p>
               <p className="font-semibold">
@@ -353,6 +380,16 @@ function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }
             <div>
               <p className="text-xs text-muted-foreground">Coins incluídos</p>
               <p className="font-semibold">{existingPlan?.base_credits ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Modelos à escolha</p>
+              <p className="font-semibold">
+                {meta.months === 0
+                  ? "Não se aplica"
+                  : existingPlan?.model_selection_limit
+                    ? `${existingPlan.model_selection_limit} modelos`
+                    : "Configure 6 ou 12"}
+              </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Status</p>

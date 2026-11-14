@@ -5,7 +5,7 @@ import { CatalogMvpShell } from "@/CatalogMvpShell";
 import {
   ADMIN_ROUTES,
   AUTH_ROUTES,
-  PUBLIC_COLLECTIONS_ENABLED,
+  PUBLIC_SUBSCRIPTIONS_ENABLED,
   PUBLIC_ROUTES,
   TONECOS_COMMERCIAL_ROUTES,
   loginReturnToPath,
@@ -140,7 +140,7 @@ const commercialRoutes: ReactNode = (
       path={TONECOS_COMMERCIAL_ROUTES.adminSubscriptions}
       element={
         <AdminAccessGate>
-          {PUBLIC_COLLECTIONS_ENABLED ? (
+          {PUBLIC_SUBSCRIPTIONS_ENABLED ? (
             <AdminSubscriptionPayments />
           ) : (
             <SubscriptionUnavailable audience="admin" />
@@ -227,7 +227,7 @@ const commercialRoutes: ReactNode = (
     <Route
       path={PUBLIC_ROUTES.plans}
       element={
-        PUBLIC_COLLECTIONS_ENABLED ? (
+        PUBLIC_SUBSCRIPTIONS_ENABLED ? (
           <SubscribeCollection />
         ) : (
           <SubscriptionUnavailable />
@@ -237,7 +237,7 @@ const commercialRoutes: ReactNode = (
     <Route
       path={AUTH_ROUTES.subscribeCollection}
       element={
-        PUBLIC_COLLECTIONS_ENABLED ? (
+        PUBLIC_SUBSCRIPTIONS_ENABLED ? (
           <SubscribeCollection />
         ) : (
           <SubscriptionUnavailable />

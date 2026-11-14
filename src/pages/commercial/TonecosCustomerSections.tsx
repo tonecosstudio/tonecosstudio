@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { profileNavigationConfig } from "@/config/profile-navigation.config";
 import {
-  PUBLIC_COLLECTIONS_ENABLED,
+  PUBLIC_SUBSCRIPTIONS_ENABLED,
   TONECOS_COMMERCIAL_ROUTES,
 } from "@/config/routes";
 import {
@@ -1124,7 +1124,7 @@ function CustomerSectionContent({
   }
   if (slug === "pagamentos") return <CustomerQuotePayments userId={userId} />;
   if (slug === "assinatura" || slug === "assinaturas") {
-    return PUBLIC_COLLECTIONS_ENABLED ? (
+    return PUBLIC_SUBSCRIPTIONS_ENABLED ? (
       <SubscriptionSection userId={userId} commercialMvp />
     ) : (
       <TonecosSubscriptionUnavailablePanel />

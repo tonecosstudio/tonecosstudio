@@ -18,6 +18,7 @@ export interface ActiveSubscriptionSummary {
   total_paid: number | null;
   payment_method: string | null;
   notes: string | null;
+  selected_model_slugs: string[];
 }
 
 export async function fetchActiveSubscriptionSummary(
@@ -26,7 +27,7 @@ export async function fetchActiveSubscriptionSummary(
   const { data, error } = await supabase
     .from("subscriptions")
     .select(
-      "id,user_id,collection_id,plan_type,plan_id,status,created_at,updated_at,next_delivery_at,started_at,cancelled_at,completed_at,deliveries_completed,deliveries_total,total_paid,payment_method,notes"
+      "id,user_id,collection_id,plan_type,plan_id,status,created_at,updated_at,next_delivery_at,started_at,cancelled_at,completed_at,deliveries_completed,deliveries_total,total_paid,payment_method,notes,selected_model_slugs"
     )
     .eq("user_id", userId)
     .eq("status", "active")
@@ -41,5 +42,12 @@ export async function fetchActiveSubscriptionSummary(
     throw error;
   }
 
-  return (data ?? null) as ActiveSubscriptionSummary | null;
+  if (!data) return null;
+  const subscription = data as unknown as ActiveSubscriptionSummary;
+  return {
+    ...subscription,
+    selected_model_slugs: Array.isArray(subscription.selected_model_slugs)
+      ? subscription.selected_model_slugs.filter((slug): slug is string => typeof slug === "string")
+      : [],
+  };
 }

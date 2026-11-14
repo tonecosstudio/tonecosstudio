@@ -4,6 +4,7 @@ import {
   deletePaymentVoucher,
   uploadPaymentVoucher,
 } from "@/services/payments/payment-voucher-storage-service";
+import { getSubscriptionModelSelectionIssue } from "@/services/subscriptions/subscription-model-selection";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -17,6 +18,7 @@ export type SubscribePlan = {
   price_full: number;
   deliveries_total: number;
   total_credits: number | null;
+  model_selection_limit: 6 | 12;
   is_active: boolean;
 };
 
@@ -28,11 +30,7 @@ export type SubscribeCollectionOption = {
   image_url: string | null;
   cover_image_url?: string | null;
   is_active: boolean;
-  collection_characters?: Array<{
-    id: string;
-    name: string;
-    status: string | null;
-  }>;
+  catalog_model_slugs: string[];
 };
 
 export type SubscriptionCheckoutResult = {
@@ -51,27 +49,45 @@ export type CustomerSubscriptionPayment = {
   rejectionReason: string | null;
 };
 
-type SubscribeCollectionQueryRow = Omit<SubscribeCollectionOption, "image_url" | "collection_characters"> & {
+type SubscribeCollectionQueryRow = Omit<SubscribeCollectionOption, "image_url" | "catalog_model_slugs"> & {
   image_url?: string | null;
   cover_image_url?: string | null;
-  collection_characters?: SubscribeCollectionOption["collection_characters"] | null;
+  catalog_model_slugs?: string[] | null;
 };
 
 type SubscribePlanQueryRow = Omit<
   SubscribePlan,
-  "price_pix" | "price_full" | "deliveries_total" | "total_credits"
+  "price_pix" | "price_full" | "deliveries_total" | "total_credits" | "model_selection_limit"
 > & {
   price_pix: unknown;
   price_full: unknown;
   deliveries_total: unknown;
   total_credits: unknown;
+  model_selection_limit: unknown;
 };
+
+interface SubscriptionCheckoutRpcClient {
+  rpc(
+    name: "create_subscription_checkout_for_current_user",
+    args: {
+      p_plan_id: string;
+      p_collection_id: string;
+      p_selected_model_slugs: string[];
+      p_payment_method: "pix";
+      p_payment_voucher_url: string;
+    },
+  ): Promise<{ data: unknown; error: Error | null }>;
+}
+
+const subscriptionCheckoutRpc = supabase as unknown as SubscriptionCheckoutRpcClient;
 
 function toSubscribeCollectionOption(row: SubscribeCollectionQueryRow): SubscribeCollectionOption {
   return {
     ...row,
     image_url: row.image_url ?? row.cover_image_url ?? null,
-    collection_characters: row.collection_characters ?? [],
+    catalog_model_slugs: Array.isArray(row.catalog_model_slugs)
+      ? row.catalog_model_slugs.filter((slug): slug is string => typeof slug === "string")
+      : [],
   };
 }
 
@@ -80,6 +96,7 @@ function normalizeSubscribePlan(row: SubscribePlanQueryRow): SubscribePlan {
   const pricePix = Number(row.price_pix);
   const deliveriesTotal = Number(row.deliveries_total);
   const totalCredits = row.total_credits == null ? null : Number(row.total_credits);
+  const modelSelectionLimit = Number(row.model_selection_limit);
 
   const invalidMoney =
     !Number.isFinite(priceFull) ||
@@ -94,8 +111,10 @@ function normalizeSubscribePlan(row: SubscribePlanQueryRow): SubscribePlan {
   const invalidCredits =
     totalCredits !== null &&
     (!Number.isFinite(totalCredits) || !Number.isInteger(totalCredits) || totalCredits < 0);
+  const invalidSelectionLimit =
+    modelSelectionLimit !== 6 && modelSelectionLimit !== 12;
 
-  if (invalidMoney || invalidDeliveries || invalidCredits) {
+  if (invalidMoney || invalidDeliveries || invalidCredits || invalidSelectionLimit) {
     throw new Error(`Configuração comercial inválida no plano ${row.id}`);
   }
 
@@ -105,6 +124,7 @@ function normalizeSubscribePlan(row: SubscribePlanQueryRow): SubscribePlan {
     price_full: priceFull,
     deliveries_total: deliveriesTotal,
     total_credits: totalCredits,
+    model_selection_limit: modelSelectionLimit,
   };
 }
 
@@ -112,9 +132,10 @@ export async function listSubscribePlans(): Promise<SubscribePlan[]> {
   const { data, error } = await supabase
     .from("subscription_plans")
     .select(
-      "id, name, description, plan_type, price_pix, price_full, deliveries_total, total_credits, is_active",
+      "id, name, description, plan_type, price_pix, price_full, deliveries_total, total_credits, model_selection_limit, is_active",
     )
     .eq("is_active", true)
+    .in("model_selection_limit", [6, 12])
     .order("display_order", { ascending: true });
 
   if (error) throw error;
@@ -124,8 +145,9 @@ export async function listSubscribePlans(): Promise<SubscribePlan[]> {
 export async function listSubscribeCollections(): Promise<SubscribeCollectionOption[]> {
   const { data, error } = await supabase
     .from("collections")
-    .select("*, collection_characters (id, name, status)")
+    .select("id, name, slug, description, image_url, cover_image_url, is_active, catalog_model_slugs")
     .eq("is_active", true)
+    .eq("status", "active")
     .order("name", { ascending: true });
 
   if (error) throw error;
@@ -137,9 +159,10 @@ export async function getSubscribeCollectionBySlug(
 ): Promise<SubscribeCollectionOption | null> {
   const { data, error } = await supabase
     .from("collections")
-    .select("*")
+    .select("id, name, slug, description, image_url, cover_image_url, is_active, catalog_model_slugs")
     .eq("slug", slug)
     .eq("is_active", true)
+    .eq("status", "active")
     .maybeSingle();
 
   if (error) throw error;
@@ -150,12 +173,18 @@ export async function getSubscribeCollectionBySlug(
 export async function createSubscriptionCheckoutForCurrentUser(input: {
   planId: string;
   collectionId: string;
+  selectedModelSlugs: string[];
+  modelSelectionLimit: 6 | 12;
   voucher: File;
 }): Promise<SubscriptionCheckoutResult> {
   if (
     !input ||
     !UUID_PATTERN.test(input.planId) ||
     !UUID_PATTERN.test(input.collectionId) ||
+    getSubscriptionModelSelectionIssue({
+      selectedSlugs: input.selectedModelSlugs,
+      selectionLimit: input.modelSelectionLimit,
+    }) !== null ||
     !(input.voucher instanceof File)
   ) {
     throw new Error("subscription_checkout_input_invalid");
@@ -170,9 +199,10 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
 
   let data: unknown;
   try {
-    const result = await supabase.rpc("create_subscription_checkout_for_current_user", {
+    const result = await subscriptionCheckoutRpc.rpc("create_subscription_checkout_for_current_user", {
       p_plan_id: input.planId,
       p_collection_id: input.collectionId,
+      p_selected_model_slugs: input.selectedModelSlugs,
       p_payment_method: "pix",
       p_payment_voucher_url: voucherPath,
     });

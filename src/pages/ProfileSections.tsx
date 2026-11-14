@@ -32,6 +32,7 @@ import {
   useProfilePaymentMethods,
   useProfileSupport,
 } from "@/hooks/customer/useProfileSectionsData";
+import { loadSubscriptionCatalogModels } from "@/services/subscriptions/subscription-catalog-service";
 import { listPaymentsByUser } from "@/lib/payment-service";
 import {
   PUBLIC_COLLECTIONS_ENABLED,
@@ -769,6 +770,52 @@ export function NotificationsSection({
   );
 }
 
+function SubscriptionSelectedModels({ slugs }: { slugs: string[] }) {
+  const selectedModelsQuery = useQuery({
+    queryKey: ["subscription-selected-models", slugs],
+    queryFn: ({ signal }) => loadSubscriptionCatalogModels(slugs, signal),
+  });
+
+  return (
+    <section className={`${profilePanelClassName} p-4`} aria-labelledby="subscription-selected-models-heading">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 id="subscription-selected-models-heading" className="text-sm font-semibold">Modelos da sua assinatura</h3>
+          <p className={`mt-1 text-xs ${profileMutedTextClassName}`}>
+            {slugs.length} modelos selecionados da coleção curada.
+          </p>
+        </div>
+        {selectedModelsQuery.isLoading && <span role="status" className={`text-xs ${profileMutedTextClassName}`}>Carregando catálogo...</span>}
+      </div>
+      {selectedModelsQuery.isError && (
+        <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-red-500/20 p-3">
+          <p className="text-sm text-red-300">Não foi possível carregar os nomes dos modelos.</p>
+          <Button type="button" variant="outline" size="sm" onClick={() => void selectedModelsQuery.refetch()}>
+            Tentar novamente
+          </Button>
+        </div>
+      )}
+      {selectedModelsQuery.data && (
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {selectedModelsQuery.data.map((model) => (
+            <li key={model.slug} className="flex min-w-0 items-center gap-3 rounded-md border border-white/10 p-2">
+              {model.imageUrl ? (
+                <img src={model.imageUrl} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded object-cover" />
+              ) : (
+                <span aria-hidden="true" className="h-12 w-12 shrink-0 rounded bg-white/5" />
+              )}
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium">{model.name}</span>
+                {model.variantName && <span className="block truncate text-xs text-zinc-400">{model.variantName}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function SubscriptionSection({
   userId,
   commercialMvp = false,
@@ -777,6 +824,7 @@ export function SubscriptionSection({
   commercialMvp?: boolean;
 }) {
   const subscriptionQuery = useActiveProfileSubscription(userId);
+  const selectedModelSlugs = subscriptionQuery.data?.selected_model_slugs ?? [];
 
   if (subscriptionQuery.isLoading) {
     return (
@@ -940,6 +988,8 @@ export function SubscriptionSection({
           </Badge>
         </div>
       </div>
+
+      {selectedModelSlugs.length > 0 && <SubscriptionSelectedModels slugs={selectedModelSlugs} />}
 
       <div className={`${profilePanelClassName} p-4`}>
         <div className="flex items-center justify-between gap-4">

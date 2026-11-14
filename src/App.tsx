@@ -16,6 +16,7 @@ import {
   ADMIN_ROUTES,
   AUTH_ROUTES,
   PUBLIC_COLLECTIONS_ENABLED,
+  PUBLIC_SUBSCRIPTIONS_ENABLED,
   PUBLIC_ROUTES,
 } from "@/config/routes";
 
@@ -175,7 +176,7 @@ function AppContent() {
               <Route
                 path={PUBLIC_ROUTES.plans}
                 element={
-                  PUBLIC_COLLECTIONS_ENABLED ? (
+                  PUBLIC_SUBSCRIPTIONS_ENABLED ? (
                     <PlansArcade />
                   ) : (
                     <HiddenCollectionsPage />
@@ -288,7 +289,7 @@ function AppContent() {
               <Route
                 path={AUTH_ROUTES.subscribeCollection}
                 element={
-                  PUBLIC_COLLECTIONS_ENABLED ? (
+                  PUBLIC_SUBSCRIPTIONS_ENABLED ? (
                     <RequireAuth>
                       <SubscribeCollection />
                     </RequireAuth>
@@ -348,7 +349,7 @@ function AppContent() {
               <Route
                 path={AUTH_ROUTES.subscriberDashboard}
                 element={
-                  PUBLIC_COLLECTIONS_ENABLED ? (
+                  PUBLIC_SUBSCRIPTIONS_ENABLED ? (
                     <RequireAuth>
                       <SubscriberDashboardArcade />
                     </RequireAuth>

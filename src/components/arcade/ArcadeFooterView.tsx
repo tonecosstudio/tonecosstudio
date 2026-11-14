@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { BRAND_NAME, BRAND_SHORT_NAME, BRAND_STUDIO_LABEL } from "@/config/brand";
 import { Mail, Phone, MessageCircle, ExternalLink } from "lucide-react";
-import { AUTH_ROUTES, PUBLIC_COLLECTIONS_ENABLED, PUBLIC_ROUTES } from "@/config/routes";
+import { AUTH_ROUTES, PUBLIC_COLLECTIONS_ENABLED, PUBLIC_ROUTES, PUBLIC_SUBSCRIPTIONS_ENABLED } from "@/config/routes";
 import { CONTACT } from "@/config/constants";
 import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import { buildSafeMailtoHref, buildSafeWhatsAppHref } from "@/lib/security/safe-open";
@@ -17,6 +17,9 @@ const navLinks: Array<{ to: string; label: string }> = [
 
 if (PUBLIC_COLLECTIONS_ENABLED) {
   navLinks.splice(2, 0, { to: PUBLIC_ROUTES.collections, label: "Colecoes" });
+}
+if (PUBLIC_SUBSCRIPTIONS_ENABLED) {
+  navLinks.splice(3, 0, { to: PUBLIC_ROUTES.plans, label: "Assinaturas" });
 }
 
 const accountLinks = [

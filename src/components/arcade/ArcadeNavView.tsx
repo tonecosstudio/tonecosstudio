@@ -5,7 +5,7 @@ import { Bell, Menu, X } from "lucide-react";
 import { CoinCounter } from "@/components/arcade/CoinCounter";
 import { BRAND_SHORT_NAME } from "@/config/brand";
 import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
-import { ADMIN_ROUTES, AUTH_ROUTES, PUBLIC_COLLECTIONS_ENABLED, PUBLIC_ROUTES } from "@/config/routes";
+import { ADMIN_ROUTES, AUTH_ROUTES, PUBLIC_COLLECTIONS_ENABLED, PUBLIC_ROUTES, PUBLIC_SUBSCRIPTIONS_ENABLED } from "@/config/routes";
 
 const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
 
@@ -19,6 +19,9 @@ const navLinks: Array<{ to: string; label: string }> = [
 
 if (PUBLIC_COLLECTIONS_ENABLED) {
   navLinks.splice(2, 0, { to: PUBLIC_ROUTES.collections, label: "COLEÇÕES" });
+}
+if (PUBLIC_SUBSCRIPTIONS_ENABLED) {
+  navLinks.splice(3, 0, { to: PUBLIC_ROUTES.plans, label: "ASSINATURAS" });
 }
 
 const authNavLinks: Array<{ to: string; label: string }> = [

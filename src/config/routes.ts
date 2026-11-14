@@ -99,6 +99,10 @@ export function tonecosRecoveryPath(
 }
 
 export const PUBLIC_COLLECTIONS_ENABLED = false;
+// Subscription pages use their own migration gate; legacy collection routes
+// stay independently disabled until their full schema is installed.
+export const PUBLIC_SUBSCRIPTIONS_ENABLED =
+  import.meta.env.VITE_TONECOS_SUBSCRIPTIONS_ENABLED === "true";
 
 export const AUTH_ROUTES = {
   profile: "/perfil",

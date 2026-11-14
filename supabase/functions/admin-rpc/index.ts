@@ -88,6 +88,7 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_save_pricing_tier_plan",
   "admin_save_quick_reply",
   "admin_save_subscription_plan_configuration",
+  "admin_set_subscription_collection_models",
   "admin_schedule_group_message",
   "admin_schedule_subscription_deliveries",
   "admin_send_chat_group_message",

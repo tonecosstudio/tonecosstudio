@@ -43,6 +43,21 @@ function VoucherCard({
         <div><dt className="text-xs uppercase tracking-wider text-white/45">Status da assinatura</dt><dd className="mt-1">{item.status}</dd></div>
       </dl>
 
+      {item.modelSlugs.length > 0 && (
+        <section className="mt-4 rounded-md border border-white/10 bg-black/10 p-3" aria-label="Modelos escolhidos pelo cliente">
+          <p className="text-xs font-semibold uppercase tracking-wider text-white/45">
+            Modelos selecionados ({item.modelSlugs.length})
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {item.modelSlugs.map((slug) => (
+              <li key={slug}>
+                <code className="rounded bg-white/5 px-2 py-1 text-xs text-white/75">{slug}</code>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {item.voucherUrl ? (
         <a
           href={item.voucherUrl}

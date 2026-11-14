@@ -20,6 +20,7 @@ export type AdminSubscriptionVoucher = {
   status: string;
   paymentStatus: string;
   collectionName: string;
+  modelSlugs: string[];
   totalPaid: number;
   createdAt: string;
   voucherUrl: string | null;
@@ -33,6 +34,7 @@ type SubscriptionVoucherRow = {
   status: string;
   payment_status: string;
   collection_id: string | null;
+  selected_model_slugs: string[] | null;
   total_paid: number | null;
   created_at: string;
   payment_voucher_path: string | null;
@@ -69,7 +71,7 @@ export async function listAdminSubscriptionVouchers(): Promise<AdminSubscription
   const { data, error } = await adminPaymentsGateway
     .from("subscriptions")
     .select(
-      "id,user_id,plan_type,status,payment_status,collection_id,total_paid,created_at,payment_voucher_path,payment_voucher_url,payment_rejection_reason",
+      "id,user_id,plan_type,status,payment_status,collection_id,selected_model_slugs,total_paid,created_at,payment_voucher_path,payment_voucher_url,payment_rejection_reason",
     )
     .or("payment_voucher_path.not.is.null,payment_voucher_url.not.is.null")
     .in("payment_status", ["pending", "under_review"])
@@ -111,6 +113,9 @@ export async function listAdminSubscriptionVouchers(): Promise<AdminSubscription
       status: row.status,
       paymentStatus: row.payment_status,
       collectionName: row.collection_id ? collectionsById.get(row.collection_id) ?? "Coleção" : "Coleção",
+      modelSlugs: Array.isArray(row.selected_model_slugs)
+        ? row.selected_model_slugs.filter((slug): slug is string => typeof slug === "string")
+        : [],
       totalPaid: Number(row.total_paid ?? 0),
       createdAt: row.created_at,
       voucherUrl: voucherUrls[index] ?? null,
