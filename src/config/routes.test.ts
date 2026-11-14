@@ -17,6 +17,8 @@ import {
   loginReturnToPath,
   paymentDetailsPath,
   profileSectionPath,
+  resolveTonecosCustomerReturnPath,
+  tonecosLoginReturnPath,
   resolveCatalogModelIdFromParam,
   resolveProfileRouteSectionId,
   resolveProfileSectionId,
@@ -89,6 +91,26 @@ describe("route helpers", () => {
     expect(resolveProfileRouteSectionId("payment")).toBeNull();
     expect(resolveProfileSectionId("payments")).toBeNull();
     expect(resolveProfileSectionId("orders")).toBeNull();
+  });
+
+  it("returns customers to the exact recovered account section after login", () => {
+    expect(resolveTonecosCustomerReturnPath("/perfil/dados-pessoais")).toBe(
+      "/perfil/dados-pessoais",
+    );
+    expect(resolveTonecosCustomerReturnPath("/perfil/endereco")).toBe(
+      "/perfil/endereco",
+    );
+    expect(tonecosLoginReturnPath("/perfil/pedidos")).toBe(
+      "/login?next=%2Fperfil%2Fpedidos",
+    );
+    expect(resolveTonecosCustomerReturnPath("/admin")).toBe("/perfil");
+    expect(resolveTonecosCustomerReturnPath("//evil.example")).toBe("/perfil");
+    expect(resolveTonecosCustomerReturnPath("/perfil/../../admin")).toBe(
+      "/perfil",
+    );
+    expect(resolveTonecosCustomerReturnPath("/perfil/endereco?redirect=/admin")).toBe(
+      "/perfil",
+    );
   });
 
   it("accepts only bounded internal action paths", () => {

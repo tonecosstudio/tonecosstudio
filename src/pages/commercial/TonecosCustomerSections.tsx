@@ -512,7 +512,7 @@ export default function TonecosCustomerSections() {
             to={
               TONECOS_COMMERCIAL_ROUTES.login +
               "?next=" +
-              encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.account)
+              encodeURIComponent(location.pathname)
             }
           >
             Entrar ou criar conta

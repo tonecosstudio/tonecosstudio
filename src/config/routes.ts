@@ -46,11 +46,19 @@ const TONECOS_CUSTOMER_RETURN_ROUTES = new Set<string>([
   TONECOS_COMMERCIAL_ROUTES.history,
 ]);
 
+/** The original account sections are the only permitted deep links after
+ * authentication. Reject arbitrary paths, nested routes and external URLs.
+ */
+const TONECOS_CUSTOMER_SECTION_RETURN_PATH =
+  /^\/perfil\/(?:conta|dados-pessoais|endereco|pedidos|producao|colecao|preferencias|pagamentos|assinatura|assinaturas|notificacoes|suporte)$/;
+
 /** Allow only customer-owned commercial destinations after email auth flows. */
 export function resolveTonecosCustomerReturnPath(
   value: string | null | undefined,
 ): string {
-  return typeof value === "string" && TONECOS_CUSTOMER_RETURN_ROUTES.has(value)
+  return typeof value === "string" &&
+    (TONECOS_CUSTOMER_RETURN_ROUTES.has(value) ||
+      TONECOS_CUSTOMER_SECTION_RETURN_PATH.test(value))
     ? value
     : TONECOS_COMMERCIAL_ROUTES.account;
 }

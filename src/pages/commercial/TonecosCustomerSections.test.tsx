@@ -225,7 +225,7 @@ describe("Original customer account navigation in the commercial app", () => {
     show("/perfil/endereco");
     expect(
       await screen.findByRole("link", { name: "Entrar ou criar conta" }),
-    ).toHaveAttribute("href", "/login?next=%2Fperfil");
+    ).toHaveAttribute("href", "/login?next=%2Fperfil%2Fendereco");
     expect(
       screen.queryByRole("textbox", { name: "CEP" }),
     ).not.toBeInTheDocument();
