@@ -1,5 +1,13 @@
 # TONART Studio — checkpoint operacional
 
+## Checkpoint 14/11/2026 — links diretos para orçamentos do cliente
+
+- **Base de código validada no preview:** `tonecosstudio/tonecosstudio/main@cd895c9b2d8b3b88016ee52b1422d7c73c4241dd`. Alterações: `src/services/customer/catalog-quote-service.ts` (filtro RLS por `user_id` e UUID exato), `TonecosMyQuotesPage.tsx` (detalhe pela rota existente `?quote=UUID`), `TonecosCustomerActivity.tsx`, `TonecosCustomerNotifications.tsx` e `TonecosCustomerSections.tsx` (atalhos), `src/config/routes.ts` (retorno de login restrito). Testes adicionados nos arquivos canônicos existentes.
+- **Vercel preview isolado:** deployment `dpl_7jcSJ8AvSh3F3amGnERyy9UsN2i6`, URL `https://tonart-studio-public-f6u5gatfy-jogo-brasils-projects.vercel.app`, SHA `cd895c9`, `target=null`, READY; Vite build concluiu, validação catalog:monorepo e noindex/disallow mantidos. **Não foi promovido** para domínio de produção. A disponibilidade HTML não substitui QA visual autenticado.
+- **GitHub Actions:** Quality Gate [#43552449800](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43552449800) concluiu failure **sem steps executados** em quatro jobs; testes de regressão novos **não tiveram runner**. Build Vercel valida bundle, não homologação de testes/unit/typecheck/E2E.
+- **NEXT_ACTION:** executar testes direcionados e tipo assim que houver runner, conferir preview com sessão cliente autorizada em pedidos/notificações/detalhes e validar bloqueio de links de terceiros por RLS. Só depois implementar os campos de cadastro permanente na única autoridade `profiles`/Supabase, mediante mudança de escopo.
+- **DO_NOT_REPEAT:** não criar nova página, backend, tabela, endpoint, workflow ou worker para links do cliente; não prometer entrega de e-mail/WhatsApp a partir de eventos internos. Não promover produção nem habilitar Coins/pagamentos.
+
 ## Checkpoint 14/11/2026 — Minha Conta: histórico sem duplicação
 
 - **Base/HEAD funcional:** `main` avançou de `1ae1464` para `0f9deb8a18d6e12609262daecae5159be2a90f89`; alterações em `src/pages/commercial/TonecosCustomerSections.tsx` e testes correspondentes. As seções recuperadas exibem dados históricos de orçamento (WhatsApp, CEP, escala e acabamento) consultados pela única `loadMyCatalogQuotePage` com sessão/RLS existente, sem promover campos de uma solicitação a perfil permanente. Falha não é confundida com vazio; há retry, limite explícito de cinco solicitações e a consulta não ocorre se orçamento estiver desabilitado.
