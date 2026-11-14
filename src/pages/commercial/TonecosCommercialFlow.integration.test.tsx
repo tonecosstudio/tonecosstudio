@@ -372,7 +372,7 @@ describe("TONART commercial screens: account → request → history → respons
     );
     expect(
       await screen.findByText(
-        "Revise WhatsApp, CEP, escala e acabamento antes de enviar.",
+        "Confira os dados de contato da Minha Conta e as preferências deste orçamento.",
       ),
     ).toBeInTheDocument();
     expect(

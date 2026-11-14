@@ -10,7 +10,7 @@ const exact: Record<string, string> = {
   catalog_quote_notes_invalid:
     "As observações devem ter no máximo 2.000 caracteres.",
   catalog_quote_contact_invalid:
-    "Revise WhatsApp, CEP, escala e acabamento antes de enviar.",
+    "Confira os dados de contato da Minha Conta e as preferências deste orçamento.",
   catalog_quote_response_invalid:
     "Não foi possível registrar a solicitação. Tente novamente.",
   catalog_quote_list_query_invalid:
@@ -56,7 +56,7 @@ const exact: Record<string, string> = {
   "Quote notes exceed 2000 characters":
     "As observações devem ter no máximo 2.000 caracteres.",
   "Quote contact or preferences invalid":
-    "Revise WhatsApp, CEP, escala e acabamento antes de enviar.",
+    "Confira os dados de contato da Minha Conta e as preferências deste orçamento.",
   "Invalid or duplicate model":
     "Revise os modelos selecionados; não envie referências duplicadas.",
   "Wait before submitting another quote":
