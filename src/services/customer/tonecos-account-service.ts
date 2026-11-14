@@ -243,6 +243,9 @@ async function updateMyComplementaryProfile(changes: ProfileUpdate): Promise<Acc
 export async function updateMyTonecosWhatsapp(raw: string): Promise<AccountProfile> {
   assertTonecosCommercialEnabled();
   if (typeof raw !== "string") throw new Error("tonecos_account_whatsapp_invalid");
+  if (raw && !/^[+\d\s().-]*$/.test(raw)) {
+    throw new Error("tonecos_account_whatsapp_invalid");
+  }
   const whatsapp = raw.replace(/\D/g, "") || null;
   if (whatsapp && !/^(55)?[1-9][0-9]{9,10}$/.test(whatsapp)) {
     throw new Error("tonecos_account_whatsapp_invalid");
@@ -272,9 +275,14 @@ export async function updateMyTonecosDeliveryAddress(
   const neighborhood = text(input.neighborhood, 100);
   const city = text(input.city, 100);
   const state = text(input.state, 2);
-  const zipCode = text(input.zipCode, 9).replace(/\D/g, "");
-  if (!BRAZIL_STATES.has(state) || !/^[0-9]{8}$/.test(zipCode) ||
-      input.country !== "BR") throw new Error("tonecos_account_address_invalid");
+  const postalInput = text(input.zipCode, 9);
+  if (!/^\d{5}-?\d{3}$/.test(postalInput)) {
+    throw new Error("tonecos_account_address_invalid");
+  }
+  const zipCode = postalInput.replace("-", "");
+  if (!BRAZIL_STATES.has(state) || input.country !== "BR") {
+    throw new Error("tonecos_account_address_invalid");
+  }
   const complement = input.complement === undefined
     ? undefined : text(input.complement, 160, true);
   const delivery_address: TonecosDeliveryAddress = {
