@@ -120,7 +120,16 @@ export default function TonecosCustomerNotifications({
                 {customerQuoteEventLabel(event)}
               </p>
               <p className="mt-1 text-xs text-white/55">
-                Orçamento #{event.quoteId.slice(0, 8)} ·{" "}
+                <Link
+                  className="text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline"
+                  to={
+                    TONECOS_COMMERCIAL_ROUTES.history +
+                    "?quote=" +
+                    encodeURIComponent(event.quoteId)
+                  }
+                >
+                  Orçamento #{event.quoteId.slice(0, 8)}
+                </Link>{" · "}
                 <time dateTime={event.createdAt}>
                   {DATE_FORMAT.format(new Date(event.createdAt))}
                 </time>
