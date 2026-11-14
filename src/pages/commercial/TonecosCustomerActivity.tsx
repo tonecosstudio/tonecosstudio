@@ -150,10 +150,23 @@ export default function TonecosCustomerActivity({
                     {quoteStatusLabels[quote.status] ?? "Em atualização"}
                   </span>
                 </div>
-                <div className="text-right text-xs text-white/75">
-                  {quote.quotedAmount === null
-                    ? "Valor em análise"
-                    : quoteValue.format(quote.quotedAmount)}
+                <div className="space-y-3 text-right text-xs text-white/75">
+                  <p>
+                    {quote.quotedAmount === null
+                      ? "Valor em análise"
+                      : quoteValue.format(quote.quotedAmount)}
+                  </p>
+                  <Link
+                    className="inline-block text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline"
+                    to={
+                      TONECOS_COMMERCIAL_ROUTES.history +
+                      "?quote=" +
+                      encodeURIComponent(quote.id)
+                    }
+                    aria-label={"Abrir orçamento #" + quote.id.slice(0, 8)}
+                  >
+                    Abrir orçamento
+                  </Link>
                 </div>
               </li>
             ))}
