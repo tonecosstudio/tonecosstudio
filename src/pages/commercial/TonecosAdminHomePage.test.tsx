@@ -242,14 +242,20 @@ describe("TONART admin workspace", () => {
     expect(mocks.overview).not.toHaveBeenCalled();
   });
 
-  it("restores original nested administration routes without fabricating backend data", () => {
+  it("restores original nested administration routes without inventing production dates", async () => {
     show("/admin/producao/calendario");
-    expect(screen.getByRole("navigation", { name: "Páginas do módulo administrativo" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Quadro de produção" })).toHaveAttribute("href", "/admin/producao/kanban");
     expect(
-      screen.getByText(/Nenhuma data de produção é inferida/),
+      screen.getByRole("navigation", {
+        name: "Páginas do módulo administrativo",
+      }),
     ).toBeInTheDocument();
-    expect(mocks.overview).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("link", { name: "Quadro de produção" }),
+    ).toHaveAttribute("href", "/admin/producao/kanban");
+    expect(
+      await screen.findByText(/Nenhuma data de produção é inferida/),
+    ).toBeInTheDocument();
+    expect(mocks.overview).toHaveBeenCalledTimes(1);
   });
 
   it("shows a read-only ledger for original Coins even while crediting is disabled", async () => {
