@@ -12,6 +12,7 @@ import {
 } from "@/services/quotes/catalog-quote-history-service";
 import { CommercialPage, panelClass, secondaryClass } from "./CommercialPage";
 import { commercialQuoteErrorText } from "./commercial-quote-error-text";
+import { customerQuoteEventLabel } from "./customer-quote-event-label";
 
 const labels: Record<string, string> = {
   pending: "Recebido",
@@ -28,18 +29,6 @@ const eventDate = new Intl.DateTimeFormat("pt-BR", {
   timeStyle: "short",
 });
 const PAGE_SIZE = 20;
-
-function customerEventLabel(event: CatalogQuoteEvent): string {
-  if (event.type === "submitted") return "Solicitação enviada";
-  if (event.type === "answered")
-    return event.amount === null
-      ? "Orçamento respondido"
-      : `Orçamento respondido: ${brl.format(event.amount)}`;
-  if (event.toStatus === "reviewing") return "Em análise pela TONART";
-  if (event.toStatus === "archived") return "Atendimento arquivado";
-  if (event.toStatus === "pending") return "Solicitação retornou para análise";
-  return "Situação atualizada";
-}
 
 export default function TonecosMyQuotesPage() {
   const location = useLocation();
@@ -289,7 +278,7 @@ export default function TonecosMyQuotesPage() {
                       {(history[row.id] ?? []).map((event) => (
                         <li key={event.id} className="text-xs text-white/65">
                           <span className="text-white/85">
-                            {customerEventLabel(event)}
+                            {customerQuoteEventLabel(event)}
                           </span>
                           {" · "}
                           <time dateTime={event.createdAt}>

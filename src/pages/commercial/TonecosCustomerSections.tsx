@@ -8,6 +8,7 @@ import {
 } from "@/services/customer/tonecos-account-service";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import TonecosCustomerActivity from "./TonecosCustomerActivity";
+import TonecosCustomerNotifications from "./TonecosCustomerNotifications";
 import TonecosCustomerContactSummary from "./TonecosCustomerContactSummary";
 import {
   actionClass,
@@ -378,14 +379,13 @@ function CustomerSectionContent({
       />
     );
   }
-  if (slug === "preferencias" || slug === "notificacoes") {
+  if (slug === "notificacoes") {
+    return <TonecosCustomerNotifications userId={userId} />;
+  }
+  if (slug === "preferencias") {
     return (
       <PendingCustomerData
-        label={
-          slug === "notificacoes"
-            ? "Preferências de notificações"
-            : "Preferências do cliente"
-        }
+        label="Preferências do cliente"
         fields={[
           { label: "Canal preferido de contato" },
           { label: "Avisos sobre orçamentos" },

@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   getProfile: vi.fn(),
   listMine: vi.fn(),
+  history: vi.fn(),
 }));
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.getUser,
@@ -24,6 +25,9 @@ vi.mock("@/services/customer/tonecos-account-service", () => ({
 }));
 vi.mock("@/services/customer/catalog-quote-service", () => ({
   loadMyCatalogQuotePage: mocks.listMine,
+}));
+vi.mock("@/services/quotes/catalog-quote-history-service", () => ({
+  loadCatalogQuoteHistory: mocks.history,
 }));
 
 beforeEach(() => {
@@ -46,6 +50,7 @@ beforeEach(() => {
     offset: 0,
     rows: [],
   });
+  mocks.history.mockResolvedValue({});
 });
 afterEach(() => cleanup());
 
@@ -218,6 +223,51 @@ describe("Original customer account navigation in the commercial app", () => {
       screen.getByText(/ainda não escolheu modelos para solicitar orçamento/),
     ).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Naruto" })).not.toBeInTheDocument();
+  });
+
+  it("uses the same quote event authority for customer notifications", async () => {
+    const quoteId = "22222222-2222-4222-8222-222222222222";
+    mocks.listMine.mockResolvedValueOnce({
+      total: 1,
+      limit: 20,
+      offset: 0,
+      rows: [{ id: quoteId, status: "answered" }],
+    });
+    mocks.history.mockResolvedValueOnce({
+      [quoteId]: [
+        {
+          id: 10,
+          quoteId,
+          type: "answered",
+          fromStatus: "reviewing",
+          toStatus: "answered",
+          amount: 249.9,
+          responseText: "Proposta pronta",
+          createdAt: "2026-11-12T12:00:00Z",
+        },
+      ],
+    });
+    show("/perfil/notificacoes");
+    expect(
+      await screen.findByText(/Orçamento respondido:/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Orçamento #22222222/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/não significa que um e-mail, SMS ou WhatsApp/),
+    ).toBeInTheDocument();
+    expect(mocks.history).toHaveBeenCalledWith([quoteId]);
+  });
+
+  it("does not display an empty notifications inbox when the quote service fails", async () => {
+    mocks.listMine.mockRejectedValueOnce(new Error("temporary outage"));
+    show("/perfil/notificacoes");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível concluir a operação de orçamento",
+    );
+    expect(
+      screen.queryByText(/Nenhuma atualização de orçamento registrada/),
+    ).not.toBeInTheDocument();
+    expect(mocks.history).not.toHaveBeenCalled();
   });
 
   it("offers a proper sign-in instead of revealing personal sections to a guest", async () => {
