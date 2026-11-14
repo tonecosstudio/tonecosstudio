@@ -68,23 +68,25 @@ serve(async (req) => {
 
     const service = getServiceClient();
 
-    const [{ data: message, error: messageError }, { data: profile, error: profileError }] =
+    const [
+      { data: message, error: messageError },
+      { data: isAdmin, error: adminCheckError },
+    ] =
       await Promise.all([
         service
           .from("support_messages")
           .select("id, conversation_id, sender_id, is_internal, deleted_at")
           .eq("id", messageId)
           .maybeSingle(),
-        service.from("profiles").select("role").eq("id", userId).maybeSingle(),
+        client.rpc("is_tonecos_admin"),
       ]);
 
     if (messageError) throw messageError;
-    if (profileError) throw profileError;
+    if (adminCheckError) throw adminCheckError;
     if (!message) {
       throw new SecureUploadError("Message not found", 404, "MESSAGE_NOT_FOUND");
     }
 
-    const isAdmin = profile?.role === "admin" || profile?.role === "super_admin";
     const { data: conversation, error: conversationError } = await service
       .from("support_conversations")
       .select("id, user_id, status")

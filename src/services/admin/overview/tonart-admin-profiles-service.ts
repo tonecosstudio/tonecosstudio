@@ -12,6 +12,11 @@ export type TonartAdminDirectoryProfile = {
   id: string;
   email: string;
   fullName: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  cpf: string | null;
+  profileCompletion: number;
+  isAdmin: boolean;
   createdAt: string;
 };
 
@@ -82,6 +87,17 @@ export async function listTonartAdminProfiles(options: {
       typeof row.email !== "string" ||
       row.email.length < 3 ||
       row.email.length > 320 ||
+      !(row.phone === null ||
+        (typeof row.phone === "string" && row.phone.length <= 40)) ||
+      !(row.whatsapp === null ||
+        (typeof row.whatsapp === "string" && row.whatsapp.length <= 40)) ||
+      !(row.cpf === null ||
+        (typeof row.cpf === "string" && row.cpf.length <= 14)) ||
+      typeof row.profileCompletion !== "number" ||
+      !Number.isInteger(row.profileCompletion) ||
+      row.profileCompletion < 0 ||
+      row.profileCompletion > 100 ||
+      typeof row.isAdmin !== "boolean" ||
       !(
         row.fullName === null ||
         (typeof row.fullName === "string" && row.fullName.length <= 160)
@@ -95,6 +111,11 @@ export async function listTonartAdminProfiles(options: {
       id: row.id,
       email: row.email,
       fullName: row.fullName,
+      phone: row.phone,
+      whatsapp: row.whatsapp,
+      cpf: row.cpf,
+      profileCompletion: row.profileCompletion,
+      isAdmin: row.isAdmin,
       createdAt: row.createdAt,
     };
   });

@@ -269,6 +269,10 @@ export type Database = {
         Args: { p_quote_id: string; p_status: string }
         Returns: string
       }
+      admin_set_tonecos_admin_access: {
+        Args: { p_is_admin: boolean; p_target_user_id: string }
+        Returns: Json
+      }
       answer_catalog_quote_request: {
         Args: { p_amount: number; p_message?: string; p_quote_id: string }
         Returns: string
@@ -308,6 +312,14 @@ export type Database = {
       }
       tonart_admin_profiles_directory: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
+        Returns: Json
+      }
+      tonart_admin_customer_coins_balance: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      tonart_admin_profile_detail: {
+        Args: { p_user_id: string }
         Returns: Json
       }
       tonart_admin_quotes_directory: {

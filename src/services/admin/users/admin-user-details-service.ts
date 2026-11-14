@@ -1,11 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
-import type { ProfileRow } from "@/lib/profile";
+import type { DeliveryAddress, ProfileRow } from "@/lib/profile";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
+
+const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 
 export type AdminUserProfile = ProfileRow & {
   email_notifications: boolean;
   order_updates: boolean;
   marketing_emails: boolean;
+  quote_updates: boolean;
+  production_updates: boolean;
+  preferred_contact_channel: string | null;
 };
 
 export type AdminUserRole = {
@@ -44,23 +51,81 @@ export interface CoinsBalance {
 }
 
 export async function fetchAdminUserProfile(userId: string): Promise<AdminUserProfile> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .maybeSingle();
-
+  const { data, error } = await tonecos.rpc("tonart_admin_profile_detail", {
+    p_user_id: userId,
+  });
   if (error) throw error;
   if (!data) throw new Error("User not found");
+  if (typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Admin user profile response is invalid");
+  }
 
-  const profile = data as unknown as ProfileRow;
-
-  return {
-    ...profile,
-    email_notifications: profile.email_notifications ?? true,
-    order_updates: profile.order_updates ?? true,
-    marketing_emails: profile.marketing_emails ?? false,
+  const value = data as Record<string, unknown>;
+  const nullableText = (field: string, maxLength: number) => {
+    const fieldValue = value[field];
+    if (fieldValue === null) return null;
+    if (typeof fieldValue !== "string" || fieldValue.length > maxLength) {
+      throw new Error("Admin user profile response is invalid");
+    }
+    return fieldValue;
   };
+  const profileId = value.id;
+  const email = value.email;
+  const createdAt = value.createdAt;
+  const updatedAt = value.updatedAt;
+  const profileCompletion = value.profileCompletion;
+  if (
+    profileId !== userId.toLowerCase() ||
+    typeof email !== "string" ||
+    typeof createdAt !== "string" ||
+    typeof updatedAt !== "string" ||
+    typeof profileCompletion !== "number" ||
+    !Number.isInteger(profileCompletion) ||
+    profileCompletion < 0 || profileCompletion > 100 ||
+    typeof value.isAdmin !== "boolean" ||
+    typeof value.quoteUpdates !== "boolean" ||
+    typeof value.productionUpdates !== "boolean" ||
+    typeof value.marketingEmails !== "boolean"
+  ) {
+    throw new Error("Admin user profile response is invalid");
+  }
+  const fullName = nullableText("fullName", 160);
+  const phone = nullableText("phone", 40);
+  const whatsapp = nullableText("whatsapp", 40);
+  const cpf = nullableText("cpf", 14);
+  const birthDate = nullableText("birthDate", 10);
+  const preferredContactChannel = nullableText("preferredContactChannel", 20);
+  const deliveryAddress =
+    value.deliveryAddress &&
+      typeof value.deliveryAddress === "object" &&
+      !Array.isArray(value.deliveryAddress)
+      ? value.deliveryAddress as DeliveryAddress
+      : null;
+  const profile: AdminUserProfile = {
+    id: profileId,
+    email,
+    full_name: fullName,
+    phone,
+    whatsapp,
+    cpf,
+    birth_date: birthDate,
+    delivery_address: deliveryAddress,
+    preferences_text: null,
+    preference_tags: null,
+    preferred_contact_channel: preferredContactChannel,
+    quote_updates: value.quoteUpdates,
+    production_updates: value.productionUpdates,
+    marketing_emails: value.marketingEmails,
+    profile_completion: profileCompletion,
+    display_name: fullName,
+    role: value.isAdmin ? "admin" : null,
+    created_at: createdAt,
+    updated_at: updatedAt,
+    email_notifications: true,
+    order_updates: value.productionUpdates,
+  };
+
+  return profile;
 }
 
 export async function listAdminUserPaymentHistory(
@@ -69,8 +134,8 @@ export async function listAdminUserPaymentHistory(
   if (!userId) return [];
 
   const { data, error } = await supabase
-    .from("manual_payments")
-    .select("id, amount, status, payment_method, approved_at, created_at")
+    .from("quote_payments")
+    .select("id, amount, status, payment_method, paid_at, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(10);
@@ -85,7 +150,7 @@ export async function listAdminUserPaymentHistory(
     amount: payment.amount,
     status: payment.status,
     payment_method: payment.payment_method,
-    payment_date: payment.approved_at,
+    payment_date: payment.paid_at,
     created_at: payment.created_at,
   }));
 }
@@ -95,18 +160,30 @@ export async function fetchAdminUserCoinsBalance(
 ): Promise<CoinsBalance | null> {
   if (!userId) return null;
 
-  const { data } = await supabase
-    .from("user_coins")
-    .select("balance, total_earned, total_spent")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (!data) return { available_credits: 0, total_earned: 0, total_spent: 0 };
+  const { data, error } = await tonecos.rpc("tonart_admin_customer_coins_balance", {
+    p_user_id: userId,
+  });
+  if (error) throw error;
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("tonecos_admin_customer_coins_balance_invalid");
+  }
+  const value = data as Record<string, unknown>;
+  const balance = Number(value.balance);
+  const totalEarned = Number(value.total_earned);
+  const totalSpent = Number(value.total_spent);
+  if (
+    !Number.isSafeInteger(balance) || balance < 0 ||
+    !Number.isSafeInteger(totalEarned) || totalEarned < 0 ||
+    !Number.isSafeInteger(totalSpent) || totalSpent < 0 ||
+    balance !== totalEarned - totalSpent
+  ) {
+    throw new Error("tonecos_admin_customer_coins_balance_invalid");
+  }
 
   return {
-    available_credits: data.balance || 0,
-    total_earned: data.total_earned || 0,
-    total_spent: data.total_spent || 0,
+    available_credits: balance,
+    total_earned: totalEarned,
+    total_spent: totalSpent,
   };
 }
 

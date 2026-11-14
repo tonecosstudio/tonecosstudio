@@ -1,8 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { AdminAccessRole } from "@/lib/permissions/adminRoles";
-import type { ProfileRow } from "@/lib/profile";
 import { fetchCustomerRelationshipSummary } from "@/services/admin/customers/customer-relationship-service";
 import { callAuthenticatedEdgeFunction } from "@/services/supabase/edge-function-client";
+import {
+  listTonartAdminProfiles,
+  type TonartAdminDirectoryProfile,
+} from "@/services/admin/overview/tonart-admin-profiles-service";
 
 export const adminUsersSupabase = supabase;
 
@@ -21,37 +24,39 @@ export type AdminUserRow = {
   roles: string[];
 };
 
-type AdminProfileListRow = ProfileRow & {
-  created_at?: string;
-  role?: string | null;
-};
-
-function mapProfileToAdminUser(profile: AdminProfileListRow): AdminUserRow {
+function mapProfileToAdminUser(
+  profile: TonartAdminDirectoryProfile,
+): AdminUserRow {
   return {
     id: profile.id,
-    email: profile.email ?? null,
-    created_at: profile.created_at ?? new Date(0).toISOString(),
+    email: profile.email,
+    created_at: profile.createdAt,
     profile: {
       id: profile.id,
-      full_name: profile.full_name ?? null,
-      phone: profile.phone ?? null,
-      whatsapp: profile.whatsapp ?? null,
-      cpf: profile.cpf ?? null,
-      profile_completion: profile.profile_completion ?? null,
+      full_name: profile.fullName,
+      phone: profile.phone,
+      whatsapp: profile.whatsapp,
+      cpf: profile.cpf,
+      profile_completion: profile.profileCompletion,
     },
-    roles: profile.role ? [profile.role] : [],
+    roles: profile.isAdmin ? ["admin"] : [],
   };
 }
 
 async function fetchAdminUsersFromProfiles(): Promise<AdminUserRow[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const users: AdminUserRow[] = [];
+  let offset = 0;
+  let total = Number.POSITIVE_INFINITY;
 
-  if (error) throw error;
+  while (offset < total) {
+    const page = await listTonartAdminProfiles({ limit: 100, offset });
+    total = page.total;
+    users.push(...page.rows.map(mapProfileToAdminUser));
+    if (page.rows.length === 0) break;
+    offset += page.rows.length;
+  }
 
-  return ((data ?? []) as unknown as AdminProfileListRow[]).map(mapProfileToAdminUser);
+  return users;
 }
 
 export async function fetchAdminUsers(): Promise<AdminUserRow[]> {

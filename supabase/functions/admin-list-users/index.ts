@@ -1,6 +1,6 @@
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
 import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
-import { errorToStatus, getServiceClient } from "../_shared/supabase.ts";
+import { errorToStatus } from "../_shared/supabase.ts";
 
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
@@ -21,43 +21,45 @@ Deno.serve(async (req) => {
     const admin = await assertRateLimitedAdmin(req, "admin-list-users");
     if (admin.rateLimited) return admin.rateLimited;
 
-    const service = getServiceClient();
-
-    const { data: authUsers, error: usersError } =
-      await service.auth.admin.listUsers();
-    if (usersError) throw usersError;
-
-    const userIds = authUsers.users.map((u) => u.id);
-    const { data: profiles, error: profilesError } = await service
-      .from("profiles")
-      .select("id, full_name, phone, whatsapp, cpf, profile_completion, role")
-      .in("id", userIds);
-
-    if (profilesError) {
-      console.error("Erro ao buscar profiles:", profilesError.message);
+    const { data, error: directoryError } = await admin.client.rpc(
+      "tonart_admin_profiles_directory",
+      { p_limit: 100, p_offset: 0 },
+    );
+    if (directoryError) throw directoryError;
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      throw new Error("Invalid profile directory response");
+    }
+    const directory = data as Record<string, unknown>;
+    if (!Array.isArray(directory.rows)) {
+      throw new Error("Invalid profile directory rows");
     }
 
-    const profilesMap = new Map();
-    (profiles || []).forEach((profile) => profilesMap.set(profile.id, profile));
-
-    const rolesMap = new Map();
-    (profiles || []).forEach((profile) => {
-      rolesMap.set(profile.id, profile.role ? [profile.role] : []);
+    const users = directory.rows.map((value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("Invalid profile directory row");
+      }
+      const row = value as Record<string, unknown>;
+      return {
+        id: row.id,
+        email: row.email,
+        created_at: row.createdAt,
+        last_sign_in_at: null,
+        confirmed_at: null,
+        email_confirmed_at: null,
+        phone: row.phone,
+        profile: {
+          id: row.id,
+          full_name: row.fullName,
+          phone: row.phone,
+          whatsapp: row.whatsapp,
+          cpf: row.cpf,
+          profile_completion: row.profileCompletion,
+        },
+        roles: row.isAdmin ? ["admin"] : [],
+      };
     });
 
-    const users = authUsers.users.map((user) => ({
-      id: user.id,
-      email: user.email,
-      created_at: user.created_at,
-      last_sign_in_at: user.last_sign_in_at,
-      confirmed_at: user.confirmed_at,
-      email_confirmed_at: user.email_confirmed_at,
-      phone: user.phone,
-      profile: profilesMap.get(user.id) || null,
-      roles: rolesMap.get(user.id) || [],
-    }));
-
-    return new Response(JSON.stringify({ users }), {
+    return new Response(JSON.stringify({ users, total: directory.total }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
