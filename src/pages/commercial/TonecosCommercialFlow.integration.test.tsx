@@ -160,11 +160,15 @@ describe("TONART commercial screens: account → request → history → respons
     mocks.getUser.mockResolvedValue(null);
     renderApp("/solicitar-orcamento", true);
     expect(
-      await screen.findByRole("link", { name: "Entrar ou criar conta" }),
+      await screen.findByRole("link", { name: "Entrar" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Entrar ou criar conta" }),
+      screen.getByRole("link", { name: "Entrar" }),
     ).toHaveAttribute("href", "/login?next=%2Fsolicitar-orcamento");
+    expect(screen.getByRole("link", { name: "Criar conta" })).toHaveAttribute(
+      "href",
+      "/login?mode=signup&next=%2Fsolicitar-orcamento",
+    );
     expect(
       screen.queryByRole("button", { name: "Enviar solicitação" }),
     ).not.toBeInTheDocument();
@@ -178,7 +182,7 @@ describe("TONART commercial screens: account → request → history → respons
       await screen.findByText("Nenhum modelo selecionado nesta visita."),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: "Entrar ou criar conta" }),
+      screen.queryByRole("link", { name: "Entrar" }),
     ).not.toBeInTheDocument();
   });
 
@@ -193,7 +197,7 @@ describe("TONART commercial screens: account → request → history → respons
       ),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: "Entrar ou criar conta" }),
+      screen.queryByRole("link", { name: "Entrar" }),
     ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(
@@ -219,6 +223,51 @@ describe("TONART commercial screens: account → request → history → respons
       }),
     );
     expect(mocks.getUser).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses saved account details instead of duplicate quote contact inputs", async () => {
+    mocks.getProfile.mockResolvedValueOnce({
+      id: USER,
+      email: "cliente@example.com",
+      full_name: "Cliente TONART",
+      phone: "(71) 99999-9999",
+    });
+    mocks.submit.mockResolvedValue(QUOTE);
+    renderApp("/solicitar-orcamento", true);
+    expect(
+      await screen.findByRole("region", {
+        name: "Dados da conta utilizados no orçamento",
+      }),
+    ).toHaveTextContent("Cliente TONART");
+    expect(screen.getByRole("link", { name: "Editar na Minha Conta" })).toHaveAttribute("href", "/perfil");
+    expect(screen.queryByLabelText("WhatsApp para contato (opcional)")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("CEP (opcional)")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Enviar solicitação" }));
+    await waitFor(() =>
+      expect(mocks.submit).toHaveBeenCalledWith(
+        USER,
+        [{ slug: "naruto", quantity: 1 }],
+        "",
+        { whatsapp: "71999999999", postalCode: "", scale: "a definir", finishing: "a definir" },
+      ),
+    );
+  });
+
+  it("requires the saved customer profile before enabling an actual quote request", async () => {
+    mocks.getProfile.mockRejectedValueOnce(new Error("profile offline"));
+    renderApp("/solicitar-orcamento", true);
+    expect(await screen.findByRole("button", { name: "Tentar carregar dados" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Enviar solicitação" })).not.toBeInTheDocument();
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
+  it("sends an incomplete customer to the existing My Account", async () => {
+    mocks.getProfile.mockResolvedValueOnce({
+      id: USER, email: "cliente@example.com", full_name: null, phone: null,
+    });
+    renderApp("/solicitar-orcamento", true);
+    expect(await screen.findByRole("link", { name: "Completar Minha Conta" })).toHaveAttribute("href", "/perfil");
+    expect(screen.queryByRole("button", { name: "Enviar solicitação" })).not.toBeInTheDocument();
   });
 
   it("submits quantities and notes, then navigates to the customer's history", async () => {
@@ -306,7 +355,7 @@ describe("TONART commercial screens: account → request → history → respons
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Entrar ou criar conta" }),
+      screen.getByRole("link", { name: "Entrar" }),
     ).toHaveAttribute("href", "/login?next=%2Fsolicitar-orcamento");
     expect(
       screen.queryByText("Nenhum modelo selecionado nesta visita."),
