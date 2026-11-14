@@ -197,11 +197,16 @@ export function TonecosCustomerWorkspace({
 
 type StagedCustomerField = {
   label: string;
-  type?: "text" | "tel" | "date";
+  type?: "text" | "tel" | "date" | "select" | "checkbox";
   inputMode?: "numeric";
   autoComplete?: string;
+  options?: readonly string[];
+  description?: string;
 };
 
+/** Reuses the original registration fields while the single TONART profile
+ * authority is being integrated. A disabled field is never submitted or stored.
+ */
 function PendingCustomerData({
   label,
   fields,
@@ -211,33 +216,76 @@ function PendingCustomerData({
 }) {
   return (
     <section className={panelClass} aria-label={label}>
-      <h2 className="mb-2 text-lg font-semibold">{label}</h2>
-      <p className="mb-5 text-sm text-white/60">
-        Esta seção foi recuperada do sistema original. A integração dos dados
-        pessoais será concluída na mesma conta, na etapa Supabase. Nenhum dado
-        inserido aqui é armazenado nesta versão.
-      </p>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">{label}</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
+            A estrutura do cadastro original está preservada na mesma Minha
+            Conta. Os campos complementares aguardam integração e não podem
+            ser preenchidos nem enviados nesta versão.
+          </p>
+        </div>
+        <span className="border border-white/20 px-3 py-1 text-xs text-white/60">
+          Integração pendente
+        </span>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {fields.map((field) => (
           <label
             key={field.label}
             className="block space-y-2 text-sm text-white/80"
           >
-            <span>{field.label}</span>
-            <input
-              className={fieldClass}
-              disabled
-              type={field.type ?? "text"}
-              inputMode={field.inputMode}
-              autoComplete={field.autoComplete}
-              placeholder="Integração pendente"
-              aria-label={field.label}
-            />
+            {field.type === "checkbox" ? (
+              <span className="flex min-h-11 items-center gap-3 rounded-sm border border-white/15 px-3 py-2">
+                <input
+                  type="checkbox"
+                  disabled
+                  aria-label={field.label}
+                  className="h-4 w-4 accent-[hsl(var(--gold-accent))]"
+                />
+                <span>{field.label}</span>
+              </span>
+            ) : (
+              <>
+                <span>{field.label}</span>
+                {field.type === "select" ? (
+                  <select
+                    className={fieldClass}
+                    disabled
+                    aria-label={field.label}
+                    defaultValue=""
+                  >
+                    <option value="">Não configurado</option>
+                    {field.options?.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className={fieldClass}
+                    disabled
+                    type={field.type ?? "text"}
+                    inputMode={field.inputMode}
+                    autoComplete={field.autoComplete}
+                    placeholder="Não cadastrado"
+                    aria-label={field.label}
+                  />
+                )}
+              </>
+            )}
+            {field.description && (
+              <span className="block text-xs leading-5 text-white/50">
+                {field.description}
+              </span>
+            )}
           </label>
         ))}
       </div>
-      <p className="mt-5 text-xs text-white/50">
-        Para alterar nome ou telefone já disponíveis, use Dados da conta.
+      <p className="mt-5 text-xs leading-5 text-white/50">
+        Nenhum dado inserido aqui é armazenado nesta versão. Para alterar nome
+        ou telefone já disponíveis, utilize a seção Dados da conta.
       </p>
       <Link
         className={secondaryClass + " mt-4"}
@@ -525,12 +573,23 @@ function CustomerSectionContent({
         <PendingCustomerData
           label="Cadastro pessoal adicional"
           fields={[
-            { label: "WhatsApp", type: "tel", autoComplete: "tel" },
+            {
+              label: "WhatsApp",
+              type: "tel",
+              autoComplete: "tel",
+              description: "Contato adicional, separado do telefone já salvo na conta.",
+            },
             {
               label: "CPF (para emissão fiscal quando necessário)",
               inputMode: "numeric",
+              description: "Somente quando houver necessidade fiscal e tratamento autorizado.",
             },
-            { label: "Data de nascimento", type: "date", autoComplete: "bday" },
+            {
+              label: "Data de nascimento",
+              type: "date",
+              autoComplete: "bday",
+              description: "Campo opcional do cadastro original.",
+            },
           ]}
         />
       </div>
@@ -542,13 +601,27 @@ function CustomerSectionContent({
         <PendingCustomerData
         label="Cadastro de entrega"
         fields={[
-          { label: "CEP", inputMode: "numeric", autoComplete: "postal-code" },
+          {
+            label: "CEP",
+            inputMode: "numeric",
+            autoComplete: "postal-code",
+            description: "Não confundir com o CEP informado em uma solicitação anterior.",
+          },
           { label: "Rua", autoComplete: "address-line1" },
           { label: "Número", autoComplete: "address-line2" },
           { label: "Complemento" },
           { label: "Bairro" },
           { label: "Cidade", autoComplete: "address-level2" },
-          { label: "UF", autoComplete: "address-level1" },
+          {
+            label: "UF",
+            type: "select",
+            autoComplete: "address-level1",
+            options: [
+              "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
+              "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
+              "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+            ],
+          },
         ]}
         />
         <RecentQuoteContext userId={userId} section="endereco" />
@@ -564,9 +637,22 @@ function CustomerSectionContent({
         <PendingCustomerData
         label="Preferências do cliente"
         fields={[
-          { label: "Canal preferido de contato" },
-          { label: "Avisos sobre orçamentos" },
-          { label: "Avisos de produção" },
+          {
+            label: "Canal preferido de contato",
+            type: "select",
+            options: ["E-mail", "WhatsApp", "Telefone"],
+            description: "A seleção não constitui consentimento de envio enquanto desativada.",
+          },
+          {
+            label: "Avisos sobre orçamentos",
+            type: "checkbox",
+            description: "Preferência de recebimento externo; o histórico interno permanece disponível.",
+          },
+          {
+            label: "Avisos de produção",
+            type: "checkbox",
+            description: "Não implica início de fabricação ou envio automático de mensagens.",
+          },
         ]}
         />
         <RecentQuoteContext userId={userId} section="preferencias" />
