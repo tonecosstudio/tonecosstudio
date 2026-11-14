@@ -1,3 +1,13 @@
+## Checkpoint 14/11/2026 — histórico de Coins e diagnóstico do Actions
+
+- **Base → commit:** `main@a6c5f12f` → `31365ca5` (`fix(coins): paginate customer ledger and sanitize errors`).
+- **Implementado:** a carteira percorre todos os lançamentos em páginas de 25, com ordenação estável por data/ID e contagem derivada do mesmo ledger imutável. Expiração de sessão oferece entrada novamente; mensagens do Supabase não são exibidas ao cliente. A administração mantém busca de cliente individual e crédito auditável idempotente. Não foi criada tabela nem regra paralela.
+- **Validação Windows:** 4 arquivos focados, 21 testes passaram; `npm run typecheck`, ESLint dos arquivos alterados e `git diff --check` passaram.
+- **Coins:** o contrato canônico continua com créditos administrativos e histórico não monetário. Não há preço de Coins no catálogo público D1 nem RPC de compra/resgate; nenhuma conversão ou política de resgate foi inventada. `purchase_spend` no ledger aceita histórico, mas não existe escritor transacional correspondente.
+- **GitHub Actions:** run `43601158822` (head `a6c5f12f`) falhou em quatro jobs em cerca de dois segundos; a consulta de jobs retornou `steps: []` e `logs_url: null`, e a API de logs respondeu `BlobNotFound`. O Worker offline foi ignorado. O problema continua antes da execução de qualquer step; sem causa operacional adicional ou correção de código identificável. Nenhum workflow paralelo foi criado.
+- **NEXT_ACTION:** continuar as integrações independentes e, para gasto/resgate de Coins, obter a regra comercial e preço canônico; verificar a próxima execução do workflow existente após o push. Homologar as migrações em staging isolado assim que disponível.
+- **DO_NOT_REPEAT:** não reutilizar as tabelas antigas de Coins no MVP TONART, nem criar saldo/compra/câmbio duplicados; não tratar mocks como integração real; não escrever no Supabase de produção.
+
 ## Checkpoint 14/11/2026 — oferta Black Friday no orçamento canônico
 
 - **Base → commit:** `main@433546b6` → `cf1d8c5d` (`feat(commercial): record Black Friday quote discounts`).
