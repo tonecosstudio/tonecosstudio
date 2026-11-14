@@ -1,4 +1,12 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { useEffect } from "react";
@@ -9,6 +17,8 @@ import {
 import type { PublicCatalogModel } from "@/services/catalog/public-catalog-gateway";
 import { HelmetProvider } from "react-helmet-async";
 import type * as CustomerSectionsModule from "./TonecosCustomerSections";
+import { SubscriptionSection } from "../ProfileSections";
+import { TonecosSubscriptionUnavailablePanel } from "./TonecosSubscriptionUnavailable";
 
 let TonecosCustomerSections: typeof CustomerSectionsModule.default;
 let customerSectionLinks: typeof CustomerSectionsModule.customerSectionLinks;
@@ -41,8 +51,16 @@ vi.mock("@/services/quotes/catalog-quote-history-service", () => ({
 }));
 vi.mock("@/hooks/customer/useProfileSectionsData", () => ({
   useActiveProfileSubscription: mocks.activeSubscription,
-  useProfilePaymentMethods: vi.fn(() => ({ data: [], isLoading: false, isError: false })),
-  useProfileSupport: vi.fn(() => ({ data: null, isLoading: false, isError: false })),
+  useProfilePaymentMethods: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+    isError: false,
+  })),
+  useProfileSupport: vi.fn(() => ({
+    data: null,
+    isLoading: false,
+    isError: false,
+  })),
 }));
 
 beforeAll(async () => {
@@ -85,11 +103,23 @@ beforeEach(() => {
     rows: [],
   });
   mocks.history.mockResolvedValue({});
-  mocks.activeSubscription.mockReturnValue({ data: null, isLoading: false, isError: false });
-  mocks.updateWhatsapp.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" });
-  mocks.updatePersonal.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" });
-  mocks.updateAddress.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" });
-  mocks.updatePreferences.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" });
+  mocks.activeSubscription.mockReturnValue({
+    data: null,
+    isLoading: false,
+    isError: false,
+  });
+  mocks.updateWhatsapp.mockResolvedValue({
+    id: "11111111-1111-4111-8111-111111111111",
+  });
+  mocks.updatePersonal.mockResolvedValue({
+    id: "11111111-1111-4111-8111-111111111111",
+  });
+  mocks.updateAddress.mockResolvedValue({
+    id: "11111111-1111-4111-8111-111111111111",
+  });
+  mocks.updatePreferences.mockResolvedValue({
+    id: "11111111-1111-4111-8111-111111111111",
+  });
 });
 afterEach(() => {
   cleanup();
@@ -116,10 +146,9 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(
       screen.getByRole("navigation", { name: "Seções da Minha Conta" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Dados da conta" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    expect(
+      screen.getByRole("link", { name: "Dados da conta" }),
+    ).toHaveAttribute("aria-current", "page");
   });
 
   it("reuses the same sidebar for restored account sections", async () => {
@@ -163,8 +192,52 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(screen.getByText("Comunicação")).toBeInTheDocument();
   });
 
-  it("reuses the subscription summary and links to the available plans", async () => {
+  it("keeps subscriptions fail-closed while their data source is disabled", async () => {
     show("/perfil/assinaturas");
+    expect(
+      await screen.findByRole("status", { name: "Assinaturas indisponíveis" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Solicitar orçamento" }),
+    ).toHaveAttribute("href", "/solicitar-orcamento");
+    expect(mocks.activeSubscription).not.toHaveBeenCalled();
+  });
+
+  it("uses the same safe subscription state for the singular profile route", async () => {
+    show("/perfil/assinatura");
+    expect(
+      await screen.findByRole("status", { name: "Assinaturas indisponíveis" }),
+    ).toBeInTheDocument();
+    expect(mocks.activeSubscription).not.toHaveBeenCalled();
+  });
+
+  it("directs the admin subscription fallback to the canonical quote workspace", () => {
+    render(
+      <MemoryRouter>
+        <TonecosSubscriptionUnavailablePanel audience="admin" />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("status", {
+        name: "Fila de comprovantes indisponível",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Abrir orçamentos" }),
+    ).toHaveAttribute("href", "/admin/orcamentos");
+  });
+
+  it("preserves the existing subscription summary when its integration is enabled", async () => {
+    render(
+      <MemoryRouter>
+        <SubscriptionSection
+          userId="11111111-1111-4111-8111-111111111111"
+          commercialMvp
+        />
+      </MemoryRouter>,
+    );
+
     expect(
       await screen.findByText("Não há plano ativo no momento"),
     ).toBeInTheDocument();
@@ -173,7 +246,7 @@ describe("Original customer account navigation in the commercial app", () => {
     ).toHaveAttribute("href", "/planos");
   });
 
-  it("separates subscription load failures from an empty subscription", async () => {
+  it("separates subscription load failures from an empty subscription when enabled", async () => {
     const refetch = vi.fn();
     mocks.activeSubscription.mockReturnValue({
       data: null,
@@ -183,14 +256,23 @@ describe("Original customer account navigation in the commercial app", () => {
       refetch,
     });
 
-    show("/perfil/assinaturas");
+    render(
+      <MemoryRouter>
+        <SubscriptionSection
+          userId="11111111-1111-4111-8111-111111111111"
+          commercialMvp
+        />
+      </MemoryRouter>,
+    );
 
     expect(
       await screen.findByRole("heading", {
         name: "Não foi possível carregar sua assinatura",
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Não há plano ativo no momento")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Não há plano ativo no momento"),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(refetch).toHaveBeenCalledTimes(1);
@@ -217,10 +299,9 @@ describe("Original customer account navigation in the commercial app", () => {
       "autocomplete",
       "off",
     );
-    expect(screen.getByRole("textbox", { name: "Complemento" })).toHaveAttribute(
-      "autocomplete",
-      "address-line2",
-    );
+    expect(
+      screen.getByRole("textbox", { name: "Complemento" }),
+    ).toHaveAttribute("autocomplete", "address-line2");
     expect(
       screen.getByText(/Este endereço pertence à sua conta/),
     ).toBeInTheDocument();
@@ -283,7 +364,9 @@ describe("Original customer account navigation in the commercial app", () => {
       });
     show("/perfil/dados-pessoais");
     expect(
-      await screen.findByText(/Não foi possível consultar seus dados cadastrais/),
+      await screen.findByText(
+        /Não foi possível consultar seus dados cadastrais/,
+      ),
     ).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: "Tentar carregar dados" }),
@@ -297,13 +380,15 @@ describe("Original customer account navigation in the commercial app", () => {
       total: 1,
       limit: 5,
       offset: 0,
-      rows: [{
-        id: "22222222-2222-4222-8222-222222222222",
-        whatsapp: "71999887766",
-        postalCode: null,
-        scale: "a definir",
-        finishing: "a definir",
-      }],
+      rows: [
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          whatsapp: "71999887766",
+          postalCode: null,
+          scale: "a definir",
+          finishing: "a definir",
+        },
+      ],
     });
     show("/perfil/dados-pessoais");
     expect(await screen.findByText("71999887766")).toBeInTheDocument();
@@ -313,7 +398,9 @@ describe("Original customer account navigation in the commercial app", () => {
       "href",
       "/meus-orcamentos?quote=22222222-2222-4222-8222-222222222222",
     );
-    expect(screen.getByText(/não ao cadastro permanente da Minha Conta/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/não ao cadastro permanente da Minha Conta/),
+    ).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "WhatsApp" })).toBeEnabled();
     expect(mocks.listMine).toHaveBeenCalledWith(
       "11111111-1111-4111-8111-111111111111",
@@ -328,17 +415,21 @@ describe("Original customer account navigation in the commercial app", () => {
         total: 1,
         limit: 5,
         offset: 0,
-        rows: [{
-          id: "22222222-2222-4222-8222-222222222222",
-          whatsapp: null,
-          postalCode: "40100000",
-          scale: "a definir",
-          finishing: "a definir",
-        }],
+        rows: [
+          {
+            id: "22222222-2222-4222-8222-222222222222",
+            whatsapp: null,
+            postalCode: "40100000",
+            scale: "a definir",
+            finishing: "a definir",
+          },
+        ],
       });
     show("/perfil/endereco");
     expect(
-      await screen.findByText(/Não foi possível consultar as informações anteriores/),
+      await screen.findByText(
+        /Não foi possível consultar as informações anteriores/,
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByText("40100000")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
@@ -352,13 +443,15 @@ describe("Original customer account navigation in the commercial app", () => {
       total: 1,
       limit: 5,
       offset: 0,
-      rows: [{
-        id: "22222222-2222-4222-8222-222222222222",
-        whatsapp: null,
-        postalCode: null,
-        scale: "1/6",
-        finishing: "pintado",
-      }],
+      rows: [
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          whatsapp: null,
+          postalCode: null,
+          scale: "1/6",
+          finishing: "pintado",
+        },
+      ],
     });
     show("/perfil/preferencias");
     expect(await screen.findByText("1/6")).toBeInTheDocument();
@@ -366,16 +459,21 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(
       screen.getByRole("link", { name: "Abrir orçamento de origem" }),
     ).toHaveAttribute(
-      "href", "/meus-orcamentos?quote=22222222-2222-4222-8222-222222222222",
+      "href",
+      "/meus-orcamentos?quote=22222222-2222-4222-8222-222222222222",
     );
-    expect(screen.getByRole("combobox", { name: "Canal preferido de contato" }))
-      .toBeEnabled();
-    expect(screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }))
-      .toBeEnabled();
-    expect(screen.getByRole("checkbox", { name: "Avisos de produção" }))
-      .toBeEnabled();
-    expect(screen.getByRole("checkbox", { name: "Novidades e campanhas" }))
-      .toBeEnabled();
+    expect(
+      screen.getByRole("combobox", { name: "Canal preferido de contato" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("checkbox", { name: "Avisos de produção" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("checkbox", { name: "Novidades e campanhas" }),
+    ).toBeEnabled();
   });
 
   it("saves personal details through the canonical profile service, never the quote service", async () => {
@@ -390,7 +488,9 @@ describe("Original customer account navigation in the commercial app", () => {
     fireEvent.change(screen.getByLabelText("Data de nascimento"), {
       target: { value: "1992-05-14" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar dados pessoais" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Salvar dados pessoais" }),
+    );
     await screen.findByText("Informações salvas na sua conta.");
     expect(mocks.updatePersonal).toHaveBeenCalledWith({
       whatsapp: "(71) 99999-9999",
@@ -420,8 +520,11 @@ describe("Original customer account navigation in the commercial app", () => {
     });
     show("/perfil/dados-pessoais");
 
-    expect(await screen.findByText(/O cadastro conectado ainda não aceita CPF e data de nascimento/))
-      .toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /O cadastro conectado ainda não aceita CPF e data de nascimento/,
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "CPF" })).toBeDisabled();
     expect(screen.getByLabelText("Data de nascimento")).toBeDisabled();
     expect(screen.getByRole("textbox", { name: "WhatsApp" })).toBeEnabled();
@@ -429,7 +532,9 @@ describe("Original customer account navigation in the commercial app", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "WhatsApp" }), {
       target: { value: "(71) 99999-9999" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar dados pessoais" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Salvar dados pessoais" }),
+    );
     await screen.findByText("Informações salvas na sua conta.");
     expect(mocks.updatePersonal).toHaveBeenCalledWith({
       whatsapp: "(71) 99999-9999",
@@ -442,8 +547,11 @@ describe("Original customer account navigation in the commercial app", () => {
     show("/perfil/endereco");
     await screen.findByRole("textbox", { name: "CEP" });
     for (const [label, value] of [
-      ["CEP", "40000-000"], ["Rua", "Rua Exemplo"], ["Número", "10"],
-      ["Bairro", "Centro"], ["Cidade", "Salvador"],
+      ["CEP", "40000-000"],
+      ["Rua", "Rua Exemplo"],
+      ["Número", "10"],
+      ["Bairro", "Centro"],
+      ["Cidade", "Salvador"],
     ]) {
       fireEvent.change(screen.getByRole("textbox", { name: label }), {
         target: { value },
@@ -455,9 +563,14 @@ describe("Original customer account navigation in the commercial app", () => {
     fireEvent.click(screen.getByRole("button", { name: "Salvar endereço" }));
     await screen.findByText("Informações salvas na sua conta.");
     expect(mocks.updateAddress).toHaveBeenCalledWith({
-      zipCode: "40000-000", street: "Rua Exemplo", number: "10",
-      complement: "", neighborhood: "Centro", city: "Salvador",
-      state: "BA", country: "BR",
+      zipCode: "40000-000",
+      street: "Rua Exemplo",
+      number: "10",
+      complement: "",
+      neighborhood: "Centro",
+      city: "Salvador",
+      state: "BA",
+      country: "BR",
     });
   });
 
@@ -467,9 +580,15 @@ describe("Original customer account navigation in the commercial app", () => {
       name: "Canal preferido de contato",
     });
     fireEvent.change(preferred, { target: { value: "email" } });
-    fireEvent.click(screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }));
-    fireEvent.click(screen.getByRole("checkbox", { name: "Novidades e campanhas" }));
-    fireEvent.click(screen.getByRole("button", { name: "Salvar preferências" }));
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Novidades e campanhas" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Salvar preferências" }),
+    );
     await screen.findByText("Informações salvas na sua conta.");
     expect(mocks.updatePreferences).toHaveBeenCalledWith({
       preferredContactChannel: "email",
@@ -485,20 +604,26 @@ describe("Original customer account navigation in the commercial app", () => {
       total: 1,
       limit: 10,
       offset: 0,
-      rows: [{
-        id: quoteId,
-        isPreorder: true,
-        quotedAmount: 300,
-        paymentStatus: "under_review",
-        paymentLinkSentAt: "2026-11-14T00:00:00Z",
-        paymentVoucherPath: "quotes/example.pdf",
-        coinAmountApplied: 25,
-      }],
+      rows: [
+        {
+          id: quoteId,
+          isPreorder: true,
+          quotedAmount: 300,
+          paymentStatus: "under_review",
+          paymentLinkSentAt: "2026-11-14T00:00:00Z",
+          paymentVoucherPath: "quotes/example.pdf",
+          coinAmountApplied: 25,
+        },
+      ],
     });
     show("/perfil/pagamentos");
     expect(await screen.findByText("Pré-venda #22222222")).toBeInTheDocument();
-    expect(screen.getByText(/Comprovante em análise · R\$\s*300,00/)).toBeInTheDocument();
-    expect(screen.getByText("25 Coins aplicados ao orçamento")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Comprovante em análise · R\$\s*300,00/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("25 Coins aplicados ao orçamento"),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ver pagamento" })).toHaveAttribute(
       "href",
       `/meus-orcamentos?quote=${quoteId}`,
@@ -549,7 +674,9 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(
       screen.getByText(/ainda não escolheu modelos para solicitar orçamento/),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Naruto" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Naruto" }),
+    ).not.toBeInTheDocument();
   });
 
   it("uses the same quote event authority for customer notifications", async () => {
@@ -629,9 +756,7 @@ describe("Original customer account navigation in the commercial app", () => {
       ],
     });
     show("/perfil/pedidos");
-    expect(
-      await screen.findByText("Orçamento #22222222"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Orçamento #22222222")).toBeInTheDocument();
     expect(screen.getByText("Em análise")).toBeInTheDocument();
     expect(screen.getByText("Valor em análise")).toBeInTheDocument();
     expect(
@@ -662,9 +787,13 @@ describe("Original customer account navigation in the commercial app", () => {
       ],
     });
     show("/perfil/producao");
-    expect(await screen.findByText("Pré-produção e propostas")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Pré-produção e propostas"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Respondido")).toBeInTheDocument();
-    expect(screen.getByText(/nenhuma etapa de fabricação é inferida/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/nenhuma etapa de fabricação é inferida/i),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Produção iniciada/i)).not.toBeInTheDocument();
   });
 
@@ -673,12 +802,14 @@ describe("Original customer account navigation in the commercial app", () => {
       .mockRejectedValueOnce(new Error("service unavailable"))
       .mockResolvedValueOnce({ total: 0, limit: 5, offset: 0, rows: [] });
     show("/perfil/pedidos");
-    expect(
-      await screen.findByRole("alert"),
-    ).toHaveTextContent("Não foi possível concluir a operação de orçamento");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível concluir a operação de orçamento",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(
-      await screen.findByText("Você ainda não enviou solicitações de orçamento."),
+      await screen.findByText(
+        "Você ainda não enviou solicitações de orçamento.",
+      ),
     ).toBeInTheDocument();
     expect(mocks.listMine).toHaveBeenCalledTimes(2);
   });

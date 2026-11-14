@@ -1,7 +1,10 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { profileNavigationConfig } from "@/config/profile-navigation.config";
-import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import {
+  PUBLIC_COLLECTIONS_ENABLED,
+  TONECOS_COMMERCIAL_ROUTES,
+} from "@/config/routes";
 import {
   getMyTonecosProfile,
   getTonecosCurrentUser,
@@ -24,6 +27,7 @@ import {
   secondaryClass,
 } from "./CommercialPage";
 import { SubscriptionSection } from "../ProfileSections";
+import { TonecosSubscriptionUnavailablePanel } from "./TonecosSubscriptionUnavailable";
 
 type CustomerSection = {
   slug: string;
@@ -37,8 +41,7 @@ const restoredSections: CustomerSection[] = [
     slug: "dados-pessoais",
     label: "Dados pessoais",
     title: "Dados pessoais",
-    summary:
-      "Gerencie seus dados pessoais e contatos em um único perfil.",
+    summary: "Gerencie seus dados pessoais e contatos em um único perfil.",
   },
   {
     slug: "endereco",
@@ -219,14 +222,37 @@ const BLANK_PREFERENCES: TonecosContactPreferences = {
 };
 const ADDRESS_FIELDS = [
   {
-    key: "zipCode", label: "CEP", autoComplete: "postal-code", maxLength: 9,
+    key: "zipCode",
+    label: "CEP",
+    autoComplete: "postal-code",
+    maxLength: 9,
     placeholder: "00000-000",
   },
-  { key: "street", label: "Rua", autoComplete: "address-line1", maxLength: 160 },
+  {
+    key: "street",
+    label: "Rua",
+    autoComplete: "address-line1",
+    maxLength: 160,
+  },
   { key: "number", label: "Número", autoComplete: "off", maxLength: 20 },
-  { key: "complement", label: "Complemento", autoComplete: "address-line2", maxLength: 160 },
-  { key: "neighborhood", label: "Bairro", autoComplete: "address-level3", maxLength: 100 },
-  { key: "city", label: "Cidade", autoComplete: "address-level2", maxLength: 100 },
+  {
+    key: "complement",
+    label: "Complemento",
+    autoComplete: "address-line2",
+    maxLength: 160,
+  },
+  {
+    key: "neighborhood",
+    label: "Bairro",
+    autoComplete: "address-level3",
+    maxLength: 100,
+  },
+  {
+    key: "city",
+    label: "Cidade",
+    autoComplete: "address-level2",
+    maxLength: 100,
+  },
 ] as const;
 
 function formatCpfInput(value: string | null): string {
@@ -252,18 +278,25 @@ type ComplementarySection = "dados-pessoais" | "endereco" | "preferencias";
  * One customer editor over the existing Auth-owned public.profiles.
  * Never persists quote-level contact data, session storage or a second profile.
  */
-function CustomerComplementaryEditor({ section }: { section: ComplementarySection }) {
-  const [profile, setProfile] = useState<
-    Awaited<ReturnType<typeof getMyTonecosProfile>> | null
-  >(null);
+function CustomerComplementaryEditor({
+  section,
+}: {
+  section: ComplementarySection;
+}) {
+  const [profile, setProfile] = useState<Awaited<
+    ReturnType<typeof getMyTonecosProfile>
+  > | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [whatsapp, setWhatsapp] = useState("");
   const [cpf, setCpf] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [address, setAddress] = useState<TonecosDeliveryAddress>(BLANK_DELIVERY_ADDRESS);
-  const [preferences, setPreferences] = useState<TonecosContactPreferences>(BLANK_PREFERENCES);
+  const [address, setAddress] = useState<TonecosDeliveryAddress>(
+    BLANK_DELIVERY_ADDRESS,
+  );
+  const [preferences, setPreferences] =
+    useState<TonecosContactPreferences>(BLANK_PREFERENCES);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -282,11 +315,12 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
         setCpf(formatCpfInput(value.cpf));
         setBirthDate(value.birth_date ?? "");
         const saved = value.delivery_address;
-        const object = saved !== null && typeof saved === "object" && !Array.isArray(saved)
-          ? saved as Record<string, unknown>
-          : {};
+        const object =
+          saved !== null && typeof saved === "object" && !Array.isArray(saved)
+            ? (saved as Record<string, unknown>)
+            : {};
         const fromSaved = (key: keyof TonecosDeliveryAddress) =>
-          typeof object[key] === "string" ? object[key] as string : "";
+          typeof object[key] === "string" ? (object[key] as string) : "";
         setAddress({
           zipCode: fromSaved("zipCode"),
           street: fromSaved("street"),
@@ -302,7 +336,8 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
             value.preferred_contact_channel === "email" ||
             value.preferred_contact_channel === "whatsapp" ||
             value.preferred_contact_channel === "phone"
-              ? value.preferred_contact_channel : null,
+              ? value.preferred_contact_channel
+              : null,
           quoteUpdates: value.quote_updates === true,
           productionUpdates: value.production_updates === true,
           marketingEmails: value.marketing_emails === true,
@@ -317,7 +352,9 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
       .finally(() => {
         if (active) setLoading(false);
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [section, attempt]);
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -344,7 +381,7 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
             ? "Informe uma data de nascimento válida."
             : message === "tonecos_account_tax_details_unavailable"
               ? "Os campos de CPF e nascimento ainda não estão habilitados neste ambiente. Nenhuma alteração foi salva; atualize a página após a configuração do cadastro."
-            : "Não foi possível salvar. Confira os campos e tente novamente.",
+              : "Não foi possível salvar. Confira os campos e tente novamente.",
       );
     } finally {
       setBusy(false);
@@ -375,10 +412,14 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
     return (
       <div role="alert" className={panelClass}>
         <p className="mb-3 text-sm text-white/75">
-          Não foi possível consultar seus dados cadastrais. Nenhuma informação foi alterada.
+          Não foi possível consultar seus dados cadastrais. Nenhuma informação
+          foi alterada.
         </p>
-        <button type="button" className={secondaryClass}
-          onClick={() => setAttempt((current) => current + 1)}>
+        <button
+          type="button"
+          className={secondaryClass}
+          onClick={() => setAttempt((current) => current + 1)}
+        >
           Tentar carregar dados
         </button>
       </div>
@@ -390,13 +431,25 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
   const taxDetailsAvailable = profile.taxDetailsAvailable !== false;
   return (
     <div className="space-y-6">
-      {isPersonal && <TonecosCustomerContactSummary profile={profile} variant="account" />}
-      <section className={panelClass} aria-label={
-        isPersonal ? "Dados pessoais e de contato" :
-        isAddress ? "Cadastro de entrega" : "Preferências do cliente"
-      }>
+      {isPersonal && (
+        <TonecosCustomerContactSummary profile={profile} variant="account" />
+      )}
+      <section
+        className={panelClass}
+        aria-label={
+          isPersonal
+            ? "Dados pessoais e de contato"
+            : isAddress
+              ? "Cadastro de entrega"
+              : "Preferências do cliente"
+        }
+      >
         <h2 className="mb-2 text-lg font-semibold">
-          {isPersonal ? "Dados pessoais e contato" : isAddress ? "Cadastro de entrega" : "Preferências do cliente"}
+          {isPersonal
+            ? "Dados pessoais e contato"
+            : isAddress
+              ? "Cadastro de entrega"
+              : "Preferências do cliente"}
         </h2>
         <p className="mb-5 text-sm leading-6 text-white/60">
           {isPersonal
@@ -406,26 +459,51 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
               : "Estas escolhas ficam no seu perfil. Elas não ativam disparos automáticos de e-mail, SMS ou WhatsApp."}
         </p>
         {isPersonal && profile.taxDetailsAvailable === false && (
-          <p role="status" className="mb-4 border border-amber-400/30 bg-amber-400/[0.06] p-3 text-sm leading-6 text-amber-100/80">
-            WhatsApp e os demais dados da conta continuam disponíveis. O cadastro conectado ainda não aceita CPF e data de nascimento, então esses campos não serão salvos até a atualização do schema.
+          <p
+            role="status"
+            className="mb-4 border border-amber-400/30 bg-amber-400/[0.06] p-3 text-sm leading-6 text-amber-100/80"
+          >
+            WhatsApp e os demais dados da conta continuam disponíveis. O
+            cadastro conectado ainda não aceita CPF e data de nascimento, então
+            esses campos não serão salvos até a atualização do schema.
           </p>
         )}
-        {error && <p role="alert" className="mb-4 border border-red-500/40 p-3 text-sm text-red-200">{error}</p>}
-        {notice && <p role="status" className="mb-4 border border-white/20 p-3 text-sm">{notice}</p>}
-        <form onSubmit={(event) => { void save(event); }} className="space-y-5">
+        {error && (
+          <p
+            role="alert"
+            className="mb-4 border border-red-500/40 p-3 text-sm text-red-200"
+          >
+            {error}
+          </p>
+        )}
+        {notice && (
+          <p role="status" className="mb-4 border border-white/20 p-3 text-sm">
+            {notice}
+          </p>
+        )}
+        <form
+          onSubmit={(event) => {
+            void save(event);
+          }}
+          className="space-y-5"
+        >
           {isPersonal && (
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block space-y-2 text-sm">
                 <span>WhatsApp</span>
                 <input
-                  className={fieldClass} type="tel" autoComplete="tel"
-                  aria-label="WhatsApp" maxLength={40}
+                  className={fieldClass}
+                  type="tel"
+                  autoComplete="tel"
+                  aria-label="WhatsApp"
+                  maxLength={40}
                   placeholder="(71) 99999-9999"
                   value={whatsapp}
                   onChange={(event) => setWhatsapp(event.target.value)}
                 />
                 <span className="block text-xs text-white/50">
-                  Opcional. Para alterar o telefone principal, abra Dados da conta.
+                  Opcional. Para alterar o telefone principal, abra Dados da
+                  conta.
                 </span>
               </label>
               <label className="block space-y-2 text-sm">
@@ -440,10 +518,13 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
                   maxLength={14}
                   placeholder="000.000.000-00"
                   value={cpf}
-                  onChange={(event) => setCpf(formatCpfInput(event.target.value))}
+                  onChange={(event) =>
+                    setCpf(formatCpfInput(event.target.value))
+                  }
                 />
                 <span className="block text-xs text-white/50">
-                  Opcional. Informe apenas quando necessário para emissão fiscal.
+                  Opcional. Informe apenas quando necessário para emissão
+                  fiscal.
                 </span>
               </label>
               <label className="block space-y-2 text-sm">
@@ -468,35 +549,75 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
                 <label className="block space-y-2 text-sm" key={field.key}>
                   <span>{field.label}</span>
                   <input
-                    className={fieldClass} type="text"
+                    className={fieldClass}
+                    type="text"
                     aria-label={field.label}
                     required={field.key !== "complement"}
                     maxLength={field.maxLength}
-                    placeholder={"placeholder" in field ? field.placeholder : undefined}
+                    placeholder={
+                      "placeholder" in field ? field.placeholder : undefined
+                    }
                     autoComplete={field.autoComplete}
                     inputMode={field.key === "zipCode" ? "numeric" : undefined}
                     value={address[field.key] ?? ""}
-                    onChange={(event) => setAddress((current) => ({
-                      ...current, [field.key]: event.target.value,
-                    }))}
+                    onChange={(event) =>
+                      setAddress((current) => ({
+                        ...current,
+                        [field.key]: event.target.value,
+                      }))
+                    }
                   />
                 </label>
               ))}
               <label className="block space-y-2 text-sm">
                 <span>UF</span>
                 <select
-                  className={fieldClass} required aria-label="UF"
-                  autoComplete="address-level1" value={address.state}
-                  onChange={(event) => setAddress((current) => ({
-                    ...current, state: event.target.value,
-                  }))}
+                  className={fieldClass}
+                  required
+                  aria-label="UF"
+                  autoComplete="address-level1"
+                  value={address.state}
+                  onChange={(event) =>
+                    setAddress((current) => ({
+                      ...current,
+                      state: event.target.value,
+                    }))
+                  }
                 >
                   <option value="">Selecione</option>
                   {[
-                    "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS",
-                    "MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR",
-                    "SC","SP","SE","TO",
-                  ].map((uf) => <option key={uf} value={uf}>{uf}</option>)}
+                    "AC",
+                    "AL",
+                    "AP",
+                    "AM",
+                    "BA",
+                    "CE",
+                    "DF",
+                    "ES",
+                    "GO",
+                    "MA",
+                    "MT",
+                    "MS",
+                    "MG",
+                    "PA",
+                    "PB",
+                    "PR",
+                    "PE",
+                    "PI",
+                    "RJ",
+                    "RN",
+                    "RS",
+                    "RO",
+                    "RR",
+                    "SC",
+                    "SP",
+                    "SE",
+                    "TO",
+                  ].map((uf) => (
+                    <option key={uf} value={uf}>
+                      {uf}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
@@ -506,16 +627,20 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
               <label className="block space-y-2 text-sm">
                 <span>Canal preferido de contato</span>
                 <select
-                  className={fieldClass} aria-label="Canal preferido de contato"
+                  className={fieldClass}
+                  aria-label="Canal preferido de contato"
                   value={preferences.preferredContactChannel ?? ""}
-                  onChange={(event) => setPreferences((current) => ({
-                    ...current,
-                    preferredContactChannel:
-                      event.target.value === "email" ||
-                      event.target.value === "whatsapp" ||
-                      event.target.value === "phone"
-                        ? event.target.value : null,
-                  }))}
+                  onChange={(event) =>
+                    setPreferences((current) => ({
+                      ...current,
+                      preferredContactChannel:
+                        event.target.value === "email" ||
+                        event.target.value === "whatsapp" ||
+                        event.target.value === "phone"
+                          ? event.target.value
+                          : null,
+                    }))
+                  }
                 >
                   <option value="">Não definido</option>
                   <option value="email">E-mail</option>
@@ -523,20 +648,28 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
                   <option value="phone">Telefone</option>
                 </select>
               </label>
-              {([
-                ["quoteUpdates", "Avisos sobre orçamentos"],
-                ["productionUpdates", "Avisos de produção"],
-                ["marketingEmails", "Novidades e campanhas"],
-              ] as const).map(([key, label]) => (
-                <label key={key} className="flex items-center gap-3 border border-white/15 p-3 text-sm">
+              {(
+                [
+                  ["quoteUpdates", "Avisos sobre orçamentos"],
+                  ["productionUpdates", "Avisos de produção"],
+                  ["marketingEmails", "Novidades e campanhas"],
+                ] as const
+              ).map(([key, label]) => (
+                <label
+                  key={key}
+                  className="flex items-center gap-3 border border-white/15 p-3 text-sm"
+                >
                   <input
                     type="checkbox"
                     className="h-4 w-4 accent-[hsl(var(--gold-accent))]"
                     aria-label={label}
                     checked={preferences[key]}
-                    onChange={(event) => setPreferences((current) => ({
-                      ...current, [key]: event.target.checked,
-                    }))}
+                    onChange={(event) =>
+                      setPreferences((current) => ({
+                        ...current,
+                        [key]: event.target.checked,
+                      }))
+                    }
                   />
                   <span>{label}</span>
                 </label>
@@ -545,11 +678,23 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
           )}
           <div className="flex flex-wrap gap-3 border-t border-white/15 pt-4">
             <button className={actionClass} type="submit" disabled={busy}>
-              {busy ? "Salvando..." : isPersonal ? "Salvar dados pessoais" : isAddress ? "Salvar endereço" : "Salvar preferências"}
+              {busy
+                ? "Salvando..."
+                : isPersonal
+                  ? "Salvar dados pessoais"
+                  : isAddress
+                    ? "Salvar endereço"
+                    : "Salvar preferências"}
             </button>
             {isAddress && profile.delivery_address && (
-              <button type="button" className={secondaryClass} disabled={busy}
-                onClick={() => { void clearAddress(); }}>
+              <button
+                type="button"
+                className={secondaryClass}
+                disabled={busy}
+                onClick={() => {
+                  void clearAddress();
+                }}
+              >
                 Remover endereço
               </button>
             )}
@@ -567,19 +712,29 @@ const quotePaymentCurrency = new Intl.NumberFormat("pt-BR", {
 
 function quotePaymentStatusLabel(status: string | null): string {
   switch (status) {
-    case "pending": return "Aguardando comprovante";
-    case "under_review": return "Comprovante em análise";
-    case "deposit_paid": return "Entrada aprovada";
-    case "fully_paid": return "Pagamento concluído";
-    case "rejected": return "Comprovante recusado";
-    default: return "Aguardando instruções de pagamento";
+    case "pending":
+      return "Aguardando comprovante";
+    case "under_review":
+      return "Comprovante em análise";
+    case "deposit_paid":
+      return "Entrada aprovada";
+    case "fully_paid":
+      return "Pagamento concluído";
+    case "rejected":
+      return "Comprovante recusado";
+    default:
+      return "Aguardando instruções de pagamento";
   }
 }
 
 /** Uses the TONART quote/payment record; the legacy card-method tables are not part of this schema. */
 function CustomerQuotePayments({ userId }: { userId: string }) {
-  const [page, setPage] = useState<Awaited<ReturnType<typeof loadMyCatalogQuotePage>> | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [page, setPage] = useState<Awaited<
+    ReturnType<typeof loadMyCatalogQuotePage>
+  > | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -595,41 +750,64 @@ function CustomerQuotePayments({ userId }: { userId: string }) {
       .catch(() => {
         if (active) setStatus("error");
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [userId, attempt]);
 
-  const paymentQuotes = (page?.rows ?? []).filter((quote) =>
-    quote.quotedAmount !== null || quote.paymentStatus !== null ||
-    quote.paymentLinkSentAt !== null || quote.paymentVoucherPath !== null ||
-    quote.coinAmountApplied > 0,
+  const paymentQuotes = (page?.rows ?? []).filter(
+    (quote) =>
+      quote.quotedAmount !== null ||
+      quote.paymentStatus !== null ||
+      quote.paymentLinkSentAt !== null ||
+      quote.paymentVoucherPath !== null ||
+      quote.coinAmountApplied > 0,
   );
 
   return (
     <section className={panelClass} aria-label="Pagamentos dos orçamentos">
-      <h2 className="mb-2 text-lg font-semibold">Pagamentos dos seus orçamentos</h2>
+      <h2 className="mb-2 text-lg font-semibold">
+        Pagamentos dos seus orçamentos
+      </h2>
       <p className="mb-5 text-sm leading-6 text-white/60">
-        Valores, instruções PIX, comprovantes e aprovações ficam vinculados ao orçamento correspondente.
-        Abra o registro para consultar os detalhes atualizados.
+        Valores, instruções PIX, comprovantes e aprovações ficam vinculados ao
+        orçamento correspondente. Abra o registro para consultar os detalhes
+        atualizados.
       </p>
-      {status === "loading" && <p role="status">Consultando pagamentos recentes...</p>}
+      {status === "loading" && (
+        <p role="status">Consultando pagamentos recentes...</p>
+      )}
       {status === "error" && (
         <div role="alert" className="space-y-3">
-          <p className="text-sm text-white/75">Não foi possível consultar seus pagamentos. Nenhuma informação foi alterada.</p>
-          <button type="button" className={secondaryClass} onClick={() => setAttempt((value) => value + 1)}>
+          <p className="text-sm text-white/75">
+            Não foi possível consultar seus pagamentos. Nenhuma informação foi
+            alterada.
+          </p>
+          <button
+            type="button"
+            className={secondaryClass}
+            onClick={() => setAttempt((value) => value + 1)}
+          >
             Tentar novamente
           </button>
         </div>
       )}
       {status === "ready" && paymentQuotes.length === 0 && (
-        <p className="text-sm text-white/65">Nenhum orçamento recente tem valor ou pagamento registrado.</p>
+        <p className="text-sm text-white/65">
+          Nenhum orçamento recente tem valor ou pagamento registrado.
+        </p>
       )}
       {status === "ready" && paymentQuotes.length > 0 && (
         <ul className="space-y-3">
           {paymentQuotes.map((quote) => (
-            <li key={quote.id} className="flex flex-wrap items-center justify-between gap-4 border-t border-white/15 pt-4">
+            <li
+              key={quote.id}
+              className="flex flex-wrap items-center justify-between gap-4 border-t border-white/15 pt-4"
+            >
               <div className="min-w-0">
                 <p className="text-sm font-medium">
-                  {quote.isPreorder ? "Pré-venda" : "Orçamento"} #{quote.id.slice(0, 8)}
+                  {quote.isPreorder ? "Pré-venda" : "Orçamento"} #
+                  {quote.id.slice(0, 8)}
                 </p>
                 <p className="mt-1 text-xs text-white/55">
                   {quotePaymentStatusLabel(quote.paymentStatus)}
@@ -645,7 +823,11 @@ function CustomerQuotePayments({ userId }: { userId: string }) {
               </div>
               <Link
                 className={secondaryClass}
-                to={TONECOS_COMMERCIAL_ROUTES.history + "?quote=" + encodeURIComponent(quote.id)}
+                to={
+                  TONECOS_COMMERCIAL_ROUTES.history +
+                  "?quote=" +
+                  encodeURIComponent(quote.id)
+                }
               >
                 Ver pagamento
               </Link>
@@ -653,7 +835,10 @@ function CustomerQuotePayments({ userId }: { userId: string }) {
           ))}
         </ul>
       )}
-      <Link className={secondaryClass + " mt-5"} to={TONECOS_COMMERCIAL_ROUTES.history}>
+      <Link
+        className={secondaryClass + " mt-5"}
+        to={TONECOS_COMMERCIAL_ROUTES.history}
+      >
         Abrir meus orçamentos
       </Link>
     </section>
@@ -672,10 +857,12 @@ function RecentQuoteContext({
   userId: string;
   section: QuoteContextSection;
 }) {
-  const [page, setPage] = useState<
-    Awaited<ReturnType<typeof loadMyCatalogQuotePage>> | null
-  >(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [page, setPage] = useState<Awaited<
+    ReturnType<typeof loadMyCatalogQuotePage>
+  > | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -714,8 +901,8 @@ function RecentQuoteContext({
       </h2>
       <p className="mb-4 text-sm leading-6 text-white/60">
         Estes dados pertencem às solicitações enviadas, não ao cadastro
-        permanente da Minha Conta. Não são reaproveitados automaticamente
-        em novos orçamentos.
+        permanente da Minha Conta. Não são reaproveitados automaticamente em
+        novos orçamentos.
       </p>
       {status === "loading" && (
         <p role="status" className="text-sm text-white/60">
@@ -747,8 +934,12 @@ function RecentQuoteContext({
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
                 {section === "dados-pessoais" && (
                   <div>
-                    <dt className="text-xs text-white/50">WhatsApp informado</dt>
-                    <dd className="break-all text-white/85">{quote.whatsapp}</dd>
+                    <dt className="text-xs text-white/50">
+                      WhatsApp informado
+                    </dt>
+                    <dd className="break-all text-white/85">
+                      {quote.whatsapp}
+                    </dd>
                   </div>
                 )}
                 {section === "endereco" && (
@@ -760,11 +951,17 @@ function RecentQuoteContext({
                 {section === "preferencias" && (
                   <>
                     <div>
-                      <dt className="text-xs text-white/50">Escala solicitada</dt>
-                      <dd className="text-white/85">{quote.scale || "A definir"}</dd>
+                      <dt className="text-xs text-white/50">
+                        Escala solicitada
+                      </dt>
+                      <dd className="text-white/85">
+                        {quote.scale || "A definir"}
+                      </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-white/50">Acabamento solicitado</dt>
+                      <dt className="text-xs text-white/50">
+                        Acabamento solicitado
+                      </dt>
                       <dd className="text-white/85">
                         {quote.finishing || "A definir"}
                       </dd>
@@ -854,13 +1051,13 @@ function CurrentCatalogSelection() {
           Explorar modelos
         </Link>
         {selectedModels.length > 0 && (
-            <Link
-              className={secondaryClass}
-              to={TONECOS_COMMERCIAL_ROUTES.request}
-            >
-              Revisar solicitação
-            </Link>
-          )}
+          <Link
+            className={secondaryClass}
+            to={TONECOS_COMMERCIAL_ROUTES.request}
+          >
+            Revisar solicitação
+          </Link>
+        )}
       </div>
     </section>
   );
@@ -927,7 +1124,11 @@ function CustomerSectionContent({
   }
   if (slug === "pagamentos") return <CustomerQuotePayments userId={userId} />;
   if (slug === "assinatura" || slug === "assinaturas") {
-    return <SubscriptionSection userId={userId} commercialMvp />;
+    return PUBLIC_COLLECTIONS_ENABLED ? (
+      <SubscriptionSection userId={userId} commercialMvp />
+    ) : (
+      <TonecosSubscriptionUnavailablePanel />
+    );
   }
   if (slug === "colecao") {
     return <CurrentCatalogSelection />;
