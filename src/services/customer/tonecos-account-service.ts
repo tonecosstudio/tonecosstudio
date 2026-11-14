@@ -18,6 +18,31 @@ import {
 
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 type AccountProfile = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Row"];
+type ProfileUpdate = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Update"];
+const PROFILE_SELECT = "id,email,full_name,phone,whatsapp,delivery_address,preferred_contact_channel,quote_updates,production_updates,marketing_emails,created_at,updated_at" as const;
+
+export type TonecosDeliveryAddress = {
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: "BR";
+};
+export type TonecosContactPreferences = {
+  preferredContactChannel: "email" | "whatsapp" | "phone" | null;
+  quoteUpdates: boolean;
+  productionUpdates: boolean;
+  marketingEmails: boolean;
+};
+
+const BRAZIL_STATES = new Set([
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
+  "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+]);
+
 
 function cleanText(input: unknown, limit: number, required = false): string | null {
   if (typeof input !== "string") throw new Error("tonecos_account_input_invalid");
@@ -176,7 +201,7 @@ export async function getMyTonecosProfile(): Promise<AccountProfile> {
   assertTonecosCommercialEnabled();
   const id = await currentAccountId();
   const { data, error } = await tonecos.from("profiles")
-    .select("id,email,full_name,phone,created_at,updated_at")
+    .select(PROFILE_SELECT)
     .eq("id", id).single();
   if (error) throw error;
   return data;
@@ -195,9 +220,88 @@ export async function updateMyTonecosProfile(input: {
   const { data, error } = await tonecos.from("profiles")
     .update({ full_name, phone })
     .eq("id", id)
-    .select("id,email,full_name,phone,created_at,updated_at").single();
+    .select(PROFILE_SELECT).single();
   if (error) throw error;
   return data;
+}
+
+/**
+ * Updates only already-granted customer columns of public.profiles.
+ * Never uses the legacy monorepo profile services or a second customer table.
+ */
+async function updateMyComplementaryProfile(changes: ProfileUpdate): Promise<AccountProfile> {
+  assertTonecosCommercialEnabled();
+  const id = await currentAccountId();
+  const { data, error } = await tonecos.from("profiles")
+    .update(changes)
+    .eq("id", id)
+    .select(PROFILE_SELECT).single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateMyTonecosWhatsapp(raw: string): Promise<AccountProfile> {
+  assertTonecosCommercialEnabled();
+  if (typeof raw !== "string") throw new Error("tonecos_account_whatsapp_invalid");
+  const whatsapp = raw.replace(/\D/g, "") || null;
+  if (whatsapp && !/^(55)?[1-9][0-9]{9,10}$/.test(whatsapp)) {
+    throw new Error("tonecos_account_whatsapp_invalid");
+  }
+  return updateMyComplementaryProfile({ whatsapp });
+}
+
+export async function updateMyTonecosDeliveryAddress(
+  input: TonecosDeliveryAddress | null,
+): Promise<AccountProfile> {
+  assertTonecosCommercialEnabled();
+  if (input === null) return updateMyComplementaryProfile({ delivery_address: null });
+  const keys = Object.keys(input ?? {});
+  if (keys.some((key) => ![
+    "street", "number", "complement", "neighborhood", "city", "state", "zipCode", "country",
+  ].includes(key))) throw new Error("tonecos_account_address_invalid");
+  const text = (value: unknown, max: number, optional = false) => {
+    if (typeof value !== "string") throw new Error("tonecos_account_address_invalid");
+    const cleaned = value.trim();
+    if ((!optional && !cleaned) || cleaned.length > max) {
+      throw new Error("tonecos_account_address_invalid");
+    }
+    return cleaned;
+  };
+  const street = text(input.street, 160);
+  const number = text(input.number, 20);
+  const neighborhood = text(input.neighborhood, 100);
+  const city = text(input.city, 100);
+  const state = text(input.state, 2);
+  const zipCode = text(input.zipCode, 9).replace(/\D/g, "");
+  if (!BRAZIL_STATES.has(state) || !/^[0-9]{8}$/.test(zipCode) ||
+      input.country !== "BR") throw new Error("tonecos_account_address_invalid");
+  const complement = input.complement === undefined
+    ? undefined : text(input.complement, 160, true);
+  const delivery_address: TonecosDeliveryAddress = {
+    street, number, neighborhood, city, state, zipCode, country: "BR",
+    ...(complement ? { complement } : {}),
+  };
+  return updateMyComplementaryProfile({ delivery_address });
+}
+
+export async function updateMyTonecosContactPreferences(
+  input: TonecosContactPreferences,
+): Promise<AccountProfile> {
+  assertTonecosCommercialEnabled();
+  if (!input || !(
+    input.preferredContactChannel === null ||
+    ["email", "whatsapp", "phone"].includes(input.preferredContactChannel)
+  ) || typeof input.quoteUpdates !== "boolean" ||
+      typeof input.productionUpdates !== "boolean" ||
+      typeof input.marketingEmails !== "boolean") {
+    throw new Error("tonecos_account_preferences_invalid");
+  }
+  return updateMyComplementaryProfile({
+    preferred_contact_channel: input.preferredContactChannel,
+    quote_updates: input.quoteUpdates,
+    production_updates: input.productionUpdates,
+    marketing_emails: input.marketingEmails,
+  });
 }
 
 /** Delegates rate-limiting to the existing canonical Supabase Auth service. */
