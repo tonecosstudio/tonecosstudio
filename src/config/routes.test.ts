@@ -113,6 +113,23 @@ describe("route helpers", () => {
     );
   });
 
+  it("preserves only an exact quote link through customer authentication", () => {
+    const quotePath = "/meus-orcamentos?quote=22222222-2222-4222-8222-222222222222";
+    expect(resolveTonecosCustomerReturnPath(quotePath)).toBe(quotePath);
+    expect(tonecosLoginReturnPath(quotePath)).toBe(
+      "/login?next=" + encodeURIComponent(quotePath),
+    );
+    for (const invalid of [
+      "/meus-orcamentos?quote=../../../admin",
+      quotePath + "&next=/admin",
+      quotePath + "#trick",
+      "/meus-orcamentos?quote=",
+      "/meus-orcamentos?quote=22222222",
+    ]) {
+      expect(resolveTonecosCustomerReturnPath(invalid)).toBe("/perfil");
+    }
+  });
+
   it("accepts only bounded internal action paths", () => {
     expect(isSafeInAppPath("/perfil/pagamentos?status=pending")).toBe(true);
     expect(isSafeInAppPath("//evil.example")).toBe(false);
