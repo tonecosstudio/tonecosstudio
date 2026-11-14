@@ -1,3 +1,13 @@
+## Checkpoint 14/11/2026 — pagamentos da conta ligados ao histórico canônico
+
+- **Base → commit funcional:** `main@3b5d4b30` → `2499a54d` (`fix(account): show canonical quote payments`).
+- **Implementado:** `/perfil/pagamentos` agora lê os 10 orçamentos recentes pelo serviço canônico e mostra estado, valor, uso de Coins e link ao detalhe. PIX, comprovantes e aprovação continuam no registro original; a página comercial não consulta as tabelas antigas `payment_methods`/`manual_payments`.
+- **Validação Windows:** `TonecosCustomerSections.test.tsx` passou (28); `npm run typecheck`, ESLint dos arquivos alterados e `git diff --check` passaram.
+- **Coins:** regra existente preservada: 1 Coin = R$1 em orçamento comum respondido, até o saldo/valor em aberto; sem aplicação à entrada de R$50 da pré-venda.
+- **Supabase (somente leitura):** projeto conectado `tonecosstudio-site` está ativo; migrações vão até `20261114150141`, mas não há `subscription_plans`, `subscriptions` ou `collections`, nem branch isolada. Nenhuma escrita remota ou alteração de produção foi feita.
+- **NEXT_ACTION:** integrar a assinatura comercial sem duplicar o catálogo. A tela existente espera coleções em Supabase, enquanto o catálogo canônico atual publica modelos por franquia; aguardo a decisão sobre esse mapeamento antes de alterar o contrato.
+- **DO_NOT_REPEAT:** não reconstruir um catálogo de coleções em Supabase, não reutilizar `subscription_credit_subscriptions` como segunda autoridade e não tratar mocks como prova de integração real.
+
 ## Checkpoint 14/11/2026 — endereço do perfil e lacuna de assinaturas
 
 - **Base → commit funcional:** `main@e5a20984` → `501c2a11` (`fix(account): correct delivery address autofill`).
