@@ -41,9 +41,9 @@ describe("TONART public Home during image review", () => {
     );
     expect(screen.getByRole("link", { name: /VER CATÁLOGO/ })).toHaveAttribute("href", "/modelos");
     expect(screen.getByRole("link", { name: /CONHEÇA O ESTÚDIO/ })).toHaveAttribute("href", "/sobre");
-    expect(screen.getByRole("heading", { name: /Black Friday Até 50% de desconto/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Solicitar pré-venda/ })).toHaveAttribute("href", "/contato?assunto=pre-venda");
-    expect(screen.getByRole("link", { name: /Consultar meus Coins/ })).toHaveAttribute("href", "/contato?assunto=coins");
+    expect(screen.getByRole("link", { name: /Fale com a TONART/ })).toHaveAttribute("href", "/contato");
+    expect(screen.queryByRole("heading", { name: /Black Friday/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Solicitar pré-venda|Consultar meus Coins/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Referências em curadoria" })).not.toBeInTheDocument();
     view.unmount();
     client.clear();
