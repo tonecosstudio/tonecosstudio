@@ -22,6 +22,7 @@ import {
 } from "@/services/admin/overview/tonart-admin-profiles-service";
 import { panelClass, secondaryClass } from "./CommercialPage";
 import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
+import TonartAdminOriginalSection from "./TonartAdminOriginalSection";
 
 const coinsEnabled = import.meta.env.VITE_TONECOS_COINS_ENABLED === "true";
 const quotesEnabled = import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true";
@@ -148,8 +149,11 @@ export default function TonecosAdminHomePage() {
     isCoins ||
     isOrders ||
     isFinancial ||
-    isCommunication;
-
+    isCommunication ||
+    (selectedSubpage !== undefined &&
+      ["production-dashboard", "communication", "financial-hub"].includes(
+        selectedSubpage.parent,
+      ));
 
   useEffect(() => {
     if (!requiresOverview) {
@@ -373,17 +377,13 @@ export default function TonecosAdminHomePage() {
           )}
 
           {selectedSubpage && (
-            <section className={panelClass}>
-              <h3 className="text-lg font-semibold">{selectedSubpage.label}</h3>
-              <p className="mt-3 text-sm leading-6 text-white/65">
-                Página do painel administrativo original recuperada na navegação.
-                A integração operacional desta seção com a autoridade TONART será
-                feita na próxima fase. Não há dados simulados ou alterações em produção.
-              </p>
-              <Link className={secondaryClass + " mt-5"} to={activeItem?.path ?? ADMIN_ROUTES.home}>
-                Voltar ao módulo
-              </Link>
-            </section>
+            <TonartAdminOriginalSection
+              section={selectedSubpage}
+              overview={overview}
+              loading={loading}
+              quotesEnabled={quotesEnabled}
+              parentPath={activeItem?.path ?? ADMIN_ROUTES.home}
+            />
           )}
           {isDashboard && (
             <>

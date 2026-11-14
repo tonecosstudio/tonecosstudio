@@ -186,11 +186,69 @@ describe("TONART admin workspace", () => {
     expect(await screen.findByRole("heading", { name: "Sistema de créditos · Coins" })).toBeInTheDocument();
   });
 
+  it("shows protected quote status on the restored production board without treating quotes as manufactured products", async () => {
+    mocks.overview.mockResolvedValueOnce({
+      ...fixture,
+      recentQuotes: [
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          status: "reviewing",
+          customerEmail: "cliente@example.com",
+          createdAt: "2026-11-13T10:00:00Z",
+          quotedAmountCents: null,
+          modelCount: 2,
+        },
+      ],
+    });
+    show("/admin/producao/kanban");
+    expect(
+      await screen.findByText(/Um orçamento não representa ordem de fabricação/),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("Solicitação #22222222")).toBeInTheDocument();
+    expect(mocks.overview).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the restored communication history as quote responses, not sent email history", async () => {
+    mocks.overview.mockResolvedValueOnce({
+      ...fixture,
+      recentQuotes: [
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          status: "answered",
+          customerEmail: "cliente@example.com",
+          createdAt: "2026-11-13T10:00:00Z",
+          quotedAmountCents: 24990,
+          modelCount: 2,
+        },
+      ],
+    });
+    show("/admin/comunicacao/historico");
+    expect(
+      await screen.findByText(/não afirma que e-mails ou mensagens externas foram enviados/),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText("Solicitação #22222222"),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps restored payment key configuration visible without claiming payment integration", () => {
+    show("/admin/pagamentos/chaves");
+    expect(
+      screen.getByText(/Nenhuma cobrança pode ser criada aqui/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Ver valores orçados" }),
+    ).toHaveAttribute("href", "/admin/financeiro");
+    expect(mocks.overview).not.toHaveBeenCalled();
+  });
+
   it("restores original nested administration routes without fabricating backend data", () => {
     show("/admin/producao/calendario");
     expect(screen.getByRole("navigation", { name: "Páginas do módulo administrativo" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Quadro de produção" })).toHaveAttribute("href", "/admin/producao/kanban");
-    expect(screen.getByText(/A integração operacional desta seção/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Nenhuma data de produção é inferida/),
+    ).toBeInTheDocument();
     expect(mocks.overview).not.toHaveBeenCalled();
   });
 
