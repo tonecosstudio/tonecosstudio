@@ -6,7 +6,7 @@ import {
   quoteItemsFromSelection,
   submitCatalogQuoteRequest,
 } from "@/services/customer/catalog-quote-service";
-import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
+import { getMyTonecosProfile, getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
 import {
   actionClass,
   CommercialPage,
@@ -17,6 +17,11 @@ import {
 import { commercialQuoteErrorText } from "./commercial-quote-error-text";
 
 type Identity = { id: string; email: string | null };
+type CustomerProfile = Awaited<ReturnType<typeof getMyTonecosProfile>>;
+function quotePhone(phone: string | null): string {
+  const digits = (phone ?? "").replace(/\D/g, "");
+  return /^(?:55)?[1-9][0-9]{9,10}$/.test(digits) ? digits : "";
+}
 
 export default function TonecosQuoteRequestPage() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
@@ -26,8 +31,9 @@ export default function TonecosQuoteRequestPage() {
   const [authAttempt, setAuthAttempt] = useState(0);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [postalCode, setPostalCode] = useState("");
+  const [profile, setProfile] = useState<CustomerProfile | null | undefined>(undefined);
+  const [profileError, setProfileError] = useState(false);
+  const [profileAttempt, setProfileAttempt] = useState(0);
   const [scale, setScale] = useState<"a definir" | "1/10" | "1/6" | "outro">(
     "a definir",
   );
@@ -56,9 +62,24 @@ export default function TonecosQuoteRequestPage() {
     };
   }, [authAttempt]);
 
+  useEffect(() => {
+    if (!user || authError) {
+      setProfile(null);
+      setProfileError(false);
+      return;
+    }
+    let active = true;
+    setProfile(undefined);
+    setProfileError(false);
+    getMyTonecosProfile()
+      .then((value) => { if (active) setProfile(value); })
+      .catch(() => { if (active) { setProfile(null); setProfileError(true); } });
+    return () => { active = false; };
+  }, [user, authError, profileAttempt]);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || !user || selectedModels.length === 0) return;
+    if (busy || !user || !profile?.full_name?.trim() || selectedModels.length === 0) return;
     setBusy(true);
     setError("");
     try {
@@ -67,8 +88,8 @@ export default function TonecosQuoteRequestPage() {
         quantity: quantities[item.slug] ?? 1,
       }));
       const quoteId = await submitCatalogQuoteRequest(user.id, items, notes, {
-        whatsapp,
-        postalCode,
+        whatsapp: quotePhone(profile.phone),
+        postalCode: "",
         scale,
         finishing,
       });
@@ -126,16 +147,20 @@ export default function TonecosQuoteRequestPage() {
               Entre ou crie uma conta para enviar a seleção e acompanhar a
               resposta da TONART Studio.
             </p>
-            <Link
-              className={actionClass}
-              to={
-                TONECOS_COMMERCIAL_ROUTES.login +
-                "?next=" +
-                encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)
-              }
-            >
-              Entrar ou criar conta
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                className={actionClass}
+                to={TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)}
+              >
+                Entrar
+              </Link>
+              <Link
+                className={secondaryClass}
+                to={TONECOS_COMMERCIAL_ROUTES.login + "?mode=signup&next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)}
+              >
+                Criar conta
+              </Link>
+            </div>
           </div>
         ) : null}
         {selectedModels.length === 0 ? (
@@ -147,7 +172,25 @@ export default function TonecosQuoteRequestPage() {
               Escolher modelos
             </Link>
           </div>
-        ) : user && !authError ? (
+        ) : user && !authError && profile === undefined ? (
+          <p role="status">Carregando seus dados cadastrais...</p>
+        ) : user && !authError && profileError ? (
+          <div role="alert" className={panelClass}>
+            <p className="mb-4 text-sm text-white/70">
+              Não foi possível carregar seus dados. A solicitação não será enviada sem conferir sua conta.
+            </p>
+            <button type="button" className={secondaryClass} onClick={() => setProfileAttempt((n) => n + 1)}>
+              Tentar carregar dados
+            </button>
+          </div>
+        ) : user && !authError && profile && !profile.full_name?.trim() ? (
+          <div className={panelClass}>
+            <p className="mb-4 text-sm text-white/70">
+              Complete seu nome na Minha Conta antes de solicitar o orçamento. Seus dados são cadastrados apenas uma vez.
+            </p>
+            <Link className={actionClass} to={TONECOS_COMMERCIAL_ROUTES.account}>Completar Minha Conta</Link>
+          </div>
+        ) : user && !authError && profile ? (
           <form
             className={panelClass + " space-y-6"}
             onSubmit={(event) => {
@@ -214,33 +257,26 @@ export default function TonecosQuoteRequestPage() {
                 </li>
               ))}
             </ul>
+            <section
+              className="border-y border-white/15 py-4"
+              aria-label="Dados da conta utilizados no orçamento"
+            >
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold">Seus dados de contato</h3>
+                <Link className="text-xs text-[hsl(var(--gold-accent))] underline-offset-2 hover:underline" to={TONECOS_COMMERCIAL_ROUTES.account}>
+                  Editar na Minha Conta
+                </Link>
+              </div>
+              <p className="text-sm text-white/85">{profile.full_name}</p>
+              <p className="mt-1 text-xs text-white/60">{user.email ?? profile.email}</p>
+              <p className="mt-1 text-xs text-white/60">
+                Telefone: {profile.phone || "Não cadastrado — contato por e-mail"}
+              </p>
+              <p className="mt-2 text-xs text-white/50">
+                Dados pessoais da mesma conta. Dados de entrega serão mantidos na Minha Conta após a integração cadastral.
+              </p>
+            </section>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block space-y-2 text-sm">
-                <span>WhatsApp para contato (opcional)</span>
-                <input
-                  className={fieldClass}
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  maxLength={40}
-                  placeholder="(71) 99999-9999"
-                  value={whatsapp}
-                  onChange={(event) => setWhatsapp(event.target.value)}
-                />
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>CEP (opcional)</span>
-                <input
-                  className={fieldClass}
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  maxLength={9}
-                  placeholder="00000-000"
-                  value={postalCode}
-                  onChange={(event) => setPostalCode(event.target.value)}
-                />
-              </label>
               <label className="block space-y-2 text-sm">
                 <span>Escala desejada</span>
                 <select
@@ -291,7 +327,7 @@ export default function TonecosQuoteRequestPage() {
               <button
                 className={actionClass}
                 type="submit"
-                disabled={!user || busy}
+                disabled={!user || !profile || busy}
               >
                 {busy ? "Enviando..." : "Enviar solicitação"}
               </button>
