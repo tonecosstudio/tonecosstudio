@@ -426,6 +426,149 @@ describe("TONART commercial screens: account → request → history → respons
     ).toBeInTheDocument();
   });
 
+  it("carries a selected-model request through admin response into customer history using mocked services", async () => {
+    let quoteStatus: "pending" | "answered" = "pending";
+    let quotedAmount: number | null = null;
+    let responseMessage: string | null = null;
+
+    const quoteRow = () => ({
+      id: QUOTE,
+      status: quoteStatus,
+      createdAt: "2026-11-14T00:00:00Z",
+      notes: "Escala 1/6",
+      quotedAmount,
+      responseMessage,
+      deadline: null,
+      items: [{ slug: "naruto", quantity: 1 }],
+      whatsapp: null,
+      postalCode: null,
+      scale: "1/6",
+      finishing: "pintado",
+    });
+    const quoteEvents = () => ({
+      [QUOTE]: [
+        {
+          id: 1,
+          quoteId: QUOTE,
+          type: "submitted",
+          fromStatus: null,
+          toStatus: "pending",
+          amount: null,
+          responseText: null,
+          createdAt: "2026-11-14T00:00:00Z",
+        },
+        ...(quoteStatus === "answered"
+          ? [{
+              id: 2,
+              quoteId: QUOTE,
+              type: "answered",
+              fromStatus: "reviewing",
+              toStatus: "answered",
+              amount: quotedAmount,
+              responseText: responseMessage,
+              createdAt: "2026-11-14T01:00:00Z",
+            }]
+          : []),
+      ],
+    });
+
+    mocks.submit.mockImplementation(async () => {
+      quoteStatus = "pending";
+      return QUOTE;
+    });
+    mocks.listMine.mockImplementation(async (_userId, query) => ({
+      total: 1,
+      limit: query?.limit ?? 20,
+      offset: query?.offset ?? 0,
+      rows: [quoteRow()],
+    }));
+    mocks.listAdmin.mockImplementation(async () => ({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [{
+        id: QUOTE,
+        userId: USER,
+        customerEmail: "cliente@example.com",
+        status: quoteStatus,
+        createdAt: "2026-11-14T00:00:00Z",
+        notes: "Escala 1/6",
+        quotedAmount,
+        responseMessage,
+        items: [{ slug: "naruto", quantity: 1 }],
+      }],
+    }));
+    mocks.answerAdmin.mockImplementation(async (_quoteId, amount, message) => {
+      quoteStatus = "answered";
+      quotedAmount = amount;
+      responseMessage = message;
+      return QUOTE;
+    });
+    mocks.history.mockImplementation(async (quoteIds: string[]) =>
+      quoteIds.includes(QUOTE) ? quoteEvents() : {},
+    );
+
+    renderApp("/solicitar-orcamento", true);
+    expect(await screen.findByText("Naruto")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Escala desejada" }), {
+      target: { value: "1/6" },
+    });
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Enviar solicitação" }),
+    );
+    expect(
+      await screen.findByText("Orçamento #22222222"),
+    ).toBeInTheDocument();
+    expect(mocks.submit).toHaveBeenCalledWith(
+      USER,
+      [{ slug: "naruto", quantity: 1 }],
+      "",
+      {
+        whatsapp: "",
+        postalCode: "",
+        scale: "1/6",
+        finishing: "a definir",
+      },
+      "quote",
+    );
+
+    cleanup();
+    renderApp("/admin/orcamentos");
+    expect(
+      await screen.findByRole("button", { name: "Registrar resposta" }),
+    ).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole("textbox", {
+        name: "Valor-base antes da promoção (R$) " + QUOTE.slice(0, 8),
+      }),
+      { target: { value: "249,90" } },
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", {
+        name: "Mensagem ao cliente " + QUOTE.slice(0, 8),
+      }),
+      { target: { value: "Proposta válida por 7 dias." } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Registrar resposta" }));
+    expect(
+      await screen.findByText(/Resposta registrada e disponível na conta do cliente/),
+    ).toBeInTheDocument();
+    expect(mocks.answerAdmin).toHaveBeenCalledWith(
+      QUOTE,
+      249.9,
+      "Proposta válida por 7 dias.",
+      0,
+    );
+
+    cleanup();
+    renderApp("/meus-orcamentos");
+    expect(
+      await screen.findByText("Proposta válida por 7 dias."),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Respondido/)).toBeInTheDocument();
+    expect(mocks.history).toHaveBeenCalledWith([QUOTE]);
+  });
+
   it("never claims an unverified navigation-state quote was submitted", async () => {
     renderApp({ pathname: "/meus-orcamentos", state: { sent: QUOTE } });
     expect(
