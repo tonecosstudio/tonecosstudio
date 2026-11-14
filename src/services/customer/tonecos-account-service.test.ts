@@ -3,6 +3,8 @@ import {
   changeTonecosPassword, registerTonecosAccount, resendTonecosSignupConfirmation,
   signInTonecosAccount, signOutTonecosAccount,
   getTonecosCurrentUser, getMyTonecosProfile, updateMyTonecosProfile,
+  updateMyTonecosWhatsapp, updateMyTonecosDeliveryAddress,
+  updateMyTonecosContactPreferences,
   requestTonecosPasswordReset, completeTonecosPasswordRecovery,
   verifyTonecosPasswordRecoveryToken,
 } from "./tonecos-account-service";
@@ -293,6 +295,62 @@ describe("Tonecos authenticated MVP account", () => {
       .rejects.toThrow("tonecos_account_phone_invalid");
     mocks.getUser.mockResolvedValue({ data: { user: null }, error: null });
     await expect(getMyTonecosProfile()).rejects.toThrow("tonecos_login_required");
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("saves WhatsApp, delivery and opt-ins only in the existing RLS-owned profile", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
+    const savedProfile = { id: USER, email: "client@example.com" };
+    const changes: unknown[] = [];
+    mocks.from.mockImplementation(() => {
+      const query = {
+        update: vi.fn((payload: unknown) => {
+          changes.push(payload);
+          return query;
+        }),
+        eq: vi.fn(() => query),
+        select: vi.fn(() => query),
+        single: vi.fn().mockResolvedValue({ data: savedProfile, error: null }),
+      };
+      return query;
+    });
+    await expect(updateMyTonecosWhatsapp("(71) 99999-9999")).resolves.toEqual(savedProfile);
+    await expect(updateMyTonecosDeliveryAddress({
+      street: "Rua Exemplo", number: "10", neighborhood: "Centro",
+      city: "Salvador", state: "BA", zipCode: "40000-000",
+      country: "BR",
+    })).resolves.toEqual(savedProfile);
+    await expect(updateMyTonecosContactPreferences({
+      preferredContactChannel: "whatsapp",
+      quoteUpdates: true,
+      productionUpdates: false,
+      marketingEmails: false,
+    })).resolves.toEqual(savedProfile);
+    expect(changes).toEqual([
+      { whatsapp: "71999999999" },
+      { delivery_address: {
+        street: "Rua Exemplo", number: "10", neighborhood: "Centro",
+        city: "Salvador", state: "BA", zipCode: "40000000",
+        country: "BR",
+      } },
+      { preferred_contact_channel: "whatsapp", quote_updates: true,
+        production_updates: false, marketing_emails: false },
+    ]);
+    expect(mocks.getUser).toHaveBeenCalledTimes(3);
+  });
+
+  it("rejects unsupported profile values before authentication or data writes", async () => {
+    await expect(updateMyTonecosWhatsapp("123")).rejects.toThrow("tonecos_account_whatsapp_invalid");
+    await expect(updateMyTonecosDeliveryAddress({
+      street: "Rua", number: "1", neighborhood: "Centro",
+      city: "Salvador", state: "BA", zipCode: "123",
+      country: "BR",
+    })).rejects.toThrow("tonecos_account_address_invalid");
+    await expect(updateMyTonecosContactPreferences({
+      preferredContactChannel: "invalid" as "email",
+      quoteUpdates: true, productionUpdates: false, marketingEmails: false,
+    })).rejects.toThrow("tonecos_account_preferences_invalid");
+    expect(mocks.getUser).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalled();
   });
 
