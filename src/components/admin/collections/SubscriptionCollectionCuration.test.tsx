@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SubscriptionCollectionCuration } from "./SubscriptionCollectionCuration";
 
@@ -50,6 +50,17 @@ const model = {
   coverStorageKey: null,
   imageUrl: null,
 };
+
+function curatedCatalogModel(index: number) {
+  return {
+    ...model,
+    id: `catalog-model-${index}`,
+    slug: `terror-model-${index}`,
+    code: `TER-${String(index).padStart(3, "0")}`,
+    name: `Modelo Terror ${index}`,
+    variantName: "",
+  };
+}
 
 function renderCuration() {
   const queryClient = new QueryClient({
@@ -103,5 +114,38 @@ describe("subscription collection curation", () => {
 
     expect(selection).toHaveTextContent("Monstro do Pântano · Edição clássica");
     expect(screen.getByRole("button", { name: "Salvar seleção" })).toBeEnabled();
+  });
+
+  it("caps a collection at 20 catalog models and saves only their slugs", async () => {
+    const catalogModels = Array.from({ length: 21 }, (_, index) => curatedCatalogModel(index + 1));
+    mocks.searchModels.mockResolvedValue({ items: catalogModels, nextCursor: null });
+    renderCuration();
+
+    const search = await screen.findByRole("textbox", {
+      name: "Buscar modelos publicados",
+    });
+    fireEvent.change(search, { target: { value: "terror" } });
+
+    await screen.findByRole("button", { name: /^Modelo Terror 1\b/ });
+    const resultButtons = screen.getAllByRole("button", {
+      name: /^Modelo Terror \d+\b/,
+    });
+    expect(resultButtons).toHaveLength(21);
+
+    for (const result of resultButtons.slice(0, 20)) {
+      fireEvent.click(result);
+    }
+
+    expect(screen.getByText("20 modelos")).toBeInTheDocument();
+    expect(resultButtons[20]).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Salvar seleção" }));
+
+    await waitFor(() => {
+      expect(mocks.saveModels).toHaveBeenCalledWith({
+        collectionId: collection.id,
+        modelSlugs: catalogModels.slice(0, 20).map((item) => item.slug),
+      });
+    });
+    expect(mocks.saveModels.mock.calls[0][0]).not.toHaveProperty("models");
   });
 });
