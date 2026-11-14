@@ -1,4 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
+import { requireAuthenticatedUserId } from "@/services/auth/current-user";
+import {
+  deletePaymentVoucher,
+  uploadPaymentVoucher,
+} from "@/services/payments/payment-voucher-storage-service";
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type SubscribePlan = {
   id: string;
@@ -25,6 +33,22 @@ export type SubscribeCollectionOption = {
     name: string;
     status: string | null;
   }>;
+};
+
+export type SubscriptionCheckoutResult = {
+  subscriptionId: string;
+  paymentId: string;
+  referenceNumber: string;
+  amount: number;
+  status: "under_review";
+};
+
+export type CustomerSubscriptionPayment = {
+  id: string;
+  status: string;
+  paymentStatus: string;
+  amount: number;
+  rejectionReason: string | null;
 };
 
 type SubscribeCollectionQueryRow = Omit<SubscribeCollectionOption, "image_url" | "collection_characters"> & {
@@ -120,4 +144,157 @@ export async function getSubscribeCollectionBySlug(
 
   if (error) throw error;
   return data ? toSubscribeCollectionOption(data as unknown as SubscribeCollectionQueryRow) : null;
+}
+
+/** Creates one pending PIX subscription through the existing database authority. */
+export async function createSubscriptionCheckoutForCurrentUser(input: {
+  planId: string;
+  collectionId: string;
+  voucher: File;
+}): Promise<SubscriptionCheckoutResult> {
+  if (
+    !input ||
+    !UUID_PATTERN.test(input.planId) ||
+    !UUID_PATTERN.test(input.collectionId) ||
+    !(input.voucher instanceof File)
+  ) {
+    throw new Error("subscription_checkout_input_invalid");
+  }
+
+  const userId = await requireAuthenticatedUserId();
+  const voucherPath = await uploadPaymentVoucher({
+    file: input.voucher,
+    userId,
+    pathPrefix: "subscriptions",
+  });
+
+  let data: unknown;
+  try {
+    const result = await supabase.rpc("create_subscription_checkout_for_current_user", {
+      p_plan_id: input.planId,
+      p_collection_id: input.collectionId,
+      p_payment_method: "pix",
+      p_payment_voucher_url: voucherPath,
+    });
+    if (result.error) throw result.error;
+    data = result.data;
+  } catch (error) {
+    try {
+      await deletePaymentVoucher(voucherPath, userId);
+    } catch {
+      // Preserve the checkout error; an orphaned private object is not exposed.
+    }
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("SUBSCRIPTION_CHECKOUT_EXISTS")) {
+      throw new Error(
+        "Já existe uma assinatura ativa ou em análise para esta coleção. Consulte Pagamentos na sua conta.",
+      );
+    }
+    throw error;
+  }
+
+  return parseSubscriptionCheckoutResult(data);
+}
+
+function parseSubscriptionCheckoutResult(data: unknown): SubscriptionCheckoutResult {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("subscription_checkout_result_invalid");
+  }
+  const result = data as Record<string, unknown>;
+  const subscription =
+    result.subscription && typeof result.subscription === "object"
+      ? result.subscription as Record<string, unknown>
+      : null;
+  const payment =
+    result.payment && typeof result.payment === "object"
+      ? result.payment as Record<string, unknown>
+      : null;
+  const amount = Number(payment?.amount);
+  if (
+    !subscription ||
+    !payment ||
+    typeof subscription.id !== "string" ||
+    !UUID_PATTERN.test(subscription.id) ||
+    typeof payment.id !== "string" ||
+    !UUID_PATTERN.test(payment.id) ||
+    typeof payment.reference_number !== "string" ||
+    payment.reference_number.length < 5 ||
+    payment.reference_number.length > 80 ||
+    !Number.isFinite(amount) ||
+    amount <= 0 ||
+    payment.status !== "under_review"
+  ) {
+    throw new Error("subscription_checkout_result_invalid");
+  }
+
+  return {
+    subscriptionId: subscription.id,
+    paymentId: payment.id,
+    referenceNumber: payment.reference_number,
+    amount,
+    status: "under_review",
+  };
+}
+
+/** Loads only the authenticated customer's subscription linked to this payment. */
+export async function getMySubscriptionPayment(
+  paymentId: string,
+): Promise<CustomerSubscriptionPayment | null> {
+  if (!UUID_PATTERN.test(paymentId)) return null;
+  const userId = await requireAuthenticatedUserId();
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select("id,status,payment_status,total_paid,payment_rejection_reason")
+    .eq("payment_id", paymentId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    id: data.id,
+    status: String(data.status),
+    paymentStatus: String(data.payment_status),
+    amount: Number(data.total_paid ?? 0),
+    rejectionReason: data.payment_rejection_reason,
+  };
+}
+
+/** Re-uploads evidence for the same rejected subscription and payment, without creating a second charge. */
+export async function resubmitSubscriptionPaymentVoucher(input: {
+  subscriptionId: string;
+  voucher: File;
+}): Promise<SubscriptionCheckoutResult> {
+  if (!UUID_PATTERN.test(input.subscriptionId) || !(input.voucher instanceof File)) {
+    throw new Error("subscription_voucher_resubmission_invalid");
+  }
+
+  const userId = await requireAuthenticatedUserId();
+  const voucherPath = await uploadPaymentVoucher({
+    file: input.voucher,
+    userId,
+    pathPrefix: "subscriptions",
+  });
+
+  let data: unknown;
+  try {
+    const result = await supabase.rpc("resubmit_subscription_payment_voucher_for_current_user", {
+      p_subscription_id: input.subscriptionId,
+      p_payment_voucher_path: voucherPath,
+    });
+    if (result.error) throw result.error;
+    data = result.data;
+  } catch (error) {
+    try {
+      await deletePaymentVoucher(voucherPath, userId);
+    } catch {
+      // Keep the RPC failure as the primary error.
+    }
+    throw error;
+  }
+
+  const checkout = parseSubscriptionCheckoutResult(data);
+  if (checkout.subscriptionId !== input.subscriptionId) {
+    throw new Error("subscription_voucher_resubmission_result_invalid");
+  }
+  return checkout;
 }

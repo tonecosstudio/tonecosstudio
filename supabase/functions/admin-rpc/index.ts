@@ -71,6 +71,7 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_mark_subscription_delivery_delivered_from_tracking",
   "admin_publish_catalog_import_item",
   "admin_process_subscription_payment",
+  "admin_verify_subscription_payment_voucher",
   "admin_remove_chat_group_member",
   "admin_register_chat_group_attachment",
   "admin_record_order_status_history",

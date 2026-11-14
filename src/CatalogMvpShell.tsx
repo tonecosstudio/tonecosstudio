@@ -9,6 +9,8 @@ import { ArcadeFooterView } from "@/components/arcade/ArcadeFooterView";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import PublicCatalogContact from "@/pages/PublicCatalogContact";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
 
 const Home = lazy(() => import("@/pages/LandingPage"));
 const Universe = lazy(() => import("@/pages/CatalogArcade"));
@@ -69,6 +71,8 @@ export function CatalogMvpShell({
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="tonecos-catalog-theme">
         <BrowserRouter>
+          <Toaster />
+          <Sonner />
           <PublicRouteScrollReset />
           <CatalogBrowsingProvider>
             <ArcadeFrame nav={navigation ?? <ArcadeNavView />} footer={<ArcadeFooterView />}>

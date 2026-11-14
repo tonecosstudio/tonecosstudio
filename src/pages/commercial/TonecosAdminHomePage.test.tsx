@@ -81,15 +81,9 @@ describe("TONART admin workspace", () => {
     expect(await screen.findByText("Cliente de teste")).toBeInTheDocument();
     expect(screen.getByText("cliente@example.com")).toBeInTheDocument();
     expect(screen.getByText("Orçamentos recebidos")).toBeInTheDocument();
-    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true") {
-      expect(
-        screen.getByRole("link", { name: "Abrir atendimento" }),
-      ).toHaveAttribute("href", "/admin/orcamentos");
-    } else {
-      expect(
-        screen.getByText("Operação de orçamentos desativada"),
-      ).toBeInTheDocument();
-    }
+    expect(
+      screen.getByRole("link", { name: "Abrir atendimento" }),
+    ).toHaveAttribute("href", "/admin/orcamentos");
   });
 
   it("keeps quote intake in the restored sidebar without creating a second backoffice", async () => {
@@ -97,30 +91,18 @@ describe("TONART admin workspace", () => {
     const navigation = screen.getByRole("navigation", {
       name: "Módulos administrativos",
     });
-    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true") {
-      expect(
-        within(navigation).getByRole("button", {
-          name: /Atendimento de orçamentos/,
-        }),
-      ).toBeInTheDocument();
-    } else {
-      expect(
-        within(navigation).queryByRole("button", {
-          name: /Atendimento de orçamentos/,
-        }),
-      ).not.toBeInTheDocument();
-    }
+    expect(
+      within(navigation).getByRole("button", {
+        name: /Atendimento de orçamentos/,
+      }),
+    ).toBeInTheDocument();
     expect(
       within(navigation).getByRole("button", { name: /Produção/ }),
     ).toHaveTextContent("Consulta");
     expect(
       within(navigation).getByRole("button", { name: /Análises/ }),
     ).toHaveTextContent("Consulta");
-    if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
-      expect(
-        screen.queryByRole("button", { name: /Créditos/ }),
-      ).not.toBeInTheDocument();
-    }
+    expect(within(navigation).getByRole("button", { name: /Créditos/ })).toBeInTheDocument();
   });
 
   it("counts pending and reviewing quotes as work in progress", async () => {
@@ -165,14 +147,6 @@ describe("TONART admin workspace", () => {
       ],
     });
     show();
-    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED !== "true") {
-      expect(
-        screen.queryByRole("list", {
-          name: "Solicitações para atendimento",
-        }),
-      ).not.toBeInTheDocument();
-      return;
-    }
     const queue = await screen.findByRole("list", {
       name: "Solicitações para atendimento",
     });
@@ -192,11 +166,7 @@ describe("TONART admin workspace", () => {
       recentQuotes: [],
     });
     show();
-    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true") {
-      expect(
-        await screen.findByText(/fora das 25 mais recentes/),
-      ).toBeInTheDocument();
-    }
+    expect(await screen.findByText(/fora das 25 mais recentes/)).toBeInTheDocument();
     expect(
       screen.queryByRole("list", {
         name: "Solicitações para atendimento",
@@ -275,27 +245,14 @@ describe("TONART admin workspace", () => {
     expect(screen.queryByText("cliente@example.com")).not.toBeInTheDocument();
   });
 
-  it("keeps the original Coins module inaccessible when its feature is disabled", async () => {
+  it("opens the original Coins module from the commercial administration", async () => {
     show("/admin/creditos");
-    if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
-      expect(
-        screen.queryByRole("heading", { name: "Sistema de créditos · Coins" }),
-      ).not.toBeInTheDocument();
-      expect(screen.queryByText("Nenhuma movimentação registrada.")).not.toBeInTheDocument();
-      return;
-    }
     expect(await screen.findByRole("heading", { name: "Sistema de créditos · Coins" })).toBeInTheDocument();
     expect(await screen.findByText("Nenhuma movimentação registrada.")).toBeInTheDocument();
   });
 
-  it("keeps Coins out of commercial administration when its feature is disabled", async () => {
+  it("exposes Coins in commercial administration", async () => {
     show();
-    if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
-      expect(screen.queryByRole("button", { name: /Créditos/ })).not.toBeInTheDocument();
-      expect(screen.queryByText("Coins · lançamentos")).not.toBeInTheDocument();
-      expect(screen.queryByText("Coins · Moedas")).not.toBeInTheDocument();
-      return;
-    }
     fireEvent.click(screen.getByRole("button", { name: /Créditos/ }));
     expect(await screen.findByRole("heading", { name: "Sistema de créditos · Coins" })).toBeInTheDocument();
   });
@@ -345,14 +302,14 @@ describe("TONART admin workspace", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps restored payment key configuration visible without claiming payment integration", () => {
+  it("links payment key configuration to subscription voucher review", () => {
     show("/admin/pagamentos/chaves");
     expect(
-      screen.getByText(/Nenhuma cobrança pode ser criada aqui/),
+      screen.getByText(/chaves PIX configuradas são usadas no checkout de assinaturas/),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Ver valores orçados" }),
-    ).toHaveAttribute("href", "/admin/financeiro");
+      screen.getByRole("link", { name: "Revisar comprovantes de assinatura" }),
+    ).toHaveAttribute("href", "/admin/assinaturas");
     expect(mocks.overview).not.toHaveBeenCalled();
   });
 
@@ -389,11 +346,6 @@ describe("TONART admin workspace", () => {
       ],
     });
     show();
-    if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
-      expect(screen.queryByRole("button", { name: /Créditos/ })).not.toBeInTheDocument();
-      expect(screen.queryByText("Crédito administrativo confirmado")).not.toBeInTheDocument();
-      return;
-    }
     fireEvent.click(screen.getByRole("button", { name: /Créditos/ }));
     expect(
       await screen.findByText("Crédito administrativo confirmado"),
@@ -403,11 +355,9 @@ describe("TONART admin workspace", () => {
     expect(
       screen.getByRole("heading", { name: "Histórico de movimentações" }),
     ).toBeInTheDocument();
-    if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
-      expect(
-        screen.queryByRole("link", { name: "Abrir operações autorizadas" }),
-      ).not.toBeInTheDocument();
-    }
+    expect(
+      screen.getByRole("link", { name: "Abrir operações autorizadas" }),
+    ).toHaveAttribute("href", "/admin/moedas");
   });
 
   it("shows actual quote requests under Pedidos without presenting them as paid orders", async () => {
@@ -495,11 +445,7 @@ describe("TONART admin workspace", () => {
     const link = screen.queryByRole("link", {
       name: "Abrir solicitação #33333333",
     });
-    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true") {
-      expect(link).toHaveAttribute("href", "/admin/orcamentos?quote=" + id);
-    } else {
-      expect(link).not.toBeInTheDocument();
-    }
+    expect(link).toHaveAttribute("href", "/admin/orcamentos?quote=" + id);
     expect(screen.getByText("Respondido")).toBeInTheDocument();
     expect(
       screen.getByText(/resposta comercial e o valor ficam registrados/i),

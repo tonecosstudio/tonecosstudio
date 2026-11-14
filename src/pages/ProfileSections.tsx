@@ -71,7 +71,11 @@ interface NotificationsSectionProps {
   saveMutation: SaveMutationLike;
 }
 
-export const PROFILE_COLLECTIONS_ENABLED = PUBLIC_COLLECTIONS_ENABLED;
+export const PROFILE_COLLECTIONS_ENABLED =
+  PUBLIC_COLLECTIONS_ENABLED ||
+  (import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
+    import.meta.env.VITE_PREVIEW_READ_ONLY === "false" &&
+    import.meta.env.VITE_PUBLIC_CATALOG_MVP !== "true");
 
 const profileCardClassName = "border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] text-white shadow-none";
 const profilePanelClassName = "rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03]";
@@ -765,7 +769,13 @@ export function NotificationsSection({
   );
 }
 
-export function SubscriptionSection({ userId }: { userId: string }) {
+export function SubscriptionSection({
+  userId,
+  commercialMvp = false,
+}: {
+  userId: string;
+  commercialMvp?: boolean;
+}) {
   const subscriptionQuery = useActiveProfileSubscription(userId);
 
   if (subscriptionQuery.isLoading) {
@@ -782,7 +792,27 @@ export function SubscriptionSection({ userId }: { userId: string }) {
     );
   }
 
-  if (!PROFILE_COLLECTIONS_ENABLED) {
+  if (subscriptionQuery.isError) {
+    return (
+      <section role="alert" className={`${profilePanelClassName} p-6`}>
+        <h2 className="text-lg font-semibold">Não foi possível carregar sua assinatura</h2>
+        <p className={`mt-2 text-sm ${profileMutedTextClassName}`}>
+          Tente novamente em instantes. Seus dados e pagamentos continuam protegidos.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className={`mt-4 ${profileOutlineButtonClassName}`}
+          onClick={() => void subscriptionQuery.refetch()}
+          disabled={subscriptionQuery.isFetching}
+        >
+          {subscriptionQuery.isFetching ? "Atualizando..." : "Tentar novamente"}
+        </Button>
+      </section>
+    );
+  }
+
+  if (!commercialMvp && !PROFILE_COLLECTIONS_ENABLED) {
     return (
       <div className="space-y-6">
         <div className="grid gap-3 md:grid-cols-3">
@@ -839,7 +869,7 @@ export function SubscriptionSection({ userId }: { userId: string }) {
             <p className="mt-2 text-2xl font-semibold">Inativo</p>
           </div>
           <div className={`${profilePanelClassName} p-4`}>
-            <p className={profileTinyMutedTextClassName}>Proximo passo</p>
+            <p className={profileTinyMutedTextClassName}>Próximo passo</p>
             <p className="mt-2 text-2xl font-semibold">Explorar</p>
           </div>
         </div>
@@ -858,12 +888,15 @@ export function SubscriptionSection({ userId }: { userId: string }) {
 
         <div className={`${profileDashedPanelClassName} px-6 py-10 text-center`}>
           <Package className="mx-auto mb-4 h-14 w-14 text-zinc-500" />
-          <p className="font-medium text-white">Nao ha plano ativo no momento</p>
+          <p className="font-medium text-white">Não há plano ativo no momento</p>
           <p className={`mx-auto mt-2 max-w-md text-sm ${profileMutedTextClassName}`}>
             Enquanto isso, use o catalogo publico e o restante da conta para acompanhar seus dados e operacoes atuais.
           </p>
           <Button asChild className={`mt-4 ${profilePrimaryButtonClassName}`}>
             <Link to={PUBLIC_ROUTES.catalog}>Explorar universo</Link>
+          </Button>
+          <Button asChild variant="outline" className="mt-4 sm:ml-2">
+            <Link to={PUBLIC_ROUTES.plans}>Conhecer planos de assinatura</Link>
           </Button>
         </div>
       </div>

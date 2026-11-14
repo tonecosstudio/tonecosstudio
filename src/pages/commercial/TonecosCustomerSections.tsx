@@ -5,7 +5,7 @@ import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import {
   getMyTonecosProfile,
   getTonecosCurrentUser,
-  updateMyTonecosWhatsapp,
+  updateMyTonecosPersonalData,
   updateMyTonecosDeliveryAddress,
   updateMyTonecosContactPreferences,
   type TonecosDeliveryAddress,
@@ -23,6 +23,7 @@ import {
   panelClass,
   secondaryClass,
 } from "./CommercialPage";
+import { PaymentSection, SubscriptionSection } from "../ProfileSections";
 
 type CustomerSection = {
   slug: string;
@@ -37,7 +38,7 @@ const restoredSections: CustomerSection[] = [
     label: "Dados pessoais",
     title: "Dados pessoais",
     summary:
-      "Documentos e contatos adicionais usados em serviços e faturamento.",
+      "Gerencie seus dados pessoais e contatos em um único perfil.",
   },
   {
     slug: "endereco",
@@ -200,108 +201,6 @@ export function TonecosCustomerWorkspace({
   );
 }
 
-type StagedCustomerField = {
-  label: string;
-  type?: "text" | "tel" | "date" | "select" | "checkbox";
-  inputMode?: "numeric";
-  autoComplete?: string;
-  options?: readonly string[];
-  description?: string;
-};
-
-/** Reuses the original registration fields while the single TONART profile
- * authority is being integrated. A disabled field is never submitted or stored.
- */
-function PendingCustomerData({
-  label,
-  fields,
-}: {
-  label: string;
-  fields: StagedCustomerField[];
-}) {
-  return (
-    <section className={panelClass} aria-label={label}>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">{label}</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
-            A estrutura do cadastro original está preservada na mesma Minha
-            Conta. Os campos complementares aguardam integração e não podem
-            ser preenchidos nem enviados nesta versão.
-          </p>
-        </div>
-        <span className="border border-white/20 px-3 py-1 text-xs text-white/60">
-          Integração pendente
-        </span>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {fields.map((field) => (
-          <label
-            key={field.label}
-            className="block space-y-2 text-sm text-white/80"
-          >
-            {field.type === "checkbox" ? (
-              <span className="flex min-h-11 items-center gap-3 rounded-sm border border-white/15 px-3 py-2">
-                <input
-                  type="checkbox"
-                  disabled
-                  aria-label={field.label}
-                  className="h-4 w-4 accent-[hsl(var(--gold-accent))]"
-                />
-                <span>{field.label}</span>
-              </span>
-            ) : (
-              <>
-                <span>{field.label}</span>
-                {field.type === "select" ? (
-                  <select
-                    className={fieldClass}
-                    disabled
-                    aria-label={field.label}
-                    defaultValue=""
-                  >
-                    <option value="">Não configurado</option>
-                    {field.options?.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    className={fieldClass}
-                    disabled
-                    type={field.type ?? "text"}
-                    inputMode={field.inputMode}
-                    autoComplete={field.autoComplete}
-                    placeholder="Não cadastrado"
-                    aria-label={field.label}
-                  />
-                )}
-              </>
-            )}
-            {field.description && (
-              <span className="block text-xs leading-5 text-white/50">
-                {field.description}
-              </span>
-            )}
-          </label>
-        ))}
-      </div>
-      <p className="mt-5 text-xs leading-5 text-white/50">
-        Nenhum dado inserido aqui é armazenado nesta versão. Para alterar nome
-        ou telefone já disponíveis, utilize a seção Dados da conta.
-      </p>
-      <Link
-        className={secondaryClass + " mt-4"}
-        to={TONECOS_COMMERCIAL_ROUTES.account}
-      >
-        Dados da conta
-      </Link>
-    </section>
-  );
-}
-
 const BLANK_DELIVERY_ADDRESS: TonecosDeliveryAddress = {
   zipCode: "",
   street: "",
@@ -327,6 +226,23 @@ const ADDRESS_FIELDS = [
   { key: "city", label: "Cidade", autoComplete: "address-level2", maxLength: 100 },
 ] as const;
 
+function formatCpfInput(value: string | null): string {
+  const digits = (value ?? "").replace(/\D/g, "").slice(0, 11);
+  if (digits.length > 9) {
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+  }
+  if (digits.length > 6) {
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  }
+  if (digits.length > 3) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  return digits;
+}
+
+function todayDateInputValue(): string {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
+
 type ComplementarySection = "dados-pessoais" | "endereco" | "preferencias";
 
 /**
@@ -341,6 +257,8 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [whatsapp, setWhatsapp] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [address, setAddress] = useState<TonecosDeliveryAddress>(BLANK_DELIVERY_ADDRESS);
   const [preferences, setPreferences] = useState<TonecosContactPreferences>(BLANK_PREFERENCES);
   const [busy, setBusy] = useState(false);
@@ -358,6 +276,8 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
         if (!active) return;
         setProfile(value);
         setWhatsapp(value.whatsapp ?? "");
+        setCpf(formatCpfInput(value.cpf));
+        setBirthDate(value.birth_date ?? "");
         const saved = value.delivery_address;
         const object = saved !== null && typeof saved === "object" && !Array.isArray(saved)
           ? saved as Record<string, unknown>
@@ -406,14 +326,21 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
     try {
       const updated =
         section === "dados-pessoais"
-          ? await updateMyTonecosWhatsapp(whatsapp)
+          ? await updateMyTonecosPersonalData({ whatsapp, cpf, birthDate })
           : section === "endereco"
             ? await updateMyTonecosDeliveryAddress(address)
             : await updateMyTonecosContactPreferences(preferences);
       setProfile(updated);
       setNotice("Informações salvas na sua conta.");
-    } catch {
-      setError("Não foi possível salvar. Confira os campos e tente novamente.");
+    } catch (failure) {
+      const message = failure instanceof Error ? failure.message : "";
+      setError(
+        message === "tonecos_account_cpf_invalid"
+          ? "Confira o CPF informado e os dígitos verificadores."
+          : message === "tonecos_account_birth_date_invalid"
+            ? "Informe uma data de nascimento válida."
+            : "Não foi possível salvar. Confira os campos e tente novamente.",
+      );
     } finally {
       setBusy(false);
     }
@@ -459,15 +386,15 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
     <div className="space-y-6">
       {isPersonal && <TonecosCustomerContactSummary profile={profile} variant="account" />}
       <section className={panelClass} aria-label={
-        isPersonal ? "WhatsApp do cadastro" :
+        isPersonal ? "Dados pessoais e de contato" :
         isAddress ? "Cadastro de entrega" : "Preferências do cliente"
       }>
         <h2 className="mb-2 text-lg font-semibold">
-          {isPersonal ? "WhatsApp adicional" : isAddress ? "Cadastro de entrega" : "Preferências do cliente"}
+          {isPersonal ? "Dados pessoais e contato" : isAddress ? "Cadastro de entrega" : "Preferências do cliente"}
         </h2>
         <p className="mb-5 text-sm leading-6 text-white/60">
           {isPersonal
-            ? "Salve um WhatsApp distinto do telefone principal, se desejar. O contato informado em um orçamento anterior não altera este cadastro."
+            ? "Informe seu WhatsApp, CPF e data de nascimento. CPF e nascimento são opcionais; o CPF só é necessário quando houver emissão fiscal."
             : isAddress
               ? "Este endereço pertence à sua conta. O CEP de um orçamento anterior não é considerado endereço cadastrado."
               : "Estas escolhas ficam no seu perfil. Elas não ativam disparos automáticos de e-mail, SMS ou WhatsApp."}
@@ -476,19 +403,51 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
         {notice && <p role="status" className="mb-4 border border-white/20 p-3 text-sm">{notice}</p>}
         <form onSubmit={(event) => { void save(event); }} className="space-y-5">
           {isPersonal && (
-            <label className="block space-y-2 text-sm">
-              <span>WhatsApp</span>
-              <input
-                className={fieldClass} type="tel" autoComplete="tel"
-                aria-label="WhatsApp" maxLength={40}
-                placeholder="(71) 99999-9999"
-                value={whatsapp}
-                onChange={(event) => setWhatsapp(event.target.value)}
-              />
-              <span className="block text-xs text-white/50">
-                Opcional. Para alterar o telefone principal, abra Dados da conta.
-              </span>
-            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block space-y-2 text-sm">
+                <span>WhatsApp</span>
+                <input
+                  className={fieldClass} type="tel" autoComplete="tel"
+                  aria-label="WhatsApp" maxLength={40}
+                  placeholder="(71) 99999-9999"
+                  value={whatsapp}
+                  onChange={(event) => setWhatsapp(event.target.value)}
+                />
+                <span className="block text-xs text-white/50">
+                  Opcional. Para alterar o telefone principal, abra Dados da conta.
+                </span>
+              </label>
+              <label className="block space-y-2 text-sm">
+                <span>CPF</span>
+                <input
+                  className={fieldClass}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  aria-label="CPF"
+                  maxLength={14}
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={(event) => setCpf(formatCpfInput(event.target.value))}
+                />
+                <span className="block text-xs text-white/50">
+                  Opcional. Informe apenas quando necessário para emissão fiscal.
+                </span>
+              </label>
+              <label className="block space-y-2 text-sm">
+                <span>Data de nascimento</span>
+                <input
+                  className={fieldClass}
+                  type="date"
+                  autoComplete="bday"
+                  max={todayDateInputValue()}
+                  aria-label="Data de nascimento"
+                  value={birthDate}
+                  onChange={(event) => setBirthDate(event.target.value)}
+                />
+                <span className="block text-xs text-white/50">Opcional.</span>
+              </label>
+            </div>
           )}
           {isAddress && (
             <div className="grid gap-4 sm:grid-cols-2">
@@ -572,7 +531,7 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
           )}
           <div className="flex flex-wrap gap-3 border-t border-white/15 pt-4">
             <button className={actionClass} type="submit" disabled={busy}>
-              {busy ? "Salvando..." : isPersonal ? "Salvar WhatsApp" : isAddress ? "Salvar endereço" : "Salvar preferências"}
+              {busy ? "Salvando..." : isPersonal ? "Salvar dados pessoais" : isAddress ? "Salvar endereço" : "Salvar preferências"}
             </button>
             {isAddress && profile.delivery_address && (
               <button type="button" className={secondaryClass} disabled={busy}
@@ -606,7 +565,6 @@ function RecentQuoteContext({
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED !== "true") return;
     let active = true;
     setPage(null);
     setStatus("loading");
@@ -632,7 +590,6 @@ function RecentQuoteContext({
       (item.finishing && item.finishing !== "a definir")
     );
   });
-  if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED !== "true") return null;
   return (
     <section
       className={panelClass}
@@ -731,9 +688,8 @@ function CurrentCatalogSelection() {
     <section className={panelClass} aria-label="Seleção atual de modelos">
       <h2 className="mb-3 text-lg font-semibold">Sua seleção de modelos</h2>
       <p className="mb-5 text-sm leading-6 text-white/65">
-        Esta é a seleção atual do catálogo para pedir orçamento. Ela não
-        representa uma compra nem o inventário de peças adquiridas; essa parte
-        da coleção será vinculada à Minha Conta na etapa de integração.
+        Esta é a seleção atual do catálogo para solicitar orçamento. Ela não
+        representa uma compra nem o inventário de peças adquiridas.
       </p>
       {selectedModels.length === 0 ? (
         <p className="mb-5 text-sm text-white/60">
@@ -783,8 +739,7 @@ function CurrentCatalogSelection() {
         <Link className={actionClass} to="/modelos">
           Explorar modelos
         </Link>
-        {selectedModels.length > 0 &&
-          import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" && (
+        {selectedModels.length > 0 && (
             <Link
               className={secondaryClass}
               to={TONECOS_COMMERCIAL_ROUTES.request}
@@ -809,22 +764,6 @@ function CustomerSectionContent({
       <div className="space-y-6">
         <CustomerComplementaryEditor section="dados-pessoais" />
         <RecentQuoteContext userId={userId} section="dados-pessoais" />
-        <PendingCustomerData
-          label="Cadastro pessoal adicional"
-          fields={[
-            {
-              label: "CPF (para emissão fiscal quando necessário)",
-              inputMode: "numeric",
-              description: "Somente quando houver necessidade fiscal e tratamento autorizado.",
-            },
-            {
-              label: "Data de nascimento",
-              type: "date",
-              autoComplete: "bday",
-              description: "Campo opcional do cadastro original.",
-            },
-          ]}
-        />
       </div>
     );
   }
@@ -872,26 +811,9 @@ function CustomerSectionContent({
       </section>
     );
   }
-  if (
-    slug === "pagamentos" ||
-    slug === "assinatura" ||
-    slug === "assinaturas"
-  ) {
-    return (
-      <section className={panelClass}>
-        <h2 className="mb-3 text-lg font-semibold">
-          {slug === "pagamentos" ? "Financeiro da conta" : "Assinaturas"}
-        </h2>
-        <p className="mb-5 text-sm text-white/65">
-          O módulo original está preservado. Esta versão ainda não tem operações
-          financeiras ou assinaturas habilitadas na autoridade comercial. Nenhum
-          pagamento ou contratação é realizado nesta tela.
-        </p>
-        <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.history}>
-          Ver propostas recebidas
-        </Link>
-      </section>
-    );
+  if (slug === "pagamentos") return <PaymentSection userId={userId} />;
+  if (slug === "assinatura" || slug === "assinaturas") {
+    return <SubscriptionSection userId={userId} commercialMvp />;
   }
   if (slug === "colecao") {
     return <CurrentCatalogSelection />;

@@ -8,9 +8,6 @@ const tonecos = supabase as unknown as SupabaseClient<Database>;
 
 export function assertTonecosCoinsEnabled(): void {
   assertTonecosCommercialEnabled();
-  if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
-    throw new Error("tonecos_coins_not_enabled");
-  }
 }
 
 export type TonecosCoinBalance = {

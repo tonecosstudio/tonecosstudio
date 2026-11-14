@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { useEffect } from "react";
@@ -8,24 +8,28 @@ import {
 } from "@/services/catalog/catalog-browsing-context";
 import type { PublicCatalogModel } from "@/services/catalog/public-catalog-gateway";
 import { HelmetProvider } from "react-helmet-async";
-import TonecosCustomerSections, {
-  customerSectionLinks,
-  TonecosCustomerNavigation,
-} from "./TonecosCustomerSections";
+import type * as CustomerSectionsModule from "./TonecosCustomerSections";
+
+let TonecosCustomerSections: typeof CustomerSectionsModule.default;
+let customerSectionLinks: typeof CustomerSectionsModule.customerSectionLinks;
+let TonecosCustomerNavigation: typeof CustomerSectionsModule.TonecosCustomerNavigation;
 
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   getProfile: vi.fn(),
   updateWhatsapp: vi.fn(),
+  updatePersonal: vi.fn(),
   updateAddress: vi.fn(),
   updatePreferences: vi.fn(),
   listMine: vi.fn(),
   history: vi.fn(),
+  activeSubscription: vi.fn(),
 }));
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.getUser,
   getMyTonecosProfile: mocks.getProfile,
   updateMyTonecosWhatsapp: mocks.updateWhatsapp,
+  updateMyTonecosPersonalData: mocks.updatePersonal,
   updateMyTonecosDeliveryAddress: mocks.updateAddress,
   updateMyTonecosContactPreferences: mocks.updatePreferences,
 }));
@@ -35,6 +39,21 @@ vi.mock("@/services/customer/catalog-quote-service", () => ({
 vi.mock("@/services/quotes/catalog-quote-history-service", () => ({
   loadCatalogQuoteHistory: mocks.history,
 }));
+vi.mock("@/hooks/customer/useProfileSectionsData", () => ({
+  useActiveProfileSubscription: mocks.activeSubscription,
+  useProfilePaymentMethods: vi.fn(() => ({ data: [], isLoading: false, isError: false })),
+  useProfileSupport: vi.fn(() => ({ data: null, isLoading: false, isError: false })),
+}));
+
+beforeAll(async () => {
+  vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+  vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+  vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+  const module = await import("./TonecosCustomerSections");
+  TonecosCustomerSections = module.default;
+  customerSectionLinks = module.customerSectionLinks;
+  TonecosCustomerNavigation = module.TonecosCustomerNavigation;
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -49,6 +68,8 @@ beforeEach(() => {
     full_name: "Cliente Cadastrado",
     phone: "(71) 99988-7766",
     whatsapp: null,
+    cpf: null,
+    birth_date: null,
     delivery_address: null,
     preferred_contact_channel: null,
     quote_updates: false,
@@ -64,7 +85,9 @@ beforeEach(() => {
     rows: [],
   });
   mocks.history.mockResolvedValue({});
+  mocks.activeSubscription.mockReturnValue({ data: null, isLoading: false, isError: false });
   mocks.updateWhatsapp.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" });
+  mocks.updatePersonal.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" });
   mocks.updateAddress.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" });
   mocks.updatePreferences.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" });
 });
@@ -140,16 +163,37 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(screen.getByText("Comunicação")).toBeInTheDocument();
   });
 
-  it("keeps the original subscription alias visible without presenting a functional payment", async () => {
+  it("reuses the subscription summary and links to the available plans", async () => {
     show("/perfil/assinaturas");
     expect(
-      await screen.findByText(
-        /não tem operações financeiras ou assinaturas habilitadas/,
-      ),
+      await screen.findByText("Não há plano ativo no momento"),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /pagar|contratar/i }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("link", { name: "Conhecer planos de assinatura" }),
+    ).toHaveAttribute("href", "/planos");
+  });
+
+  it("separates subscription load failures from an empty subscription", async () => {
+    const refetch = vi.fn();
+    mocks.activeSubscription.mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: true,
+      isFetching: false,
+      refetch,
+    });
+
+    show("/perfil/assinaturas");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Não foi possível carregar sua assinatura",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Não há plano ativo no momento")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 
   it("offers the canonical delivery form in the same authenticated profile", async () => {
@@ -186,27 +230,21 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(mocks.getProfile).toHaveBeenCalledTimes(1);
   });
 
-  it("preserves the original personal data fields as visible frontend without claiming persistence", async () => {
+  it("provides editable CPF and birth date fields in the same customer profile", async () => {
     show("/perfil/dados-pessoais");
     expect(
       await screen.findByRole("textbox", { name: "WhatsApp" }),
     ).toBeEnabled();
-    expect(
-      screen.getByRole("textbox", {
-        name: "CPF (para emissão fiscal quando necessário)",
-      }),
-    ).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "CPF" })).toBeEnabled();
     expect(screen.getByLabelText("Data de nascimento")).toHaveAttribute(
       "type",
       "date",
     );
-    expect(screen.getByLabelText("Data de nascimento")).toBeDisabled();
-    expect(
-      screen.getByText(/Nenhum dado inserido aqui é armazenado/),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Data de nascimento")).toBeEnabled();
+    expect(screen.queryByText("Integração pendente")).not.toBeInTheDocument();
   });
 
-  it("shows the canonical registered contact data alongside the old personal fields", async () => {
+  it("shows canonical registered contact data in the personal section", async () => {
     show("/perfil/dados-pessoais");
     expect(
       await screen.findByRole("region", {
@@ -218,8 +256,8 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(mocks.getProfile).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("textbox", { name: "WhatsApp" })).toBeEnabled();
     expect(
-      screen.queryByRole("button", { name: /Salvar dados pessoais/i }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: /Salvar dados pessoais/i }),
+    ).toBeEnabled();
   });
 
   it("fails closed if the registered contact profile cannot be loaded", async () => {
@@ -328,13 +366,25 @@ describe("Original customer account navigation in the commercial app", () => {
       .toBeEnabled();
   });
 
-  it("saves optional WhatsApp through the canonical profile service, never the quote service", async () => {
+  it("saves personal details through the canonical profile service, never the quote service", async () => {
     show("/perfil/dados-pessoais");
-    const field = await screen.findByRole("textbox", { name: "WhatsApp" });
-    fireEvent.change(field, { target: { value: "(71) 99999-9999" } });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar WhatsApp" }));
+    await screen.findByRole("textbox", { name: "CPF" });
+    fireEvent.change(screen.getByRole("textbox", { name: "WhatsApp" }), {
+      target: { value: "(71) 99999-9999" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "CPF" }), {
+      target: { value: "529.982.247-25" },
+    });
+    fireEvent.change(screen.getByLabelText("Data de nascimento"), {
+      target: { value: "1992-05-14" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar dados pessoais" }));
     await screen.findByText("Informações salvas na sua conta.");
-    expect(mocks.updateWhatsapp).toHaveBeenCalledWith("(71) 99999-9999");
+    expect(mocks.updatePersonal).toHaveBeenCalledWith({
+      whatsapp: "(71) 99999-9999",
+      cpf: "529.982.247-25",
+      birthDate: "1992-05-14",
+    });
     expect(mocks.listMine).toHaveBeenCalledTimes(1);
   });
 

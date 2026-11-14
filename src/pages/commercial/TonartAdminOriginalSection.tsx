@@ -28,7 +28,7 @@ const guidance: Record<string, string> = {
   "catalog-hub": "As coleções e os modelos pertencem ao catálogo Cloudflare existente. Revise as referências no catálogo, sem duplicá-las no Supabase.",
   "production-dashboard": "Visão preparatória das solicitações recebidas. Um orçamento não representa ordem de fabricação, prazo confirmado nem produção iniciada.",
   "financial-hub": "Valores de propostas comerciais. Não representam recebimentos, faturamento, vendas concluídas ou conciliação financeira.",
-  payments: "O sistema original contempla métodos de pagamento, chaves e cálculo financeiro. Nenhuma cobrança pode ser criada aqui antes da ligação com a autoridade de pagamentos.",
+  payments: "As chaves PIX configuradas são usadas no checkout de assinaturas. Os comprovantes ficam privados e a equipe revisa a confirmação na fila de assinaturas; esta área mantém as demais ferramentas financeiras originais.",
   communication: "Use as respostas dos orçamentos já registradas. O histórico abaixo não afirma que e-mails ou mensagens externas foram enviados.",
   system: "As configurações antigas estão preservadas no repositório. Não serão gravadas alterações até existir uma autoridade operacional validada.",
   users: "Os grupos históricos ainda não estão associados ao controle de permissões da TONART. Consulte as contas atuais pela lista protegida.",
@@ -88,7 +88,7 @@ export default function TonartAdminOriginalSection({
       : section.parent === "users"
         ? ADMIN_ROUTES.users
         : section.parent === "payments"
-          ? ADMIN_ROUTES.financialHub
+          ? TONECOS_COMMERCIAL_ROUTES.adminSubscriptions
           : hasSnapshot
             ? TONECOS_COMMERCIAL_ROUTES.adminQuotes
             : parentPath;
@@ -98,7 +98,7 @@ export default function TonartAdminOriginalSection({
       : section.parent === "users"
         ? "Consultar usuários"
         : section.parent === "payments"
-          ? "Ver valores orçados"
+          ? "Revisar comprovantes de assinatura"
           : hasSnapshot
             ? "Abrir atendimento de orçamentos"
             : "Voltar ao módulo";

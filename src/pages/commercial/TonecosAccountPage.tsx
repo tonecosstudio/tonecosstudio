@@ -36,16 +36,11 @@ type Identity = { id: string; email: string | null };
 const safeNext = new Set<string>([
   TONECOS_COMMERCIAL_ROUTES.account,
   TONECOS_COMMERCIAL_ROUTES.adminHome,
-  ...(import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true"
-    ? [
-        TONECOS_COMMERCIAL_ROUTES.request,
-        TONECOS_COMMERCIAL_ROUTES.history,
-        TONECOS_COMMERCIAL_ROUTES.adminQuotes,
-      ]
-    : []),
-  ...(import.meta.env.VITE_TONECOS_COINS_ENABLED === "true"
-    ? [TONECOS_COMMERCIAL_ROUTES.coins, TONECOS_COMMERCIAL_ROUTES.adminCoins]
-    : []),
+  TONECOS_COMMERCIAL_ROUTES.request,
+  TONECOS_COMMERCIAL_ROUTES.history,
+  TONECOS_COMMERCIAL_ROUTES.adminQuotes,
+  TONECOS_COMMERCIAL_ROUTES.coins,
+  TONECOS_COMMERCIAL_ROUTES.adminCoins,
 ]);
 
 export default function TonecosAccountPage() {
@@ -510,27 +505,22 @@ export default function TonecosAccountPage() {
               </form>
             </section>
             <div className={panelClass + " flex flex-wrap gap-3"}>
-              {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" && (
-                <Link
-                  className={secondaryClass}
-                  to={TONECOS_COMMERCIAL_ROUTES.history}
-                >
-                  Meus orçamentos
-                </Link>
-              )}
-              {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" && (
-                <Link
-                  className={secondaryClass}
-                  to={TONECOS_COMMERCIAL_ROUTES.coins}
-                >
-                  Minhas moedas
-                </Link>
-              )}
+              <Link
+                className={secondaryClass}
+                to={TONECOS_COMMERCIAL_ROUTES.history}
+              >
+                Meus orçamentos
+              </Link>
+              <Link
+                className={secondaryClass}
+                to={TONECOS_COMMERCIAL_ROUTES.coins}
+              >
+                Minhas moedas
+              </Link>
               <Link className={secondaryClass} to="/modelos">
                 Explorar modelos
               </Link>
-              {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
-                isAdmin && (
+              {isAdmin && (
                   <Link
                     className={secondaryClass}
                     to={TONECOS_COMMERCIAL_ROUTES.adminCoins}

@@ -19,7 +19,7 @@ import {
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 type AccountProfile = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Update"];
-const PROFILE_SELECT = "id,email,full_name,phone,whatsapp,delivery_address,preferred_contact_channel,quote_updates,production_updates,marketing_emails,created_at,updated_at" as const;
+const PROFILE_SELECT = "id,email,full_name,phone,whatsapp,cpf,birth_date,delivery_address,preferred_contact_channel,quote_updates,production_updates,marketing_emails,created_at,updated_at" as const;
 
 export type TonecosDeliveryAddress = {
   street: string;
@@ -242,15 +242,84 @@ async function updateMyComplementaryProfile(changes: ProfileUpdate): Promise<Acc
 
 export async function updateMyTonecosWhatsapp(raw: string): Promise<AccountProfile> {
   assertTonecosCommercialEnabled();
-  if (typeof raw !== "string") throw new Error("tonecos_account_whatsapp_invalid");
-  if (raw && !/^[+\d\s().-]*$/.test(raw)) {
+  return updateMyComplementaryProfile({ whatsapp: normalizeWhatsapp(raw) });
+}
+
+export async function updateMyTonecosPersonalData(input: {
+  whatsapp: string;
+  cpf: string;
+  birthDate: string;
+}): Promise<AccountProfile> {
+  assertTonecosCommercialEnabled();
+  if (!input || typeof input !== "object") {
+    throw new Error("tonecos_account_personal_data_invalid");
+  }
+  const changes: ProfileUpdate = {
+    whatsapp: normalizeWhatsapp(input.whatsapp),
+    cpf: normalizeCpf(input.cpf),
+    birth_date: normalizeBirthDate(input.birthDate),
+  };
+  return updateMyComplementaryProfile(changes);
+}
+
+function normalizeWhatsapp(raw: string): string | null {
+  if (typeof raw !== "string" || (raw && !/^[+\d\s().-]*$/.test(raw))) {
     throw new Error("tonecos_account_whatsapp_invalid");
   }
   const whatsapp = raw.replace(/\D/g, "") || null;
   if (whatsapp && !/^(55)?[1-9][0-9]{9,10}$/.test(whatsapp)) {
     throw new Error("tonecos_account_whatsapp_invalid");
   }
-  return updateMyComplementaryProfile({ whatsapp });
+  return whatsapp;
+}
+
+function normalizeCpf(raw: string): string | null {
+  if (typeof raw !== "string" || (raw && !/^[\d.\-\s]*$/.test(raw))) {
+    throw new Error("tonecos_account_cpf_invalid");
+  }
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) {
+    throw new Error("tonecos_account_cpf_invalid");
+  }
+
+  const checkDigit = (length: number) => {
+    const sum = digits
+      .slice(0, length)
+      .split("")
+      .reduce((total, digit, index) => total + Number(digit) * (length + 1 - index), 0);
+    const remainder = sum % 11;
+    return remainder < 2 ? 0 : 11 - remainder;
+  };
+
+  if (checkDigit(9) !== Number(digits[9]) || checkDigit(10) !== Number(digits[10])) {
+    throw new Error("tonecos_account_cpf_invalid");
+  }
+  return digits;
+}
+
+function normalizeBirthDate(raw: string): string | null {
+  if (typeof raw !== "string") throw new Error("tonecos_account_birth_date_invalid");
+  const birthDate = raw.trim();
+  if (!birthDate) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+    throw new Error("tonecos_account_birth_date_invalid");
+  }
+
+  const parsed = new Date(`${birthDate}T00:00:00.000Z`);
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.toISOString().slice(0, 10) !== birthDate
+  ) {
+    throw new Error("tonecos_account_birth_date_invalid");
+  }
+
+  const today = new Date();
+  const latestAllowed = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  if (birthDate > latestAllowed) {
+    throw new Error("tonecos_account_birth_date_invalid");
+  }
+  return birthDate;
 }
 
 export async function updateMyTonecosDeliveryAddress(

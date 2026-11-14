@@ -38,6 +38,7 @@ export const TONECOS_COMMERCIAL_ROUTES = {
   adminHome: "/admin",
   adminQuotes: "/admin/orcamentos",
   adminCoins: "/admin/moedas",
+  adminSubscriptions: "/admin/assinaturas",
 } as const;
 
 const TONECOS_CUSTOMER_RETURN_ROUTES = new Set<string>([

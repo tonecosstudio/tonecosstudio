@@ -56,14 +56,17 @@ describe("Tonecos Coins ledger authority", () => {
     await expect(getMyTonecosCoinBalance()).rejects.toThrow("tonecos_coin_balance_invalid");
   });
 
-  it("never contacts Supabase in public preview or before coins activation", async () => {
+  it("blocks read-only previews and ignores the retired coins feature switch", async () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
     await expect(getMyTonecosCoinBalance()).rejects.toThrow("tonecos_commercial_mvp_disabled");
+    expect(mocks.rpc).not.toHaveBeenCalled();
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
     vi.stubEnv("VITE_TONECOS_COINS_ENABLED", "false");
-    await expect(listMyTonecosCoinEntries()).rejects.toThrow("tonecos_coins_not_enabled");
-    expect(mocks.rpc).not.toHaveBeenCalled();
-    expect(mocks.from).not.toHaveBeenCalled();
+    mocks.rpc.mockResolvedValueOnce({ data: {
+      balance: 0, total_earned: 0, total_spent: 0, entry_count: 0, updated_at: null,
+    }, error: null });
+    await expect(getMyTonecosCoinBalance()).resolves.toMatchObject({ balance: 0 });
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("get_my_tonecos_coin_balance");
   });
 
   it("requires authenticated owner for all reads", async () => {

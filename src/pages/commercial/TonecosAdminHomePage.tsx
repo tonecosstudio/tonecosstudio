@@ -24,8 +24,8 @@ import { panelClass, secondaryClass } from "./CommercialPage";
 import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
 import TonartAdminOriginalSection from "./TonartAdminOriginalSection";
 
-const coinsEnabled = import.meta.env.VITE_TONECOS_COINS_ENABLED === "true";
-const quotesEnabled = import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true";
+const coinsEnabled = true;
+const quotesEnabled = true;
 const USER_PAGE_SIZE = 25;
 const integer = new Intl.NumberFormat("pt-BR");
 const dates = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
@@ -1020,9 +1020,14 @@ export default function TonecosAdminHomePage() {
                   Ver solicitações
                 </button>
                 <span className="self-center text-xs text-white/50">
-                  Pagamentos, assinaturas e conciliação bancária permanecem
-                  desativados.
+                  Comprovantes de assinatura são revisados no fluxo dedicado.
                 </span>
+                <Link
+                  className={secondaryClass}
+                  to={TONECOS_COMMERCIAL_ROUTES.adminSubscriptions}
+                >
+                  Revisar assinaturas
+                </Link>
               </div>
             </section>
           )}

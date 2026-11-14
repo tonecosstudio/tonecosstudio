@@ -2,7 +2,7 @@
 import { lazy, useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate, Route, useLocation } from "react-router-dom";
 import { CatalogMvpShell } from "@/CatalogMvpShell";
-import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES, loginReturnToPath } from "@/config/routes";
+import { AUTH_ROUTES, PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES, loginReturnToPath } from "@/config/routes";
 import { hasTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
 import { CommercialPage, secondaryClass } from "@/pages/commercial/CommercialPage";
@@ -18,6 +18,9 @@ const AdminHome = lazy(() => import("@/pages/commercial/TonecosAdminHomePage"));
 const CustomerSections = lazy(() => import("@/pages/commercial/TonecosCustomerSections"));
 const Coins = lazy(() => import("@/pages/commercial/TonecosCoinsPage"));
 const AdminCoins = lazy(() => import("@/pages/commercial/TonecosAdminCoinsPage"));
+const PaymentDetails = lazy(() => import("@/pages/commercial/TonecosPaymentDetailsPage"));
+const AdminSubscriptionPayments = lazy(() => import("@/pages/commercial/TonecosAdminSubscriptionPaymentsPage"));
+const SubscribeCollection = lazy(() => import("@/pages/SubscribeCollection"));
 
 /** Central UI gate; the database remains the only authority for admin operations. */
 function AdminAccessGate({ children }: { children: ReactNode }) {
@@ -66,19 +69,19 @@ const commercialRoutes: ReactNode = (
     <Route path={TONECOS_COMMERCIAL_ROUTES.account} element={<Account />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.account + "/conta"} element={<Navigate to={TONECOS_COMMERCIAL_ROUTES.account} replace />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.account + "/:section"} element={<CustomerSections />} />
+    <Route path={AUTH_ROUTES.paymentDetails} element={<PaymentDetails />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.recovery} element={<Recovery />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.adminHome} element={<AdminAccessGate><AdminHome /></AdminAccessGate>} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.adminSubscriptions} element={<AdminAccessGate><AdminSubscriptionPayments /></AdminAccessGate>} />
     {/* Existing original backoffice paths share one guarded commercial workspace. */}
     <Route path={TONECOS_COMMERCIAL_ROUTES.adminHome + "/*"} element={<AdminAccessGate><AdminHome /></AdminAccessGate>} />
-    {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" && <>
-      <Route path={PUBLIC_ROUTES.quoteRequest} element={<Request />} />
-      <Route path={TONECOS_COMMERCIAL_ROUTES.history} element={<Quotes />} />
-      <Route path={TONECOS_COMMERCIAL_ROUTES.adminQuotes} element={<AdminAccessGate><AdminQuotes /></AdminAccessGate>} />
-    </>}
-    {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
-      <Route path={TONECOS_COMMERCIAL_ROUTES.coins} element={<Coins />} />}
-    {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
-      <Route path={TONECOS_COMMERCIAL_ROUTES.adminCoins} element={<AdminAccessGate><AdminCoins /></AdminAccessGate>} />}
+    <Route path={PUBLIC_ROUTES.quoteRequest} element={<Request />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.history} element={<Quotes />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.adminQuotes} element={<AdminAccessGate><AdminQuotes /></AdminAccessGate>} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.coins} element={<Coins />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.adminCoins} element={<AdminAccessGate><AdminCoins /></AdminAccessGate>} />
+    <Route path={PUBLIC_ROUTES.plans} element={<SubscribeCollection />} />
+    <Route path={AUTH_ROUTES.subscribeCollection} element={<SubscribeCollection />} />
   </>
 );
 

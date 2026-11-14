@@ -7501,6 +7501,13 @@ export type Database = {
         }
         Returns: Json
       }
+      resubmit_subscription_payment_voucher_for_current_user: {
+        Args: {
+          p_payment_voucher_path: string
+          p_subscription_id: string
+        }
+        Returns: Json
+      }
       create_subscription_credit_individual_order: {
         Args: { p_character_id: string }
         Returns: Json

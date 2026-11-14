@@ -19,10 +19,9 @@ export function assertTonecosCommercialEnabled(): void {
   }
 }
 
-/** Quote intake is opt-in; accounts and coins never depend on this flag. */
+/** Quote intake is part of the authenticated commercial MVP. */
 export function assertTonecosQuotesEnabled(): void {
-  if (import.meta.env.VITE_PREVIEW_READ_ONLY === "true" ||
-      import.meta.env.VITE_CATALOG_QUOTES_ENABLED !== "true") {
+  if (import.meta.env.VITE_PREVIEW_READ_ONLY === "true") {
     throw new Error("catalog_quotes_not_enabled");
   }
   assertTonecosCommercialEnabled();

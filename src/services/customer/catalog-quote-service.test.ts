@@ -134,18 +134,29 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     expect(mocks.assertCurrentUserId).not.toHaveBeenCalled();
   });
 
-  it("never submits in read-only previews or without explicit commercial release", async () => {
+  it("blocks read-only previews and ignores the retired quote feature switch", async () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
-    await expect(
-      submitCatalogQuoteRequest(USER, [{ slug: "naruto", quantity: 1 }]),
-    ).rejects.toThrow("catalog_quotes_not_enabled");
-    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
-    vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "false");
     await expect(
       submitCatalogQuoteRequest(USER, [{ slug: "naruto", quantity: 1 }]),
     ).rejects.toThrow("catalog_quotes_not_enabled");
     expect(mocks.assertCurrentUserId).not.toHaveBeenCalled();
     expect(mocks.rpc).not.toHaveBeenCalled();
+
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+    vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "false");
+    mocks.rpc.mockResolvedValueOnce({ data: QUOTE, error: null });
+    await expect(
+      submitCatalogQuoteRequest(USER, [{ slug: "naruto", quantity: 1 }]),
+    ).resolves.toBe(QUOTE);
+    expect(mocks.assertCurrentUserId).toHaveBeenCalledExactlyOnceWith(USER);
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("submit_catalog_quote_request", {
+      p_models: [{ slug: "naruto", quantity: 1 }],
+      p_notes: undefined,
+      p_whatsapp: undefined,
+      p_postal_code: undefined,
+      p_scale: "a definir",
+      p_finishing: "a definir",
+    });
   });
 
   it("rejects malformed, duplicated and oversized submissions before I/O", async () => {

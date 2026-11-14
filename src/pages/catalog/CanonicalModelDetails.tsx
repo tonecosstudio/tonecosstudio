@@ -180,7 +180,6 @@ export default function CanonicalModelDetails() {
   const galleryKeyboardHelpId = useId();
   const quoteRequestsEnabled =
     import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
-    import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" &&
     import.meta.env.VITE_PREVIEW_READ_ONLY !== "true" &&
     !isCatalogPublicMvpEnabled();
   const {

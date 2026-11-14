@@ -44,7 +44,7 @@ export default function PublicCatalogContact() {
   const quotesAvailable =
     import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
     import.meta.env.VITE_PREVIEW_READ_ONLY === "false" &&
-    import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true";
+    !import.meta.env.VITE_PUBLIC_CATALOG_MVP;
 
   return (
     <Page

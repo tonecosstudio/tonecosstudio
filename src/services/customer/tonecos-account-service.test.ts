@@ -3,7 +3,7 @@ import {
   changeTonecosPassword, registerTonecosAccount, resendTonecosSignupConfirmation,
   signInTonecosAccount, signOutTonecosAccount,
   getTonecosCurrentUser, getMyTonecosProfile, updateMyTonecosProfile,
-  updateMyTonecosWhatsapp, updateMyTonecosDeliveryAddress,
+  updateMyTonecosWhatsapp, updateMyTonecosPersonalData, updateMyTonecosDeliveryAddress,
   updateMyTonecosContactPreferences,
   requestTonecosPasswordReset, completeTonecosPasswordRecovery,
   verifyTonecosPasswordRecoveryToken,
@@ -267,6 +267,7 @@ describe("Tonecos authenticated MVP account", () => {
     mocks.getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
     const profile = {
       id: USER, email: "client@example.com", full_name: "Cliente", phone: "71999999999",
+      cpf: null, birth_date: null,
       created_at: "2026-11-05T00:00:00Z", updated_at: "2026-11-05T00:00:00Z",
     };
     const read = { select: vi.fn(), eq: vi.fn(), single: vi.fn() };
@@ -298,7 +299,7 @@ describe("Tonecos authenticated MVP account", () => {
     expect(mocks.from).not.toHaveBeenCalled();
   });
 
-  it("saves WhatsApp, delivery and opt-ins only in the existing RLS-owned profile", async () => {
+  it("saves personal details, delivery and opt-ins only in the existing RLS-owned profile", async () => {
     mocks.getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
     const savedProfile = { id: USER, email: "client@example.com" };
     const changes: unknown[] = [];
@@ -314,6 +315,11 @@ describe("Tonecos authenticated MVP account", () => {
       };
       return query;
     });
+    await expect(updateMyTonecosPersonalData({
+      whatsapp: "(71) 99999-9999",
+      cpf: "529.982.247-25",
+      birthDate: "1992-05-14",
+    })).resolves.toEqual(savedProfile);
     await expect(updateMyTonecosWhatsapp("(71) 99999-9999")).resolves.toEqual(savedProfile);
     await expect(updateMyTonecosDeliveryAddress({
       street: "Rua Exemplo", number: "10", neighborhood: "Centro",
@@ -327,6 +333,7 @@ describe("Tonecos authenticated MVP account", () => {
       marketingEmails: false,
     })).resolves.toEqual(savedProfile);
     expect(changes).toEqual([
+      { whatsapp: "71999999999", cpf: "52998224725", birth_date: "1992-05-14" },
       { whatsapp: "71999999999" },
       { delivery_address: {
         street: "Rua Exemplo", number: "10", neighborhood: "Centro",
@@ -336,12 +343,18 @@ describe("Tonecos authenticated MVP account", () => {
       { preferred_contact_channel: "whatsapp", quote_updates: true,
         production_updates: false, marketing_emails: false },
     ]);
-    expect(mocks.getUser).toHaveBeenCalledTimes(3);
+    expect(mocks.getUser).toHaveBeenCalledTimes(4);
   });
 
   it("rejects unsupported profile values before authentication or data writes", async () => {
     await expect(updateMyTonecosWhatsapp("123")).rejects.toThrow("tonecos_account_whatsapp_invalid");
     await expect(updateMyTonecosWhatsapp("71abcd999999999")).rejects.toThrow("tonecos_account_whatsapp_invalid");
+    await expect(updateMyTonecosPersonalData({
+      whatsapp: "", cpf: "111.111.111-11", birthDate: "1992-05-14",
+    })).rejects.toThrow("tonecos_account_cpf_invalid");
+    await expect(updateMyTonecosPersonalData({
+      whatsapp: "", cpf: "529.982.247-25", birthDate: "2027-01-01",
+    })).rejects.toThrow("tonecos_account_birth_date_invalid");
     await expect(updateMyTonecosDeliveryAddress({
       street: "Rua", number: "1", neighborhood: "Centro",
       city: "Salvador", state: "BA", zipCode: "123",
