@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import TonecosCustomerSections, {
   customerSectionLinks,
   TonecosCustomerNavigation,
@@ -23,7 +24,9 @@ afterEach(() => cleanup());
 function show(path: string) {
   render(
     <MemoryRouter initialEntries={[path]}>
-      <TonecosCustomerSections />
+      <HelmetProvider>
+        <TonecosCustomerSections />
+      </HelmetProvider>
     </MemoryRouter>,
   );
 }
