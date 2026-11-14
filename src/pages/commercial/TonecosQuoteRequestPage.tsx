@@ -23,6 +23,12 @@ function quotePhone(phone: string | null): string {
   const digits = (phone ?? "").replace(/\D/g, "");
   return /^(?:55)?[1-9][0-9]{9,10}$/.test(digits) ? digits : "";
 }
+function savedQuotePostalCode(profile: CustomerProfile): string {
+  const address = profile.delivery_address;
+  if (!address || typeof address !== "object" || Array.isArray(address)) return "";
+  const code = address.zipCode;
+  return typeof code === "string" && /^[0-9]{8}$/.test(code) ? code : "";
+}
 
 export default function TonecosQuoteRequestPage() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
@@ -89,8 +95,8 @@ export default function TonecosQuoteRequestPage() {
         quantity: quantities[item.slug] ?? 1,
       }));
       const quoteId = await submitCatalogQuoteRequest(user.id, items, notes, {
-        whatsapp: quotePhone(profile.phone),
-        postalCode: "",
+        whatsapp: quotePhone(profile.whatsapp) || quotePhone(profile.phone),
+        postalCode: savedQuotePostalCode(profile),
         scale,
         finishing,
       });
