@@ -153,12 +153,19 @@ export function TonecosCustomerNavigation() {
   );
 }
 
+type StagedCustomerField = {
+  label: string;
+  type?: "text" | "tel" | "date";
+  inputMode?: "numeric";
+  autoComplete?: string;
+};
+
 function PendingCustomerData({
   label,
   fields,
 }: {
   label: string;
-  fields: string[];
+  fields: StagedCustomerField[];
 }) {
   return (
     <section className={panelClass} aria-label={label}>
@@ -170,13 +177,19 @@ function PendingCustomerData({
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         {fields.map((field) => (
-          <label key={field} className="block space-y-2 text-sm text-white/80">
-            <span>{field}</span>
+          <label
+            key={field.label}
+            className="block space-y-2 text-sm text-white/80"
+          >
+            <span>{field.label}</span>
             <input
               className={fieldClass}
               disabled
+              type={field.type ?? "text"}
+              inputMode={field.inputMode}
+              autoComplete={field.autoComplete}
               placeholder="Integração pendente"
-              aria-label={field}
+              aria-label={field.label}
             />
           </label>
         ))}
@@ -200,9 +213,12 @@ function CustomerSectionContent({ slug }: { slug: string }) {
       <PendingCustomerData
         label="Cadastro pessoal adicional"
         fields={[
-          "WhatsApp",
-          "CPF (para emissão fiscal quando necessário)",
-          "Data de nascimento",
+          { label: "WhatsApp", type: "tel", autoComplete: "tel" },
+          {
+            label: "CPF (para emissão fiscal quando necessário)",
+            inputMode: "numeric",
+          },
+          { label: "Data de nascimento", type: "date", autoComplete: "bday" },
         ]}
       />
     );
@@ -212,13 +228,13 @@ function CustomerSectionContent({ slug }: { slug: string }) {
       <PendingCustomerData
         label="Cadastro de entrega"
         fields={[
-          "CEP",
-          "Rua",
-          "Número",
-          "Complemento",
-          "Bairro",
-          "Cidade",
-          "UF",
+          { label: "CEP", inputMode: "numeric", autoComplete: "postal-code" },
+          { label: "Rua", autoComplete: "address-line1" },
+          { label: "Número", autoComplete: "address-line2" },
+          { label: "Complemento" },
+          { label: "Bairro" },
+          { label: "Cidade", autoComplete: "address-level2" },
+          { label: "UF", autoComplete: "address-level1" },
         ]}
       />
     );
@@ -232,9 +248,9 @@ function CustomerSectionContent({ slug }: { slug: string }) {
             : "Preferências do cliente"
         }
         fields={[
-          "Canal preferido de contato",
-          "Avisos sobre orçamentos",
-          "Avisos de produção",
+          { label: "Canal preferido de contato" },
+          { label: "Avisos sobre orçamentos" },
+          { label: "Avisos de produção" },
         ]}
       />
     );

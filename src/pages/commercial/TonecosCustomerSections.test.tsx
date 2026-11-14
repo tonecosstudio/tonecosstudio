@@ -81,6 +81,10 @@ describe("Original customer account navigation in the commercial app", () => {
       screen.getByRole("navigation", { name: "Seções da Minha Conta" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "CEP" })).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "CEP" })).toHaveAttribute(
+      "autocomplete",
+      "postal-code",
+    );
     expect(
       screen.getByText(/Nenhum dado inserido aqui é armazenado/),
     ).toBeInTheDocument();
@@ -99,9 +103,11 @@ describe("Original customer account navigation in the commercial app", () => {
         name: "CPF (para emissão fiscal quando necessário)",
       }),
     ).toBeDisabled();
-    expect(
-      screen.getByRole("textbox", { name: "Data de nascimento" }),
-    ).toBeDisabled();
+    expect(screen.getByLabelText("Data de nascimento")).toHaveAttribute(
+      "type",
+      "date",
+    );
+    expect(screen.getByLabelText("Data de nascimento")).toBeDisabled();
     expect(
       screen.getByText(/Nenhum dado inserido aqui é armazenado/),
     ).toBeInTheDocument();
