@@ -247,7 +247,7 @@ describe("TONART commercial screens: account → request → history → respons
     renderApp("/solicitar-orcamento", true);
     expect(
       await screen.findByRole("region", {
-        name: "Dados da conta utilizados no orçamento",
+        name: "Dados cadastrais da conta",
       }),
     ).toHaveTextContent("Cliente TONART");
     expect(screen.getByRole("link", { name: "Editar na Minha Conta" })).toHaveAttribute("href", "/perfil");
