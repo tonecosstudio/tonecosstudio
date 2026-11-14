@@ -23,7 +23,7 @@ import {
   panelClass,
   secondaryClass,
 } from "./CommercialPage";
-import { PaymentSection, SubscriptionSection } from "../ProfileSections";
+import { SubscriptionSection } from "../ProfileSections";
 
 type CustomerSection = {
   slug: string;
@@ -560,6 +560,106 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
   );
 }
 
+const quotePaymentCurrency = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
+function quotePaymentStatusLabel(status: string | null): string {
+  switch (status) {
+    case "pending": return "Aguardando comprovante";
+    case "under_review": return "Comprovante em análise";
+    case "deposit_paid": return "Entrada aprovada";
+    case "fully_paid": return "Pagamento concluído";
+    case "rejected": return "Comprovante recusado";
+    default: return "Aguardando instruções de pagamento";
+  }
+}
+
+/** Uses the TONART quote/payment record; the legacy card-method tables are not part of this schema. */
+function CustomerQuotePayments({ userId }: { userId: string }) {
+  const [page, setPage] = useState<Awaited<ReturnType<typeof loadMyCatalogQuotePage>> | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    setPage(null);
+    setStatus("loading");
+    loadMyCatalogQuotePage(userId, { limit: 10, offset: 0 })
+      .then((result) => {
+        if (!active) return;
+        setPage(result);
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (active) setStatus("error");
+      });
+    return () => { active = false; };
+  }, [userId, attempt]);
+
+  const paymentQuotes = (page?.rows ?? []).filter((quote) =>
+    quote.quotedAmount !== null || quote.paymentStatus !== null ||
+    quote.paymentLinkSentAt !== null || quote.paymentVoucherPath !== null ||
+    quote.coinAmountApplied > 0,
+  );
+
+  return (
+    <section className={panelClass} aria-label="Pagamentos dos orçamentos">
+      <h2 className="mb-2 text-lg font-semibold">Pagamentos dos seus orçamentos</h2>
+      <p className="mb-5 text-sm leading-6 text-white/60">
+        Valores, instruções PIX, comprovantes e aprovações ficam vinculados ao orçamento correspondente.
+        Abra o registro para consultar os detalhes atualizados.
+      </p>
+      {status === "loading" && <p role="status">Consultando pagamentos recentes...</p>}
+      {status === "error" && (
+        <div role="alert" className="space-y-3">
+          <p className="text-sm text-white/75">Não foi possível consultar seus pagamentos. Nenhuma informação foi alterada.</p>
+          <button type="button" className={secondaryClass} onClick={() => setAttempt((value) => value + 1)}>
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      {status === "ready" && paymentQuotes.length === 0 && (
+        <p className="text-sm text-white/65">Nenhum orçamento recente tem valor ou pagamento registrado.</p>
+      )}
+      {status === "ready" && paymentQuotes.length > 0 && (
+        <ul className="space-y-3">
+          {paymentQuotes.map((quote) => (
+            <li key={quote.id} className="flex flex-wrap items-center justify-between gap-4 border-t border-white/15 pt-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">
+                  {quote.isPreorder ? "Pré-venda" : "Orçamento"} #{quote.id.slice(0, 8)}
+                </p>
+                <p className="mt-1 text-xs text-white/55">
+                  {quotePaymentStatusLabel(quote.paymentStatus)}
+                  {quote.quotedAmount !== null
+                    ? ` · ${quotePaymentCurrency.format(quote.quotedAmount)}`
+                    : ""}
+                </p>
+                {quote.coinAmountApplied > 0 && (
+                  <p className="mt-1 text-xs text-white/50">
+                    {quote.coinAmountApplied} Coins aplicados ao orçamento
+                  </p>
+                )}
+              </div>
+              <Link
+                className={secondaryClass}
+                to={TONECOS_COMMERCIAL_ROUTES.history + "?quote=" + encodeURIComponent(quote.id)}
+              >
+                Ver pagamento
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link className={secondaryClass + " mt-5"} to={TONECOS_COMMERCIAL_ROUTES.history}>
+        Abrir meus orçamentos
+      </Link>
+    </section>
+  );
+}
+
 type QuoteContextSection = "dados-pessoais" | "endereco" | "preferencias";
 
 /** Displays quote-specific information already stored in the canonical quote history.
@@ -825,7 +925,7 @@ function CustomerSectionContent({
       </section>
     );
   }
-  if (slug === "pagamentos") return <PaymentSection userId={userId} />;
+  if (slug === "pagamentos") return <CustomerQuotePayments userId={userId} />;
   if (slug === "assinatura" || slug === "assinaturas") {
     return <SubscriptionSection userId={userId} commercialMvp />;
   }

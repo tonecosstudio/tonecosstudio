@@ -479,6 +479,36 @@ describe("Original customer account navigation in the commercial app", () => {
     });
   });
 
+  it("shows account payments from the canonical quote history", async () => {
+    const quoteId = "22222222-2222-4222-8222-222222222222";
+    mocks.listMine.mockResolvedValueOnce({
+      total: 1,
+      limit: 10,
+      offset: 0,
+      rows: [{
+        id: quoteId,
+        isPreorder: true,
+        quotedAmount: 300,
+        paymentStatus: "under_review",
+        paymentLinkSentAt: "2026-11-14T00:00:00Z",
+        paymentVoucherPath: "quotes/example.pdf",
+        coinAmountApplied: 25,
+      }],
+    });
+    show("/perfil/pagamentos");
+    expect(await screen.findByText("Pré-venda #22222222")).toBeInTheDocument();
+    expect(screen.getByText(/Comprovante em análise · R\$\s*300,00/)).toBeInTheDocument();
+    expect(screen.getByText("25 Coins aplicados ao orçamento")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver pagamento" })).toHaveAttribute(
+      "href",
+      `/meus-orcamentos?quote=${quoteId}`,
+    );
+    expect(mocks.listMine).toHaveBeenCalledWith(
+      "11111111-1111-4111-8111-111111111111",
+      { limit: 10, offset: 0 },
+    );
+  });
+
   it("shows the existing catalog selection in the restored collection and removes items through the same store", async () => {
     function SeedSelection() {
       const { setSelectedModels } = useCatalogBrowsing();
