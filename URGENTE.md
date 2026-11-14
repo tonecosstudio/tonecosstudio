@@ -2,13 +2,13 @@
 
 ## Checkpoint 14/11/2026 — integração de conta, administração e pré-venda
 
-- **Base:** `main@9063dd33`; alterações deste ciclo ainda locais.
+- **Base:** implementado sobre `main@9063dd33`; commits `463e0d42` e `54d06665` sincronizados com `origin/main`.
 - **Implementado:** autorização de administrador nas Edge Functions usa `is_tonecos_admin()` do projeto TONART, sem consultar `profiles.role`. Os RPCs de pré-venda que verificam `auth.uid()` agora recebem o JWT do administrador; upload de suporte consulta a mesma autoridade. Gestão e detalhes de clientes usam o diretório de perfis, `private_api.admin_users`, o perfil canônico e o ledger Coins. Histórico financeiro da pré-venda lê `quote_payments` sob RLS de dono/admin.
 - **Banco local:** a migração de pré-venda declara os campos/tabelas ausentes no schema TONART, bucket privado, RPC de instruções de pagamento e políticas de acesso. Migração administrativa estende o diretório existente e adiciona funções para gestão de acesso, perfil individual e saldo Coins sem cadastro paralelo. Os passos legados de reenvio/sincronização de assinaturas ficam condicionados à presença das tabelas antigas, para não bloquear o fluxo TONART.
 - **Validação Windows:** 48 testes direcionados passaram; `npm run typecheck`, ESLint dos arquivos de aplicação e `git diff --check` passaram. TypeScript não inclui as Edge Functions Deno. `deno`, `psql` e Supabase CLI não estão instalados; SQL e Edge Functions precisam de verificação em staging.
 - **Supabase:** nenhuma migração ou escrita remota foi feita. A única base conectada é a de produção; a criação de branch isolada custa US$ 0,01344/hora e a aprovação do usuário continua pendente.
 - **Limites reais:** o schema comercial existente não tem `subscriptions`/`manual_payments`; as duas integrações legadas de assinatura não foram provisionadas nesta etapa. GitHub Actions permanece falhando antes dos jobs, com `runner_id=0` e sem steps/logs úteis.
-- **NEXT_ACTION:** commit e sincronização do código em `origin/main`; após a aprovação da branch isolada, aplicar e validar as migrações nela com sessões autenticadas cliente/admin. Não alterar Supabase de produção nem publicar no domínio oficial.
+- **NEXT_ACTION:** após a aprovação da branch isolada, aplicar e validar as migrações nela com sessões autenticadas cliente/admin. Não alterar Supabase de produção nem publicar no domínio oficial.
 
 ## Checkpoint 14/11/2026 — compatibilidade do perfil e do histórico comercial
 
