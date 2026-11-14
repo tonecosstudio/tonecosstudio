@@ -150,7 +150,7 @@ describe("TONART administrative quote directory", () => {
       { target: { value: "Confirmação de preço" } },
     );
     fireEvent.click(
-      screen.getAllByRole("button", { name: "Enviar resposta" })[0],
+      screen.getAllByRole("button", { name: "Registrar resposta" })[0],
     );
     expect(mocks.answer).not.toHaveBeenCalled();
     expect(await screen.findByRole("alert")).toBeInTheDocument();
