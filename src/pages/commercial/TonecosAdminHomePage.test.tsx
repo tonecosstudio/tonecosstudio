@@ -173,24 +173,24 @@ describe("TONART admin workspace", () => {
     ).toBeInTheDocument();
   });
 
-  it("preserves the existing Coins module even with operations turned off", async () => {
+  it("keeps Coins out of commercial administration when its feature is disabled", async () => {
     show();
-    fireEvent.click(screen.getByRole("button", { name: /Créditos/ }));
-    expect(
-      await screen.findByRole("heading", {
-        name: "Sistema de créditos · Coins",
-      }),
-    ).toBeInTheDocument();
     if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
-      expect(
-        screen.getByText(
-          /Operações de emissão, utilização e estorno desativadas/,
-        ),
-      ).toBeInTheDocument();
-      expect(
-        screen.queryByRole("link", { name: /Abrir operações autorizadas/ }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Créditos/ })).not.toBeInTheDocument();
+      expect(screen.queryByText("Coins · lançamentos")).not.toBeInTheDocument();
+      expect(screen.queryByText("Coins · Moedas")).not.toBeInTheDocument();
+      return;
     }
+    fireEvent.click(screen.getByRole("button", { name: /Créditos/ }));
+    expect(await screen.findByRole("heading", { name: "Sistema de créditos · Coins" })).toBeInTheDocument();
+  });
+
+  it("restores original nested administration routes without fabricating backend data", () => {
+    show("/admin/producao/calendario");
+    expect(screen.getByRole("navigation", { name: "Páginas do módulo administrativo" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Quadro de produção" })).toHaveAttribute("href", "/admin/producao/kanban");
+    expect(screen.getByText(/A integração operacional desta seção/)).toBeInTheDocument();
+    expect(mocks.overview).not.toHaveBeenCalled();
   });
 
   it("shows a read-only ledger for original Coins even while crediting is disabled", async () => {
