@@ -32,6 +32,7 @@ vi.mock("@/services/quotes/catalog-quote-history-service", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
   mocks.getUser.mockResolvedValue({
     id: "11111111-1111-4111-8111-111111111111",
     email: "cliente@example.com",
@@ -52,7 +53,10 @@ beforeEach(() => {
   });
   mocks.history.mockResolvedValue({});
 });
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.unstubAllEnvs();
+});
 
 function show(path: string) {
   render(
