@@ -64,6 +64,7 @@ const commercialRoutes: ReactNode = (
   <>
     <Route path={TONECOS_COMMERCIAL_ROUTES.login} element={<Account />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.account} element={<Account />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.account + "/conta"} element={<Navigate to={TONECOS_COMMERCIAL_ROUTES.account} replace />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.account + "/:section"} element={<CustomerSections />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.recovery} element={<Recovery />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.adminHome} element={<AdminAccessGate><AdminHome /></AdminAccessGate>} />

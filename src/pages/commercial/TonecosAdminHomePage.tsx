@@ -46,7 +46,6 @@ const coinLabels: Record<TonartAdminCoinEntry["type"], string> = {
 
 const originalAdminSubpages = [
   { parent: "catalog-hub", path: ADMIN_ROUTES.catalogCollections, label: "Coleções do catálogo" },
-  { parent: "orders", path: ADMIN_ROUTES.orders, label: "Solicitações e pedidos" },
   { parent: "production-dashboard", path: ADMIN_ROUTES.productionKanban, label: "Quadro de produção" },
   { parent: "production-dashboard", path: ADMIN_ROUTES.productionList, label: "Lista de produção" },
   { parent: "production-dashboard", path: ADMIN_ROUTES.productionCalendar, label: "Calendário de produção" },

@@ -19,6 +19,7 @@ type CustomerSection = {
 };
 
 const restoredSections: CustomerSection[] = [
+  { slug: "dados-pessoais", label: "Dados pessoais", title: "Dados pessoais", summary: "Documentos e contatos adicionais usados em serviços e faturamento." },
   { slug: "endereco", label: "Endereços", title: "Endereços e entrega", summary: "Dados de localização para futuras entregas e cálculo de frete." },
   { slug: "pedidos", label: "Pedidos", title: "Pedidos e orçamentos", summary: "Solicitações, aprovações e acompanhamento de encomendas." },
   { slug: "producao", label: "Produção", title: "Acompanhamento de produção", summary: "Acompanhe as etapas das peças quando houver pedidos efetivados." },
@@ -106,6 +107,14 @@ function PendingCustomerData({ label, fields }: { label: string; fields: string[
 }
 
 function CustomerSectionContent({ slug }: { slug: string }) {
+  if (slug === "dados-pessoais") {
+    return (
+      <PendingCustomerData
+        label="Cadastro pessoal adicional"
+        fields={["WhatsApp", "CPF (para emissão fiscal quando necessário)", "Data de nascimento"]}
+      />
+    );
+  }
   if (slug === "endereco") {
     return (
       <PendingCustomerData

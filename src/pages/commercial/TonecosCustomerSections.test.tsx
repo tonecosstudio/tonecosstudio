@@ -36,6 +36,7 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(paths).toContain("/perfil/notificacoes");
     expect(paths).toContain("/perfil/suporte");
     expect(paths).toContain("/perfil/endereco");
+    expect(paths).toContain("/perfil/dados-pessoais");
     expect(paths).toContain("/perfil/pedidos");
     expect(paths).not.toContain("/moedas");
     expect(paths).not.toContain("/perfil/moedas");
@@ -48,6 +49,14 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(screen.getByRole("textbox", { name: "CEP" })).toBeDisabled();
     expect(screen.getByText(/Nenhum dado inserido aqui é armazenado/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Salvar endereço" })).not.toBeInTheDocument();
+  });
+
+  it("preserves the original personal data fields as visible frontend without claiming persistence", async () => {
+    show("/perfil/dados-pessoais");
+    expect(await screen.findByRole("textbox", { name: "WhatsApp" })).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "CPF (para emissão fiscal quando necessário)" })).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "Data de nascimento" })).toBeDisabled();
+    expect(screen.getByText(/Nenhum dado inserido aqui é armazenado/)).toBeInTheDocument();
   });
 
   it("offers a proper sign-in instead of revealing personal sections to a guest", async () => {
