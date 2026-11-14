@@ -575,15 +575,18 @@ describe("TONART commercial screens: account → request → history → respons
       deadline: null,
       notes: null,
       items: [{ slug: "naruto", quantity: 1 }],
-      quotedAmount: 300,
-      responseMessage: "Total R$300; sinal de R$50 e saldo na finalização.",
+      quotedAmount: 240,
+      listAmount: 300,
+      discountPercent: 20,
+      discountAmount: 60,
+      responseMessage: "Total R$240; sinal de R$50 e saldo na finalização.",
       whatsapp: null,
       postalCode: null,
       scale: "1/10",
       finishing: "pintado",
       isPreorder: true,
       depositAmount: 50,
-      remainingAmount: 250,
+      remainingAmount: 190,
       paymentStatus: "pending",
       paymentLink: null,
       pixKey: "pix@tonart.example",
@@ -603,7 +606,9 @@ describe("TONART commercial screens: account → request → history → respons
       paymentStatus: "under_review",
     });
     renderApp("/meus-orcamentos");
-    expect(await screen.findAllByText("R$ 300,00")).toHaveLength(2);
+    expect(await screen.findAllByText(/300,00/)).toHaveLength(1);
+    expect(screen.getByText(/Desconto Black Friday \(20%\)/)?.parentElement).toHaveTextContent(/60,00/);
+    expect(screen.getByText(/Valor total/)?.parentElement).toHaveTextContent(/240,00/);
     expect(screen.getByText("pix@tonart.example")).toBeInTheDocument();
     const file = new File(["proof"], "pix.png", { type: "image/png" });
     fireEvent.change(screen.getByLabelText("Comprovante de pagamento"), {
@@ -707,6 +712,37 @@ describe("TONART commercial screens: account → request → history → respons
     expect(screen.getByText(/Orçamento respondido:/)).toHaveTextContent("R$");
     expect(screen.getByText("Proposta válida por 7 dias.")).toBeInTheDocument();
     expect(mocks.history).toHaveBeenCalledWith([QUOTE]);
+  });
+
+  it("shows the Black Friday saving and final price in the customer's quote history", async () => {
+    mocks.listMine.mockResolvedValue({
+      total: 1,
+      limit: 20,
+      offset: 0,
+      rows: [{
+        id: QUOTE,
+        status: "answered",
+        createdAt: "2026-11-14T00:00:00Z",
+        notes: null,
+        quotedAmount: 150,
+        listAmount: 300,
+        discountPercent: 50,
+        discountAmount: 150,
+        responseMessage: "Oferta Black Friday aplicada.",
+        deadline: null,
+        items: [{ slug: "naruto", quantity: 1 }],
+        whatsapp: null,
+        postalCode: null,
+        scale: "a definir",
+        finishing: "a definir",
+      }],
+    });
+
+    renderApp("/meus-orcamentos");
+
+    expect(await screen.findByText(/Valor antes da Black Friday:/)).toHaveTextContent(/300,00/);
+    expect(screen.getByText(/Desconto Black Friday \(50%\):/)).toHaveTextContent(/150,00/);
+    expect(screen.getByText(/Valor final:/)).toHaveTextContent(/150,00/);
   });
 
   it("does not display another person's history without a session", async () => {
@@ -1121,7 +1157,7 @@ describe("TONART commercial screens: account → request → history → respons
     ).toBeInTheDocument();
     fireEvent.change(
       screen.getByRole("textbox", {
-        name: "Valor do orçamento " + QUOTE.slice(0, 8),
+        name: "Valor-base antes da promoção (R$) " + QUOTE.slice(0, 8),
       }),
       {
         target: { value: "249,90" },
@@ -1139,6 +1175,7 @@ describe("TONART commercial screens: account → request → history → respons
         QUOTE,
         249.9,
         "Proposta válida por 7 dias.",
+        0,
       ),
     );
   });

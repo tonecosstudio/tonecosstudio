@@ -131,6 +131,12 @@ function PreorderPaymentPanel({
         </p>
       ) : (
         <dl className="mt-4 grid grid-cols-2 gap-3 border-y border-white/10 py-3 text-sm">
+          {row.discountAmount > 0 && row.listAmount !== null && (
+            <div><dt className="text-xs text-white/50">Valor antes da Black Friday</dt><dd className="mt-1 font-medium">{brl.format(row.listAmount)}</dd></div>
+          )}
+          {row.discountAmount > 0 && (
+            <div><dt className="text-xs text-white/50">Desconto Black Friday ({row.discountPercent}%)</dt><dd className="mt-1 font-medium text-[hsl(var(--gold-accent))]">−{brl.format(row.discountAmount)}</dd></div>
+          )}
           <div><dt className="text-xs text-white/50">Valor total</dt><dd className="mt-1 font-medium">{brl.format(row.quotedAmount)}</dd></div>
           <div><dt className="text-xs text-white/50">Saldo na finalização</dt><dd className="mt-1 font-medium">{balance === null ? "A confirmar" : brl.format(balance)}</dd></div>
         </dl>
@@ -502,11 +508,19 @@ export default function TonecosMyQuotesPage() {
                     </ol>
                   </section>
                 )}
-                <div className="mt-5 border-t border-white/15 pt-4 text-sm font-semibold">
-                  {row.quotedAmount === null
-                    ? "Valor em análise"
-                    : brl.format(row.quotedAmount)}
-                </div>
+                {!row.isPreorder && (
+                  <div className="mt-5 border-t border-white/15 pt-4 text-sm font-semibold">
+                    {row.quotedAmount === null
+                      ? "Valor em análise"
+                      : row.discountAmount > 0 && row.listAmount !== null
+                        ? <div className="space-y-1">
+                            <p className="text-xs font-normal text-white/55">Valor antes da Black Friday: {brl.format(row.listAmount)}</p>
+                            <p className="text-xs font-normal text-[hsl(var(--gold-accent))]">Desconto Black Friday ({row.discountPercent}%): −{brl.format(row.discountAmount)}</p>
+                            <p>Valor final: {brl.format(row.quotedAmount)}</p>
+                          </div>
+                        : brl.format(row.quotedAmount)}
+                  </div>
+                )}
                 <PreorderPaymentPanel
                   row={row}
                   onSuccess={() => setAttempt((value) => value + 1)}

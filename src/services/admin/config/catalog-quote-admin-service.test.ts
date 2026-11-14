@@ -40,6 +40,9 @@ const row = {
   createdAt: "2026-11-13T12:00:00Z",
   notes: null,
   quotedAmount: null,
+  listAmount: null,
+  discountPercent: 0,
+  discountAmount: 0,
   responseMessage: null,
   items: [{ slug: "naruto", quantity: 1 }],
   whatsapp: null,
@@ -107,18 +110,19 @@ describe("TONART admin quote directory", () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
-  it("answers only after admin verification with value and message", async () => {
+  it("answers only after admin verification with base value, discount and message", async () => {
     mocks.rpc.mockResolvedValue({ data: QUOTE, error: null });
     await expect(
-      answerCatalogQuoteRequest(QUOTE, 279.9, "Proposta válida por 7 dias."),
+      answerCatalogQuoteRequest(QUOTE, 300, "Proposta válida por 7 dias.", 50),
     ).resolves.toBe(QUOTE);
     expect(mocks.requireAdmin).toHaveBeenCalledTimes(1);
     expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
       "answer_catalog_quote_request",
       {
         p_quote_id: QUOTE,
-        p_amount: 279.9,
+        p_amount: 300,
         p_message: "Proposta válida por 7 dias.",
+        p_discount_percent: 50,
       },
     );
   });
@@ -137,6 +141,10 @@ describe("TONART admin quote directory", () => {
       .rejects.toThrow("admin_catalog_quote_response_invalid");
     await expect(answerCatalogQuoteRequest(QUOTE, 10, " "))
       .rejects.toThrow("admin_catalog_quote_response_invalid");
+    await expect(answerCatalogQuoteRequest(QUOTE, 300, "Proposta", 51))
+      .rejects.toThrow("admin_catalog_quote_response_invalid");
+    await expect(answerCatalogQuoteRequest(QUOTE, 0.01, "Proposta", 50))
+      .rejects.toThrow("admin_catalog_quote_response_invalid");
     expect(mocks.requireAdmin).not.toHaveBeenCalled();
 
     mocks.rpc.mockResolvedValue({
@@ -145,6 +153,25 @@ describe("TONART admin quote directory", () => {
         limit: 25,
         offset: 0,
         rows: [{ ...row, customerEmail: "" }],
+      },
+      error: null,
+    });
+    await expect(loadAdminCatalogQuotePage())
+      .rejects.toThrow("admin_catalog_quote_row_invalid");
+
+    mocks.rpc.mockResolvedValueOnce({
+      data: {
+        total: 1,
+        limit: 25,
+        offset: 0,
+        rows: [{
+          ...row,
+          status: "answered",
+          quotedAmount: 150,
+          listAmount: 300,
+          discountPercent: 0,
+          discountAmount: 150,
+        }],
       },
       error: null,
     });

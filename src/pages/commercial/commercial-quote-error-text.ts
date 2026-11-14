@@ -27,6 +27,8 @@ const exact: Record<string, string> = {
     "Não foi possível confirmar a lista de orçamentos. Tente novamente.",
   catalog_quote_row_invalid:
     "Um orçamento retornou dados inconsistentes. Tente novamente.",
+  catalog_quote_promotion_invalid:
+    "O desconto registrado neste orçamento está inconsistente. Entre em contato com a equipe TONART.",
   catalog_quote_rows_invalid:
     "Um orçamento retornou modelos inconsistentes. Tente novamente.",
   catalog_quote_history_ids_invalid:
@@ -73,6 +75,10 @@ const exact: Record<string, string> = {
     "Informe um valor válido e uma mensagem ao cliente.",
   "Pre-order total must exceed the R$50 deposit":
     "O total da pré-venda precisa ser superior à entrada de R$50.",
+  "Pre-order total after discount must exceed the R$50 deposit":
+    "O total da pré-venda após o desconto precisa ser superior à entrada de R$50.",
+  "Discounted quote total must remain positive":
+    "O total do orçamento após o desconto precisa ser maior que zero.",
   "Pre-order deposit is not available":
     "A entrada ainda não pode ser paga. Confira se o orçamento e as instruções foram enviados.",
   "Final payment is not available":

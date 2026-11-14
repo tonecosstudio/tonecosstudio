@@ -116,12 +116,15 @@ export type Database = {
           created_at: string
           customer_whatsapp: string | null
           deposit_amount: number | null
+          discount_amount: number
+          discount_percent: number
           deadline: string | null
           desired_scale: string
           finishing: string
           final_payment_notified_at: string | null
           id: string
           is_preorder: boolean | null
+          list_amount: number | null
           notes: string | null
           postal_code: string | null
           payment_instructions: string | null
@@ -146,12 +149,15 @@ export type Database = {
           created_at?: string
           customer_whatsapp?: string | null
           deposit_amount?: number | null
+          discount_amount?: number
+          discount_percent?: number
           deadline?: string | null
           desired_scale?: string
           finishing?: string
           final_payment_notified_at?: string | null
           id?: string
           is_preorder?: boolean | null
+          list_amount?: number | null
           notes?: string | null
           postal_code?: string | null
           payment_instructions?: string | null
@@ -176,12 +182,15 @@ export type Database = {
           created_at?: string
           customer_whatsapp?: string | null
           deposit_amount?: number | null
+          discount_amount?: number
+          discount_percent?: number
           deadline?: string | null
           desired_scale?: string
           finishing?: string
           final_payment_notified_at?: string | null
           id?: string
           is_preorder?: boolean | null
+          list_amount?: number | null
           notes?: string | null
           postal_code?: string | null
           payment_instructions?: string | null
@@ -274,7 +283,12 @@ export type Database = {
         Returns: Json
       }
       answer_catalog_quote_request: {
-        Args: { p_amount: number; p_message?: string; p_quote_id: string }
+        Args: {
+          p_amount: number
+          p_discount_percent: number
+          p_message: string
+          p_quote_id: string
+        }
         Returns: string
       }
       admin_reject_preorder_payment_voucher: {

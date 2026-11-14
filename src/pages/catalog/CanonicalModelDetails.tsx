@@ -899,6 +899,22 @@ export default function CanonicalModelDetails() {
                         <ArrowLeft size={16} aria-hidden="true" />
                         Continuar explorando
                       </Link>
+                      {quoteRequestsEnabled ? (
+                        <aside
+                          aria-label="Oferta Black Friday para este modelo"
+                          className="border border-[hsl(var(--gold-accent)/0.32)] bg-[hsl(var(--gold-accent)/0.06)] p-4"
+                        >
+                          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--gold-accent))]">
+                            Black Friday · todos os modelos
+                          </p>
+                          <p className="mt-2 text-sm font-semibold text-[hsl(0,0%,88%)]">
+                            Até 50% de desconto nesta referência.
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-[hsl(0,0%,62%)]">
+                            A equipe informa o preço-base, o desconto aplicado e o total final na resposta ao orçamento, antes de qualquer pagamento.
+                          </p>
+                        </aside>
+                      ) : null}
                     </div>
                     <details className="border-t border-[hsl(0,0%,15%)] pt-4">
                       <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">

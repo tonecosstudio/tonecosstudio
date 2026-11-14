@@ -119,7 +119,7 @@ describe("TONART administrative quote directory", () => {
     show();
     await screen.findByText("Solicitação #33333333");
     fireEvent.change(
-      screen.getByRole("textbox", { name: "Valor do orçamento 33333333" }),
+      screen.getByRole("textbox", { name: "Valor-base antes da promoção (R$) 33333333" }),
       { target: { value: "1.249,90" } },
     );
     fireEvent.change(
@@ -134,6 +134,37 @@ describe("TONART administrative quote directory", () => {
         quoteA.id,
         1249.9,
         "Proposta válida por sete dias.",
+        0,
+      ),
+    );
+  });
+
+  it("records a Black Friday discount up to 50 percent on the quoted base", async () => {
+    mocks.answer.mockResolvedValue(quoteA.id);
+    show();
+    await screen.findByText("Solicitação #33333333");
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Valor-base antes da promoção (R$) 33333333" }),
+      { target: { value: "300,00" } },
+    );
+    fireEvent.change(
+      screen.getByRole("spinbutton", { name: "Desconto Black Friday 33333333" }),
+      { target: { value: "50" } },
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Mensagem ao cliente 33333333" }),
+      { target: { value: "Condição válida durante a Black Friday." } },
+    );
+    expect(screen.getByText(/Total após desconto:.*150,00/)).toBeInTheDocument();
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Registrar resposta" })[0],
+    );
+    await waitFor(() =>
+      expect(mocks.answer).toHaveBeenCalledWith(
+        quoteA.id,
+        300,
+        "Condição válida durante a Black Friday.",
+        50,
       ),
     );
   });
@@ -142,7 +173,7 @@ describe("TONART administrative quote directory", () => {
     show();
     await screen.findByText("Solicitação #33333333");
     fireEvent.change(
-      screen.getByRole("textbox", { name: "Valor do orçamento 33333333" }),
+      screen.getByRole("textbox", { name: "Valor-base antes da promoção (R$) 33333333" }),
       { target: { value: "1.249,999" } },
     );
     fireEvent.change(
@@ -183,6 +214,33 @@ describe("TONART administrative quote directory", () => {
     expect(
       screen.getByText(/Confirme o envio manualmente/),
     ).toBeInTheDocument();
+  });
+
+  it("includes the Black Friday base, discount and final value in customer communication", async () => {
+    mocks.page.mockResolvedValueOnce({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [{
+        ...quoteA,
+        status: "answered",
+        quotedAmount: 150,
+        listAmount: 300,
+        discountPercent: 50,
+        discountAmount: 150,
+        responseMessage: "Condição válida por sete dias.",
+      }],
+    });
+
+    show();
+
+    const link = await screen.findByRole("link", {
+      name: "Preparar e-mail de resposta",
+    });
+    const body = decodeURIComponent(link.getAttribute("href") ?? "").replace(/\u00a0/g, " ");
+    expect(body).toContain("Valor antes da Black Friday: R$ 300,00");
+    expect(body).toContain("Black Friday (50%): −R$ 150,00");
+    expect(body).toContain("Valor final com desconto: R$ 150,00");
   });
 
   it("offers a WhatsApp reply only for a valid recorded customer number", async () => {

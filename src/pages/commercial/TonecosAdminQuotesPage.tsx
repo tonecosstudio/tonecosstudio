@@ -55,6 +55,27 @@ function parseQuoteAmount(input: string): number {
   if (!br.test(raw) && !plain.test(raw)) return NaN;
   return Number(br.test(raw) ? raw.replace(/\./g, "").replace(",", ".") : raw);
 }
+function parseDiscountPercent(input: string): number {
+  const raw = input.trim();
+  if (!/^(?:0|[1-9]\d?)$/.test(raw)) return NaN;
+  const value = Number(raw);
+  return value <= 50 ? value : NaN;
+}
+function discountedTotal(listAmount: number, discountPercent: number): number {
+  const discountAmount = Math.round(
+    ((listAmount * discountPercent) / 100 + Number.EPSILON) * 100,
+  ) / 100;
+  return Number((listAmount - discountAmount).toFixed(2));
+}
+function quotePricingLines(quote: AdminCatalogQuote): string[] {
+  const lines: string[] = [];
+  if (quote.discountAmount > 0 && quote.listAmount !== null) {
+    lines.push(`Valor antes da Black Friday: ${brl.format(quote.listAmount)}`);
+    lines.push(`Black Friday (${quote.discountPercent}%): −${brl.format(quote.discountAmount)}`);
+  }
+  lines.push(`${quote.discountAmount > 0 ? "Valor final com desconto" : "Valor informado"}: ${brl.format(quote.quotedAmount ?? 0)}`);
+  return lines;
+}
 function quotedResponseEmail(quote: AdminCatalogQuote): string {
   if (quote.quotedAmount === null || !quote.responseMessage) {
     throw new Error("admin_catalog_quote_response_invalid");
@@ -64,7 +85,7 @@ function quotedResponseEmail(quote: AdminCatalogQuote): string {
     "Olá,",
     "",
     "Sua solicitação de orçamento foi analisada pela TONART Studio.",
-    `Valor informado: ${brl.format(quote.quotedAmount)}`,
+    ...quotePricingLines(quote),
     "",
     quote.responseMessage,
     "",
@@ -88,7 +109,7 @@ function quotedResponseWhatsApp(quote: AdminCatalogQuote): string | null {
   const body = [
     "Olá! Aqui é a TONART Studio.",
     `Respondemos ao orçamento #${quote.id.slice(0, 8)}.`,
-    `Valor: ${brl.format(quote.quotedAmount)}`,
+    ...quotePricingLines(quote),
     quote.responseMessage,
     "Detalhes disponíveis em https://tonartstudio.com.br/meus-orcamentos",
   ].join("\n");
@@ -117,6 +138,7 @@ export default function TonecosAdminQuotesPage() {
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [price, setPrice] = useState<Record<string, string>>({});
+  const [discountPercent, setDiscountPercent] = useState<Record<string, string>>({});
   const [responseMessage, setResponseMessage] = useState<
     Record<string, string>
   >({});
@@ -186,17 +208,23 @@ export default function TonecosAdminQuotesPage() {
     setNotice("");
     try {
       const amount = parseQuoteAmount(price[id] ?? "");
+      const discount = parseDiscountPercent(discountPercent[id] ?? "0");
       const message = (responseMessage[id] ?? "").trim();
       const quote = quotes.find((entry) => entry.id === id);
-      if (!Number.isFinite(amount) || amount <= 0 || amount > 99999999.99) {
+      if (!Number.isFinite(amount) || amount <= 0 || amount > 99999999.99 || !Number.isFinite(discount)) {
         throw new Error("admin_catalog_quote_response_invalid");
       }
-      if (quote?.isPreorder && amount <= (quote.depositAmount ?? 50)) {
+      const finalAmount = discountedTotal(amount, discount);
+      if (finalAmount <= 0) {
+        throw new Error("admin_catalog_quote_response_invalid");
+      }
+      if (quote?.isPreorder && finalAmount <= (quote.depositAmount ?? 50)) {
         setError("O total da pré-venda precisa ser maior que a entrada fixa de R$50.");
         return;
       }
-      await answerCatalogQuoteRequest(id, amount, message);
+      await answerCatalogQuoteRequest(id, amount, message, discount);
       setPrice((current) => ({ ...current, [id]: "" }));
+      setDiscountPercent((current) => ({ ...current, [id]: "0" }));
       setResponseMessage((current) => ({ ...current, [id]: "" }));
       setNotice(
         "Resposta registrada e disponível na conta do cliente. Para avisá-lo, abra o e-mail ou WhatsApp e confirme o envio manualmente.",
@@ -337,7 +365,13 @@ export default function TonecosAdminQuotesPage() {
       )}
       {!loading && !error && (
         <ul className="grid max-w-4xl gap-4">
-          {quotes.map((quote) => (
+          {quotes.map((quote) => {
+            const previewBase = parseQuoteAmount(price[quote.id] ?? "");
+            const previewPercent = parseDiscountPercent(discountPercent[quote.id] ?? "0");
+            const previewTotal = Number.isFinite(previewBase) && previewBase > 0 && Number.isFinite(previewPercent)
+              ? brl.format(discountedTotal(previewBase, previewPercent))
+              : null;
+            return (
             <li key={quote.id} className={panelClass}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-semibold">
@@ -461,8 +495,13 @@ export default function TonecosAdminQuotesPage() {
                 ) : quote.quotedAmount !== null ? (
                   <div className="space-y-3">
                     <p className="text-sm font-semibold">
-                      Valor informado: {brl.format(quote.quotedAmount)}
+                      {quote.discountAmount > 0 ? "Valor final com desconto" : "Valor informado"}: {brl.format(quote.quotedAmount)}
                     </p>
+                    {quote.discountAmount > 0 && quote.listAmount !== null && (
+                      <p className="text-xs leading-5 text-white/65">
+                        Black Friday: {brl.format(quote.listAmount)} − {quote.discountPercent}% ({brl.format(quote.discountAmount)}) = {brl.format(quote.quotedAmount)}
+                      </p>
+                    )}
                     {quote.isPreorder && (
                       <p className="text-xs text-white/65">
                         Entrada: {brl.format(quote.depositAmount ?? 50)} · saldo na finalização: {quote.remainingAmount === null ? "aguardando cálculo" : brl.format(quote.remainingAmount)}
@@ -513,14 +552,14 @@ export default function TonecosAdminQuotesPage() {
                   >
                     {quote.isPreorder && (
                       <p className="text-xs leading-5 text-white/65 sm:col-span-2">
-                        Informe o total final da peça. O sistema reserva R$50 como entrada e calcula o restante automaticamente; o valor total deve ser superior a R$50.
+                        Informe o valor-base antes da promoção. A Black Friday permite até 50% de desconto em todos os modelos; a entrada de R$50 e o saldo são calculados sobre o total final.
                       </p>
                     )}
                     <label className="block space-y-2 text-sm">
-                      <span>{quote.isPreorder ? "Total da pré-venda (R$)" : "Valor total (R$)"}</span>
+                      <span>Valor-base antes da promoção (R$)</span>
                       <input
                         aria-label={
-                          "Valor do orçamento " + quote.id.slice(0, 8)
+                          "Valor-base antes da promoção (R$) " + quote.id.slice(0, 8)
                         }
                         className={fieldClass}
                         type="text"
@@ -538,12 +577,41 @@ export default function TonecosAdminQuotesPage() {
                       />
                     </label>
                     <label className="block space-y-2 text-sm">
+                      <span>Desconto Black Friday (%)</span>
+                      <input
+                        aria-label={"Desconto Black Friday " + quote.id.slice(0, 8)}
+                        className={fieldClass}
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={50}
+                        step={1}
+                        required
+                        value={discountPercent[quote.id] ?? "0"}
+                        onChange={(event) =>
+                          setDiscountPercent((current) => ({
+                            ...current,
+                            [quote.id]: event.target.value,
+                          }))
+                        }
+                      />
+                      {previewTotal ? (
+                        <p className="text-xs text-[hsl(var(--gold-accent))]" aria-live="polite">
+                          Total após desconto: {previewTotal}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-white/50">
+                          Defina um desconto entre 0% e 50%.
+                        </p>
+                      )}
+                    </label>
+                    <label className="block space-y-2 text-sm">
                       <span>Mensagem ao cliente</span>
                       <textarea
                         aria-label={
                           "Mensagem ao cliente " + quote.id.slice(0, 8)
                         }
-                        className={fieldClass + " min-h-24 py-3"}
+                        className={fieldClass + " min-h-24 py-3 sm:col-span-2"}
                         required
                         maxLength={2000}
                         rows={3}
@@ -572,7 +640,8 @@ export default function TonecosAdminQuotesPage() {
                 )}
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
       {!loading && !error && !requestedId && total > PAGE_SIZE && (

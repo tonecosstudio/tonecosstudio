@@ -22,6 +22,9 @@ export type AdminCatalogQuote = {
   notes: string | null;
   items: CatalogQuoteItem[];
   quotedAmount: number | null;
+  listAmount: number | null;
+  discountPercent: number;
+  discountAmount: number;
   responseMessage: string | null;
   whatsapp: string | null;
   postalCode: string | null;
@@ -82,6 +85,10 @@ function decodeQuote(value: unknown): AdminCatalogQuote {
     throw new Error("admin_catalog_quote_row_invalid");
   }
   const row = value as Record<string, unknown>;
+  const quotedAmount = row.quotedAmount as number | null;
+  const listAmount = row.listAmount == null ? quotedAmount : row.listAmount;
+  const discountPercent = row.discountPercent == null ? 0 : row.discountPercent;
+  const discountAmount = row.discountAmount == null ? 0 : row.discountAmount;
   if (
     typeof row.id !== "string" ||
     !uuid.test(row.id) ||
@@ -102,6 +109,18 @@ function decodeQuote(value: unknown): AdminCatalogQuote {
         Number.isFinite(row.quotedAmount) &&
         row.quotedAmount > 0)
     ) ||
+    !(listAmount === null ||
+      (typeof listAmount === "number" && Number.isFinite(listAmount) && listAmount > 0)) ||
+    typeof discountPercent !== "number" || !Number.isInteger(discountPercent) ||
+    discountPercent < 0 || discountPercent > 50 ||
+    typeof discountAmount !== "number" || !Number.isFinite(discountAmount) || discountAmount < 0 ||
+    (quotedAmount !== null &&
+      (listAmount === null || listAmount < quotedAmount ||
+        Math.abs(listAmount - discountAmount - quotedAmount) > 0.001 ||
+        Math.abs(
+          Math.round(((listAmount * discountPercent) / 100 + Number.EPSILON) * 100) / 100 -
+            discountAmount,
+        ) > 0.001)) ||
     !(
       row.responseMessage === null ||
       (typeof row.responseMessage === "string" &&
@@ -127,7 +146,10 @@ function decodeQuote(value: unknown): AdminCatalogQuote {
     createdAt: row.createdAt,
     notes: row.notes as string | null,
     items: decodeItems(row.items),
-    quotedAmount: row.quotedAmount as number | null,
+    quotedAmount,
+    listAmount,
+    discountPercent,
+    discountAmount,
     responseMessage: row.responseMessage as string | null,
     whatsapp: row.whatsapp as string | null,
     postalCode: row.postalCode as string | null,
@@ -205,17 +227,23 @@ export async function listAdminCatalogQuotes(
 /** Only the privileged server RPC may answer a quote. */
 export async function answerCatalogQuoteRequest(
   quoteId: string,
-  amount: number,
+  listAmount: number,
   message: string,
+  discountPercent = 0,
 ): Promise<string> {
   assertCommercialMode();
   const responseMessage = typeof message === "string" ? message.trim() : "";
   if (
     !uuid.test(quoteId) ||
-    !Number.isFinite(amount) ||
-    amount <= 0 ||
-    amount > 99999999.99 ||
-    Math.abs(amount * 100 - Math.round(amount * 100)) > 0.00001 ||
+    !Number.isFinite(listAmount) ||
+    listAmount <= 0 ||
+    listAmount > 99999999.99 ||
+    Math.abs(listAmount * 100 - Math.round(listAmount * 100)) > 0.00001 ||
+    !Number.isInteger(discountPercent) ||
+    discountPercent < 0 ||
+    discountPercent > 50 ||
+    (Number.isFinite(listAmount) &&
+      listAmount - Math.round(((listAmount * discountPercent) / 100 + Number.EPSILON) * 100) / 100 <= 0) ||
     responseMessage.length < 1 ||
     responseMessage.length > 2000
   ) {
@@ -224,8 +252,9 @@ export async function answerCatalogQuoteRequest(
   await requireTonecosAdminAccess();
   const { data, error } = await tonecos.rpc("answer_catalog_quote_request", {
     p_quote_id: quoteId,
-    p_amount: amount,
+    p_amount: listAmount,
     p_message: responseMessage,
+    p_discount_percent: discountPercent,
   });
   if (error) throw error;
   if (data !== quoteId) throw new Error("admin_catalog_quote_result_invalid");

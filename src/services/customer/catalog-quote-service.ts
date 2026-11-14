@@ -35,6 +35,9 @@ export type CustomerCatalogQuote = {
   items: CatalogQuoteItem[];
   /** No price is supplied or approved by the customer. */
   quotedAmount: number | null;
+  listAmount: number | null;
+  discountPercent: number;
+  discountAmount: number;
   responseMessage: string | null;
   whatsapp: string | null;
   postalCode: string | null;
@@ -165,6 +168,9 @@ type QuoteDbRow = {
   deadline: string | null;
   notes: string | null;
   total_amount: number | null;
+  list_amount?: number | null;
+  discount_percent?: number | null;
+  discount_amount?: number | null;
   admin_response: string | null;
   requested_catalog_models: unknown;
   catalog_requested_at: string | null;
@@ -188,8 +194,12 @@ type QuoteDbRow = {
 };
 
 const QUOTE_HISTORY_SELECT =
+  "id,status,created_at,deadline,notes,total_amount,list_amount,discount_percent,discount_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing,is_preorder,deposit_amount,remaining_amount,payment_status,payment_link,pix_key,payment_instructions,payment_link_sent_at,final_payment_notified_at,ready_for_final_payment,payment_voucher_path,payment_voucher_type,payment_voucher_rejection_reason";
+const QUOTE_HISTORY_SELECT_WITHOUT_PROMOTION =
   "id,status,created_at,deadline,notes,total_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing,is_preorder,deposit_amount,remaining_amount,payment_status,payment_link,pix_key,payment_instructions,payment_link_sent_at,final_payment_notified_at,ready_for_final_payment,payment_voucher_path,payment_voucher_type,payment_voucher_rejection_reason";
 const QUOTE_HISTORY_SELECT_WITHOUT_PAYMENT =
+  "id,status,created_at,deadline,notes,total_amount,list_amount,discount_percent,discount_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing";
+const QUOTE_HISTORY_SELECT_LEGACY =
   "id,status,created_at,deadline,notes,total_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing";
 const PREORDER_SCHEMA_COLUMNS = [
   "is_preorder", "deposit_amount", "remaining_amount", "payment_status",
@@ -197,6 +207,7 @@ const PREORDER_SCHEMA_COLUMNS = [
   "final_payment_notified_at", "ready_for_final_payment", "payment_voucher_path",
   "payment_voucher_type", "payment_voucher_rejection_reason",
 ];
+const PROMOTION_SCHEMA_COLUMNS = ["list_amount", "discount_percent", "discount_amount"];
 
 function isMissingPreorderSchemaColumn(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
@@ -204,6 +215,16 @@ function isMissingPreorderSchemaColumn(error: unknown): boolean {
   if (value.code !== "42703" && value.code !== "PGRST204") return false;
   const description = `${value.message ?? ""} ${value.details ?? ""}`;
   return PREORDER_SCHEMA_COLUMNS.some((column) =>
+    new RegExp(`\\b${column}\\b`, "i").test(description),
+  );
+}
+
+function isMissingPromotionSchemaColumn(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const value = error as { code?: unknown; message?: unknown; details?: unknown };
+  if (value.code !== "42703" && value.code !== "PGRST204") return false;
+  const description = `${value.message ?? ""} ${value.details ?? ""}`;
+  return PROMOTION_SCHEMA_COLUMNS.some((column) =>
     new RegExp(`\\b${column}\\b`, "i").test(description),
   );
 }
@@ -262,16 +283,35 @@ export async function loadMyCatalogQuotePage(
   await assertCurrentUserId(userId);
   // A deep link is resolved by the same protected quotes relation and RLS,
   // not by paging through a customer's history or exposing a public lookup.
-  // Older deployments can still show ordinary quotes until the preorder schema
-  // is applied; fallback only handles a known missing payment column.
+  // Fall back only for the known optional preorder/promotion columns.
   let paymentSchemaAvailable = true;
+  let promotionSchemaAvailable = true;
   let result = await fetchMyQuotePage(
     userId, quoteId, limit, offset, QUOTE_HISTORY_SELECT,
   );
-  if (result.error && isMissingPreorderSchemaColumn(result.error)) {
+  if (result.error) {
+    if (isMissingPromotionSchemaColumn(result.error)) {
+      promotionSchemaAvailable = false;
+      result = await fetchMyQuotePage(
+        userId, quoteId, limit, offset, QUOTE_HISTORY_SELECT_WITHOUT_PROMOTION,
+      );
+    } else if (isMissingPreorderSchemaColumn(result.error)) {
+      paymentSchemaAvailable = false;
+      result = await fetchMyQuotePage(
+        userId, quoteId, limit, offset, QUOTE_HISTORY_SELECT_WITHOUT_PAYMENT,
+      );
+    }
+  }
+  if (result.error && promotionSchemaAvailable && isMissingPromotionSchemaColumn(result.error)) {
+    promotionSchemaAvailable = false;
+    result = await fetchMyQuotePage(
+      userId, quoteId, limit, offset, QUOTE_HISTORY_SELECT_LEGACY,
+    );
+  }
+  if (result.error && paymentSchemaAvailable && isMissingPreorderSchemaColumn(result.error)) {
     paymentSchemaAvailable = false;
     result = await fetchMyQuotePage(
-      userId, quoteId, limit, offset, QUOTE_HISTORY_SELECT_WITHOUT_PAYMENT,
+      userId, quoteId, limit, offset, QUOTE_HISTORY_SELECT_LEGACY,
     );
   }
   const { data, error, count } = result;
@@ -306,6 +346,35 @@ export async function loadMyCatalogQuotePage(
         : row.payment_voucher_type === "final"
           ? "final"
           : null;
+    const quotedAmount =
+      ["answered", "archived"].includes(row.status) &&
+      row.total_amount !== null &&
+      row.total_amount > 0
+        ? row.total_amount
+        : null;
+    const listAmount = promotionSchemaAvailable
+      ? validPositiveMoney(row.list_amount) ?? validPositiveMoney(row.total_amount)
+      : validPositiveMoney(row.total_amount);
+    const discountPercent = promotionSchemaAvailable
+      ? validDiscountPercent(row.discount_percent)
+      : 0;
+    const discountAmount = promotionSchemaAvailable
+      ? validNonNegativeMoney(row.discount_amount)
+      : 0;
+    if (
+      discountPercent === null ||
+      discountAmount === null ||
+      (quotedAmount !== null &&
+        (listAmount === null ||
+          listAmount < quotedAmount ||
+          Math.abs(listAmount - discountAmount - quotedAmount) > 0.001 ||
+          Math.abs(
+            Math.round(((listAmount * discountPercent) / 100 + Number.EPSILON) * 100) / 100 -
+              discountAmount,
+          ) > 0.001))
+    ) {
+      throw new Error("catalog_quote_promotion_invalid");
+    }
     if (
       voucherPath != null &&
       (typeof voucherPath !== "string" ||
@@ -322,12 +391,10 @@ export async function loadMyCatalogQuotePage(
       deadline: row.deadline,
       notes: row.notes,
       items,
-      quotedAmount:
-        ["answered", "archived"].includes(row.status) &&
-        row.total_amount !== null &&
-        row.total_amount > 0
-          ? row.total_amount
-          : null,
+      quotedAmount,
+      listAmount,
+      discountPercent,
+      discountAmount,
       responseMessage: row.admin_response,
       whatsapp: row.customer_whatsapp,
       postalCode: row.postal_code,
@@ -361,6 +428,18 @@ export async function loadMyCatalogQuotePage(
 
 function validPositiveMoney(value: number | null | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : null;
+}
+
+function validNonNegativeMoney(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : null;
+}
+
+function validDiscountPercent(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 50
     ? value
     : null;
 }

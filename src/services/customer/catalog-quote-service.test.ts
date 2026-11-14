@@ -257,6 +257,9 @@ describe("authenticated Tonecos catalog quote boundary", () => {
           deadline: null,
           notes: "Naruto",
           total_amount: 0,
+          list_amount: null,
+          discount_percent: 0,
+          discount_amount: 0,
           admin_response: null,
           catalog_requested_at: "2026-11-05T00:00:00Z",
           requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
@@ -268,6 +271,9 @@ describe("authenticated Tonecos catalog quote boundary", () => {
           deadline: null,
           notes: null,
           total_amount: 129.9,
+          list_amount: 129.9,
+          discount_percent: 0,
+          discount_amount: 0,
           admin_response: "Proposta válida por 7 dias.",
           catalog_requested_at: "2026-11-04T00:00:00Z",
           requested_catalog_models: [{ slug: "nier-2b", quantity: 2 }],
@@ -330,6 +336,9 @@ describe("authenticated Tonecos catalog quote boundary", () => {
         deadline: null,
         notes: null,
         total_amount: null,
+        list_amount: null,
+        discount_percent: 0,
+        discount_amount: 0,
         admin_response: null,
         customer_whatsapp: null,
         postal_code: null,
@@ -376,6 +385,9 @@ describe("authenticated Tonecos catalog quote boundary", () => {
         deadline: null,
         notes: null,
         total_amount: 300,
+        list_amount: 300,
+        discount_percent: 0,
+        discount_amount: 0,
         admin_response: "Orçamento aprovado.",
         requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
         catalog_requested_at: "2026-11-14T00:00:00Z",
@@ -400,6 +412,131 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     expect(unavailable.select).toHaveBeenCalledWith(expect.stringContaining("is_preorder"), { count: "exact" });
     expect(compatible.select).toHaveBeenCalledWith(expect.not.stringContaining("is_preorder"), { count: "exact" });
     expect(compatible.eq).toHaveBeenCalledWith("user_id", USER);
+  });
+
+  it("shows the Black Friday base, percentage, reduction and final amount in customer history", async () => {
+    const query = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      not: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    };
+    for (const method of ["select", "eq", "not", "order"] as const) {
+      query[method].mockReturnValue(query);
+    }
+    query.range.mockResolvedValue({
+      data: [{
+        id: QUOTE,
+        status: "answered",
+        created_at: "2026-11-14T00:00:00Z",
+        catalog_requested_at: "2026-11-14T00:00:00Z",
+        requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
+        deadline: null,
+        notes: null,
+        total_amount: 150,
+        list_amount: 300,
+        discount_percent: 50,
+        discount_amount: 150,
+        admin_response: "Oferta Black Friday aplicada.",
+      }],
+      error: null,
+      count: 1,
+    });
+    mocks.from.mockReturnValue(query);
+
+    const page = await loadMyCatalogQuotePage(USER);
+
+    expect(page.rows[0]).toMatchObject({
+      quotedAmount: 150,
+      listAmount: 300,
+      discountPercent: 50,
+      discountAmount: 150,
+    });
+  });
+
+  it("rejects a customer quote whose discount percentage does not match its reduction", async () => {
+    const query = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      not: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    };
+    for (const method of ["select", "eq", "not", "order"] as const) {
+      query[method].mockReturnValue(query);
+    }
+    query.range.mockResolvedValue({
+      data: [{
+        id: QUOTE,
+        status: "answered",
+        created_at: "2026-11-14T00:00:00Z",
+        catalog_requested_at: "2026-11-14T00:00:00Z",
+        requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
+        deadline: null,
+        notes: null,
+        total_amount: 150,
+        list_amount: 300,
+        discount_percent: 0,
+        discount_amount: 150,
+        admin_response: "Resposta inconsistente.",
+      }],
+      error: null,
+      count: 1,
+    });
+    mocks.from.mockReturnValue(query);
+
+    await expect(loadMyCatalogQuotePage(USER)).rejects.toThrow(
+      "catalog_quote_promotion_invalid",
+    );
+  });
+
+  it("falls back to ordinary quote history while promotion columns await migration", async () => {
+    const makeQuery = (response: { data: unknown; error: unknown; count?: number | null }) => {
+      const query = {
+        select: vi.fn(),
+        eq: vi.fn(),
+        not: vi.fn(),
+        order: vi.fn(),
+        range: vi.fn().mockResolvedValue(response),
+      };
+      for (const method of ["select", "eq", "not", "order"] as const) {
+        query[method].mockReturnValue(query);
+      }
+      return query;
+    };
+    const unavailable = makeQuery({
+      data: null,
+      error: { code: "42703", message: "column quotes.discount_percent does not exist" },
+    });
+    const compatible = makeQuery({
+      data: [{
+        id: QUOTE,
+        status: "answered",
+        created_at: "2026-11-14T00:00:00Z",
+        catalog_requested_at: "2026-11-14T00:00:00Z",
+        requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
+        deadline: null,
+        notes: null,
+        total_amount: 300,
+        admin_response: "Orçamento aprovado.",
+      }],
+      error: null,
+      count: 1,
+    });
+    mocks.from.mockReturnValueOnce(unavailable).mockReturnValueOnce(compatible);
+
+    const page = await loadMyCatalogQuotePage(USER);
+
+    expect(page.rows[0]).toMatchObject({
+      quotedAmount: 300,
+      listAmount: 300,
+      discountPercent: 0,
+      discountAmount: 0,
+    });
+    expect(unavailable.select).toHaveBeenCalledWith(expect.stringContaining("discount_percent"), { count: "exact" });
+    expect(compatible.select).toHaveBeenCalledWith(expect.not.stringContaining("discount_percent"), { count: "exact" });
+    expect(compatible.select).toHaveBeenCalledWith(expect.stringContaining("is_preorder"), { count: "exact" });
   });
 
   it("rejects invalid exact quote identifiers before any authentication or network I/O", async () => {
