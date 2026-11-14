@@ -184,7 +184,11 @@ export default function TonecosMyQuotesPage() {
             to={
               TONECOS_COMMERCIAL_ROUTES.login +
               "?next=" +
-              encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.history)
+              encodeURIComponent(
+                selectedId
+                  ? TONECOS_COMMERCIAL_ROUTES.history + "?quote=" + selectedId
+                  : TONECOS_COMMERCIAL_ROUTES.history,
+              )
             }
           >
             Entrar
@@ -203,7 +207,11 @@ export default function TonecosMyQuotesPage() {
               to={
                 TONECOS_COMMERCIAL_ROUTES.login +
                 "?next=" +
-                encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.history)
+                encodeURIComponent(
+                selectedId
+                  ? TONECOS_COMMERCIAL_ROUTES.history + "?quote=" + selectedId
+                  : TONECOS_COMMERCIAL_ROUTES.history,
+              )
               }
             >
               Entrar novamente
