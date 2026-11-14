@@ -56,10 +56,16 @@ function getSafePaymentUrl(value: string | null): string | null {
 function QuotePaymentPanel({
   row,
   coinBalance,
+  coinBalanceLoading,
+  coinBalanceError,
+  onRetryCoinBalance,
   onSuccess,
 }: {
   row: CustomerCatalogQuote;
   coinBalance: TonecosCoinBalance | null;
+  coinBalanceLoading: boolean;
+  coinBalanceError: boolean;
+  onRetryCoinBalance: () => void;
   onSuccess: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
@@ -105,14 +111,15 @@ function QuotePaymentPanel({
     row.quotedAmount !== null && row.depositAmount !== null
       ? Math.max(0, row.quotedAmount - row.depositAmount)
       : null;
-  const maxCoins =
+  const eligibleForCoins =
     !row.isPreorder &&
     row.status === "answered" &&
     paymentStatus === "pending" &&
     row.coinAmountApplied === 0 &&
     row.paymentVoucherPath === null &&
-    coinBalance !== null &&
-    amountDue !== null
+    amountDue !== null;
+  const maxCoins =
+    eligibleForCoins && coinBalance !== null && amountDue !== null
       ? Math.min(coinBalance.balance, Math.floor(amountDue))
       : 0;
   const coinAmount = maxCoins > 0 ? (coinAmountInput ?? maxCoins) : 0;
@@ -259,6 +266,40 @@ function QuotePaymentPanel({
           )}
         </dl>
       )}
+
+      {eligibleForCoins && coinBalanceLoading && (
+        <p role="status" className="mt-4 text-xs text-white/55">
+          Consultando seu saldo de Coins…
+        </p>
+      )}
+
+      {eligibleForCoins && coinBalanceError && (
+        <div
+          role="alert"
+          className="mt-4 flex flex-col gap-3 border border-amber-400/30 bg-amber-400/5 p-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="text-xs leading-5 text-amber-100/80">
+            Não foi possível carregar seu saldo de Coins. O orçamento continua
+            disponível; tente consultar novamente.
+          </p>
+          <button
+            type="button"
+            className={secondaryClass}
+            onClick={onRetryCoinBalance}
+          >
+            Tentar carregar Coins
+          </button>
+        </div>
+      )}
+
+      {eligibleForCoins &&
+        !coinBalanceLoading &&
+        !coinBalanceError &&
+        maxCoins === 0 && (
+          <p className="mt-4 text-xs text-white/50">
+            Não há Coins disponíveis para este orçamento.
+          </p>
+        )}
 
       {maxCoins > 0 && (
         <div className="mt-4 space-y-3 border-b border-white/10 pb-4">
@@ -475,6 +516,9 @@ export default function TonecosMyQuotesPage() {
   const [coinBalance, setCoinBalance] = useState<TonecosCoinBalance | null>(
     null,
   );
+  const [coinBalanceLoading, setCoinBalanceLoading] = useState(false);
+  const [coinBalanceError, setCoinBalanceError] = useState(false);
+  const [coinBalanceAttempt, setCoinBalanceAttempt] = useState(0);
   const [history, setHistory] = useState<Record<string, CatalogQuoteEvent[]>>(
     {},
   );
@@ -509,26 +553,38 @@ export default function TonecosMyQuotesPage() {
         !row.isPreorder &&
         row.status === "answered" &&
         row.quotedAmount !== null &&
-        row.paymentStatus !== "fully_paid" &&
-        row.coinAmountApplied === 0,
+        (row.paymentStatus ?? "pending") === "pending" &&
+        row.coinAmountApplied === 0 &&
+        row.paymentVoucherPath === null,
     );
     if (!userId || !needsCoins) {
       setCoinBalance(null);
+      setCoinBalanceLoading(false);
+      setCoinBalanceError(false);
       return;
     }
     let active = true;
     setCoinBalance(null);
+    setCoinBalanceLoading(true);
+    setCoinBalanceError(false);
     getMyTonecosCoinBalance()
       .then((balance) => {
-        if (active) setCoinBalance(balance);
+        if (active) {
+          setCoinBalance(balance);
+          setCoinBalanceLoading(false);
+        }
       })
       .catch(() => {
-        if (active) setCoinBalance(null);
+        if (active) {
+          setCoinBalance(null);
+          setCoinBalanceLoading(false);
+          setCoinBalanceError(true);
+        }
       });
     return () => {
       active = false;
     };
-  }, [userId, rows]);
+  }, [coinBalanceAttempt, userId, rows]);
 
   useEffect(() => {
     if (!userId || invalidSelection) return;
@@ -821,6 +877,11 @@ export default function TonecosMyQuotesPage() {
                 <QuotePaymentPanel
                   row={row}
                   coinBalance={coinBalance}
+                  coinBalanceLoading={coinBalanceLoading}
+                  coinBalanceError={coinBalanceError}
+                  onRetryCoinBalance={() =>
+                    setCoinBalanceAttempt((value) => value + 1)
+                  }
                   onSuccess={() => setAttempt((value) => value + 1)}
                 />
               </li>

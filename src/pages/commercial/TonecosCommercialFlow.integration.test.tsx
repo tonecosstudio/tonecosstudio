@@ -766,6 +766,7 @@ describe("TONART commercial screens: account → request → history → respons
   });
 
   it("applies Coins to an answered quote and explains voucher follow-up", async () => {
+    mocks.coinBalance.mockRejectedValueOnce(new Error("offline"));
     mocks.listMine.mockResolvedValue({
       total: 1,
       limit: 20,
@@ -807,6 +808,14 @@ describe("TONART commercial screens: account → request → history → respons
 
     renderApp("/meus-orcamentos");
 
+    const coinBalanceError = await screen.findByRole("alert");
+    expect(coinBalanceError).toHaveTextContent(
+      "Não foi possível carregar seu saldo de Coins",
+    );
+    expect(coinBalanceError).not.toHaveTextContent("offline");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Tentar carregar Coins" }),
+    );
     expect(await screen.findByText("Use seus Coins")).toBeInTheDocument();
     expect(screen.getByText(/o comprovante pode ser enviado por aqui/)).toBeInTheDocument();
     expect(
