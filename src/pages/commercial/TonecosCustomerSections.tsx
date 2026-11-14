@@ -319,6 +319,7 @@ function RecentQuoteContext({
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED !== "true") return;
     let active = true;
     setPage(null);
     setStatus("loading");
@@ -344,6 +345,7 @@ function RecentQuoteContext({
       (item.finishing && item.finishing !== "a definir")
     );
   });
+  if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED !== "true") return null;
   return (
     <section
       className={panelClass}
