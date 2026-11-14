@@ -419,6 +419,7 @@ export default function TonecosAccountPage() {
                     required
                     maxLength={160}
                     autoComplete="name"
+                    aria-label="Nome completo"
                     placeholder="Informe seu nome completo"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
