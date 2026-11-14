@@ -5,6 +5,7 @@
 - **Base:** main@5ce02e10e7cae1926028e17231ad64f5de3b3cba, sincronizada com origin/main antes desta alteração.
 - **Implementado:** home recomposta; faixa Black Friday até 50% após o título; produtos em três colunas; pré-venda com entrada de R$50 abatida do total e simulador; Coins em linguagem atual, conectados à carteira canônica quando habilitada; contato contextual para Coins/pré-venda. Ficha do modelo refinada e CTA de orçamento respeita suas flags.
 - **Validação:** 4 testes focados, typecheck, ESLint dos arquivos alterados e npm run build passaram. Build reportou avisos de comentários internos em zod, sem falhas. Sem publicação ou escrita produtiva.
+- **GitHub Actions:** run 43578448703 (commit 4c1e8ace) repete a falha do run 43572892489: quatro jobs failed, runner_id=0, zero steps e logs indisponíveis (404). Workflow usa ubuntu-latest; causa exata externa não retornada pelo GitHub. Sem pipeline paralelo.
 - **Limites:** simulador é informativo; não ativamos cobrança nova nem Coins por alteração de flags. Inspeção visual automatizada indisponível nesta sessão.
 - **NEXT_ACTION:** homologação visual e comercial no ambiente autorizado.
 - **DO_NOT_REPEAT:** não inventar saldos, descontos individuais ou datas de campanha; não escrever em produção.
