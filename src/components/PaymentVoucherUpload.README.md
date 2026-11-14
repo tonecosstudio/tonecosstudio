@@ -21,7 +21,7 @@
 A configuração canônica do bucket e das policies está em:
 
 `supabase/migrations/20260915205645_secure_payment_voucher_storage.sql` and the
-quote extension `supabase/migrations/20261114110000_tonart_preorder_quote_payment_flow.sql`.
+quote extension `supabase/migrations/20261114140837_tonart_preorder_quote_payment_flow.sql`.
 
 Não recrie o bucket manualmente como público e não adicione policy de leitura
 para `public` ou `anon`.
