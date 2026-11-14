@@ -147,12 +147,17 @@ type QuoteDbRow = {
 /** Own records only; the quotes RLS policy remains the database's authority. */
 export async function loadMyCatalogQuotePage(
   userId: string,
-  options: { limit?: number; offset?: number } = {},
+  options: { limit?: number; offset?: number; quoteId?: string } = {},
 ): Promise<CustomerCatalogQuotePage> {
   requireCommercialQuoteMode();
   const limit = options.limit ?? 20;
   const offset = options.offset ?? 0;
+  const quoteId = options.quoteId;
   if (
+    (quoteId !== undefined &&
+      (typeof quoteId !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(quoteId))) ||
+    (quoteId !== undefined && (limit !== 1 || offset !== 0)) ||
     !Number.isSafeInteger(limit) ||
     limit < 1 ||
     limit > 50 ||
@@ -164,14 +169,18 @@ export async function loadMyCatalogQuotePage(
   }
 
   await assertCurrentUserId(userId);
-  const { data, error, count } = await tonecos
+  // A deep link is resolved by the same protected quotes relation and RLS,
+  // not by paging through a customer's history or exposing a public lookup.
+  let query = tonecos
     .from("quotes")
     .select(
       "id,status,created_at,deadline,notes,total_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing",
       { count: "exact" },
     )
     .eq("user_id", userId)
-    .not("catalog_requested_at", "is", null)
+    .not("catalog_requested_at", "is", null);
+  if (quoteId !== undefined) query = query.eq("id", quoteId.toLowerCase());
+  const { data, error, count } = await query
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
