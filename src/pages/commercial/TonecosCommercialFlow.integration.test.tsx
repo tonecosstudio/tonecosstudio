@@ -132,6 +132,12 @@ beforeEach(() => {
     email: "cliente@example.com",
     full_name: "Cliente",
     phone: null,
+    whatsapp: null,
+    delivery_address: null,
+    preferred_contact_channel: null,
+    quote_updates: false,
+    production_updates: false,
+    marketing_emails: false,
     created_at: "2026-11-05T00:00:00Z",
     updated_at: "2026-11-05T00:00:00Z",
   });
@@ -256,6 +262,37 @@ describe("TONART commercial screens: account → request → history → respons
         { whatsapp: "71999999999", postalCode: "", scale: "a definir", finishing: "a definir" },
       ),
     );
+  });
+
+  it("sends the saved WhatsApp and delivery CEP from one profile without duplicate quote inputs", async () => {
+    mocks.getProfile.mockResolvedValueOnce({
+      id: USER, email: "cliente@example.com", full_name: "Cliente",
+      phone: "71999999999", whatsapp: "71988887777",
+      delivery_address: {
+        street: "Rua Exemplo", number: "10", neighborhood: "Centro",
+        city: "Salvador", state: "BA", zipCode: "40000000",
+        country: "BR",
+      },
+    });
+    mocks.submit.mockResolvedValue(QUOTE);
+    renderApp("/solicitar-orcamento", true);
+    await screen.findByRole("button", { name: "Enviar solicitação" });
+    expect(screen.getByText("71988887777")).toBeInTheDocument();
+    expect(screen.getByText("40000000")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Enviar solicitação" }));
+    await waitFor(() =>
+      expect(mocks.submit).toHaveBeenCalledWith(
+        USER, [{ slug: "naruto", quantity: 1 }], "",
+        {
+          whatsapp: "71988887777",
+          postalCode: "40000000",
+          scale: "a definir",
+          finishing: "a definir",
+        },
+      ),
+    );
+    expect(screen.queryByLabelText("CEP (opcional)")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("WhatsApp para contato (opcional)")).not.toBeInTheDocument();
   });
 
   it("requires the saved customer profile before enabling an actual quote request", async () => {
