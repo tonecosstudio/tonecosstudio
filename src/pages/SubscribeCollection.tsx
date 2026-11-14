@@ -54,10 +54,9 @@ export default function SubscribeCollection() {
     plansLoading,
     collections,
     collectionsLoading,
-    initialCollectionLoading,
     loadError,
     retryLoad,
-  } = useSubscribeCollectionCheckout(slug);
+  } = useSubscribeCollectionCheckout();
   const catalogGateway = useMemo(
     () => CANONICAL_CATALOG_API_BASE
       ? createPublicCatalogGateway(CANONICAL_CATALOG_API_BASE, fetch)
@@ -107,7 +106,7 @@ export default function SubscribeCollection() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const isLoading = plansLoading || collectionsLoading || initialCollectionLoading;
+  const isLoading = plansLoading || collectionsLoading;
   const requestedCollectionMissing = Boolean(
     slug && !availableCollections.some((collection) => collection.slug === slug),
   );

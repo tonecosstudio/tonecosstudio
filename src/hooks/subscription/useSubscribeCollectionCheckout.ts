@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  getSubscribeCollectionBySlug,
   listSubscribeCollections,
   listSubscribePlans,
 } from "@/services/subscriptions/subscription-checkout-service";
@@ -10,7 +9,7 @@ export type {
   SubscribePlan,
 } from "@/services/subscriptions/subscription-checkout-service";
 
-export function useSubscribeCollectionCheckout(slug?: string) {
+export function useSubscribeCollectionCheckout() {
   const plansQuery = useQuery({
     queryKey: ["subscription-plans"],
     queryFn: listSubscribePlans,
@@ -21,21 +20,11 @@ export function useSubscribeCollectionCheckout(slug?: string) {
     queryFn: listSubscribeCollections,
   });
 
-  const initialCollectionQuery = useQuery({
-    queryKey: ["collection", slug],
-    enabled: Boolean(slug),
-    queryFn: () => getSubscribeCollectionBySlug(slug as string),
-  });
-
-  const loadError =
-    plansQuery.error ?? collectionsQuery.error ?? initialCollectionQuery.error ?? null;
+  const loadError = plansQuery.error ?? collectionsQuery.error ?? null;
 
   const retryLoad = () => {
     void plansQuery.refetch();
     void collectionsQuery.refetch();
-    if (slug) {
-      void initialCollectionQuery.refetch();
-    }
   };
 
   return {
@@ -43,8 +32,6 @@ export function useSubscribeCollectionCheckout(slug?: string) {
     plansLoading: plansQuery.isLoading,
     collections: collectionsQuery.data,
     collectionsLoading: collectionsQuery.isLoading,
-    initialCollection: initialCollectionQuery.data,
-    initialCollectionLoading: initialCollectionQuery.isLoading,
     loadError,
     retryLoad,
   };
