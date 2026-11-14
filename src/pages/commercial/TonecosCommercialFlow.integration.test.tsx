@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
   cleanup,
+  within,
 } from "@testing-library/react";
 import { useEffect } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -869,12 +870,20 @@ describe("TONART commercial screens: account → request → history → respons
     expect(mocks.answerAdmin).not.toHaveBeenCalled();
   });
 
-  it("shows only a real administrator's console link", async () => {
+  it("places the verified administrator's console link in the account header", async () => {
     mocks.hasAdmin.mockResolvedValue(true);
     renderApp("/perfil");
+    const account = await screen.findByRole("region", {
+      name: "Dados da conta",
+    });
     expect(
-      await screen.findByRole("link", { name: "Painel administrativo" }),
+      await within(account).findByRole("link", {
+        name: "Painel administrativo",
+      }),
     ).toHaveAttribute("href", "/admin");
+    expect(
+      screen.getAllByRole("link", { name: "Painel administrativo" }),
+    ).toHaveLength(1);
   });
 
   it("admin page uses the restricted service and does not submit prices for unauthorized users", async () => {

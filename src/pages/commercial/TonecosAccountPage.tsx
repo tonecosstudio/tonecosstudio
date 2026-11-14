@@ -347,12 +347,22 @@ export default function TonecosAccountPage() {
                 aria-labelledby="account-personal-title"
               >
                 <div className="mb-6 border-b border-white/15 pb-5">
-                  <h2
-                    id="account-personal-title"
-                    className="text-xl font-semibold tracking-tight"
-                  >
-                    Dados da conta
-                  </h2>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2
+                      id="account-personal-title"
+                      className="text-xl font-semibold tracking-tight"
+                    >
+                      Dados da conta
+                    </h2>
+                    {isAdmin && (
+                      <Link
+                        className={actionClass}
+                        to={TONECOS_COMMERCIAL_ROUTES.adminHome}
+                      >
+                        Painel administrativo
+                      </Link>
+                    )}
+                  </div>
                   <p className="mt-2 text-sm text-white/60">
                     Atualize seus contatos uma vez. Eles também serão usados nas
                     solicitações de orçamento.
@@ -518,14 +528,6 @@ export default function TonecosAccountPage() {
               <Link className={secondaryClass} to="/modelos">
                 Explorar modelos
               </Link>
-              {isAdmin && (
-                <Link
-                  className={actionClass}
-                  to={TONECOS_COMMERCIAL_ROUTES.adminHome}
-                >
-                  Painel administrativo
-                </Link>
-              )}
               {import.meta.env.VITE_TONECOS_COINS_ENABLED === "true" &&
                 isAdmin && (
                   <Link
