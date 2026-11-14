@@ -73,15 +73,22 @@ export async function getMyTonecosCoinBalance(): Promise<TonecosCoinBalance> {
 }
 
 /** Strictly owner-scoped by both authenticated id and PostgreSQL RLS. */
-export async function listMyTonecosCoinEntries(limit = 20): Promise<TonecosCoinEntry[]> {
+export async function listMyTonecosCoinEntries(
+  limit = 20,
+  offset = 0,
+): Promise<TonecosCoinEntry[]> {
   assertTonecosCoinsEnabled();
-  if (!integer(limit) || limit < 1 || limit > 50) throw new Error("tonecos_coin_limit_invalid");
+  if (!integer(limit) || limit < 1 || limit > 50 ||
+      !integer(offset) || offset < 0 || offset > 100000) {
+    throw new Error("tonecos_coin_limit_invalid");
+  }
   const userId = await requireOwnAccount();
   const { data, error } = await tonecos.from("tonecos_coin_entries")
     .select("id,delta,entry_type,reason,created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .order("id", { ascending: false })
+    .range(offset, offset + limit - 1);
   if (error) throw error;
   return (data ?? []).map((v) => {
     const r = object(v);

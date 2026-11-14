@@ -57,12 +57,14 @@ describe("commercial coins account UI", () => {
       await screen.findByText("Nenhuma movimentação registrada."),
     ).toBeInTheDocument();
     expect(screen.getAllByText("0", { selector: "p" })).toHaveLength(3);
-    expect(mocks.entries).toHaveBeenCalledWith(25);
+    expect(mocks.entries).toHaveBeenCalledWith(25, 0);
   });
   it("never displays a fake zero balance when Supabase is offline", async () => {
     mocks.balance.mockRejectedValue(new Error("offline"));
     renderPage();
-    expect(await screen.findByRole("alert")).toHaveTextContent("offline");
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Não foi possível conectar à carteira.");
+    expect(alert).not.toHaveTextContent("offline");
     expect(screen.queryByText("Saldo disponível")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
     await waitFor(() => expect(mocks.balance).toHaveBeenCalledTimes(2));
@@ -96,5 +98,46 @@ describe("commercial coins account UI", () => {
     expect(await screen.findByText("Crédito manual")).toBeInTheDocument();
     expect(screen.getByText("+20")).toBeInTheDocument();
     expect(screen.getByText("15", { selector: "p" })).toBeInTheDocument();
+  });
+
+  it("pages through the full append-only coin history", async () => {
+    const entries = (start: number, count: number) => Array.from({ length: count }, (_, index) => ({
+      id: `movement-${start + index}`,
+      delta: 1,
+      type: "admin_credit" as const,
+      reason: `Crédito ${start + index}`,
+      createdAt: "2026-11-05T08:00:00Z",
+    }));
+    mocks.balance.mockResolvedValue({
+      balance: 32,
+      totalEarned: 32,
+      totalSpent: 0,
+      entryCount: 32,
+      updatedAt: "2026-11-05T08:00:00Z",
+    });
+    mocks.entries
+      .mockResolvedValue(entries(0, 25))
+      .mockResolvedValueOnce(entries(0, 25))
+      .mockResolvedValueOnce(entries(25, 7));
+
+    renderPage();
+
+    expect(await screen.findByText("Crédito 0")).toBeInTheDocument();
+    expect(screen.getByText("Mostrando 1–25 de 32")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Movimentações mais antigas" }));
+    expect(await screen.findByText("Crédito 25")).toBeInTheDocument();
+    expect(screen.getByText("Mostrando 26–32 de 32")).toBeInTheDocument();
+    expect(mocks.entries).toHaveBeenLastCalledWith(25, 25);
+    fireEvent.click(screen.getByRole("button", { name: "Movimentações mais recentes" }));
+    expect(await screen.findByText("Crédito 0")).toBeInTheDocument();
+    expect(mocks.entries).toHaveBeenLastCalledWith(25, 0);
+  });
+
+  it("offers sign-in instead of retry when the wallet session has expired", async () => {
+    mocks.balance.mockRejectedValue(new Error("tonecos_login_required"));
+    renderPage();
+    const login = await screen.findByRole("link", { name: "Entrar novamente" });
+    expect(login).toHaveAttribute("href", "/login?next=%2Fmoedas");
+    expect(screen.queryByRole("button", { name: "Tentar novamente" })).not.toBeInTheDocument();
   });
 });

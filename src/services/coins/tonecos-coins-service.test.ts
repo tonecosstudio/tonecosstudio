@@ -77,11 +77,11 @@ describe("Tonecos Coins ledger authority", () => {
   });
 
   it("reads at most fifty owner-scoped ledger entries with no direct writes", async () => {
-    const q = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), limit: vi.fn() };
+    const q = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), range: vi.fn() };
     q.select.mockReturnValue(q);
     q.eq.mockReturnValue(q);
     q.order.mockReturnValue(q);
-    q.limit.mockResolvedValue({ data: [{
+    q.range.mockResolvedValue({ data: [{
       id: TX, delta: 23, entry_type: "admin_credit", reason: "Crédito manual",
       created_at: "2026-11-05T08:00:00Z",
     }], error: null });
@@ -93,14 +93,19 @@ describe("Tonecos Coins ledger authority", () => {
     }]);
     expect(mocks.from).toHaveBeenCalledExactlyOnceWith("tonecos_coin_entries");
     expect(q.eq).toHaveBeenCalledWith("user_id", USER);
-    expect(q.limit).toHaveBeenCalledWith(10);
+    expect(q.order).toHaveBeenNthCalledWith(1, "created_at", { ascending: false });
+    expect(q.order).toHaveBeenNthCalledWith(2, "id", { ascending: false });
+    expect(q.range).toHaveBeenCalledWith(0, 9);
+    await listMyTonecosCoinEntries(10, 25);
+    expect(q.range).toHaveBeenLastCalledWith(25, 34);
     await expect(listMyTonecosCoinEntries(100)).rejects.toThrow("tonecos_coin_limit_invalid");
+    await expect(listMyTonecosCoinEntries(25, 100001)).rejects.toThrow("tonecos_coin_limit_invalid");
   });
 
   it("never trusts malformed ledger entries", async () => {
-    const q = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), limit: vi.fn() };
+    const q = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), range: vi.fn() };
     q.select.mockReturnValue(q); q.eq.mockReturnValue(q); q.order.mockReturnValue(q);
-    q.limit.mockResolvedValue({ data: [{
+    q.range.mockResolvedValue({ data: [{
       id: TX, delta: 10, entry_type: "self_credit", reason: "Não autorizado",
       created_at: "2026-11-05T08:00:00Z",
     }], error: null });

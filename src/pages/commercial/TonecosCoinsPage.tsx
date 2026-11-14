@@ -5,10 +5,12 @@ import {
   type TonecosCoinBalance, type TonecosCoinEntry,
 } from "@/services/coins/tonecos-coins-service";
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
+import { isTonecosCoinsAuthError, tonecosCoinsErrorText } from "@/services/coins/tonecos-coins-error-text";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { CommercialPage, panelClass, secondaryClass } from "./CommercialPage";
 
 const format = new Intl.NumberFormat("pt-BR");
+const PAGE_SIZE = 25;
 const types: Record<TonecosCoinEntry["type"], string> = {
   admin_credit: "Crédito",
   purchase_spend: "Utilização",
@@ -22,34 +24,44 @@ export default function TonecosCoinsPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(true);
   const [reload, setReload] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     let active = true;
     setBusy(true); setError("");
+    setSessionExpired(false);
     getTonecosCurrentUser().then(async (identity) => {
       if (!active) return;
       if (!identity) { setGuest(true); return; }
       setGuest(false);
       const [wallet, movements] = await Promise.all([
-        getMyTonecosCoinBalance(), listMyTonecosCoinEntries(25),
+        getMyTonecosCoinBalance(), listMyTonecosCoinEntries(PAGE_SIZE, offset),
       ]);
       if (active) { setBalance(wallet); setEntries(movements); }
     }).catch((err: unknown) => {
-      if (active) setError(err instanceof Error ? err.message : "Não foi possível carregar seu saldo.");
+      if (active) {
+        setError(tonecosCoinsErrorText(err));
+        setSessionExpired(isTonecosCoinsAuthError(err));
+      }
     }).finally(() => { if (active) setBusy(false); });
     return () => { active = false; };
-  }, [reload]);
+  }, [reload, offset]);
 
   return (
-    <CommercialPage title="Minhas moedas" intro="Acompanhe suas moedas virtuais e o histórico de movimentações da conta TONART Studio. Moedas não representam saldo em reais e não há compra ou conversão habilitada.">
+    <CommercialPage title="Minhas moedas" intro="Consulte seus créditos TONART e cada movimentação registrada na mesma conta. Coins são créditos virtuais da plataforma, não dinheiro e não podem ser convertidos ou transferidos.">
       {busy && <p role="status">Consultando histórico de moedas...</p>}
       {guest === true && !busy && <div className={panelClass}>
         <p className="mb-4 text-white/70">Entre para consultar suas moedas.</p>
         <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.coins)}>Entrar</Link>
       </div>}
       {error && !busy && <div role="alert" className={panelClass + " max-w-3xl"}>
-        <p className="mb-3 text-red-200">Não foi possível consultar o saldo: {error}</p>
-        <button className={secondaryClass} type="button" onClick={() => setReload((x) => x + 1)}>Tentar novamente</button>
+        <p className="mb-3 text-red-200">{error}</p>
+        {sessionExpired ? (
+          <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.coins)}>Entrar novamente</Link>
+        ) : (
+          <button className={secondaryClass} type="button" onClick={() => setReload((x) => x + 1)}>Tentar novamente</button>
+        )}
       </div>}
       {balance && !busy && !error && !guest && <>
         <div className="grid gap-4 sm:grid-cols-3" aria-label="Resumo de moedas">
@@ -68,8 +80,18 @@ export default function TonecosCoinsPage() {
         </div>
         <div className="mt-7 max-w-4xl">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-            <h2 className="text-xl font-semibold">Movimentações</h2>
-            <button type="button" className={secondaryClass} onClick={() => setReload((x) => x + 1)}>Atualizar</button>
+            <div>
+              <h2 className="text-xl font-semibold">Movimentações</h2>
+              <p className="mt-1 text-xs text-white/50" role="status" aria-live="polite">
+                {balance.entryCount > 0
+                  ? `Mostrando ${offset + 1}–${Math.min(offset + entries.length, balance.entryCount)} de ${balance.entryCount}`
+                  : "Histórico completo da carteira"}
+              </p>
+            </div>
+            <button type="button" className={secondaryClass} onClick={() => {
+              setOffset(0);
+              setReload((x) => x + 1);
+            }}>Atualizar</button>
           </div>
           {entries.length === 0 ? <div className={panelClass}>
             <p className="text-sm text-white/70">Nenhuma movimentação registrada.</p>
@@ -85,6 +107,26 @@ export default function TonecosCoinsPage() {
               </span>
             </li>)}
           </ul>}
+          {balance.entryCount > PAGE_SIZE && entries.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                className={secondaryClass}
+                disabled={offset === 0 || busy}
+                onClick={() => setOffset((value) => Math.max(0, value - PAGE_SIZE))}
+              >
+                Movimentações mais recentes
+              </button>
+              <button
+                type="button"
+                className={secondaryClass}
+                disabled={offset + entries.length >= balance.entryCount || busy}
+                onClick={() => setOffset((value) => value + PAGE_SIZE)}
+              >
+                Movimentações mais antigas
+              </button>
+            </div>
+          )}
         </div>
       </>}
     </CommercialPage>

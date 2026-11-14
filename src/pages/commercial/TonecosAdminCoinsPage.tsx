@@ -5,6 +5,7 @@ import {
   creditTonecosCoins, findTonecosCoinRecipient,
   type TonecosCoinRecipient,
 } from "@/services/coins/tonecos-coins-service";
+import { tonecosCoinsErrorText } from "@/services/coins/tonecos-coins-error-text";
 import { actionClass, CommercialPage, fieldClass, panelClass, secondaryClass } from "./CommercialPage";
 
 const formatted = new Intl.NumberFormat("pt-BR");
@@ -27,7 +28,7 @@ export default function TonecosAdminCoinsPage() {
       if (!person) { setNotice("Nenhum cliente encontrado com esse e-mail."); return; }
       setRecipient(person);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Busca não autorizada.");
+      setError(tonecosCoinsErrorText(err, "admin"));
     } finally { setBusy(false); }
   }
 
@@ -48,7 +49,7 @@ export default function TonecosAdminCoinsPage() {
           formatted.format(result.balance) + ".");
       setRefKey(null); setReason(""); setAmount("1");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível registrar o crédito.");
+      setError(tonecosCoinsErrorText(err, "admin"));
     } finally { setBusy(false); }
   }
 

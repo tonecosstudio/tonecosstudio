@@ -45,7 +45,7 @@ describe("Tonecos controlled coin credit page", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Localizar" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Admin access required",
+      "Acesso administrativo não autorizado.",
     );
     expect(
       screen.queryByRole("button", { name: "Confirmar crédito" }),
