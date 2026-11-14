@@ -1,5 +1,15 @@
 # TONART Studio — checkpoint operacional
 
+## Checkpoint 14/11/2026 — cadastro complementar no Supabase canônico
+
+- **Implementado:** somente `public.profiles` do projeto TONART `icmtmaakjucmuzxnofkd` recebeu `whatsapp`, `delivery_address`, `preferred_contact_channel`, `quote_updates`, `production_updates` e `marketing_emails`, via migração aplicada `20261114043245_tonart_profile_complementary_fields`. A migração canônica foi alinhada à versão real no repositório. **Não foram criadas tabelas de cadastro paralelas.**
+- **Autoridade e controles verificados no banco:** RLS própria de `profiles` preservada (`id=auth.uid()` para SELECT/UPDATE, com WITH CHECK), GRANT UPDATE somente às colunas previstas, CPF e nascimento não armazenados, restrições de WhatsApp/CEP/endereço/UF e opt-ins false por padrão. Advisors de segurança identificaram `auth_leaked_password_protection` desabilitado (preexistente, não alterado); RLS sem políticas na tabela interna `private_api.admin_users` é intencional, sem exposição pública.
+- **Frontend integrado:** `TonecosCustomerSections.tsx` agora permite editar WhatsApp, endereço e preferências no mesmo perfil. `tonecos-account-service.ts` consulta/atualiza somente esse perfil com validações e verificação Auth; `TonecosQuoteRequestPage.tsx` reutiliza WhatsApp e CEP salvos, sem novos campos de coleta. Os valores antigos em `quotes` continuam histórico da solicitação, não são importados automaticamente para `profiles`.
+- **Build preview confirmado:** `main@11b69bbfae71e6bcdf36ebfe3a9d29c8d610126b`, Vercel `dpl_ARcwdN7YiTNunEZD9PT5RyZV3NZN` READY, `https://tonart-studio-public-on5ytw7so-jogo-brasils-projects.vercel.app` (preview sem promoção); `/perfil/endereco` HTTP 200, noindex, build Vite aprovado.
+- **Testes:** testes focados de formulário, persistência, validação e reuso no orçamento escritos/atualizados, mas GitHub Actions [#43557650643](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43557650643) falhou **antes de executar qualquer step**. Nenhuma homologação E2E autenticada com cliente real concluída.
+- **NEXT_ACTION:** executar testes unitários e de tipo em runner funcional, homologar sessão cliente no preview (salvar/recarregar/remover endereço e preferências, conferir orçamento com contato/CEP corretos), avaliar eventual proteção contra senhas vazadas. Não ativar e-mail/WhatsApp automático apenas por haver opt-in de preferência.
+- **DO_NOT_REPEAT:** não recriar perfis, não migrar CPF/nascimento sem finalidade, não alterar política admin/Coins/pagamentos, não publicar no domínio oficial sem homologação.
+
 ## Checkpoint 14/11/2026 — formulário complementar recuperado no frontend
 
 - **Base e HEAD de código:** `main@c59a35af043438987554b0fd458f020215eb63b0`; somente `src/pages/commercial/TonecosCustomerSections.tsx` e testes da mesma página foram alterados. O formulário complementar reutiliza `PendingCustomerData` e a mesma navegação/identidade existentes; restabelece WhatsApp adicional, CPF para finalidade fiscal, data de nascimento, endereço BR/UF e preferências (contato, avisos de orçamento/produção, campanhas), sem gravar dados nem simular consentimento.
