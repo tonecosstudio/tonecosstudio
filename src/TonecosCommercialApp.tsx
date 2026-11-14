@@ -15,6 +15,7 @@ const Request = lazy(() => import("@/pages/commercial/TonecosQuoteRequestPage"))
 const Quotes = lazy(() => import("@/pages/commercial/TonecosMyQuotesPage"));
 const AdminQuotes = lazy(() => import("@/pages/commercial/TonecosAdminQuotesPage"));
 const AdminHome = lazy(() => import("@/pages/commercial/TonecosAdminHomePage"));
+const CustomerSections = lazy(() => import("@/pages/commercial/TonecosCustomerSections"));
 const Coins = lazy(() => import("@/pages/commercial/TonecosCoinsPage"));
 const AdminCoins = lazy(() => import("@/pages/commercial/TonecosAdminCoinsPage"));
 
@@ -63,6 +64,7 @@ const commercialRoutes: ReactNode = (
   <>
     <Route path={TONECOS_COMMERCIAL_ROUTES.login} element={<Account />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.account} element={<Account />} />
+    <Route path={TONECOS_COMMERCIAL_ROUTES.account + "/:section"} element={<CustomerSections />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.recovery} element={<Recovery />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.adminHome} element={<AdminAccessGate><AdminHome /></AdminAccessGate>} />
     {/* Existing original backoffice paths share one guarded commercial workspace. */}

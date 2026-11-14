@@ -28,6 +28,7 @@ import {
   secondaryClass,
 } from "./CommercialPage";
 import PasswordField from "./PasswordField";
+import { TonecosCustomerNavigation } from "./TonecosCustomerSections";
 import { commercialAccountErrorText } from "./commercial-account-error-text";
 
 type Identity = { id: string; email: string | null };
@@ -339,6 +340,7 @@ export default function TonecosAccountPage() {
           <p role="status">Verificando sessão...</p>
         ) : identity ? (
           <div className={panelClass}>
+            <TonecosCustomerNavigation />
             <p className="mb-4 text-sm text-white/60">
               Conectado como {identity.email ?? "cliente"}
             </p>
