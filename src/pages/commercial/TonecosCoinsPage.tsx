@@ -49,7 +49,7 @@ export default function TonecosCoinsPage() {
   }, [reload, offset]);
 
   return (
-    <CommercialPage title="Minhas moedas" intro="Consulte seus créditos TONART e cada movimentação registrada na mesma conta. Coins são créditos virtuais da plataforma, não dinheiro e não podem ser convertidos ou transferidos.">
+    <CommercialPage title="Minhas moedas" intro="Consulte seu saldo e histórico. Em orçamento comum respondido pela equipe, 1 Coin abate R$ 1 do valor em aberto, limitado ao saldo disponível. Coins são créditos virtuais, sem transferência, saque ou conversão em dinheiro; não pagam a entrada de R$ 50 da pré-venda.">
       {busy && <p role="status">Consultando histórico de moedas...</p>}
       {guest === true && !busy && <div className={panelClass}>
         <p className="mb-4 text-white/70">Entre para consultar suas moedas.</p>

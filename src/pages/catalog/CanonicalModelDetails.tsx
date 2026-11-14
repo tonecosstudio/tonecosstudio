@@ -916,16 +916,23 @@ export default function CanonicalModelDetails() {
                         </aside>
                       ) : null}
                     </div>
-                    <details className="border-t border-[hsl(0,0%,15%)] pt-4">
-                      <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
-                        Coins neste modelo
-                      </summary>
-                      <p className="pb-3 text-sm leading-relaxed text-[hsl(0,0%,70%)]">
-                        Esta ficha ainda não oferece resgate com Coins. Não há valor
-                        em Coins definido para este modelo; adicioná-lo à seleção
-                        não utiliza saldo nem gera cobrança.
-                      </p>
-                    </details>
+                    {quoteRequestsEnabled ? (
+                      <details className="border-t border-[hsl(0,0%,15%)] pt-4">
+                        <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                          Como usar Coins no orçamento
+                        </summary>
+                        <p className="pb-3 text-sm leading-relaxed text-[hsl(0,0%,70%)]">
+                          Coins não são definidos por modelo nem usados ao montar
+                          a seleção. Depois que a equipe responder a um orçamento
+                          comum, você pode usar seu saldo para abater R$ 1 por
+                          Coin, até o menor valor entre seu saldo disponível e o
+                          total em aberto. A entrada de R$ 50 da pré-venda não
+                          aceita Coins. O saldo restante segue pelas
+                          instruções de pagamento do orçamento; Coins são créditos
+                          virtuais, sem saque ou conversão em dinheiro.
+                        </p>
+                      </details>
+                    ) : null}
                     <details className="border-t border-[hsl(0,0%,15%)] pt-4">
                       <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
                         Como preparar sua solicitação

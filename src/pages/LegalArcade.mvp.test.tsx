@@ -46,4 +46,14 @@ describe("legal content for read-only public catalog", () => {
     expect(screen.getByText(/Sistema de Coins/)).toBeInTheDocument();
     expect(mock.useSystemSettings).toHaveBeenCalledWith({ enabled: false });
   });
+
+  it("states the current commercial payment and Coins rules", () => {
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+    vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+    render(<TermsArcade />);
+    expect(screen.getByText(/entrada é de R\$ 50 e é abatida do total/)).toBeInTheDocument();
+    expect(screen.getByText(/cada Coin abate R\$ 1/)).toBeInTheDocument();
+    expect(screen.queryByText(/servem apenas para seleção na plataforma/)).not.toBeInTheDocument();
+  });
 });

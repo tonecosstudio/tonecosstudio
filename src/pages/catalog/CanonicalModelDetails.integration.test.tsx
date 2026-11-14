@@ -307,6 +307,29 @@ describe("published model/gallery identity on the public detail page", () => {
     expect(
       screen.queryByRole("heading", { name: "Ficha em preparação" }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Como usar Coins no orçamento"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("explains that Coins are applied to answered commercial quotes", async () => {
+    vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+    const { io } = mountGallery({ total: 1 });
+
+    expect(
+      await screen.findByRole("heading", { name: "Animal original" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Como usar Coins no orçamento"));
+
+    expect(
+      screen.getByText(/Coin, até o menor valor entre/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/A entrada de R\$ 50 da pré-venda não aceita Coins/),
+    ).toBeInTheDocument();
+    expect(io).toHaveBeenCalled();
   });
 
   it("keeps the gallery operational despite the retired media-review flag", async () => {

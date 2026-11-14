@@ -183,7 +183,7 @@ function QuotePaymentPanel({
           <p className="mt-1 text-xs leading-5 text-white/60">
             {row.isPreorder
               ? "R$ 50 de entrada abatidos do total; o restante é pago na finalização."
-              : "Pague por PIX ou use seus Coins após a TONART responder ao orçamento."}
+              : "Após a resposta da TONART, use Coins ou siga as instruções de pagamento; o comprovante pode ser enviado por aqui."}
           </p>
         </div>
         {paymentStatus === "under_review" ? (
@@ -306,7 +306,7 @@ function QuotePaymentPanel({
           >
             {coinAmountOutOfRange
               ? `Escolha até ${maxCoins.toLocaleString("pt-BR")} Coins neste orçamento.`
-              : `Até ${maxCoins.toLocaleString("pt-BR")} Coins neste orçamento; o restante pode ser pago por PIX.`}
+              : `Até ${maxCoins.toLocaleString("pt-BR")} Coins neste orçamento; se restar algum valor, siga as instruções de pagamento e envie o comprovante por aqui.`}
           </p>
           {coinError && (
             <p role="alert" className="text-sm text-red-300">

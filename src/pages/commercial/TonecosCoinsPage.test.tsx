@@ -54,6 +54,9 @@ describe("commercial coins account UI", () => {
   it("shows an actual empty ledger as 0 only after successful Supabase read", async () => {
     renderPage();
     expect(
+      await screen.findByText(/1 Coin abate R\$ 1 do valor em aberto/),
+    ).toBeInTheDocument();
+    expect(
       await screen.findByText("Nenhuma movimentação registrada."),
     ).toBeInTheDocument();
     expect(screen.getAllByText("0", { selector: "p" })).toHaveLength(3);

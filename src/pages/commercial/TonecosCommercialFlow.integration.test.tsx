@@ -38,6 +38,8 @@ const mocks = vi.hoisted(() => {
     submit: vi.fn(),
     listMine: vi.fn(),
     submitVoucher: vi.fn(),
+    coinBalance: vi.fn(),
+    applyCoins: vi.fn(),
     listAdmin: vi.fn(),
     answerAdmin: vi.fn(),
     changeStatus: vi.fn(),
@@ -70,6 +72,10 @@ vi.mock("@/services/payments/payment-voucher-storage-service", () => ({
   ALLOWED_PAYMENT_VOUCHER_TYPES: ["image/jpeg", "image/png", "application/pdf"],
   MAX_PAYMENT_VOUCHER_SIZE: 5 * 1024 * 1024,
   validatePaymentVoucher: vi.fn(),
+}));
+vi.mock("@/services/coins/tonecos-coins-service", () => ({
+  getMyTonecosCoinBalance: mocks.coinBalance,
+  applyTonecosCoinsToQuote: mocks.applyCoins,
 }));
 vi.mock("@/services/admin/config/catalog-quote-admin-service", () => ({
   loadAdminCatalogQuotePage: mocks.listAdmin,
@@ -156,6 +162,20 @@ beforeEach(() => {
     limit: 20,
     offset: 0,
     rows: [],
+  });
+  mocks.coinBalance.mockResolvedValue({
+    balance: 40,
+    totalEarned: 40,
+    totalSpent: 0,
+    entryCount: 1,
+    updatedAt: "2026-11-14T00:00:00Z",
+  });
+  mocks.applyCoins.mockResolvedValue({
+    quoteId: QUOTE,
+    spent: 20,
+    balance: 20,
+    remainingAmount: 100,
+    idempotent: false,
   });
   mocks.listAdmin.mockResolvedValue({
     total: 0,
@@ -743,6 +763,68 @@ describe("TONART commercial screens: account → request → history → respons
     expect(await screen.findByText(/Valor antes da Black Friday:/)).toHaveTextContent(/300,00/);
     expect(screen.getByText(/Desconto Black Friday \(50%\):/)).toHaveTextContent(/150,00/);
     expect(screen.getByText(/Valor final:/)).toHaveTextContent(/150,00/);
+  });
+
+  it("applies Coins to an answered quote and explains voucher follow-up", async () => {
+    mocks.listMine.mockResolvedValue({
+      total: 1,
+      limit: 20,
+      offset: 0,
+      rows: [
+        {
+          id: QUOTE,
+          status: "answered",
+          createdAt: "2026-11-14T00:00:00Z",
+          notes: null,
+          quotedAmount: 120,
+          listAmount: 120,
+          discountPercent: 0,
+          discountAmount: 0,
+          responseMessage: "Orçamento respondido.",
+          deadline: null,
+          items: [{ slug: "naruto", quantity: 1 }],
+          whatsapp: null,
+          postalCode: null,
+          scale: "a definir",
+          finishing: "a definir",
+          isPreorder: false,
+          depositAmount: null,
+          remainingAmount: null,
+          paymentStatus: "pending",
+          paymentLink: null,
+          pixKey: "pix@tonart.example",
+          paymentInstructions: null,
+          paymentLinkSentAt: "2026-11-14T01:00:00Z",
+          finalPaymentNotifiedAt: null,
+          readyForFinalPayment: false,
+          paymentVoucherPath: null,
+          paymentVoucherType: null,
+          paymentVoucherRejectionReason: null,
+          coinAmountApplied: 0,
+        },
+      ],
+    });
+
+    renderApp("/meus-orcamentos");
+
+    expect(await screen.findByText("Use seus Coins")).toBeInTheDocument();
+    expect(screen.getByText(/o comprovante pode ser enviado por aqui/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/se restar algum valor.*comprovante por aqui/i),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Quantos Coins deseja usar?"), {
+      target: { value: "20" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Usar Coins" }));
+
+    await waitFor(() =>
+      expect(mocks.applyCoins).toHaveBeenCalledWith({ quoteId: QUOTE, amount: 20 }),
+    );
+    expect(
+      await screen.findByText(
+        "20 Coins aplicados. Restam R$ 100,00 para pagamento.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("does not display another person's history without a session", async () => {
