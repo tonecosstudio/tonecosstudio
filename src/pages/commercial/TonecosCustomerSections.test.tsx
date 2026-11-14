@@ -229,6 +229,12 @@ describe("Original customer account navigation in the commercial app", () => {
     });
     show("/perfil/dados-pessoais");
     expect(await screen.findByText("71999887766")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Abrir orçamento de origem" }),
+    ).toHaveAttribute(
+      "href",
+      "/meus-orcamentos?quote=22222222-2222-4222-8222-222222222222",
+    );
     expect(screen.getByText(/não ao cadastro permanente da Minha Conta/)).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "WhatsApp" })).toBeDisabled();
     expect(mocks.listMine).toHaveBeenCalledWith(
@@ -355,7 +361,12 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(
       await screen.findByText(/Orçamento respondido:/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Orçamento #22222222/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Orçamento #22222222" }),
+    ).toHaveAttribute(
+      "href",
+      "/meus-orcamentos?quote=22222222-2222-4222-8222-222222222222",
+    );
     expect(
       screen.getByText(/não significa que um e-mail, SMS ou WhatsApp/),
     ).toBeInTheDocument();
@@ -406,6 +417,12 @@ describe("Original customer account navigation in the commercial app", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Em análise")).toBeInTheDocument();
     expect(screen.getByText("Valor em análise")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Abrir orçamento #22222222" }),
+    ).toHaveAttribute(
+      "href",
+      "/meus-orcamentos?quote=22222222-2222-4222-8222-222222222222",
+    );
     expect(mocks.listMine).toHaveBeenCalledWith(
       "11111111-1111-4111-8111-111111111111",
       { limit: 5, offset: 0 },
