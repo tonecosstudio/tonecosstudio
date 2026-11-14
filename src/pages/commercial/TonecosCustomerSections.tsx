@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { profileNavigationConfig } from "@/config/profile-navigation.config";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
@@ -172,6 +172,25 @@ export function TonecosCustomerNavigation({
         </div>
       ))}
     </nav>
+  );
+}
+
+/** Consistent customer shell shared by account overview and restored sections. */
+export function TonecosCustomerWorkspace({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <div className="grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start">
+      <aside
+        className={panelClass + " lg:sticky lg:top-24"}
+        aria-label="Navegação lateral da conta"
+      >
+        <TonecosCustomerNavigation layout="sidebar" />
+      </aside>
+      <div className="min-w-0 space-y-6">{children}</div>
+    </div>
   );
 }
 
@@ -535,10 +554,9 @@ export default function TonecosCustomerSections() {
         </div>
       )}
       {state === "authenticated" && userId && (
-        <>
-          <TonecosCustomerNavigation />
+        <TonecosCustomerWorkspace>
           <CustomerSectionContent slug={sectionSlug} userId={userId} />
-        </>
+        </TonecosCustomerWorkspace>
       )}
     </CommercialPage>
   );

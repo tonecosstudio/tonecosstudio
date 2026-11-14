@@ -102,6 +102,10 @@ function renderApp(entry: RouteEntry, seed = false) {
             />
             <Route path="/perfil" element={<TonecosAccountPage />} />
             <Route
+              path="/perfil/:section"
+              element={<div>Seção autenticada da Minha Conta</div>}
+            />
+            <Route
               path="/solicitar-orcamento"
               element={<TonecosQuoteRequestPage />}
             />
@@ -630,6 +634,42 @@ describe("TONART commercial screens: account → request → history → respons
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
+  });
+
+  it("returns signed-in customers to the requested profile subsection", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    mocks.signIn.mockResolvedValue(USER);
+    renderApp("/login?next=%2Fperfil%2Fendereco");
+    fireEvent.change(await screen.findByLabelText("E-mail"), {
+      target: { value: "cliente@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Senha"), {
+      target: { value: "StrongPass123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(
+      await screen.findByText("Seção autenticada da Minha Conta"),
+    ).toBeInTheDocument();
+    expect(mocks.signIn).toHaveBeenCalledTimes(1);
+  });
+
+  it("continues a verified session to a restored profile subsection", async () => {
+    renderApp("/login?next=%2Fperfil%2Fpedidos");
+    expect(
+      await screen.findByText("Seção autenticada da Minha Conta"),
+    ).toBeInTheDocument();
+    expect(mocks.signIn).not.toHaveBeenCalled();
+  });
+
+  it("does not honor arbitrary nested return URLs during authentication", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    renderApp("/login?next=%2Fperfil%2F..%2F..%2Fadmin");
+    expect(
+      await screen.findByRole("button", { name: "Entrar" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Seção autenticada da Minha Conta"),
+    ).not.toBeInTheDocument();
   });
 
   it("requires account sign-in and preserves a return-to path", async () => {

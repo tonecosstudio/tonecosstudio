@@ -8,6 +8,7 @@ import {
 import {
   TONECOS_COMMERCIAL_ROUTES,
   tonecosRecoveryPath,
+  resolveTonecosCustomerReturnPath,
 } from "@/config/routes";
 import { hasTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
 import {
@@ -28,7 +29,7 @@ import {
   secondaryClass,
 } from "./CommercialPage";
 import PasswordField from "./PasswordField";
-import { TonecosCustomerNavigation } from "./TonecosCustomerSections";
+import { TonecosCustomerWorkspace } from "./TonecosCustomerSections";
 import { commercialAccountErrorText } from "./commercial-account-error-text";
 
 type Identity = { id: string; email: string | null };
@@ -51,9 +52,10 @@ export default function TonecosAccountPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
-  const next = safeNext.has(params.get("next") ?? "")
-    ? params.get("next")!
-    : TONECOS_COMMERCIAL_ROUTES.account;
+  const requestedNext = params.get("next");
+  const next = safeNext.has(requestedNext ?? "")
+    ? requestedNext!
+    : resolveTonecosCustomerReturnPath(requestedNext);
   const [mode, setMode] = useState(
     params.get("mode") === "signup" ? "signup" : "login",
   );
@@ -339,14 +341,7 @@ export default function TonecosAccountPage() {
         ) : identity === undefined ? (
           <p role="status">Verificando sessão...</p>
         ) : identity ? (
-          <div className="grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start">
-            <aside
-              className={panelClass + " lg:sticky lg:top-24"}
-              aria-label="Navegação lateral da conta"
-            >
-              <TonecosCustomerNavigation layout="sidebar" />
-            </aside>
-            <div className="min-w-0 space-y-6">
+          <TonecosCustomerWorkspace>
               <section
                 className={panelClass}
                 aria-labelledby="account-personal-title"
@@ -551,8 +546,7 @@ export default function TonecosAccountPage() {
                 Sair da conta
               </button>
             </div>
-            </div>
-          </div>
+          </TonecosCustomerWorkspace>
         ) : (
           <div className={panelClass}>
             <div className="mb-6 flex gap-3" aria-label="Acesso à conta">

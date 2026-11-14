@@ -80,6 +80,19 @@ describe("Original customer account navigation in the commercial app", () => {
     );
   });
 
+  it("reuses the same sidebar for restored account sections", async () => {
+    show("/perfil/endereco");
+    expect(
+      await screen.findByRole("complementary", {
+        name: "Navegação lateral da conta",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Endereços" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
   it("keeps the old payment, notifications and support sections alongside restored pages", () => {
     const paths = customerSectionLinks.map((x) => x.path);
     expect(paths).toContain("/perfil");
