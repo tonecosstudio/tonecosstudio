@@ -161,16 +161,17 @@ describe("TONART admin workspace", () => {
     expect(screen.queryByText("cliente@example.com")).not.toBeInTheDocument();
   });
 
-  it("opens original Coins route directly without enabling emission", async () => {
+  it("keeps the original Coins module inaccessible when its feature is disabled", async () => {
     show("/admin/creditos");
-    expect(
-      await screen.findByRole("heading", {
-        name: "Sistema de créditos · Coins",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByText("Nenhuma movimentação registrada."),
-    ).toBeInTheDocument();
+    if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
+      expect(
+        screen.queryByRole("heading", { name: "Sistema de créditos · Coins" }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText("Nenhuma movimentação registrada.")).not.toBeInTheDocument();
+      return;
+    }
+    expect(await screen.findByRole("heading", { name: "Sistema de créditos · Coins" })).toBeInTheDocument();
+    expect(await screen.findByText("Nenhuma movimentação registrada.")).toBeInTheDocument();
   });
 
   it("keeps Coins out of commercial administration when its feature is disabled", async () => {
@@ -210,6 +211,11 @@ describe("TONART admin workspace", () => {
       ],
     });
     show();
+    if (import.meta.env.VITE_TONECOS_COINS_ENABLED !== "true") {
+      expect(screen.queryByRole("button", { name: /Créditos/ })).not.toBeInTheDocument();
+      expect(screen.queryByText("Crédito administrativo confirmado")).not.toBeInTheDocument();
+      return;
+    }
     fireEvent.click(screen.getByRole("button", { name: /Créditos/ }));
     expect(
       await screen.findByText("Crédito administrativo confirmado"),

@@ -136,7 +136,7 @@ export default function TonecosAdminHomePage() {
       : (selectedSubpage?.label ?? activeItem?.label ?? "Painel");
   const isUsers = sectionId === "users" && !selectedSubpage;
   const isDashboard = sectionId === "dashboard";
-  const isCoins = sectionId === "credits-hub";
+  const isCoins = coinsEnabled && sectionId === "credits-hub";
   const isCatalog = sectionId === "catalog-hub" && !selectedSubpage;
   const isOrders = sectionId === "orders" && !selectedSubpage;
   const isFinancial = sectionId === "financial-hub" && !selectedSubpage;
