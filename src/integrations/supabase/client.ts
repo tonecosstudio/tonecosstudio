@@ -2,10 +2,11 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { createPreviewReadOnlyFetch } from "./preview-readonly-transport";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+import {
+  PREVIEW_READ_ONLY,
+  SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_URL,
+} from "@/config/supabase-environment";
 
 // Validate environment variables before client creation
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
