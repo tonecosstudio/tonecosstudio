@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { useEffect } from "react";
+import {
+  CatalogBrowsingProvider,
+  useCatalogBrowsing,
+} from "@/services/catalog/catalog-browsing-context";
+import type { PublicCatalogModel } from "@/services/catalog/public-catalog-gateway";
 import { HelmetProvider } from "react-helmet-async";
 import TonecosCustomerSections, {
   customerSectionLinks,
@@ -111,6 +117,49 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(
       screen.getByText(/Nenhum dado inserido aqui é armazenado/),
     ).toBeInTheDocument();
+  });
+
+  it("shows the existing catalog selection in the restored collection and removes items through the same store", async () => {
+    function SeedSelection() {
+      const { setSelectedModels } = useCatalogBrowsing();
+      useEffect(() => {
+        setSelectedModels([
+          {
+            id: "model-1",
+            slug: "naruto",
+            name: "Naruto",
+            code: "TC-001",
+          } as PublicCatalogModel,
+        ]);
+      }, [setSelectedModels]);
+      return null;
+    }
+
+    render(
+      <MemoryRouter initialEntries={["/perfil/colecao"]}>
+        <HelmetProvider>
+          <CatalogBrowsingProvider>
+            <SeedSelection />
+            <TonecosCustomerSections />
+          </CatalogBrowsingProvider>
+        </HelmetProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("region", { name: "Seleção atual de modelos" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Naruto" })).toHaveAttribute(
+      "href",
+      "/modelos/naruto",
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Remover Naruto da seleção" }),
+    );
+    expect(
+      screen.getByText(/ainda não escolheu modelos para solicitar orçamento/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Naruto" })).not.toBeInTheDocument();
   });
 
   it("offers a proper sign-in instead of revealing personal sections to a guest", async () => {

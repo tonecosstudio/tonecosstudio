@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { profileNavigationConfig } from "@/config/profile-navigation.config";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
+import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import {
   actionClass,
   CommercialPage,
@@ -207,6 +208,79 @@ function PendingCustomerData({
   );
 }
 
+function CurrentCatalogSelection() {
+  const { selectedModels, setSelectedModels } = useCatalogBrowsing();
+
+  return (
+    <section className={panelClass} aria-label="Seleção atual de modelos">
+      <h2 className="mb-3 text-lg font-semibold">Sua seleção de modelos</h2>
+      <p className="mb-5 text-sm leading-6 text-white/65">
+        Esta é a seleção atual do catálogo para pedir orçamento. Ela não
+        representa uma compra nem o inventário de peças adquiridas; essa parte
+        da coleção será vinculada à Minha Conta na etapa de integração.
+      </p>
+      {selectedModels.length === 0 ? (
+        <p className="mb-5 text-sm text-white/60">
+          Você ainda não escolheu modelos para solicitar orçamento.
+        </p>
+      ) : (
+        <div className="mb-6 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-white/55">
+            {selectedModels.length}{" "}
+            {selectedModels.length === 1
+              ? "modelo selecionado"
+              : "modelos selecionados"}
+          </p>
+          <ul className="space-y-2">
+            {selectedModels.map((model) => (
+              <li
+                key={model.id}
+                className="flex flex-wrap items-center justify-between gap-3 border border-white/15 p-4"
+              >
+                <div className="min-w-0">
+                  <Link
+                    to={"/modelos/" + encodeURIComponent(model.slug)}
+                    className="font-medium text-white/90 hover:text-[hsl(var(--gold-accent))]"
+                  >
+                    {model.name}
+                  </Link>
+                  <p className="mt-1 text-xs text-white/50">{model.code}</p>
+                </div>
+                <button
+                  type="button"
+                  className="min-h-10 border border-white/25 px-3 text-xs text-white/70 hover:border-white/60"
+                  aria-label={"Remover " + model.name + " da seleção"}
+                  onClick={() =>
+                    setSelectedModels((models) =>
+                      models.filter((item) => item.id !== model.id),
+                    )
+                  }
+                >
+                  Remover
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-3">
+        <Link className={actionClass} to="/modelos">
+          Explorar modelos
+        </Link>
+        {selectedModels.length > 0 &&
+          import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" && (
+            <Link
+              className={secondaryClass}
+              to={TONECOS_COMMERCIAL_ROUTES.request}
+            >
+              Revisar solicitação
+            </Link>
+          )}
+      </div>
+    </section>
+  );
+}
+
 function CustomerSectionContent({ slug }: { slug: string }) {
   if (slug === "dados-pessoais") {
     return (
@@ -317,19 +391,7 @@ function CustomerSectionContent({ slug }: { slug: string }) {
     );
   }
   if (slug === "colecao") {
-    return (
-      <section className={panelClass}>
-        <h2 className="mb-3 text-lg font-semibold">Seus modelos</h2>
-        <p className="mb-5 text-sm text-white/65">
-          Explore o catálogo canônico e selecione peças para orçamento. O
-          inventário de peças adquiridas será ligado à conta existente na etapa
-          de integração dos dados.
-        </p>
-        <Link className={actionClass} to="/modelos">
-          Explorar modelos
-        </Link>
-      </section>
-    );
+    return <CurrentCatalogSelection />;
   }
   return (
     <section role="alert" className={panelClass}>
