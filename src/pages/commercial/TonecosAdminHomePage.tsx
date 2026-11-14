@@ -1055,25 +1055,32 @@ export default function TonecosAdminHomePage() {
             !isFinancial &&
             !isCommunication &&
             !isProduction &&
-            !isAnalytics && (
+            !isAnalytics &&
+            sectionId !== "unknown" &&
+            sectionId !== "credits-hub" && (
+              <TonartAdminOriginalSection
+                section={{
+                  parent: sectionId,
+                  path: pathname,
+                  label: displayName,
+                }}
+                overview={null}
+                loading={false}
+                quotesEnabled={quotesEnabled}
+                parentPath={ADMIN_ROUTES.home}
+              />
+            )}
+          {(sectionId === "unknown" ||
+            (!coinsEnabled && sectionId === "credits-hub")) && (
               <section className={panelClass}>
                 <h3 className="text-lg font-semibold">{displayName}</h3>
                 <p className="mt-4 max-w-2xl text-sm leading-6 text-white/65">
-                  Este módulo integra o painel administrativo original e
-                  permanece preservado no repositório. Suas operações não estão
-                  habilitadas na base de produção atual. Nenhum dado foi apagado
-                  nem foram criadas funções substitutas.
+                  Esta página não está disponível na implantação comercial atual.
+                  Nenhuma operação foi executada.
                 </p>
-                <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-white/45">
-                  Módulo desativado nesta implantação
-                </p>
-                <button
-                  type="button"
-                  className={secondaryClass + " mt-5"}
-                  onClick={() => navigate(ADMIN_ROUTES.home)}
-                >
+                <Link className={secondaryClass + " mt-5"} to={ADMIN_ROUTES.home}>
                   Voltar ao painel
-                </button>
+                </Link>
               </section>
             )}
         </main>

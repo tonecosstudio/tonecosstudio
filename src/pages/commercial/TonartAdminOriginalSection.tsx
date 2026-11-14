@@ -32,6 +32,9 @@ const guidance: Record<string, string> = {
   communication: "Use as respostas dos orçamentos já registradas. O histórico abaixo não afirma que e-mails ou mensagens externas foram enviados.",
   system: "As configurações antigas estão preservadas no repositório. Não serão gravadas alterações até existir uma autoridade operacional validada.",
   users: "Os grupos históricos ainda não estão associados ao controle de permissões da TONART. Consulte as contas atuais pela lista protegida.",
+  audit: "A trilha de auditoria original está preservada, mas este projeto comercial ainda não expõe registros administrativos auditáveis. Não é apresentada uma lista simulada de eventos.",
+  packaging: "As opções de embalagem do sistema anterior fazem parte da estrutura recuperada. Nenhuma embalagem será aplicada a pedidos inexistentes ou gravada sem a autoridade operacional.",
+
 };
 
 function SnapshotMetric({

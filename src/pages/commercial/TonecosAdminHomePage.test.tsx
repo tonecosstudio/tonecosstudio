@@ -436,6 +436,23 @@ describe("TONART admin workspace", () => {
     expect(mocks.overview).toHaveBeenCalledTimes(1);
   });
 
+  it("exposes the original packaging and audit frontend without pretending that it can save data", () => {
+    show("/admin/embalagem");
+    expect(
+      screen.getByText(/As opções de embalagem do sistema anterior/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Salvar embalagem/ }),
+    ).not.toBeInTheDocument();
+    cleanup();
+
+    show("/admin/auditoria");
+    expect(
+      screen.getByText(/Não é apresentada uma lista simulada de eventos/),
+    ).toBeInTheDocument();
+    expect(mocks.overview).not.toHaveBeenCalled();
+  });
+
   it("fails closed on dashboard query errors instead of inventing empty figures", async () => {
     mocks.overview.mockRejectedValueOnce(new Error("RLS blocked"));
     show();
