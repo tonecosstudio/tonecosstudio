@@ -32,6 +32,8 @@ const mocks = vi.hoisted(() => ({
   updatePersonal: vi.fn(),
   updateAddress: vi.fn(),
   updatePreferences: vi.fn(),
+  fetchNotificationPreferences: vi.fn(),
+  updateNotificationPreferences: vi.fn(),
   listMine: vi.fn(),
   history: vi.fn(),
   activeSubscription: vi.fn(),
@@ -49,6 +51,10 @@ vi.mock("@/services/customer/catalog-quote-service", () => ({
 }));
 vi.mock("@/services/quotes/catalog-quote-history-service", () => ({
   loadCatalogQuoteHistory: mocks.history,
+}));
+vi.mock("@/services/customer/notification-preferences-service", () => ({
+  fetchNotificationPreferences: mocks.fetchNotificationPreferences,
+  updateNotificationPreferences: mocks.updateNotificationPreferences,
 }));
 vi.mock("@/hooks/customer/useProfileSectionsData", () => ({
   useActiveProfileSubscription: mocks.activeSubscription,
@@ -122,6 +128,19 @@ beforeEach(() => {
   mocks.updatePreferences.mockResolvedValue({
     id: "11111111-1111-4111-8111-111111111111",
   });
+  mocks.fetchNotificationPreferences.mockResolvedValue({
+    production_stage_updates: true,
+    item_shipped: true,
+    item_delivered: true,
+    marketing_emails: true,
+  });
+  mocks.updateNotificationPreferences.mockImplementation(async (updates) => ({
+    production_stage_updates: true,
+    item_shipped: true,
+    item_delivered: true,
+    marketing_emails: true,
+    ...updates,
+  }));
 });
 afterEach(() => {
   cleanup();
@@ -486,11 +505,11 @@ describe("Original customer account navigation in the commercial app", () => {
       screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }),
     ).toBeEnabled();
     expect(
-      screen.getByRole("checkbox", { name: "Avisos de produção" }),
-    ).toBeEnabled();
+      screen.getByRole("link", { name: "Gerenciar preferências de envio" }),
+    ).toHaveAttribute("href", "/perfil/notificacoes");
     expect(
-      screen.getByRole("checkbox", { name: "Novidades e campanhas" }),
-    ).toBeEnabled();
+      screen.queryByRole("checkbox", { name: "Novidades e campanhas" }),
+    ).not.toBeInTheDocument();
   });
 
   it("saves personal details through the canonical profile service, never the quote service", async () => {
@@ -601,18 +620,16 @@ describe("Original customer account navigation in the commercial app", () => {
       screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }),
     );
     fireEvent.click(
-      screen.getByRole("checkbox", { name: "Novidades e campanhas" }),
-    );
-    fireEvent.click(
       screen.getByRole("button", { name: "Salvar preferências" }),
     );
     await screen.findByText("Informações salvas na sua conta.");
     expect(mocks.updatePreferences).toHaveBeenCalledWith({
       preferredContactChannel: "email",
       quoteUpdates: true,
-      productionUpdates: false,
-      marketingEmails: true,
     });
+    expect(
+      screen.getByRole("link", { name: "Gerenciar preferências de envio" }),
+    ).toHaveAttribute("href", "/perfil/notificacoes");
   });
 
   it("shows account payments from the canonical quote history", async () => {
@@ -729,9 +746,59 @@ describe("Original customer account navigation in the commercial app", () => {
       "/meus-orcamentos?quote=22222222-2222-4222-8222-222222222222",
     );
     expect(
-      screen.getByText(/não significa que um e-mail, SMS ou WhatsApp/),
+      screen.getByText(/não confirma o envio de e-mail, SMS ou WhatsApp/),
     ).toBeInTheDocument();
     expect(mocks.history).toHaveBeenCalledWith([quoteId]);
+  });
+
+  it("loads and saves the existing delivery preferences alongside quote history", async () => {
+    mocks.fetchNotificationPreferences.mockResolvedValueOnce({
+      production_stage_updates: false,
+      item_shipped: true,
+      item_delivered: true,
+      marketing_emails: false,
+    });
+    mocks.updateNotificationPreferences.mockResolvedValueOnce({
+      production_stage_updates: true,
+      item_shipped: false,
+      item_delivered: false,
+      marketing_emails: false,
+    });
+
+    show("/perfil/notificacoes");
+    const emailSwitch = await screen.findByRole("switch", {
+      name: "Alertas por e-mail",
+    });
+    expect(emailSwitch).toHaveAttribute("data-state", "checked");
+    expect(
+      screen.getByRole("switch", { name: "Atualizações de pedidos" }),
+    ).toHaveAttribute("data-state", "unchecked");
+    expect(
+      screen.getByRole("switch", { name: "Comunicados de lançamento" }),
+    ).toHaveAttribute("data-state", "unchecked");
+
+    fireEvent.click(emailSwitch);
+    fireEvent.click(
+      screen.getByRole("switch", { name: "Atualizações de pedidos" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Salvar preferências" }),
+    );
+
+    expect(
+      await screen.findByText("Preferências de envio salvas na sua conta."),
+    ).toBeInTheDocument();
+    expect(mocks.updateNotificationPreferences).toHaveBeenCalledWith({
+      production_stage_updates: true,
+      item_shipped: false,
+      item_delivered: false,
+      marketing_emails: false,
+    });
+    expect(
+      screen.getByText(
+        "Nenhuma atualização de orçamento registrada nas solicitações recentes.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("does not display an empty notifications inbox when the quote service fails", async () => {

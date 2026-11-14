@@ -56,8 +56,6 @@ export type TonecosDeliveryAddress = {
 export type TonecosContactPreferences = {
   preferredContactChannel: "email" | "whatsapp" | "phone" | null;
   quoteUpdates: boolean;
-  productionUpdates: boolean;
-  marketingEmails: boolean;
 };
 
 const BRAZIL_STATES = new Set([
@@ -413,19 +411,22 @@ export async function updateMyTonecosContactPreferences(
   input: TonecosContactPreferences,
 ): Promise<AccountProfile> {
   assertTonecosCommercialEnabled();
-  if (!input || !(
-    input.preferredContactChannel === null ||
-    ["email", "whatsapp", "phone"].includes(input.preferredContactChannel)
-  ) || typeof input.quoteUpdates !== "boolean" ||
-      typeof input.productionUpdates !== "boolean" ||
-      typeof input.marketingEmails !== "boolean") {
+  if (
+    !input ||
+    !(
+      input.preferredContactChannel === null ||
+      ["email", "whatsapp", "phone"].includes(input.preferredContactChannel)
+    ) ||
+    typeof input.quoteUpdates !== "boolean" ||
+    Object.keys(input).some(
+      (key) => !["preferredContactChannel", "quoteUpdates"].includes(key),
+    )
+  ) {
     throw new Error("tonecos_account_preferences_invalid");
   }
   return updateMyComplementaryProfile({
     preferred_contact_channel: input.preferredContactChannel,
     quote_updates: input.quoteUpdates,
-    production_updates: input.productionUpdates,
-    marketing_emails: input.marketingEmails,
   });
 }
 

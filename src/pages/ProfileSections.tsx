@@ -713,9 +713,10 @@ export function NotificationsSection({
         <div className="flex items-start gap-3">
           <Bell className="mt-0.5 h-4 w-4 text-[hsl(var(--gold-accent))]" />
           <div className="space-y-1">
-            <p className="text-sm font-medium">Politica de notificacao</p>
+            <p className="text-sm font-medium">Política de notificações</p>
             <p className={`text-sm ${profileMutedTextClassName}`}>
-              Mantenha ativos os avisos operacionais para nao perder etapas de pedido, cobranca, envio ou retorno da equipe.
+              Mantenha ativos os avisos operacionais para não perder etapas de
+              pedido, cobrança, envio ou retorno da equipe.
             </p>
           </div>
         </div>
@@ -724,37 +725,54 @@ export function NotificationsSection({
       <div className="space-y-3">
         <div className={`${profilePanelClassName} flex items-start justify-between gap-4 p-4`}>
           <div className="space-y-1">
-            <Label>Alertas por email</Label>
+            <Label>Alertas por e-mail</Label>
             <p className={`text-sm ${profileMutedTextClassName}`}>
-              Avisos gerais sobre a conta, retorno da equipe e interacoes relevantes.
+              Avisos gerais sobre a conta, retorno da equipe e interações relevantes.
             </p>
           </div>
-          <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
+          <Switch
+            aria-label="Alertas por e-mail"
+            checked={emailNotifications}
+            disabled={saveMutation.isPending}
+            onCheckedChange={setEmailNotifications}
+          />
         </div>
 
         <div className={`${profilePanelClassName} flex items-start justify-between gap-4 p-4`}>
           <div className="space-y-1">
-            <Label>Atualizacoes de pedidos</Label>
+            <Label>Atualizações de pedidos</Label>
             <p className={`text-sm ${profileMutedTextClassName}`}>
-              Mudancas de producao, expedicao, entrega e eventos que exigem acao da conta.
+              Mudanças de produção, expedição, entrega e eventos que exigem ação da conta.
             </p>
           </div>
-          <Switch checked={orderUpdates} onCheckedChange={setOrderUpdates} />
+          <Switch
+            aria-label="Atualizações de pedidos"
+            checked={orderUpdates}
+            disabled={saveMutation.isPending}
+            onCheckedChange={setOrderUpdates}
+          />
         </div>
 
         <div className={`${profilePanelClassName} flex items-start justify-between gap-4 p-4`}>
           <div className="space-y-1">
-            <Label>Comunicados de lancamento</Label>
+            <Label>Comunicados de lançamento</Label>
             <p className={`text-sm ${profileMutedTextClassName}`}>
-              Novidades de universo, campanhas e comunicados comerciais nao operacionais.
+              Novidades de universos, campanhas e comunicados comerciais não operacionais.
             </p>
           </div>
-          <Switch checked={marketingEmails} onCheckedChange={setMarketingEmails} />
+          <Switch
+            aria-label="Comunicados de lançamento"
+            checked={marketingEmails}
+            disabled={saveMutation.isPending}
+            onCheckedChange={setMarketingEmails}
+          />
         </div>
       </div>
 
       <div className={`${profilePanelClassName} p-4 text-sm ${profileMutedTextClassName}`}>
-        Preferencias de notificacao impactam somente a distribuicao dos avisos. Comunicacoes obrigatorias de seguranca ou operacao critica continuam sendo priorizadas quando necessario.
+        Preferências de notificação impactam somente a distribuição dos avisos.
+        Comunicações obrigatórias de segurança ou operação crítica continuam
+        sendo priorizadas quando necessário.
       </div>
 
       <div className="border-t border-[hsl(0,0%,14%)] pt-4">
@@ -763,7 +781,7 @@ export function NotificationsSection({
           disabled={saveMutation.isPending}
           className={`w-full ${profilePrimaryButtonClassName}`}
         >
-          {saveMutation.isPending ? "Salvando..." : "Salvar preferencias"}
+          {saveMutation.isPending ? "Salvando..." : "Salvar preferências"}
         </Button>
       </div>
     </div>

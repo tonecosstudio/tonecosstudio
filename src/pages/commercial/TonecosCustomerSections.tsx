@@ -241,8 +241,6 @@ const BLANK_DELIVERY_ADDRESS: TonecosDeliveryAddress = {
 const BLANK_PREFERENCES: TonecosContactPreferences = {
   preferredContactChannel: null,
   quoteUpdates: false,
-  productionUpdates: false,
-  marketingEmails: false,
 };
 const ADDRESS_FIELDS = [
   {
@@ -363,8 +361,6 @@ function CustomerComplementaryEditor({
               ? value.preferred_contact_channel
               : null,
           quoteUpdates: value.quote_updates === true,
-          productionUpdates: value.production_updates === true,
-          marketingEmails: value.marketing_emails === true,
         });
       })
       .catch(() => {
@@ -480,7 +476,7 @@ function CustomerComplementaryEditor({
             ? "Informe seu WhatsApp, CPF e data de nascimento. CPF e nascimento são opcionais; o CPF só é necessário quando houver emissão fiscal."
             : isAddress
               ? "Este endereço pertence à sua conta. O CEP de um orçamento anterior não é considerado endereço cadastrado."
-              : "Estas escolhas ficam no seu perfil. Elas não ativam disparos automáticos de e-mail, SMS ou WhatsApp."}
+              : "Defina seu canal preferido e os avisos de orçamento. As preferências de envio de e-mails sobre produção, entrega e campanhas ficam em Notificações."}
         </p>
         {isPersonal && profile.taxDetailsAvailable === false && (
           <p
@@ -673,11 +669,7 @@ function CustomerComplementaryEditor({
                 </select>
               </label>
               {(
-                [
-                  ["quoteUpdates", "Avisos sobre orçamentos"],
-                  ["productionUpdates", "Avisos de produção"],
-                  ["marketingEmails", "Novidades e campanhas"],
-                ] as const
+                [["quoteUpdates", "Avisos sobre orçamentos"]] as const
               ).map(([key, label]) => (
                 <label
                   key={key}
@@ -698,6 +690,12 @@ function CustomerComplementaryEditor({
                   <span>{label}</span>
                 </label>
               ))}
+              <Link
+                className={secondaryClass + " min-h-11 self-end"}
+                to={TONECOS_COMMERCIAL_ROUTES.account + "/notificacoes"}
+              >
+                Gerenciar preferências de envio
+              </Link>
             </div>
           )}
           <div className="flex flex-wrap gap-3 border-t border-white/15 pt-4">

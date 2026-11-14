@@ -392,8 +392,6 @@ describe("Tonecos authenticated MVP account", () => {
     await expect(updateMyTonecosContactPreferences({
       preferredContactChannel: "whatsapp",
       quoteUpdates: true,
-      productionUpdates: false,
-      marketingEmails: false,
     })).resolves.toEqual(savedProfile);
     expect(changes).toEqual([
       { whatsapp: "71999999999", cpf: "52998224725", birth_date: "1992-05-14" },
@@ -403,8 +401,7 @@ describe("Tonecos authenticated MVP account", () => {
         city: "Salvador", state: "BA", zipCode: "40000000",
         country: "BR",
       } },
-      { preferred_contact_channel: "whatsapp", quote_updates: true,
-        production_updates: false, marketing_emails: false },
+      { preferred_contact_channel: "whatsapp", quote_updates: true },
     ]);
     expect(mocks.getUser).toHaveBeenCalledTimes(4);
   });
@@ -430,8 +427,14 @@ describe("Tonecos authenticated MVP account", () => {
     })).rejects.toThrow("tonecos_account_address_invalid");
     await expect(updateMyTonecosContactPreferences({
       preferredContactChannel: "invalid" as "email",
-      quoteUpdates: true, productionUpdates: false, marketingEmails: false,
+      quoteUpdates: true,
     })).rejects.toThrow("tonecos_account_preferences_invalid");
+    await expect(updateMyTonecosContactPreferences({
+      preferredContactChannel: "email",
+      quoteUpdates: true,
+      marketingEmails: false,
+    } as Parameters<typeof updateMyTonecosContactPreferences>[0]))
+      .rejects.toThrow("tonecos_account_preferences_invalid");
     expect(mocks.getUser).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalled();
   });
