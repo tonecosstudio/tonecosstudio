@@ -16,7 +16,7 @@ import {
   ArcadeCard,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
-import { PUBLIC_ROUTES } from "@/config/routes";
+import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import {
   MAX_CANONICAL_SELECTION,
@@ -931,6 +931,13 @@ export default function CanonicalModelDetails() {
                           instruções de pagamento do orçamento; Coins são créditos
                           virtuais, sem saque ou conversão em dinheiro.
                         </p>
+                        <Link
+                          to={TONECOS_COMMERCIAL_ROUTES.coins}
+                          className="mb-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                        >
+                          Consultar saldo e movimentações de Coins
+                          <ChevronRight size={16} aria-hidden="true" />
+                        </Link>
                       </details>
                     ) : null}
                     <details className="border-t border-[hsl(0,0%,15%)] pt-4">

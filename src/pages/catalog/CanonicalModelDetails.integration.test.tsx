@@ -329,6 +329,11 @@ describe("published model/gallery identity on the public detail page", () => {
     expect(
       screen.getByText(/A entrada de R\$ 50 da pré-venda não aceita Coins/),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: "Consultar saldo e movimentações de Coins",
+      }),
+    ).toHaveAttribute("href", "/moedas");
     expect(io).toHaveBeenCalled();
   });
 
