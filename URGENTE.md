@@ -1,5 +1,17 @@
 # TONART Studio — checkpoint operacional
 
+## Checkpoint 14/11/2026 — integrações comerciais na main
+
+- **Base e integração:** `main@f71a78ac` incorporada via rebase; implementação em `348b9081 feat(commercial): complete account and subscription flows`. O teste adicional da Home e este checkpoint ainda serão commitados e sincronizados.
+- **Conta e orçamento:** Minha Conta usa o perfil canônico existente para dados pessoais, CPF/nascimento, endereço e preferências. As rotas autenticadas de orçamento, administração e histórico permanecem no fluxo único.
+- **Coins e campanha:** carteira Coins e orçamentos ficam acessíveis no MVP comercial. Black Friday (até 50%) e pré-venda de R$50 abatidos do total aparecem apenas no ambiente comercial; o catálogo público somente leitura segue sem ofertas nem chamadas de pré-venda.
+- **Assinaturas:** checkout PIX manual coleta comprovante no bucket privado existente, registra solicitação pela RPC existente e oferece fila administrativa de conferência; comprovante rejeitado pode ser reenviado na mesma cobrança. A tela distingue falha de consulta de ausência de plano.
+- **Banco:** migrações locais sincronizam o resultado da conferência com o histórico de pagamentos e permitem reenvio. A migração de perfil reutiliza `cpf` e `birth_date` em texto que já existem no mesmo `profiles`; não cria colunas/tabela de identidade duplicadas. **Nenhuma migração foi aplicada remotamente e nenhum recurso de produção foi alterado.**
+- **Validação Windows:** `npm test --` nos 8 arquivos focados passou (107 testes); `npm run typecheck`, ESLint dos arquivos alterados e `git diff --check` passaram. Fixtures/mocks não provam E2E real com Supabase.
+- **GitHub Actions:** permanece o bloqueio operacional conhecido, jobs encerrando antes de steps com `runner_id=0`; não foi criado nem repetido workflow paralelo.
+- **NEXT_ACTION:** concluir revisão final do diff, enviar os commits para `origin/main` e, em staging autorizado, aplicar as migrações e provar checkout/revisão com sessões cliente/admin reais. Não publicar produção.
+- **DO_NOT_REPEAT:** não recriar perfil, auth, wallet, orçamento, tabelas, endpoints ou workflow; não usar mocks como prova do Supabase; não aplicar migração ou publicar no domínio oficial sem o gate específico.
+
 ## Checkpoint 14/11/2026 — home TONART, campanha e Coins
 
 - **Base:** main@5ce02e10e7cae1926028e17231ad64f5de3b3cba, sincronizada com origin/main antes desta alteração.
