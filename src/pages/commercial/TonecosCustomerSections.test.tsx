@@ -158,6 +158,19 @@ describe("Original customer account navigation in the commercial app", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("restores Brazilian address choices without any saving or independent address store", async () => {
+    show("/perfil/endereco");
+    const uf = await screen.findByRole("combobox", { name: "UF" });
+    expect(uf).toBeDisabled();
+    expect(uf).toHaveValue("");
+    expect(screen.getByRole("option", { name: "BA" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "SP" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /salvar endereço/i }),
+    ).not.toBeInTheDocument();
+    expect(mocks.getProfile).not.toHaveBeenCalled();
+  });
+
   it("preserves the original personal data fields as visible frontend without claiming persistence", async () => {
     show("/perfil/dados-pessoais");
     expect(
@@ -288,7 +301,11 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(
       screen.getByRole("link", { name: "Consultar meus orçamentos" }),
     ).toHaveAttribute("href", "/meus-orcamentos");
-    expect(screen.getByRole("textbox", { name: "Canal preferido de contato" }))
+    expect(screen.getByRole("combobox", { name: "Canal preferido de contato" }))
+      .toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }))
+      .toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: "Avisos de produção" }))
       .toBeDisabled();
   });
 
