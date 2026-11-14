@@ -49,7 +49,7 @@ describe("TONART public Home during image review", () => {
     client.clear();
   });
 
-  it("shows the campaign, R$50 pre-sale and active Coins wallet in the commercial MVP", () => {
+  it("keeps pre-sale and Coins absent even when the commercial MVP is enabled", () => {
     vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
@@ -62,15 +62,9 @@ describe("TONART public Home during image review", () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByRole("heading", { name: /Black Friday Até 50% de desconto/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Solicitar pré-venda/ })).toHaveAttribute(
-      "href",
-      "/contato?assunto=pre-venda",
-    );
-    expect(screen.getByRole("link", { name: /Acessar minha carteira/ })).toHaveAttribute(
-      "href",
-      "/moedas",
-    );
+    expect(screen.queryByRole("heading", { name: /Black Friday/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Solicitar pré-venda/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Acessar minha carteira/ })).not.toBeInTheDocument();
 
     view.unmount();
     client.clear();
