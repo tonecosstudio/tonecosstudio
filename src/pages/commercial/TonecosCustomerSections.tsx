@@ -7,6 +7,7 @@ import {
   getTonecosCurrentUser,
 } from "@/services/customer/tonecos-account-service";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
+import { loadMyCatalogQuotePage } from "@/services/customer/catalog-quote-service";
 import TonecosCustomerActivity from "./TonecosCustomerActivity";
 import TonecosCustomerNotifications from "./TonecosCustomerNotifications";
 import TonecosCustomerContactSummary from "./TonecosCustomerContactSummary";
@@ -299,6 +300,138 @@ function CustomerRegisteredContacts() {
   return <TonecosCustomerContactSummary profile={profile} variant="account" />;
 }
 
+type QuoteContextSection = "dados-pessoais" | "endereco" | "preferencias";
+
+/** Displays quote-specific information already stored in the canonical quote history.
+ * This does not turn a past request into permanent account profile data.
+ */
+function RecentQuoteContext({
+  userId,
+  section,
+}: {
+  userId: string;
+  section: QuoteContextSection;
+}) {
+  const [page, setPage] = useState<
+    Awaited<ReturnType<typeof loadMyCatalogQuotePage>> | null
+  >(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    setPage(null);
+    setStatus("loading");
+    loadMyCatalogQuotePage(userId, { limit: 5, offset: 0 })
+      .then((result) => {
+        if (!active) return;
+        setPage(result);
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (active) setStatus("error");
+      });
+    return () => {
+      active = false;
+    };
+  }, [userId, attempt]);
+
+  const quote = page?.rows.find((item) => {
+    if (section === "dados-pessoais") return Boolean(item.whatsapp?.trim());
+    if (section === "endereco") return Boolean(item.postalCode?.trim());
+    return (
+      (item.scale && item.scale !== "a definir") ||
+      (item.finishing && item.finishing !== "a definir")
+    );
+  });
+  return (
+    <section
+      className={panelClass}
+      aria-label="Informações de orçamentos anteriores"
+    >
+      <h2 className="mb-2 text-lg font-semibold">
+        Informações de orçamentos anteriores
+      </h2>
+      <p className="mb-4 text-sm leading-6 text-white/60">
+        Estes dados pertencem às solicitações enviadas, não ao cadastro
+        permanente da Minha Conta. Não são reaproveitados automaticamente
+        em novos orçamentos.
+      </p>
+      {status === "loading" && (
+        <p role="status" className="text-sm text-white/60">
+          Consultando solicitações recentes...
+        </p>
+      )}
+      {status === "error" && (
+        <div role="alert" className="space-y-3">
+          <p className="text-sm text-white/75">
+            Não foi possível consultar as informações anteriores. Nenhum dado
+            cadastral foi alterado.
+          </p>
+          <button
+            type="button"
+            className={secondaryClass}
+            onClick={() => setAttempt((value) => value + 1)}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      {status === "ready" && (
+        <>
+          {quote ? (
+            <div className="space-y-3">
+              <p className="text-xs text-white/50">
+                Informado no orçamento #{quote.id.slice(0, 8)}
+              </p>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                {section === "dados-pessoais" && (
+                  <div>
+                    <dt className="text-xs text-white/50">WhatsApp informado</dt>
+                    <dd className="break-all text-white/85">{quote.whatsapp}</dd>
+                  </div>
+                )}
+                {section === "endereco" && (
+                  <div>
+                    <dt className="text-xs text-white/50">CEP informado</dt>
+                    <dd className="text-white/85">{quote.postalCode}</dd>
+                  </div>
+                )}
+                {section === "preferencias" && (
+                  <>
+                    <div>
+                      <dt className="text-xs text-white/50">Escala solicitada</dt>
+                      <dd className="text-white/85">{quote.scale || "A definir"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-white/50">Acabamento solicitado</dt>
+                      <dd className="text-white/85">
+                        {quote.finishing || "A definir"}
+                      </dd>
+                    </div>
+                  </>
+                )}
+              </dl>
+            </div>
+          ) : (
+            <p className="text-sm text-white/60">
+              Nenhuma informação correspondente foi encontrada entre as cinco
+              solicitações mais recentes. Isso não significa que não existam
+              dados em orçamentos mais antigos.
+            </p>
+          )}
+          <Link
+            className={secondaryClass + " mt-4"}
+            to={TONECOS_COMMERCIAL_ROUTES.history}
+          >
+            Consultar meus orçamentos
+          </Link>
+        </>
+      )}
+    </section>
+  );
+}
+
 function CurrentCatalogSelection() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
 
@@ -383,6 +516,7 @@ function CustomerSectionContent({
     return (
       <div className="space-y-6">
         <CustomerRegisteredContacts />
+        <RecentQuoteContext userId={userId} section="dados-pessoais" />
         <PendingCustomerData
           label="Cadastro pessoal adicional"
           fields={[
@@ -399,7 +533,8 @@ function CustomerSectionContent({
   }
   if (slug === "endereco") {
     return (
-      <PendingCustomerData
+      <div className="space-y-6">
+        <PendingCustomerData
         label="Cadastro de entrega"
         fields={[
           { label: "CEP", inputMode: "numeric", autoComplete: "postal-code" },
@@ -410,7 +545,9 @@ function CustomerSectionContent({
           { label: "Cidade", autoComplete: "address-level2" },
           { label: "UF", autoComplete: "address-level1" },
         ]}
-      />
+        />
+        <RecentQuoteContext userId={userId} section="endereco" />
+      </div>
     );
   }
   if (slug === "notificacoes") {
@@ -418,14 +555,17 @@ function CustomerSectionContent({
   }
   if (slug === "preferencias") {
     return (
-      <PendingCustomerData
+      <div className="space-y-6">
+        <PendingCustomerData
         label="Preferências do cliente"
         fields={[
           { label: "Canal preferido de contato" },
           { label: "Avisos sobre orçamentos" },
           { label: "Avisos de produção" },
         ]}
-      />
+        />
+        <RecentQuoteContext userId={userId} section="preferencias" />
+      </div>
     );
   }
   if (slug === "pedidos" || slug === "producao") {
