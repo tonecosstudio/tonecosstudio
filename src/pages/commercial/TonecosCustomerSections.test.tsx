@@ -160,7 +160,7 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(
       screen.getByRole("navigation", { name: "Seções da Minha Conta" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "CEP" })).toBeEnabled();
+    expect(await screen.findByRole("textbox", { name: "CEP" })).toBeEnabled();
     expect(screen.getByRole("textbox", { name: "CEP" })).toHaveAttribute(
       "autocomplete",
       "postal-code",
