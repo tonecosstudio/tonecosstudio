@@ -424,9 +424,12 @@ function RecentQuoteContext({
           )}
           <Link
             className={secondaryClass + " mt-4"}
-            to={TONECOS_COMMERCIAL_ROUTES.history}
+            to={
+              TONECOS_COMMERCIAL_ROUTES.history +
+              (quote ? "?quote=" + encodeURIComponent(quote.id) : "")
+            }
           >
-            Consultar meus orçamentos
+            {quote ? "Abrir orçamento de origem" : "Consultar meus orçamentos"}
           </Link>
         </>
       )}
