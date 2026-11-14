@@ -476,7 +476,7 @@ function CustomerComplementaryEditor({
             ? "Informe seu WhatsApp, CPF e data de nascimento. CPF e nascimento são opcionais; o CPF só é necessário quando houver emissão fiscal."
             : isAddress
               ? "Este endereço pertence à sua conta. O CEP de um orçamento anterior não é considerado endereço cadastrado."
-              : "Defina seu canal preferido e os avisos de orçamento. As preferências de envio de e-mails sobre produção, entrega e campanhas ficam em Notificações."}
+              : "Defina seu canal preferido e registre sua preferência sobre atualizações de orçamento. Para controlar e-mails de produção, envio, entrega e campanhas, acesse Notificações."}
         </p>
         {isPersonal && profile.taxDetailsAvailable === false && (
           <p
@@ -696,6 +696,11 @@ function CustomerComplementaryEditor({
               >
                 Gerenciar preferências de envio
               </Link>
+              <p className="text-xs leading-5 text-white/50 sm:col-span-2">
+                A preferência sobre orçamento fica registrada no perfil e é
+                exibida à equipe; ela não inicia envios automáticos. Os eventos
+                registrados aparecem em Notificações.
+              </p>
             </div>
           )}
           <div className="flex flex-wrap gap-3 border-t border-white/15 pt-4">

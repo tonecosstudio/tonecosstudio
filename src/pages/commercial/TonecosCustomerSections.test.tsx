@@ -630,6 +630,9 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(
       screen.getByRole("link", { name: "Gerenciar preferências de envio" }),
     ).toHaveAttribute("href", "/perfil/notificacoes");
+    expect(
+      screen.getByText(/não inicia envios automáticos/),
+    ).toBeInTheDocument();
   });
 
   it("shows account payments from the canonical quote history", async () => {
