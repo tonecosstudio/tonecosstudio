@@ -54,16 +54,22 @@ describe("Original customer account navigation in the commercial app", () => {
       </MemoryRouter>,
     );
     expect(screen.getByText("Cadastro e preferências")).toBeInTheDocument();
-    expect(screen.getByText("Solicitações e relacionamento")).toBeInTheDocument();
+    expect(
+      screen.getByText("Solicitações e relacionamento"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Comunicação")).toBeInTheDocument();
   });
 
   it("keeps the original subscription alias visible without presenting a functional payment", async () => {
     show("/perfil/assinaturas");
     expect(
-      await screen.findByText(/não tem operações financeiras ou assinaturas habilitadas/),
+      await screen.findByText(
+        /não tem operações financeiras ou assinaturas habilitadas/,
+      ),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /pagar|contratar/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /pagar|contratar/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the original customer address form without pretending to save unsupported data", async () => {
