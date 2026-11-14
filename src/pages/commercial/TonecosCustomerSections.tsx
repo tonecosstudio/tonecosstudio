@@ -1,10 +1,15 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { profileNavigationConfig } from "@/config/profile-navigation.config";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import {
   getMyTonecosProfile,
   getTonecosCurrentUser,
+  updateMyTonecosWhatsapp,
+  updateMyTonecosDeliveryAddress,
+  updateMyTonecosContactPreferences,
+  type TonecosDeliveryAddress,
+  type TonecosContactPreferences,
 } from "@/services/customer/tonecos-account-service";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import { loadMyCatalogQuotePage } from "@/services/customer/catalog-quote-service";
@@ -297,55 +302,289 @@ function PendingCustomerData({
   );
 }
 
-function CustomerRegisteredContacts() {
+const BLANK_DELIVERY_ADDRESS: TonecosDeliveryAddress = {
+  zipCode: "",
+  street: "",
+  number: "",
+  complement: "",
+  neighborhood: "",
+  city: "",
+  state: "",
+  country: "BR",
+};
+const BLANK_PREFERENCES: TonecosContactPreferences = {
+  preferredContactChannel: null,
+  quoteUpdates: false,
+  productionUpdates: false,
+  marketingEmails: false,
+};
+const ADDRESS_FIELDS = [
+  { key: "zipCode", label: "CEP", autoComplete: "postal-code", maxLength: 9 },
+  { key: "street", label: "Rua", autoComplete: "address-line1", maxLength: 160 },
+  { key: "number", label: "Número", autoComplete: "address-line2", maxLength: 20 },
+  { key: "complement", label: "Complemento", autoComplete: "off", maxLength: 160 },
+  { key: "neighborhood", label: "Bairro", autoComplete: "address-level3", maxLength: 100 },
+  { key: "city", label: "Cidade", autoComplete: "address-level2", maxLength: 100 },
+] as const;
+
+type ComplementarySection = "dados-pessoais" | "endereco" | "preferencias";
+
+/**
+ * One customer editor over the existing Auth-owned public.profiles.
+ * Never persists quote-level contact data, session storage or a second profile.
+ */
+function CustomerComplementaryEditor({ section }: { section: ComplementarySection }) {
   const [profile, setProfile] = useState<
     Awaited<ReturnType<typeof getMyTonecosProfile>> | null
   >(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [whatsapp, setWhatsapp] = useState("");
+  const [address, setAddress] = useState<TonecosDeliveryAddress>(BLANK_DELIVERY_ADDRESS);
+  const [preferences, setPreferences] = useState<TonecosContactPreferences>(BLANK_PREFERENCES);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     let active = true;
-    setProfile(null);
     setLoading(true);
-    setError(false);
+    setLoadError(false);
+    setError("");
+    setNotice("");
     getMyTonecosProfile()
       .then((value) => {
-        if (active) setProfile(value);
+        if (!active) return;
+        setProfile(value);
+        setWhatsapp(value.whatsapp ?? "");
+        const saved = value.delivery_address;
+        const object = saved !== null && typeof saved === "object" && !Array.isArray(saved)
+          ? saved as Record<string, unknown>
+          : {};
+        const fromSaved = (key: keyof TonecosDeliveryAddress) =>
+          typeof object[key] === "string" ? object[key] as string : "";
+        setAddress({
+          zipCode: fromSaved("zipCode"),
+          street: fromSaved("street"),
+          number: fromSaved("number"),
+          complement: fromSaved("complement"),
+          neighborhood: fromSaved("neighborhood"),
+          city: fromSaved("city"),
+          state: fromSaved("state"),
+          country: "BR",
+        });
+        setPreferences({
+          preferredContactChannel:
+            value.preferred_contact_channel === "email" ||
+            value.preferred_contact_channel === "whatsapp" ||
+            value.preferred_contact_channel === "phone"
+              ? value.preferred_contact_channel : null,
+          quoteUpdates: value.quote_updates === true,
+          productionUpdates: value.production_updates === true,
+          marketingEmails: value.marketing_emails === true,
+        });
       })
       .catch(() => {
-        if (active) setError(true);
+        if (active) {
+          setProfile(null);
+          setLoadError(true);
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
       });
-    return () => {
-      active = false;
-    };
-  }, [attempt]);
+    return () => { active = false; };
+  }, [section, attempt]);
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy || !profile) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const updated =
+        section === "dados-pessoais"
+          ? await updateMyTonecosWhatsapp(whatsapp)
+          : section === "endereco"
+            ? await updateMyTonecosDeliveryAddress(address)
+            : await updateMyTonecosContactPreferences(preferences);
+      setProfile(updated);
+      setNotice("Informações salvas na sua conta.");
+    } catch {
+      setError("Não foi possível salvar. Confira os campos e tente novamente.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clearAddress() {
+    if (busy || !profile) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const updated = await updateMyTonecosDeliveryAddress(null);
+      setProfile(updated);
+      setAddress(BLANK_DELIVERY_ADDRESS);
+      setNotice("Endereço removido da sua conta.");
+    } catch {
+      setError("Não foi possível remover o endereço. Tente novamente.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (loading) {
     return <p role="status">Carregando seus dados cadastrados...</p>;
   }
-  if (error || !profile) {
+  if (loadError || !profile) {
     return (
       <div role="alert" className={panelClass}>
         <p className="mb-3 text-sm text-white/75">
-          Não foi possível consultar seus dados cadastrais. Nenhuma informação
-          foi alterada.
+          Não foi possível consultar seus dados cadastrais. Nenhuma informação foi alterada.
         </p>
-        <button
-          type="button"
-          className={secondaryClass}
-          onClick={() => setAttempt((current) => current + 1)}
-        >
+        <button type="button" className={secondaryClass}
+          onClick={() => setAttempt((current) => current + 1)}>
           Tentar carregar dados
         </button>
       </div>
     );
   }
-  return <TonecosCustomerContactSummary profile={profile} variant="account" />;
+
+  const isPersonal = section === "dados-pessoais";
+  const isAddress = section === "endereco";
+  return (
+    <div className="space-y-6">
+      {isPersonal && <TonecosCustomerContactSummary profile={profile} variant="account" />}
+      <section className={panelClass} aria-label={
+        isPersonal ? "WhatsApp do cadastro" :
+        isAddress ? "Cadastro de entrega" : "Preferências do cliente"
+      }>
+        <h2 className="mb-2 text-lg font-semibold">
+          {isPersonal ? "WhatsApp adicional" : isAddress ? "Cadastro de entrega" : "Preferências do cliente"}
+        </h2>
+        <p className="mb-5 text-sm leading-6 text-white/60">
+          {isPersonal
+            ? "Salve um WhatsApp distinto do telefone principal, se desejar. O contato informado em um orçamento anterior não altera este cadastro."
+            : isAddress
+              ? "Este endereço pertence à sua conta. O CEP de um orçamento anterior não é considerado endereço cadastrado."
+              : "Estas escolhas ficam no seu perfil. Elas não ativam disparos automáticos de e-mail, SMS ou WhatsApp."}
+        </p>
+        {error && <p role="alert" className="mb-4 border border-red-500/40 p-3 text-sm text-red-200">{error}</p>}
+        {notice && <p role="status" className="mb-4 border border-white/20 p-3 text-sm">{notice}</p>}
+        <form onSubmit={(event) => { void save(event); }} className="space-y-5">
+          {isPersonal && (
+            <label className="block space-y-2 text-sm">
+              <span>WhatsApp</span>
+              <input
+                className={fieldClass} type="tel" autoComplete="tel"
+                aria-label="WhatsApp" maxLength={40}
+                placeholder="(71) 99999-9999"
+                value={whatsapp}
+                onChange={(event) => setWhatsapp(event.target.value)}
+              />
+              <span className="block text-xs text-white/50">
+                Opcional. Para alterar o telefone principal, abra Dados da conta.
+              </span>
+            </label>
+          )}
+          {isAddress && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {ADDRESS_FIELDS.map((field) => (
+                <label className="block space-y-2 text-sm" key={field.key}>
+                  <span>{field.label}</span>
+                  <input
+                    className={fieldClass} type="text"
+                    aria-label={field.label}
+                    required={field.key !== "complement"}
+                    maxLength={field.maxLength}
+                    autoComplete={field.autoComplete}
+                    inputMode={field.key === "zipCode" ? "numeric" : undefined}
+                    value={address[field.key] ?? ""}
+                    onChange={(event) => setAddress((current) => ({
+                      ...current, [field.key]: event.target.value,
+                    }))}
+                  />
+                </label>
+              ))}
+              <label className="block space-y-2 text-sm">
+                <span>UF</span>
+                <select
+                  className={fieldClass} required aria-label="UF"
+                  autoComplete="address-level1" value={address.state}
+                  onChange={(event) => setAddress((current) => ({
+                    ...current, state: event.target.value,
+                  }))}
+                >
+                  <option value="">Selecione</option>
+                  {[
+                    "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS",
+                    "MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR",
+                    "SC","SP","SE","TO",
+                  ].map((uf) => <option key={uf} value={uf}>{uf}</option>)}
+                </select>
+              </label>
+            </div>
+          )}
+          {!isPersonal && !isAddress && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block space-y-2 text-sm">
+                <span>Canal preferido de contato</span>
+                <select
+                  className={fieldClass} aria-label="Canal preferido de contato"
+                  value={preferences.preferredContactChannel ?? ""}
+                  onChange={(event) => setPreferences((current) => ({
+                    ...current,
+                    preferredContactChannel:
+                      event.target.value === "email" ||
+                      event.target.value === "whatsapp" ||
+                      event.target.value === "phone"
+                        ? event.target.value : null,
+                  }))}
+                >
+                  <option value="">Não definido</option>
+                  <option value="email">E-mail</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="phone">Telefone</option>
+                </select>
+              </label>
+              {([
+                ["quoteUpdates", "Avisos sobre orçamentos"],
+                ["productionUpdates", "Avisos de produção"],
+                ["marketingEmails", "Novidades e campanhas"],
+              ] as const).map(([key, label]) => (
+                <label key={key} className="flex items-center gap-3 border border-white/15 p-3 text-sm">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-[hsl(var(--gold-accent))]"
+                    aria-label={label}
+                    checked={preferences[key]}
+                    onChange={(event) => setPreferences((current) => ({
+                      ...current, [key]: event.target.checked,
+                    }))}
+                  />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-3 border-t border-white/15 pt-4">
+            <button className={actionClass} type="submit" disabled={busy}>
+              {busy ? "Salvando..." : isPersonal ? "Salvar WhatsApp" : isAddress ? "Salvar endereço" : "Salvar preferências"}
+            </button>
+            {isAddress && profile.delivery_address && (
+              <button type="button" className={secondaryClass} disabled={busy}
+                onClick={() => { void clearAddress(); }}>
+                Remover endereço
+              </button>
+            )}
+          </div>
+        </form>
+      </section>
+    </div>
+  );
 }
 
 type QuoteContextSection = "dados-pessoais" | "endereco" | "preferencias";
@@ -568,17 +807,11 @@ function CustomerSectionContent({
   if (slug === "dados-pessoais") {
     return (
       <div className="space-y-6">
-        <CustomerRegisteredContacts />
+        <CustomerComplementaryEditor section="dados-pessoais" />
         <RecentQuoteContext userId={userId} section="dados-pessoais" />
         <PendingCustomerData
           label="Cadastro pessoal adicional"
           fields={[
-            {
-              label: "WhatsApp",
-              type: "tel",
-              autoComplete: "tel",
-              description: "Contato adicional, separado do telefone já salvo na conta.",
-            },
             {
               label: "CPF (para emissão fiscal quando necessário)",
               inputMode: "numeric",
@@ -598,32 +831,7 @@ function CustomerSectionContent({
   if (slug === "endereco") {
     return (
       <div className="space-y-6">
-        <PendingCustomerData
-        label="Cadastro de entrega"
-        fields={[
-          {
-            label: "CEP",
-            inputMode: "numeric",
-            autoComplete: "postal-code",
-            description: "Não confundir com o CEP informado em uma solicitação anterior.",
-          },
-          { label: "Rua", autoComplete: "address-line1" },
-          { label: "Número", autoComplete: "address-line2" },
-          { label: "Complemento" },
-          { label: "Bairro" },
-          { label: "Cidade", autoComplete: "address-level2" },
-          {
-            label: "UF",
-            type: "select",
-            autoComplete: "address-level1",
-            options: [
-              "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
-              "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
-              "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
-            ],
-          },
-        ]}
-        />
+        <CustomerComplementaryEditor section="endereco" />
         <RecentQuoteContext userId={userId} section="endereco" />
       </div>
     );
@@ -634,32 +842,7 @@ function CustomerSectionContent({
   if (slug === "preferencias") {
     return (
       <div className="space-y-6">
-        <PendingCustomerData
-        label="Preferências do cliente"
-        fields={[
-          {
-            label: "Canal preferido de contato",
-            type: "select",
-            options: ["E-mail", "WhatsApp", "Telefone"],
-            description: "A seleção não constitui consentimento de envio enquanto desativada.",
-          },
-          {
-            label: "Avisos sobre orçamentos",
-            type: "checkbox",
-            description: "Preferência de recebimento externo; o histórico interno permanece disponível.",
-          },
-          {
-            label: "Avisos de produção",
-            type: "checkbox",
-            description: "Não implica início de fabricação ou envio automático de mensagens.",
-          },
-          {
-            label: "Novidades e campanhas",
-            type: "checkbox",
-            description: "Consentimento opcional do sistema original; nenhuma inscrição é efetuada.",
-          },
-        ]}
-        />
+        <CustomerComplementaryEditor section="preferencias" />
         <RecentQuoteContext userId={userId} section="preferencias" />
       </div>
     );
