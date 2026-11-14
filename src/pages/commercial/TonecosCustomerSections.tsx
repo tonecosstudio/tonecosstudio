@@ -4,6 +4,7 @@ import { profileNavigationConfig } from "@/config/profile-navigation.config";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
+import TonecosCustomerActivity from "./TonecosCustomerActivity";
 import {
   actionClass,
   CommercialPage,
@@ -281,7 +282,13 @@ function CurrentCatalogSelection() {
   );
 }
 
-function CustomerSectionContent({ slug }: { slug: string }) {
+function CustomerSectionContent({
+  slug,
+  userId,
+}: {
+  slug: string;
+  userId: string;
+}) {
   if (slug === "dados-pessoais") {
     return (
       <PendingCustomerData
@@ -330,22 +337,7 @@ function CustomerSectionContent({ slug }: { slug: string }) {
     );
   }
   if (slug === "pedidos" || slug === "producao") {
-    return (
-      <section className={panelClass}>
-        <h2 className="mb-3 text-lg font-semibold">
-          {slug === "pedidos"
-            ? "Suas solicitações"
-            : "Andamento das solicitações"}
-        </h2>
-        <p className="mb-5 text-sm text-white/65">
-          Consulte seus orçamentos reais e suas respostas. Uma solicitação de
-          orçamento ainda não representa compra nem início da produção.
-        </p>
-        <Link className={actionClass} to={TONECOS_COMMERCIAL_ROUTES.history}>
-          Consultar meus orçamentos
-        </Link>
-      </section>
-    );
+    return <TonecosCustomerActivity userId={userId} area={slug} />;
   }
   if (slug === "suporte") {
     return (
@@ -413,12 +405,16 @@ export default function TonecosCustomerSections() {
     "checking" | "guest" | "authenticated" | "error"
   >("checking");
   const [attempt, setAttempt] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
     setState("checking");
+    setUserId(null);
     getTonecosCurrentUser()
       .then((user) => {
-        if (active) setState(user ? "authenticated" : "guest");
+        if (!active) return;
+        setUserId(user?.id ?? null);
+        setState(user ? "authenticated" : "guest");
       })
       .catch(() => {
         if (active) setState("error");
@@ -465,10 +461,10 @@ export default function TonecosCustomerSections() {
           </Link>
         </div>
       )}
-      {state === "authenticated" && (
+      {state === "authenticated" && userId && (
         <>
           <TonecosCustomerNavigation />
-          <CustomerSectionContent slug={sectionSlug} />
+          <CustomerSectionContent slug={sectionSlug} userId={userId} />
         </>
       )}
     </CommercialPage>

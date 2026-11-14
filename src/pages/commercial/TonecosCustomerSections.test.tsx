@@ -13,9 +13,15 @@ import TonecosCustomerSections, {
   TonecosCustomerNavigation,
 } from "./TonecosCustomerSections";
 
-const mocks = vi.hoisted(() => ({ getUser: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  getUser: vi.fn(),
+  listMine: vi.fn(),
+}));
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.getUser,
+}));
+vi.mock("@/services/customer/catalog-quote-service", () => ({
+  loadMyCatalogQuotePage: mocks.listMine,
 }));
 
 beforeEach(() => {
@@ -23,6 +29,12 @@ beforeEach(() => {
   mocks.getUser.mockResolvedValue({
     id: "11111111-1111-4111-8111-111111111111",
     email: "cliente@example.com",
+  });
+  mocks.listMine.mockResolvedValue({
+    total: 0,
+    limit: 5,
+    offset: 0,
+    rows: [],
   });
 });
 afterEach(() => cleanup());
@@ -171,6 +183,70 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(
       screen.queryByRole("textbox", { name: "CEP" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the actual customer's recent quotes on the recovered orders page", async () => {
+    mocks.listMine.mockResolvedValueOnce({
+      total: 1,
+      limit: 5,
+      offset: 0,
+      rows: [
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          status: "reviewing",
+          createdAt: "2026-11-12T12:00:00Z",
+          items: [{ slug: "naruto", quantity: 2 }],
+          quotedAmount: null,
+        },
+      ],
+    });
+    show("/perfil/pedidos");
+    expect(
+      await screen.findByText("Orçamento #22222222"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Em análise")).toBeInTheDocument();
+    expect(screen.getByText("Valor em análise")).toBeInTheDocument();
+    expect(mocks.listMine).toHaveBeenCalledWith(
+      "11111111-1111-4111-8111-111111111111",
+      { limit: 5, offset: 0 },
+    );
+  });
+
+  it("does not invent production milestones from an answered quote", async () => {
+    mocks.listMine.mockResolvedValueOnce({
+      total: 1,
+      limit: 5,
+      offset: 0,
+      rows: [
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          status: "answered",
+          createdAt: "2026-11-12T12:00:00Z",
+          items: [{ slug: "naruto", quantity: 1 }],
+          quotedAmount: 249.9,
+        },
+      ],
+    });
+    show("/perfil/producao");
+    expect(await screen.findByText("Pré-produção e propostas")).toBeInTheDocument();
+    expect(screen.getByText("Respondido")).toBeInTheDocument();
+    expect(screen.getByText(/nenhuma etapa de fabricação é inferida/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Produção iniciada/i)).not.toBeInTheDocument();
+  });
+
+  it("exposes a retry without fabricating an empty history when quote loading fails", async () => {
+    mocks.listMine
+      .mockRejectedValueOnce(new Error("service unavailable"))
+      .mockResolvedValueOnce({ total: 0, limit: 5, offset: 0, rows: [] });
+    show("/perfil/pedidos");
+    expect(
+      await screen.findByRole("alert"),
+    ).toHaveTextContent("Não foi possível concluir a operação de orçamento");
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(
+      await screen.findByText("Você ainda não enviou solicitações de orçamento."),
+    ).toBeInTheDocument();
+    expect(mocks.listMine).toHaveBeenCalledTimes(2);
   });
 
   it("allows retry when identity verification is unavailable", async () => {
