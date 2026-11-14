@@ -274,6 +274,63 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     expect(query.range).toHaveBeenLastCalledWith(20, 39);
   });
 
+  it("loads an exact authorized quote without scanning paginated history", async () => {
+    const query = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      not: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    };
+    for (const method of ["select", "eq", "not", "order"] as const) {
+      query[method].mockReturnValue(query);
+    }
+    query.range.mockResolvedValue({
+      data: [{
+        id: QUOTE,
+        status: "reviewing",
+        created_at: "2026-11-14T00:00:00Z",
+        catalog_requested_at: "2026-11-14T00:00:00Z",
+        requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
+        deadline: null,
+        notes: null,
+        total_amount: null,
+        admin_response: null,
+        customer_whatsapp: null,
+        postal_code: null,
+        desired_scale: "a definir",
+        finishing: "a definir",
+      }],
+      error: null,
+      count: 1,
+    });
+    mocks.from.mockReturnValue(query);
+    const page = await loadMyCatalogQuotePage(USER, {
+      quoteId: QUOTE.toUpperCase(),
+      limit: 1,
+      offset: 0,
+    });
+    expect(page.rows).toHaveLength(1);
+    expect(page.rows[0].id).toBe(QUOTE);
+    expect(query.eq).toHaveBeenCalledWith("user_id", USER);
+    expect(query.eq).toHaveBeenCalledWith("id", QUOTE);
+    expect(query.range).toHaveBeenCalledExactlyOnceWith(0, 0);
+    expect(mocks.assertCurrentUserId).toHaveBeenCalledWith(USER);
+  });
+
+  it("rejects invalid exact quote identifiers before any authentication or network I/O", async () => {
+    for (const quoteId of ["../admin", "123", QUOTE + "&other=1"]) {
+      await expect(
+        loadMyCatalogQuotePage(USER, { quoteId, limit: 1, offset: 0 }),
+      ).rejects.toThrow("catalog_quote_list_query_invalid");
+    }
+    await expect(
+      loadMyCatalogQuotePage(USER, { quoteId: QUOTE, limit: 20 }),
+    ).rejects.toThrow("catalog_quote_list_query_invalid");
+    expect(mocks.assertCurrentUserId).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
   it("refuses legacy quotes and empty item sets if a query unexpectedly returns them", async () => {
     const query = {
       select: vi.fn(),
