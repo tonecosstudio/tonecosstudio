@@ -1,8 +1,8 @@
 ## Checkpoint 14/11/2026 — host local isolado do Supabase remoto
 
-- **Base → HEAD:** `1e67b4fa` → `8a9fb2c9` (`fix(local): isolate dev Supabase from remote project`).
+- **Base → commits funcionais:** `1e67b4fa` → `8a9fb2c9` (`fix(local): isolate dev Supabase from remote project`) → `18369f30` (`test(local): cover commercial preview boot`).
 - **Implementado:** no localhost e em qualquer origem Vite de desenvolvimento, configuração Supabase remota é descartada; o fallback usa somente `127.0.0.1:54321` e bloqueia escrita. URL e chave de uma instância local explicitamente configurada continuam aceitas. A casca comercial inicia no fallback local, enquanto orçamentos falham fechados.
-- **Validação Windows:** 101 testes direcionados, `npm run typecheck:app`, ESLint e `git diff --check` passaram. Página, entrada comercial e módulo de ambiente do Vite respondem HTTP 200. A captura visual do Chrome interno expirou duas vezes; a renderização final não foi verificada por screenshot.
+- **Validação Windows:** 102 testes direcionados, `npm run typecheck:app`, ESLint e `git diff --check` passaram; o smoke test monta a entrada comercial no fallback local. Página, entrada comercial e módulo de ambiente do Vite respondem HTTP 200. A captura visual do Chrome interno expirou duas vezes; a renderização final não foi verificada por screenshot.
 - **Integração:** não há serviço local escutando em `54321`; nenhum dado, migration ou serviço remoto foi acessado ou alterado. Testes mockados e HTTP 200 não comprovam persistência Supabase.
 - **NEXT_ACTION:** continuar as melhorias locais independentes; validar conta/orçamentos/admin com persistência somente quando houver Supabase local compatível. Repetir QA visual quando a automação do Chrome estiver disponível.
 - **DO_NOT_REPEAT:** não encaminhar do localhost as credenciais remotas de `.env.local`, não aplicar migrações nem gravar no Supabase conectado e não tratar mock/HTTP como integração real.
