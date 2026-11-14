@@ -19,6 +19,11 @@ import {
   validatePaymentVoucher,
 } from "@/services/payments/payment-voucher-storage-service";
 import { submitCatalogPreorderVoucher } from "@/services/customer/catalog-quote-service";
+import {
+  applyTonecosCoinsToQuote,
+  getMyTonecosCoinBalance,
+  type TonecosCoinBalance,
+} from "@/services/coins/tonecos-coins-service";
 
 const labels: Record<string, string> = {
   pending: "Recebido",
@@ -48,39 +53,70 @@ function getSafePaymentUrl(value: string | null): string | null {
   }
 }
 
-function PreorderPaymentPanel({
+function QuotePaymentPanel({
   row,
+  coinBalance,
   onSuccess,
 }: {
   row: CustomerCatalogQuote;
+  coinBalance: TonecosCoinBalance | null;
   onSuccess: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [coinAmountInput, setCoinAmountInput] = useState<number | null>(null);
+  const [coinError, setCoinError] = useState("");
+  const [coinNotice, setCoinNotice] = useState("");
   const paymentStatus = row.paymentStatus ?? "pending";
-  const finalPayment = paymentStatus === "deposit_paid" && row.readyForFinalPayment;
-  const paymentType = finalPayment ? "final" : "deposit";
-  const amount = finalPayment ? row.remainingAmount : row.depositAmount;
+  const finalPayment =
+    paymentStatus === "deposit_paid" && row.readyForFinalPayment;
+  const paymentType = row.isPreorder
+    ? finalPayment
+      ? "final"
+      : "deposit"
+    : "full";
+  const amountDue = row.remainingAmount ?? row.quotedAmount;
+  const amount = row.isPreorder
+    ? finalPayment
+      ? row.remainingAmount
+      : row.depositAmount
+    : amountDue;
   const safeLink = getSafePaymentUrl(row.paymentLink);
-  const currentPaymentInstructions = !finalPayment || (
-    Boolean(row.finalPaymentNotifiedAt && row.paymentLinkSentAt) &&
-    Date.parse(row.paymentLinkSentAt ?? "") >= Date.parse(row.finalPaymentNotifiedAt ?? "")
-  );
+  const currentPaymentInstructions =
+    paymentType !== "final" ||
+    (Boolean(row.finalPaymentNotifiedAt && row.paymentLinkSentAt) &&
+      Date.parse(row.paymentLinkSentAt ?? "") >=
+        Date.parse(row.finalPaymentNotifiedAt ?? ""));
   const instructionsAvailable = Boolean(
-    currentPaymentInstructions && row.paymentLinkSentAt && (safeLink || row.pixKey),
+    currentPaymentInstructions &&
+    row.paymentLinkSentAt &&
+    (safeLink || row.pixKey),
   );
   const canSubmit =
     (paymentStatus === "pending" || finalPayment) &&
     row.quotedAmount !== null &&
-    !["pending", "reviewing"].includes(row.status) &&
+    row.status === "answered" &&
     amount !== null &&
     amount > 0 &&
     instructionsAvailable;
-  const balance = row.quotedAmount !== null && row.depositAmount !== null
-    ? Math.max(0, row.quotedAmount - row.depositAmount)
-    : null;
+  const preorderBalance =
+    row.quotedAmount !== null && row.depositAmount !== null
+      ? Math.max(0, row.quotedAmount - row.depositAmount)
+      : null;
+  const maxCoins =
+    !row.isPreorder &&
+    row.status === "answered" &&
+    paymentStatus === "pending" &&
+    row.coinAmountApplied === 0 &&
+    row.paymentVoucherPath === null &&
+    coinBalance !== null &&
+    amountDue !== null
+      ? Math.min(coinBalance.balance, Math.floor(amountDue))
+      : 0;
+  const coinAmount = maxCoins > 0 ? (coinAmountInput ?? maxCoins) : 0;
+  const coinAmountOutOfRange = coinAmount > maxCoins;
 
   async function sendVoucher() {
     if (!file || !canSubmit || busy) return;
@@ -103,21 +139,61 @@ function PreorderPaymentPanel({
     }
   }
 
-  if (!row.isPreorder) return null;
+  async function applyCoins() {
+    if (busy || maxCoins < 1 || coinAmount < 1) return;
+    setBusy(true);
+    setCoinError("");
+    setCoinNotice("");
+    try {
+      const result = await applyTonecosCoinsToQuote({
+        quoteId: row.id,
+        amount: coinAmount,
+      });
+      setCoinNotice(
+        result.remainingAmount === 0
+          ? "Coins aplicados. O orçamento foi totalmente quitado."
+          : `${result.spent} Coins aplicados. Restam ${brl.format(result.remainingAmount)} para pagamento.`,
+      );
+      onSuccess();
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "";
+      setCoinError(
+        message.includes("Insufficient coin balance")
+          ? "Seu saldo mudou. Atualize a página e tente novamente."
+          : message.includes("exceeds the remaining")
+            ? "A quantidade excede o saldo atual do orçamento. Atualize a página."
+            : "Não foi possível aplicar Coins agora. Atualize a página e tente novamente.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!row.isPreorder && row.quotedAmount === null) return null;
 
   return (
     <section className="mt-5 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(0,0%,5%)] p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-[hsl(var(--gold-accent))]">Pré-venda com entrada</h3>
+          <h3 className="text-sm font-semibold text-[hsl(var(--gold-accent))]">
+            {row.isPreorder
+              ? "Pré-venda com entrada"
+              : "Pagamento do orçamento"}
+          </h3>
           <p className="mt-1 text-xs leading-5 text-white/60">
-            R$ 50 de entrada abatidos do total; o restante é pago na finalização.
+            {row.isPreorder
+              ? "R$ 50 de entrada abatidos do total; o restante é pago na finalização."
+              : "Pague por PIX ou use seus Coins após a TONART responder ao orçamento."}
           </p>
         </div>
         {paymentStatus === "under_review" ? (
-          <span className="border border-amber-400/40 px-3 py-1 text-xs text-amber-200">Comprovante em análise</span>
+          <span className="border border-amber-400/40 px-3 py-1 text-xs text-amber-200">
+            Comprovante em análise
+          </span>
         ) : paymentStatus === "fully_paid" ? (
-          <span className="border border-emerald-400/40 px-3 py-1 text-xs text-emerald-200">Pagamento concluído</span>
+          <span className="border border-emerald-400/40 px-3 py-1 text-xs text-emerald-200">
+            Pagamento concluído
+          </span>
         ) : paymentStatus === "deposit_paid" ? (
           <span className="border border-sky-400/40 px-3 py-1 text-xs text-sky-200">
             {finalPayment ? "Saldo liberado" : "Entrada aprovada"}
@@ -127,86 +203,256 @@ function PreorderPaymentPanel({
 
       {row.quotedAmount === null ? (
         <p className="mt-4 text-sm text-white/70">
-          A equipe está definindo o valor e o prazo. O sinal só será solicitado após a sua confirmação do orçamento.
+          A equipe está definindo o valor e o prazo. As opções de pagamento
+          aparecem após a resposta.
         </p>
       ) : (
         <dl className="mt-4 grid grid-cols-2 gap-3 border-y border-white/10 py-3 text-sm">
           {row.discountAmount > 0 && row.listAmount !== null && (
-            <div><dt className="text-xs text-white/50">Valor antes da Black Friday</dt><dd className="mt-1 font-medium">{brl.format(row.listAmount)}</dd></div>
+            <div>
+              <dt className="text-xs text-white/50">
+                Valor antes da Black Friday
+              </dt>
+              <dd className="mt-1 font-medium">{brl.format(row.listAmount)}</dd>
+            </div>
           )}
           {row.discountAmount > 0 && (
-            <div><dt className="text-xs text-white/50">Desconto Black Friday ({row.discountPercent}%)</dt><dd className="mt-1 font-medium text-[hsl(var(--gold-accent))]">−{brl.format(row.discountAmount)}</dd></div>
+            <div>
+              <dt className="text-xs text-white/50">
+                Desconto Black Friday ({row.discountPercent}%)
+              </dt>
+              <dd className="mt-1 font-medium text-[hsl(var(--gold-accent))]">
+                −{brl.format(row.discountAmount)}
+              </dd>
+            </div>
           )}
-          <div><dt className="text-xs text-white/50">Valor total</dt><dd className="mt-1 font-medium">{brl.format(row.quotedAmount)}</dd></div>
-          <div><dt className="text-xs text-white/50">Saldo na finalização</dt><dd className="mt-1 font-medium">{balance === null ? "A confirmar" : brl.format(balance)}</dd></div>
+          <div>
+            <dt className="text-xs text-white/50">Valor total</dt>
+            <dd className="mt-1 font-medium">{brl.format(row.quotedAmount)}</dd>
+          </div>
+          {row.isPreorder ? (
+            <div>
+              <dt className="text-xs text-white/50">Saldo na finalização</dt>
+              <dd className="mt-1 font-medium">
+                {preorderBalance === null
+                  ? "A confirmar"
+                  : brl.format(preorderBalance)}
+              </dd>
+            </div>
+          ) : (
+            <>
+              {row.coinAmountApplied > 0 && (
+                <div>
+                  <dt className="text-xs text-white/50">Coins aplicados</dt>
+                  <dd className="mt-1 font-medium text-[hsl(var(--gold-accent))]">
+                    −{brl.format(row.coinAmountApplied)}
+                  </dd>
+                </div>
+              )}
+              <div>
+                <dt className="text-xs text-white/50">Valor para pagar</dt>
+                <dd className="mt-1 font-medium">
+                  {amountDue === null ? "A confirmar" : brl.format(amountDue)}
+                </dd>
+              </div>
+            </>
+          )}
         </dl>
       )}
 
+      {maxCoins > 0 && (
+        <div className="mt-4 space-y-3 border-b border-white/10 pb-4">
+          <div>
+            <h4 className="text-sm font-semibold">Use seus Coins</h4>
+            <p className="mt-1 text-xs leading-5 text-white/55">
+              1 Coin reduz R$ 1 do orçamento. Seu saldo:{" "}
+              {coinBalance?.balance.toLocaleString("pt-BR")} Coins.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label
+              className="block flex-1 space-y-1 text-xs text-white/65"
+              htmlFor={`quote-coins-${row.id}`}
+            >
+              Quantos Coins deseja usar?
+              <input
+                id={`quote-coins-${row.id}`}
+                className="min-h-11 w-full border border-white/20 bg-black px-3 text-sm text-white"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={maxCoins}
+                step={1}
+                value={coinAmount}
+                onChange={(event) =>
+                  setCoinAmountInput(Number(event.target.value))
+                }
+                aria-invalid={coinAmountOutOfRange}
+                aria-describedby={`quote-coins-help-${row.id}`}
+              />
+            </label>
+            <button
+              type="button"
+              className={secondaryClass}
+              disabled={busy || coinAmount < 1 || coinAmountOutOfRange}
+              onClick={() => void applyCoins()}
+            >
+              {busy ? "Aplicando..." : "Usar Coins"}
+            </button>
+          </div>
+          <p
+            id={`quote-coins-help-${row.id}`}
+            className="text-xs text-white/45"
+          >
+            {coinAmountOutOfRange
+              ? `Escolha até ${maxCoins.toLocaleString("pt-BR")} Coins neste orçamento.`
+              : `Até ${maxCoins.toLocaleString("pt-BR")} Coins neste orçamento; o restante pode ser pago por PIX.`}
+          </p>
+          {coinError && (
+            <p role="alert" className="text-sm text-red-300">
+              {coinError}
+            </p>
+          )}
+          {coinNotice && (
+            <p role="status" className="text-sm text-emerald-300">
+              {coinNotice}
+            </p>
+          )}
+        </div>
+      )}
+
       {row.paymentVoucherRejectionReason && (
-        <p role="alert" className="mt-4 border-l-2 border-red-400 pl-3 text-sm text-red-200">
+        <p
+          role="alert"
+          className="mt-4 border-l-2 border-red-400 pl-3 text-sm text-red-200"
+        >
           Comprovante recusado: {row.paymentVoucherRejectionReason}
         </p>
       )}
 
       {paymentStatus === "under_review" ? (
         <p role="status" className="mt-4 text-sm text-white/70">
-          Recebemos seu comprovante de {row.paymentVoucherType === "final" ? "saldo" : "entrada"}. A produção ou a baixa final só avançará após a conferência da equipe.
+          Recebemos seu comprovante de{" "}
+          {row.paymentVoucherType === "final"
+            ? "saldo"
+            : row.paymentVoucherType === "full"
+              ? "pagamento do orçamento"
+              : "entrada"}
+          . A confirmação só acontece após a conferência da equipe.
         </p>
       ) : paymentStatus === "fully_paid" ? (
-        <p className="mt-4 text-sm text-white/70">O valor total foi confirmado pela TONART.</p>
+        <p className="mt-4 text-sm text-white/70">
+          O valor total foi confirmado pela TONART.
+        </p>
       ) : paymentStatus === "deposit_paid" && !finalPayment ? (
-        <p className="mt-4 text-sm text-white/70">Entrada aprovada. A equipe libera o saldo quando a peça estiver pronta para finalização.</p>
+        <p className="mt-4 text-sm text-white/70">
+          Entrada aprovada. A equipe libera o saldo quando a peça estiver pronta
+          para finalização.
+        </p>
       ) : row.quotedAmount !== null && !instructionsAvailable ? (
-        <p className="mt-4 text-sm text-white/70">O valor está definido. A equipe enviará as instruções PIX para você confirmar a entrada.</p>
+        <p className="mt-4 text-sm text-white/70">
+          {row.isPreorder
+            ? "O valor está definido. A equipe enviará as instruções PIX para você confirmar a entrada."
+            : "O valor está definido. A equipe enviará as instruções para pagamento do saldo."}
+        </p>
       ) : null}
 
-      {instructionsAvailable && (paymentStatus === "pending" || finalPayment) && (
-        <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/75">
-            {finalPayment ? "Instruções para pagar o saldo" : "Instruções para pagar a entrada"}
-            {amount !== null ? ` · ${brl.format(amount)}` : ""}
-          </p>
-          {row.pixKey && (
-            <p className="break-all rounded-sm bg-white/[0.04] p-3 text-sm text-white/80">
-              <span className="mb-1 block text-xs text-white/50">Chave PIX</span>{row.pixKey}
+      {instructionsAvailable &&
+        (paymentStatus === "pending" || finalPayment) && (
+          <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-white/75">
+              {finalPayment
+                ? "Instruções para pagar o saldo"
+                : row.isPreorder
+                  ? "Instruções para pagar a entrada"
+                  : "Instruções para pagar o orçamento"}
+              {amount !== null ? ` · ${brl.format(amount)}` : ""}
             </p>
-          )}
-          {safeLink && (
-            <a href={safeLink} target="_blank" rel="noreferrer" className={secondaryClass}>
-              Abrir link de pagamento
-            </a>
-          )}
-          {row.paymentInstructions && (
-            <p className="whitespace-pre-wrap text-sm leading-6 text-white/65">{row.paymentInstructions}</p>
-          )}
-          {canSubmit && (
-            <div className="space-y-3 border-t border-white/10 pt-4">
-              <label htmlFor={`preorder-voucher-${row.id}`} className="block text-sm font-medium">
-                {row.paymentVoucherRejectionReason ? "Enviar comprovante corrigido" : "Comprovante de pagamento"}
-              </label>
-              <input
-                id={`preorder-voucher-${row.id}`}
-                type="file"
-                accept={ALLOWED_PAYMENT_VOUCHER_TYPES.join(",")}
-                className="block min-h-11 w-full text-sm text-white/70 file:mr-3 file:min-h-11 file:border-0 file:bg-white/10 file:px-4 file:text-white hover:file:bg-white/15"
-                onChange={(event) => {
-                  const selected = event.currentTarget.files?.[0] ?? null;
-                  setError("");
-                  if (!selected) { setFile(null); return; }
-                  try { validatePaymentVoucher(selected); setFile(selected); }
-                  catch (cause) { setFile(null); setError(cause instanceof Error ? cause.message : "Comprovante inválido."); }
-                }}
-              />
-              <p className="text-xs text-white/50">JPG, PNG ou PDF · até {Math.round(MAX_PAYMENT_VOUCHER_SIZE / (1024 * 1024))} MB. O comprovante fica privado e é analisado pela equipe.</p>
-              {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
-              {submitted && <p role="status" className="text-sm text-emerald-300">Comprovante enviado para análise.</p>}
-              <button type="button" className={secondaryClass} disabled={!file || busy} onClick={() => void sendVoucher()}>
-                {busy ? "Enviando comprovante..." : "Enviar comprovante"}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+            {row.pixKey && (
+              <p className="break-all rounded-sm bg-white/[0.04] p-3 text-sm text-white/80">
+                <span className="mb-1 block text-xs text-white/50">
+                  Chave PIX
+                </span>
+                {row.pixKey}
+              </p>
+            )}
+            {safeLink && (
+              <a
+                href={safeLink}
+                target="_blank"
+                rel="noreferrer"
+                className={secondaryClass}
+              >
+                Abrir link de pagamento
+              </a>
+            )}
+            {row.paymentInstructions && (
+              <p className="whitespace-pre-wrap text-sm leading-6 text-white/65">
+                {row.paymentInstructions}
+              </p>
+            )}
+            {canSubmit && (
+              <div className="space-y-3 border-t border-white/10 pt-4">
+                <label
+                  htmlFor={`preorder-voucher-${row.id}`}
+                  className="block text-sm font-medium"
+                >
+                  {row.paymentVoucherRejectionReason
+                    ? "Enviar comprovante corrigido"
+                    : "Comprovante de pagamento"}
+                </label>
+                <input
+                  id={`preorder-voucher-${row.id}`}
+                  type="file"
+                  accept={ALLOWED_PAYMENT_VOUCHER_TYPES.join(",")}
+                  className="block min-h-11 w-full text-sm text-white/70 file:mr-3 file:min-h-11 file:border-0 file:bg-white/10 file:px-4 file:text-white hover:file:bg-white/15"
+                  onChange={(event) => {
+                    const selected = event.currentTarget.files?.[0] ?? null;
+                    setError("");
+                    if (!selected) {
+                      setFile(null);
+                      return;
+                    }
+                    try {
+                      validatePaymentVoucher(selected);
+                      setFile(selected);
+                    } catch (cause) {
+                      setFile(null);
+                      setError(
+                        cause instanceof Error
+                          ? cause.message
+                          : "Comprovante inválido.",
+                      );
+                    }
+                  }}
+                />
+                <p className="text-xs text-white/50">
+                  JPG, PNG ou PDF · até{" "}
+                  {Math.round(MAX_PAYMENT_VOUCHER_SIZE / (1024 * 1024))} MB. O
+                  comprovante fica privado e é analisado pela equipe.
+                </p>
+                {error && (
+                  <p role="alert" className="text-sm text-red-300">
+                    {error}
+                  </p>
+                )}
+                {submitted && (
+                  <p role="status" className="text-sm text-emerald-300">
+                    Comprovante enviado para análise.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className={secondaryClass}
+                  disabled={!file || busy}
+                  onClick={() => void sendVoucher()}
+                >
+                  {busy ? "Enviando comprovante..." : "Enviar comprovante"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
     </section>
   );
 }
@@ -216,7 +462,9 @@ export default function TonecosMyQuotesPage() {
   const requestedId = new URLSearchParams(location.search).get("quote");
   const selectedId =
     requestedId &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedId)
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      requestedId,
+    )
       ? requestedId.toLowerCase()
       : null;
   const invalidSelection = requestedId !== null && !selectedId;
@@ -224,6 +472,9 @@ export default function TonecosMyQuotesPage() {
   const [authError, setAuthError] = useState(false);
   const [authAttempt, setAuthAttempt] = useState(0);
   const [rows, setRows] = useState<CustomerCatalogQuote[]>([]);
+  const [coinBalance, setCoinBalance] = useState<TonecosCoinBalance | null>(
+    null,
+  );
   const [history, setHistory] = useState<Record<string, CatalogQuoteEvent[]>>(
     {},
   );
@@ -251,6 +502,33 @@ export default function TonecosMyQuotesPage() {
       active = false;
     };
   }, [authAttempt]);
+
+  useEffect(() => {
+    const needsCoins = rows.some(
+      (row) =>
+        !row.isPreorder &&
+        row.status === "answered" &&
+        row.quotedAmount !== null &&
+        row.paymentStatus !== "fully_paid" &&
+        row.coinAmountApplied === 0,
+    );
+    if (!userId || !needsCoins) {
+      setCoinBalance(null);
+      return;
+    }
+    let active = true;
+    setCoinBalance(null);
+    getMyTonecosCoinBalance()
+      .then((balance) => {
+        if (active) setCoinBalance(balance);
+      })
+      .catch(() => {
+        if (active) setCoinBalance(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [userId, rows]);
 
   useEffect(() => {
     if (!userId || invalidSelection) return;
@@ -317,7 +595,10 @@ export default function TonecosMyQuotesPage() {
       intro="Acompanhe as solicitações enviadas e os valores respondidos pela TONART Studio. Orçamento não é confirmação de compra."
     >
       {invalidSelection && (
-        <p role="alert" className="mb-5 max-w-3xl border border-white/20 p-4 text-sm text-white/75">
+        <p
+          role="alert"
+          className="mb-5 max-w-3xl border border-white/20 p-4 text-sm text-white/75"
+        >
           O link do orçamento é inválido. Abra seu histórico para continuar.
         </p>
       )}
@@ -326,7 +607,10 @@ export default function TonecosMyQuotesPage() {
           <p className="text-sm text-white/75">
             Consultando orçamento #{selectedId.slice(0, 8)}
           </p>
-          <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.history}>
+          <Link
+            className={secondaryClass}
+            to={TONECOS_COMMERCIAL_ROUTES.history}
+          >
             Ver todos os orçamentos
           </Link>
         </div>
@@ -389,10 +673,10 @@ export default function TonecosMyQuotesPage() {
                 TONECOS_COMMERCIAL_ROUTES.login +
                 "?next=" +
                 encodeURIComponent(
-                selectedId
-                  ? TONECOS_COMMERCIAL_ROUTES.history + "?quote=" + selectedId
-                  : TONECOS_COMMERCIAL_ROUTES.history,
-              )
+                  selectedId
+                    ? TONECOS_COMMERCIAL_ROUTES.history + "?quote=" + selectedId
+                    : TONECOS_COMMERCIAL_ROUTES.history,
+                )
               }
             >
               Entrar novamente
@@ -420,12 +704,17 @@ export default function TonecosMyQuotesPage() {
           </button>
         </div>
       )}
-      {userId && !loading && !error && !invalidSelection && !selectedId && total > 0 && (
-        <p className="mb-4 max-w-3xl text-xs text-white/55">
-          Mostrando {offset + 1}–{Math.min(offset + rows.length, total)} de{" "}
-          {total}
-        </p>
-      )}
+      {userId &&
+        !loading &&
+        !error &&
+        !invalidSelection &&
+        !selectedId &&
+        total > 0 && (
+          <p className="mb-4 max-w-3xl text-xs text-white/55">
+            Mostrando {offset + 1}–{Math.min(offset + rows.length, total)} de{" "}
+            {total}
+          </p>
+        )}
       {userId &&
         !loading &&
         !error &&
@@ -510,49 +799,65 @@ export default function TonecosMyQuotesPage() {
                 )}
                 {!row.isPreorder && (
                   <div className="mt-5 border-t border-white/15 pt-4 text-sm font-semibold">
-                    {row.quotedAmount === null
-                      ? "Valor em análise"
-                      : row.discountAmount > 0 && row.listAmount !== null
-                        ? <div className="space-y-1">
-                            <p className="text-xs font-normal text-white/55">Valor antes da Black Friday: {brl.format(row.listAmount)}</p>
-                            <p className="text-xs font-normal text-[hsl(var(--gold-accent))]">Desconto Black Friday ({row.discountPercent}%): −{brl.format(row.discountAmount)}</p>
-                            <p>Valor final: {brl.format(row.quotedAmount)}</p>
-                          </div>
-                        : brl.format(row.quotedAmount)}
+                    {row.quotedAmount === null ? (
+                      "Valor em análise"
+                    ) : row.discountAmount > 0 && row.listAmount !== null ? (
+                      <div className="space-y-1">
+                        <p className="text-xs font-normal text-white/55">
+                          Valor antes da Black Friday:{" "}
+                          {brl.format(row.listAmount)}
+                        </p>
+                        <p className="text-xs font-normal text-[hsl(var(--gold-accent))]">
+                          Desconto Black Friday ({row.discountPercent}%): −
+                          {brl.format(row.discountAmount)}
+                        </p>
+                        <p>Valor final: {brl.format(row.quotedAmount)}</p>
+                      </div>
+                    ) : (
+                      brl.format(row.quotedAmount)
+                    )}
                   </div>
                 )}
-                <PreorderPaymentPanel
+                <QuotePaymentPanel
                   row={row}
+                  coinBalance={coinBalance}
                   onSuccess={() => setAttempt((value) => value + 1)}
                 />
               </li>
             ))}
           </ul>
         ))}
-      {userId && !loading && !error && !selectedId && !invalidSelection && total > PAGE_SIZE && (
-        <div className="mt-6 flex max-w-3xl items-center justify-between gap-3">
-          <button
-            type="button"
-            className={secondaryClass}
-            disabled={offset === 0}
-            onClick={() => setOffset((value) => Math.max(0, value - PAGE_SIZE))}
-          >
-            Anterior
-          </button>
-          <span className="text-xs text-white/55">
-            Página {Math.floor(offset / PAGE_SIZE) + 1} de{" "}
-            {Math.ceil(total / PAGE_SIZE)}
-          </span>
-          <button
-            type="button"
-            className={secondaryClass}
-            disabled={offset + rows.length >= total}
-            onClick={() => setOffset((value) => value + PAGE_SIZE)}
-          >
-            Próxima
-          </button>
-        </div>
-      )}
+      {userId &&
+        !loading &&
+        !error &&
+        !selectedId &&
+        !invalidSelection &&
+        total > PAGE_SIZE && (
+          <div className="mt-6 flex max-w-3xl items-center justify-between gap-3">
+            <button
+              type="button"
+              className={secondaryClass}
+              disabled={offset === 0}
+              onClick={() =>
+                setOffset((value) => Math.max(0, value - PAGE_SIZE))
+              }
+            >
+              Anterior
+            </button>
+            <span className="text-xs text-white/55">
+              Página {Math.floor(offset / PAGE_SIZE) + 1} de{" "}
+              {Math.ceil(total / PAGE_SIZE)}
+            </span>
+            <button
+              type="button"
+              className={secondaryClass}
+              disabled={offset + rows.length >= total}
+              onClick={() => setOffset((value) => value + PAGE_SIZE)}
+            >
+              Próxima
+            </button>
+          </div>
+        )}
     </CommercialPage>
   );
 }

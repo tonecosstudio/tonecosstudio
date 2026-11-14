@@ -1,6 +1,12 @@
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, CreditCard, Calculator, Package, KeyRound } from "lucide-react";
+import {
+  Wallet,
+  CreditCard,
+  Calculator,
+  Package,
+  KeyRound,
+} from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ADMIN_ROUTES } from "@/config/routes";
 import AdminPayments from "./AdminPayments";
@@ -9,7 +15,12 @@ import PaymentCalculator from "./PaymentCalculator";
 import AdminPreorders from "./AdminPreorders";
 import AdminPaymentKeys from "./AdminPaymentKeys";
 
-type PaymentHubTab = "payments" | "methods" | "keys" | "calculator" | "preorders";
+type PaymentHubTab =
+  | "payments"
+  | "methods"
+  | "keys"
+  | "calculator"
+  | "preorders";
 
 const PAYMENT_TAB_PATHS: Record<PaymentHubTab, string> = {
   payments: ADMIN_ROUTES.payments,
@@ -60,7 +71,11 @@ export default function AdminPaymentHub() {
           </p>
         </div>
 
-        <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
+        <Tabs
+          value={currentTab}
+          onValueChange={handleTabChange}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
             <TabsTrigger value="payments">
               <Wallet className="h-4 w-4 mr-2" />
@@ -80,7 +95,7 @@ export default function AdminPaymentHub() {
             </TabsTrigger>
             <TabsTrigger value="preorders">
               <Package className="mr-2 h-4 w-4" />
-              Pré-vendas
+              Pagamentos de pedidos
             </TabsTrigger>
           </TabsList>
 

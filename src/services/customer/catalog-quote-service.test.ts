@@ -173,14 +173,17 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       submitCatalogQuoteRequest(USER, [{ slug: "naruto", quantity: 1 }]),
     ).resolves.toBe(QUOTE);
     expect(mocks.assertCurrentUserId).toHaveBeenCalledExactlyOnceWith(USER);
-    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("submit_catalog_quote_request", {
-      p_models: [{ slug: "naruto", quantity: 1 }],
-      p_notes: undefined,
-      p_whatsapp: undefined,
-      p_postal_code: undefined,
-      p_scale: "a definir",
-      p_finishing: "a definir",
-    });
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "submit_catalog_quote_request",
+      {
+        p_models: [{ slug: "naruto", quantity: 1 }],
+        p_notes: undefined,
+        p_whatsapp: undefined,
+        p_postal_code: undefined,
+        p_scale: "a definir",
+        p_finishing: "a definir",
+      },
+    );
   });
 
   it("rejects malformed, duplicated and oversized submissions before I/O", async () => {
@@ -327,24 +330,26 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       query[method].mockReturnValue(query);
     }
     query.range.mockResolvedValue({
-      data: [{
-        id: QUOTE,
-        status: "reviewing",
-        created_at: "2026-11-14T00:00:00Z",
-        catalog_requested_at: "2026-11-14T00:00:00Z",
-        requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
-        deadline: null,
-        notes: null,
-        total_amount: null,
-        list_amount: null,
-        discount_percent: 0,
-        discount_amount: 0,
-        admin_response: null,
-        customer_whatsapp: null,
-        postal_code: null,
-        desired_scale: "a definir",
-        finishing: "a definir",
-      }],
+      data: [
+        {
+          id: QUOTE,
+          status: "reviewing",
+          created_at: "2026-11-14T00:00:00Z",
+          catalog_requested_at: "2026-11-14T00:00:00Z",
+          requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
+          deadline: null,
+          notes: null,
+          total_amount: null,
+          list_amount: null,
+          discount_percent: 0,
+          discount_amount: 0,
+          admin_response: null,
+          customer_whatsapp: null,
+          postal_code: null,
+          desired_scale: "a definir",
+          finishing: "a definir",
+        },
+      ],
       error: null,
       count: 1,
     });
@@ -362,8 +367,83 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     expect(mocks.assertCurrentUserId).toHaveBeenCalledWith(USER);
   });
 
+  it("reads applied Coins from the existing payment ledger for the quote owner", async () => {
+    const quoteQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      not: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    };
+    for (const method of ["select", "eq", "not", "order"] as const) {
+      quoteQuery[method].mockReturnValue(quoteQuery);
+    }
+    quoteQuery.range.mockResolvedValue({
+      data: [
+        {
+          id: QUOTE,
+          status: "answered",
+          created_at: "2026-11-14T00:00:00Z",
+          deadline: null,
+          notes: null,
+          total_amount: 150,
+          list_amount: 300,
+          discount_percent: 50,
+          discount_amount: 150,
+          admin_response: "Desconto aplicado.",
+          requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
+          catalog_requested_at: "2026-11-14T00:00:00Z",
+          customer_whatsapp: null,
+          postal_code: null,
+          desired_scale: "a definir",
+          finishing: "a definir",
+          is_preorder: false,
+          deposit_amount: null,
+          remaining_amount: 125,
+          payment_status: "pending",
+          payment_link: null,
+          pix_key: null,
+          payment_instructions: null,
+          payment_link_sent_at: null,
+          final_payment_notified_at: null,
+          ready_for_final_payment: false,
+          payment_voucher_path: null,
+          payment_voucher_type: null,
+          payment_voucher_rejection_reason: null,
+        },
+      ],
+      error: null,
+      count: 1,
+    });
+    const coinPaymentsQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      in: vi.fn(),
+    };
+    coinPaymentsQuery.select.mockReturnValue(coinPaymentsQuery);
+    coinPaymentsQuery.eq.mockReturnValue(coinPaymentsQuery);
+    coinPaymentsQuery.in.mockResolvedValue({
+      data: [{ quote_id: QUOTE, amount: 25 }],
+      error: null,
+    });
+    mocks.from.mockImplementation((table: string) =>
+      table === "quotes" ? quoteQuery : coinPaymentsQuery,
+    );
+
+    const page = await loadMyCatalogQuotePage(USER);
+
+    expect(page.rows[0].coinAmountApplied).toBe(25);
+    expect(coinPaymentsQuery.eq).toHaveBeenCalledWith("user_id", USER);
+    expect(coinPaymentsQuery.eq).toHaveBeenCalledWith("payment_type", "coins");
+    expect(coinPaymentsQuery.in).toHaveBeenCalledWith("quote_id", [QUOTE]);
+  });
+
   it("preserves ordinary quote history while preorder payment columns await migration", async () => {
-    const makeQuery = (response: { data: unknown; error: unknown; count?: number | null }) => {
+    const makeQuery = (response: {
+      data: unknown;
+      error: unknown;
+      count?: number | null;
+    }) => {
       const query = {
         select: vi.fn(() => query),
         eq: vi.fn(() => query),
@@ -375,42 +455,58 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     };
     const unavailable = makeQuery({
       data: null,
-      error: { code: "42703", message: "column quotes.is_preorder does not exist" },
+      error: {
+        code: "42703",
+        message: "column quotes.is_preorder does not exist",
+      },
     });
     const compatible = makeQuery({
-      data: [{
-        id: QUOTE,
-        status: "answered",
-        created_at: "2026-11-14T00:00:00Z",
-        deadline: null,
-        notes: null,
-        total_amount: 300,
-        list_amount: 300,
-        discount_percent: 0,
-        discount_amount: 0,
-        admin_response: "Orçamento aprovado.",
-        requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
-        catalog_requested_at: "2026-11-14T00:00:00Z",
-        customer_whatsapp: null,
-        postal_code: null,
-        desired_scale: "a definir",
-        finishing: "a definir",
-      }],
+      data: [
+        {
+          id: QUOTE,
+          status: "answered",
+          created_at: "2026-11-14T00:00:00Z",
+          deadline: null,
+          notes: null,
+          total_amount: 300,
+          list_amount: 300,
+          discount_percent: 0,
+          discount_amount: 0,
+          admin_response: "Orçamento aprovado.",
+          requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
+          catalog_requested_at: "2026-11-14T00:00:00Z",
+          customer_whatsapp: null,
+          postal_code: null,
+          desired_scale: "a definir",
+          finishing: "a definir",
+        },
+      ],
       error: null,
       count: 1,
     });
     mocks.from.mockReturnValueOnce(unavailable).mockReturnValueOnce(compatible);
 
     const page = await loadMyCatalogQuotePage(USER);
-    expect(page).toMatchObject({ total: 1, rows: [{
-      id: QUOTE,
-      quotedAmount: 300,
-      isPreorder: false,
-      paymentStatus: null,
-      paymentVoucherPath: null,
-    }] });
-    expect(unavailable.select).toHaveBeenCalledWith(expect.stringContaining("is_preorder"), { count: "exact" });
-    expect(compatible.select).toHaveBeenCalledWith(expect.not.stringContaining("is_preorder"), { count: "exact" });
+    expect(page).toMatchObject({
+      total: 1,
+      rows: [
+        {
+          id: QUOTE,
+          quotedAmount: 300,
+          isPreorder: false,
+          paymentStatus: null,
+          paymentVoucherPath: null,
+        },
+      ],
+    });
+    expect(unavailable.select).toHaveBeenCalledWith(
+      expect.stringContaining("is_preorder"),
+      { count: "exact" },
+    );
+    expect(compatible.select).toHaveBeenCalledWith(
+      expect.not.stringContaining("is_preorder"),
+      { count: "exact" },
+    );
     expect(compatible.eq).toHaveBeenCalledWith("user_id", USER);
   });
 
@@ -426,20 +522,22 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       query[method].mockReturnValue(query);
     }
     query.range.mockResolvedValue({
-      data: [{
-        id: QUOTE,
-        status: "answered",
-        created_at: "2026-11-14T00:00:00Z",
-        catalog_requested_at: "2026-11-14T00:00:00Z",
-        requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
-        deadline: null,
-        notes: null,
-        total_amount: 150,
-        list_amount: 300,
-        discount_percent: 50,
-        discount_amount: 150,
-        admin_response: "Oferta Black Friday aplicada.",
-      }],
+      data: [
+        {
+          id: QUOTE,
+          status: "answered",
+          created_at: "2026-11-14T00:00:00Z",
+          catalog_requested_at: "2026-11-14T00:00:00Z",
+          requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
+          deadline: null,
+          notes: null,
+          total_amount: 150,
+          list_amount: 300,
+          discount_percent: 50,
+          discount_amount: 150,
+          admin_response: "Oferta Black Friday aplicada.",
+        },
+      ],
       error: null,
       count: 1,
     });
@@ -467,20 +565,22 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       query[method].mockReturnValue(query);
     }
     query.range.mockResolvedValue({
-      data: [{
-        id: QUOTE,
-        status: "answered",
-        created_at: "2026-11-14T00:00:00Z",
-        catalog_requested_at: "2026-11-14T00:00:00Z",
-        requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
-        deadline: null,
-        notes: null,
-        total_amount: 150,
-        list_amount: 300,
-        discount_percent: 0,
-        discount_amount: 150,
-        admin_response: "Resposta inconsistente.",
-      }],
+      data: [
+        {
+          id: QUOTE,
+          status: "answered",
+          created_at: "2026-11-14T00:00:00Z",
+          catalog_requested_at: "2026-11-14T00:00:00Z",
+          requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
+          deadline: null,
+          notes: null,
+          total_amount: 150,
+          list_amount: 300,
+          discount_percent: 0,
+          discount_amount: 150,
+          admin_response: "Resposta inconsistente.",
+        },
+      ],
       error: null,
       count: 1,
     });
@@ -492,7 +592,11 @@ describe("authenticated Tonecos catalog quote boundary", () => {
   });
 
   it("falls back to ordinary quote history while promotion columns await migration", async () => {
-    const makeQuery = (response: { data: unknown; error: unknown; count?: number | null }) => {
+    const makeQuery = (response: {
+      data: unknown;
+      error: unknown;
+      count?: number | null;
+    }) => {
       const query = {
         select: vi.fn(),
         eq: vi.fn(),
@@ -507,20 +611,25 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     };
     const unavailable = makeQuery({
       data: null,
-      error: { code: "42703", message: "column quotes.discount_percent does not exist" },
+      error: {
+        code: "42703",
+        message: "column quotes.discount_percent does not exist",
+      },
     });
     const compatible = makeQuery({
-      data: [{
-        id: QUOTE,
-        status: "answered",
-        created_at: "2026-11-14T00:00:00Z",
-        catalog_requested_at: "2026-11-14T00:00:00Z",
-        requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
-        deadline: null,
-        notes: null,
-        total_amount: 300,
-        admin_response: "Orçamento aprovado.",
-      }],
+      data: [
+        {
+          id: QUOTE,
+          status: "answered",
+          created_at: "2026-11-14T00:00:00Z",
+          catalog_requested_at: "2026-11-14T00:00:00Z",
+          requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
+          deadline: null,
+          notes: null,
+          total_amount: 300,
+          admin_response: "Orçamento aprovado.",
+        },
+      ],
       error: null,
       count: 1,
     });
@@ -534,9 +643,18 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       discountPercent: 0,
       discountAmount: 0,
     });
-    expect(unavailable.select).toHaveBeenCalledWith(expect.stringContaining("discount_percent"), { count: "exact" });
-    expect(compatible.select).toHaveBeenCalledWith(expect.not.stringContaining("discount_percent"), { count: "exact" });
-    expect(compatible.select).toHaveBeenCalledWith(expect.stringContaining("is_preorder"), { count: "exact" });
+    expect(unavailable.select).toHaveBeenCalledWith(
+      expect.stringContaining("discount_percent"),
+      { count: "exact" },
+    );
+    expect(compatible.select).toHaveBeenCalledWith(
+      expect.not.stringContaining("discount_percent"),
+      { count: "exact" },
+    );
+    expect(compatible.select).toHaveBeenCalledWith(
+      expect.stringContaining("is_preorder"),
+      { count: "exact" },
+    );
   });
 
   it("rejects invalid exact quote identifiers before any authentication or network I/O", async () => {
@@ -621,8 +739,9 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       error: { message: "offline" },
     });
     mocks.from.mockReturnValue(query);
-    await expect(loadMyCatalogQuotePage(USER, { limit: 3, offset: 6 }))
-      .rejects.toMatchObject({ message: "offline" });
+    await expect(
+      loadMyCatalogQuotePage(USER, { limit: 3, offset: 6 }),
+    ).rejects.toMatchObject({ message: "offline" });
     expect(query.range).toHaveBeenCalledWith(6, 8);
   });
 });
