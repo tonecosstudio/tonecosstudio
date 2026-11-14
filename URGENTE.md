@@ -1,3 +1,11 @@
+## Checkpoint 14/11/2026 — correção de catálogo no host local
+
+- **Base/HEAD:** `main@5a6a2785` → correção `3ef2b0ac`.
+- **Implementado:** o gateway de catálogo agora aceita o proxy HTTP somente quando ele usa a origem local exata (`localhost`/`127.0.0.1`) em desenvolvimento, independentemente da porta dinâmica do Vite. HTTP externo continua rejeitado. A prévia local usa `.env.local` ignorado pelo Git, com catálogo público somente leitura e o proxy existente; não usa credenciais Supabase.
+- **Validação:** `npx vitest run src/services/catalog/public-catalog-gateway.test.ts` passou (51 testes); `npm run typecheck` passou; `git diff --check` limpo. A API de desenvolvimento respondeu com 24 referências e a home no navegador interno exibiu seis modelos.
+- **Produção:** nenhuma escrita em Supabase, Cloudflare, D1/R2 ou deploy. O host local permanece somente leitura.
+- **NEXT_ACTION:** continuar integrando as páginas comerciais ao schema TONART atual. Não aplicar migrações no Supabase de produção; validar checkout/assinaturas somente em ambiente isolado quando o custo de branch de desenvolvimento estiver aprovado.
+- **DO_NOT_REPEAT:** não iniciar o app legado sem flags locais; não relaxar HTTP fora da origem de desenvolvimento; não usar esse preview somente leitura como prova de checkout ou de gravação no Supabase.
 # TONART Studio — checkpoint operacional
 
 ## Checkpoint 14/11/2026 — integração de conta, administração e pré-venda
