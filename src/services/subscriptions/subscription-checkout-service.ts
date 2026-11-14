@@ -9,6 +9,8 @@ import { getSubscriptionModelSelectionIssue } from "@/services/subscriptions/sub
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export type SubscriptionPaymentMethod = "pix" | "credit_card";
+
 export type SubscribePlan = {
   id: string;
   name: string;
@@ -73,7 +75,7 @@ interface SubscriptionCheckoutRpcClient {
       p_plan_id: string;
       p_collection_id: string;
       p_selected_model_slugs: string[];
-      p_payment_method: "pix";
+      p_payment_method: SubscriptionPaymentMethod;
       p_payment_voucher_url: string;
     },
   ): Promise<{ data: unknown; error: Error | null }>;
@@ -169,18 +171,20 @@ export async function getSubscribeCollectionBySlug(
   return data ? toSubscribeCollectionOption(data as unknown as SubscribeCollectionQueryRow) : null;
 }
 
-/** Creates one pending PIX subscription through the existing database authority. */
+/** Creates one pending subscription through the existing database authority. */
 export async function createSubscriptionCheckoutForCurrentUser(input: {
   planId: string;
   collectionId: string;
   selectedModelSlugs: string[];
   modelSelectionLimit: 6 | 12;
+  paymentMethod: SubscriptionPaymentMethod;
   voucher: File;
 }): Promise<SubscriptionCheckoutResult> {
   if (
     !input ||
     !UUID_PATTERN.test(input.planId) ||
     !UUID_PATTERN.test(input.collectionId) ||
+    (input.paymentMethod !== "pix" && input.paymentMethod !== "credit_card") ||
     getSubscriptionModelSelectionIssue({
       selectedSlugs: input.selectedModelSlugs,
       selectionLimit: input.modelSelectionLimit,
@@ -203,7 +207,7 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
       p_plan_id: input.planId,
       p_collection_id: input.collectionId,
       p_selected_model_slugs: input.selectedModelSlugs,
-      p_payment_method: "pix",
+      p_payment_method: input.paymentMethod,
       p_payment_voucher_url: voucherPath,
     });
     if (result.error) throw result.error;

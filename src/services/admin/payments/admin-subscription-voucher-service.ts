@@ -17,6 +17,7 @@ export type AdminSubscriptionVoucher = {
   customerName: string;
   customerEmail: string;
   planType: string;
+  paymentMethod: string | null;
   status: string;
   paymentStatus: string;
   collectionName: string;
@@ -31,6 +32,7 @@ type SubscriptionVoucherRow = {
   id: string;
   user_id: string;
   plan_type: string;
+  payment_method: string | null;
   status: string;
   payment_status: string;
   collection_id: string | null;
@@ -71,7 +73,7 @@ export async function listAdminSubscriptionVouchers(): Promise<AdminSubscription
   const { data, error } = await adminPaymentsGateway
     .from("subscriptions")
     .select(
-      "id,user_id,plan_type,status,payment_status,collection_id,selected_model_slugs,total_paid,created_at,payment_voucher_path,payment_voucher_url,payment_rejection_reason",
+      "id,user_id,plan_type,payment_method,status,payment_status,collection_id,selected_model_slugs,total_paid,created_at,payment_voucher_path,payment_voucher_url,payment_rejection_reason",
     )
     .or("payment_voucher_path.not.is.null,payment_voucher_url.not.is.null")
     .in("payment_status", ["pending", "under_review"])
@@ -110,6 +112,7 @@ export async function listAdminSubscriptionVouchers(): Promise<AdminSubscription
       customerName: profile?.full_name?.trim() || "Cliente",
       customerEmail: profile?.email?.trim() || "E-mail não informado",
       planType: row.plan_type,
+      paymentMethod: row.payment_method,
       status: row.status,
       paymentStatus: row.payment_status,
       collectionName: row.collection_id ? collectionsById.get(row.collection_id) ?? "Coleção" : "Coleção",

@@ -23,13 +23,18 @@ function VoucherCard({
 }) {
   const [reason, setReason] = useState("");
   const [localError, setLocalError] = useState("");
+  const paymentMethodLabel = item.paymentMethod === "credit_card"
+    ? "Cartão"
+    : item.paymentMethod === "pix"
+      ? "PIX"
+      : "Não informado";
   return (
     <article className={panelClass}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="font-mono text-xs text-white/45">Assinatura #{item.id.slice(0, 8)}</p>
           <h2 className="mt-1 text-lg font-semibold">{item.collectionName}</h2>
-          <p className="mt-1 text-sm text-white/60">Plano {item.planType} · {currency.format(item.totalPaid)}</p>
+          <p className="mt-1 text-sm text-white/60">Plano {item.planType} · {paymentMethodLabel} · {currency.format(item.totalPaid)}</p>
         </div>
         <span className="border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs text-[hsl(var(--gold-accent))]">
           {item.paymentStatus === "under_review" ? "Em análise" : "Aguardando conferência"}
@@ -140,7 +145,7 @@ export default function TonecosAdminSubscriptionPaymentsPage() {
   return (
     <CommercialPage
       title="Comprovantes de assinatura"
-      intro="Revise os comprovantes PIX recebidos. A aprovação ativa a assinatura; a rejeição informa ao cliente o que precisa corrigir."
+      intro="Revise comprovantes PIX e confirmações de cartão. A aprovação ativa a assinatura; a rejeição informa ao cliente o que precisa corrigir."
     >
       {actionError && <p role="alert" className={panelClass + " mb-5 border-red-500/40 text-red-200"}>{actionError}</p>}
 

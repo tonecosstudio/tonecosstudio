@@ -159,6 +159,7 @@ describe("SubscribeCollection curated model checkout", () => {
         collectionId: COLLECTION_ID,
         selectedModelSlugs: MODEL_SLUGS.slice(0, 6),
         modelSelectionLimit: 6,
+        paymentMethod: "pix",
         voucher: expect.any(File),
       });
     });
@@ -184,5 +185,53 @@ describe("SubscribeCollection curated model checkout", () => {
     expect(models[12]).toBeDisabled();
     expect(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i })).toBeEnabled();
     expect(mocks.checkout).not.toHaveBeenCalled();
+  });
+
+  it("uses the secure card link, full price, and review proof for card checkout", async () => {
+    const user = userEvent.setup();
+    mocks.getPaymentSettings.mockResolvedValue({
+      payment_type: "subscription",
+      subscription_period: "quarterly",
+      pix_key: "",
+      payment_link: "https://checkout.example/tonart",
+    });
+    renderPage();
+
+    const models = await modelButtons();
+    const checkoutLink = await screen.findByRole("link", { name: /Abrir pagamento seguro/i });
+    expect(checkoutLink).toHaveAttribute("href", "https://checkout.example/tonart");
+    expect(checkoutLink).toHaveAttribute("target", "_blank");
+    expect(screen.getByText(/Confira o valor de R\$\s?360,00/)).toBeInTheDocument();
+
+    for (const model of models.slice(0, 6)) {
+      fireEvent.click(model);
+    }
+    await attachVoucher(user);
+    await user.click(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i }));
+
+    await waitFor(() => {
+      expect(mocks.checkout).toHaveBeenCalledWith({
+        planId: PLAN_6_ID,
+        collectionId: COLLECTION_ID,
+        selectedModelSlugs: MODEL_SLUGS.slice(0, 6),
+        modelSelectionLimit: 6,
+        paymentMethod: "credit_card",
+        voucher: expect.any(File),
+      });
+    });
+  });
+
+  it("rejects insecure card payment links", async () => {
+    mocks.getPaymentSettings.mockResolvedValue({
+      payment_type: "subscription",
+      subscription_period: "quarterly",
+      pix_key: "",
+      payment_link: "http://checkout.example/tonart",
+    });
+    renderPage();
+
+    await modelButtons();
+    expect(screen.queryByRole("link", { name: /Abrir pagamento seguro/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Cartão/ })).toBeDisabled();
   });
 });
