@@ -384,6 +384,7 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
 
   const isPersonal = section === "dados-pessoais";
   const isAddress = section === "endereco";
+  const taxDetailsAvailable = profile.taxDetailsAvailable !== false;
   return (
     <div className="space-y-6">
       {isPersonal && <TonecosCustomerContactSummary profile={profile} variant="account" />}
@@ -432,6 +433,7 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
                   inputMode="numeric"
                   autoComplete="off"
                   aria-label="CPF"
+                  disabled={!taxDetailsAvailable}
                   maxLength={14}
                   placeholder="000.000.000-00"
                   value={cpf}
@@ -449,6 +451,7 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
                   autoComplete="bday"
                   max={todayDateInputValue()}
                   aria-label="Data de nascimento"
+                  disabled={!taxDetailsAvailable}
                   value={birthDate}
                   onChange={(event) => setBirthDate(event.target.value)}
                 />

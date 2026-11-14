@@ -388,6 +388,44 @@ describe("Original customer account navigation in the commercial app", () => {
     expect(mocks.listMine).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps tax details unavailable until the canonical profile columns exist while saving WhatsApp", async () => {
+    mocks.getProfile.mockResolvedValueOnce({
+      id: "11111111-1111-4111-8111-111111111111",
+      email: "cliente@example.com",
+      full_name: "Cliente Cadastrado",
+      phone: "(71) 99988-7766",
+      whatsapp: null,
+      cpf: null,
+      birth_date: null,
+      taxDetailsAvailable: false,
+      delivery_address: null,
+      preferred_contact_channel: null,
+      quote_updates: false,
+      production_updates: false,
+      marketing_emails: false,
+      created_at: "2026-11-05T00:00:00Z",
+      updated_at: "2026-11-05T00:00:00Z",
+    });
+    show("/perfil/dados-pessoais");
+
+    expect(await screen.findByText(/O cadastro conectado ainda não aceita CPF e data de nascimento/))
+      .toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "CPF" })).toBeDisabled();
+    expect(screen.getByLabelText("Data de nascimento")).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "WhatsApp" })).toBeEnabled();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "WhatsApp" }), {
+      target: { value: "(71) 99999-9999" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar dados pessoais" }));
+    await screen.findByText("Informações salvas na sua conta.");
+    expect(mocks.updatePersonal).toHaveBeenCalledWith({
+      whatsapp: "(71) 99999-9999",
+      cpf: "",
+      birthDate: "",
+    });
+  });
+
   it("saves delivery details to the same profile and never copies historic quote CEP", async () => {
     show("/perfil/endereco");
     await screen.findByRole("textbox", { name: "CEP" });
