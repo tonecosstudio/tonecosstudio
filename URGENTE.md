@@ -1,3 +1,12 @@
+## Checkpoint 14/11/2026 — oferta Black Friday no orçamento canônico
+
+- **Base → commit:** `main@433546b6` → `cf1d8c5d` (`feat(commercial): record Black Friday quote discounts`).
+- **Implementado:** o administrador registra preço-base e desconto inteiro de 0–50%; uma RPC protegida grava preço-base, percentual, redução e total no mesmo `quotes` canônico. O saldo da pré-venda de R$50 é calculado sobre o total já descontado. Valores históricos mantêm o preço anterior. Cliente vê base, economia e total no histórico; o e-mail/WhatsApp preparado pelo administrador inclui os mesmos valores. A página do modelo explica a campanha e o quadro da pré-venda não repete o total.
+- **Validação Windows:** 4 arquivos focados, 85 testes passaram; `npm run typecheck`, ESLint dos TSX/serviços alterados e `git diff --check` passaram. Testes usam serviços simulados e não provam gravação real no Supabase.
+- **Supabase:** migração local `20261114130000_tonart_black_friday_quote_discounts.sql` adiciona os campos à tabela `quotes` e atualiza a RPC/diretório existentes. Não aplicada em produção nem em branch remoto.
+- **NEXT_ACTION:** continuar a integração das Coins e demais recursos já programados usando o ledger/serviços existentes; depois retomar a homologação autenticada e o diagnóstico do runner do GitHub Actions. Aplicar migrações só em staging autorizado.
+- **DO_NOT_REPEAT:** não criar autoridade paralela de preço, carrinho, conta ou ledger; não tratar mocks como prova Supabase; não publicar nem escrever em serviços de produção.
+
 ## Checkpoint 14/11/2026 — correção de catálogo no host local
 
 - **Base/HEAD:** `main@5a6a2785` → correção `3ef2b0ac`.
