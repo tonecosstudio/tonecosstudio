@@ -17,6 +17,7 @@ import {
   secondaryClass,
 } from "@/pages/commercial/CommercialPage";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
+import { LOCAL_SUPABASE_FALLBACK, PREVIEW_READ_ONLY } from "@/config/supabase-environment";
 import TonecosCommercialNav from "@/pages/commercial/TonecosCommercialNav";
 
 const Account = lazy(() => import("@/pages/commercial/TonecosAccountPage"));
@@ -251,7 +252,7 @@ export default function TonecosCommercialApp() {
   if (
     import.meta.env.VITE_TONECOS_COMMERCIAL_MVP !== "true" ||
     import.meta.env.VITE_PUBLIC_CATALOG_MVP === "true" ||
-    import.meta.env.VITE_PREVIEW_READ_ONLY !== "false"
+    (PREVIEW_READ_ONLY && !LOCAL_SUPABASE_FALLBACK)
   ) {
     throw new Error("tonecos_commercial_mvp_disabled");
   }

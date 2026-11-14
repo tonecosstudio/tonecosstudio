@@ -1,5 +1,6 @@
 /** Canonical read-only catalog MVP route policy (not a replacement for API/RLS). */
 import { PUBLIC_ROUTES } from "./routes";
+import { isPreviewReadOnly } from "./supabase-environment";
 const PUBLIC = new Set<string>([
   PUBLIC_ROUTES.home, PUBLIC_ROUTES.landing, PUBLIC_ROUTES.catalog,
   PUBLIC_ROUTES.catalogModels, PUBLIC_ROUTES.about, PUBLIC_ROUTES.contact,
@@ -14,7 +15,7 @@ export function isCatalogMediaUnderReview(): boolean {
   return false;
 }
 export function isCatalogMvpReadOnlyConfigurationSafe(): boolean {
-  return !isCatalogPublicMvpEnabled() || import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  return !isCatalogPublicMvpEnabled() || isPreviewReadOnly();
 }
 export function isPublicCatalogMvpPath(path: string): boolean {
   if (!path.startsWith("/") || path.startsWith("//") || path.includes("?") ||

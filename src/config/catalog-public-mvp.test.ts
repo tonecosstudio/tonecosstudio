@@ -13,6 +13,8 @@ describe("Tonecos catalog MVP allowlist", () => {
   it("fails closed when read-only mode is absent", () => {
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+    vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:54321");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "local-publishable-key");
     expect(isCatalogPublicMvpEnabled()).toBe(true);
     expect(isCatalogMvpReadOnlyConfigurationSafe()).toBe(false);
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
