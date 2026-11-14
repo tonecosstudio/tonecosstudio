@@ -44,6 +44,28 @@ const coinLabels: Record<TonartAdminCoinEntry["type"], string> = {
   refund: "Estorno",
 };
 
+const originalAdminSubpages = [
+  { parent: "catalog-hub", path: ADMIN_ROUTES.catalogCollections, label: "Coleções do catálogo" },
+  { parent: "orders", path: ADMIN_ROUTES.orders, label: "Solicitações e pedidos" },
+  { parent: "production-dashboard", path: ADMIN_ROUTES.productionKanban, label: "Quadro de produção" },
+  { parent: "production-dashboard", path: ADMIN_ROUTES.productionList, label: "Lista de produção" },
+  { parent: "production-dashboard", path: ADMIN_ROUTES.productionCalendar, label: "Calendário de produção" },
+  { parent: "production-dashboard", path: ADMIN_ROUTES.productionAnalytics, label: "Análises de produção" },
+  { parent: "production-dashboard", path: ADMIN_ROUTES.productionChoices, label: "Escolhas de produção" },
+  { parent: "financial-hub", path: ADMIN_ROUTES.financialCollections, label: "Financeiro de coleções" },
+  { parent: "payments", path: ADMIN_ROUTES.paymentMethods, label: "Métodos de pagamento" },
+  { parent: "payments", path: ADMIN_ROUTES.paymentKeys, label: "Chaves de pagamento" },
+  { parent: "payments", path: ADMIN_ROUTES.paymentCalculator, label: "Calculadora financeira" },
+  { parent: "communication", path: ADMIN_ROUTES.communicationQuickReplies, label: "Respostas rápidas" },
+  { parent: "communication", path: ADMIN_ROUTES.communicationTemplates, label: "Modelos de mensagem" },
+  { parent: "communication", path: ADMIN_ROUTES.communicationNotifications, label: "Configuração de notificações" },
+  { parent: "communication", path: ADMIN_ROUTES.communicationHistory, label: "Histórico de comunicações" },
+  { parent: "system", path: ADMIN_ROUTES.settingsOperational, label: "Configuração operacional" },
+  { parent: "system", path: ADMIN_ROUTES.settingsHolidays, label: "Feriados" },
+  { parent: "system", path: ADMIN_ROUTES.settingsLegal, label: "Conformidade legal" },
+  { parent: "users", path: ADMIN_ROUTES.groupDetails, label: "Grupos de usuários" },
+].filter((section) => !section.path.includes(":"));
+
 function moduleState(id: string): "active" | "read-only" | "off" {
   if (id === "dashboard") return "active";
   if (
@@ -94,9 +116,14 @@ export default function TonecosAdminHomePage() {
     useState<TonartAdminProfilesPage | null>(null);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState("");
-  const allItems = adminNavigationConfig.flatMap((section) => section.items);
+  const allItems = adminNavigationConfig
+    .filter((section) => section.id !== "credits" || coinsEnabled)
+    .flatMap((section) => section.items);
   const pathname = location.pathname.replace(/\/+$/, "") || "/";
-  const activeItem = allItems.find((item) => item.path === pathname);
+  const selectedSubpage = originalAdminSubpages.find((item) => item.path === pathname);
+  const activeItem = allItems.find(
+    (item) => item.path === pathname || item.id === selectedSubpage?.parent,
+  );
   const sectionId =
     pathname === TONECOS_COMMERCIAL_ROUTES.adminCoins
       ? "credits-hub"
@@ -107,18 +134,18 @@ export default function TonecosAdminHomePage() {
   const displayName =
     sectionId === "unknown"
       ? "Página não encontrada"
-      : (activeItem?.label ?? "Painel");
-  const isUsers = sectionId === "users";
+      : (selectedSubpage?.label ?? activeItem?.label ?? "Painel");
+  const isUsers = sectionId === "users" && !selectedSubpage;
   const isDashboard = sectionId === "dashboard";
   const isCoins = sectionId === "credits-hub";
-  const isCatalog = sectionId === "catalog-hub";
-  const isOrders = sectionId === "orders";
-  const isFinancial = sectionId === "financial-hub";
-  const isCommunication = sectionId === "communication";
+  const isCatalog = sectionId === "catalog-hub" && !selectedSubpage;
+  const isOrders = sectionId === "orders" && !selectedSubpage;
+  const isFinancial = sectionId === "financial-hub" && !selectedSubpage;
+  const isCommunication = sectionId === "communication" && !selectedSubpage;
   // The catalog has its own Cloudflare authority. Do not fetch account,
   // quote or Coins aggregates when inspecting catalog media.
   const requiresOverview =
-    isDashboard ||
+    (isDashboard && !selectedSubpage) ||
     isCoins ||
     isOrders ||
     isFinancial ||
@@ -246,7 +273,7 @@ export default function TonecosAdminHomePage() {
             </p>
           </div>
           <nav aria-label="Módulos administrativos" className="space-y-5">
-            {adminNavigationConfig.map((group) => (
+            {adminNavigationConfig.filter((group) => group.id !== "credits" || coinsEnabled).map((group) => (
               <div key={group.id}>
                 <h2 className="mb-2 px-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--gold-accent))]">
                   {group.title}
@@ -316,6 +343,22 @@ export default function TonecosAdminHomePage() {
             )}
           </div>
 
+          {activeItem && originalAdminSubpages.some((item) => item.parent === activeItem.id) && (
+            <nav aria-label="Páginas do módulo administrativo" className="mb-5 flex flex-wrap gap-2">
+              {originalAdminSubpages
+                .filter((item) => item.parent === activeItem.id && item.path !== activeItem.path)
+                .map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    aria-current={selectedSubpage?.path === item.path ? "page" : undefined}
+                    className={secondaryClass}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+            </nav>
+          )}
           {requiresOverview && error && (
             <div
               role="alert"
@@ -330,6 +373,19 @@ export default function TonecosAdminHomePage() {
             </p>
           )}
 
+          {selectedSubpage && (
+            <section className={panelClass}>
+              <h3 className="text-lg font-semibold">{selectedSubpage.label}</h3>
+              <p className="mt-3 text-sm leading-6 text-white/65">
+                Página do painel administrativo original recuperada na navegação.
+                A integração operacional desta seção com a autoridade TONART será
+                feita na próxima fase. Não há dados simulados ou alterações em produção.
+              </p>
+              <Link className={secondaryClass + " mt-5"} to={activeItem?.path ?? ADMIN_ROUTES.home}>
+                Voltar ao módulo
+              </Link>
+            </section>
+          )}
           {isDashboard && (
             <>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -348,11 +404,13 @@ export default function TonecosAdminHomePage() {
                   value={overview?.pendingQuoteCount}
                   detail="Pedidos de orçamento pendentes"
                 />
-                <Metric
-                  label="Coins · lançamentos"
-                  value={overview?.coinEntryCount}
-                  detail="Registros do livro de moedas"
-                />
+                {coinsEnabled && (
+                  <Metric
+                    label="Coins · lançamentos"
+                    value={overview?.coinEntryCount}
+                    detail="Registros do livro de moedas"
+                  />
+                )}
               </div>
               <div className="mt-6 grid gap-4 xl:grid-cols-2">
                 <section className={panelClass}>
@@ -379,7 +437,7 @@ export default function TonecosAdminHomePage() {
                     )}
                   </div>
                 </section>
-                <section className={panelClass}>
+                {coinsEnabled && <section className={panelClass}>
                   <h3 className="text-lg font-semibold">Coins · Moedas</h3>
                   <p className="mt-2 text-sm text-white/60">
                     A estrutura de créditos permanece preservada. Não há
@@ -402,7 +460,7 @@ export default function TonecosAdminHomePage() {
                       </span>
                     )}
                   </div>
-                </section>
+                </section>}
               </div>
               <section className={panelClass + " mt-6"}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -972,7 +1030,8 @@ export default function TonecosAdminHomePage() {
             </section>
           )}
 
-          {!isDashboard &&
+          {!selectedSubpage &&
+            !isDashboard &&
             !isUsers &&
             !isCoins &&
             !isCatalog &&
