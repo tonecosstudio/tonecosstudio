@@ -178,6 +178,11 @@ export default function CanonicalModelDetails() {
   const relatedModelTitleRef = useRef<HTMLHeadingElement>(null);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const galleryKeyboardHelpId = useId();
+  const quoteRequestsEnabled =
+    import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
+    import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" &&
+    import.meta.env.VITE_PREVIEW_READ_ONLY !== "true" &&
+    !isCatalogPublicMvpEnabled();
   const {
     selectedModels,
     setSelectedModels,
@@ -734,7 +739,7 @@ export default function CanonicalModelDetails() {
                       <h1
                         ref={relatedModelTitleRef}
                         tabIndex={-1}
-                        className="mt-3 text-2xl font-black uppercase tracking-[0.08em] leading-tight sm:text-3xl md:text-4xl"
+                        className="mt-3 break-words text-2xl font-black uppercase tracking-[0.08em] leading-tight sm:text-3xl md:text-4xl"
                       >
                         {model.name}
                       </h1>
@@ -745,11 +750,10 @@ export default function CanonicalModelDetails() {
                       ) : null}
                     </header>
 
-                    {model.description ? (
-                      <p className="whitespace-pre-line leading-relaxed text-[hsl(0,0%,56%)]">
-                        {model.description}
-                      </p>
-                    ) : null}
+                    <p className="whitespace-pre-line leading-relaxed text-[hsl(0,0%,70%)]">
+                      {model.description ||
+                        "Explore os detalhes desta referência digital e adicione o modelo à sua seleção para consultá-lo enquanto navega pelo acervo."}
+                    </p>
 
                     <dl className="grid grid-cols-2 gap-3 border-y border-[hsl(0,0%,15%)] py-5 text-sm">
                       <div>
@@ -758,20 +762,24 @@ export default function CanonicalModelDetails() {
                           {model.code}
                         </dd>
                       </div>
-                      {model.material ? (
-                        <div>
-                          <dt className="text-[hsl(0,0%,56%)]">Material</dt>
-                          <dd className="mt-1 font-medium">{model.material}</dd>
-                        </div>
-                      ) : null}
-                      {model.heightCm !== null ? (
-                        <div>
-                          <dt className="text-[hsl(0,0%,56%)]">
-                            Altura informada
-                          </dt>
-                          <dd className="mt-1 font-medium">
-                            {model.heightCm} cm
-                          </dd>
+                      <div>
+                        <dt className="text-[hsl(0,0%,56%)]">Material</dt>
+                        <dd className="mt-1 break-words font-medium">
+                          {model.material || "A confirmar no orçamento"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[hsl(0,0%,56%)]">Altura de referência</dt>
+                        <dd className="mt-1 font-medium">
+                          {model.heightCm !== null
+                            ? model.heightCm.toLocaleString("pt-BR") + " cm"
+                            : "A confirmar no orçamento"}
+                        </dd>
+                      </div>
+                      {model.collection ? (
+                        <div className="col-span-2">
+                          <dt className="text-[hsl(0,0%,56%)]">Coleção</dt>
+                          <dd className="mt-1 break-words font-medium">{model.collection}</dd>
                         </div>
                       ) : null}
                       <div>
@@ -800,6 +808,14 @@ export default function CanonicalModelDetails() {
                         ? "Imagem digital de referência. Este catálogo é somente para consulta e não recebe pedidos ou pagamentos."
                         : "Disponibilidade e preço são confirmados pela equipe na etapa de orçamento. Esta ficha apresenta somente os dados publicados no catálogo."}
                     </p>
+                    <div className="border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,9%)] p-4">
+                      <h2 className="text-sm font-semibold uppercase tracking-wide">Peça sob consulta</h2>
+                      <p className="mt-2 text-sm leading-relaxed text-[hsl(0,0%,70%)]">
+                        Valor, tamanho final, acabamento, prazo de produção e entrega
+                        precisam ser confirmados pela equipe. As imagens são renders
+                        digitais de referência, não fotos de peças finalizadas.
+                      </p>
+                    </div>
                     <div className="space-y-3">
                       <button
                         type="button"
@@ -819,7 +835,7 @@ export default function CanonicalModelDetails() {
                           ? "Remover da seleção"
                           : "Adicionar à seleção"}
                       </button>
-                      {import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
+                      {quoteRequestsEnabled &&
                         (selectionAtCapacity ? (
                           <button
                             type="button"
@@ -864,7 +880,37 @@ export default function CanonicalModelDetails() {
                         {MAX_CANONICAL_SELECTION} modelos. Nenhum pedido é
                         enviado automaticamente.
                       </p>
+                      <Link
+                        to={catalogReturnTo}
+                        className="inline-flex min-h-11 w-full items-center justify-center gap-2 border border-[hsl(0,0%,20%)] px-4 py-3 text-sm text-[hsl(0,0%,80%)] hover:bg-[hsl(0,0%,9%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                      >
+                        <ArrowLeft size={16} aria-hidden="true" />
+                        Continuar explorando
+                      </Link>
                     </div>
+                    <details className="border-t border-[hsl(0,0%,15%)] pt-4">
+                      <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                        Coins neste modelo
+                      </summary>
+                      <p className="pb-3 text-sm leading-relaxed text-[hsl(0,0%,70%)]">
+                        Esta ficha ainda não oferece resgate com Coins. Não há valor
+                        em Coins definido para este modelo; adicioná-lo à seleção
+                        não utiliza saldo nem gera cobrança.
+                      </p>
+                    </details>
+                    <details className="border-t border-[hsl(0,0%,15%)] pt-4">
+                      <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                        Como preparar sua solicitação
+                      </summary>
+                      <p className="pb-3 text-sm leading-relaxed text-[hsl(0,0%,70%)]">
+                        Anote o tamanho desejado, suas preferências de acabamento e
+                        o CEP de entrega. Essas informações ajudam a equipe a avaliar
+                        as possibilidades para esta referência.
+                        {quoteRequestsEnabled
+                          ? " Ao solicitar o orçamento, você poderá complementar sua seleção no formulário."
+                          : " Neste catálogo de consulta, a seleção não é enviada à equipe."}
+                      </p>
+                    </details>
                   </div>
                 </ArcadeCard>
               </article>

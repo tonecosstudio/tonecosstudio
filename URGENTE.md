@@ -1,5 +1,14 @@
 # TONART Studio — checkpoint operacional
 
+## Checkpoint 14/11/2026 — home TONART, campanha e Coins
+
+- **Base:** main@5ce02e10e7cae1926028e17231ad64f5de3b3cba, sincronizada com origin/main antes desta alteração.
+- **Implementado:** home recomposta; faixa Black Friday até 50% após o título; produtos em três colunas; pré-venda com entrada de R$50 abatida do total e simulador; Coins em linguagem atual, conectados à carteira canônica quando habilitada; contato contextual para Coins/pré-venda. Ficha do modelo refinada e CTA de orçamento respeita suas flags.
+- **Validação:** 4 testes focados, typecheck, ESLint dos arquivos alterados e npm run build passaram. Build reportou avisos de comentários internos em zod, sem falhas. Sem publicação ou escrita produtiva.
+- **Limites:** simulador é informativo; não ativamos cobrança nova nem Coins por alteração de flags. Inspeção visual automatizada indisponível nesta sessão.
+- **NEXT_ACTION:** homologação visual e comercial no ambiente autorizado.
+- **DO_NOT_REPEAT:** não inventar saldos, descontos individuais ou datas de campanha; não escrever em produção.
+
 ## Checkpoint 14/11/2026 — catálogo local sem modelos
 
 - **Base → alteração:** `main@75c09f1b3f70ca67d12463cda40b8427fbe060f8` → proxy local de desenvolvimento e base same-origin automática em `http://localhost:8080/catalogo-api/`. Com endpoint vazio, a tela de modelos desativava a consulta; chamadas diretas ao Worker falhavam por CORS.
