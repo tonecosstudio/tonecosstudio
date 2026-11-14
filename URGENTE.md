@@ -1,3 +1,15 @@
+## Checkpoint 14/11/2026 — assinatura com modelos curados do catálogo canônico
+
+- **Base → commit funcional:** `main@a6b00e22` → `2b6a6a61` (`feat(subscriptions): add curated catalog model selection`).
+- **Implementado:** administração seleciona até 20 slugs do catálogo público D1 para cada coleção existente; plano define seleção exata de 6 ou 12 modelos; o cliente escolhe no checkout; a RPC valida os slugs contra a curadoria e persiste a seleção na assinatura existente; conta e fila administrativa exibem as identidades escolhidas. Nenhum catálogo, coleção, tabela de assinaturas ou ledger paralelo foi criado. O checkout mantém o caminho do comprovante no Storage privado e a chamada antiga falha fechada sem seleção.
+- **Cobrança:** o período bimestral agora resolve as próprias configurações PIX; chaves e links editáveis são semeados vazios apenas quando ausentes. A tela administrativa carrega os valores assíncronos e permite removê-los.
+- **Flags:** `VITE_TONECOS_SUBSCRIPTIONS_ENABLED` foi separado do gate das rotas legadas de coleção e documentado nos templates. Permanece `false` por padrão até haver schema compatível no ambiente conectado.
+- **Validação Windows:** `npm run typecheck` passou; ESLint dos arquivos TypeScript/TSX/Edge Function alterados passou; 4 arquivos de teste focados passaram (50 testes); Prettier passou nos arquivos novos; `git diff --check` passou. Os testes locais não comprovam gravação real no Supabase.
+- **Bloqueio real:** a leitura anterior do Supabase conectado não encontrou `collections`, `subscription_plans` ou `subscriptions`; a migração `20261114160000_tonecos_curated_subscription_models.sql` não foi aplicada. Portanto o checkout cliente/admin ainda não foi homologado contra Supabase real. Produção, Cloudflare, D1/R2 e Vercel não foram alterados.
+- **GitHub Actions:** permanece o diagnóstico do run [43623029155](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43623029155): falha antes dos steps com `runner_id=0`; nenhum workflow paralelo foi criado.
+- **NEXT_ACTION:** sincronizar o commit; reconciliar o schema do ambiente não produtivo com as tabelas de assinatura já previstas no histórico do repositório; só então aplicar a migração compatível, habilitar a flag nesse ambiente e validar checkout com sessão controlada de cliente e revisão administrativa.
+- **DO_NOT_REPEAT:** não duplicar tabelas, catálogo, conta ou ledger; não ativar a flag contra tabelas ausentes; não tratar testes simulados como integração Supabase real; não aplicar migração nem publicar em produção.
+
 ## Checkpoint 14/11/2026 — rotas de assinatura protegidas pela disponibilidade real
 
 - **Base → commit funcional:** `main@e9367a73` → `8c0c2fca` (`fix(commercial): gate subscriptions on data availability`).
