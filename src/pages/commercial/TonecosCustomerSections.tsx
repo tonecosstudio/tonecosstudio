@@ -44,32 +44,58 @@ const previousSections = profileNavigationConfig.flatMap((group) =>
   })),
 );
 
+/** Keep one canonical destination per section even when the old profile registry
+ * and the restored navigation expose the same path.
+ */
 export const customerSectionLinks = [
-  ...previousSections,
-  ...restoredPaths.map(({ path, label }) => ({ path, label })),
+  ...new Map(
+    [...previousSections, ...restoredPaths.map(({ path, label }) => ({ path, label }))]
+      .map((item) => [item.path, item] as const),
+  ).values(),
 ];
 
 export function TonecosCustomerNavigation() {
   const location = useLocation();
+  const accountLinks = customerSectionLinks.filter((item) =>
+    ["/perfil", "/perfil/dados-pessoais", "/perfil/endereco", "/perfil/preferencias"].includes(item.path),
+  );
+  const commercialLinks = customerSectionLinks.filter((item) =>
+    ["/perfil/pedidos", "/perfil/producao", "/perfil/colecao", "/perfil/pagamentos", "/perfil/assinatura", "/perfil/assinaturas"].includes(item.path),
+  );
+  const communicationLinks = customerSectionLinks.filter((item) =>
+    ["/perfil/notificacoes", "/perfil/suporte"].includes(item.path),
+  );
+  const sections = [
+    { title: "Cadastro e preferências", items: accountLinks },
+    { title: "Solicitações e relacionamento", items: commercialLinks },
+    { title: "Comunicação", items: communicationLinks },
+  ];
   return (
-    <nav aria-label="Seções da Minha Conta" className="mb-6">
-      <div className="flex flex-wrap gap-2">
-        {customerSectionLinks.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            aria-current={location.pathname === item.path ? "page" : undefined}
-            className={
-              "inline-flex min-h-10 items-center rounded-sm border px-3 py-2 text-xs transition-colors " +
-              (location.pathname === item.path
-                ? "border-[hsl(var(--gold-accent))] text-[hsl(var(--gold-accent))]"
-                : "border-white/20 text-white/70 hover:border-white/50 hover:text-white")
-            }
-          >
-            {item.label}
-          </Link>
-        ))}
-      </div>
+    <nav aria-label="Seções da Minha Conta" className="mb-6 space-y-5">
+      {sections.map((section) => (
+        <div key={section.title}>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/50">
+            {section.title}
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {section.items.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                aria-current={location.pathname === item.path ? "page" : undefined}
+                className={
+                  "inline-flex min-h-10 items-center rounded-sm border px-3 py-2 text-xs transition-colors " +
+                  (location.pathname === item.path
+                    ? "border-[hsl(var(--gold-accent))] text-[hsl(var(--gold-accent))]"
+                    : "border-white/20 text-white/70 hover:border-white/50 hover:text-white")
+                }
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
     </nav>
   );
 }
@@ -164,7 +190,7 @@ function CustomerSectionContent({ slug }: { slug: string }) {
       </section>
     );
   }
-  if (slug === "pagamentos" || slug === "assinatura") {
+  if (slug === "pagamentos" || slug === "assinatura" || slug === "assinaturas") {
     return (
       <section className={panelClass}>
         <h2 className="mb-3 text-lg font-semibold">
