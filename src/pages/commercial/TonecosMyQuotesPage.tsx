@@ -32,6 +32,13 @@ const PAGE_SIZE = 20;
 
 export default function TonecosMyQuotesPage() {
   const location = useLocation();
+  const requestedId = new URLSearchParams(location.search).get("quote");
+  const selectedId =
+    requestedId &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedId)
+      ? requestedId.toLowerCase()
+      : null;
+  const invalidSelection = requestedId !== null && !selectedId;
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
   const [authError, setAuthError] = useState(false);
   const [authAttempt, setAuthAttempt] = useState(0);
@@ -65,13 +72,18 @@ export default function TonecosMyQuotesPage() {
   }, [authAttempt]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || invalidSelection) return;
     let active = true;
     setRows([]);
     setHistory({});
     setLoading(true);
     setError("");
-    loadMyCatalogQuotePage(userId, { limit: PAGE_SIZE, offset })
+    loadMyCatalogQuotePage(
+      userId,
+      selectedId
+        ? { limit: 1, offset: 0, quoteId: selectedId }
+        : { limit: PAGE_SIZE, offset },
+    )
       .then(async (result) => ({
         result,
         history: await loadCatalogQuoteHistory(
@@ -80,7 +92,7 @@ export default function TonecosMyQuotesPage() {
       }))
       .then(({ result, history: quoteHistory }) => {
         if (!active) return;
-        if (result.total > 0 && offset >= result.total) {
+        if (!selectedId && result.total > 0 && offset >= result.total) {
           setOffset(Math.floor((result.total - 1) / PAGE_SIZE) * PAGE_SIZE);
           return;
         }
@@ -97,7 +109,7 @@ export default function TonecosMyQuotesPage() {
     return () => {
       active = false;
     };
-  }, [userId, attempt, offset]);
+  }, [userId, attempt, offset, selectedId, invalidSelection]);
 
   // Navigation state is not proof until the authenticated quote directory returns it.
   const sentId =
@@ -123,6 +135,21 @@ export default function TonecosMyQuotesPage() {
       title="Meus orçamentos"
       intro="Acompanhe as solicitações enviadas e os valores respondidos pela TONART Studio. Orçamento não é confirmação de compra."
     >
+      {invalidSelection && (
+        <p role="alert" className="mb-5 max-w-3xl border border-white/20 p-4 text-sm text-white/75">
+          O link do orçamento é inválido. Abra seu histórico para continuar.
+        </p>
+      )}
+      {selectedId && (
+        <div className="mb-5 max-w-3xl flex flex-wrap items-center gap-3">
+          <p className="text-sm text-white/75">
+            Consultando orçamento #{selectedId.slice(0, 8)}
+          </p>
+          <Link className={secondaryClass} to={TONECOS_COMMERCIAL_ROUTES.history}>
+            Ver todos os orçamentos
+          </Link>
+        </div>
+      )}
       {justSent && (
         <p
           role="status"
@@ -131,7 +158,7 @@ export default function TonecosMyQuotesPage() {
           Solicitação enviada. Você poderá acompanhar a resposta aqui.
         </p>
       )}
-      {userId === undefined || loading ? (
+      {userId === undefined || (loading && !invalidSelection) ? (
         <p role="status">Carregando seus orçamentos...</p>
       ) : null}
       {authError ? (
@@ -192,7 +219,7 @@ export default function TonecosMyQuotesPage() {
           )}
         </div>
       )}
-      {userId && !authError && !error && (
+      {userId && !authError && !error && !invalidSelection && (
         <div className="mb-5">
           <button
             type="button"
@@ -204,7 +231,7 @@ export default function TonecosMyQuotesPage() {
           </button>
         </div>
       )}
-      {userId && !loading && !error && total > 0 && (
+      {userId && !loading && !error && !invalidSelection && !selectedId && total > 0 && (
         <p className="mb-4 max-w-3xl text-xs text-white/55">
           Mostrando {offset + 1}–{Math.min(offset + rows.length, total)} de{" "}
           {total}
@@ -213,10 +240,13 @@ export default function TonecosMyQuotesPage() {
       {userId &&
         !loading &&
         !error &&
+        !invalidSelection &&
         (rows.length === 0 ? (
           <div className={panelClass + " max-w-3xl"}>
             <p className="mb-5 text-white/70">
-              Você ainda não enviou solicitações.
+              {selectedId
+                ? "Esse orçamento não foi encontrado na sua conta."
+                : "Você ainda não enviou solicitações."}
             </p>
             <Link className={secondaryClass} to="/modelos">
               Explorar modelos
@@ -298,7 +328,7 @@ export default function TonecosMyQuotesPage() {
             ))}
           </ul>
         ))}
-      {userId && !loading && !error && total > PAGE_SIZE && (
+      {userId && !loading && !error && !selectedId && !invalidSelection && total > PAGE_SIZE && (
         <div className="mt-6 flex max-w-3xl items-center justify-between gap-3">
           <button
             type="button"
