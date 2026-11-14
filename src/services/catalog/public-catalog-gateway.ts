@@ -325,7 +325,6 @@ export function createPublicCatalogGateway(
       typeof window !== "undefined" &&
       base.protocol === "http:" &&
       ["localhost", "127.0.0.1"].includes(base.hostname) &&
-      base.port === "8080" &&
       base.pathname === "/catalogo-api/" &&
       base.origin === window.location.origin;
     if (base.protocol !== "https:" && !localDevelopmentProxy) {

@@ -265,6 +265,21 @@ describe("canonical catalog read boundary", () => {
       expect(() =>
         createPublicCatalogGateway("http://127.0.0.1:5173/catalogo-api/", fetch),
       ).toThrow("catalog_endpoint_not_configured");
+
+      vi.stubGlobal("window", {
+        location: { origin: "http://127.0.0.1:8081" },
+      });
+      const alternateLocalPort = vi.fn(async () =>
+        Response.json({ items: [], nextCursor: null }),
+      );
+      await createPublicCatalogGateway(
+        "http://127.0.0.1:8081/catalogo-api/",
+        alternateLocalPort as typeof fetch,
+      ).listPage();
+      expect(alternateLocalPort).toHaveBeenCalledExactlyOnceWith(
+        "http://127.0.0.1:8081/catalogo-api/api/catalog?limit=24",
+        expect.objectContaining({ method: "GET", credentials: "same-origin" }),
+      );
     } finally {
       vi.stubGlobal("window", currentWindow);
     }
