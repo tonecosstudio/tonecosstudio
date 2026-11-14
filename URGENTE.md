@@ -1,3 +1,12 @@
+## Checkpoint 14/11/2026 — checkout de assinatura com leitura única de coleções
+
+- **Base → HEAD:** `9f722bed` → `429f153b` (`fix(subscriptions): remove duplicate collection lookup`).
+- **Implementado:** o checkout carrega planos e coleções ativas uma vez; a URL da coleção é resolvida da lista canônica já carregada. Eliminada a consulta duplicada que podia atrasar ou falhar a página apesar da lista disponível.
+- **Validação Windows:** `SubscribeCollection.voucher.test.tsx` passou (2 testes), `npm run typecheck:app`, ESLint dos dois arquivos e `git diff --check` passaram. Host local responde HTTP 200 em `127.0.0.1:8080`; a sessão do navegador interno retornou timeout `service_info`.
+- **Integração de assinatura:** nenhuma escrita remota. O schema conectado ainda não possui as tabelas/RPCs de assinatura. Neste Windows não há Docker nem Supabase CLI para levantar e migrar uma instância Supabase local; testes mockados não comprovam persistência real.
+- **NEXT_ACTION:** continuar nas melhorias locais independentes do backend ausente; homologar checkout/revisão com sessão real quando existir um ambiente com o schema compatível. Manter os gates de assinatura até então.
+- **DO_NOT_REPEAT:** não aplicar migrações ou gravar no Supabase conectado, não habilitar assinaturas contra tabelas ausentes, não tratar mocks como prova de integração e não publicar produção.
+
 ## Checkpoint 14/11/2026 — estado real das integrações comerciais
 
 - **Base → commits sincronizados:** `main@962c5d45` → `c5536746` (`test(subscriptions): cover curated model checkout`) → `0c5fe0ff` (`test(subscriptions): cover admin curation limit`); `main` local e remoto estavam sincronizados.
