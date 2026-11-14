@@ -1,5 +1,15 @@
 # TONART Studio — checkpoint operacional
 
+## Checkpoint 14/11/2026 — compatibilidade do perfil e do histórico comercial
+
+- **Base:** `main@462e9729`; mudanças locais ainda não commitadas neste checkpoint.
+- **Correção:** Minha Conta agora continua carregando e salvando os dados suportados quando o schema ainda não tem `cpf`/`birth_date`; se o cliente preencher esses campos sem a migração, a interface explica que eles não foram salvos. O histórico de orçamentos faz fallback restrito às colunas canônicas conhecidas quando o schema de pré-venda não está presente; falhas de rede e outros erros continuam visíveis.
+- **Validação Windows:** 39 testes direcionados passaram; `npm run typecheck`, ESLint nos arquivos alterados e `git diff --check` passaram.
+- **Integração Supabase:** o projeto conectado tem `profiles`, `quotes`, `quote_events` e `tonecos_coin_entries`, com RPCs de perfil, orçamento e Coins. A migração mais recente registrada é `20261114043245`. O schema não contém CPF/nascimento, `quote_payments`, `subscriptions` ou `manual_payments`; por isso três das quatro migrações locais posteriores precisam de dependências reconciliadas antes de qualquer aplicação. Nenhuma escrita remota foi feita.
+- **Homologação:** não há branch de desenvolvimento. O custo informado para criar uma é US$ 0,01344/hora; pedi aprovação e ela ainda está pendente.
+- **GitHub Actions:** run `43591444126` tem quatro jobs encerrados antes de qualquer step com `runner_id=0`; o bloqueio continua externo ao workflow e não foi criado pipeline paralelo.
+- **NEXT_ACTION:** após a aprovação da branch, reconciliar as dependências comerciais no ambiente isolado, aplicar as migrações pendentes e verificar os RPCs. Não publicar nem alterar os serviços de produção neste ciclo.
+
 ## Checkpoint 14/11/2026 — pré-venda ligada ao fluxo comercial
 
 - **Base:** `main@b4a9c8d7`, commits concorrentes da Home e seus testes foram preservados e integrados neste ciclo.

@@ -19,7 +19,29 @@ import {
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 type AccountProfile = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Update"];
+type TonecosAccountProfile = AccountProfile & { taxDetailsAvailable?: boolean };
 const PROFILE_SELECT = "id,email,full_name,phone,whatsapp,cpf,birth_date,delivery_address,preferred_contact_channel,quote_updates,production_updates,marketing_emails,created_at,updated_at" as const;
+const PROFILE_SELECT_WITHOUT_TAX_DETAILS = "id,email,full_name,phone,whatsapp,delivery_address,preferred_contact_channel,quote_updates,production_updates,marketing_emails,created_at,updated_at" as const;
+
+function isMissingTaxProfileColumn(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const value = error as { code?: unknown; message?: unknown; details?: unknown };
+  if (value.code !== "42703" && value.code !== "PGRST204") return false;
+  const description = `${value.message ?? ""} ${value.details ?? ""}`;
+  return /\b(cpf|birth_date)\b/i.test(description);
+}
+
+function markTaxDetailsUnavailable(data: unknown): TonecosAccountProfile {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("tonecos_account_profile_invalid");
+  }
+  return {
+    ...(data as Omit<AccountProfile, "cpf" | "birth_date">),
+    cpf: null,
+    birth_date: null,
+    taxDetailsAvailable: false,
+  };
+}
 
 export type TonecosDeliveryAddress = {
   street: string;
@@ -197,14 +219,20 @@ async function currentAccountId(): Promise<string> {
   return data.user.id;
 }
 
-export async function getMyTonecosProfile(): Promise<AccountProfile> {
+export async function getMyTonecosProfile(): Promise<TonecosAccountProfile> {
   assertTonecosCommercialEnabled();
   const id = await currentAccountId();
-  const { data, error } = await tonecos.from("profiles")
+  const profile = await tonecos.from("profiles")
     .select(PROFILE_SELECT)
     .eq("id", id).single();
-  if (error) throw error;
-  return data;
+  if (!profile.error) return profile.data;
+  if (!isMissingTaxProfileColumn(profile.error)) throw profile.error;
+
+  const compatibleProfile = await tonecos.from("profiles")
+    .select(PROFILE_SELECT_WITHOUT_TAX_DETAILS)
+    .eq("id", id).single();
+  if (compatibleProfile.error) throw compatibleProfile.error;
+  return markTaxDetailsUnavailable(compatibleProfile.data);
 }
 
 export async function updateMyTonecosProfile(input: {
@@ -217,27 +245,47 @@ export async function updateMyTonecosProfile(input: {
     throw new Error("tonecos_account_phone_invalid");
   }
   const id = await currentAccountId();
-  const { data, error } = await tonecos.from("profiles")
+  const profile = await tonecos.from("profiles")
     .update({ full_name, phone })
     .eq("id", id)
     .select(PROFILE_SELECT).single();
-  if (error) throw error;
-  return data;
+  if (!profile.error) return profile.data;
+  if (!isMissingTaxProfileColumn(profile.error)) throw profile.error;
+
+  const compatibleProfile = await tonecos.from("profiles")
+    .update({ full_name, phone })
+    .eq("id", id)
+    .select(PROFILE_SELECT_WITHOUT_TAX_DETAILS).single();
+  if (compatibleProfile.error) throw compatibleProfile.error;
+  return markTaxDetailsUnavailable(compatibleProfile.data);
 }
 
 /**
  * Updates only already-granted customer columns of public.profiles.
  * Never uses the legacy monorepo profile services or a second customer table.
  */
-async function updateMyComplementaryProfile(changes: ProfileUpdate): Promise<AccountProfile> {
+async function updateMyComplementaryProfile(changes: ProfileUpdate): Promise<TonecosAccountProfile> {
   assertTonecosCommercialEnabled();
   const id = await currentAccountId();
-  const { data, error } = await tonecos.from("profiles")
+  const profile = await tonecos.from("profiles")
     .update(changes)
     .eq("id", id)
     .select(PROFILE_SELECT).single();
-  if (error) throw error;
-  return data;
+  if (!profile.error) return profile.data;
+  if (!isMissingTaxProfileColumn(profile.error)) throw profile.error;
+
+  if (changes.cpf || changes.birth_date) {
+    throw new Error("tonecos_account_tax_details_unavailable");
+  }
+  const compatibleChanges = { ...changes };
+  delete compatibleChanges.cpf;
+  delete compatibleChanges.birth_date;
+  const compatibleProfile = await tonecos.from("profiles")
+    .update(compatibleChanges)
+    .eq("id", id)
+    .select(PROFILE_SELECT_WITHOUT_TAX_DETAILS).single();
+  if (compatibleProfile.error) throw compatibleProfile.error;
+  return markTaxDetailsUnavailable(compatibleProfile.data);
 }
 
 export async function updateMyTonecosWhatsapp(raw: string): Promise<AccountProfile> {

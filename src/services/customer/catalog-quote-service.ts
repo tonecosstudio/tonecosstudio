@@ -172,20 +172,68 @@ type QuoteDbRow = {
   postal_code: string | null;
   desired_scale: string;
   finishing: string;
-  is_preorder: boolean | null;
-  deposit_amount: number | null;
-  remaining_amount: number | null;
-  payment_status: string | null;
-  payment_link: string | null;
-  pix_key: string | null;
-  payment_instructions: string | null;
-  payment_link_sent_at: string | null;
-  final_payment_notified_at: string | null;
-  ready_for_final_payment: boolean;
-  payment_voucher_path: string | null;
-  payment_voucher_type: string | null;
-  payment_voucher_rejection_reason: string | null;
+  is_preorder?: boolean | null;
+  deposit_amount?: number | null;
+  remaining_amount?: number | null;
+  payment_status?: string | null;
+  payment_link?: string | null;
+  pix_key?: string | null;
+  payment_instructions?: string | null;
+  payment_link_sent_at?: string | null;
+  final_payment_notified_at?: string | null;
+  ready_for_final_payment?: boolean;
+  payment_voucher_path?: string | null;
+  payment_voucher_type?: string | null;
+  payment_voucher_rejection_reason?: string | null;
 };
+
+const QUOTE_HISTORY_SELECT =
+  "id,status,created_at,deadline,notes,total_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing,is_preorder,deposit_amount,remaining_amount,payment_status,payment_link,pix_key,payment_instructions,payment_link_sent_at,final_payment_notified_at,ready_for_final_payment,payment_voucher_path,payment_voucher_type,payment_voucher_rejection_reason";
+const QUOTE_HISTORY_SELECT_WITHOUT_PAYMENT =
+  "id,status,created_at,deadline,notes,total_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing";
+const PREORDER_SCHEMA_COLUMNS = [
+  "is_preorder", "deposit_amount", "remaining_amount", "payment_status",
+  "payment_link", "pix_key", "payment_instructions", "payment_link_sent_at",
+  "final_payment_notified_at", "ready_for_final_payment", "payment_voucher_path",
+  "payment_voucher_type", "payment_voucher_rejection_reason",
+];
+
+function isMissingPreorderSchemaColumn(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const value = error as { code?: unknown; message?: unknown; details?: unknown };
+  if (value.code !== "42703" && value.code !== "PGRST204") return false;
+  const description = `${value.message ?? ""} ${value.details ?? ""}`;
+  return PREORDER_SCHEMA_COLUMNS.some((column) =>
+    new RegExp(`\\b${column}\\b`, "i").test(description),
+  );
+}
+
+async function fetchMyQuotePage(
+  userId: string,
+  quoteId: string | undefined,
+  limit: number,
+  offset: number,
+  selection: string,
+): Promise<{
+  data: QuoteDbRow[] | null;
+  error: { code?: string; message?: string; details?: string } | null;
+  count: number | null;
+}> {
+  let query = tonecos
+    .from("quotes")
+    .select(selection, { count: "exact" })
+    .eq("user_id", userId)
+    .not("catalog_requested_at", "is", null);
+  if (quoteId !== undefined) query = query.eq("id", quoteId.toLowerCase());
+  const { data, error, count } = await query
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+  return {
+    data: data as unknown as QuoteDbRow[] | null,
+    error,
+    count,
+  };
+}
 
 /** Own records only; the quotes RLS policy remains the database's authority. */
 export async function loadMyCatalogQuotePage(
@@ -214,19 +262,19 @@ export async function loadMyCatalogQuotePage(
   await assertCurrentUserId(userId);
   // A deep link is resolved by the same protected quotes relation and RLS,
   // not by paging through a customer's history or exposing a public lookup.
-  let query = tonecos
-    .from("quotes")
-    .select(
-      "id,status,created_at,deadline,notes,total_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing,is_preorder,deposit_amount,remaining_amount,payment_status,payment_link,pix_key,payment_instructions,payment_link_sent_at,final_payment_notified_at,ready_for_final_payment,payment_voucher_path,payment_voucher_type,payment_voucher_rejection_reason",
-      { count: "exact" },
-    )
-    .eq("user_id", userId)
-    .not("catalog_requested_at", "is", null);
-  if (quoteId !== undefined) query = query.eq("id", quoteId.toLowerCase());
-  const { data, error, count } = await query
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
-
+  // Older deployments can still show ordinary quotes until the preorder schema
+  // is applied; fallback only handles a known missing payment column.
+  let paymentSchemaAvailable = true;
+  let result = await fetchMyQuotePage(
+    userId, quoteId, limit, offset, QUOTE_HISTORY_SELECT,
+  );
+  if (result.error && isMissingPreorderSchemaColumn(result.error)) {
+    paymentSchemaAvailable = false;
+    result = await fetchMyQuotePage(
+      userId, quoteId, limit, offset, QUOTE_HISTORY_SELECT_WITHOUT_PAYMENT,
+    );
+  }
+  const { data, error, count } = result;
   if (error) throw error;
   if (
     typeof count !== "number" ||
@@ -250,7 +298,14 @@ export async function loadMyCatalogQuotePage(
     ) {
       throw new Error("catalog_quote_row_invalid");
     }
-    const voucherPath = row.payment_voucher_path;
+    const voucherPath = paymentSchemaAvailable ? row.payment_voucher_path ?? null : null;
+    const voucherType = !paymentSchemaAvailable
+      ? null
+      : row.payment_voucher_type === "deposit"
+        ? "deposit"
+        : row.payment_voucher_type === "final"
+          ? "final"
+          : null;
     if (
       voucherPath != null &&
       (typeof voucherPath !== "string" ||
@@ -278,27 +333,22 @@ export async function loadMyCatalogQuotePage(
       postalCode: row.postal_code,
       scale: row.desired_scale,
       finishing: row.finishing,
-      isPreorder: row.is_preorder === true,
-      depositAmount: validPositiveMoney(row.deposit_amount),
-      remainingAmount: validPositiveMoney(row.remaining_amount),
-      paymentStatus: row.payment_status ?? null,
-      paymentLink: validOptionalText(row.payment_link, 2000),
-      pixKey: validOptionalText(row.pix_key, 220),
-      paymentInstructions: validOptionalText(row.payment_instructions, 4000),
-      paymentLinkSentAt: row.payment_link_sent_at ?? null,
-      finalPaymentNotifiedAt: row.final_payment_notified_at ?? null,
-      readyForFinalPayment: row.ready_for_final_payment === true,
+      isPreorder: paymentSchemaAvailable && row.is_preorder === true,
+      depositAmount: paymentSchemaAvailable ? validPositiveMoney(row.deposit_amount) : null,
+      remainingAmount: paymentSchemaAvailable ? validPositiveMoney(row.remaining_amount) : null,
+      paymentStatus: paymentSchemaAvailable ? row.payment_status ?? null : null,
+      paymentLink: paymentSchemaAvailable ? validOptionalText(row.payment_link, 2000) : null,
+      pixKey: paymentSchemaAvailable ? validOptionalText(row.pix_key, 220) : null,
+      paymentInstructions: paymentSchemaAvailable ? validOptionalText(row.payment_instructions, 4000) : null,
+      paymentLinkSentAt: paymentSchemaAvailable ? row.payment_link_sent_at ?? null : null,
+      finalPaymentNotifiedAt: paymentSchemaAvailable ? row.final_payment_notified_at ?? null : null,
+      readyForFinalPayment: paymentSchemaAvailable && row.ready_for_final_payment === true,
       paymentVoucherPath: voucherPath,
-      paymentVoucherType:
-        row.payment_voucher_type === "deposit"
-          ? "deposit"
-          : row.payment_voucher_type === "final"
-            ? "final"
-            : null,
-      paymentVoucherRejectionReason: validOptionalText(
+      paymentVoucherType: voucherType,
+      paymentVoucherRejectionReason: paymentSchemaAvailable ? validOptionalText(
         row.payment_voucher_rejection_reason,
         500,
-      ),
+      ) : null,
     };
   });
 

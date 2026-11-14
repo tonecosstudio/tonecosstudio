@@ -353,6 +353,55 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     expect(mocks.assertCurrentUserId).toHaveBeenCalledWith(USER);
   });
 
+  it("preserves ordinary quote history while preorder payment columns await migration", async () => {
+    const makeQuery = (response: { data: unknown; error: unknown; count?: number | null }) => {
+      const query = {
+        select: vi.fn(() => query),
+        eq: vi.fn(() => query),
+        not: vi.fn(() => query),
+        order: vi.fn(() => query),
+        range: vi.fn().mockResolvedValue(response),
+      };
+      return query;
+    };
+    const unavailable = makeQuery({
+      data: null,
+      error: { code: "42703", message: "column quotes.is_preorder does not exist" },
+    });
+    const compatible = makeQuery({
+      data: [{
+        id: QUOTE,
+        status: "answered",
+        created_at: "2026-11-14T00:00:00Z",
+        deadline: null,
+        notes: null,
+        total_amount: 300,
+        admin_response: "Orçamento aprovado.",
+        requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
+        catalog_requested_at: "2026-11-14T00:00:00Z",
+        customer_whatsapp: null,
+        postal_code: null,
+        desired_scale: "a definir",
+        finishing: "a definir",
+      }],
+      error: null,
+      count: 1,
+    });
+    mocks.from.mockReturnValueOnce(unavailable).mockReturnValueOnce(compatible);
+
+    const page = await loadMyCatalogQuotePage(USER);
+    expect(page).toMatchObject({ total: 1, rows: [{
+      id: QUOTE,
+      quotedAmount: 300,
+      isPreorder: false,
+      paymentStatus: null,
+      paymentVoucherPath: null,
+    }] });
+    expect(unavailable.select).toHaveBeenCalledWith(expect.stringContaining("is_preorder"), { count: "exact" });
+    expect(compatible.select).toHaveBeenCalledWith(expect.not.stringContaining("is_preorder"), { count: "exact" });
+    expect(compatible.eq).toHaveBeenCalledWith("user_id", USER);
+  });
+
   it("rejects invalid exact quote identifiers before any authentication or network I/O", async () => {
     for (const quoteId of ["../admin", "123", QUOTE + "&other=1"]) {
       await expect(

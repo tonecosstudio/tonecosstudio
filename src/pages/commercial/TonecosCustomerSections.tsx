@@ -339,6 +339,8 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
           ? "Confira o CPF informado e os dígitos verificadores."
           : message === "tonecos_account_birth_date_invalid"
             ? "Informe uma data de nascimento válida."
+            : message === "tonecos_account_tax_details_unavailable"
+              ? "Os campos de CPF e nascimento ainda não estão habilitados neste ambiente. Nenhuma alteração foi salva; atualize a página após a configuração do cadastro."
             : "Não foi possível salvar. Confira os campos e tente novamente.",
       );
     } finally {
@@ -399,6 +401,11 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
               ? "Este endereço pertence à sua conta. O CEP de um orçamento anterior não é considerado endereço cadastrado."
               : "Estas escolhas ficam no seu perfil. Elas não ativam disparos automáticos de e-mail, SMS ou WhatsApp."}
         </p>
+        {isPersonal && profile.taxDetailsAvailable === false && (
+          <p role="status" className="mb-4 border border-amber-400/30 bg-amber-400/[0.06] p-3 text-sm leading-6 text-amber-100/80">
+            WhatsApp e os demais dados da conta continuam disponíveis. O cadastro conectado ainda não aceita CPF e data de nascimento, então esses campos não serão salvos até a atualização do schema.
+          </p>
+        )}
         {error && <p role="alert" className="mb-4 border border-red-500/40 p-3 text-sm text-red-200">{error}</p>}
         {notice && <p role="status" className="mb-4 border border-white/20 p-3 text-sm">{notice}</p>}
         <form onSubmit={(event) => { void save(event); }} className="space-y-5">

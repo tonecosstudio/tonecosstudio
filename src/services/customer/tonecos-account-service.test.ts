@@ -288,6 +288,69 @@ describe("Tonecos authenticated MVP account", () => {
     expect(change.eq).toHaveBeenCalledWith("id", USER);
   });
 
+  it("keeps the existing account usable when optional CPF and birth-date columns are not deployed", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
+    const missingTaxColumns = {
+      code: "42703",
+      message: "column profiles.cpf does not exist",
+    };
+    const makeQuery = (result: { data: unknown; error: unknown }) => {
+      const query = {
+        select: vi.fn(() => query),
+        update: vi.fn(() => query),
+        eq: vi.fn(() => query),
+        single: vi.fn().mockResolvedValue(result),
+      };
+      return query;
+    };
+    const saved = {
+      id: USER, email: "client@example.com", full_name: "Cliente", phone: null,
+      whatsapp: "71999999999", delivery_address: null,
+      preferred_contact_channel: "email", quote_updates: true,
+      production_updates: true, marketing_emails: false,
+      created_at: "2026-11-05T00:00:00Z", updated_at: "2026-11-05T00:00:00Z",
+    };
+    const failedRead = makeQuery({ data: null, error: missingTaxColumns });
+    const compatibleRead = makeQuery({ data: saved, error: null });
+    mocks.from.mockReturnValueOnce(failedRead).mockReturnValueOnce(compatibleRead);
+
+    await expect(getMyTonecosProfile()).resolves.toMatchObject({
+      cpf: null,
+      birth_date: null,
+      taxDetailsAvailable: false,
+      whatsapp: "71999999999",
+    });
+    expect(failedRead.select).toHaveBeenCalledWith(expect.stringContaining("cpf"));
+    expect(compatibleRead.select).toHaveBeenCalledWith(expect.not.stringContaining("cpf"));
+
+    const failedUpdate = makeQuery({ data: null, error: missingTaxColumns });
+    const compatibleUpdate = makeQuery({ data: saved, error: null });
+    mocks.from.mockReturnValueOnce(failedUpdate).mockReturnValueOnce(compatibleUpdate);
+    await expect(updateMyTonecosWhatsapp("(71) 99999-9999"))
+      .resolves.toMatchObject({ taxDetailsAvailable: false, whatsapp: "71999999999" });
+    expect(compatibleUpdate.update).toHaveBeenCalledExactlyOnceWith({ whatsapp: "71999999999" });
+  });
+
+  it("never drops entered CPF or birth date when the profile schema is missing those columns", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
+    const query = {
+      update: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      select: vi.fn(() => query),
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: "PGRST204", message: "Could not find the 'cpf' column of 'profiles' in the schema cache" },
+      }),
+    };
+    mocks.from.mockReturnValue(query);
+    await expect(updateMyTonecosPersonalData({
+      whatsapp: "(71) 99999-9999",
+      cpf: "529.982.247-25",
+      birthDate: "1992-05-14",
+    })).rejects.toThrow("tonecos_account_tax_details_unavailable");
+    expect(mocks.from).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects weak input, non-owner and invalid phones before mutation", async () => {
     await expect(registerTonecosAccount({
       email: "bad", password: "short", fullName: "Cliente",
