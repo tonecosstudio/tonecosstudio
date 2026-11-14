@@ -13,6 +13,12 @@ import {
 import { CommercialPage, panelClass, secondaryClass } from "./CommercialPage";
 import { commercialQuoteErrorText } from "./commercial-quote-error-text";
 import { customerQuoteEventLabel } from "./customer-quote-event-label";
+import {
+  ALLOWED_PAYMENT_VOUCHER_TYPES,
+  MAX_PAYMENT_VOUCHER_SIZE,
+  validatePaymentVoucher,
+} from "@/services/payments/payment-voucher-storage-service";
+import { submitCatalogPreorderVoucher } from "@/services/customer/catalog-quote-service";
 
 const labels: Record<string, string> = {
   pending: "Recebido",
@@ -29,6 +35,175 @@ const eventDate = new Intl.DateTimeFormat("pt-BR", {
   timeStyle: "short",
 });
 const PAGE_SIZE = 20;
+
+function getSafePaymentUrl(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function PreorderPaymentPanel({
+  row,
+  onSuccess,
+}: {
+  row: CustomerCatalogQuote;
+  onSuccess: () => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const paymentStatus = row.paymentStatus ?? "pending";
+  const finalPayment = paymentStatus === "deposit_paid" && row.readyForFinalPayment;
+  const paymentType = finalPayment ? "final" : "deposit";
+  const amount = finalPayment ? row.remainingAmount : row.depositAmount;
+  const safeLink = getSafePaymentUrl(row.paymentLink);
+  const currentPaymentInstructions = !finalPayment || (
+    Boolean(row.finalPaymentNotifiedAt && row.paymentLinkSentAt) &&
+    Date.parse(row.paymentLinkSentAt ?? "") >= Date.parse(row.finalPaymentNotifiedAt ?? "")
+  );
+  const instructionsAvailable = Boolean(
+    currentPaymentInstructions && row.paymentLinkSentAt && (safeLink || row.pixKey),
+  );
+  const canSubmit =
+    (paymentStatus === "pending" || finalPayment) &&
+    row.quotedAmount !== null &&
+    !["pending", "reviewing"].includes(row.status) &&
+    amount !== null &&
+    amount > 0 &&
+    instructionsAvailable;
+  const balance = row.quotedAmount !== null && row.depositAmount !== null
+    ? Math.max(0, row.quotedAmount - row.depositAmount)
+    : null;
+
+  async function sendVoucher() {
+    if (!file || !canSubmit || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await submitCatalogPreorderVoucher({
+        quoteId: row.id,
+        paymentType,
+        file,
+        previousVoucherPath: row.paymentVoucherPath,
+      });
+      setSubmitted(true);
+      setFile(null);
+      onSuccess();
+    } catch (cause) {
+      setError(commercialQuoteErrorText(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!row.isPreorder) return null;
+
+  return (
+    <section className="mt-5 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(0,0%,5%)] p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-[hsl(var(--gold-accent))]">Pré-venda com entrada</h3>
+          <p className="mt-1 text-xs leading-5 text-white/60">
+            R$ 50 de entrada abatidos do total; o restante é pago na finalização.
+          </p>
+        </div>
+        {paymentStatus === "under_review" ? (
+          <span className="border border-amber-400/40 px-3 py-1 text-xs text-amber-200">Comprovante em análise</span>
+        ) : paymentStatus === "fully_paid" ? (
+          <span className="border border-emerald-400/40 px-3 py-1 text-xs text-emerald-200">Pagamento concluído</span>
+        ) : paymentStatus === "deposit_paid" ? (
+          <span className="border border-sky-400/40 px-3 py-1 text-xs text-sky-200">
+            {finalPayment ? "Saldo liberado" : "Entrada aprovada"}
+          </span>
+        ) : null}
+      </div>
+
+      {row.quotedAmount === null ? (
+        <p className="mt-4 text-sm text-white/70">
+          A equipe está definindo o valor e o prazo. O sinal só será solicitado após a sua confirmação do orçamento.
+        </p>
+      ) : (
+        <dl className="mt-4 grid grid-cols-2 gap-3 border-y border-white/10 py-3 text-sm">
+          <div><dt className="text-xs text-white/50">Valor total</dt><dd className="mt-1 font-medium">{brl.format(row.quotedAmount)}</dd></div>
+          <div><dt className="text-xs text-white/50">Saldo na finalização</dt><dd className="mt-1 font-medium">{balance === null ? "A confirmar" : brl.format(balance)}</dd></div>
+        </dl>
+      )}
+
+      {row.paymentVoucherRejectionReason && (
+        <p role="alert" className="mt-4 border-l-2 border-red-400 pl-3 text-sm text-red-200">
+          Comprovante recusado: {row.paymentVoucherRejectionReason}
+        </p>
+      )}
+
+      {paymentStatus === "under_review" ? (
+        <p role="status" className="mt-4 text-sm text-white/70">
+          Recebemos seu comprovante de {row.paymentVoucherType === "final" ? "saldo" : "entrada"}. A produção ou a baixa final só avançará após a conferência da equipe.
+        </p>
+      ) : paymentStatus === "fully_paid" ? (
+        <p className="mt-4 text-sm text-white/70">O valor total foi confirmado pela TONART.</p>
+      ) : paymentStatus === "deposit_paid" && !finalPayment ? (
+        <p className="mt-4 text-sm text-white/70">Entrada aprovada. A equipe libera o saldo quando a peça estiver pronta para finalização.</p>
+      ) : row.quotedAmount !== null && !instructionsAvailable ? (
+        <p className="mt-4 text-sm text-white/70">O valor está definido. A equipe enviará as instruções PIX para você confirmar a entrada.</p>
+      ) : null}
+
+      {instructionsAvailable && (paymentStatus === "pending" || finalPayment) && (
+        <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-white/75">
+            {finalPayment ? "Instruções para pagar o saldo" : "Instruções para pagar a entrada"}
+            {amount !== null ? ` · ${brl.format(amount)}` : ""}
+          </p>
+          {row.pixKey && (
+            <p className="break-all rounded-sm bg-white/[0.04] p-3 text-sm text-white/80">
+              <span className="mb-1 block text-xs text-white/50">Chave PIX</span>{row.pixKey}
+            </p>
+          )}
+          {safeLink && (
+            <a href={safeLink} target="_blank" rel="noreferrer" className={secondaryClass}>
+              Abrir link de pagamento
+            </a>
+          )}
+          {row.paymentInstructions && (
+            <p className="whitespace-pre-wrap text-sm leading-6 text-white/65">{row.paymentInstructions}</p>
+          )}
+          {canSubmit && (
+            <div className="space-y-3 border-t border-white/10 pt-4">
+              <label htmlFor={`preorder-voucher-${row.id}`} className="block text-sm font-medium">
+                {row.paymentVoucherRejectionReason ? "Enviar comprovante corrigido" : "Comprovante de pagamento"}
+              </label>
+              <input
+                id={`preorder-voucher-${row.id}`}
+                type="file"
+                accept={ALLOWED_PAYMENT_VOUCHER_TYPES.join(",")}
+                className="block min-h-11 w-full text-sm text-white/70 file:mr-3 file:min-h-11 file:border-0 file:bg-white/10 file:px-4 file:text-white hover:file:bg-white/15"
+                onChange={(event) => {
+                  const selected = event.currentTarget.files?.[0] ?? null;
+                  setError("");
+                  if (!selected) { setFile(null); return; }
+                  try { validatePaymentVoucher(selected); setFile(selected); }
+                  catch (cause) { setFile(null); setError(cause instanceof Error ? cause.message : "Comprovante inválido."); }
+                }}
+              />
+              <p className="text-xs text-white/50">JPG, PNG ou PDF · até {Math.round(MAX_PAYMENT_VOUCHER_SIZE / (1024 * 1024))} MB. O comprovante fica privado e é analisado pela equipe.</p>
+              {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
+              {submitted && <p role="status" className="text-sm text-emerald-300">Comprovante enviado para análise.</p>}
+              <button type="button" className={secondaryClass} disabled={!file || busy} onClick={() => void sendVoucher()}>
+                {busy ? "Enviando comprovante..." : "Enviar comprovante"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
 
 export default function TonecosMyQuotesPage() {
   const location = useLocation();
@@ -332,6 +507,10 @@ export default function TonecosMyQuotesPage() {
                     ? "Valor em análise"
                     : brl.format(row.quotedAmount)}
                 </div>
+                <PreorderPaymentPanel
+                  row={row}
+                  onSuccess={() => setAttempt((value) => value + 1)}
+                />
               </li>
             ))}
           </ul>

@@ -165,6 +165,7 @@ export const ADMIN_ROUTES = {
   paymentMethods: "/admin/pagamentos/metodos",
   paymentKeys: "/admin/pagamentos/chaves",
   paymentCalculator: "/admin/pagamentos/calculadora",
+  preorders: "/admin/pagamentos/pre-vendas",
   paymentDetails: "/admin/pagamentos/:paymentId",
   communication: "/admin/comunicacao",
   communicationGroups: "/admin/comunicacao/grupos",

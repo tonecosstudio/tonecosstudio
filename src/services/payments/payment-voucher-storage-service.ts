@@ -2,7 +2,6 @@ import {
   ALLOWED_PAYMENT_PROOF_TYPES,
   generateSecureToken,
   MAX_PAYMENT_PROOF_SIZE,
-  sanitizeFilename,
 } from "@/lib/security/input-sanitizer";
 import {
   assertCurrentUserId,
@@ -31,18 +30,20 @@ export function validatePaymentVoucher(file: File): void {
   }
 }
 
-function sanitizePathPrefix(pathPrefix: string): string {
-  const sanitizedSegments = pathPrefix
-    .split(/[/\\]+/)
-    .map((segment) => sanitizeFilename(segment))
-    .filter(Boolean);
-
-  const sanitizedPrefix = sanitizedSegments.join("/");
-  if (sanitizedPrefix !== SUBSCRIPTIONS_PREFIX) {
-    throw new Error("Destino de comprovante não permitido");
+function getOwnedPathPrefix(pathPrefix: string, userId: string): string {
+  if (pathPrefix === SUBSCRIPTIONS_PREFIX) {
+    return `${SUBSCRIPTIONS_PREFIX}/${userId.toLowerCase()}`;
   }
 
-  return sanitizedPrefix;
+  const quoteMatch = /^quotes:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(
+    pathPrefix,
+  );
+  if (quoteMatch) {
+    return `quotes/${userId.toLowerCase()}/${quoteMatch[1].toLowerCase()}`;
+  }
+
+  // Keep path parsing allowlisted; caller-controlled path segments are never copied.
+  throw new Error("Destino de comprovante não permitido");
 }
 
 interface UploadPaymentVoucherInput {
@@ -61,13 +62,15 @@ export async function uploadPaymentVoucher({
     ? await assertCurrentUserId(userId)
     : await requireAuthenticatedUserId();
 
-  const sanitizedName = sanitizeFilename(file.name);
-  const finalName = sanitizedName || `file-${Date.now()}`;
-  const fileExt = finalName.split(".").pop()?.toLowerCase() || "bin";
+  const fileExt = file.type === "image/jpeg"
+    ? "jpg"
+    : file.type === "image/png"
+      ? "png"
+      : "pdf";
   const timestamp = Date.now();
   const randomId = generateSecureToken(8);
   const fileName = `${timestamp}-${randomId}.${fileExt}`;
-  const filePath = `${sanitizePathPrefix(pathPrefix)}/${authenticatedUserId}/${fileName}`;
+  const filePath = `${getOwnedPathPrefix(pathPrefix, authenticatedUserId)}/${fileName}`;
 
   const { error: uploadError } = await uploadStorageFile(STORAGE_BUCKET, filePath, file, {
     upsert: false,
@@ -83,7 +86,7 @@ export async function uploadPaymentVoucher({
   return filePath;
 }
 
-/** Remove only a just-uploaded subscription voucher owned by this session. */
+/** Remove only a private voucher uploaded under this session's allowed namespace. */
 export async function deletePaymentVoucher(
   filePath: string,
   userId?: string,
@@ -91,14 +94,17 @@ export async function deletePaymentVoucher(
   const authenticatedUserId = userId
     ? await assertCurrentUserId(userId)
     : await requireAuthenticatedUserId();
-  const prefix = "subscriptions/" + authenticatedUserId.toLowerCase() + "/";
   const normalizedPath = filePath.toLowerCase();
-  const filename = normalizedPath.startsWith(prefix)
-    ? normalizedPath.slice(prefix.length)
-    : "";
+  const ownerPrefix = authenticatedUserId.toLowerCase();
+  const subscriptionMatch = new RegExp(
+    `^subscriptions/${ownerPrefix}/([0-9]{10,16}-[0-9a-f]{16}\\.(jpg|jpeg|png|pdf))$`,
+  ).exec(normalizedPath);
+  const quoteMatch = new RegExp(
+    `^quotes/${ownerPrefix}/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/([0-9]{10,16}-[0-9a-f]{16}\\.(jpg|jpeg|png|pdf))$`,
+  ).exec(normalizedPath);
   if (
     !UUID_PATTERN.test(authenticatedUserId) ||
-    !/^[0-9]{10,16}-[0-9a-f]{16}\.(jpg|jpeg|png|pdf)$/.test(filename)
+    (!subscriptionMatch && !quoteMatch)
   ) {
     throw new Error("Destino de comprovante não permitido");
   }

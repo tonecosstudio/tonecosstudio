@@ -2,13 +2,14 @@ import { useState } from "react";
 import {
   useAdminPreordersData,
   useRegisterAdminPreorderManualPayment,
+  useRejectAdminPreorderVoucher,
   useReleaseAdminPreorderFinalPayment,
 } from "@/hooks/admin/useAdminPreorders";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, CheckCircle2, Package, DollarSign, AlertCircle, Send, Eye } from "lucide-react";
+import { Clock, CheckCircle2, Package, DollarSign, AlertCircle, Send, Eye, RefreshCw } from "lucide-react";
 import { SendPaymentLinkDialog } from "@/components/admin/payments/SendPaymentLinkDialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,7 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
-import { adminOrdersPath } from "@/config/routes";
+import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 
 function isValidPaymentAmount(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
@@ -38,14 +39,18 @@ export default function AdminPreorders() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState<
-    "pending_deposit" | "in_production" | "ready_for_payment" | "completed"
-  >("in_production");
-  const { preorders, stats } = useAdminPreordersData();
+    "under_review" | "pending_deposit" | "in_production" | "ready_for_payment" | "completed"
+  >("under_review");
+  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
+  const { preorders, stats, preordersQuery, statsQuery } = useAdminPreordersData();
   const releaseFinalPaymentMutation = useReleaseAdminPreorderFinalPayment();
   const markAsPaidMutation = useRegisterAdminPreorderManualPayment();
+  const rejectVoucherMutation = useRejectAdminPreorderVoucher();
 
   const filteredPreorders = preorders.filter((quote) => {
     switch (selectedTab) {
+      case "under_review":
+        return quote.payment_status === "under_review";
       case "pending_deposit":
         return quote.payment_status === "pending";
       case "in_production":
@@ -85,6 +90,32 @@ export default function AdminPreorders() {
         });
       },
     });
+  };
+
+  const handleRejectVoucher = (quoteId: string) => {
+    const rejectionReason = rejectionReasons[quoteId]?.trim() ?? "";
+    if (!rejectionReason) {
+      toast({
+        title: "Motivo obrigatório",
+        description: "Informe ao cliente o que precisa ser corrigido no comprovante.",
+        variant: "destructive",
+      });
+      return;
+    }
+    rejectVoucherMutation.mutate(
+      { quoteId, rejectionReason },
+      {
+        onSuccess: () => {
+          setRejectionReasons((current) => ({ ...current, [quoteId]: "" }));
+          toast({ title: "Comprovante recusado", description: "O cliente poderá enviar outro comprovante nesta mesma pré-venda." });
+        },
+        onError: (error: Error) => toast({
+          title: "Erro ao recusar comprovante",
+          description: error.message,
+          variant: "destructive",
+        }),
+      },
+    );
   };
 
   const handleMarkAsPaid = (quoteId: string, paymentType: "deposit" | "final") => {
@@ -135,14 +166,47 @@ export default function AdminPreorders() {
         <p className="text-muted-foreground">Gerencie pedidos com pagamento de sinal</p>
       </div>
 
-      <div className="mb-8 grid gap-4 md:grid-cols-4">
+      {(preordersQuery.isError || statsQuery.isError) && (
+        <div role="alert" className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-destructive">
+            {preordersQuery.isError
+              ? "Não foi possível carregar a fila de pré-vendas. Os pedidos não serão exibidos como uma fila vazia."
+              : "Não foi possível atualizar os indicadores de pré-vendas."}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {preordersQuery.isError && (
+              <Button size="sm" variant="outline" onClick={() => void preordersQuery.refetch()} disabled={preordersQuery.isFetching}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${preordersQuery.isFetching ? "animate-spin" : ""}`} />
+                Tentar fila novamente
+              </Button>
+            )}
+            {statsQuery.isError && (
+              <Button size="sm" variant="outline" onClick={() => void statsQuery.refetch()} disabled={statsQuery.isFetching}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${statsQuery.isFetching ? "animate-spin" : ""}`} />
+                Atualizar indicadores
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Comprovantes em análise</CardTitle>
+            <AlertCircle className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{statsQuery.isLoading || statsQuery.isError ? "—" : stats?.pending_review ?? 0}</div>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Pré-vendas</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.total || 0}</div>
+            <div className="text-2xl font-bold">{statsQuery.isLoading || statsQuery.isError ? "—" : stats?.total ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -151,7 +215,7 @@ export default function AdminPreorders() {
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats?.in_production || 0}</div>
+            <div className="text-2xl font-bold text-blue-600">{statsQuery.isLoading || statsQuery.isError ? "—" : stats?.in_production ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -160,7 +224,7 @@ export default function AdminPreorders() {
             <AlertCircle className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats?.ready_for_payment || 0}</div>
+            <div className="text-2xl font-bold text-orange-600">{statsQuery.isLoading || statsQuery.isError ? "—" : stats?.ready_for_payment ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -170,16 +234,23 @@ export default function AdminPreorders() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              R$ {(stats?.total_revenue || 0).toFixed(2)}
+              {statsQuery.isLoading || statsQuery.isError ? "—" : `R$ ${(stats?.total_revenue || 0).toFixed(2)}`}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Sinais: R$ {(stats?.total_deposits || 0).toFixed(2)}
+              Sinais: {statsQuery.isLoading || statsQuery.isError ? "—" : `R$ ${(stats?.total_deposits || 0).toFixed(2)}`}
             </p>
           </CardContent>
         </Card>
       </div>
 
       <div className="mb-6 flex gap-2 overflow-x-auto">
+        <Button
+          variant={selectedTab === "under_review" ? "default" : "outline"}
+          onClick={() => setSelectedTab("under_review")}
+          className="whitespace-nowrap"
+        >
+          Revisar comprovantes ({stats?.pending_review || 0})
+        </Button>
         <Button
           variant={selectedTab === "pending_deposit" ? "default" : "outline"}
           onClick={() => setSelectedTab("pending_deposit")}
@@ -216,7 +287,16 @@ export default function AdminPreorders() {
           <CardDescription>{filteredPreorders.length} pedido(s) nesta categoria</CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredPreorders.length === 0 ? (
+          {preordersQuery.isLoading ? (
+            <div role="status" className="py-8 text-center text-muted-foreground">
+              <RefreshCw className="mx-auto mb-3 h-5 w-5 animate-spin" />
+              Carregando pré-vendas…
+            </div>
+          ) : preordersQuery.isError ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              A fila não está disponível no momento. Use a opção de tentar novamente acima.
+            </div>
+          ) : filteredPreorders.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
               <Package className="mx-auto mb-4 h-12 w-12 opacity-50" />
               <p>Nenhum pedido nesta categoria</p>
@@ -238,7 +318,7 @@ export default function AdminPreorders() {
                     key={quote.id}
                     className="rounded-lg border p-4 transition-colors hover:bg-muted/50"
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0 flex-1">
                         <div className="mb-2 flex items-center gap-2">
                           <p className="font-medium">#{quote.id.slice(0, 8)}</p>
@@ -246,6 +326,12 @@ export default function AdminPreorders() {
                             <Badge variant="secondary">
                               <Clock className="mr-1 h-3 w-3" />
                               Aguardando Sinal
+                            </Badge>
+                          )}
+                          {quote.payment_status === "under_review" && (
+                            <Badge variant="default" className="bg-orange-500">
+                              <AlertCircle className="mr-1 h-3 w-3" />
+                              Comprovante em análise
                             </Badge>
                           )}
                           {quote.payment_status === "deposit_paid" && !quote.ready_for_final_payment && (
@@ -272,7 +358,7 @@ export default function AdminPreorders() {
                           Cliente: {quote.profiles?.full_name || quote.profiles?.email || "Sem nome"}
                         </p>
 
-                        <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3 sm:gap-4">
                           <div>
                             <span className="text-muted-foreground">Sinal:</span>
                             <p className="font-medium">{formatAmount(quote.deposit_amount)}</p>
@@ -295,24 +381,30 @@ export default function AdminPreorders() {
                         </p>
                       </div>
 
-                      <div className="flex flex-col gap-2">
+                      <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-40">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigate(adminOrdersPath({ type: "quote", search: quote.id }))}
+                          onClick={() => navigate(
+                            TONECOS_COMMERCIAL_ROUTES.adminQuotes + "?quote=" + encodeURIComponent(quote.id),
+                          )}
                         >
                           <Eye className="mr-2 h-4 w-4" />
                           Ver
                         </Button>
 
                         {quote.payment_status === "pending" && depositAmount !== null && (
-                          <SendPaymentLinkDialog
-                            quoteId={quote.id}
-                            amount={depositAmount}
-                            paymentType="voucher"
-                            customerName={quote.profiles?.full_name || "Cliente"}
-                            customerEmail={quote.profiles?.email || ""}
-                          />
+                          quote.total_amount !== null && quote.total_amount > depositAmount ? (
+                            <SendPaymentLinkDialog
+                              quoteId={quote.id}
+                              amount={depositAmount}
+                              paymentType="deposit"
+                              customerName={quote.profiles?.full_name || "Cliente"}
+                              customerEmail={quote.profiles?.email || ""}
+                            />
+                          ) : (
+                            <Button size="sm" variant="outline" disabled>Confirme o orçamento primeiro</Button>
+                          )
                         )}
 
                         {quote.payment_status === "pending" && !hasDepositAmount && (
@@ -371,11 +463,59 @@ export default function AdminPreorders() {
                           <Button
                             size="sm"
                             variant="outline"
-                            disabled={!hasDepositAmount}
+                            disabled={!hasDepositAmount || quote.total_amount === null || quote.total_amount <= (depositAmount ?? 0)}
                             onClick={() => handleMarkAsPaid(quote.id, "deposit")}
                           >
                             Marcar Sinal Pago
                           </Button>
+                        )}
+
+                        {quote.payment_status === "under_review" && (
+                          <div className="w-full min-w-0 space-y-2 rounded-md border border-orange-500/30 bg-orange-500/5 p-3 sm:min-w-64">
+                            {quote.payment_voucher_url ? (
+                              <a
+                                href={quote.payment_voucher_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                              >
+                                <Eye className="h-4 w-4" /> Abrir comprovante
+                              </a>
+                            ) : (
+                              <p role="alert" className="text-xs text-destructive">Comprovante indisponível. Atualize a fila antes de aprovar.</p>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              Tipo: {quote.payment_voucher_type === "final" ? "saldo final" : "entrada"} · valor oficial: {formatAmount(quote.payment_voucher_type === "final" ? quote.remaining_amount : quote.deposit_amount)}
+                            </p>
+                            <Button
+                              size="sm"
+                              className="w-full"
+                              disabled={!quote.payment_voucher_url || !quote.payment_voucher_type || markAsPaidMutation.isPending}
+                              onClick={() => quote.payment_voucher_type && handleMarkAsPaid(quote.id, quote.payment_voucher_type)}
+                            >
+                              <CheckCircle2 className="mr-2 h-4 w-4" /> Aprovar comprovante
+                            </Button>
+                            <label htmlFor={`preorder-reject-${quote.id}`} className="block text-xs font-medium">
+                              Motivo para recusar
+                            </label>
+                            <input
+                              id={`preorder-reject-${quote.id}`}
+                              value={rejectionReasons[quote.id] ?? ""}
+                              maxLength={500}
+                              onChange={(event) => setRejectionReasons((current) => ({ ...current, [quote.id]: event.target.value }))}
+                              className="min-h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                              placeholder="Ex.: comprovante ilegível"
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full"
+                              disabled={!rejectionReasons[quote.id]?.trim() || rejectVoucherMutation.isPending}
+                              onClick={() => handleRejectVoucher(quote.id)}
+                            >
+                              Recusar e solicitar novo
+                            </Button>
+                          </div>
                         )}
 
                         {quote.payment_status === "deposit_paid" && quote.ready_for_final_payment && (

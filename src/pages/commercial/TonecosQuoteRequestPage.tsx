@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import {
   quoteItemsFromSelection,
   submitCatalogQuoteRequest,
+  type CatalogQuoteIntent,
 } from "@/services/customer/catalog-quote-service";
 import { getMyTonecosProfile, getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
 import {
@@ -33,6 +34,7 @@ function savedQuotePostalCode(profile: CustomerProfile): string {
 export default function TonecosQuoteRequestPage() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [user, setUser] = useState<Identity | null | undefined>(undefined);
   const [authError, setAuthError] = useState(false);
   const [authAttempt, setAuthAttempt] = useState(0);
@@ -49,6 +51,9 @@ export default function TonecosQuoteRequestPage() {
   >("a definir");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [intent, setIntent] = useState<CatalogQuoteIntent>(() =>
+    searchParams.get("tipo") === "pre-venda" ? "preorder" : "quote",
+  );
 
   useEffect(() => {
     let active = true;
@@ -94,12 +99,18 @@ export default function TonecosQuoteRequestPage() {
         ...item,
         quantity: quantities[item.slug] ?? 1,
       }));
-      const quoteId = await submitCatalogQuoteRequest(user.id, items, notes, {
-        whatsapp: quotePhone(profile.whatsapp) || quotePhone(profile.phone),
-        postalCode: savedQuotePostalCode(profile),
-        scale,
-        finishing,
-      });
+      const quoteId = await submitCatalogQuoteRequest(
+        user.id,
+        items,
+        notes,
+        {
+          whatsapp: quotePhone(profile.whatsapp) || quotePhone(profile.phone),
+          postalCode: savedQuotePostalCode(profile),
+          scale,
+          finishing,
+        },
+        intent,
+      );
       setSelectedModels([]);
       navigate(TONECOS_COMMERCIAL_ROUTES.history, {
         replace: true,
@@ -120,7 +131,9 @@ export default function TonecosQuoteRequestPage() {
   return (
     <CommercialPage
       title="Solicitar orçamento"
-      intro="Selecione modelos do catálogo, informe as quantidades e envie sua solicitação. O estúdio analisará os itens e informará valores e prazos. Nenhum pagamento é realizado agora."
+      intro={intent === "preorder"
+        ? "Escolha a pré-venda para solicitar sua peça com entrada de R$50 após a confirmação do valor e do prazo. O saldo é pago na finalização."
+        : "Selecione modelos do catálogo, informe as quantidades e envie sua solicitação. O estúdio analisará os itens e informará valores e prazos. Nenhum pagamento é realizado agora."}
     >
       <div className="max-w-3xl">
         {error && (
@@ -215,6 +228,44 @@ export default function TonecosQuoteRequestPage() {
                 Os preços serão definidos após análise da solicitação.
               </p>
             </div>
+            <fieldset className="space-y-3 border-y border-white/15 py-5">
+              <legend className="px-1 text-sm font-medium">Como deseja continuar?</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex cursor-pointer items-start gap-3 border border-white/15 p-4 has-[:checked]:border-[hsl(var(--gold-accent))]">
+                  <input
+                    type="radio"
+                    name="quote-intent"
+                    value="quote"
+                    checked={intent === "quote"}
+                    onChange={() => setIntent("quote")}
+                    className="mt-1 accent-[hsl(var(--gold-accent))]"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium">Só quero o orçamento</span>
+                    <span className="mt-1 block text-xs leading-5 text-white/55">Sem compromisso de compra ou pagamento.</span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3 border border-white/15 p-4 has-[:checked]:border-[hsl(var(--gold-accent))]">
+                  <input
+                    type="radio"
+                    name="quote-intent"
+                    value="preorder"
+                    checked={intent === "preorder"}
+                    onChange={() => setIntent("preorder")}
+                    className="mt-1 accent-[hsl(var(--gold-accent))]"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium">Quero fazer pré-venda</span>
+                    <span className="mt-1 block text-xs leading-5 text-white/55">R$50 de entrada; saldo restante na finalização.</span>
+                  </span>
+                </label>
+              </div>
+              {intent === "preorder" && (
+                <p className="text-xs leading-5 text-white/60">
+                  Primeiro a TONART confirma o preço total e o prazo. Depois você recebe os dados de pagamento, envia o comprovante de R$50 e acompanha a aprovação na sua conta. O saldo é calculado como valor total menos R$50.
+                </p>
+              )}
+            </fieldset>
             <ul className="space-y-3">
               {selectedModels.map((item) => (
                 <li
@@ -312,8 +363,9 @@ export default function TonecosQuoteRequestPage() {
               />
             </label>
             <p className="text-xs text-white/55">
-              O envio registra apenas a referência dos modelos e sua
-              solicitação; não gera compra ou cobrança.
+              {intent === "preorder"
+                ? "O pedido de pré-venda não gera cobrança imediata. O pagamento de R$50 só será solicitado após confirmação do orçamento e das instruções de pagamento."
+                : "O envio registra apenas a referência dos modelos e sua solicitação; não gera compra ou cobrança."}
             </p>
             <div className="flex flex-wrap gap-3">
               <button
@@ -321,7 +373,11 @@ export default function TonecosQuoteRequestPage() {
                 type="submit"
                 disabled={!user || !profile || busy}
               >
-                {busy ? "Enviando..." : "Enviar solicitação"}
+                {busy
+                  ? "Enviando..."
+                  : intent === "preorder"
+                    ? "Solicitar pré-venda"
+                    : "Enviar solicitação"}
               </button>
               <Link className={secondaryClass} to="/modelos">
                 Adicionar modelos

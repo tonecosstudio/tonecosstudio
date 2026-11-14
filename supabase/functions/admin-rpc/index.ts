@@ -76,6 +76,7 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_register_chat_group_attachment",
   "admin_record_order_status_history",
   "admin_register_preorder_manual_payment",
+  "admin_reject_preorder_payment_voucher",
   "admin_reject_character_choice",
   "admin_reject_manual_payment_with_notification",
   "admin_reject_standalone_payment_voucher",

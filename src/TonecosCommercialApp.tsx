@@ -2,7 +2,7 @@
 import { lazy, useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate, Route, useLocation } from "react-router-dom";
 import { CatalogMvpShell } from "@/CatalogMvpShell";
-import { AUTH_ROUTES, PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES, loginReturnToPath } from "@/config/routes";
+import { ADMIN_ROUTES, AUTH_ROUTES, PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES, loginReturnToPath } from "@/config/routes";
 import { hasTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
 import { CommercialPage, secondaryClass } from "@/pages/commercial/CommercialPage";
@@ -20,6 +20,7 @@ const Coins = lazy(() => import("@/pages/commercial/TonecosCoinsPage"));
 const AdminCoins = lazy(() => import("@/pages/commercial/TonecosAdminCoinsPage"));
 const PaymentDetails = lazy(() => import("@/pages/commercial/TonecosPaymentDetailsPage"));
 const AdminSubscriptionPayments = lazy(() => import("@/pages/commercial/TonecosAdminSubscriptionPaymentsPage"));
+const AdminPaymentHub = lazy(() => import("@/pages/admin/payments/AdminPaymentHub"));
 const SubscribeCollection = lazy(() => import("@/pages/SubscribeCollection"));
 
 /** Central UI gate; the database remains the only authority for admin operations. */
@@ -73,6 +74,12 @@ const commercialRoutes: ReactNode = (
     <Route path={TONECOS_COMMERCIAL_ROUTES.recovery} element={<Recovery />} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.adminHome} element={<AdminAccessGate><AdminHome /></AdminAccessGate>} />
     <Route path={TONECOS_COMMERCIAL_ROUTES.adminSubscriptions} element={<AdminAccessGate><AdminSubscriptionPayments /></AdminAccessGate>} />
+    <Route path={ADMIN_ROUTES.payments} element={<AdminAccessGate><AdminPaymentHub /></AdminAccessGate>} />
+    <Route path={ADMIN_ROUTES.paymentMethods} element={<AdminAccessGate><AdminPaymentHub /></AdminAccessGate>} />
+    <Route path={ADMIN_ROUTES.paymentKeys} element={<AdminAccessGate><AdminPaymentHub /></AdminAccessGate>} />
+    <Route path={ADMIN_ROUTES.paymentCalculator} element={<AdminAccessGate><AdminPaymentHub /></AdminAccessGate>} />
+    <Route path={ADMIN_ROUTES.preorders} element={<AdminAccessGate><AdminPaymentHub /></AdminAccessGate>} />
+    <Route path={ADMIN_ROUTES.paymentDetails} element={<AdminAccessGate><AdminPaymentHub /></AdminAccessGate>} />
     {/* Existing original backoffice paths share one guarded commercial workspace. */}
     <Route path={TONECOS_COMMERCIAL_ROUTES.adminHome + "/*"} element={<AdminAccessGate><AdminHome /></AdminAccessGate>} />
     <Route path={PUBLIC_ROUTES.quoteRequest} element={<Request />} />

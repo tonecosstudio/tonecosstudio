@@ -43,17 +43,17 @@ describe("TONART public Home during image review", () => {
     expect(screen.getByRole("link", { name: /CONHEÇA O ESTÚDIO/ })).toHaveAttribute("href", "/sobre");
     expect(screen.getByRole("link", { name: /Fale com a TONART/ })).toHaveAttribute("href", "/contato");
     expect(screen.queryByRole("heading", { name: /Black Friday/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Solicitar pré-venda|Consultar meus Coins/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Escolher modelos|Consultar meus Coins/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Referências em curadoria" })).not.toBeInTheDocument();
     view.unmount();
     client.clear();
   });
 
-  it("keeps pre-sale and Coins absent even when the commercial MVP is enabled", () => {
+  it("shows pre-sale and the Coins wallet in the commercial MVP", () => {
     vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
-    vi.stubEnv("VITE_TONECOS_COINS_ENABLED", "false");
+    vi.stubEnv("VITE_TONECOS_COINS_ENABLED", "true");
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ items: [] })));
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const view = render(
@@ -62,9 +62,15 @@ describe("TONART public Home during image review", () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.queryByRole("heading", { name: /Black Friday/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Solicitar pré-venda/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Acessar minha carteira/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Black Friday Até 50% de desconto/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Escolher modelos/ })).toHaveAttribute(
+      "href",
+      "/modelos?tipo=pre-venda",
+    );
+    expect(screen.getByRole("link", { name: /Acessar minha carteira/ })).toHaveAttribute(
+      "href",
+      "/moedas",
+    );
 
     view.unmount();
     client.clear();

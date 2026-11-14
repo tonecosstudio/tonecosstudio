@@ -3,12 +3,19 @@ import { assertTonecosQuotesEnabled } from "@/config/tonecos-commercial-authorit
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
-import { assertCurrentUserId } from "@/services/auth/current-user";
+import {
+  assertCurrentUserId,
+  requireAuthenticatedUserId,
+} from "@/services/auth/current-user";
 import {
   validCatalogSlug,
   type PublicCatalogModel,
 } from "@/services/catalog/public-catalog-gateway";
 import { MAX_CANONICAL_SELECTION } from "@/services/catalog/public-catalog-selection";
+import {
+  deletePaymentVoucher,
+  uploadPaymentVoucher,
+} from "@/services/payments/payment-voucher-storage-service";
 
 /** One commercial quote authority: Supabase quotes. Catalog model slugs come from D1. */
 export type CatalogQuoteItem = { slug: string; quantity: number };
@@ -18,6 +25,7 @@ export type CatalogQuotePreferences = {
   scale?: "a definir" | "1/10" | "1/6" | "outro";
   finishing?: "a definir" | "pintado" | "sem pintura";
 };
+export type CatalogQuoteIntent = "quote" | "preorder";
 export type CustomerCatalogQuote = {
   id: string;
   status: string;
@@ -32,6 +40,19 @@ export type CustomerCatalogQuote = {
   postalCode: string | null;
   scale: string;
   finishing: string;
+  isPreorder: boolean;
+  depositAmount: number | null;
+  remainingAmount: number | null;
+  paymentStatus: string | null;
+  paymentLink: string | null;
+  pixKey: string | null;
+  paymentInstructions: string | null;
+  paymentLinkSentAt: string | null;
+  finalPaymentNotifiedAt: string | null;
+  readyForFinalPayment: boolean;
+  paymentVoucherPath: string | null;
+  paymentVoucherType: "deposit" | "final" | null;
+  paymentVoucherRejectionReason: string | null;
 };
 
 export type CustomerCatalogQuotePage = {
@@ -84,6 +105,7 @@ export async function submitCatalogQuoteRequest(
   items: readonly CatalogQuoteItem[],
   notes: string | null = null,
   preferences: CatalogQuotePreferences = {},
+  intent: CatalogQuoteIntent = "quote",
 ): Promise<string> {
   requireCommercialQuoteMode();
   const safeItems = validateItems(items);
@@ -108,14 +130,22 @@ export async function submitCatalogQuoteRequest(
   }
   await assertCurrentUserId(userId);
   const client = tonecos;
-  const { data, error } = await client.rpc("submit_catalog_quote_request", {
+  if (intent !== "quote" && intent !== "preorder") {
+    throw new Error("catalog_quote_intent_invalid");
+  }
+  const { data, error } = await client.rpc(
+    intent === "preorder"
+      ? "submit_catalog_preorder_request"
+      : "submit_catalog_quote_request",
+    {
     p_models: safeItems,
     p_notes: safeNotes ?? undefined,
     p_whatsapp: whatsapp || undefined,
     p_postal_code: postalCode || undefined,
     p_scale: scale,
     p_finishing: finishing,
-  });
+    },
+  );
   if (error) throw error;
   if (
     !data ||
@@ -142,6 +172,19 @@ type QuoteDbRow = {
   postal_code: string | null;
   desired_scale: string;
   finishing: string;
+  is_preorder: boolean | null;
+  deposit_amount: number | null;
+  remaining_amount: number | null;
+  payment_status: string | null;
+  payment_link: string | null;
+  pix_key: string | null;
+  payment_instructions: string | null;
+  payment_link_sent_at: string | null;
+  final_payment_notified_at: string | null;
+  ready_for_final_payment: boolean;
+  payment_voucher_path: string | null;
+  payment_voucher_type: string | null;
+  payment_voucher_rejection_reason: string | null;
 };
 
 /** Own records only; the quotes RLS policy remains the database's authority. */
@@ -174,7 +217,7 @@ export async function loadMyCatalogQuotePage(
   let query = tonecos
     .from("quotes")
     .select(
-      "id,status,created_at,deadline,notes,total_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing",
+      "id,status,created_at,deadline,notes,total_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing,is_preorder,deposit_amount,remaining_amount,payment_status,payment_link,pix_key,payment_instructions,payment_link_sent_at,final_payment_notified_at,ready_for_final_payment,payment_voucher_path,payment_voucher_type,payment_voucher_rejection_reason",
       { count: "exact" },
     )
     .eq("user_id", userId)
@@ -193,7 +236,7 @@ export async function loadMyCatalogQuotePage(
     throw new Error("catalog_quote_count_invalid");
   }
 
-  const rows = ((data ?? []) as QuoteDbRow[]).map((row) => {
+  const rows = ((data ?? []) as QuoteDbRow[]).map((row): CustomerCatalogQuote => {
     const items = validateListedItems(row.requested_catalog_models);
     if (
       typeof row.id !== "string" ||
@@ -206,6 +249,16 @@ export async function loadMyCatalogQuotePage(
           row.admin_response.length > 2000))
     ) {
       throw new Error("catalog_quote_row_invalid");
+    }
+    const voucherPath = row.payment_voucher_path;
+    if (
+      voucherPath != null &&
+      (typeof voucherPath !== "string" ||
+        !new RegExp(
+          `^quotes/${userId.toLowerCase()}/${row.id.toLowerCase()}/[0-9]{10,16}-[0-9a-f]{16}\\.(jpg|jpeg|png|pdf)$`,
+        ).test(voucherPath))
+    ) {
+      throw new Error("catalog_quote_voucher_path_invalid");
     }
     return {
       id: row.id,
@@ -225,6 +278,27 @@ export async function loadMyCatalogQuotePage(
       postalCode: row.postal_code,
       scale: row.desired_scale,
       finishing: row.finishing,
+      isPreorder: row.is_preorder === true,
+      depositAmount: validPositiveMoney(row.deposit_amount),
+      remainingAmount: validPositiveMoney(row.remaining_amount),
+      paymentStatus: row.payment_status ?? null,
+      paymentLink: validOptionalText(row.payment_link, 2000),
+      pixKey: validOptionalText(row.pix_key, 220),
+      paymentInstructions: validOptionalText(row.payment_instructions, 4000),
+      paymentLinkSentAt: row.payment_link_sent_at ?? null,
+      finalPaymentNotifiedAt: row.final_payment_notified_at ?? null,
+      readyForFinalPayment: row.ready_for_final_payment === true,
+      paymentVoucherPath: voucherPath,
+      paymentVoucherType:
+        row.payment_voucher_type === "deposit"
+          ? "deposit"
+          : row.payment_voucher_type === "final"
+            ? "final"
+            : null,
+      paymentVoucherRejectionReason: validOptionalText(
+        row.payment_voucher_rejection_reason,
+        500,
+      ),
     };
   });
 
@@ -233,6 +307,98 @@ export async function loadMyCatalogQuotePage(
   }
 
   return { total: count, limit, offset, rows };
+}
+
+function validPositiveMoney(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : null;
+}
+
+function validOptionalText(value: string | null | undefined, maxLength: number): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string" || value.length > maxLength) {
+    throw new Error("catalog_quote_row_invalid");
+  }
+  return value;
+}
+
+export type CatalogPreorderVoucherSubmission = {
+  quoteId: string;
+  paymentType: "deposit" | "final";
+  amount: number;
+  paymentStatus: "under_review";
+};
+
+/** Uploads private proof and asks the same quotes authority to queue its review. */
+export async function submitCatalogPreorderVoucher(input: {
+  quoteId: string;
+  paymentType: "deposit" | "final";
+  file: File;
+  previousVoucherPath?: string | null;
+}): Promise<CatalogPreorderVoucherSubmission> {
+  requireCommercialQuoteMode();
+  if (
+    !input ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.quoteId) ||
+    (input.paymentType !== "deposit" && input.paymentType !== "final") ||
+    !(input.file instanceof File)
+  ) {
+    throw new Error("catalog_preorder_voucher_input_invalid");
+  }
+
+  const userId = await requireAuthenticatedUserId();
+  const voucherPath = await uploadPaymentVoucher({
+    file: input.file,
+    userId,
+    pathPrefix: `quotes:${input.quoteId}`,
+  });
+
+  let data: unknown;
+  try {
+    const result = await tonecos.rpc("submit_catalog_preorder_voucher_for_current_user", {
+      p_quote_id: input.quoteId.toLowerCase(),
+      p_payment_type: input.paymentType,
+      p_payment_voucher_path: voucherPath,
+    });
+    if (result.error) throw result.error;
+    data = result.data;
+  } catch (error) {
+    try {
+      await deletePaymentVoucher(voucherPath, userId);
+    } catch {
+      // Keep the database/upload error; failed uploads remain private and owner-scoped.
+    }
+    throw error;
+  }
+
+  const result = data && typeof data === "object" && !Array.isArray(data)
+    ? data as Record<string, unknown>
+    : null;
+  const amount = Number(result?.amount);
+  if (
+    result?.quote_id !== input.quoteId.toLowerCase() ||
+    result.payment_type !== input.paymentType ||
+    result.payment_status !== "under_review" ||
+    !Number.isFinite(amount) || amount <= 0
+  ) {
+    throw new Error("catalog_preorder_voucher_response_invalid");
+  }
+
+  if (input.previousVoucherPath && input.previousVoucherPath !== voucherPath) {
+    try {
+      await deletePaymentVoucher(input.previousVoucherPath, userId);
+    } catch {
+      // Replacing a proof succeeded; a stale private object does not undo that result.
+    }
+  }
+
+  return {
+    quoteId: input.quoteId.toLowerCase(),
+    paymentType: input.paymentType,
+    amount,
+    paymentStatus: "under_review",
+  };
 }
 
 /** Compatibility helper returning only the newest bounded rows. */

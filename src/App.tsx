@@ -615,6 +615,14 @@ function AppContent() {
                 }
               />
               <Route
+                path={ADMIN_ROUTES.preorders}
+                element={
+                  <RequireAdmin>
+                    <AdminPaymentHub />
+                  </RequireAdmin>
+                }
+              />
+              <Route
                 path={ADMIN_ROUTES.paymentDetails}
                 element={
                   <RequireAdmin>

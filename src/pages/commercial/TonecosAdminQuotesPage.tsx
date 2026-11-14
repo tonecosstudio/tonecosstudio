@@ -187,8 +187,13 @@ export default function TonecosAdminQuotesPage() {
     try {
       const amount = parseQuoteAmount(price[id] ?? "");
       const message = (responseMessage[id] ?? "").trim();
+      const quote = quotes.find((entry) => entry.id === id);
       if (!Number.isFinite(amount) || amount <= 0 || amount > 99999999.99) {
         throw new Error("admin_catalog_quote_response_invalid");
+      }
+      if (quote?.isPreorder && amount <= (quote.depositAmount ?? 50)) {
+        setError("O total da pré-venda precisa ser maior que a entrada fixa de R$50.");
+        return;
       }
       await answerCatalogQuoteRequest(id, amount, message);
       setPrice((current) => ({ ...current, [id]: "" }));
@@ -341,6 +346,11 @@ export default function TonecosAdminQuotesPage() {
                 <span className="border border-white/20 px-3 py-1 text-xs">
                   {statusLabels[quote.status] ?? "Em atualização"}
                 </span>
+                {quote.isPreorder && (
+                  <span className="border border-[hsl(var(--gold-accent)/0.4)] px-3 py-1 text-xs text-[hsl(var(--gold-accent))]">
+                    Pré-venda · sinal {brl.format(quote.depositAmount ?? 50)}
+                  </span>
+                )}
               </div>
               <p className="mb-1 text-sm text-white/80">
                 {quote.customerName || "Cliente"}
@@ -453,6 +463,11 @@ export default function TonecosAdminQuotesPage() {
                     <p className="text-sm font-semibold">
                       Valor informado: {brl.format(quote.quotedAmount)}
                     </p>
+                    {quote.isPreorder && (
+                      <p className="text-xs text-white/65">
+                        Entrada: {brl.format(quote.depositAmount ?? 50)} · saldo na finalização: {quote.remainingAmount === null ? "aguardando cálculo" : brl.format(quote.remainingAmount)}
+                      </p>
+                    )}
                     {quote.responseMessage && (
                       <>
                         <div className="border-l-2 border-[hsl(var(--gold-accent)/0.55)] pl-3">
@@ -496,8 +511,13 @@ export default function TonecosAdminQuotesPage() {
                     }}
                     className="grid gap-3 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)]"
                   >
+                    {quote.isPreorder && (
+                      <p className="text-xs leading-5 text-white/65 sm:col-span-2">
+                        Informe o total final da peça. O sistema reserva R$50 como entrada e calcula o restante automaticamente; o valor total deve ser superior a R$50.
+                      </p>
+                    )}
                     <label className="block space-y-2 text-sm">
-                      <span>Valor total (R$)</span>
+                      <span>{quote.isPreorder ? "Total da pré-venda (R$)" : "Valor total (R$)"}</span>
                       <input
                         aria-label={
                           "Valor do orçamento " + quote.id.slice(0, 8)
@@ -507,7 +527,7 @@ export default function TonecosAdminQuotesPage() {
                         inputMode="decimal"
                         required
                         maxLength={12}
-                        placeholder="Ex.: 1.249,90"
+                        placeholder={quote.isPreorder ? "Ex.: 300,00" : "Ex.: 1.249,90"}
                         value={price[quote.id] ?? ""}
                         onChange={(event) =>
                           setPrice((current) => ({

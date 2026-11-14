@@ -13,6 +13,14 @@ const exact: Record<string, string> = {
     "Confira os dados de contato da Minha Conta e as preferências deste orçamento.",
   catalog_quote_response_invalid:
     "Não foi possível registrar a solicitação. Tente novamente.",
+  catalog_quote_intent_invalid:
+    "Escolha se deseja solicitar apenas o orçamento ou uma pré-venda.",
+  catalog_preorder_voucher_input_invalid:
+    "Confira o tipo de pagamento e selecione um comprovante válido.",
+  catalog_preorder_voucher_path_invalid:
+    "Não foi possível validar o comprovante vinculado a esta pré-venda.",
+  catalog_preorder_voucher_response_invalid:
+    "O servidor não confirmou o envio do comprovante. Atualize o histórico para conferir o status.",
   catalog_quote_list_query_invalid:
     "Não foi possível carregar esta página de orçamentos.",
   catalog_quote_count_invalid:
@@ -63,6 +71,16 @@ const exact: Record<string, string> = {
     "Sua solicitação anterior acabou de ser enviada. Aguarde um minuto antes de enviar outra.",
   "Invalid quote response":
     "Informe um valor válido e uma mensagem ao cliente.",
+  "Pre-order total must exceed the R$50 deposit":
+    "O total da pré-venda precisa ser superior à entrada de R$50.",
+  "Pre-order deposit is not available":
+    "A entrada ainda não pode ser paga. Confira se o orçamento e as instruções foram enviados.",
+  "Final payment is not available":
+    "O pagamento do saldo ainda não foi liberado pela equipe.",
+  "Payment instructions are not available":
+    "A equipe ainda não enviou as instruções de pagamento desta etapa.",
+  "Invalid payment voucher path":
+    "Não foi possível validar o comprovante. Selecione o arquivo novamente.",
   "Invalid quote amount":
     "Informe um valor válido para o orçamento.",
   "Invalid quote status":

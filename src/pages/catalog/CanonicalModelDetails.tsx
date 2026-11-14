@@ -78,6 +78,9 @@ function catalogReturnPath(state: unknown): string {
     const value = values[0]?.trim();
     if (value) filters.set(key, value);
   }
+  const intentValues = source.getAll("tipo");
+  if (intentValues.length > 1) return base;
+  if (intentValues[0] === "pre-venda") filters.set("tipo", "pre-venda");
   const query = filters.get("q");
   const queryLength = query ? Array.from(query).length : 0;
   if (query && (queryLength < 3 || queryLength > 80)) return base;
@@ -91,6 +94,14 @@ function catalogReturnPath(state: unknown): string {
     return base;
   const search = filters.toString();
   return search ? `${base}?${search}` : base;
+}
+
+function shouldRequestPreorder(state: unknown): boolean {
+  if (!state || typeof state !== "object" || Array.isArray(state)) return false;
+  const raw = (state as Record<string, unknown>).catalogReturnSearch;
+  if (typeof raw !== "string" || raw.length > 1024) return false;
+  const params = new URLSearchParams(raw);
+  return params.getAll("tipo").length === 1 && params.get("tipo") === "pre-venda";
 }
 
 /** Use only a bounded same-page snapshot for adjacent-model links. */
@@ -149,6 +160,8 @@ export default function CanonicalModelDetails() {
   const { id: slug } = useParams<{ id: string }>();
   const location = useLocation();
   const catalogReturnTo = catalogReturnPath(location.state);
+  const quoteRequestPath =
+    PUBLIC_ROUTES.quoteRequest + (shouldRequestPreorder(location.state) ? "?tipo=pre-venda" : "");
   const adjacentModels = adjacentCatalogModels(
     location.state,
     slug,
@@ -846,7 +859,7 @@ export default function CanonicalModelDetails() {
                           </button>
                         ) : (
                           <Link
-                            to={PUBLIC_ROUTES.quoteRequest}
+                            to={quoteRequestPath}
                             onClick={() =>
                               setSelectedModels((current) =>
                                 current.some((entry) => entry.id === model.id)

@@ -113,6 +113,30 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     );
   });
 
+  it("starts a R$50 pre-sale request inside the canonical quote relation", async () => {
+    mocks.rpc.mockResolvedValue({ data: QUOTE, error: null });
+    await expect(
+      submitCatalogQuoteRequest(
+        USER,
+        [{ slug: "naruto", quantity: 1 }],
+        "Preferência por acabamento pintado",
+        { scale: "1/10", finishing: "pintado" },
+        "preorder",
+      ),
+    ).resolves.toBe(QUOTE);
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "submit_catalog_preorder_request",
+      {
+        p_models: [{ slug: "naruto", quantity: 1 }],
+        p_notes: "Preferência por acabamento pintado",
+        p_whatsapp: undefined,
+        p_postal_code: undefined,
+        p_scale: "1/10",
+        p_finishing: "pintado",
+      },
+    );
+  });
+
   it("rejects invalid quote contact and finishing before network or login I/O", async () => {
     for (const preferences of [
       { whatsapp: "not-a-phone" },

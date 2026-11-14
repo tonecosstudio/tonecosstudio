@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fetchAdminPreordersStats,
   registerAdminPreorderManualPayment,
+  rejectAdminPreorderVoucher,
   releaseAdminPreorderFinalPayment,
 } from "./admin-preorders-service";
 
@@ -43,6 +44,13 @@ describe("admin-preorders-service", () => {
           ready_for_final_payment: false,
         },
         {
+          payment_status: "under_review",
+          deposit_amount: 50,
+          remaining_amount: 150,
+          total_amount: 200,
+          ready_for_final_payment: false,
+        },
+        {
           payment_status: "deposit_paid",
           deposit_amount: 50,
           remaining_amount: 150,
@@ -51,24 +59,34 @@ describe("admin-preorders-service", () => {
         },
         {
           payment_status: "fully_paid",
+          payment_voucher_type: null,
           deposit_amount: 60,
           remaining_amount: 240,
           total_amount: 300,
           ready_for_final_payment: false,
+        },
+        {
+          payment_status: "under_review",
+          payment_voucher_type: "final",
+          deposit_amount: 50,
+          remaining_amount: 150,
+          total_amount: 200,
+          ready_for_final_payment: true,
         },
       ],
       error: null,
     });
 
     await expect(fetchAdminPreordersStats()).resolves.toEqual({
-      total: 3,
+      total: 5,
       pending_deposit: 1,
+      pending_review: 2,
       in_production: 1,
       ready_for_payment: 0,
       completed: 1,
-      total_deposits: 110,
-      total_remaining: 150,
-      total_revenue: 350,
+      total_deposits: 160,
+      total_remaining: 300,
+      total_revenue: 400,
     });
   });
 
@@ -120,6 +138,18 @@ describe("admin-preorders-service", () => {
       }),
     ).rejects.toThrow(
       "Preorder manual payment registration returned an invalid resource id",
+    );
+  });
+
+  it("recusa comprovantes apenas com motivo e confirmação do RPC administrativo", async () => {
+    mocks.callAdminRpc.mockResolvedValueOnce(QUOTE_ID);
+    await expect(rejectAdminPreorderVoucher({
+      quoteId: QUOTE_ID,
+      rejectionReason: "Comprovante ilegível",
+    })).resolves.toBeUndefined();
+    expect(mocks.callAdminRpc).toHaveBeenCalledExactlyOnceWith(
+      "admin_reject_preorder_payment_voucher",
+      { p_quote_id: QUOTE_ID, p_rejection_reason: "Comprovante ilegível" },
     );
   });
 });

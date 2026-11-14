@@ -53,6 +53,7 @@ const originalAdminSubpages = [
   { parent: "production-dashboard", path: ADMIN_ROUTES.productionAnalytics, label: "Análises de produção" },
   { parent: "production-dashboard", path: ADMIN_ROUTES.productionChoices, label: "Escolhas de produção" },
   { parent: "financial-hub", path: ADMIN_ROUTES.financialCollections, label: "Financeiro de coleções" },
+  { parent: "payments", path: ADMIN_ROUTES.preorders, label: "Pré-vendas" },
   { parent: "payments", path: ADMIN_ROUTES.paymentMethods, label: "Métodos de pagamento" },
   { parent: "payments", path: ADMIN_ROUTES.paymentKeys, label: "Chaves de pagamento" },
   { parent: "payments", path: ADMIN_ROUTES.paymentCalculator, label: "Calculadora financeira" },
@@ -977,9 +978,8 @@ export default function TonecosAdminHomePage() {
               </h3>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-white/65">
                 Valores extraídos das respostas a orçamentos, não de vendas. Não
-                existe integração de recebimentos nesta implantação; valores
-                informados não são faturamento, caixa, pagamentos aprovados nem
-                receita realizada.
+                representam caixa ou receita realizada. Os pagamentos de pré-venda
+                são acompanhados separadamente no fluxo de pedidos e comprovantes.
               </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 <div className="border border-white/15 p-5">
@@ -1027,6 +1027,9 @@ export default function TonecosAdminHomePage() {
                   to={TONECOS_COMMERCIAL_ROUTES.adminSubscriptions}
                 >
                   Revisar assinaturas
+                </Link>
+                <Link className={secondaryClass} to={ADMIN_ROUTES.preorders}>
+                  Gerenciar pré-vendas
                 </Link>
               </div>
             </section>

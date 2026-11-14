@@ -129,6 +129,12 @@ export const adminNavigationConfig: NavigationSection[] = [
         icon: 'CreditCard',
         badge: 'Central',
       },
+      {
+        id: 'preorders',
+        label: 'Pré-vendas',
+        path: ADMIN_ROUTES.preorders,
+        icon: 'Package',
+      },
     ],
   },
   {

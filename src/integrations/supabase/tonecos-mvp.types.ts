@@ -115,12 +115,25 @@ export type Database = {
           catalog_requested_at: string
           created_at: string
           customer_whatsapp: string | null
+          deposit_amount: number | null
           deadline: string | null
           desired_scale: string
           finishing: string
+          final_payment_notified_at: string | null
           id: string
+          is_preorder: boolean | null
           notes: string | null
           postal_code: string | null
+          payment_instructions: string | null
+          payment_link: string | null
+          payment_link_sent_at: string | null
+          payment_status: string | null
+          payment_voucher_path: string | null
+          payment_voucher_rejection_reason: string | null
+          payment_voucher_type: string | null
+          pix_key: string | null
+          ready_for_final_payment: boolean
+          remaining_amount: number | null
           requested_catalog_models: Json
           status: string
           total_amount: number | null
@@ -132,12 +145,25 @@ export type Database = {
           catalog_requested_at?: string
           created_at?: string
           customer_whatsapp?: string | null
+          deposit_amount?: number | null
           deadline?: string | null
           desired_scale?: string
           finishing?: string
+          final_payment_notified_at?: string | null
           id?: string
+          is_preorder?: boolean | null
           notes?: string | null
           postal_code?: string | null
+          payment_instructions?: string | null
+          payment_link?: string | null
+          payment_link_sent_at?: string | null
+          payment_status?: string | null
+          payment_voucher_path?: string | null
+          payment_voucher_rejection_reason?: string | null
+          payment_voucher_type?: string | null
+          pix_key?: string | null
+          ready_for_final_payment?: boolean
+          remaining_amount?: number | null
           requested_catalog_models: Json
           status?: string
           total_amount?: number | null
@@ -149,12 +175,25 @@ export type Database = {
           catalog_requested_at?: string
           created_at?: string
           customer_whatsapp?: string | null
+          deposit_amount?: number | null
           deadline?: string | null
           desired_scale?: string
           finishing?: string
+          final_payment_notified_at?: string | null
           id?: string
+          is_preorder?: boolean | null
           notes?: string | null
           postal_code?: string | null
+          payment_instructions?: string | null
+          payment_link?: string | null
+          payment_link_sent_at?: string | null
+          payment_status?: string | null
+          payment_voucher_path?: string | null
+          payment_voucher_rejection_reason?: string | null
+          payment_voucher_type?: string | null
+          pix_key?: string | null
+          ready_for_final_payment?: boolean
+          remaining_amount?: number | null
           requested_catalog_models?: Json
           status?: string
           total_amount?: number | null
@@ -234,6 +273,10 @@ export type Database = {
         Args: { p_amount: number; p_message?: string; p_quote_id: string }
         Returns: string
       }
+      admin_reject_preorder_payment_voucher: {
+        Args: { p_quote_id: string; p_rejection_reason: string }
+        Returns: string
+      }
       find_tonecos_coin_recipient: { Args: { p_email: string }; Returns: Json }
       get_my_tonecos_coin_balance: { Args: never; Returns: Json }
       is_tonecos_admin: { Args: never; Returns: boolean }
@@ -247,6 +290,21 @@ export type Database = {
           p_whatsapp?: string
         }
         Returns: string
+      }
+      submit_catalog_preorder_request: {
+        Args: {
+          p_finishing?: string
+          p_models: Json
+          p_notes?: string
+          p_postal_code?: string
+          p_scale?: string
+          p_whatsapp?: string
+        }
+        Returns: string
+      }
+      submit_catalog_preorder_voucher_for_current_user: {
+        Args: { p_payment_type: string; p_payment_voucher_path: string; p_quote_id: string }
+        Returns: Json
       }
       tonart_admin_profiles_directory: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }

@@ -37,6 +37,7 @@ const mocks = vi.hoisted(() => {
     quoteItems: vi.fn(),
     submit: vi.fn(),
     listMine: vi.fn(),
+    submitVoucher: vi.fn(),
     listAdmin: vi.fn(),
     answerAdmin: vi.fn(),
     changeStatus: vi.fn(),
@@ -62,7 +63,13 @@ vi.mock("@/services/auth/tonecos-admin-access", () => ({
 vi.mock("@/services/customer/catalog-quote-service", () => ({
   quoteItemsFromSelection: mocks.quoteItems,
   submitCatalogQuoteRequest: mocks.submit,
+  submitCatalogPreorderVoucher: mocks.submitVoucher,
   loadMyCatalogQuotePage: mocks.listMine,
+}));
+vi.mock("@/services/payments/payment-voucher-storage-service", () => ({
+  ALLOWED_PAYMENT_VOUCHER_TYPES: ["image/jpeg", "image/png", "application/pdf"],
+  MAX_PAYMENT_VOUCHER_SIZE: 5 * 1024 * 1024,
+  validatePaymentVoucher: vi.fn(),
 }));
 vi.mock("@/services/admin/config/catalog-quote-admin-service", () => ({
   loadAdminCatalogQuotePage: mocks.listAdmin,
@@ -260,6 +267,30 @@ describe("TONART commercial screens: account → request → history → respons
         [{ slug: "naruto", quantity: 1 }],
         "",
         { whatsapp: "71999999999", postalCode: "", scale: "a definir", finishing: "a definir" },
+        "quote",
+      ),
+    );
+  });
+
+  it("routes a selected catalog model into the R$50 pre-sale request", async () => {
+    mocks.submit.mockResolvedValue(QUOTE);
+    renderApp("/solicitar-orcamento?tipo=pre-venda", true);
+    const submit = await screen.findByRole("button", { name: "Solicitar pré-venda" });
+    expect(screen.getByRole("radio", { name: /Quero fazer pré-venda/ })).toBeChecked();
+    expect(screen.getByText(/R\$50 só será solicitado após confirmação/)).toBeInTheDocument();
+    fireEvent.click(submit);
+    await waitFor(() =>
+      expect(mocks.submit).toHaveBeenCalledWith(
+        USER,
+        [{ slug: "naruto", quantity: 1 }],
+        "",
+        {
+          whatsapp: "",
+          postalCode: "",
+          scale: "a definir",
+          finishing: "a definir",
+        },
+        "preorder",
       ),
     );
   });
@@ -289,6 +320,7 @@ describe("TONART commercial screens: account → request → history → respons
           scale: "a definir",
           finishing: "a definir",
         },
+        "quote",
       ),
     );
     expect(screen.queryByLabelText("CEP (opcional)")).not.toBeInTheDocument();
@@ -364,6 +396,7 @@ describe("TONART commercial screens: account → request → history → respons
           scale: "a definir",
           finishing: "a definir",
         },
+        "quote",
       ),
     );
     expect(
@@ -532,6 +565,57 @@ describe("TONART commercial screens: account → request → history → respons
     expect(
       screen.queryByRole("button", { name: "Tentar novamente" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("lets a customer upload the R$50 pre-sale voucher from their quote history", async () => {
+    const preorder = {
+      id: QUOTE,
+      status: "answered",
+      createdAt: "2026-11-14T00:00:00Z",
+      deadline: null,
+      notes: null,
+      items: [{ slug: "naruto", quantity: 1 }],
+      quotedAmount: 300,
+      responseMessage: "Total R$300; sinal de R$50 e saldo na finalização.",
+      whatsapp: null,
+      postalCode: null,
+      scale: "1/10",
+      finishing: "pintado",
+      isPreorder: true,
+      depositAmount: 50,
+      remainingAmount: 250,
+      paymentStatus: "pending",
+      paymentLink: null,
+      pixKey: "pix@tonart.example",
+      paymentInstructions: "Pague R$50 e envie o comprovante.",
+      paymentLinkSentAt: "2026-11-14T00:10:00Z",
+      finalPaymentNotifiedAt: null,
+      readyForFinalPayment: false,
+      paymentVoucherPath: null,
+      paymentVoucherType: null,
+      paymentVoucherRejectionReason: null,
+    };
+    mocks.listMine.mockResolvedValue({ total: 1, limit: 20, offset: 0, rows: [preorder] });
+    mocks.submitVoucher.mockResolvedValue({
+      quoteId: QUOTE,
+      paymentType: "deposit",
+      amount: 50,
+      paymentStatus: "under_review",
+    });
+    renderApp("/meus-orcamentos");
+    expect(await screen.findAllByText("R$ 300,00")).toHaveLength(2);
+    expect(screen.getByText("pix@tonart.example")).toBeInTheDocument();
+    const file = new File(["proof"], "pix.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("Comprovante de pagamento"), {
+      target: { files: [file] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar comprovante" }));
+    await waitFor(() => expect(mocks.submitVoucher).toHaveBeenCalledWith({
+      quoteId: QUOTE,
+      paymentType: "deposit",
+      file,
+      previousVoucherPath: null,
+    }));
   });
 
   it("refreshes customer quotes after an administrator responds", async () => {

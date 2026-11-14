@@ -46,6 +46,9 @@ const row = {
   postalCode: null,
   scale: "a definir",
   finishing: "a definir",
+  isPreorder: false,
+  depositAmount: null,
+  remainingAmount: null,
 };
 
 describe("TONART admin quote directory", () => {

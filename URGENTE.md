@@ -1,5 +1,18 @@
 # TONART Studio — checkpoint operacional
 
+## Checkpoint 14/11/2026 — pré-venda ligada ao fluxo comercial
+
+- **Base:** `main@b4a9c8d7`, commits concorrentes da Home e seus testes foram preservados e integrados neste ciclo.
+- **Home comercial:** Black Friday, entrada de R$50 e carteira Coins ficam disponíveis quando o ambiente comercial está habilitado; a home pública somente leitura continua sem ofertas ou cobrança.
+- **Implementado:** pré-venda usa a solicitação canônica de orçamento e o mesmo registro `quotes`. Entrada fixa de R$50, saldo calculado após a resposta administrativa, instruções PIX/link, upload privado de comprovante pelo cliente, aprovação/recusa administrativa com motivo e reenvio no mesmo pedido. Os estados de pagamento e os valores são conferidos no banco; nenhuma aprovação é simulada no cliente.
+- **Administração:** a central existente abriu as rotas de pagamentos no shell comercial e agora inclui a página existente de chaves e a aba de pré-vendas. Navegação direta, filas de revisão, estados de carregamento/erro, métricas e apresentação mobile foram ajustados.
+- **Comunicação de cobrança:** a tela salva PIX/link e disponibiliza as instruções em Meus orçamentos; o texto agora esclarece que não há envio automático de e-mail/WhatsApp e orienta o comprovante corretamente.
+- **Banco e segurança:** migração local `20261114110000_tonart_preorder_quote_payment_flow.sql` acrescenta campos e RPCs à estrutura `quotes`/`quote_payments` existente e amplia as políticas do bucket privado `payment-vouchers`. **Não aplicada remotamente; nenhum recurso Supabase/Cloudflare de produção foi alterado.** Não foi possível provar a integração Supabase real neste ciclo.
+- **Validação Windows:** 6 arquivos focados, 85 testes passaram; `npm run typecheck`, ESLint dos arquivos alterados e `git diff --check` passaram. Fixtures e testes com mocks não comprovam E2E real nem a aplicação da migração.
+- **GitHub Actions:** segue o bloqueio externo previamente observado: jobs falham antes dos steps com `runner_id=0`; sem workflow paralelo.
+- **NEXT_ACTION:** sincronizar este commit em `origin/main`; depois aplicar a migração somente em staging autorizado e homologar o percurso com sessões reais de cliente e administração. Produção permanece sem publicação.
+- **DO_NOT_REPEAT:** não criar cadastro, tabela, serviço, RPC ou workflow duplicados; não tratar mocks como Supabase real; não aplicar migração nem publicar em produção sem o gate específico.
+
 ## Checkpoint 14/11/2026 — integrações comerciais na main
 
 - **Base e integração:** `main@f71a78ac` incorporada via rebase; implementação em `348b9081 feat(commercial): complete account and subscription flows`. O teste adicional da Home e este checkpoint ainda serão commitados e sincronizados.

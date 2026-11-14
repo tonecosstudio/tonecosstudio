@@ -82,10 +82,12 @@ export default function PublicCatalogContact() {
             <div className="flex flex-col items-center gap-3">
               {quotesAvailable && subject !== "coins" ? (
                 <Link
-                  to={PUBLIC_ROUTES.quoteRequest}
+                  to={subject === "pre-venda"
+                    ? PUBLIC_ROUTES.catalogModels + "?tipo=pre-venda"
+                    : PUBLIC_ROUTES.quoteRequest}
                   className="inline-flex min-h-11 items-center justify-center bg-[hsl(var(--gold-accent))] px-5 font-mono text-xs font-semibold uppercase tracking-[0.1em] text-black transition-colors hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                 >
-                  SOLICITAR ORÇAMENTO
+                  {subject === "pre-venda" ? "ESCOLHER MODELOS" : "SOLICITAR ORÇAMENTO"}
                 </Link>
               ) : null}
               {emailHref ? (

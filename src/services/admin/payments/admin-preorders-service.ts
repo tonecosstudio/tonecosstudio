@@ -4,6 +4,8 @@ import {
   requireAdminRpcUuid,
 } from "@/services/admin/rpc/admin-rpc-results";
 import { adminPaymentsGateway } from "@/services/admin/payments/admin-payments-gateway";
+import { createStorageSignedUrl } from "@/services/supabase/storage-client";
+import { requireTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
 
 export interface PreorderQuote {
   id: string;
@@ -15,11 +17,16 @@ export interface PreorderQuote {
   total_amount: number | null;
   created_at: string;
   profiles?: { full_name?: string | null; email?: string | null };
+  payment_voucher_path: string | null;
+  payment_voucher_type: "deposit" | "final" | null;
+  payment_voucher_rejection_reason: string | null;
+  payment_voucher_url: string | null;
 }
 
 export interface AdminPreordersStats {
   total: number;
   pending_deposit: number;
+  pending_review: number;
   in_production: number;
   ready_for_payment: number;
   completed: number;
@@ -33,18 +40,31 @@ function positiveAmountOrZero(value: number | null | undefined): number {
 }
 
 export async function fetchAdminPreorders(): Promise<PreorderQuote[]> {
+  await requireTonecosAdminAccess();
   const { data, error } = await adminPaymentsGateway
     .from("quotes")
     .select(
-      "id,user_id,payment_status,ready_for_final_payment,deposit_amount,remaining_amount,total_amount,created_at",
+      "id,user_id,payment_status,ready_for_final_payment,deposit_amount,remaining_amount,total_amount,created_at,payment_voucher_path,payment_voucher_type,payment_voucher_rejection_reason",
     )
     .eq("is_preorder", true)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
 
+  const rows = data ?? [];
+  const voucherUrls = await Promise.all(rows.map(async (quote) => {
+    if (!quote.payment_voucher_path) return null;
+    const { data: signedData, error: signedError } = await createStorageSignedUrl(
+      "payment-vouchers",
+      quote.payment_voucher_path,
+      60 * 60,
+    );
+    if (signedError) throw new Error(`Falha ao abrir comprovante da pré-venda ${quote.id}.`);
+    return signedData?.signedUrl ?? null;
+  }));
+
   return Promise.all(
-    (data ?? []).map(async (quote) => {
+    rows.map(async (quote, index) => {
       const { data: profileData, error: profileError } = await adminPaymentsGateway
         .from("profiles")
         .select("full_name, email")
@@ -60,6 +80,13 @@ export async function fetchAdminPreorders(): Promise<PreorderQuote[]> {
       return {
         ...quote,
         profiles: profileData ?? { full_name: "N/A", email: "N/A" },
+        payment_voucher_path: quote.payment_voucher_path ?? null,
+        payment_voucher_type:
+          quote.payment_voucher_type === "deposit" || quote.payment_voucher_type === "final"
+            ? quote.payment_voucher_type
+            : null,
+        payment_voucher_rejection_reason: quote.payment_voucher_rejection_reason ?? null,
+        payment_voucher_url: voucherUrls[index] ?? null,
       };
     }),
   );
@@ -69,7 +96,7 @@ export async function fetchAdminPreordersStats(): Promise<AdminPreordersStats> {
   const { data, error } = await adminPaymentsGateway
     .from("quotes")
     .select(
-      "payment_status,ready_for_final_payment,deposit_amount,remaining_amount,total_amount",
+      "payment_status,payment_voucher_type,ready_for_final_payment,deposit_amount,remaining_amount,total_amount",
     )
     .eq("is_preorder", true);
 
@@ -80,14 +107,21 @@ export async function fetchAdminPreordersStats(): Promise<AdminPreordersStats> {
   const quotes = data ?? [];
 
   const totalDepositsReceived = quotes.reduce((total, quote) => {
-    if (quote.payment_status !== "deposit_paid" && quote.payment_status !== "fully_paid") {
+    const depositWasPaid =
+      quote.payment_status === "deposit_paid" ||
+      quote.payment_status === "fully_paid" ||
+      (quote.payment_status === "under_review" && quote.payment_voucher_type === "final");
+    if (!depositWasPaid) {
       return total;
     }
     return total + positiveAmountOrZero(quote.deposit_amount);
   }, 0);
 
   const totalOutstandingFinalBalance = quotes.reduce((total, quote) => {
-    if (quote.payment_status !== "deposit_paid") return total;
+    const balanceIsOutstanding =
+      quote.payment_status === "deposit_paid" ||
+      (quote.payment_status === "under_review" && quote.payment_voucher_type === "final");
+    if (!balanceIsOutstanding) return total;
     return total + positiveAmountOrZero(quote.remaining_amount);
   }, 0);
 
@@ -98,12 +132,16 @@ export async function fetchAdminPreordersStats(): Promise<AdminPreordersStats> {
     if (quote.payment_status === "deposit_paid") {
       return total + positiveAmountOrZero(quote.deposit_amount);
     }
+    if (quote.payment_status === "under_review" && quote.payment_voucher_type === "final") {
+      return total + positiveAmountOrZero(quote.deposit_amount);
+    }
     return total;
   }, 0);
 
   return {
     total: quotes.length,
     pending_deposit: quotes.filter((quote) => quote.payment_status === "pending").length,
+    pending_review: quotes.filter((quote) => quote.payment_status === "under_review").length,
     in_production: quotes.filter(
       (quote) => quote.payment_status === "deposit_paid" && !quote.ready_for_final_payment,
     ).length,
@@ -141,4 +179,23 @@ export async function registerAdminPreorderManualPayment(
   });
 
   requireAdminRpcUuid(result, "Preorder manual payment registration");
+}
+
+export async function rejectAdminPreorderVoucher(input: {
+  quoteId: string;
+  rejectionReason: string;
+}): Promise<void> {
+  const reason = input.rejectionReason.trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.quoteId)) {
+    throw new Error("Pré-venda inválida.");
+  }
+  if (!reason || reason.length > 500) {
+    throw new Error("Informe um motivo de rejeição de até 500 caracteres.");
+  }
+
+  const result = await callAdminRpc<unknown>("admin_reject_preorder_payment_voucher", {
+    p_quote_id: input.quoteId.toLowerCase(),
+    p_rejection_reason: reason,
+  });
+  requireAdminRpcMatchingId(result, input.quoteId, "Preorder voucher rejection");
 }

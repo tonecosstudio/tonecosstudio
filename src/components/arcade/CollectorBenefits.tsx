@@ -28,7 +28,7 @@ export function CollectorBenefits({ coinsAvailable }: { coinsAvailable: boolean 
             </div>
           </div>
           <div className="mt-7 flex flex-wrap items-center gap-4">
-            <Link to={PUBLIC_ROUTES.contact + "?assunto=pre-venda"} className={"inline-flex min-h-12 items-center justify-center gap-4 bg-[hsl(var(--gold-accent))] px-6 py-3 text-xs font-semibold uppercase tracking-wider text-black hover:brightness-110 " + focus}>Solicitar pré-venda <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link to={PUBLIC_ROUTES.catalogModels + "?tipo=pre-venda"} className={"inline-flex min-h-12 items-center justify-center gap-4 bg-[hsl(var(--gold-accent))] px-6 py-3 text-xs font-semibold uppercase tracking-wider text-black hover:brightness-110 " + focus}>Escolher modelos <ArrowRight size={16} aria-hidden="true" /></Link>
             <span className="text-xs text-[hsl(0,0%,60%)]">Valor e prazo confirmados no orçamento.</span>
           </div>
           <details className="mt-6 border-t border-[hsl(0,0%,15%)] pt-2">
@@ -37,7 +37,7 @@ export function CollectorBenefits({ coinsAvailable }: { coinsAvailable: boolean 
               <p className="leading-6">Em uma peça de R$300, são R$50 no pedido e R$250 na finalização. A entrada faz parte do preço; não é uma taxa extra.</p>
               <label htmlFor="preorder-value" className="flex flex-wrap items-center justify-between gap-3"><span>Valor da peça (R$)</span><input id="preorder-value" type="number" inputMode="decimal" min="50" max="1000000" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} aria-invalid={!valid} aria-describedby="preorder-result" className={"min-h-11 w-32 border border-[hsl(0,0%,25%)] bg-[hsl(0,0%,7%)] px-3 text-base text-white " + focus} /></label>
               <p id="preorder-result" aria-live="polite" className="border-l-2 border-[hsl(var(--gold-accent))] pl-3">{valid ? "R$50 de entrada + " + currency.format(Math.round((value - 50) * 100) / 100) + " na finalização." : "Informe um valor entre R$50 e R$1.000.000."}</p>
-              <p className="text-xs leading-6 text-[hsl(0,0%,60%)]">Simulação ilustrativa. A equipe confirma a pré-venda após o aceite do orçamento e a confirmação da entrada.</p>
+              <p className="text-xs leading-6 text-[hsl(0,0%,60%)]">Após o orçamento, você confirma o pedido, paga R$50 e envia o comprovante. A equipe libera a produção após a aprovação.</p>
             </div>
           </details>
         </article>

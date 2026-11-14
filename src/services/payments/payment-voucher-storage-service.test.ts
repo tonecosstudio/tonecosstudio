@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { uploadPaymentVoucher } from "./payment-voucher-storage-service";
+import { deletePaymentVoucher, uploadPaymentVoucher } from "./payment-voucher-storage-service";
 
 const mocks = vi.hoisted(() => ({
   upload: vi.fn(),
+  remove: vi.fn(),
   assertCurrentUserId: vi.fn(),
   requireAuthenticatedUserId: vi.fn(),
 }));
@@ -13,6 +14,7 @@ vi.mock("@/services/auth/current-user", () => ({
 }));
 vi.mock("@/services/supabase/storage-client", () => ({
   uploadStorageFile: mocks.upload,
+  removeStorageFiles: mocks.remove,
 }));
 vi.mock("@/lib/security/input-sanitizer", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/security/input-sanitizer")>()),
@@ -20,11 +22,14 @@ vi.mock("@/lib/security/input-sanitizer", async (importOriginal) => ({
 }));
 
 const voucher = () => new File(["proof"], "receipt.png", { type: "image/png" });
+const USER = "11111111-1111-4111-8111-111111111111";
+const QUOTE = "22222222-2222-4222-8222-222222222222";
 
 describe("private subscription voucher storage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.upload.mockResolvedValue({ error: null });
+    mocks.remove.mockResolvedValue({ error: null });
     mocks.assertCurrentUserId.mockResolvedValue("user-1");
     mocks.requireAuthenticatedUserId.mockResolvedValue("user-1");
   });
@@ -39,6 +44,23 @@ describe("private subscription voucher storage", () => {
       { upsert: false, contentType: "image/png" },
     );
     expect(path).not.toContain("https://");
+  });
+
+  it("stores a quote voucher under the current owner and canonical quote id", async () => {
+    const file = voucher();
+    const path = await uploadPaymentVoucher({ file, pathPrefix: `quotes:${QUOTE}` });
+    expect(path).toMatch(/^quotes\/user-1\/22222222-2222-4222-8222-222222222222\/\d+-token123\.png$/);
+    expect(mocks.upload).toHaveBeenCalledExactlyOnceWith(
+      "payment-vouchers", path, file,
+      { upsert: false, contentType: "image/png" },
+    );
+  });
+
+  it("removes an obsolete quote voucher only within the authenticated owner's path", async () => {
+    const path = `quotes/${USER}/${QUOTE}/1788130800000-a1b2c3d4e5f60708.png`;
+    mocks.assertCurrentUserId.mockResolvedValueOnce(USER);
+    await deletePaymentVoucher(path, USER);
+    expect(mocks.remove).toHaveBeenCalledExactlyOnceWith("payment-vouchers", [path]);
   });
 
   it("requires the requested identity to match the authenticated identity", async () => {

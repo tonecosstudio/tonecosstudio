@@ -27,6 +27,9 @@ export type AdminCatalogQuote = {
   postalCode: string | null;
   scale: string;
   finishing: string;
+  isPreorder: boolean;
+  depositAmount: number | null;
+  remainingAmount: number | null;
 };
 
 export type AdminCatalogQuotePage = {
@@ -107,7 +110,10 @@ function decodeQuote(value: unknown): AdminCatalogQuote {
     !(row.whatsapp === null || typeof row.whatsapp === "string") ||
     !(row.postalCode === null || typeof row.postalCode === "string") ||
     typeof row.scale !== "string" ||
-    typeof row.finishing !== "string"
+    typeof row.finishing !== "string" ||
+    !(row.isPreorder === undefined || typeof row.isPreorder === "boolean") ||
+    !(row.depositAmount === undefined || row.depositAmount === null || (typeof row.depositAmount === "number" && Number.isFinite(row.depositAmount) && row.depositAmount > 0)) ||
+    !(row.remainingAmount === undefined || row.remainingAmount === null || (typeof row.remainingAmount === "number" && Number.isFinite(row.remainingAmount) && row.remainingAmount > 0))
   ) {
     throw new Error("admin_catalog_quote_row_invalid");
   }
@@ -127,6 +133,9 @@ function decodeQuote(value: unknown): AdminCatalogQuote {
     postalCode: row.postalCode as string | null,
     scale: row.scale,
     finishing: row.finishing,
+    isPreorder: row.isPreorder === true,
+    depositAmount: (row.depositAmount ?? null) as number | null,
+    remainingAmount: (row.remainingAmount ?? null) as number | null,
   };
 }
 
