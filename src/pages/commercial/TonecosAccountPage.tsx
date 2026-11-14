@@ -305,7 +305,7 @@ export default function TonecosAccountPage() {
       title="Minha conta"
       intro="Acesse seus dados e acompanhe suas solicitações de orçamento. Não há cobrança online nesta etapa."
     >
-      <div className="mx-auto max-w-xl">
+      <div className={identity ? "mx-auto w-full max-w-5xl" : "mx-auto max-w-xl"}>
         {error && (
           <p
             role="alert"
@@ -339,11 +339,33 @@ export default function TonecosAccountPage() {
         ) : identity === undefined ? (
           <p role="status">Verificando sessão...</p>
         ) : identity ? (
-          <div className={panelClass}>
-            <TonecosCustomerNavigation />
-            <p className="mb-4 text-sm text-white/60">
-              Conectado como {identity.email ?? "cliente"}
-            </p>
+          <div className="grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start">
+            <aside
+              className={panelClass + " lg:sticky lg:top-24"}
+              aria-label="Navegação lateral da conta"
+            >
+              <TonecosCustomerNavigation layout="sidebar" />
+            </aside>
+            <div className="min-w-0 space-y-6">
+              <section
+                className={panelClass}
+                aria-labelledby="account-personal-title"
+              >
+                <div className="mb-6 border-b border-white/15 pb-5">
+                  <h2
+                    id="account-personal-title"
+                    className="text-xl font-semibold tracking-tight"
+                  >
+                    Dados da conta
+                  </h2>
+                  <p className="mt-2 text-sm text-white/60">
+                    Atualize seus contatos uma vez. Eles também serão usados nas
+                    solicitações de orçamento.
+                  </p>
+                  <p className="mt-3 break-all text-xs text-white/50">
+                    Conectado como {identity.email ?? "cliente"}
+                  </p>
+                </div>
             {adminCheckError && (
               <div role="status" className="mb-5 border border-white/20 p-4">
                 <p className="mb-3 text-sm text-white/70">
@@ -383,7 +405,7 @@ export default function TonecosAccountPage() {
                 onSubmit={(event) => {
                   void saveProfile(event);
                 }}
-                className="space-y-5"
+                className="grid gap-5 sm:grid-cols-2"
               >
                 <label className="block space-y-2 text-sm">
                   <span>Nome completo</span>
@@ -392,9 +414,16 @@ export default function TonecosAccountPage() {
                     required
                     maxLength={160}
                     autoComplete="name"
+                    placeholder="Informe seu nome completo"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                   />
+                  {!name.trim() && (
+                    <span className="block text-xs leading-relaxed text-[hsl(var(--gold-accent))]">
+                      Nome ainda não cadastrado. Complete este campo para
+                      solicitar orçamentos.
+                    </span>
+                  )}
                 </label>
                 <label className="block space-y-2 text-sm">
                   <span>Telefone (opcional)</span>
@@ -402,17 +431,22 @@ export default function TonecosAccountPage() {
                     className={fieldClass}
                     maxLength={40}
                     autoComplete="tel"
+                    type="tel"
+                    placeholder="Telefone ou WhatsApp"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                   />
                 </label>
-                <button type="submit" disabled={busy} className={actionClass}>
-                  Salvar dados
-                </button>
+                <div className="sm:col-span-2">
+                  <button type="submit" disabled={busy} className={actionClass}>
+                    Salvar dados
+                  </button>
+                </div>
               </form>
             ) : null}
+              </section>
             <section
-              className="mt-7 border-t border-white/15 pt-6"
+              className={panelClass}
               aria-labelledby="account-security-title"
             >
               <h2
@@ -469,7 +503,7 @@ export default function TonecosAccountPage() {
                 </button>
               </form>
             </section>
-            <div className="mt-7 flex flex-wrap gap-3 border-t border-white/15 pt-6">
+            <div className={panelClass + " flex flex-wrap gap-3"}>
               {import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true" && (
                 <Link
                   className={secondaryClass}
@@ -516,6 +550,7 @@ export default function TonecosAccountPage() {
               >
                 Sair da conta
               </button>
+            </div>
             </div>
           </div>
         ) : (

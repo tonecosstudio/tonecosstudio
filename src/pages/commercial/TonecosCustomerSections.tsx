@@ -100,7 +100,11 @@ export const customerSectionLinks = [
   ).values(),
 ];
 
-export function TonecosCustomerNavigation() {
+export function TonecosCustomerNavigation({
+  layout = "inline",
+}: {
+  layout?: "inline" | "sidebar";
+} = {}) {
   const location = useLocation();
   const accountLinks = customerSectionLinks.filter((item) =>
     [
@@ -129,13 +133,22 @@ export function TonecosCustomerNavigation() {
     { title: "Comunicação", items: communicationLinks },
   ];
   return (
-    <nav aria-label="Seções da Minha Conta" className="mb-6 space-y-5">
+    <nav
+      aria-label="Seções da Minha Conta"
+      className={layout === "sidebar" ? "space-y-5" : "mb-6 space-y-5"}
+    >
       {sections.map((section) => (
         <div key={section.title}>
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/50">
             {section.title}
           </h2>
-          <div className="flex flex-wrap gap-2">
+          <div
+            className={
+              layout === "sidebar"
+                ? "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1"
+                : "flex flex-wrap gap-2"
+            }
+          >
             {section.items.map((item) => (
               <Link
                 key={item.path}
@@ -144,7 +157,9 @@ export function TonecosCustomerNavigation() {
                   location.pathname === item.path ? "page" : undefined
                 }
                 className={
-                  "inline-flex min-h-10 items-center rounded-sm border px-3 py-2 text-xs transition-colors " +
+                  (layout === "sidebar"
+                    ? "flex min-h-11 w-full items-center rounded-sm border px-3 py-2 text-sm transition-colors "
+                    : "inline-flex min-h-10 items-center rounded-sm border px-3 py-2 text-xs transition-colors ") +
                   (location.pathname === item.path
                     ? "border-[hsl(var(--gold-accent))] text-[hsl(var(--gold-accent))]"
                     : "border-white/20 text-white/70 hover:border-white/50 hover:text-white")

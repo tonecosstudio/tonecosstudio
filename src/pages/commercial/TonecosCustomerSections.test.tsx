@@ -65,6 +65,21 @@ function show(path: string) {
 }
 
 describe("Original customer account navigation in the commercial app", () => {
+  it("supports the desktop sidebar without replacing the shared account menu", () => {
+    render(
+      <MemoryRouter initialEntries={["/perfil"]}>
+        <TonecosCustomerNavigation layout="sidebar" />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole("navigation", { name: "Seções da Minha Conta" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Dados da conta" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
   it("keeps the old payment, notifications and support sections alongside restored pages", () => {
     const paths = customerSectionLinks.map((x) => x.path);
     expect(paths).toContain("/perfil");

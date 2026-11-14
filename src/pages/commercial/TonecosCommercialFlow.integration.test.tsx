@@ -546,6 +546,38 @@ describe("TONART commercial screens: account → request → history → respons
     expect(mocks.getUser).toHaveBeenCalledTimes(2);
   });
 
+  it("shows the authenticated account in a separate navigation and content layout", async () => {
+    renderApp("/perfil");
+    expect(
+      await screen.findByRole("complementary", {
+        name: "Navegação lateral da conta",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Dados da conta" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Segurança da conta" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Nome completo")).toHaveValue("Cliente");
+    expect(screen.getByRole("button", { name: "Salvar dados" })).toBeEnabled();
+  });
+
+  it("explains an empty registered name without fabricating profile data", async () => {
+    mocks.getProfile.mockResolvedValueOnce({
+      id: USER,
+      email: "cliente@example.com",
+      full_name: null,
+      phone: null,
+    });
+    renderApp("/perfil");
+    expect(
+      await screen.findByText(/Nome ainda não cadastrado/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Nome completo")).toHaveValue("");
+    expect(mocks.updateProfile).not.toHaveBeenCalled();
+  });
+
   it("protects saved account data from replacement if the profile cannot be loaded", async () => {
     mocks.getProfile.mockRejectedValueOnce(new Error("profile offline"));
     renderApp("/perfil");
