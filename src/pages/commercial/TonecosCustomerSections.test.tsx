@@ -307,6 +307,8 @@ describe("Original customer account navigation in the commercial app", () => {
       .toBeDisabled();
     expect(screen.getByRole("checkbox", { name: "Avisos de produção" }))
       .toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: "Novidades e campanhas" }))
+      .toBeDisabled();
   });
 
   it("shows the existing catalog selection in the restored collection and removes items through the same store", async () => {
