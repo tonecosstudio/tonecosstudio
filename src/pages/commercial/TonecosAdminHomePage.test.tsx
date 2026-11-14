@@ -5,6 +5,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
@@ -88,6 +89,42 @@ describe("TONART admin workspace", () => {
         screen.getByText("Operação de orçamentos desativada"),
       ).toBeInTheDocument();
     }
+  });
+
+  it("keeps quote intake in the restored sidebar without creating a second backoffice", async () => {
+    show();
+    const navigation = screen.getByRole("navigation", {
+      name: "Módulos administrativos",
+    });
+    if (import.meta.env.VITE_CATALOG_QUOTES_ENABLED === "true") {
+      expect(
+        within(navigation).getByRole("button", {
+          name: /Atendimento de orçamentos/,
+        }),
+      ).toBeInTheDocument();
+    } else {
+      expect(
+        within(navigation).queryByRole("button", {
+          name: /Atendimento de orçamentos/,
+        }),
+      ).not.toBeInTheDocument();
+    }
+    expect(
+      within(navigation).getByRole("button", { name: /Produção/ }),
+    ).toHaveTextContent("Consulta");
+    expect(
+      within(navigation).getByRole("button", { name: /Análises/ }),
+    ).toHaveTextContent("Consulta");
+    expect(screen.queryByRole("button", { name: /Créditos/ })).not.toBeInTheDocument();
+  });
+
+  it("counts pending and reviewing quotes as work in progress", async () => {
+    show();
+    expect(await screen.findByText("Cliente de teste")).toBeInTheDocument();
+    expect(screen.getByText("Em atendimento")).toBeInTheDocument();
+    const metric = screen.getByText("Em atendimento").closest("div");
+    expect(metric).toHaveTextContent("2");
+    expect(metric).toHaveTextContent("Aguardando resposta ou em análise");
   });
 
   it("does not query Supabase aggregates when opening the Cloudflare catalog", async () => {

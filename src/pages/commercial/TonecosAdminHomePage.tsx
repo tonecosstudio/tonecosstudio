@@ -72,10 +72,13 @@ function moduleState(id: string): "active" | "read-only" | "off" {
     id === "users" ||
     id === "orders" ||
     id === "financial-hub" ||
-    id === "communication"
+    id === "communication" ||
+    id === "production-dashboard" ||
+    id === "analytics"
   )
     return "read-only";
-  if (id === "credits-hub") return coinsEnabled ? "active" : "read-only";
+  if (id === "quote-intake") return quotesEnabled ? "active" : "off";
+  if (id === "credits-hub") return coinsEnabled ? "active" : "off";
   if (id === "catalog-hub") return "read-only";
   return "off";
 }
@@ -116,9 +119,27 @@ export default function TonecosAdminHomePage() {
     useState<TonartAdminProfilesPage | null>(null);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState("");
-  const allItems = adminNavigationConfig
+  // Add the existing TONART quote intake to the legacy navigation.
+  // All original groups and destinations remain sourced from the canonical registry.
+  const adminGroups = adminNavigationConfig
     .filter((section) => section.id !== "credits" || coinsEnabled)
-    .flatMap((section) => section.items);
+    .map((section) =>
+      section.id === "operations" && quotesEnabled
+        ? {
+            ...section,
+            items: [
+              section.items[0],
+              {
+                id: "quote-intake",
+                label: "Atendimento de orçamentos",
+                path: TONECOS_COMMERCIAL_ROUTES.adminQuotes,
+              },
+              ...section.items.slice(1),
+            ],
+          }
+        : section,
+    );
+  const allItems = adminGroups.flatMap((section) => section.items);
   const pathname = location.pathname.replace(/\/+$/, "") || "/";
   const selectedSubpage = originalAdminSubpages.find((item) => item.path === pathname);
   const activeItem = allItems.find(
@@ -268,7 +289,7 @@ export default function TonecosAdminHomePage() {
 
       <div className="grid items-start gap-6 lg:grid-cols-[265px_minmax(0,1fr)]">
         <aside
-          className="rounded-sm border border-white/15 bg-[hsl(0,0%,7%)] p-4 lg:sticky lg:top-6"
+          className="rounded-sm border border-white/15 bg-[hsl(0,0%,7%)] p-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto"
           aria-label="Navegação administrativa"
         >
           <div className="mb-5 border-b border-white/10 pb-4">
@@ -280,7 +301,7 @@ export default function TonecosAdminHomePage() {
             </p>
           </div>
           <nav aria-label="Módulos administrativos" className="space-y-5">
-            {adminNavigationConfig.filter((group) => group.id !== "credits" || coinsEnabled).map((group) => (
+            {adminGroups.map((group) => (
               <div key={group.id}>
                 <h2 className="mb-2 px-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--gold-accent))]">
                   {group.title}
@@ -296,7 +317,7 @@ export default function TonecosAdminHomePage() {
                         onClick={() => showItem(item)}
                         aria-current={selected ? "page" : undefined}
                         className={
-                          "flex min-h-10 w-full items-center justify-between gap-3 rounded-sm border px-3 py-2 text-left text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))] " +
+                          "flex min-h-10 w-full items-center justify-between gap-3 rounded-sm border px-3 py-2 text-left text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))] " +
                           (selected
                             ? "border-[hsl(var(--gold-accent)/0.4)] bg-[hsl(var(--gold-accent)/0.09)] text-[hsl(var(--gold-accent))]"
                             : "border-transparent text-white/70 hover:bg-white/5 hover:text-white")
@@ -310,14 +331,14 @@ export default function TonecosAdminHomePage() {
                               ? "Ativo"
                               : state === "read-only"
                                 ? "Consulta"
-                                : "Desativado"
+                                : "Em integração"
                           }
                         >
                           {state === "active"
                             ? "●"
                             : state === "read-only"
                               ? "Consulta"
-                              : "—"}
+                              : "Integração"}
                         </span>
                       </button>
                     );
@@ -404,7 +425,12 @@ export default function TonecosAdminHomePage() {
           )}
           {isDashboard && (
             <>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div
+                className={
+                  "grid gap-4 sm:grid-cols-2 " +
+                  (coinsEnabled ? "xl:grid-cols-4" : "xl:grid-cols-3")
+                }
+              >
                 <Metric
                   label="Perfis cadastrados"
                   value={overview?.profileCount}
@@ -416,9 +442,13 @@ export default function TonecosAdminHomePage() {
                   detail="Solicitações do catálogo"
                 />
                 <Metric
-                  label="Aguardando resposta"
-                  value={overview?.pendingQuoteCount}
-                  detail="Pedidos de orçamento pendentes"
+                  label="Em atendimento"
+                  value={
+                    overview
+                      ? overview.pendingQuoteCount + overview.reviewingQuoteCount
+                      : undefined
+                  }
+                  detail="Aguardando resposta ou em análise"
                 />
                 {coinsEnabled && (
                   <Metric
