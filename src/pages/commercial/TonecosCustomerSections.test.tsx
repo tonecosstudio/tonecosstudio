@@ -209,6 +209,18 @@ describe("Original customer account navigation in the commercial app", () => {
       "autocomplete",
       "postal-code",
     );
+    expect(screen.getByRole("textbox", { name: "CEP" })).toHaveAttribute(
+      "placeholder",
+      "00000-000",
+    );
+    expect(screen.getByRole("textbox", { name: "Número" })).toHaveAttribute(
+      "autocomplete",
+      "off",
+    );
+    expect(screen.getByRole("textbox", { name: "Complemento" })).toHaveAttribute(
+      "autocomplete",
+      "address-line2",
+    );
     expect(
       screen.getByText(/Este endereço pertence à sua conta/),
     ).toBeInTheDocument();

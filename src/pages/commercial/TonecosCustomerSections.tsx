@@ -218,10 +218,13 @@ const BLANK_PREFERENCES: TonecosContactPreferences = {
   marketingEmails: false,
 };
 const ADDRESS_FIELDS = [
-  { key: "zipCode", label: "CEP", autoComplete: "postal-code", maxLength: 9 },
+  {
+    key: "zipCode", label: "CEP", autoComplete: "postal-code", maxLength: 9,
+    placeholder: "00000-000",
+  },
   { key: "street", label: "Rua", autoComplete: "address-line1", maxLength: 160 },
-  { key: "number", label: "Número", autoComplete: "address-line2", maxLength: 20 },
-  { key: "complement", label: "Complemento", autoComplete: "off", maxLength: 160 },
+  { key: "number", label: "Número", autoComplete: "off", maxLength: 20 },
+  { key: "complement", label: "Complemento", autoComplete: "address-line2", maxLength: 160 },
   { key: "neighborhood", label: "Bairro", autoComplete: "address-level3", maxLength: 100 },
   { key: "city", label: "Cidade", autoComplete: "address-level2", maxLength: 100 },
 ] as const;
@@ -469,6 +472,7 @@ function CustomerComplementaryEditor({ section }: { section: ComplementarySectio
                     aria-label={field.label}
                     required={field.key !== "complement"}
                     maxLength={field.maxLength}
+                    placeholder={"placeholder" in field ? field.placeholder : undefined}
                     autoComplete={field.autoComplete}
                     inputMode={field.key === "zipCode" ? "numeric" : undefined}
                     value={address[field.key] ?? ""}
