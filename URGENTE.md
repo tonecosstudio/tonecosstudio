@@ -1,3 +1,13 @@
+## Checkpoint 14/11/2026 — revisão do contrato Coins e resumo financeiro admin
+
+- **Base → commit funcional:** `main@8c97d8f8` → `c4a8095a` (`test(commercial): align finance summary assertion`).
+- **Coins:** confirmação no código/migração existente: 1 Coin abate R$1 em orçamento comum já respondido, limitado ao saldo e ao valor em aberto; a entrada de R$50 da pré-venda fica fora do resgate. Não foi criada nem alterada regra financeira, ledger ou serviço.
+- **Correção:** expectativa do teste do resumo financeiro agora acompanha o texto atual, que identifica os dados como valores de orçamentos e não como faturamento; o teste do menu aguarda a carga assíncrona da tela.
+- **Validação Windows:** suíte focada anterior de 6 arquivos passou (151 testes); o teste do menu passou isolado após o ajuste assíncrono, ESLint do arquivo e `git diff --check` passaram.
+- **Integração remota:** nenhuma escrita Supabase, publicação ou deploy. E2E autenticado de cliente/admin depende de sessões controladas e homologação inequivocamente isolada; o Actions segue bloqueado antes dos steps pelo runner indisponível/limite da conta.
+- **NEXT_ACTION:** seguir os pontos pendentes de perfil/endereço/preferências e do ciclo orçamento → administração → histórico usando os serviços existentes; retomar E2E real quando houver sessão de homologação controlada.
+- **DO_NOT_REPEAT:** não inventar compra/conversão ou resgate na pré-venda; não duplicar carteira, ledger, cadastro ou serviços; testes com mocks não comprovam gravação real no Supabase.
+
 ## Checkpoint 14/11/2026 — contrato de Coins alinhado nas telas comerciais
 
 - **Base e commit:** main@9ce109abd83e18c7b783adf8e29c80755c2aabd7 → 0fb6e5add25a75a34d8cc0675a3f5995479cb980, sincronizado com origin/main.
