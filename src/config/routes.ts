@@ -52,13 +52,20 @@ const TONECOS_CUSTOMER_RETURN_ROUTES = new Set<string>([
 const TONECOS_CUSTOMER_SECTION_RETURN_PATH =
   /^\/perfil\/(?:conta|dados-pessoais|endereco|pedidos|producao|colecao|preferencias|pagamentos|assinatura|assinaturas|notificacoes|suporte)$/;
 
+/** Customer quote links are only returnable with one strict UUID, never
+ * with arbitrary query strings or external/nested redirect destinations.
+ */
+const TONECOS_CUSTOMER_QUOTE_RETURN_PATH =
+  /^\/meus-orcamentos\?quote=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Allow only customer-owned commercial destinations after email auth flows. */
 export function resolveTonecosCustomerReturnPath(
   value: string | null | undefined,
 ): string {
   return typeof value === "string" &&
     (TONECOS_CUSTOMER_RETURN_ROUTES.has(value) ||
-      TONECOS_CUSTOMER_SECTION_RETURN_PATH.test(value))
+      TONECOS_CUSTOMER_SECTION_RETURN_PATH.test(value) ||
+      TONECOS_CUSTOMER_QUOTE_RETURN_PATH.test(value))
     ? value
     : TONECOS_COMMERCIAL_ROUTES.account;
 }
