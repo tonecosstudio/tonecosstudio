@@ -1,12 +1,13 @@
-## Checkpoint 14/11/2026 — curadoria de assinatura e host local
+## Checkpoint 14/11/2026 — estado real das integrações comerciais
 
-- **Base → commit sincronizado:** `main@962c5d45` → `c5536746` (`test(subscriptions): cover curated model checkout`); o teste administrativo segue local neste ciclo.
-- **Implementado:** removidos os testes tautológicos do checkout. A tela agora tem cobertura para seleção exata de 6/12 modelos curados e envio com voucher; a curadoria administrativa cobre o teto de 20 modelos e confirma que só `collectionId`/slugs são enviados para salvar.
-- **Validação Windows:** checkout (2 testes), curadoria admin (2), `npm run typecheck:app`, ESLint dos dois testes e `git diff --check` passaram. Serviços foram simulados; isso não comprova gravação no Supabase.
-- **Host local:** Vite está servindo a home em `http://127.0.0.1:8080/` (HTTP 200). A automação do navegador interno expirou, mas o host responde e a URL aberta pode ser recarregada.
-- **Bloqueio real:** o Supabase conectado não expõe `collections`, `subscription_plans`, `subscriptions`, `manual_payments` nem `system_settings`; o projeto/branch não está comprovadamente isolado. Nenhuma escrita remota foi feita.
-- **NEXT_ACTION:** reconciliar o schema remoto com as migrações locais existentes e seguir as integrações independentes. Não aplicar DDL até confirmar homologação isolada; não alterar serviços de produção.
-- **DO_NOT_REPEAT:** não duplicar catálogo, cadastro, ledger ou serviços; não tratar mocks como prova de Supabase; não escrever no projeto conectado sem identificar o ambiente.
+- **Base → commits sincronizados:** `main@962c5d45` → `c5536746` (`test(subscriptions): cover curated model checkout`) → `0c5fe0ff` (`test(subscriptions): cover admin curation limit`); `main` local e remoto estavam sincronizados.
+- **Implementado:** testes executáveis do checkout de assinatura (seleção exata de 6/12 modelos, limite e voucher) e da curadoria admin (máximo 20, gravação somente de `collectionId`/slugs). O host local em `http://127.0.0.1:8080/` responde HTTP 200.
+- **Validação Windows:** checkout (2 testes), curadoria (2), `npm run typecheck:app`, ESLint dos testes e `git diff --check` passaram. Serviços mockados não comprovam gravação remota.
+- **Supabase conectado (somente leitura):** projetos/organização `tonecosstudio-site`/`tonecosstudio` (`Free`); só existe branch `main`, sem ambiente isolado. A base possui `profiles`, `quotes`, `quote_events`, `quote_payments`, `payment_links` e ledger Coins; RPCs de orçamento/Coins estão presentes, a Edge Function `tonart-quotes` está ativa e `payment-vouchers` é privado. Nenhuma escrita remota foi feita.
+- **Assinaturas:** não existem `collections`, `subscription_plans`, `subscriptions`, `manual_payments`, `system_settings` nem RPCs de checkout/curadoria/revisão; o checkout real não pode ser homologado nesse schema.
+- **GitHub Actions:** run [43641065251](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43641065251) no commit `0c5fe0ff`: quatro jobs de qualidade encerraram com falha e zero steps; a falha ocorre antes da execução do workflow. Nenhum pipeline paralelo foi criado.
+- **NEXT_ACTION:** concluir a integração local sem alterar o banco conectado; para homologar assinatura real é necessário um projeto/branch Supabase não produtivo autorizado.
+- **DO_NOT_REPEAT:** não duplicar catálogo, cadastro, ledger ou serviços; não tratar mocks como prova de Supabase; não aplicar DDL ou publicar em produção.
 
 ## Checkpoint 14/11/2026 — prévia dos modelos na curadoria de assinaturas
 
