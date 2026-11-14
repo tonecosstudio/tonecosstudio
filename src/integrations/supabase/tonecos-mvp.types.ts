@@ -21,6 +21,12 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          whatsapp: string | null
+          delivery_address: Json | null
+          preferred_contact_channel: string | null
+          quote_updates: boolean
+          production_updates: boolean
+          marketing_emails: boolean
           updated_at: string
         }
         Insert: {
@@ -29,6 +35,12 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          whatsapp?: string | null
+          delivery_address?: Json | null
+          preferred_contact_channel?: string | null
+          quote_updates?: boolean
+          production_updates?: boolean
+          marketing_emails?: boolean
           updated_at?: string
         }
         Update: {
@@ -37,6 +49,12 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          whatsapp?: string | null
+          delivery_address?: Json | null
+          preferred_contact_channel?: string | null
+          quote_updates?: boolean
+          production_updates?: boolean
+          marketing_emails?: boolean
           updated_at?: string
         }
         Relationships: []
