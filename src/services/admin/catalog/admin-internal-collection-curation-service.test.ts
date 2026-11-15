@@ -11,6 +11,7 @@ vi.mock("@/services/admin/rpc/admin-rpc-gateway", () => ({
 
 import {
   addCatalogCurationTagAlias,
+  assertCurrentCanonicalCurationModels,
   createCatalogCurationTag,
   ensureAdminInternalCollection,
   getInternalCollectionCurationPage,
@@ -131,6 +132,30 @@ describe("internal catalog curation service", () => {
       "catalog_internal_collection_invalid",
     );
     expect(mocks.callAdminRpc).toHaveBeenCalledTimes(1);
+  });
+
+  it("requires an exact current catalog ID and slug before editorial review", () => {
+    const selected = [{ modelId: MODEL_ID, slug: "modelo-real" }];
+    expect(() => assertCurrentCanonicalCurationModels(selected, [])).toThrow(
+      "catalog_curation_model_reference_stale",
+    );
+    expect(() =>
+      assertCurrentCanonicalCurationModels(selected, [
+        { modelId: MODEL_ID, slug: "modelo-antigo" },
+      ]),
+    ).toThrow("catalog_curation_model_reference_stale");
+    expect(() =>
+      assertCurrentCanonicalCurationModels(selected, [
+        { modelId: "44444444-4444-4444-8444-444444444444", slug: "modelo-real" },
+      ]),
+    ).toThrow("catalog_curation_model_reference_stale");
+
+    expect(() =>
+      assertCurrentCanonicalCurationModels(selected, [
+        { modelId: MODEL_ID, slug: "modelo-real" },
+      ]),
+    ).not.toThrow();
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
   });
 
   it("rejects duplicate canonical IDs or slugs before either batch RPC", async () => {
