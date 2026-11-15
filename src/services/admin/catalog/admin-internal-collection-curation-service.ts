@@ -368,6 +368,34 @@ export async function addCatalogCurationTagAlias(input: {
   return aliasSlug;
 }
 
+export async function removeCatalogCurationTagAlias(input: {
+  tagId: string;
+  aliasSlug: string;
+}): Promise<string> {
+  if (
+    !UUID_PATTERN.test(input.tagId) ||
+    !CURATION_ALIAS_SLUG.test(input.aliasSlug)
+  ) {
+    throw new Error("catalog_curation_tag_alias_invalid");
+  }
+
+  const data = asRecord(
+    await callAdminRpc<unknown>("admin_remove_catalog_curation_tag_alias", {
+      p_tag_id: input.tagId,
+      p_alias_slug: input.aliasSlug,
+    }),
+    "catalog_curation_tag_alias_result_invalid",
+  );
+  if (
+    data.tagId !== input.tagId ||
+    data.aliasSlug !== input.aliasSlug ||
+    data.removed !== true
+  ) {
+    throw new Error("catalog_curation_tag_alias_result_invalid");
+  }
+  return input.aliasSlug;
+}
+
 export async function getInternalCollectionCurationSummary(
   collectionId: string,
 ): Promise<CatalogCurationSummary> {
