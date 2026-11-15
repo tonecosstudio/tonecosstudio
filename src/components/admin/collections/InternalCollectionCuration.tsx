@@ -30,6 +30,7 @@ import {
   INTERNAL_COLLECTION_TEMPLATES,
   listAdminInternalCollections,
   listCatalogCurationTags,
+  removeCatalogCurationTagAlias,
   saveCatalogModelClassifications,
   saveInternalCollectionCuration,
   verifyCatalogModelCharacterIdentity,
@@ -336,6 +337,29 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível registrar o sinônimo",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      }),
+  });
+
+  const removeAliasMutation = useMutation({
+    mutationFn: async (aliasSlug: string) => {
+      if (!selectedTag) throw new Error("Selecione uma classificação.");
+      return removeCatalogCurationTagAlias({
+        tagId: selectedTag.id,
+        aliasSlug,
+      });
+    },
+    onSuccess: async (aliasSlug) => {
+      await queryClient.invalidateQueries({ queryKey: TAGS_QUERY });
+      toast({
+        title: "Sinônimo removido",
+        description: `${aliasSlug} deixou de resolver para a classificação selecionada.`,
+      });
+    },
+    onError: (error) =>
+      toast({
+        title: "Não foi possível remover o sinônimo",
         description: error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
@@ -927,9 +951,19 @@ export function InternalCollectionCuration() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       {selectedTag.aliases.length ? (
                         selectedTag.aliases.map((alias) => (
-                          <Badge key={alias} variant="secondary">
-                            {alias}
-                          </Badge>
+                          <div key={alias} className="flex items-center gap-1">
+                            <Badge variant="secondary">{alias}</Badge>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs"
+                              disabled={removeAliasMutation.isPending}
+                              onClick={() => removeAliasMutation.mutate(alias)}
+                            >
+                              Remover
+                            </Button>
+                          </div>
                         ))
                       ) : (
                         <span className="text-xs text-muted-foreground">
@@ -943,7 +977,7 @@ export function InternalCollectionCuration() {
                         aria-label={`Novo sinônimo para ${selectedTag.label}`}
                         value={aliasDraft}
                         onChange={(event) => setAliasDraft(event.target.value)}
-                        placeholder="Ex: horror classico"
+                        placeholder="Ex: sinonimo alternativo"
                       />
                       <Button
                         type="button"
