@@ -1510,3 +1510,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** sincronizar este ajuste na PR #27 e continuar a integração local da conta sem adicionar dados de resposta administrativa não existentes.
 
 **DO_NOT_REPEAT:** não recolocar banner/modo de demonstração ou preço/resposta fabricados; não tratar dados locais como prova de integração real; não fazer merge nem publicar em produção sem sinalização específica.
+
+## Rodada 67 — Conta local normal e bloqueio de upload de assinatura (15/11/2026)
+
+- Conferência no navegador interno em `/perfil`: carregou Minha Conta usual com os dados simples de Marina; navegação de endereço, preferências, orçamento e Coins permanece na estrutura existente, sem aviso ou acesso especial de demonstração.
+- O checkout e reenvio de comprovante de assinatura agora param antes de autenticação, Storage e RPC quando o ambiente é fallback local ou read-only. Não foram criados planos, coleções ou dados comerciais fictícios.
+- O filtro do Quality Gate existente agora inclui os serviços, páginas, testes, hooks e componentes de assinaturas, planos e vouchers. Nenhum workflow paralelo foi criado.
+- Verificações: `subscription-checkout-service.test.ts` — 1 arquivo / 5 testes; `npm run typecheck:app` e ESLint dos arquivos alterados passaram. O endpoint local `127.0.0.1:54321` não está ouvindo e o comando Docker não existe nesta máquina; não há ambiente Supabase local para validar catálogo/planos reais.
+- O run #43674614806 ainda falhou no job sem etapas nem logs (`BlobNotFound`). Nenhuma consulta/escrita em Supabase remoto ou alteração de produção foi feita.
+
+**NEXT_ACTION:** continuar pela validação dos fluxos de assinatura com um Supabase local disponível; manter a PR #27 aberta até o Quality Gate fornecer execução/logs interpretáveis.
+
+**DO_NOT_REPEAT:** não inventar dados de planos/coleções para preencher o preview; não usar mocks como prova do fluxo real; não reexecutar Actions sem mudança de infraestrutura; não publicar ou alterar recursos de produção.
