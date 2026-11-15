@@ -35,27 +35,6 @@ const LOCAL_PREVIEW_QUOTE_EVENTS: CatalogQuoteEvent[] = [
     responseText: null,
     createdAt: "2026-11-10T12:00:00.000Z",
   },
-  {
-    id: 9002,
-    quoteId: TONECOS_LOCAL_PREVIEW_QUOTE_ID,
-    type: "status_changed",
-    fromStatus: "pending",
-    toStatus: "reviewing",
-    amount: null,
-    responseText: null,
-    createdAt: "2026-11-11T14:30:00.000Z",
-  },
-  {
-    id: 9003,
-    quoteId: TONECOS_LOCAL_PREVIEW_QUOTE_ID,
-    type: "answered",
-    fromStatus: "reviewing",
-    toStatus: "answered",
-    amount: 300,
-    responseText:
-      "Resposta simulada da equipe: total de R$ 300,00 com entrada de R$ 50,00 e saldo de R$ 250,00 na finalização.",
-    createdAt: "2026-11-12T16:00:00.000Z",
-  },
 ];
 
 type QuoteEventRow = TonecosMvpDatabase["public"]["Tables"]["quote_events"]["Row"];

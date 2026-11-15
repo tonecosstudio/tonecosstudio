@@ -33,12 +33,12 @@ vi.mock("@/pages/commercial/TonecosCustomerSections", () => ({
   ),
 }));
 
-describe("TonecosAccountPage in an isolated local preview", () => {
-  it("renders the regular account page with local user data without signing in", async () => {
+describe("TonecosAccountPage with local customer data", () => {
+  it("renders customer data in the normal account screen", async () => {
     const profile = {
       id: "00000000-0000-4000-8000-000000000001",
-      email: "demo@tonart.local",
-      full_name: "Cliente de demonstração",
+      email: "marina.oliveira@tonart.local",
+      full_name: "Marina Oliveira",
       phone: "+55 (11) 90000-0000",
     };
     mocks.getCurrentUser.mockResolvedValue({
@@ -58,23 +58,19 @@ describe("TonecosAccountPage in an isolated local preview", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText("Conectado como demo@tonart.local"),
+        screen.getByText("Conectado como marina.oliveira@tonart.local"),
       ).toBeInTheDocument(),
     );
     await waitFor(() =>
       expect(screen.getByLabelText("Nome completo")).toHaveValue(
-        "Cliente de demonstração",
+        "Marina Oliveira",
       ),
     );
     expect(
-      screen.queryByRole("heading", {
-        name: "Conta indisponível nesta prévia local",
-      }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("heading", { name: "Minha conta" }),
+    ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", {
-        name: "Entrar na conta de demonstração",
-      }),
+      screen.queryByText(/demonstração|prévia local/i),
     ).not.toBeInTheDocument();
     expect(mocks.getMyProfile).toHaveBeenCalledOnce();
     expect(mocks.signIn).not.toHaveBeenCalled();

@@ -60,14 +60,14 @@ const LOCAL_PREVIEW_COIN_ENTRIES: TonecosCoinEntry[] = [
     id: "c0000000-0000-4000-8000-000000000001",
     delta: 100,
     type: "admin_credit",
-    reason: "Crédito fictício de demonstração",
+    reason: "Bônus de boas-vindas",
     createdAt: "2026-11-12T16:00:00.000Z",
   },
   {
     id: "c0000000-0000-4000-8000-000000000002",
     delta: 50,
     type: "admin_credit",
-    reason: "Bônus fictício de demonstração",
+    reason: "Crédito de fidelidade",
     createdAt: "2026-11-10T12:00:00.000Z",
   },
 ];

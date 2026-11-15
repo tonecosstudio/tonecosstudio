@@ -46,7 +46,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("authenticated Tonecos catalog quote boundary", () => {
-  it("serves the local demo quote without checking Supabase auth or querying a table", async () => {
+  it("serves the customer's local pending request without Supabase access", async () => {
     mocks.isLocalPreviewActive.mockReturnValue(true);
     const page = await loadMyCatalogQuotePage(
       "00000000-0000-4000-8000-000000000001",
@@ -55,11 +55,12 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     expect(page.total).toBe(1);
     expect(page.rows[0]).toMatchObject({
       id: "a0000000-0000-4000-8000-000000000001",
-      status: "answered",
-      quotedAmount: 300,
-      isPreorder: true,
-      depositAmount: 50,
-      remainingAmount: 250,
+      status: "pending",
+      quotedAmount: null,
+      responseMessage: null,
+      isPreorder: false,
+      depositAmount: null,
+      remainingAmount: null,
     });
     expect(mocks.assertCurrentUserId).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalled();

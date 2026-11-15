@@ -1498,3 +1498,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** identificar por que o runner/log do job do Actions não foi disponibilizado; manter a PR aberta até haver sinal de CI interpretável e executar E2E autenticado apenas em ambiente Supabase isolado.
 
 **DO_NOT_REPEAT:** não recriar banner ou modo especial de demonstração; não usar mocks como prova de integração real; não reexecutar repetidamente o job sem mudança externa; não fazer merge ou publicar em produção nesta rodada.
+
+## Rodada 66 — Dados locais limitados à conta do cliente (15/11/2026)
+
+- A prévia mantém a tela e os caminhos normais de Minha Conta, sem aviso ou botão especial de demonstração. Perfil, endereço, preferências, carteira e solicitação pendente usam apenas dados fictícios associados ao cliente local.
+- Removidos a resposta, preço, entrada de pré-venda e avanços administrativos fictícios do orçamento local. O histórico agora mostra somente a solicitação feita pelo cliente; saldo e movimentos de Coins continuam disponíveis como dados da carteira, sem descrições de demonstração.
+- Testes direcionados: 5 arquivos e 38 testes passaram; `npm run typecheck:app`, ESLint dos arquivos alterados e `git diff --check` passaram. Prettier sinaliza formatação antiga nos quatro arquivos conferidos; o formatter foi revertido para evitar diff mecânico extenso.
+- Nenhuma autenticação ou escrita no Supabase real foi simulada como prova. Nenhum recurso remoto ou produção foi alterado.
+
+**NEXT_ACTION:** sincronizar este ajuste na PR #27 e continuar a integração local da conta sem adicionar dados de resposta administrativa não existentes.
+
+**DO_NOT_REPEAT:** não recolocar banner/modo de demonstração ou preço/resposta fabricados; não tratar dados locais como prova de integração real; não fazer merge nem publicar em produção sem sinalização específica.

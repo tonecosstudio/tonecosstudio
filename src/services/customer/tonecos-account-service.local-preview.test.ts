@@ -37,12 +37,12 @@ describe("Tonecos local account fixture", () => {
   it("uses the normal account profile and keeps edits in memory without Supabase calls", async () => {
     await expect(getTonecosCurrentUser()).resolves.toEqual({
       id: "00000000-0000-4000-8000-000000000001",
-      email: "demo@tonart.local",
+      email: "marina.oliveira@tonart.local",
     });
     await expect(getMyTonecosProfile()).resolves.toMatchObject({
-      full_name: "Cliente de demonstração",
-      delivery_address: { street: "Rua Exemplo", city: "Cidade de Teste" },
-      preferred_contact_channel: "whatsapp",
+      full_name: "Marina Oliveira",
+      delivery_address: { street: "Rua das Palmeiras", city: "São Paulo" },
+      preferred_contact_channel: "email",
     });
 
     await updateMyTonecosDeliveryAddress({

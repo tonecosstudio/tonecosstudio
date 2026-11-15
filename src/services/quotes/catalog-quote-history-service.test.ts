@@ -32,15 +32,13 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("canonical quote history boundary", () => {
-  it("serves the user's local quote timeline without querying Supabase", async () => {
+  it("serves the user's local request without inventing team updates", async () => {
     mocks.isLocalPreviewActive.mockReturnValue(true);
     await expect(
       loadCatalogQuoteHistory(["a0000000-0000-4000-8000-000000000001"]),
     ).resolves.toMatchObject({
       "a0000000-0000-4000-8000-000000000001": [
         { type: "submitted", toStatus: "pending" },
-        { type: "status_changed", toStatus: "reviewing" },
-        { type: "answered", toStatus: "answered", amount: 300 },
       ],
     });
     expect(mocks.from).not.toHaveBeenCalled();

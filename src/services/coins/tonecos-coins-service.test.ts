@@ -45,11 +45,11 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("Tonecos Coins ledger authority", () => {
-  it("serves fictional balance and entries without calling Supabase for the local demo", async () => {
+  it("serves the local customer's wallet data without calling Supabase", async () => {
     mocks.isLocalPreviewActive.mockReturnValue(true);
     mocks.user.mockResolvedValue({
       id: "00000000-0000-4000-8000-000000000001",
-      email: "demo@tonart.local",
+      email: "marina.oliveira@tonart.local",
     });
 
     await expect(getMyTonecosCoinBalance()).resolves.toMatchObject({
