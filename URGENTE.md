@@ -1,3 +1,12 @@
+## Checkpoint 14/11/2026 — conta local sem autenticação conectada
+
+- **Base → commit candidato:** `main@0ca0a77b` → estado de fallback da conta + teste.
+- **Implementado:** quando `LOCAL_SUPABASE_FALLBACK` está ativo, Minha Conta não consulta sessão nem mostra campos de login/cadastro; explica que a prévia não tem persistência local e oferece entrada segura para o catálogo. Com Supabase local configurado, o fluxo de autenticação permanece disponível.
+- **Validação Windows:** fluxo comercial e histórico (51 testes) e seções do cliente (33 testes) passaram; teste do fallback local passou após montar `HelmetProvider`. `npm run typecheck:app` e ESLint dos arquivos alterados passaram.
+- **Integração real:** a prévia confirmou a mensagem de Supabase ausente; nenhuma autenticação ou persistência remota foi tentada. Testes usam mocks.
+- **NEXT_ACTION:** continuar lacunas comerciais locais; validar dados persistidos somente com ambiente Supabase local compatível.
+- **DO_NOT_REPEAT:** não coletar credenciais na prévia sem backend; não habilitar o projeto remoto no localhost nem usar mocks como prova de persistência.
+
 ## Checkpoint 14/11/2026 — vitrine de assinaturas ligada à curadoria
 
 - **Base → commit:** `main@68d8aaeb` → `feat(subscriptions): connect plans to curated collections`, rebased sobre `origin/main@c10115b2`.
