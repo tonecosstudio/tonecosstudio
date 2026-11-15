@@ -171,6 +171,34 @@ BEFORE INSERT OR UPDATE OF dimension, alias_slug, tag_id
 ON public.catalog_curation_tag_aliases
 FOR EACH ROW
 EXECUTE FUNCTION public.guard_catalog_curation_tag_alias();
+CREATE OR REPLACE FUNCTION public.guard_catalog_curation_tag_slug()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $tagslug$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM public.catalog_curation_tag_aliases a
+    WHERE a.dimension = NEW.dimension
+      AND a.alias_slug = NEW.slug
+  ) THEN
+    RAISE EXCEPTION 'Canonical curation tag slug collides with existing alias'
+      USING ERRCODE = '22023';
+  END IF;
+
+  RETURN NEW;
+END;
+$tagslug$;
+
+DROP TRIGGER IF EXISTS guard_catalog_curation_tag_slug
+  ON public.catalog_curation_tags;
+
+CREATE TRIGGER guard_catalog_curation_tag_slug
+BEFORE INSERT OR UPDATE OF dimension, slug
+ON public.catalog_curation_tags
+FOR EACH ROW
+EXECUTE FUNCTION public.guard_catalog_curation_tag_slug();
 CREATE TABLE IF NOT EXISTS public.catalog_collection_curation (
   collection_id uuid NOT NULL REFERENCES public.collections(id) ON DELETE CASCADE,
   catalog_model_id text NOT NULL REFERENCES public.catalog_curation_model_profiles(catalog_model_id) ON DELETE CASCADE,
