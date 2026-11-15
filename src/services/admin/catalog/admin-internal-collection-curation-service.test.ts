@@ -1,0 +1,130 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  callAdminRpc: vi.fn(),
+}));
+
+vi.mock("@/services/admin/rpc/admin-rpc-gateway", () => ({
+  callAdminRpc: mocks.callAdminRpc,
+}));
+
+import {
+  ensureAdminInternalCollection,
+  getInternalCollectionCurationPage,
+  INTERNAL_COLLECTION_TEMPLATES,
+  saveCatalogModelClassifications,
+  saveInternalCollectionCuration,
+} from "./admin-internal-collection-curation-service";
+
+const COLLECTION_ID = "11111111-1111-4111-8111-111111111111";
+const MODEL_ID = "22222222-2222-4222-8222-222222222222";
+const TAG_ID = "33333333-3333-4333-8333-333333333301";
+
+describe("internal catalog curation service", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("prepares owner-defined collections without seeding models", async () => {
+    const terror = INTERNAL_COLLECTION_TEMPLATES[0];
+    mocks.callAdminRpc.mockResolvedValue({
+      id: COLLECTION_ID,
+      name: terror.name,
+      slug: terror.slug,
+      collectionKind: "internal",
+      curationVisibility: "private",
+      isActive: false,
+      status: "draft",
+    });
+
+    await expect(ensureAdminInternalCollection(terror)).resolves.toMatchObject({
+      slug: "terror",
+      collectionKind: "internal",
+      curationVisibility: "private",
+      isActive: false,
+    });
+
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_ensure_internal_collection",
+      expect.objectContaining({
+        p_name: "Terror",
+        p_slug: "terror",
+      }),
+    );
+    expect(mocks.callAdminRpc.mock.calls[0][1]).not.toHaveProperty("models");
+  });
+
+  it("keeps automatic collection classifications in suggested state", async () => {
+    await expect(
+      saveInternalCollectionCuration({
+        collectionId: COLLECTION_ID,
+        models: [{ modelId: MODEL_ID, slug: "modelo-real" }],
+        state: "approved",
+        evidenceOrigin: "automatic:catalog-name-match",
+      }),
+    ).rejects.toThrow("catalog_curation_automatic_must_be_suggested");
+
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
+  it("keeps automatic controlled tags in suggested state", async () => {
+    await expect(
+      saveCatalogModelClassifications({
+        models: [{ modelId: MODEL_ID, slug: "modelo-real" }],
+        tagId: TAG_ID,
+        reviewState: "approved",
+        evidenceOrigin: "automatic:classifier-v1",
+      }),
+    ).rejects.toThrow("catalog_curation_automatic_must_be_suggested");
+
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
+  it("reads only one bounded curation page and preserves evidence", async () => {
+    mocks.callAdminRpc.mockResolvedValue({
+      items: [
+        {
+          modelId: MODEL_ID,
+          slug: "modelo-real",
+          state: "suggested",
+          evidenceOrigin: "manual_admin:canonical_catalog_search",
+          evidenceNote: "Revisar variante",
+          identityVerified: false,
+          characterIdentityId: null,
+          tags: [],
+        },
+      ],
+      total: 1,
+      offset: 0,
+      limit: 20,
+    });
+
+    await expect(
+      getInternalCollectionCurationPage({
+        collectionId: COLLECTION_ID,
+        state: "suggested",
+        offset: 0,
+        limit: 20,
+      }),
+    ).resolves.toMatchObject({
+      total: 1,
+      items: [
+        {
+          modelId: MODEL_ID,
+          state: "suggested",
+          evidenceOrigin: "manual_admin:canonical_catalog_search",
+        },
+      ],
+    });
+
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_get_collection_curation_page",
+      {
+        p_collection_id: COLLECTION_ID,
+        p_state: "suggested",
+        p_offset: 0,
+        p_limit: 20,
+      },
+    );
+  });
+});
