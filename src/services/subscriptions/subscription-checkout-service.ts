@@ -201,6 +201,7 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
     pathPrefix: "subscriptions",
   });
 
+  let data: unknown;
   try {
     const result = await subscriptionCheckoutRpc.rpc("create_subscription_checkout_for_current_user", {
       p_plan_id: input.planId,
@@ -210,7 +211,7 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
       p_payment_voucher_url: voucherPath,
     });
     if (result.error) throw result.error;
-    return parseSubscriptionCheckoutResult(result.data);
+    data = result.data;
   } catch (error) {
     try {
       await deletePaymentVoucher(voucherPath, userId);
@@ -224,6 +225,14 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
       );
     }
     throw error;
+  }
+
+  try {
+    return parseSubscriptionCheckoutResult(data);
+  } catch {
+    throw new Error(
+      "Não foi possível confirmar o resultado. Sua solicitação pode ter sido registrada; confira Pagamentos na sua conta antes de tentar novamente.",
+    );
   }
 }
 
@@ -306,17 +315,14 @@ export async function resubmitSubscriptionPaymentVoucher(input: {
     pathPrefix: "subscriptions",
   });
 
+  let data: unknown;
   try {
     const result = await supabase.rpc("resubmit_subscription_payment_voucher_for_current_user", {
       p_subscription_id: input.subscriptionId,
       p_payment_voucher_path: voucherPath,
     });
     if (result.error) throw result.error;
-    const checkout = parseSubscriptionCheckoutResult(result.data);
-    if (checkout.subscriptionId !== input.subscriptionId) {
-      throw new Error("subscription_voucher_resubmission_result_invalid");
-    }
-    return checkout;
+    data = result.data;
   } catch (error) {
     try {
       await deletePaymentVoucher(voucherPath, userId);
@@ -324,5 +330,17 @@ export async function resubmitSubscriptionPaymentVoucher(input: {
       // Keep the RPC failure as the primary error.
     }
     throw error;
+  }
+
+  try {
+    const checkout = parseSubscriptionCheckoutResult(data);
+    if (checkout.subscriptionId !== input.subscriptionId) {
+      throw new Error("subscription_voucher_resubmission_result_invalid");
+    }
+    return checkout;
+  } catch {
+    throw new Error(
+      "Não foi possível confirmar o reenvio. Confira Pagamentos na sua conta antes de enviar outro comprovante.",
+    );
   }
 }

@@ -39,7 +39,7 @@ describe("subscription checkout voucher cleanup", () => {
     mocks.deletePaymentVoucher.mockResolvedValue(undefined);
   });
 
-  it("deletes a checkout voucher when the RPC returns an invalid payload", async () => {
+  it("preserves a voucher when a successful checkout response cannot be confirmed", async () => {
     mocks.rpc.mockResolvedValue({ data: {}, error: null });
 
     await expect(createSubscriptionCheckoutForCurrentUser({
@@ -49,12 +49,12 @@ describe("subscription checkout voucher cleanup", () => {
       modelSelectionLimit: 6,
       paymentMethod: "pix",
       voucher: voucher(),
-    })).rejects.toThrow("subscription_checkout_result_invalid");
+    })).rejects.toThrow("Sua solicitação pode ter sido registrada");
 
-    expect(mocks.deletePaymentVoucher).toHaveBeenCalledExactlyOnceWith(VOUCHER_PATH, USER_ID);
+    expect(mocks.deletePaymentVoucher).not.toHaveBeenCalled();
   });
 
-  it("deletes a replacement voucher when the RPC returns a different subscription", async () => {
+  it("preserves a replacement voucher when the RPC returns a different subscription", async () => {
     mocks.rpc.mockResolvedValue({
       data: {
         subscription: { id: OTHER_SUBSCRIPTION_ID },
@@ -71,7 +71,22 @@ describe("subscription checkout voucher cleanup", () => {
     await expect(resubmitSubscriptionPaymentVoucher({
       subscriptionId: SUBSCRIPTION_ID,
       voucher: voucher(),
-    })).rejects.toThrow("subscription_voucher_resubmission_result_invalid");
+    })).rejects.toThrow("Confira Pagamentos na sua conta");
+
+    expect(mocks.deletePaymentVoucher).not.toHaveBeenCalled();
+  });
+
+  it("deletes a voucher when the checkout RPC explicitly rejects the request", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: new Error("Database rejected the request") });
+
+    await expect(createSubscriptionCheckoutForCurrentUser({
+      planId: PLAN_ID,
+      collectionId: COLLECTION_ID,
+      selectedModelSlugs: Array.from({ length: 6 }, (_, index) => `terror-${index + 1}`),
+      modelSelectionLimit: 6,
+      paymentMethod: "pix",
+      voucher: voucher(),
+    })).rejects.toThrow("Database rejected the request");
 
     expect(mocks.deletePaymentVoucher).toHaveBeenCalledExactlyOnceWith(VOUCHER_PATH, USER_ID);
   });
