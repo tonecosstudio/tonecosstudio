@@ -683,7 +683,8 @@ CREATE OR REPLACE FUNCTION public.admin_get_collection_curation_page(
   p_collection_id uuid,
   p_state text DEFAULT NULL,
   p_offset integer DEFAULT 0,
-  p_limit integer DEFAULT 20
+  p_limit integer DEFAULT 20,
+  p_tag_id uuid DEFAULT NULL
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -718,7 +719,17 @@ BEGIN
   SELECT count(*) INTO v_total
   FROM public.catalog_collection_curation cc
   WHERE cc.collection_id = p_collection_id
-    AND (v_state IS NULL OR cc.state = v_state);
+    AND (v_state IS NULL OR cc.state = v_state)
+    AND (
+      p_tag_id IS NULL
+      OR EXISTS (
+        SELECT 1
+        FROM public.catalog_curation_model_tags mt_filter
+        WHERE mt_filter.catalog_model_id = cc.catalog_model_id
+          AND mt_filter.tag_id = p_tag_id
+          AND mt_filter.review_state <> 'discarded'
+      )
+    );
 
   SELECT COALESCE(jsonb_agg(row_payload ORDER BY ordinal), '[]'::jsonb)
   INTO v_items
@@ -757,6 +768,16 @@ BEGIN
       ON mp.catalog_model_id = cc.catalog_model_id
     WHERE cc.collection_id = p_collection_id
       AND (v_state IS NULL OR cc.state = v_state)
+    AND (
+      p_tag_id IS NULL
+      OR EXISTS (
+        SELECT 1
+        FROM public.catalog_curation_model_tags mt_filter
+        WHERE mt_filter.catalog_model_id = cc.catalog_model_id
+          AND mt_filter.tag_id = p_tag_id
+          AND mt_filter.review_state <> 'discarded'
+      )
+    )
     ORDER BY cc.updated_at DESC, cc.catalog_model_id
     OFFSET p_offset
     LIMIT p_limit
@@ -1119,7 +1140,7 @@ REVOKE ALL ON FUNCTION public.admin_list_catalog_curation_tags() FROM PUBLIC, an
 REVOKE ALL ON FUNCTION public.admin_add_catalog_curation_tag_alias(uuid, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_remove_catalog_curation_tag_alias(uuid, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_get_collection_curation_summary(uuid) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer, uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_upsert_collection_curation_models(uuid, jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_verify_catalog_model_identity(text, text, text, text, text, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_upsert_catalog_curation_tags(jsonb) FROM PUBLIC, anon, authenticated;
@@ -1130,7 +1151,7 @@ GRANT EXECUTE ON FUNCTION public.admin_list_catalog_curation_tags() TO service_r
 GRANT EXECUTE ON FUNCTION public.admin_add_catalog_curation_tag_alias(uuid, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_remove_catalog_curation_tag_alias(uuid, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_summary(uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer, uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_upsert_collection_curation_models(uuid, jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_verify_catalog_model_identity(text, text, text, text, text, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_upsert_catalog_curation_tags(jsonb) TO service_role;
