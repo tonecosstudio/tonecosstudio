@@ -1,3 +1,12 @@
+## Checkpoint 14/11/2026 — catálogo restaurado na prévia local
+
+- **Estado:** `.env.local` ignorado pelo Git apontava `VITE_CANONICAL_CATALOG_API_BASE` para `127.0.0.1:8082`, sem serviço ativo. Removida somente essa sobrescrita; a resolução local passou a usar o proxy canônico somente leitura na mesma origem, em `http://127.0.0.1:8080/catalogo-api/`.
+- **Evidência:** a rota antiga recusava conexão; `GET /catalogo-api/api/catalog?limit=1` no host `8080` retornou HTTP 200. Após recarregar o navegador interno em `/modelos`, a lista mostrou 33 modelos na primeira página, “Há mais modelos” e filtros de categoria/franquia ativos.
+- **Escopo:** nenhuma mudança no banco, Supabase ou serviços de produção; o catálogo usa o Worker existente apenas para leitura. `.env.local` continua fora do Git.
+- **Validação:** conferência real do endpoint e da interface no navegador interno; não foi necessário executar testes de código para a alteração somente local de configuração.
+- **NEXT_ACTION:** continuar correções locais e validar as páginas comerciais com o backend compatível quando disponível.
+- **DO_NOT_REPEAT:** não apontar a prévia para a porta `8082` inexistente; não tratar HTTP 200 sem conteúdo ou mocks como prova de catálogo funcional; não gravar no Supabase conectado.
+
 ## Checkpoint 14/11/2026 — atualização do histórico após envio incerto de comprovante
 
 - **Base → commit funcional:** `main@92af24a8` → `418de908` (`fix(quotes): refresh after uncertain voucher submission`).
