@@ -299,6 +299,21 @@ export function validateCanonicalCurationModelRef(
   }
 }
 
+function assertUniqueCanonicalCurationModels(
+  models: readonly CanonicalCurationModelRef[],
+): void {
+  const ids = new Set<string>();
+  const slugs = new Set<string>();
+  for (const model of models) {
+    validateCanonicalCurationModelRef(model);
+    if (ids.has(model.modelId) || slugs.has(model.slug)) {
+      throw new Error("catalog_curation_duplicate_model_reference");
+    }
+    ids.add(model.modelId);
+    slugs.add(model.slug);
+  }
+}
+
 export async function listAdminInternalCollections(): Promise<
   AdminInternalCollection[]
 > {
@@ -501,7 +516,7 @@ export async function saveInternalCollectionCuration(input: {
   if (input.models.length < 1 || input.models.length > 50) {
     throw new Error("catalog_curation_save_invalid");
   }
-  input.models.forEach(validateCanonicalCurationModelRef);
+  assertUniqueCanonicalCurationModels(input.models);
   if (!input.evidenceOrigin.trim()) throw new Error("catalog_curation_save_invalid");
   if (
     input.evidenceOrigin.startsWith("automatic:") &&
@@ -589,7 +604,7 @@ export async function saveCatalogModelClassifications(input: {
   ) {
     throw new Error("catalog_curation_classification_invalid");
   }
-  input.models.forEach(validateCanonicalCurationModelRef);
+  assertUniqueCanonicalCurationModels(input.models);
   if (
     input.evidenceOrigin.startsWith("automatic:") &&
     input.reviewState !== "suggested"
