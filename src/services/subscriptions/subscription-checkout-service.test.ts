@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   requireAuthenticatedUserId: vi.fn(),
   uploadPaymentVoucher: vi.fn(),
   deletePaymentVoucher: vi.fn(),
+  localFallback: false,
+  previewReadOnly: false,
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -20,6 +22,10 @@ vi.mock("@/services/auth/current-user", () => ({
 vi.mock("@/services/payments/payment-voucher-storage-service", () => ({
   uploadPaymentVoucher: mocks.uploadPaymentVoucher,
   deletePaymentVoucher: mocks.deletePaymentVoucher,
+}));
+vi.mock("@/config/supabase-environment", () => ({
+  get LOCAL_SUPABASE_FALLBACK() { return mocks.localFallback; },
+  get PREVIEW_READ_ONLY() { return mocks.previewReadOnly; },
 }));
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -37,7 +43,38 @@ describe("subscription checkout voucher cleanup", () => {
     mocks.requireAuthenticatedUserId.mockResolvedValue(USER_ID);
     mocks.uploadPaymentVoucher.mockResolvedValue(VOUCHER_PATH);
     mocks.deletePaymentVoucher.mockResolvedValue(undefined);
+    mocks.localFallback = false;
+    mocks.previewReadOnly = false;
   });
+
+  it.each([
+    ["local fallback", true, false],
+    ["read-only preview", false, true],
+  ] as const)(
+    "blocks subscription voucher writes in a %s before auth or upload",
+    async (_mode, localFallback, previewReadOnly) => {
+      mocks.localFallback = localFallback;
+      mocks.previewReadOnly = previewReadOnly;
+      const file = voucher();
+
+      await expect(createSubscriptionCheckoutForCurrentUser({
+        planId: PLAN_ID,
+        collectionId: COLLECTION_ID,
+        selectedModelSlugs: Array.from({ length: 6 }, (_, index) => `terror-${index + 1}`),
+        modelSelectionLimit: 6,
+        paymentMethod: "pix",
+        voucher: file,
+      })).rejects.toThrow("O envio de comprovantes está indisponível neste ambiente.");
+      await expect(resubmitSubscriptionPaymentVoucher({
+        subscriptionId: SUBSCRIPTION_ID,
+        voucher: file,
+      })).rejects.toThrow("O envio de comprovantes está indisponível neste ambiente.");
+
+      expect(mocks.requireAuthenticatedUserId).not.toHaveBeenCalled();
+      expect(mocks.uploadPaymentVoucher).not.toHaveBeenCalled();
+      expect(mocks.rpc).not.toHaveBeenCalled();
+    },
+  );
 
   it("preserves a voucher when a successful checkout response cannot be confirmed", async () => {
     mocks.rpc.mockResolvedValue({ data: {}, error: null });

@@ -1,4 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  LOCAL_SUPABASE_FALLBACK,
+  PREVIEW_READ_ONLY,
+} from "@/config/supabase-environment";
 import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 import {
   deletePaymentVoucher,
@@ -82,6 +86,12 @@ interface SubscriptionCheckoutRpcClient {
 }
 
 const subscriptionCheckoutRpc = supabase as unknown as SubscriptionCheckoutRpcClient;
+
+function assertSubscriptionPaymentWritesAllowed(): void {
+  if (LOCAL_SUPABASE_FALLBACK || PREVIEW_READ_ONLY) {
+    throw new Error("O envio de comprovantes está indisponível neste ambiente.");
+  }
+}
 
 function toSubscribeCollectionOption(row: SubscribeCollectionQueryRow): SubscribeCollectionOption {
   return {
@@ -180,6 +190,7 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
   paymentMethod: SubscriptionPaymentMethod;
   voucher: File;
 }): Promise<SubscriptionCheckoutResult> {
+  assertSubscriptionPaymentWritesAllowed();
   if (
     !input ||
     !UUID_PATTERN.test(input.planId) ||
@@ -304,6 +315,7 @@ export async function resubmitSubscriptionPaymentVoucher(input: {
   subscriptionId: string;
   voucher: File;
 }): Promise<SubscriptionCheckoutResult> {
+  assertSubscriptionPaymentWritesAllowed();
   if (!UUID_PATTERN.test(input.subscriptionId) || !(input.voucher instanceof File)) {
     throw new Error("subscription_voucher_resubmission_invalid");
   }
