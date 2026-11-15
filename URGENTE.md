@@ -1,3 +1,12 @@
+## Checkpoint 15/11/2026 — estratégia de coleções, planos e Coins registrada
+
+- **Base documental → commits:** main com URGENTE blob `1b5ec68401a4f2cbed5b62c18674e4f1614096d5`; estratégia criada em `0086f2f9`, índice atualizado em `d6fb4a38`. Este checkpoint é documental, não uma entrega funcional.
+- **Documento:** [TONART — Coleções, Assinaturas e Coins](docs/TONART-COLECOES-ASSINATURAS-COINS.md), solicitado pelo proprietário para orientar o Codex. Consolida a direção final e identifica propostas/configurações sujeitas a margem e liberação.
+- **Direção:** plano compra peças, não credita o principal em Coins; compra integral à vista ou parcelada, sem recorrência inicial. Avulso R$250; trimestral 3 × R$235; semestral 6 × R$225; anual 12 × R$200 preparado/desativado. Bônus à vista 15/30/120 Coins; extras elegíveis com proposta de 5%, carteira única e pagamento misto.
+- **Validação:** conteúdo do documento relido no GitHub e conferido integralmente após gravação. Nenhum build/teste de aplicação necessário para estes textos; sem alteração de código, banco, cobrança ou deploy.
+- **NEXT_ACTION:** Codex deve seguir o documento no checkout canônico, reaproveitando curadoria/checkout/ledger existentes, implementar regras e UI primeiro e validar proporcionalmente em ambiente autorizado.
+- **DO_NOT_REPEAT:** não tratar alternativas anteriores (principal da assinatura como Coins ou abatimento universal de orçamento) como direção atual; não duplicar catálogo/carteira/planos; não habilitar produção, gravar no Supabase conectado nem confundir mocks com persistência real.
+
 ## Checkpoint 14/11/2026 — conta local sem autenticação conectada
 
 - **Base → commit candidato:** `main@0ca0a77b` → estado de fallback da conta + teste.
