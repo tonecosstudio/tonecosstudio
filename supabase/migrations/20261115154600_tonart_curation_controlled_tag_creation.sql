@@ -18,7 +18,7 @@ DECLARE
   v_label text;
   v_id uuid;
 BEGIN
-  PERFORM public.assert_admin_access();
+  PERFORM private_api.assert_tonart_curation_service_role();
 
   IF v_dimension IS NULL
      OR v_dimension NOT IN ('theme_genre', 'characteristic', 'narrative_role') THEN
