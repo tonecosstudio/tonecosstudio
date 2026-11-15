@@ -40,7 +40,7 @@ describe("internal catalog curation service", () => {
       expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
       expect(migration.match(/^COMMIT;$/gm)).toHaveLength(1);
       expect(migration.trimEnd().endsWith("COMMIT;")).toBe(true);
-      const functions = [...migration.matchAll(/CREATE OR REPLACE FUNCTION public\\.(\\w+)\\(/g)].map(
+      const functions = [...migration.matchAll(/CREATE OR REPLACE FUNCTION public\.(\w+)\(/g)].map(
         (match) => match[1],
       );
       expect(new Set(functions).size).toBe(functions.length);
