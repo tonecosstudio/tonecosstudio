@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
   addCatalogCurationTagAlias,
+  createCatalogCurationTag,
   ensureAdminInternalCollection,
   getInternalCollectionCurationPage,
   getInternalCollectionCurationSummary,
@@ -96,6 +97,9 @@ export function InternalCollectionCuration() {
   const [tagReviewState, setTagReviewState] =
     useState<"suggested" | "approved">("suggested");
   const [aliasDraft, setAliasDraft] = useState("");
+  const [newTagDimension, setNewTagDimension] =
+    useState<CatalogCurationTagDimension>("characteristic");
+  const [newTagLabel, setNewTagLabel] = useState("");
   const [identityReview, setIdentityReview] = useState<{
     model: SubscriptionCatalogModel;
     characterName: string;
@@ -324,6 +328,29 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível classificar os modelos",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      }),
+  });
+
+  const createTagMutation = useMutation({
+    mutationFn: () =>
+      createCatalogCurationTag({
+        dimension: newTagDimension,
+        label: newTagLabel,
+      }),
+    onSuccess: async (created) => {
+      setNewTagLabel("");
+      setTagId(created.id);
+      await queryClient.invalidateQueries({ queryKey: TAGS_QUERY });
+      toast({
+        title: "Classificação definida",
+        description: `${created.label} foi adicionada ao vocabulário controlado, sem classificar modelos automaticamente.`,
+      });
+    },
+    onError: (error) =>
+      toast({
+        title: "Não foi possível criar a classificação",
         description: error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
@@ -995,6 +1022,59 @@ export function InternalCollectionCuration() {
                       </div>
                     </div>
                   ))}
+                </div>
+                <div className="space-y-3 rounded-lg border p-3">
+                  <p className="text-sm font-medium">Definir nova classificação</p>
+                  <p className="text-xs text-muted-foreground">
+                    Acrescente uma classificação ao vocabulário privado, separada
+                    por dimensão. Isso não atribui a tag a nenhum modelo.
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+                    <div className="space-y-1">
+                      <Label htmlFor="internal-curation-new-tag-dimension">Dimensão</Label>
+                      <select
+                        id="internal-curation-new-tag-dimension"
+                        value={newTagDimension}
+                        onChange={(event) =>
+                          setNewTagDimension(event.target.value as CatalogCurationTagDimension)
+                        }
+                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                      >
+                        {(Object.keys(dimensionLabels) as CatalogCurationTagDimension[]).map(
+                          (dimension) => (
+                            <option key={dimension} value={dimension}>
+                              {dimensionLabels[dimension]}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="internal-curation-new-tag-name">Nome</Label>
+                      <Input
+                        id="internal-curation-new-tag-name"
+                        value={newTagLabel}
+                        onChange={(event) => setNewTagLabel(event.target.value)}
+                        maxLength={120}
+                        placeholder="Ex.: Armadura, Criatura, Protagonista..."
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={!newTagLabel.trim() || createTagMutation.isPending}
+                    onClick={() => createTagMutation.mutate()}
+                  >
+                    {createTagMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Criar classificação
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    A identificação é normalizada e colisões com tags ou
+                    sinônimos existentes são recusadas.
+                  </p>
                 </div>
                 <div className="space-y-2 pt-2">
                   <Label htmlFor="internal-curation-tag-state">
