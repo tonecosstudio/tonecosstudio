@@ -13,6 +13,7 @@ import {
   addCatalogCurationTagAlias,
   assertCurrentCanonicalCurationModels,
   createCatalogCurationTag,
+  createInternalCollectionTemplate,
   ensureAdminInternalCollection,
   getInternalCollectionCurationPage,
   INTERNAL_COLLECTION_TEMPLATES,
@@ -79,6 +80,53 @@ describe("internal catalog curation service", () => {
     expect(migrations[1]).toContain("TO service_role;");
   });
 
+
+  it("builds valid custom editorial collections without inventing models", () => {
+    expect(
+      createInternalCollectionTemplate(
+        " Vilões do Homem-Aranha ",
+        " Revisão editorial de antagonistas ",
+      ),
+    ).toEqual({
+      name: "Vilões do Homem-Aranha",
+      slug: "viloes-do-homem-aranha",
+      description: "Revisão editorial de antagonistas",
+    });
+    expect(() => createInternalCollectionTemplate("<script>", "Descrição")).toThrow(
+      "catalog_internal_collection_template_invalid",
+    );
+    expect(() => createInternalCollectionTemplate("  ", "Descrição")).toThrow(
+      "catalog_internal_collection_template_invalid",
+    );
+    expect(() => createInternalCollectionTemplate("Tema", " ")).toThrow(
+      "catalog_internal_collection_template_invalid",
+    );
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
+  it("allows manually discarding an incorrect controlled classification", async () => {
+    mocks.callAdminRpc.mockResolvedValue({ count: 1 });
+    await expect(
+      saveCatalogModelClassifications({
+        models: [{ modelId: MODEL_ID, slug: "modelo-real" }],
+        tagId: TAG_ID,
+        reviewState: "discarded",
+        evidenceOrigin: "manual_admin:controlled_classification",
+        evidenceNote: "Revisão editorial: classificação removida.",
+      }),
+    ).resolves.toBe(1);
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_upsert_catalog_curation_tags",
+      expect.objectContaining({
+        p_items: [
+          expect.objectContaining({
+            reviewState: "discarded",
+            tagId: TAG_ID,
+          }),
+        ],
+      }),
+    );
+  });
 
   it("prepares owner-defined collections without seeding models", async () => {
     const terror = INTERNAL_COLLECTION_TEMPLATES[0];
