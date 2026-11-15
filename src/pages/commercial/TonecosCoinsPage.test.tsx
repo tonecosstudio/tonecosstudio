@@ -101,6 +101,9 @@ describe("commercial coins account UI", () => {
     expect(await screen.findByText("Crédito manual")).toBeInTheDocument();
     expect(screen.getByText("+20")).toBeInTheDocument();
     expect(screen.getByText("15", { selector: "p" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Abrir meus orçamentos" }),
+    ).toHaveAttribute("href", "/meus-orcamentos");
   });
 
   it("pages through the full append-only coin history", async () => {

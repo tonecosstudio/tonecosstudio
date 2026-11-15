@@ -7,7 +7,12 @@ import {
 import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
 import { isTonecosCoinsAuthError, tonecosCoinsErrorText } from "@/services/coins/tonecos-coins-error-text";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
-import { CommercialPage, panelClass, secondaryClass } from "./CommercialPage";
+import {
+  actionClass,
+  CommercialPage,
+  panelClass,
+  secondaryClass,
+} from "./CommercialPage";
 
 const format = new Intl.NumberFormat("pt-BR");
 const PAGE_SIZE = 25;
@@ -78,6 +83,31 @@ export default function TonecosCoinsPage() {
             <p className="mt-3 text-2xl font-semibold tabular-nums">{format.format(balance.totalSpent)}</p>
           </div>
         </div>
+        {balance.balance > 0 && (
+          <section
+            className={
+              panelClass +
+              " mt-5 flex flex-col gap-4 border-[hsl(var(--gold-accent)/0.35)] sm:flex-row sm:items-center sm:justify-between"
+            }
+            aria-label="Usar Coins em um orçamento"
+          >
+            <div className="max-w-2xl">
+              <h2 className="text-base font-semibold">
+                Aproveite seu saldo em um orçamento
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-white/60">
+                Acesse um orçamento comum já respondido para escolher quantos
+                Coins aplicar ao valor em aberto.
+              </p>
+            </div>
+            <Link
+              className={actionClass + " shrink-0"}
+              to={TONECOS_COMMERCIAL_ROUTES.history}
+            >
+              Abrir meus orçamentos
+            </Link>
+          </section>
+        )}
         <div className="mt-7 max-w-4xl">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div>
