@@ -117,11 +117,19 @@ export async function fetchAdminAnalyticsTopCollectors(): Promise<TopCollector[]
 }
 
 export async function fetchAdminAnalyticsCollectionsStats(): Promise<CollectionsStats> {
-  const { data, error } = await supabase.from("collections").select("id, name, is_active");
+  const { data, error } = await supabase.from("collections").select("*");
   if (error) throw error;
 
-  const active = data?.filter((c) => c.is_active).length || 0;
-  const inactive = data?.filter((c) => !c.is_active).length || 0;
+  const commercialCollections = (
+    (data ?? []) as unknown as Array<{
+      id: string;
+      is_active: boolean;
+      collection_kind?: string;
+    }>
+  ).filter((collection) => collection.collection_kind !== "internal");
 
-  return { total: data?.length || 0, active, inactive };
+  const active = commercialCollections.filter((collection) => collection.is_active).length;
+  const inactive = commercialCollections.length - active;
+
+  return { total: commercialCollections.length, active, inactive };
 }
