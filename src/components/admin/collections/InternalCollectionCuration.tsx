@@ -513,6 +513,22 @@ export function InternalCollectionCuration() {
           </p>
         ) : (
           <>
+            {summaryQuery.isError && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  Não foi possível carregar as estatísticas desta coleção.
+                  Os indicadores não representam valores zerados.
+                </AlertDescription>
+              </Alert>
+            )}
+            {tagsQuery.isError && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  Não foi possível carregar o vocabulário de classificações.
+                  A indisponibilidade não significa ausência de tags.
+                </AlertDescription>
+              </Alert>
+            )}
             <section className="grid gap-4 lg:grid-cols-[minmax(220px,0.8fr)_minmax(0,2fr)]">
               <div className="space-y-2">
                 <Label htmlFor="internal-curation-collection">Coleção interna</Label>
@@ -714,6 +730,16 @@ export function InternalCollectionCuration() {
                   </select>
                 </div>
               </div>
+
+              {pageModelsQuery.isError && page?.items.length ? (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    Não foi possível confirmar os detalhes dos candidatos no
+                    catálogo canônico. As referências editoriais permanecem
+                    visíveis, mas a revisão de identidade fica indisponível.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
 
               {pageQuery.isLoading ? (
                 <p role="status" className="text-sm text-muted-foreground">
