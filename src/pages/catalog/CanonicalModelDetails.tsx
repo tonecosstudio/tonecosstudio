@@ -16,7 +16,7 @@ import {
   ArcadeCard,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
-import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import { PUBLIC_ROUTES } from "@/config/routes";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import {
   MAX_CANONICAL_SELECTION,
@@ -916,30 +916,6 @@ export default function CanonicalModelDetails() {
                         </aside>
                       ) : null}
                     </div>
-                    {quoteRequestsEnabled ? (
-                      <details className="border-t border-[hsl(0,0%,15%)] pt-4">
-                        <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
-                          Como usar Coins no orçamento
-                        </summary>
-                        <p className="pb-3 text-sm leading-relaxed text-[hsl(0,0%,70%)]">
-                          Coins não são definidos por modelo nem usados ao montar
-                          a seleção. Depois que a equipe responder a um orçamento
-                          comum, você pode usar seu saldo para abater R$ 1 por
-                          Coin, até o menor valor entre seu saldo disponível e o
-                          total em aberto. A entrada de R$ 50 da pré-venda não
-                          aceita Coins. O saldo restante segue pelas
-                          instruções de pagamento do orçamento; Coins são créditos
-                          virtuais, sem saque ou conversão em dinheiro.
-                        </p>
-                        <Link
-                          to={TONECOS_COMMERCIAL_ROUTES.coins}
-                          className="mb-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                        >
-                          Consultar saldo e movimentações de Coins
-                          <ChevronRight size={16} aria-hidden="true" />
-                        </Link>
-                      </details>
-                    ) : null}
                     <details className="border-t border-[hsl(0,0%,15%)] pt-4">
                       <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
                         Como preparar sua solicitação
