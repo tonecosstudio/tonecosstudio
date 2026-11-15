@@ -13,6 +13,7 @@ import AdminCollections from "./AdminCollections";
 import { CreditCharactersContent } from "@/components/admin/catalog/CreditCharactersContent";
 import { CatalogCurationContent } from "@/components/admin/catalog/CatalogCurationContent";
 import { SubscriptionCollectionCuration } from "@/components/admin/collections/SubscriptionCollectionCuration";
+import { InternalCollectionCuration } from "@/components/admin/collections/InternalCollectionCuration";
 
 type AdminCatalogTab = "models" | "collections" | "credit-characters";
 
@@ -95,6 +96,7 @@ export default function AdminCollectionsHub() {
                 preco.
               </p>
             </div>
+            <InternalCollectionCuration />
             {PUBLIC_SUBSCRIPTIONS_ENABLED && <SubscriptionCollectionCuration />}
             <AdminCollections />
           </TabsContent>
