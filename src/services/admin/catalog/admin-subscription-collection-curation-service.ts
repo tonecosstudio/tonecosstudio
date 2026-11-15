@@ -17,17 +17,24 @@ export type AdminSubscriptionCollection = {
 export async function listAdminSubscriptionCollections(): Promise<AdminSubscriptionCollection[]> {
   const { data, error } = await supabase
     .from("collections")
-    .select("id, name, slug, is_active, catalog_model_slugs")
-    .neq("collection_kind", "internal")
+    .select("*")
     .order("name", { ascending: true });
 
   if (error) throw error;
-  return ((data ?? []) as unknown as AdminSubscriptionCollection[]).map((collection) => ({
-    ...collection,
-    catalog_model_slugs: Array.isArray(collection.catalog_model_slugs)
-      ? collection.catalog_model_slugs.filter((slug): slug is string => typeof slug === "string")
-      : [],
-  }));
+  return (
+    (data ?? []) as unknown as Array<
+      AdminSubscriptionCollection & { collection_kind?: string }
+    >
+  )
+    .filter((collection) => collection.collection_kind !== "internal")
+    .map((collection) => ({
+      ...collection,
+      catalog_model_slugs: Array.isArray(collection.catalog_model_slugs)
+        ? collection.catalog_model_slugs.filter(
+            (slug): slug is string => typeof slug === "string",
+          )
+        : [],
+    }));
 }
 
 export async function saveAdminSubscriptionCollectionModels(input: {
