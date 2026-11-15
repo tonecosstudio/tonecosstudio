@@ -1,58 +1,35 @@
 -- TONART internal catalog curation.
--- Reuses public.collections and canonical catalog identifiers without copying D1/R2.
+-- Preserves canonical catalog IDs without copying Cloudflare D1/R2 models.
 -- Internal curation is private by default and never activates a commercial offer.
 BEGIN;
 
-ALTER TABLE public.collections
-  ADD COLUMN IF NOT EXISTS collection_kind text NOT NULL DEFAULT 'commercial',
-  ADD COLUMN IF NOT EXISTS curation_visibility text NOT NULL DEFAULT 'public';
+-- One private editorial authority. No subscription, pricing or sales table duplication.
+CREATE TABLE IF NOT EXISTS public.tonart_editorial_collections (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL CHECK (length(btrim(name)) BETWEEN 1 AND 160 AND name !~ '[[:cntrl:]<>]'),
+  slug text NOT NULL UNIQUE CHECK (length(slug) <= 120 AND slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+  description text CHECK (description IS NULL OR (length(description) <= 2000 AND description !~ '[[:cntrl:]<>]')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 
-ALTER TABLE public.collections
-  DROP CONSTRAINT IF EXISTS collections_collection_kind_valid,
-  ADD CONSTRAINT collections_collection_kind_valid
-    CHECK (collection_kind IN ('commercial', 'internal', 'hybrid')) NOT VALID,
-  DROP CONSTRAINT IF EXISTS collections_curation_visibility_valid,
-  ADD CONSTRAINT collections_curation_visibility_valid
-    CHECK (curation_visibility IN ('public', 'private')) NOT VALID,
-  DROP CONSTRAINT IF EXISTS collections_internal_private_inactive,
-  ADD CONSTRAINT collections_internal_private_inactive
-    CHECK (
-      collection_kind <> 'internal'
-      OR (
-        curation_visibility = 'private'
-        AND is_active = false
-        AND status <> 'active'::public.collection_status
-      )
-    ) NOT VALID;
-
-CREATE OR REPLACE FUNCTION public.guard_internal_collection_tier_assignment()
-RETURNS trigger
-LANGUAGE plpgsql
-SET search_path = public, pg_temp
-AS $guard$
+-- The authenticated admin is checked in the existing Edge admin-rpc boundary.
+-- This database layer additionally rejects calls not arriving as service_role.
+CREATE OR REPLACE FUNCTION private_api.assert_tonart_curation_service_role()
+RETURNS void
+LANGUAGE plpgsql SECURITY INVOKER SET search_path = ''
+AS $editorialguard$
 BEGIN
-  IF EXISTS (
-    SELECT 1
-      FROM public.collections c
-     WHERE c.id = NEW.collection_id
-       AND c.collection_kind = 'internal'
-  ) THEN
-    RAISE EXCEPTION 'Internal collection cannot receive commercial pricing tier'
-      USING ERRCODE = '22023';
+  IF COALESCE(current_setting('request.jwt.claim.role', true), '') <> 'service_role' THEN
+    RAISE EXCEPTION 'Forbidden: editorial service role required' USING ERRCODE = '42501';
   END IF;
-
-  RETURN NEW;
 END;
-$guard$;
+$editorialguard$;
+REVOKE ALL ON FUNCTION private_api.assert_tonart_curation_service_role()
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION private_api.assert_tonart_curation_service_role()
+  TO service_role;
 
-DROP TRIGGER IF EXISTS guard_internal_collection_tier_assignment
-  ON public.collection_tier_assignments;
-
-CREATE TRIGGER guard_internal_collection_tier_assignment
-BEFORE INSERT OR UPDATE OF collection_id
-ON public.collection_tier_assignments
-FOR EACH ROW
-EXECUTE FUNCTION public.guard_internal_collection_tier_assignment();
 CREATE TABLE IF NOT EXISTS public.catalog_character_identities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   identity_key text NOT NULL UNIQUE,
@@ -204,7 +181,7 @@ ON public.catalog_curation_tags
 FOR EACH ROW
 EXECUTE FUNCTION public.guard_catalog_curation_tag_slug();
 CREATE TABLE IF NOT EXISTS public.catalog_collection_curation (
-  collection_id uuid NOT NULL REFERENCES public.collections(id) ON DELETE CASCADE,
+  collection_id uuid NOT NULL REFERENCES public.tonart_editorial_collections(id) ON DELETE CASCADE,
   catalog_model_id text NOT NULL REFERENCES public.catalog_curation_model_profiles(catalog_model_id) ON DELETE CASCADE,
   state text NOT NULL DEFAULT 'suggested',
   evidence_origin text NOT NULL,
@@ -262,6 +239,7 @@ VALUES
   )
 ON CONFLICT (id) DO NOTHING;
 
+ALTER TABLE public.tonart_editorial_collections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.catalog_character_identities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.catalog_curation_model_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.catalog_curation_tags ENABLE ROW LEVEL SECURITY;
@@ -272,33 +250,35 @@ ALTER TABLE public.catalog_curation_model_tags ENABLE ROW LEVEL SECURITY;
 CREATE POLICY catalog_character_identities_admin_read
   ON public.catalog_character_identities FOR SELECT
   TO authenticated
-  USING (public.has_role((SELECT auth.uid()), 'admin'));
+  USING (public.is_tonecos_admin());
 
 CREATE POLICY catalog_curation_model_profiles_admin_read
   ON public.catalog_curation_model_profiles FOR SELECT
   TO authenticated
-  USING (public.has_role((SELECT auth.uid()), 'admin'));
+  USING (public.is_tonecos_admin());
 
 CREATE POLICY catalog_curation_tags_admin_read
   ON public.catalog_curation_tags FOR SELECT
   TO authenticated
-  USING (public.has_role((SELECT auth.uid()), 'admin'));
+  USING (public.is_tonecos_admin());
 
 CREATE POLICY catalog_curation_tag_aliases_admin_read
   ON public.catalog_curation_tag_aliases FOR SELECT
   TO authenticated
-  USING (public.has_role((SELECT auth.uid()), 'admin'));
+  USING (public.is_tonecos_admin());
 
 CREATE POLICY catalog_collection_curation_admin_read
   ON public.catalog_collection_curation FOR SELECT
   TO authenticated
-  USING (public.has_role((SELECT auth.uid()), 'admin'));
+  USING (public.is_tonecos_admin());
 
 CREATE POLICY catalog_curation_model_tags_admin_read
   ON public.catalog_curation_model_tags FOR SELECT
   TO authenticated
-  USING (public.has_role((SELECT auth.uid()), 'admin'));
+  USING (public.is_tonecos_admin());
 
+REVOKE ALL ON TABLE public.tonart_editorial_collections FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tonart_editorial_collections TO service_role;
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.catalog_character_identities FROM anon, authenticated;
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.catalog_curation_model_profiles FROM anon, authenticated;
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.catalog_curation_tags FROM anon, authenticated;
@@ -358,122 +338,54 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.admin_list_internal_collections()
 RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp
 AS $$
-DECLARE
-  v_result jsonb;
+DECLARE v_result jsonb;
 BEGIN
-  PERFORM public.assert_admin_access();
-  SELECT COALESCE(
-    jsonb_agg(
-      jsonb_build_object(
-        'id', c.id,
-        'name', c.name,
-        'slug', c.slug,
-        'collectionKind', c.collection_kind,
-        'curationVisibility', c.curation_visibility,
-        'isActive', c.is_active,
-        'status', c.status::text
-      )
-      ORDER BY c.name
-    ),
-    '[]'::jsonb
-  )
-  INTO v_result
-  FROM public.collections c
-  WHERE c.collection_kind IN ('internal', 'hybrid');
+  PERFORM private_api.assert_tonart_curation_service_role();
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'id', c.id, 'name', c.name, 'slug', c.slug,
+    'collectionKind', 'internal', 'curationVisibility', 'private',
+    'isActive', false, 'status', 'draft'
+  ) ORDER BY c.name), '[]'::jsonb) INTO v_result
+  FROM public.tonart_editorial_collections c;
   RETURN v_result;
 END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.admin_ensure_internal_collection(
-  p_name text,
-  p_slug text,
-  p_description text DEFAULT NULL
+  p_name text, p_slug text, p_description text DEFAULT NULL
 )
 RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_name text;
   v_slug text;
   v_description text;
-  v_existing public.collections%ROWTYPE;
-  v_created jsonb;
-  v_id uuid;
+  v_collection public.tonart_editorial_collections%ROWTYPE;
 BEGIN
-  PERFORM public.assert_admin_access();
-  v_name := public.admin_validate_collection_text(p_name, 'collection name', 160);
-  v_slug := lower(public.admin_validate_collection_text(p_slug, 'collection slug', 120));
+  PERFORM private_api.assert_tonart_curation_service_role();
+  v_name := public.admin_validate_catalog_curation_text(p_name, 'collection name', 160);
+  v_slug := lower(public.admin_validate_catalog_curation_text(p_slug, 'collection slug', 120));
   IF v_slug !~ '^[a-z0-9]+(?:-[a-z0-9]+)*$' THEN
     RAISE EXCEPTION 'Invalid collection slug' USING ERRCODE = '22023';
   END IF;
-  v_description := public.admin_validate_collection_text(
-    p_description,
-    'collection description',
-    2000,
-    false
+  v_description := public.admin_validate_catalog_curation_text(
+    p_description, 'collection description', 2000, false
   );
-
-  PERFORM pg_advisory_xact_lock(hashtext('tonart-internal-collection:' || v_slug));
-
-  SELECT * INTO v_existing
-  FROM public.collections
-  WHERE slug = v_slug
-  ORDER BY created_at
-  LIMIT 1;
-
-  IF v_existing.id IS NOT NULL THEN
-    -- A template must not silently reclassify an existing commercial offer.
-    -- Only already-internal or explicitly established hybrid collections can be reused.
-    IF v_existing.collection_kind = 'commercial' THEN
-      RAISE EXCEPTION 'Invalid internal curation slug: reserved by an existing commercial collection'
-        USING ERRCODE = '22023';
-    END IF;
-    IF v_existing.collection_kind NOT IN ('internal', 'hybrid') THEN
-      RAISE EXCEPTION 'Invalid collection kind for editorial reuse'
-        USING ERRCODE = '22023';
-    END IF;
-    IF v_existing.curation_visibility <> 'private' THEN
-      UPDATE public.collections
-         SET curation_visibility = 'private', updated_at = now()
-       WHERE id = v_existing.id
-       RETURNING * INTO v_existing;
-    END IF;
-    v_id := v_existing.id;
-  ELSE
-    v_created := public.admin_create_collection(
-      jsonb_build_object(
-        'name', v_name,
-        'slug', v_slug,
-        'description', v_description,
-        'is_active', false,
-        'rotation_type', 'fixed'
-      )
-    );
-    v_id := (v_created->>'id')::uuid;
-    UPDATE public.collections
-       SET collection_kind = 'internal',
-           curation_visibility = 'private',
-           is_active = false,
-           status = 'draft',
-           updated_at = now()
-     WHERE id = v_id
-     RETURNING * INTO v_existing;
+  INSERT INTO public.tonart_editorial_collections (name, slug, description)
+  VALUES (v_name, v_slug, v_description)
+  ON CONFLICT (slug) DO NOTHING;
+  SELECT * INTO v_collection FROM public.tonart_editorial_collections
+  WHERE slug = v_slug;
+  IF v_collection.id IS NULL THEN
+    RAISE EXCEPTION 'Internal collection not found' USING ERRCODE = 'P0002';
   END IF;
-
   RETURN jsonb_build_object(
-    'id', v_existing.id,
-    'name', v_existing.name,
-    'slug', v_existing.slug,
-    'collectionKind', v_existing.collection_kind,
-    'curationVisibility', v_existing.curation_visibility,
-    'isActive', v_existing.is_active,
-    'status', v_existing.status::text
+    'id', v_collection.id, 'name', v_collection.name, 'slug', v_collection.slug,
+    'collectionKind', 'internal', 'curationVisibility', 'private',
+    'isActive', false, 'status', 'draft'
   );
 END;
 $$;
@@ -487,7 +399,7 @@ AS $$
 DECLARE
   v_result jsonb;
 BEGIN
-  PERFORM public.assert_admin_access();
+  PERFORM private_api.assert_tonart_curation_service_role();
   SELECT COALESCE(
     jsonb_agg(
       jsonb_build_object(
@@ -535,7 +447,7 @@ DECLARE
   v_alias_slug text := lower(btrim(COALESCE(p_alias_slug, '')));
   v_existing_tag_id uuid;
 BEGIN
-  PERFORM public.assert_admin_access();
+  PERFORM private_api.assert_tonart_curation_service_role();
 
   IF length(v_alias_slug) < 1
      OR length(v_alias_slug) > 80
@@ -598,7 +510,7 @@ DECLARE
   v_alias_slug text := lower(btrim(COALESCE(p_alias_slug, '')));
   v_deleted integer;
 BEGIN
-  PERFORM public.assert_admin_access();
+  PERFORM private_api.assert_tonart_curation_service_role();
 
   IF length(v_alias_slug) < 1
      OR length(v_alias_slug) > 80
@@ -632,7 +544,6 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-  v_kind text;
   v_model_count integer;
   v_distinct_characters integer;
   v_unverified integer;
@@ -641,15 +552,11 @@ DECLARE
   v_selected integer;
   v_discarded integer;
 BEGIN
-  PERFORM public.assert_admin_access();
-  SELECT collection_kind INTO v_kind
-  FROM public.collections
-  WHERE id = p_collection_id;
-  IF v_kind IS NULL THEN
-    RAISE EXCEPTION 'Collection not found' USING ERRCODE = 'P0002';
-  END IF;
-  IF v_kind NOT IN ('internal', 'hybrid') THEN
-    RAISE EXCEPTION 'Collection is not enabled for internal curation' USING ERRCODE = '22023';
+  PERFORM private_api.assert_tonart_curation_service_role();
+  IF NOT EXISTS (
+    SELECT 1 FROM public.tonart_editorial_collections WHERE id = p_collection_id
+  ) THEN
+    RAISE EXCEPTION 'Internal collection not found' USING ERRCODE = 'P0002';
   END IF;
 
   SELECT
@@ -699,12 +606,11 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-  v_kind text;
   v_state text := NULLIF(btrim(COALESCE(p_state, '')), '');
   v_total integer;
   v_items jsonb;
 BEGIN
-  PERFORM public.assert_admin_access();
+  PERFORM private_api.assert_tonart_curation_service_role();
   IF p_offset < 0 OR p_limit < 1 OR p_limit > 20 THEN
     RAISE EXCEPTION 'Invalid curation page bounds' USING ERRCODE = '22023';
   END IF;
@@ -713,14 +619,10 @@ BEGIN
     RAISE EXCEPTION 'Invalid curation state' USING ERRCODE = '22023';
   END IF;
 
-  SELECT collection_kind INTO v_kind
-  FROM public.collections
-  WHERE id = p_collection_id;
-  IF v_kind IS NULL THEN
-    RAISE EXCEPTION 'Collection not found' USING ERRCODE = 'P0002';
-  END IF;
-  IF v_kind NOT IN ('internal', 'hybrid') THEN
-    RAISE EXCEPTION 'Collection is not enabled for internal curation' USING ERRCODE = '22023';
+  IF NOT EXISTS (
+    SELECT 1 FROM public.tonart_editorial_collections WHERE id = p_collection_id
+  ) THEN
+    RAISE EXCEPTION 'Internal collection not found' USING ERRCODE = 'P0002';
   END IF;
 
   SELECT count(*) INTO v_total
@@ -809,7 +711,6 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-  v_kind text;
   v_item jsonb;
   v_id text;
   v_slug text;
@@ -818,20 +719,16 @@ DECLARE
   v_note text;
   v_count integer := 0;
 BEGIN
-  PERFORM public.assert_admin_access();
+  PERFORM private_api.assert_tonart_curation_service_role();
   IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array'
      OR jsonb_array_length(p_items) < 1 OR jsonb_array_length(p_items) > 50 THEN
     RAISE EXCEPTION 'Curation items must contain between 1 and 50 models' USING ERRCODE = '22023';
   END IF;
 
-  SELECT collection_kind INTO v_kind
-  FROM public.collections
-  WHERE id = p_collection_id;
-  IF v_kind IS NULL THEN
-    RAISE EXCEPTION 'Collection not found' USING ERRCODE = 'P0002';
-  END IF;
-  IF v_kind NOT IN ('internal', 'hybrid') THEN
-    RAISE EXCEPTION 'Collection is not enabled for internal curation' USING ERRCODE = '22023';
+  IF NOT EXISTS (
+    SELECT 1 FROM public.tonart_editorial_collections WHERE id = p_collection_id
+  ) THEN
+    RAISE EXCEPTION 'Internal collection not found' USING ERRCODE = 'P0002';
   END IF;
 
   -- Reject repeated canonical references atomically before any row is written.
@@ -942,7 +839,7 @@ DECLARE
   v_identity_key text;
   v_identity_id uuid;
 BEGIN
-  PERFORM public.assert_admin_access();
+  PERFORM private_api.assert_tonart_curation_service_role();
   SELECT model_id, model_slug INTO v_id, v_slug
   FROM public.admin_validate_catalog_model_reference(p_model_id, p_model_slug);
   v_name := public.admin_validate_catalog_curation_text(
@@ -1049,7 +946,7 @@ DECLARE
   v_note text;
   v_count integer := 0;
 BEGIN
-  PERFORM public.assert_admin_access();
+  PERFORM private_api.assert_tonart_curation_service_role();
   IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array'
      OR jsonb_array_length(p_items) < 1 OR jsonb_array_length(p_items) > 100 THEN
     RAISE EXCEPTION 'Tag items must contain between 1 and 100 classifications' USING ERRCODE = '22023';
@@ -1173,10 +1070,8 @@ GRANT EXECUTE ON FUNCTION public.admin_upsert_collection_curation_models(uuid, j
 GRANT EXECUTE ON FUNCTION public.admin_verify_catalog_model_identity(text, text, text, text, text, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_upsert_catalog_curation_tags(jsonb) TO service_role;
 
-COMMENT ON COLUMN public.collections.collection_kind IS
-  'commercial=existing sellable collection; internal=private editorial grouping; hybrid=same collection row also used for internal curation.';
-COMMENT ON COLUMN public.collections.curation_visibility IS
-  'Visibility of editorial curation metadata only. It does not publish or hide the commercial collection.';
+COMMENT ON TABLE public.tonart_editorial_collections IS
+  'Private editorial group authority; no checkout, sale terms, price, catalog copy or publication state.';
 COMMENT ON TABLE public.catalog_collection_curation IS
   'Private editorial membership of canonical catalog models. selected_for_offer is not publication authorization and never mutates collections.catalog_model_slugs.';
 COMMENT ON TABLE public.catalog_curation_model_tags IS
