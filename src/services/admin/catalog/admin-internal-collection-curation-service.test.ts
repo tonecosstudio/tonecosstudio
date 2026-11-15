@@ -9,6 +9,7 @@ vi.mock("@/services/admin/rpc/admin-rpc-gateway", () => ({
 }));
 
 import {
+  addCatalogCurationTagAlias,
   ensureAdminInternalCollection,
   getInternalCollectionCurationPage,
   INTERNAL_COLLECTION_TEMPLATES,
@@ -78,6 +79,29 @@ describe("internal catalog curation service", () => {
     ).rejects.toThrow("catalog_curation_automatic_must_be_suggested");
 
     expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
+  it("normalizes a manually reviewed curation alias before persisting it", async () => {
+    mocks.callAdminRpc.mockResolvedValue({
+      tagId: TAG_ID,
+      dimension: "narrative_role",
+      aliasSlug: "vilao-principal",
+    });
+
+    await expect(
+      addCatalogCurationTagAlias({
+        tagId: TAG_ID,
+        alias: "Vilão principal",
+      }),
+    ).resolves.toBe("vilao-principal");
+
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_add_catalog_curation_tag_alias",
+      {
+        p_tag_id: TAG_ID,
+        p_alias_slug: "vilao-principal",
+      },
+    );
   });
 
   it("reads only one bounded curation page and preserves evidence", async () => {
