@@ -546,6 +546,44 @@ BEGIN
   );
 END;
 $alias$;
+CREATE OR REPLACE FUNCTION public.admin_remove_catalog_curation_tag_alias(
+  p_tag_id uuid,
+  p_alias_slug text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $removealias$
+DECLARE
+  v_alias_slug text := lower(btrim(COALESCE(p_alias_slug, '')));
+  v_deleted integer;
+BEGIN
+  PERFORM public.assert_admin_access();
+
+  IF length(v_alias_slug) < 1
+     OR length(v_alias_slug) > 80
+     OR left(v_alias_slug, 1) !~ '^[a-z0-9]'
+     OR v_alias_slug ~ '[^a-z0-9-]' THEN
+    RAISE EXCEPTION 'Invalid curation tag alias slug' USING ERRCODE = '22023';
+  END IF;
+
+  DELETE FROM public.catalog_curation_tag_aliases
+  WHERE tag_id = p_tag_id
+    AND alias_slug = v_alias_slug;
+
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+  IF v_deleted <> 1 THEN
+    RAISE EXCEPTION 'Curation tag alias not found' USING ERRCODE = 'P0002';
+  END IF;
+
+  RETURN jsonb_build_object(
+    'tagId', p_tag_id,
+    'aliasSlug', v_alias_slug,
+    'removed', true
+  );
+END;
+$removealias$;
 CREATE OR REPLACE FUNCTION public.admin_get_collection_curation_summary(
   p_collection_id uuid
 )
@@ -1015,6 +1053,7 @@ REVOKE ALL ON FUNCTION public.admin_list_internal_collections() FROM PUBLIC, ano
 REVOKE ALL ON FUNCTION public.admin_ensure_internal_collection(text, text, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_list_catalog_curation_tags() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_add_catalog_curation_tag_alias(uuid, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.admin_remove_catalog_curation_tag_alias(uuid, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_get_collection_curation_summary(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_upsert_collection_curation_models(uuid, jsonb) FROM PUBLIC, anon, authenticated;
@@ -1025,6 +1064,7 @@ GRANT EXECUTE ON FUNCTION public.admin_list_internal_collections() TO service_ro
 GRANT EXECUTE ON FUNCTION public.admin_ensure_internal_collection(text, text, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_list_catalog_curation_tags() TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_add_catalog_curation_tag_alias(uuid, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.admin_remove_catalog_curation_tag_alias(uuid, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_summary(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_upsert_collection_curation_models(uuid, jsonb) TO service_role;
