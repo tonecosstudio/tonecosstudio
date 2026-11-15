@@ -215,6 +215,7 @@ function parseMembershipTag(value: unknown): CatalogCurationMembershipTag {
     ...row,
     status: "active",
     definitionOrigin: "membership",
+    aliases: [],
   });
   if (
     typeof row.reviewState !== "string" ||
