@@ -358,6 +358,44 @@ function normalizeCurationAliasSlug(value: string): string {
     .slice(0, 80);
 }
 
+export async function createCatalogCurationTag(input: {
+  dimension: CatalogCurationTagDimension;
+  label: string;
+}): Promise<CatalogCurationTag> {
+  if (
+    !input ||
+    !tagDimensions.has(input.dimension) ||
+    typeof input.label !== "string" ||
+    !input.label.trim() ||
+    input.label.trim().length > 120 ||
+    /[\\u0000-\\u001f\\u007f<>]/.test(input.label)
+  ) {
+    throw new Error("catalog_curation_tag_definition_invalid");
+  }
+  const label = input.label.trim();
+  const slug = normalizeCurationAliasSlug(label);
+  if (!CURATION_ALIAS_SLUG.test(slug)) {
+    throw new Error("catalog_curation_tag_definition_invalid");
+  }
+  const data = await callAdminRpc<unknown>("admin_create_catalog_curation_tag", {
+    p_dimension: input.dimension,
+    p_slug: slug,
+    p_label: label,
+  });
+  const tag = parseTag(data);
+  if (
+    tag.dimension !== input.dimension ||
+    tag.slug !== slug ||
+    tag.label !== label ||
+    tag.status !== "active" ||
+    tag.definitionOrigin !== "manual_admin:controlled_vocabulary" ||
+    tag.aliases.length !== 0
+  ) {
+    throw new Error("catalog_curation_tag_definition_result_invalid");
+  }
+  return tag;
+}
+
 export async function addCatalogCurationTagAlias(input: {
   tagId: string;
   alias: string;
