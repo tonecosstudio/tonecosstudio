@@ -864,8 +864,13 @@ BEGIN
       1000,
       false
     );
-    IF v_origin LIKE 'automatic:%' AND v_state <> 'suggested' THEN
-      RAISE EXCEPTION 'Automatic classifications must remain suggestions' USING ERRCODE = '22023';
+    IF lower(v_origin) LIKE 'automatic:%' THEN
+      IF v_state <> 'suggested' THEN
+        RAISE EXCEPTION 'Automatic classifications must remain suggestions' USING ERRCODE = '22023';
+      END IF;
+      IF v_note IS NULL THEN
+        RAISE EXCEPTION 'Automatic curation requires a specific evidence note' USING ERRCODE = '22023';
+      END IF;
     END IF;
 
     INSERT INTO public.catalog_curation_model_profiles (
@@ -954,7 +959,7 @@ BEGIN
     1000,
     false
   );
-  IF v_origin LIKE 'automatic:%' THEN
+  IF lower(v_origin) LIKE 'automatic:%' THEN
     RAISE EXCEPTION 'Automatic identity cannot be marked as verified' USING ERRCODE = '22023';
   END IF;
 
@@ -1091,8 +1096,13 @@ BEGIN
       1000,
       false
     );
-    IF v_origin LIKE 'automatic:%' AND v_state <> 'suggested' THEN
-      RAISE EXCEPTION 'Automatic classifications must remain suggestions' USING ERRCODE = '22023';
+    IF lower(v_origin) LIKE 'automatic:%' THEN
+      IF v_state <> 'suggested' THEN
+        RAISE EXCEPTION 'Automatic classifications must remain suggestions' USING ERRCODE = '22023';
+      END IF;
+      IF v_note IS NULL THEN
+        RAISE EXCEPTION 'Automatic curation requires a specific evidence note' USING ERRCODE = '22023';
+      END IF;
     END IF;
 
     INSERT INTO public.catalog_curation_model_profiles (
