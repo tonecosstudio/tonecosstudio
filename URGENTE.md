@@ -1571,3 +1571,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** continuar a integração do checkout no histórico/pedidos existentes, com reserva idempotente de Coins e confirmação financeira vinculada; manter o gate fechado e não tratar a simulação da ficha como compra funcional. Preservar a falha de infraestrutura já observada no Quality Gate sem reexecuções sem mudança externa.
 
 **DO_NOT_REPEAT:** não reabrir create_standalone_purchase_atomic nem qualquer caminho que marque pagamento sem evidência; não usar o preview como prova de checkout/Supabase real; não habilitar cobrança, não escrever em Supabase produtivo e não criar carteira ou catálogo duplicado.
+
+## Rodada 69 — Desconto configurável de assinante nas ofertas (15/11/2026)
+
+- A oferta comercial agora persiste o percentual de desconto em basis points (default proposto de 500 = 5%), valida faixa de 0–100% e impede oferta elegível com desconto zero. O admin configura o percentual; diretório administrativo, RPC de gravação, leitura pública e decoder usam o mesmo campo.
+- A ficha mostra o percentual configurado e compara o preço regular com o cenário de assinante. A regra de preço aplica o desconto à peça antes dos Coins; o frete permanece separado. A prévia não cria pedido, reserva peça ou debita carteira. O gate `tonart_extra_commerce_enabled` continua fechado.
+- Validações locais: 5 arquivos de teste / 24 testes passaram; `npm run typecheck:app`, ESLint dos arquivos afetados, `security:supabase-access`, `security:supabase-types`, `security:pricing-read-authority`, auditoria de autoridade comercial e `git diff --check` passaram.
+- A migration `20261115221327_tonart_offer_subscriber_discount.sql` foi criada e revisada contra as migrations existentes, mas não foi aplicada nem validada por PostgreSQL: este checkout não tem Supabase local, Docker ou `psql`, e nenhum banco remoto pode ser usado como substituto. O Quality Gate anterior (#43764463202) falhou antes de iniciar steps, sem logs; nenhuma alegação de CI ou integração real é feita.
+
+**NEXT_ACTION:** continuar o checkout de ofertas no pedido existente, com pagamento misto e reserva idempotente de Coins, mantendo confirmação financeira como autoridade e o gate fechado até homologação isolada.
+
+**DO_NOT_REPEAT:** não tratar testes/mocks locais como validação da migration ou do Supabase real; não debitar Coins nem marcar compra paga sem confirmação idempotente; não abrir o gate, ativar cobrança ou alterar Supabase/Cloudflare de produção.

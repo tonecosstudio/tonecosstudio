@@ -36,6 +36,7 @@ const activeOffer = {
   delivery_terms: "Prazo informado após confirmação do CEP.",
   coins_eligible: true,
   subscriber_discount_eligible: false,
+  subscriber_discount_basis_points: 500,
   is_active: true,
   updated_at: "2026-11-15T20:00:00.000Z",
 };

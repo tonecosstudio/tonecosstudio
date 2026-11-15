@@ -20,6 +20,7 @@ export type TonartCommercialOffer = {
   deliveryTerms: string;
   coinsEligible: boolean;
   subscriberDiscountEligible: boolean;
+  subscriberDiscountBasisPoints: number;
   isActive: boolean;
   updatedAt: string;
 };
@@ -88,6 +89,12 @@ export function decodeTonartCommercialOffer(
     value.delivery_terms.length > 500 ||
     typeof value.coins_eligible !== "boolean" ||
     typeof value.subscriber_discount_eligible !== "boolean" ||
+    typeof value.subscriber_discount_basis_points !== "number" ||
+    !Number.isSafeInteger(value.subscriber_discount_basis_points) ||
+    value.subscriber_discount_basis_points < 0 ||
+    value.subscriber_discount_basis_points > 10_000 ||
+    (value.subscriber_discount_eligible &&
+      value.subscriber_discount_basis_points === 0) ||
     typeof value.is_active !== "boolean" ||
     typeof value.updated_at !== "string" ||
     Number.isNaN(Date.parse(value.updated_at))
@@ -116,6 +123,7 @@ export function decodeTonartCommercialOffer(
     deliveryTerms: value.delivery_terms,
     coinsEligible: value.coins_eligible,
     subscriberDiscountEligible: value.subscriber_discount_eligible,
+    subscriberDiscountBasisPoints: value.subscriber_discount_basis_points,
     isActive: value.is_active,
     updatedAt: value.updated_at,
   };

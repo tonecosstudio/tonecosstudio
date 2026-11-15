@@ -13,6 +13,7 @@ const validOffer = {
   delivery_terms: "Prazo informado após confirmação do CEP.",
   coins_eligible: true,
   subscriber_discount_eligible: true,
+  subscriber_discount_basis_points: 500,
   is_active: true,
   updated_at: "2026-11-15T20:00:00.000Z",
 };
@@ -26,6 +27,7 @@ describe("TONART commercial offer decoding", () => {
       shippingAmountBrl: null,
       coinsEligible: true,
       subscriberDiscountEligible: true,
+      subscriberDiscountBasisPoints: 500,
       isActive: true,
     });
   });
@@ -51,6 +53,21 @@ describe("TONART commercial offer decoding", () => {
       decodeTonartCommercialOffer({
         ...validOffer,
         catalog_model_slug: "../other",
+      }),
+    ).toThrow("commercial_offer_row_invalid");
+  });
+
+  it("rejects an enabled subscriber benefit without a valid configured rate", () => {
+    expect(() =>
+      decodeTonartCommercialOffer({
+        ...validOffer,
+        subscriber_discount_basis_points: 0,
+      }),
+    ).toThrow("commercial_offer_row_invalid");
+    expect(() =>
+      decodeTonartCommercialOffer({
+        ...validOffer,
+        subscriber_discount_basis_points: 10_001,
       }),
     ).toThrow("commercial_offer_row_invalid");
   });

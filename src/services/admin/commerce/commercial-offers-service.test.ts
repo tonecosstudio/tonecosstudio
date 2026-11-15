@@ -22,6 +22,7 @@ const validDraft: TonartCommercialOfferDraft = {
   deliveryTerms: "Prazo informado após confirmação do CEP.",
   coinsEligible: true,
   subscriberDiscountEligible: true,
+  subscriberDiscountBasisPoints: 500,
   isActive: false,
 };
 
@@ -36,6 +37,7 @@ describe("commercial-offers-service", () => {
       shipping_amount_brl: null,
       coins_eligible: true,
       subscriber_discount_eligible: true,
+      subscriber_discount_basis_points: 500,
       is_active: false,
     });
   });
@@ -63,6 +65,27 @@ describe("commercial-offers-service", () => {
         false,
       ),
     ).toThrow("commercial_offer_shipping_invalid");
+  });
+
+  it("sends a configured subscriber rate in basis points and requires a positive rate when eligible", () => {
+    expect(
+      validateCommercialOfferDraft(
+        { ...validDraft, subscriberDiscountBasisPoints: 575 },
+        false,
+      ),
+    ).toMatchObject({ subscriber_discount_basis_points: 575 });
+    expect(() =>
+      validateCommercialOfferDraft(
+        { ...validDraft, subscriberDiscountBasisPoints: 0 },
+        false,
+      ),
+    ).toThrow("commercial_offer_subscriber_discount_invalid");
+    expect(() =>
+      validateCommercialOfferDraft(
+        { ...validDraft, subscriberDiscountBasisPoints: 10_001 },
+        false,
+      ),
+    ).toThrow("commercial_offer_subscriber_discount_invalid");
   });
 
   it("reads the backend gate alongside an empty offer list", async () => {

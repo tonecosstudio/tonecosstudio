@@ -7,6 +7,10 @@ const brl = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
+const discountPercent = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
 function finishingLabel(finishing: "painted" | "unpainted"): string {
   return finishing === "painted" ? "Pintado" : "Sem pintura";
 }
@@ -122,9 +126,11 @@ export function TonartCommercialOfferDetails({
                 ) : null}
                 {offer.subscriberDiscountEligible ? (
                   <li>
-                    Elegível à condição configurada para assinante ativo. O
-                    benefício e o total final precisam ser confirmados antes da
-                    contratação.
+                    Contrato elegível: desconto configurado de{" "}
+                    {discountPercent.format(
+                      offer.subscriberDiscountBasisPoints / 100,
+                    )}
+                    % na peça, antes dos Coins. O frete não recebe desconto.
                   </li>
                 ) : null}
               </ul>

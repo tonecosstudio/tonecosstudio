@@ -64,6 +64,15 @@ export function validateCommercialOfferDraft(
   if (!deliveryTerms || deliveryTerms.length > 500) {
     throw new Error("commercial_offer_delivery_terms_invalid");
   }
+  if (
+    !Number.isSafeInteger(draft.subscriberDiscountBasisPoints) ||
+    draft.subscriberDiscountBasisPoints < 0 ||
+    draft.subscriberDiscountBasisPoints > 10_000 ||
+    (draft.subscriberDiscountEligible &&
+      draft.subscriberDiscountBasisPoints === 0)
+  ) {
+    throw new Error("commercial_offer_subscriber_discount_invalid");
+  }
   const itemPriceBrl = parseBrazilianMoney(draft.itemPriceBrl, "price");
   const shippingAmountBrl =
     draft.shippingMode === "fixed"
@@ -90,6 +99,7 @@ export function validateCommercialOfferDraft(
     delivery_terms: deliveryTerms,
     coins_eligible: draft.coinsEligible,
     subscriber_discount_eligible: draft.subscriberDiscountEligible,
+    subscriber_discount_basis_points: draft.subscriberDiscountBasisPoints,
     is_active: draft.isActive,
   };
 }

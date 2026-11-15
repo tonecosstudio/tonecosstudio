@@ -28,9 +28,13 @@ const brl = new Intl.NumberFormat("pt-BR", {
 });
 const dates = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
 
-type OfferForm = Omit<TonartCommercialOfferDraft, "scale" | "finishing"> & {
+type OfferForm = Omit<
+  TonartCommercialOfferDraft,
+  "scale" | "finishing" | "subscriberDiscountBasisPoints"
+> & {
   scale: "" | TonartOfferScale;
   finishing: "" | TonartOfferFinishing;
+  subscriberDiscountBasisPoints: string;
 };
 
 const EMPTY_FORM: OfferForm = {
@@ -44,8 +48,28 @@ const EMPTY_FORM: OfferForm = {
   deliveryTerms: "",
   coinsEligible: false,
   subscriberDiscountEligible: false,
+  subscriberDiscountBasisPoints: "5",
   isActive: false,
 };
+
+function formatDiscountPercent(basisPoints: number): string {
+  return (basisPoints / 100)
+    .toFixed(2)
+    .replace(/\.?0+$/, "")
+    .replace(".", ",");
+}
+
+function parseDiscountPercent(value: string): number {
+  const normalized = value.trim().replace(",", ".");
+  const match = /^(\d{1,3})(?:\.(\d{1,2}))?$/.exec(normalized);
+  if (!match) throw new Error("commercial_offer_subscriber_discount_invalid");
+  const basisPoints =
+    Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"));
+  if (!Number.isSafeInteger(basisPoints) || basisPoints > 10_000) {
+    throw new Error("commercial_offer_subscriber_discount_invalid");
+  }
+  return basisPoints;
+}
 
 function offerToForm(offer: TonartCommercialOffer): OfferForm {
   return {
@@ -63,6 +87,9 @@ function offerToForm(offer: TonartCommercialOffer): OfferForm {
     deliveryTerms: offer.deliveryTerms,
     coinsEligible: offer.coinsEligible,
     subscriberDiscountEligible: offer.subscriberDiscountEligible,
+    subscriberDiscountBasisPoints: formatDiscountPercent(
+      offer.subscriberDiscountBasisPoints,
+    ),
     isActive: offer.isActive,
   };
 }
@@ -112,6 +139,9 @@ export default function TonartCommercialOffersAdmin() {
         ...form,
         scale: form.scale,
         finishing: form.finishing,
+        subscriberDiscountBasisPoints: parseDiscountPercent(
+          form.subscriberDiscountBasisPoints,
+        ),
       };
       return saveAdminTonartCommercialOffer(draft, directory.commerceEnabled);
     },
@@ -502,6 +532,28 @@ export default function TonartCommercialOffersAdmin() {
                 </span>
               </span>
             </label>
+            {form.subscriberDiscountEligible && (
+              <label className="space-y-2 text-sm">
+                <span className="block">Desconto de assinante (%)</span>
+                <Input
+                  required
+                  inputMode="decimal"
+                  maxLength={6}
+                  value={form.subscriberDiscountBasisPoints}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      subscriberDiscountBasisPoints: event.target.value,
+                    }))
+                  }
+                  placeholder="5"
+                />
+                <span className="block text-xs leading-5 text-white/50">
+                  5% é a proposta documentada e inicial. O percentual permanece
+                  configurável; esta edição não libera vendas.
+                </span>
+              </label>
+            )}
           </fieldset>
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
@@ -601,7 +653,13 @@ export default function TonartCommercialOffersAdmin() {
                       <Badge variant="outline">Coins</Badge>
                     )}
                     {offer.subscriberDiscountEligible && (
-                      <Badge variant="outline">Desconto de assinante</Badge>
+                      <Badge variant="outline">
+                        Assinante −
+                        {formatDiscountPercent(
+                          offer.subscriberDiscountBasisPoints,
+                        )}
+                        %
+                      </Badge>
                     )}
                   </div>
                   <p className="mt-2 text-sm text-white/60">

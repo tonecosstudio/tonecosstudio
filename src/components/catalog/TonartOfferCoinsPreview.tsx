@@ -112,17 +112,19 @@ export function TonartOfferCoinsPreview({
     offer.shippingMode === "fixed" && offer.shippingAmountBrl !== null
       ? decimalToHundredths(offer.shippingAmountBrl)
       : 0;
-  const breakdown = priceEligibleExtra({
+  const priceInput = {
     listPriceCents: decimalToHundredths(offer.itemPriceBrl),
     subscriber: false,
     subscriberDiscountEligible: offer.subscriberDiscountEligible,
-    subscriberDiscountBasisPoints: 0,
-    coinsEligible: true,
+    subscriberDiscountBasisPoints: offer.subscriberDiscountBasisPoints,
+    coinsEligible: offer.coinsEligible,
     coinBalanceHundredths: applyCoins ? balanceHundredths : 0,
     shippingCents,
-  });
-  const itemCashCents =
-    breakdown.priceAfterAllowedDiscountCents - breakdown.coinsAppliedHundredths;
+  };
+  const regularPrice = priceEligibleExtra(priceInput);
+  const subscriberPrice = offer.subscriberDiscountEligible
+    ? priceEligibleExtra({ ...priceInput, subscriber: true })
+    : null;
 
   return (
     <section
@@ -131,7 +133,7 @@ export function TonartOfferCoinsPreview({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h4 className="text-xs font-semibold uppercase tracking-wider text-[hsl(0,0%,72%)]">
-          Simulação com Coins
+          Simulação de preço e Coins
         </h4>
         <p className="text-xs tabular-nums text-[hsl(var(--gold-accent))]">
           Saldo: {formatCoins.format(balanceQuery.data.balance)} Coins
@@ -150,43 +152,94 @@ export function TonartOfferCoinsPreview({
         Aplicar saldo disponível ao valor da peça
       </label>
 
-      <dl className="mt-2 grid gap-x-4 gap-y-2 text-xs sm:grid-cols-2">
-        <div>
-          <dt className="text-[hsl(0,0%,56%)]">Coins simulados na peça</dt>
-          <dd className="mt-1 font-medium text-[hsl(0,0%,86%)]">
-            {formatCoins.format(breakdown.coinsAppliedHundredths / 100)} Coins
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[hsl(0,0%,56%)]">Restante da peça em reais</dt>
-          <dd className="mt-1 font-medium text-[hsl(0,0%,86%)]">
-            {formatBrl.format(itemCashCents / 100)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[hsl(0,0%,56%)]">Frete</dt>
-          <dd className="mt-1 font-medium text-[hsl(0,0%,86%)]">
-            {offer.shippingMode === "fixed"
-              ? formatBrl.format(shippingCents / 100)
-              : "Definido separadamente"}
-          </dd>
-        </div>
-        {offer.shippingMode === "fixed" ? (
-          <div>
-            <dt className="text-[hsl(0,0%,56%)]">Total estimado em reais</dt>
-            <dd className="mt-1 font-semibold text-[hsl(var(--gold-accent))]">
-              {formatBrl.format(breakdown.amountDueCents / 100)}
-            </dd>
-          </div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <PriceScenario
+          title="Sem desconto de assinante"
+          breakdown={regularPrice}
+          showCoins={offer.coinsEligible}
+          fixedShipping={offer.shippingMode === "fixed"}
+          shippingCents={shippingCents}
+        />
+        {subscriberPrice ? (
+          <PriceScenario
+            title="Com desconto de assinante"
+            breakdown={subscriberPrice}
+            showCoins={offer.coinsEligible}
+            fixedShipping={offer.shippingMode === "fixed"}
+            shippingCents={shippingCents}
+            discountCents={subscriberPrice.discountCents}
+          />
         ) : null}
-      </dl>
+      </div>
 
       <p className="mt-3 text-xs leading-relaxed text-[hsl(0,0%,56%)]">
         {offer.subscriberDiscountEligible
-          ? "Estimativa pelo preço configurado, sem aplicar eventual desconto de assinante. "
-          : "Estimativa pelo preço configurado. "}
+          ? "O cenário de assinante depende de um contrato elegível confirmado. "
+          : ""}
         Esta simulação não cria pedido, reserva a peça nem debita sua carteira.
       </p>
     </section>
+  );
+}
+
+function PriceScenario({
+  title,
+  breakdown,
+  showCoins,
+  fixedShipping,
+  shippingCents,
+  discountCents,
+}: {
+  title: string;
+  breakdown: ReturnType<typeof priceEligibleExtra>;
+  showCoins: boolean;
+  fixedShipping: boolean;
+  shippingCents: number;
+  discountCents?: number;
+}) {
+  const itemCashCents =
+    breakdown.priceAfterAllowedDiscountCents - breakdown.coinsAppliedHundredths;
+
+  return (
+    <dl className="space-y-2 border border-[hsl(0,0%,17%)] p-3 text-xs">
+      <div>
+        <dt className="font-semibold text-[hsl(0,0%,80%)]">{title}</dt>
+        {discountCents !== undefined ? (
+          <dd className="mt-1 text-[hsl(var(--gold-accent))]">
+            Redução configurada: {formatBrl.format(discountCents / 100)}
+          </dd>
+        ) : null}
+      </div>
+      {showCoins ? (
+        <div className="flex justify-between gap-3">
+          <dt className="text-[hsl(0,0%,56%)]">Coins na peça</dt>
+          <dd className="font-medium text-[hsl(0,0%,86%)]">
+            {formatCoins.format(breakdown.coinsAppliedHundredths / 100)}
+          </dd>
+        </div>
+      ) : null}
+      <div className="flex justify-between gap-3">
+        <dt className="text-[hsl(0,0%,56%)]">Peça em reais</dt>
+        <dd className="font-medium text-[hsl(0,0%,86%)]">
+          {formatBrl.format(itemCashCents / 100)}
+        </dd>
+      </div>
+      <div className="flex justify-between gap-3">
+        <dt className="text-[hsl(0,0%,56%)]">Frete</dt>
+        <dd className="font-medium text-[hsl(0,0%,86%)]">
+          {fixedShipping
+            ? formatBrl.format(shippingCents / 100)
+            : "Definido separadamente"}
+        </dd>
+      </div>
+      {fixedShipping ? (
+        <div className="flex justify-between gap-3 border-t border-[hsl(0,0%,17%)] pt-2">
+          <dt className="font-medium text-[hsl(0,0%,68%)]">Total em reais</dt>
+          <dd className="font-semibold text-[hsl(var(--gold-accent))]">
+            {formatBrl.format(breakdown.amountDueCents / 100)}
+          </dd>
+        </div>
+      ) : null}
+    </dl>
   );
 }

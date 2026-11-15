@@ -30,6 +30,7 @@ const offer: TonartCommercialOffer = {
   deliveryTerms: "Prazo informado na oferta.",
   coinsEligible: true,
   subscriberDiscountEligible: true,
+  subscriberDiscountBasisPoints: 500,
   isActive: true,
   updatedAt: "2026-11-15T12:00:00.000Z",
 };
@@ -70,10 +71,12 @@ describe("TonartOfferCoinsPreview", () => {
 
     expect(await screen.findByText("Saldo: 30,50 Coins")).toBeTruthy();
     expect(screen.getByText(/219,50/)).toBeTruthy();
-    expect(screen.getByText(/12,99/)).toBeTruthy();
+    expect(screen.getAllByText(/12,99/)).toHaveLength(2);
     expect(screen.getByText(/232,49/)).toBeTruthy();
+    expect(screen.getByText(/Redução configurada: R\$\s?12,50/)).toBeTruthy();
+    expect(screen.getByText(/219,99/)).toBeTruthy();
     expect(
-      screen.getByText(/sem aplicar eventual desconto de assinante/i),
+      screen.getByText(/O cenário de assinante depende de um contrato elegível confirmado/i),
     ).toBeTruthy();
 
     fireEvent.click(
@@ -85,6 +88,7 @@ describe("TonartOfferCoinsPreview", () => {
     await waitFor(() => {
       expect(screen.getByText(/250,00/)).toBeTruthy();
       expect(screen.getByText(/262,99/)).toBeTruthy();
+      expect(screen.getByText(/250,49/)).toBeTruthy();
     });
   });
 
@@ -110,11 +114,9 @@ describe("TonartOfferCoinsPreview", () => {
     renderPreview();
 
     expect(
-      await screen.findByText(
-        /O saldo não foi tratado como zero/i,
-        undefined,
-        { timeout: 4_000 },
-      ),
+      await screen.findByText(/O saldo não foi tratado como zero/i, undefined, {
+        timeout: 4_000,
+      }),
     ).toBeTruthy();
   });
 });
