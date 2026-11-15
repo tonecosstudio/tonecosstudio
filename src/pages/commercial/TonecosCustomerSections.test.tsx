@@ -699,7 +699,18 @@ describe("Original customer account navigation in the commercial app", () => {
     );
 
     expect(
-      await screen.findByRole("region", { name: "Seleção atual de modelos" }),
+      await screen.findByRole("heading", { name: "Seleção para orçamento" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", {
+        name: "Seleção atual de modelos para orçamento",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Seleção para orçamento" }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(
+      screen.getByRole("heading", { name: "Modelos selecionados" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Naruto" })).toHaveAttribute(
       "href",

@@ -63,9 +63,10 @@ const restoredSections: CustomerSection[] = [
   },
   {
     slug: "colecao",
-    label: "Minha coleção",
-    title: "Minha coleção",
-    summary: "Modelos selecionados e peças de sua coleção.",
+    label: "Seleção para orçamento",
+    title: "Seleção para orçamento",
+    summary:
+      "Revise os modelos separados no catálogo para montar uma solicitação de orçamento.",
   },
   {
     slug: "preferencias",
@@ -1023,12 +1024,11 @@ function CurrentCatalogSelection() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
 
   return (
-    <section className={panelClass} aria-label="Seleção atual de modelos">
-      <h2 className="mb-3 text-lg font-semibold">Sua seleção de modelos</h2>
-      <p className="mb-5 text-sm leading-6 text-white/65">
-        Esta é a seleção atual do catálogo para solicitar orçamento. Ela não
-        representa uma compra nem o inventário de peças adquiridas.
-      </p>
+    <section
+      className={panelClass}
+      aria-label="Seleção atual de modelos para orçamento"
+    >
+      <h2 className="mb-5 text-lg font-semibold">Modelos selecionados</h2>
       {selectedModels.length === 0 ? (
         <p className="mb-5 text-sm text-white/60">
           Você ainda não escolheu modelos para solicitar orçamento.
