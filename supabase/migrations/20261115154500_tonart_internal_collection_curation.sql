@@ -806,6 +806,22 @@ BEGIN
     RAISE EXCEPTION 'Collection is not enabled for internal curation' USING ERRCODE = '22023';
   END IF;
 
+  -- Reject repeated canonical references atomically before any row is written.
+  IF EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(p_items) AS item
+    GROUP BY item->>'modelId'
+    HAVING count(*) > 1
+  ) OR EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(p_items) AS item
+    GROUP BY item->>'slug'
+    HAVING count(*) > 1
+  ) THEN
+    RAISE EXCEPTION 'Duplicate catalog model id or slug in curation batch'
+      USING ERRCODE = '22023';
+  END IF;
+
   FOR v_item IN SELECT value FROM jsonb_array_elements(p_items) LOOP
     SELECT model_id, model_slug INTO v_id, v_slug
     FROM public.admin_validate_catalog_model_reference(
@@ -1004,6 +1020,22 @@ BEGIN
   IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array'
      OR jsonb_array_length(p_items) < 1 OR jsonb_array_length(p_items) > 100 THEN
     RAISE EXCEPTION 'Tag items must contain between 1 and 100 classifications' USING ERRCODE = '22023';
+  END IF;
+
+  -- Reject repeated canonical references atomically before any row is written.
+  IF EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(p_items) AS item
+    GROUP BY item->>'modelId'
+    HAVING count(*) > 1
+  ) OR EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(p_items) AS item
+    GROUP BY item->>'slug'
+    HAVING count(*) > 1
+  ) THEN
+    RAISE EXCEPTION 'Duplicate catalog model id or slug in curation batch'
+      USING ERRCODE = '22023';
   END IF;
 
   FOR v_item IN SELECT value FROM jsonb_array_elements(p_items) LOOP
