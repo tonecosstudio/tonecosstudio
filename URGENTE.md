@@ -1475,10 +1475,10 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 
 ## Rodada 64 — Prévia local da conta com dados fictícios (14/11/2026)
 
-- Base: `main` @ `07091e7120dac8eaac7727527ed59a088aa4f5c8`.
+- Base: `main` @ `07091e7120dac8eaac7727527ed59a088aa4f5c8`; HEAD funcional validado: `a6aa6f89`.
 - A conta local usa as telas e navegação habituais, preenchidas por um perfil fictício em memória. Perfil, endereço e preferências permanecem editáveis nesta sessão; Coins e histórico mostram registros de exemplo pelas páginas já existentes. Não há banner, tela de demonstração ou botão de acesso especial.
 - No fallback local, leitura de perfil, saldo, histórico e preferências não consulta o Supabase; tentativas de criar orçamento, enviar voucher ou alterar Coins são bloqueadas. A configuração só ativa esse fallback em runtime local e evita reaproveitar URL/chave Supabase remotas.
-- QA local: `http://127.0.0.1:8080/perfil` respondeu HTTP 200; navegação visual conferida em perfil, endereço e preferências. TypeScript (`typecheck:app`) e ESLint dos arquivos alterados passaram. O conjunto direcionado passou em 8 arquivos e 147 testes.
+- QA local: `http://127.0.0.1:8080/perfil` respondeu HTTP 200; navegação visual conferida em perfil, endereço e preferências. TypeScript (`typecheck:app`) e ESLint dos arquivos alterados passaram. O conjunto direcionado passou em 8 arquivos e 147 testes; após o último ajuste de saída, a suíte da conta passou em 2 arquivos e 26 testes.
 - Limite da evidência: mocks locais demonstram a navegação e o estado de interface; não comprovam autenticação, gravação ou consulta real no Supabase. Produção e recursos remotos não foram alterados.
 
 **NEXT_ACTION:** manter a prévia local como caminho de revisão da conta; validar com Supabase apenas em ambiente isolado com usuário fictício antes de homologar autenticação real.
