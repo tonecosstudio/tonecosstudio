@@ -1559,3 +1559,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** continuar pela validação dos fluxos de assinatura com um Supabase local disponível; manter a PR #27 aberta até o Quality Gate fornecer execução/logs interpretáveis.
 
 **DO_NOT_REPEAT:** não inventar dados de planos/coleções para preencher o preview; não usar mocks como prova do fluxo real; não reexecutar Actions sem mudança de infraestrutura; não publicar ou alterar recursos de produção.
+
+## Rodada 68 — Simulação de Coins na ficha comercial (15/11/2026)
+
+- Base da branch da PR #27: HEAD 54a952d0, remoto confirmado no mesmo SHA; origin/main está contido na branch e não há commits remotos concorrentes nela.
+- As ofertas elegíveis agora consultam a identidade e a carteira existentes e mostram, por variante, Coins aplicados à peça, restante em reais, frete separado e total apenas quando o frete está configurado. A simulação usa priceEligibleExtra e centésimos; erro de consulta não vira saldo zero. Cliente sem sessão recebe caminho para login.
+- A tela informa quando uma eventual condição de assinante não foi aplicada e deixa explícito que não cria pedido, reserva nem débito. Nenhum endpoint de escrita, tabela, carteira ou produto foi adicionado; o gate tonart_extra_commerce_enabled permanece fechado.
+- Validações: TonartOfferCoinsPreview.test.tsx — 1 arquivo / 3 testes; npm run typecheck:app; ESLint dos três arquivos alterados; git diff --check. A consulta com falha foi validada após o tempo da única repetição de rede configurada.
+- Limite: checkout de ofertas extras, criação persistente do pedido, pagamento misto e revisão financeira no admin ainda não estão ligados ao histórico standalone_purchases. Não há Supabase local, Docker, psql ou CLI Supabase nesta máquina; nenhuma migration foi aplicada e nenhum dado remoto foi escrito.
+
+**NEXT_ACTION:** continuar a integração do checkout no histórico/pedidos existentes, com reserva idempotente de Coins e confirmação financeira vinculada; manter o gate fechado e não tratar a simulação da ficha como compra funcional. Preservar a falha de infraestrutura já observada no Quality Gate sem reexecuções sem mudança externa.
+
+**DO_NOT_REPEAT:** não reabrir create_standalone_purchase_atomic nem qualquer caminho que marque pagamento sem evidência; não usar o preview como prova de checkout/Supabase real; não habilitar cobrança, não escrever em Supabase produtivo e não criar carteira ou catálogo duplicado.

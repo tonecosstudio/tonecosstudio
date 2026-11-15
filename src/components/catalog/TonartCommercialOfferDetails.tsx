@@ -1,31 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
+import { TonartOfferCoinsPreview } from "@/components/catalog/TonartOfferCoinsPreview";
 import { validCatalogSlug } from "@/services/catalog/public-catalog-gateway";
 import { listTonartCommercialOffersForModel } from "@/services/commercial/tonart-commercial-offers-service";
-import {
-  calculateCoinPayment,
-  decimalToHundredths,
-} from "@/services/commercial/tonart-commerce-rules";
 
 const brl = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
-const coins = new Intl.NumberFormat("pt-BR", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
 function finishingLabel(finishing: "painted" | "unpainted"): string {
   return finishing === "painted" ? "Pintado" : "Sem pintura";
-}
-
-function coinPriceHundredths(itemPriceBrl: number): number {
-  return calculateCoinPayment({
-    itemPriceCents: decimalToHundredths(itemPriceBrl),
-    shippingCents: 0,
-    coinsEligible: true,
-    coinBalanceHundredths: Number.MAX_SAFE_INTEGER,
-  }).coinsPriceHundredths;
 }
 
 export function TonartCommercialOfferDetails({
@@ -84,7 +67,7 @@ export function TonartCommercialOfferDetails({
         </h2>
         <p className="mt-2 text-xs leading-relaxed text-[hsl(0,0%,58%)]">
           Valores e detalhes cadastrados para esta referência. Esta ficha não
-          cria pedido, confirma disponibilidade nem realiza pagamento.
+          reserva a peça nem realiza pagamento.
         </p>
       </div>
 
@@ -133,12 +116,8 @@ export function TonartCommercialOfferDetails({
               <ul className="mt-3 space-y-2 border-t border-[hsl(0,0%,17%)] pt-3 text-xs leading-relaxed text-[hsl(0,0%,66%)]">
                 {offer.coinsEligible ? (
                   <li>
-                    Elegível para Coins: referência de até{" "}
-                    {coins.format(
-                      coinPriceHundredths(offer.itemPriceBrl) / 100,
-                    )}{" "}
-                    Coins no valor da peça. O frete fica fora desse cálculo;
-                    esta ficha não debita saldo.
+                    Elegível para Coins no valor da peça. O frete é pago à
+                    parte; consulte abaixo a simulação com seu saldo.
                   </li>
                 ) : null}
                 {offer.subscriberDiscountEligible ? (
@@ -150,6 +129,7 @@ export function TonartCommercialOfferDetails({
                 ) : null}
               </ul>
             ) : null}
+            <TonartOfferCoinsPreview offer={offer} />
           </li>
         ))}
       </ul>
