@@ -128,6 +128,49 @@ CREATE TABLE IF NOT EXISTS public.catalog_curation_tag_aliases (
     CHECK (alias_slug ~ '^[a-z0-9][a-z0-9-]{0,79}$')
 );
 
+CREATE OR REPLACE FUNCTION public.guard_catalog_curation_tag_alias()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $tagalias$
+DECLARE
+  v_dimension text;
+  v_slug text;
+BEGIN
+  SELECT t.dimension, t.slug
+    INTO v_dimension, v_slug
+  FROM public.catalog_curation_tags t
+  WHERE t.id = NEW.tag_id;
+
+  IF v_dimension IS NULL THEN
+    RAISE EXCEPTION 'Curation tag not found' USING ERRCODE = 'P0002';
+  END IF;
+  IF NEW.dimension <> v_dimension THEN
+    RAISE EXCEPTION 'Curation alias dimension must match tag dimension'
+      USING ERRCODE = '22023';
+  END IF;
+  IF NEW.alias_slug = v_slug OR EXISTS (
+    SELECT 1
+    FROM public.catalog_curation_tags t
+    WHERE t.dimension = NEW.dimension
+      AND t.slug = NEW.alias_slug
+  ) THEN
+    RAISE EXCEPTION 'Curation alias collides with canonical tag slug'
+      USING ERRCODE = '22023';
+  END IF;
+
+  RETURN NEW;
+END;
+$tagalias$;
+
+DROP TRIGGER IF EXISTS guard_catalog_curation_tag_alias
+  ON public.catalog_curation_tag_aliases;
+
+CREATE TRIGGER guard_catalog_curation_tag_alias
+BEFORE INSERT OR UPDATE OF dimension, alias_slug, tag_id
+ON public.catalog_curation_tag_aliases
+FOR EACH ROW
+EXECUTE FUNCTION public.guard_catalog_curation_tag_alias();
 CREATE TABLE IF NOT EXISTS public.catalog_collection_curation (
   collection_id uuid NOT NULL REFERENCES public.collections(id) ON DELETE CASCADE,
   catalog_model_id text NOT NULL REFERENCES public.catalog_curation_model_profiles(catalog_model_id) ON DELETE CASCADE,
