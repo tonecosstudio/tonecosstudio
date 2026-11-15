@@ -56,6 +56,41 @@ describe("internal catalog curation service", () => {
     expect(mocks.callAdminRpc.mock.calls[0][1]).not.toHaveProperty("models");
   });
 
+  it("rejects duplicate canonical IDs or slugs before either batch RPC", async () => {
+    const duplicateIds = [
+      { modelId: MODEL_ID, slug: "modelo-real" },
+      { modelId: MODEL_ID, slug: "modelo-variante-incorreta" },
+    ];
+    const duplicateSlugs = [
+      { modelId: MODEL_ID, slug: "modelo-real" },
+      {
+        modelId: "44444444-4444-4444-8444-444444444444",
+        slug: "modelo-real",
+      },
+    ];
+
+    for (const models of [duplicateIds, duplicateSlugs]) {
+      await expect(
+        saveInternalCollectionCuration({
+          collectionId: COLLECTION_ID,
+          models,
+          state: "suggested",
+          evidenceOrigin: "manual_admin:review",
+        }),
+      ).rejects.toThrow("catalog_curation_duplicate_model_reference");
+      await expect(
+        saveCatalogModelClassifications({
+          models,
+          tagId: TAG_ID,
+          reviewState: "suggested",
+          evidenceOrigin: "manual_admin:review",
+        }),
+      ).rejects.toThrow("catalog_curation_duplicate_model_reference");
+    }
+
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
   it("keeps automatic collection classifications in suggested state", async () => {
     await expect(
       saveInternalCollectionCuration({
