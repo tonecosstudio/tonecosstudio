@@ -10,6 +10,7 @@ vi.mock("@/services/admin/rpc/admin-rpc-gateway", () => ({
 
 import {
   addCatalogCurationTagAlias,
+  createCatalogCurationTag,
   ensureAdminInternalCollection,
   getInternalCollectionCurationPage,
   INTERNAL_COLLECTION_TEMPLATES,
@@ -211,6 +212,59 @@ describe("internal catalog curation service", () => {
         ],
       }),
     );
+  });
+
+  it("creates a reviewed tag in its chosen dimension without model assignments", async () => {
+    mocks.callAdminRpc.mockResolvedValue({
+      id: TAG_ID,
+      dimension: "characteristic",
+      slug: "armadura",
+      label: "Armadura",
+      status: "active",
+      definitionOrigin: "manual_admin:controlled_vocabulary",
+      aliases: [],
+    });
+    await expect(
+      createCatalogCurationTag({
+        dimension: "characteristic",
+        label: " Armadura ",
+      }),
+    ).resolves.toMatchObject({
+      id: TAG_ID,
+      dimension: "characteristic",
+      slug: "armadura",
+    });
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_create_catalog_curation_tag",
+      {
+        p_dimension: "characteristic",
+        p_slug: "armadura",
+        p_label: "Armadura",
+      },
+    );
+    expect(mocks.callAdminRpc.mock.calls[0][1]).not.toHaveProperty("models");
+  });
+
+  it("rejects malformed controlled tag definitions before any RPC", async () => {
+    await expect(
+      createCatalogCurationTag({
+        dimension: "free_text" as never,
+        label: "Armadura",
+      }),
+    ).rejects.toThrow("catalog_curation_tag_definition_invalid");
+    await expect(
+      createCatalogCurationTag({
+        dimension: "characteristic",
+        label: "<script>",
+      }),
+    ).rejects.toThrow("catalog_curation_tag_definition_invalid");
+    await expect(
+      createCatalogCurationTag({
+        dimension: "characteristic",
+        label: "  ",
+      }),
+    ).rejects.toThrow("catalog_curation_tag_definition_invalid");
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
   });
 
   it("normalizes a manually reviewed curation alias before persisting it", async () => {
