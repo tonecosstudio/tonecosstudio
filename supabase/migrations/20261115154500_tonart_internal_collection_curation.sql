@@ -18,7 +18,11 @@ ALTER TABLE public.collections
   ADD CONSTRAINT collections_internal_private_inactive
     CHECK (
       collection_kind <> 'internal'
-      OR (curation_visibility = 'private' AND is_active = false)
+      OR (
+        curation_visibility = 'private'
+        AND is_active = false
+        AND status <> 'active'::public.collection_status
+      )
     ) NOT VALID;
 
 CREATE OR REPLACE FUNCTION public.guard_internal_collection_tier_assignment()
