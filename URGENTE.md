@@ -1,3 +1,12 @@
+## Checkpoint 14/11/2026 — atualização do histórico após envio incerto de comprovante
+
+- **Base → commit funcional:** `main@92af24a8` → `418de908` (`fix(quotes): refresh after uncertain voucher submission`).
+- **Implementado:** se o envio do comprovante da pré-venda não recebe confirmação interpretável, o histórico é atualizado imediatamente. Se o pagamento já foi registrado, o cliente passa a ver “em análise” e perde a opção de reenviar; se não foi registrado, o formulário reaparece para uma nova tentativa.
+- **Validação Windows:** fluxo comercial focado passou (51 testes), `npm run typecheck:app`, ESLint dos dois arquivos e `git diff --check` passaram.
+- **Integração:** teste usa serviços simulados; não houve escrita no Supabase. O teste confirma atualização da interface, não persistência real.
+- **NEXT_ACTION:** continuar correções locais independentes; provar a persistência em ambiente compatível quando disponível.
+- **DO_NOT_REPEAT:** não solicitar/repetir pagamento sem conferir o histórico após resposta ambígua; não usar testes simulados como prova do banco.
+
 ## Checkpoint 14/11/2026 — proteção dos comprovantes em checkout de assinatura
 
 - **Base → commits:** `main@096831fe` → `1813f583` → `822c6e3b` → `5123829c` (`fix(subscriptions): protect voucher after ambiguous checkout`).
