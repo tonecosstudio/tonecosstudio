@@ -57,6 +57,24 @@ describe("internal catalog curation service", () => {
     expect(mocks.callAdminRpc.mock.calls[0][1]).not.toHaveProperty("models");
   });
 
+  it("does not accept a commercial collection as an internal curation template", async () => {
+    const template = INTERNAL_COLLECTION_TEMPLATES[0];
+    mocks.callAdminRpc.mockResolvedValue({
+      id: COLLECTION_ID,
+      name: template.name,
+      slug: template.slug,
+      collectionKind: "commercial",
+      curationVisibility: "public",
+      isActive: true,
+      status: "active",
+    });
+
+    await expect(ensureAdminInternalCollection(template)).rejects.toThrow(
+      "catalog_internal_collection_invalid",
+    );
+    expect(mocks.callAdminRpc).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects duplicate canonical IDs or slugs before either batch RPC", async () => {
     const duplicateIds = [
       { modelId: MODEL_ID, slug: "modelo-real" },
