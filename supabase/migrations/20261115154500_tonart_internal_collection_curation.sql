@@ -281,12 +281,25 @@ CREATE POLICY catalog_curation_model_tags_admin_read
 
 REVOKE ALL ON TABLE public.tonart_editorial_collections FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tonart_editorial_collections TO service_role;
-REVOKE INSERT, UPDATE, DELETE ON TABLE public.catalog_character_identities FROM anon, authenticated;
-REVOKE INSERT, UPDATE, DELETE ON TABLE public.catalog_curation_model_profiles FROM anon, authenticated;
-REVOKE INSERT, UPDATE, DELETE ON TABLE public.catalog_curation_tags FROM anon, authenticated;
-REVOKE INSERT, UPDATE, DELETE ON TABLE public.catalog_curation_tag_aliases FROM anon, authenticated;
-REVOKE INSERT, UPDATE, DELETE ON TABLE public.catalog_collection_curation FROM anon, authenticated;
-REVOKE INSERT, UPDATE, DELETE ON TABLE public.catalog_curation_model_tags FROM anon, authenticated;
+-- Supabase grants ALL table privileges to anon/authenticated by default,
+-- including TRUNCATE (not restricted by RLS). These are private RPC-only tables.
+REVOKE ALL ON TABLE
+  public.catalog_character_identities,
+  public.catalog_curation_model_profiles,
+  public.catalog_curation_tags,
+  public.catalog_curation_tag_aliases,
+  public.catalog_collection_curation,
+  public.catalog_curation_model_tags
+  FROM PUBLIC, anon, authenticated;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+  public.catalog_character_identities,
+  public.catalog_curation_model_profiles,
+  public.catalog_curation_tags,
+  public.catalog_curation_tag_aliases,
+  public.catalog_collection_curation,
+  public.catalog_curation_model_tags
+  TO service_role;
 
 CREATE OR REPLACE FUNCTION public.admin_validate_catalog_curation_text(
   p_value text,
