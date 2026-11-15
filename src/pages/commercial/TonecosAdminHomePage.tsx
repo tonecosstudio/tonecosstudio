@@ -23,6 +23,7 @@ import {
 import { panelClass, secondaryClass } from "./CommercialPage";
 import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
 import TonartAdminOriginalSection from "./TonartAdminOriginalSection";
+import TonartCommercialOffersAdmin from "./TonartCommercialOffersAdmin";
 
 const coinsEnabled = true;
 const quotesEnabled = true;
@@ -54,6 +55,7 @@ const coinLabels: Record<TonartAdminCoinEntry["type"], string> = {
 };
 
 const originalAdminSubpages = [
+  { parent: "catalog-hub", path: TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers, label: "Ofertas comerciais TONART" },
   { parent: "catalog-hub", path: ADMIN_ROUTES.catalogCollections, label: "Coleções do catálogo" },
   { parent: "production-dashboard", path: ADMIN_ROUTES.productionKanban, label: "Quadro de produção" },
   { parent: "production-dashboard", path: ADMIN_ROUTES.productionList, label: "Lista de produção" },
@@ -427,13 +429,17 @@ export default function TonecosAdminHomePage() {
           )}
 
           {selectedSubpage && (
-            <TonartAdminOriginalSection
-              section={selectedSubpage}
-              overview={overview}
-              loading={loading}
-              quotesEnabled={quotesEnabled}
-              parentPath={activeItem?.path ?? ADMIN_ROUTES.home}
-            />
+            selectedSubpage.path === TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers ? (
+              <TonartCommercialOffersAdmin />
+            ) : (
+              <TonartAdminOriginalSection
+                section={selectedSubpage}
+                overview={overview}
+                loading={loading}
+                quotesEnabled={quotesEnabled}
+                parentPath={activeItem?.path ?? ADMIN_ROUTES.home}
+              />
+            )
           )}
           {(isProduction || isAnalytics) && (
             <TonartAdminOriginalSection
