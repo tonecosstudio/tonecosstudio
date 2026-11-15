@@ -120,6 +120,7 @@ export function InternalCollectionCuration() {
   useEffect(() => {
     setOffset(0);
     setMemberIds([]);
+    setIdentityReview(null);
   }, [collection?.id, stateFilter]);
 
   useEffect(() => {
