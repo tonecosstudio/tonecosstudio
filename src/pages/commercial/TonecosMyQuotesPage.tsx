@@ -853,25 +853,9 @@ export default function TonecosMyQuotesPage() {
                     </ol>
                   </section>
                 )}
-                {!row.isPreorder && (
+                {!row.isPreorder && row.quotedAmount === null && (
                   <div className="mt-5 border-t border-white/15 pt-4 text-sm font-semibold">
-                    {row.quotedAmount === null ? (
-                      "Valor em análise"
-                    ) : row.discountAmount > 0 && row.listAmount !== null ? (
-                      <div className="space-y-1">
-                        <p className="text-xs font-normal text-white/55">
-                          Valor antes da Black Friday:{" "}
-                          {brl.format(row.listAmount)}
-                        </p>
-                        <p className="text-xs font-normal text-[hsl(var(--gold-accent))]">
-                          Desconto Black Friday ({row.discountPercent}%): −
-                          {brl.format(row.discountAmount)}
-                        </p>
-                        <p>Valor final: {brl.format(row.quotedAmount)}</p>
-                      </div>
-                    ) : (
-                      brl.format(row.quotedAmount)
-                    )}
+                    Valor em análise
                   </div>
                 )}
                 <QuotePaymentPanel

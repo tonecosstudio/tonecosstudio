@@ -903,9 +903,14 @@ describe("TONART commercial screens: account → request → history → respons
 
     renderApp("/meus-orcamentos");
 
-    expect(await screen.findByText(/Valor antes da Black Friday:/)).toHaveTextContent(/300,00/);
-    expect(screen.getByText(/Desconto Black Friday \(50%\):/)).toHaveTextContent(/150,00/);
-    expect(screen.getByText(/Valor final:/)).toHaveTextContent(/150,00/);
+    const listAmountLabel = await screen.findByText("Valor antes da Black Friday");
+    expect(listAmountLabel.parentElement).toHaveTextContent(/300,00/);
+    expect(screen.getByText("Desconto Black Friday (50%)").parentElement)
+      .toHaveTextContent(/150,00/);
+    expect(screen.getByText("Valor total").parentElement)
+      .toHaveTextContent(/150,00/);
+    expect(screen.queryByText(/Valor final:/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("Desconto Black Friday (50%)")).toHaveLength(1);
   });
 
   it("applies Coins to an answered quote and explains voucher follow-up", async () => {
