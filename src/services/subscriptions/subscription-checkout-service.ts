@@ -201,7 +201,6 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
     pathPrefix: "subscriptions",
   });
 
-  let data: unknown;
   try {
     const result = await subscriptionCheckoutRpc.rpc("create_subscription_checkout_for_current_user", {
       p_plan_id: input.planId,
@@ -211,7 +210,7 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
       p_payment_voucher_url: voucherPath,
     });
     if (result.error) throw result.error;
-    data = result.data;
+    return parseSubscriptionCheckoutResult(result.data);
   } catch (error) {
     try {
       await deletePaymentVoucher(voucherPath, userId);
@@ -226,8 +225,6 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
     }
     throw error;
   }
-
-  return parseSubscriptionCheckoutResult(data);
 }
 
 function parseSubscriptionCheckoutResult(data: unknown): SubscriptionCheckoutResult {
@@ -309,14 +306,17 @@ export async function resubmitSubscriptionPaymentVoucher(input: {
     pathPrefix: "subscriptions",
   });
 
-  let data: unknown;
   try {
     const result = await supabase.rpc("resubmit_subscription_payment_voucher_for_current_user", {
       p_subscription_id: input.subscriptionId,
       p_payment_voucher_path: voucherPath,
     });
     if (result.error) throw result.error;
-    data = result.data;
+    const checkout = parseSubscriptionCheckoutResult(result.data);
+    if (checkout.subscriptionId !== input.subscriptionId) {
+      throw new Error("subscription_voucher_resubmission_result_invalid");
+    }
+    return checkout;
   } catch (error) {
     try {
       await deletePaymentVoucher(voucherPath, userId);
@@ -325,10 +325,4 @@ export async function resubmitSubscriptionPaymentVoucher(input: {
     }
     throw error;
   }
-
-  const checkout = parseSubscriptionCheckoutResult(data);
-  if (checkout.subscriptionId !== input.subscriptionId) {
-    throw new Error("subscription_voucher_resubmission_result_invalid");
-  }
-  return checkout;
 }
