@@ -1472,3 +1472,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** quando o conector Cloudflare voltar, criar uma prévia privada do HEAD `834e861` e confirmar em 280/320/360/390 px que “Aspros de Gêmeos” está inteiro; então seguir para a próxima franquia ou página de catálogo.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb`; não tratar `0dfc5f86` como prévia do HEAD atual; não gerar build só por documentação; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
+
+## Rodada 64 — Prévia local da conta com dados fictícios (14/11/2026)
+
+- Base: `main` @ `07091e7120dac8eaac7727527ed59a088aa4f5c8`.
+- A conta local usa as telas e navegação habituais, preenchidas por um perfil fictício em memória. Perfil, endereço e preferências permanecem editáveis nesta sessão; Coins e histórico mostram registros de exemplo pelas páginas já existentes. Não há banner, tela de demonstração ou botão de acesso especial.
+- No fallback local, leitura de perfil, saldo, histórico e preferências não consulta o Supabase; tentativas de criar orçamento, enviar voucher ou alterar Coins são bloqueadas. A configuração só ativa esse fallback em runtime local e evita reaproveitar URL/chave Supabase remotas.
+- QA local: `http://127.0.0.1:8080/perfil` respondeu HTTP 200; navegação visual conferida em perfil, endereço e preferências. TypeScript (`typecheck:app`) e ESLint dos arquivos alterados passaram. O conjunto direcionado passou em 8 arquivos e 147 testes.
+- Limite da evidência: mocks locais demonstram a navegação e o estado de interface; não comprovam autenticação, gravação ou consulta real no Supabase. Produção e recursos remotos não foram alterados.
+
+**NEXT_ACTION:** manter a prévia local como caminho de revisão da conta; validar com Supabase apenas em ambiente isolado com usuário fictício antes de homologar autenticação real.
+
+**DO_NOT_REPEAT:** não recriar painel, botão ou modo especial de demonstração; não tratar dados fictícios como evidência de funcionamento remoto; não publicar em produção nem alterar Supabase/Cloudflare de produção.

@@ -31,6 +31,15 @@ vi.mock("@/services/auth/auth-session-service", () => ({
   signInWithPasswordCredentials: mocks.signInWithPasswordCredentials,
   signOutCurrentSession: mocks.signOutCurrentSession,
 }));
+vi.mock("@/config/supabase-environment", () => ({
+  LOCAL_SUPABASE_FALLBACK: false,
+  get PREVIEW_READ_ONLY() {
+    return import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  },
+  get SUPABASE_URL() {
+    return import.meta.env.VITE_SUPABASE_URL ?? "";
+  },
+}));
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.getSession.mockResolvedValue({ data: { session: { access_token: "test" } }, error: null });

@@ -9,6 +9,9 @@ import log from '@/lib/logger';
 import { assertCurrentUserId, requireAuthenticatedUserId } from '@/services/auth/current-user';
 import type { NotificationPreferences } from '@/types/notification-preferences';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/types/notification-preferences';
+import { LOCAL_SUPABASE_FALLBACK } from '@/config/supabase-environment';
+
+let localPreviewPreferences: NotificationPreferences = { ...DEFAULT_NOTIFICATION_PREFERENCES };
 
 interface CustomerNotificationPreferencesRpcClient {
   rpc(
@@ -44,6 +47,7 @@ const customerNotificationProfileGateway =
  * Fetch notification preferences for the current user
  */
 export async function fetchNotificationPreferences(): Promise<NotificationPreferences> {
+  if (LOCAL_SUPABASE_FALLBACK) return { ...localPreviewPreferences };
   const userId = await requireAuthenticatedUserId();
 
   const { data, error } = await customerNotificationProfileGateway
@@ -67,6 +71,10 @@ export async function fetchNotificationPreferences(): Promise<NotificationPrefer
 export async function updateNotificationPreferences(
   preferences: Partial<NotificationPreferences>
 ): Promise<NotificationPreferences> {
+  if (LOCAL_SUPABASE_FALLBACK) {
+    localPreviewPreferences = { ...localPreviewPreferences, ...preferences };
+    return { ...localPreviewPreferences };
+  }
   await requireAuthenticatedUserId();
 
   // Fetch current preferences
@@ -100,6 +108,15 @@ export async function shouldSendNotification(
   userId: string,
   notificationType: string
 ): Promise<boolean> {
+  if (LOCAL_SUPABASE_FALLBACK) {
+    switch (notificationType) {
+      case 'stage_update': return localPreviewPreferences.production_stage_updates;
+      case 'item_shipped': return localPreviewPreferences.item_shipped;
+      case 'item_delivered': return localPreviewPreferences.item_delivered;
+      case 'marketing': return localPreviewPreferences.marketing_emails;
+      default: return true;
+    }
+  }
   await assertCurrentUserId(userId);
 
   const { data, error } = await customerNotificationPreferencesRpc.rpc('should_send_notification', {

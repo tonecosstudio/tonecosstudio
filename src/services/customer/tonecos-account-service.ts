@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
+import { LOCAL_SUPABASE_FALLBACK } from "@/config/supabase-environment";
 import { isPasswordPolicyCompliant } from "@/config/auth";
 import {
   resolveTonecosCustomerReturnPath,
@@ -20,8 +21,68 @@ const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 type AccountProfile = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Update"];
 type TonecosAccountProfile = AccountProfile & { taxDetailsAvailable?: boolean };
+export const TONECOS_LOCAL_PREVIEW_USER_ID =
+  "00000000-0000-4000-8000-000000000001";
+export const TONECOS_LOCAL_PREVIEW_QUOTE_ID =
+  "a0000000-0000-4000-8000-000000000001";
 const PROFILE_SELECT = "id,email,full_name,phone,whatsapp,cpf,birth_date,delivery_address,preferred_contact_channel,quote_updates,production_updates,marketing_emails,created_at,updated_at" as const;
 const PROFILE_SELECT_WITHOUT_TAX_DETAILS = "id,email,full_name,phone,whatsapp,delivery_address,preferred_contact_channel,quote_updates,production_updates,marketing_emails,created_at,updated_at" as const;
+let localPreviewProfile: AccountProfile | null = null;
+let localPreviewSignedOut = false;
+
+function createLocalPreviewProfile(): AccountProfile {
+  const now = new Date().toISOString();
+  return {
+    id: TONECOS_LOCAL_PREVIEW_USER_ID,
+    email: "demo@tonart.local",
+    full_name: "Cliente de demonstração",
+    phone: "+55 (11) 90000-0000",
+    whatsapp: "5511900000000",
+    cpf: null,
+    birth_date: null,
+    delivery_address: {
+      street: "Rua Exemplo",
+      number: "100",
+      complement: "Unidade de demonstração",
+      neighborhood: "Bairro Modelo",
+      city: "Cidade de Teste",
+      state: "SP",
+      zipCode: "00000000",
+      country: "BR",
+    },
+    preferred_contact_channel: "whatsapp",
+    quote_updates: true,
+    production_updates: true,
+    marketing_emails: false,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+function requireLocalPreviewProfile(): AccountProfile {
+  if (!LOCAL_SUPABASE_FALLBACK) {
+    throw new Error("tonecos_local_preview_unavailable");
+  }
+  if (localPreviewSignedOut) throw new Error("tonecos_login_required");
+  if (!localPreviewProfile) {
+    localPreviewProfile = createLocalPreviewProfile();
+  }
+  return localPreviewProfile;
+}
+
+function updateLocalPreviewProfile(changes: ProfileUpdate): AccountProfile {
+  const profile = requireLocalPreviewProfile();
+  localPreviewProfile = {
+    ...profile,
+    ...changes,
+    updated_at: new Date().toISOString(),
+  };
+  return { ...localPreviewProfile };
+}
+
+export function isTonecosLocalPreviewEnabled(): boolean {
+  return LOCAL_SUPABASE_FALLBACK;
+}
 
 function isMissingTaxProfileColumn(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
@@ -189,11 +250,21 @@ export async function changeTonecosPassword(input: {
 
 export async function signOutTonecosAccount(): Promise<void> {
   assertTonecosCommercialEnabled();
+  if (LOCAL_SUPABASE_FALLBACK) {
+    localPreviewProfile = null;
+    localPreviewSignedOut = true;
+    return;
+  }
   await signOutCurrentSession();
 }
 
 export async function getTonecosCurrentUser(): Promise<{ id: string; email: string | null } | null> {
   assertTonecosCommercialEnabled();
+  if (LOCAL_SUPABASE_FALLBACK) {
+    if (localPreviewSignedOut) return null;
+    const profile = requireLocalPreviewProfile();
+    return { id: profile.id, email: profile.email };
+  }
   // A signed-out visitor has no session; that is not an authentication failure.
   // This is only a local preflight: an existing session must still be verified by getUser().
   const { data: stored, error: sessionError } = await tonecos.auth.getSession();
@@ -211,6 +282,7 @@ export async function getTonecosCurrentUser(): Promise<{ id: string; email: stri
 }
 
 async function currentAccountId(): Promise<string> {
+  if (LOCAL_SUPABASE_FALLBACK) return requireLocalPreviewProfile().id;
   const { data, error } = await tonecos.auth.getUser();
   if (error) throw error;
   if (!data.user) throw new Error("tonecos_login_required");
@@ -219,6 +291,7 @@ async function currentAccountId(): Promise<string> {
 
 export async function getMyTonecosProfile(): Promise<TonecosAccountProfile> {
   assertTonecosCommercialEnabled();
+  if (LOCAL_SUPABASE_FALLBACK) return { ...requireLocalPreviewProfile() };
   const id = await currentAccountId();
   const profile = await tonecos.from("profiles")
     .select(PROFILE_SELECT)
@@ -243,6 +316,9 @@ export async function updateMyTonecosProfile(input: {
     throw new Error("tonecos_account_phone_invalid");
   }
   const id = await currentAccountId();
+  if (LOCAL_SUPABASE_FALLBACK) {
+    return updateLocalPreviewProfile({ full_name, phone });
+  }
   const profile = await tonecos.from("profiles")
     .update({ full_name, phone })
     .eq("id", id)
@@ -265,6 +341,7 @@ export async function updateMyTonecosProfile(input: {
 async function updateMyComplementaryProfile(changes: ProfileUpdate): Promise<TonecosAccountProfile> {
   assertTonecosCommercialEnabled();
   const id = await currentAccountId();
+  if (LOCAL_SUPABASE_FALLBACK) return updateLocalPreviewProfile(changes);
   const profile = await tonecos.from("profiles")
     .update(changes)
     .eq("id", id)

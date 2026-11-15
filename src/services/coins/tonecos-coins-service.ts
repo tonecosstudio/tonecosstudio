@@ -1,7 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/tonecos-mvp.types";
-import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
+import {
+  getTonecosCurrentUser,
+  isTonecosLocalPreviewEnabled,
+} from "@/services/customer/tonecos-account-service";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 
 const tonecos = supabase as unknown as SupabaseClient<Database>;
@@ -45,6 +48,29 @@ export type TonecosQuoteCoinPaymentResult = {
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const coinTypeSet = new Set(["admin_credit", "purchase_spend", "refund"]);
+const LOCAL_PREVIEW_COIN_BALANCE: TonecosCoinBalance = {
+  balance: 150,
+  totalEarned: 150,
+  totalSpent: 0,
+  entryCount: 2,
+  updatedAt: "2026-11-12T16:00:00.000Z",
+};
+const LOCAL_PREVIEW_COIN_ENTRIES: TonecosCoinEntry[] = [
+  {
+    id: "c0000000-0000-4000-8000-000000000001",
+    delta: 100,
+    type: "admin_credit",
+    reason: "Crédito fictício de demonstração",
+    createdAt: "2026-11-12T16:00:00.000Z",
+  },
+  {
+    id: "c0000000-0000-4000-8000-000000000002",
+    delta: 50,
+    type: "admin_credit",
+    reason: "Bônus fictício de demonstração",
+    createdAt: "2026-11-10T12:00:00.000Z",
+  },
+];
 
 function integer(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value);
@@ -65,6 +91,9 @@ async function requireOwnAccount(): Promise<string> {
 export async function getMyTonecosCoinBalance(): Promise<TonecosCoinBalance> {
   assertTonecosCoinsEnabled();
   await requireOwnAccount();
+  if (isTonecosLocalPreviewEnabled()) {
+    return { ...LOCAL_PREVIEW_COIN_BALANCE };
+  }
   const { data, error } = await tonecos.rpc("get_my_tonecos_coin_balance");
   if (error) throw error;
   const o = object(data);
@@ -111,6 +140,9 @@ export async function listMyTonecosCoinEntries(
   ) {
     throw new Error("tonecos_coin_limit_invalid");
   }
+  if (isTonecosLocalPreviewEnabled()) {
+    return LOCAL_PREVIEW_COIN_ENTRIES.slice(offset, offset + limit);
+  }
   const userId = await requireOwnAccount();
   const { data, error } = await tonecos
     .from("tonecos_coin_entries")
@@ -155,6 +187,9 @@ export async function creditTonecosCoins(input: {
   reason: string;
 }): Promise<TonecosAdminCreditResult> {
   assertTonecosCoinsEnabled();
+  if (isTonecosLocalPreviewEnabled()) {
+    throw new Error("tonecos_local_preview_read_only");
+  }
   if (
     typeof input.userId !== "string" ||
     !uuidPattern.test(input.userId) ||
@@ -205,6 +240,9 @@ export async function applyTonecosCoinsToQuote(input: {
   amount: number;
 }): Promise<TonecosQuoteCoinPaymentResult> {
   assertTonecosCoinsEnabled();
+  if (isTonecosLocalPreviewEnabled()) {
+    throw new Error("tonecos_local_preview_read_only");
+  }
   if (
     typeof input.quoteId !== "string" ||
     !uuidPattern.test(input.quoteId) ||
@@ -254,6 +292,9 @@ export async function findTonecosCoinRecipient(
   email: string,
 ): Promise<TonecosCoinRecipient | null> {
   assertTonecosCoinsEnabled();
+  if (isTonecosLocalPreviewEnabled()) {
+    throw new Error("tonecos_local_preview_read_only");
+  }
   const normalized =
     typeof email === "string" ? email.trim().toLowerCase() : "";
   if (

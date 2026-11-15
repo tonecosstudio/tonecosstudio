@@ -13,12 +13,22 @@ const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   from: vi.fn(),
   assertCurrentUserId: vi.fn(),
+  isLocalPreviewActive: vi.fn(() => false),
+  assertQuotesEnabled: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { rpc: mocks.rpc, from: mocks.from },
 }));
+vi.mock("@/config/tonecos-commercial-authority", () => ({
+  assertTonecosQuotesEnabled: mocks.assertQuotesEnabled,
+}));
 vi.mock("@/services/auth/current-user", () => ({
   assertCurrentUserId: mocks.assertCurrentUserId,
+}));
+vi.mock("@/services/customer/tonecos-account-service", () => ({
+  isTonecosLocalPreviewEnabled: mocks.isLocalPreviewActive,
+  TONECOS_LOCAL_PREVIEW_QUOTE_ID: "a0000000-0000-4000-8000-000000000001",
+  TONECOS_LOCAL_PREVIEW_USER_ID: "00000000-0000-4000-8000-000000000001",
 }));
 
 beforeEach(() => {
@@ -29,10 +39,32 @@ beforeEach(() => {
   vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
   vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
   mocks.assertCurrentUserId.mockResolvedValue(USER);
+  mocks.isLocalPreviewActive.mockReturnValue(false);
+  mocks.assertQuotesEnabled.mockReset();
+  mocks.assertQuotesEnabled.mockImplementation(() => undefined);
 });
 afterEach(() => vi.unstubAllEnvs());
 
 describe("authenticated Tonecos catalog quote boundary", () => {
+  it("serves the local demo quote without checking Supabase auth or querying a table", async () => {
+    mocks.isLocalPreviewActive.mockReturnValue(true);
+    const page = await loadMyCatalogQuotePage(
+      "00000000-0000-4000-8000-000000000001",
+    );
+
+    expect(page.total).toBe(1);
+    expect(page.rows[0]).toMatchObject({
+      id: "a0000000-0000-4000-8000-000000000001",
+      status: "answered",
+      quotedAmount: 300,
+      isPreorder: true,
+      depositAmount: 50,
+      remainingAmount: 250,
+    });
+    expect(mocks.assertCurrentUserId).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
   it("converts only slugs into unpriced quote items, without mirroring catalog data", () => {
     const models = [
       {
@@ -160,6 +192,9 @@ describe("authenticated Tonecos catalog quote boundary", () => {
 
   it("blocks read-only previews and ignores the retired quote feature switch", async () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
+    mocks.assertQuotesEnabled.mockImplementationOnce(() => {
+      throw new Error("catalog_quotes_not_enabled");
+    });
     await expect(
       submitCatalogQuoteRequest(USER, [{ slug: "naruto", quantity: 1 }]),
     ).rejects.toThrow("catalog_quotes_not_enabled");

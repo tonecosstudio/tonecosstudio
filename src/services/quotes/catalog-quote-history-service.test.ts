@@ -2,14 +2,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadCatalogQuoteHistory } from "./catalog-quote-history-service";
 
 const QUOTE = "22222222-2222-4222-8222-222222222222";
-const mocks = vi.hoisted(() => ({ from: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  from: vi.fn(),
+  isLocalPreviewActive: vi.fn(() => false),
+  assertQuotesEnabled: vi.fn(),
+}));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: mocks.from },
 }));
+vi.mock("@/config/tonecos-commercial-authority", () => ({
+  assertTonecosQuotesEnabled: mocks.assertQuotesEnabled,
+}));
+vi.mock("@/services/customer/tonecos-account-service", () => ({
+  isTonecosLocalPreviewEnabled: mocks.isLocalPreviewActive,
+  TONECOS_LOCAL_PREVIEW_QUOTE_ID: "a0000000-0000-4000-8000-000000000001",
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.isLocalPreviewActive.mockReturnValue(false);
+  mocks.assertQuotesEnabled.mockImplementation(() => undefined);
   vi.stubEnv("VITE_SUPABASE_URL", "https://icmtmaakjucmuzxnofkd.supabase.co");
   vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
   vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
@@ -19,6 +32,20 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("canonical quote history boundary", () => {
+  it("serves the user's local quote timeline without querying Supabase", async () => {
+    mocks.isLocalPreviewActive.mockReturnValue(true);
+    await expect(
+      loadCatalogQuoteHistory(["a0000000-0000-4000-8000-000000000001"]),
+    ).resolves.toMatchObject({
+      "a0000000-0000-4000-8000-000000000001": [
+        { type: "submitted", toStatus: "pending" },
+        { type: "status_changed", toStatus: "reviewing" },
+        { type: "answered", toStatus: "answered", amount: 300 },
+      ],
+    });
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
   it("reads a bounded immutable timeline through quote_events RLS", async () => {
     const query = {
       select: vi.fn(),

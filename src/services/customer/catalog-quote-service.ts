@@ -1,5 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { assertTonecosQuotesEnabled } from "@/config/tonecos-commercial-authority";
+import {
+  isTonecosLocalPreviewEnabled,
+  TONECOS_LOCAL_PREVIEW_QUOTE_ID,
+  TONECOS_LOCAL_PREVIEW_USER_ID,
+} from "@/services/customer/tonecos-account-service";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
@@ -68,6 +73,39 @@ export type CustomerCatalogQuotePage = {
 
 const requireCommercialQuoteMode = assertTonecosQuotesEnabled;
 
+const LOCAL_PREVIEW_QUOTE: CustomerCatalogQuote = {
+  id: TONECOS_LOCAL_PREVIEW_QUOTE_ID,
+  status: "answered",
+  createdAt: "2026-11-10T12:00:00.000Z",
+  deadline: "2026-11-20T12:00:00.000Z",
+  notes: "Solicitação fictícia usada para revisar a resposta e a pré-venda.",
+  items: [{ slug: "naruto", quantity: 1 }],
+  quotedAmount: 300,
+  listAmount: 300,
+  discountPercent: 0,
+  discountAmount: 0,
+  responseMessage:
+    "Resposta simulada da equipe: o total da peça é R$ 300,00. Na pré-venda, a entrada de R$ 50,00 reserva o modelo e o saldo de R$ 250,00 fica para a finalização.",
+  whatsapp: "5511900000000",
+  postalCode: "00000000",
+  scale: "1/10",
+  finishing: "pintado",
+  isPreorder: true,
+  depositAmount: 50,
+  remainingAmount: 250,
+  paymentStatus: "pending",
+  paymentLink: null,
+  pixKey: null,
+  paymentInstructions: null,
+  paymentLinkSentAt: null,
+  finalPaymentNotifiedAt: null,
+  readyForFinalPayment: false,
+  paymentVoucherPath: null,
+  paymentVoucherType: null,
+  paymentVoucherRejectionReason: null,
+  coinAmountApplied: 0,
+};
+
 function validateItems(items: readonly CatalogQuoteItem[]): CatalogQuoteItem[] {
   if (
     !Array.isArray(items) ||
@@ -112,6 +150,9 @@ export async function submitCatalogQuoteRequest(
   intent: CatalogQuoteIntent = "quote",
 ): Promise<string> {
   requireCommercialQuoteMode();
+  if (isTonecosLocalPreviewEnabled()) {
+    throw new Error("catalog_quote_local_preview_read_only");
+  }
   const safeItems = validateItems(items);
   if (notes !== null && typeof notes !== "string") {
     throw new Error("catalog_quote_notes_invalid");
@@ -283,7 +324,7 @@ export async function loadMyCatalogQuotePage(
   userId: string,
   options: { limit?: number; offset?: number; quoteId?: string } = {},
 ): Promise<CustomerCatalogQuotePage> {
-  requireCommercialQuoteMode();
+  if (!isTonecosLocalPreviewEnabled()) requireCommercialQuoteMode();
   const limit = options.limit ?? 20;
   const offset = options.offset ?? 0;
   const quoteId = options.quoteId;
@@ -302,6 +343,21 @@ export async function loadMyCatalogQuotePage(
     offset > 100000
   ) {
     throw new Error("catalog_quote_list_query_invalid");
+  }
+
+  if (isTonecosLocalPreviewEnabled()) {
+    if (userId !== TONECOS_LOCAL_PREVIEW_USER_ID) {
+      throw new Error("tonecos_login_required");
+    }
+    const matchesSelection =
+      quoteId === undefined || quoteId.toLowerCase() === LOCAL_PREVIEW_QUOTE.id;
+    const rows = matchesSelection && offset === 0 ? [LOCAL_PREVIEW_QUOTE] : [];
+    return {
+      total: matchesSelection ? 1 : 0,
+      limit,
+      offset,
+      rows: rows.slice(0, limit),
+    };
   }
 
   await assertCurrentUserId(userId);
@@ -592,6 +648,9 @@ export async function submitCatalogPreorderVoucher(input: {
   previousVoucherPath?: string | null;
 }): Promise<CatalogPreorderVoucherSubmission> {
   requireCommercialQuoteMode();
+  if (isTonecosLocalPreviewEnabled()) {
+    throw new Error("catalog_quote_local_preview_read_only");
+  }
   if (
     !input ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(

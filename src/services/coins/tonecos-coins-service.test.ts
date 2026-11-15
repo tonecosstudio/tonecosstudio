@@ -15,12 +15,18 @@ const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   from: vi.fn(),
   user: vi.fn(),
+  isLocalPreviewActive: vi.fn(() => false),
+  assertCommercialEnabled: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { rpc: mocks.rpc, from: mocks.from },
 }));
 vi.mock("@/services/customer/tonecos-account-service", () => ({
+  isTonecosLocalPreviewEnabled: mocks.isLocalPreviewActive,
   getTonecosCurrentUser: mocks.user,
+}));
+vi.mock("@/config/tonecos-commercial-authority", () => ({
+  assertTonecosCommercialEnabled: mocks.assertCommercialEnabled,
 }));
 
 beforeEach(() => {
@@ -32,10 +38,31 @@ beforeEach(() => {
   vi.stubEnv("VITE_TONECOS_COINS_ENABLED", "true");
   vi.stubEnv("VITE_SUPABASE_URL", "https://icmtmaakjucmuzxnofkd.supabase.co");
   mocks.user.mockResolvedValue({ id: USER, email: "cliente@example.test" });
+  mocks.isLocalPreviewActive.mockReturnValue(false);
+  mocks.assertCommercialEnabled.mockReset();
+  mocks.assertCommercialEnabled.mockImplementation(() => undefined);
 });
 afterEach(() => vi.unstubAllEnvs());
 
 describe("Tonecos Coins ledger authority", () => {
+  it("serves fictional balance and entries without calling Supabase for the local demo", async () => {
+    mocks.isLocalPreviewActive.mockReturnValue(true);
+    mocks.user.mockResolvedValue({
+      id: "00000000-0000-4000-8000-000000000001",
+      email: "demo@tonart.local",
+    });
+
+    await expect(getMyTonecosCoinBalance()).resolves.toMatchObject({
+      balance: 150,
+      totalEarned: 150,
+      totalSpent: 0,
+      entryCount: 2,
+    });
+    await expect(listMyTonecosCoinEntries()).resolves.toHaveLength(2);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
   it("reads private coins with quotes disabled, without reactivating quotes", async () => {
     vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "false");
     mocks.rpc.mockResolvedValue({
@@ -102,6 +129,9 @@ describe("Tonecos Coins ledger authority", () => {
 
   it("blocks read-only previews and ignores the retired coins feature switch", async () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
+    mocks.assertCommercialEnabled.mockImplementationOnce(() => {
+      throw new Error("tonecos_commercial_mvp_disabled");
+    });
     await expect(getMyTonecosCoinBalance()).rejects.toThrow(
       "tonecos_commercial_mvp_disabled",
     );
