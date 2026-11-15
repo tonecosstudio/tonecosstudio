@@ -502,7 +502,9 @@ describe("Original customer account navigation in the commercial app", () => {
       screen.getByRole("combobox", { name: "Canal preferido de contato" }),
     ).toBeEnabled();
     expect(
-      screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }),
+      screen.getByRole("checkbox", {
+        name: "Mostrar à equipe que desejo atualizações de orçamento",
+      }),
     ).toBeEnabled();
     expect(
       screen.getByRole("link", { name: "Gerenciar preferências de envio" }),
@@ -617,7 +619,9 @@ describe("Original customer account navigation in the commercial app", () => {
     });
     fireEvent.change(preferred, { target: { value: "email" } });
     fireEvent.click(
-      screen.getByRole("checkbox", { name: "Avisos sobre orçamentos" }),
+      screen.getByRole("checkbox", {
+        name: "Mostrar à equipe que desejo atualizações de orçamento",
+      }),
     );
     fireEvent.click(
       screen.getByRole("button", { name: "Salvar preferências" }),

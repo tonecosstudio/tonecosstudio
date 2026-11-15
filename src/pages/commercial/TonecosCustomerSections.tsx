@@ -670,7 +670,10 @@ function CustomerComplementaryEditor({
                 </select>
               </label>
               {(
-                [["quoteUpdates", "Avisos sobre orçamentos"]] as const
+                [[
+                  "quoteUpdates",
+                  "Mostrar à equipe que desejo atualizações de orçamento",
+                ]] as const
               ).map(([key, label]) => (
                 <label
                   key={key}
