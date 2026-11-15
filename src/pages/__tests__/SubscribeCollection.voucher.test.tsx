@@ -73,14 +73,14 @@ function plan(limit: 6 | 12) {
   };
 }
 
-function renderPage() {
+function renderPage(initialEntry = "/assinar/terror") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/assinar/terror"]}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route path="/assinar/:slug" element={<SubscribeCollection />} />
         </Routes>
@@ -185,6 +185,14 @@ describe("SubscribeCollection curated model checkout", () => {
     expect(models[12]).toBeDisabled();
     expect(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i })).toBeEnabled();
     expect(mocks.checkout).not.toHaveBeenCalled();
+  });
+
+  it("preselects the plan supplied by the plans page", async () => {
+    renderPage(`/assinar/terror?plan=${PLAN_12_ID}`);
+
+    await modelButtons();
+
+    expect(await screen.findByText("0 de 12 selecionados")).toBeInTheDocument();
   });
 
   it("uses the secure card link, full price, and review proof for card checkout", async () => {

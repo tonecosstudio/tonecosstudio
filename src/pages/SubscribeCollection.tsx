@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +54,8 @@ export default function SubscribeCollection() {
   const { slug } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedPlanId = searchParams.get("plan");
   const {
     plans,
     plansLoading,
@@ -77,6 +79,12 @@ export default function SubscribeCollection() {
   const [checkoutError, setCheckoutError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (requestedPlanId && plans?.some((plan) => plan.id === requestedPlanId)) {
+      setSelectedPlanId(requestedPlanId);
+    }
+  }, [plans, requestedPlanId]);
 
   const selectedPlan = plans?.find((plan) => plan.id === selectedPlanId) ?? plans?.[0] ?? null;
   const modelSelectionLimit = selectedPlan?.model_selection_limit ?? 6;

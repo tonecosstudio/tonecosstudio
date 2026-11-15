@@ -1,3 +1,12 @@
+## Checkpoint 14/11/2026 — vitrine de assinaturas ligada à curadoria
+
+- **Base → commit:** `main@68d8aaeb` → `feat(subscriptions): connect plans to curated collections`, rebased sobre `origin/main@c10115b2`.
+- **Implementado:** os cards mostram o valor total, o preço PIX, a quantidade de Coins e a seleção de 6 ou 12 modelos. Cada plano oferece somente coleções com curadoria suficiente e abre o checkout com a coleção e o plano já escolhidos. A vitrine e o FAQ descrevem a conferência do pagamento sem prometer itens ou benefícios não comprovados.
+- **Validação Windows:** 6 testes focados de assinatura passaram; `npm run typecheck:app` e ESLint dos arquivos alterados passaram. Os testes usam serviços simulados.
+- **Integração real:** nenhuma chamada ou gravação no Supabase neste ciclo. `VITE_TONECOS_SUBSCRIPTIONS_ENABLED` continua ausente do `.env.local`; não há ambiente Supabase local compatível confirmado para validar persistência real.
+- **NEXT_ACTION:** continuar as lacunas comerciais independentes localmente; validar persistência de assinatura somente com uma instância Supabase local compatível.
+- **DO_NOT_REPEAT:** não habilitar checkout local contra credenciais remotas, não escrever no Supabase conectado e não tratar mocks como prova de persistência.
+
 ## Checkpoint 14/11/2026 — catálogo restaurado na prévia local
 
 - **Estado:** `.env.local` ignorado pelo Git apontava `VITE_CANONICAL_CATALOG_API_BASE` para `127.0.0.1:8082`, sem serviço ativo. Removida somente essa sobrescrita; a resolução local passou a usar o proxy canônico somente leitura na mesma origem, em `http://127.0.0.1:8080/catalogo-api/`.
