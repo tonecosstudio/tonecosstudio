@@ -236,6 +236,7 @@ export async function fetchCollectionsWithCharacterCount(): Promise<
   const { data: collections, error } = await supabase
     .from("collections")
     .select("*")
+    .neq("collection_kind", "internal")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
