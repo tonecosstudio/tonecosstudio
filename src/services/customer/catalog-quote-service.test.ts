@@ -4,6 +4,7 @@ import {
   loadMyCatalogQuotePage,
   quoteItemsFromSelection,
   submitCatalogQuoteRequest,
+  submitCatalogPreorderVoucher,
 } from "./catalog-quote-service";
 import type { PublicCatalogModel } from "@/services/catalog/public-catalog-gateway";
 
@@ -13,6 +14,9 @@ const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   from: vi.fn(),
   assertCurrentUserId: vi.fn(),
+  requireAuthenticatedUserId: vi.fn(),
+  uploadVoucher: vi.fn(),
+  deleteVoucher: vi.fn(),
   isLocalPreviewActive: vi.fn(() => false),
   assertQuotesEnabled: vi.fn(),
 }));
@@ -24,6 +28,11 @@ vi.mock("@/config/tonecos-commercial-authority", () => ({
 }));
 vi.mock("@/services/auth/current-user", () => ({
   assertCurrentUserId: mocks.assertCurrentUserId,
+  requireAuthenticatedUserId: mocks.requireAuthenticatedUserId,
+}));
+vi.mock("@/services/payments/payment-voucher-storage-service", () => ({
+  uploadPaymentVoucher: mocks.uploadVoucher,
+  deletePaymentVoucher: mocks.deleteVoucher,
 }));
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   isTonecosLocalPreviewEnabled: mocks.isLocalPreviewActive,
@@ -39,6 +48,11 @@ beforeEach(() => {
   vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
   vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
   mocks.assertCurrentUserId.mockResolvedValue(USER);
+  mocks.requireAuthenticatedUserId.mockResolvedValue(USER);
+  mocks.uploadVoucher.mockResolvedValue(
+    `quotes/${USER}/${QUOTE}/1731600000000-0123456789abcdef.png`,
+  );
+  mocks.deleteVoucher.mockResolvedValue(undefined);
   mocks.isLocalPreviewActive.mockReturnValue(false);
   mocks.assertQuotesEnabled.mockReset();
   mocks.assertQuotesEnabled.mockImplementation(() => undefined);
@@ -166,6 +180,46 @@ describe("authenticated Tonecos catalog quote boundary", () => {
         p_postal_code: undefined,
         p_scale: "1/10",
         p_finishing: "pintado",
+      },
+    );
+  });
+
+  it("submits a full-payment voucher through the same quote payment authority", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: {
+        quote_id: QUOTE,
+        payment_type: "full",
+        amount: 74.25,
+        payment_status: "under_review",
+      },
+      error: null,
+    });
+    const file = new File(["PIX proof"], "pix.png", { type: "image/png" });
+
+    await expect(
+      submitCatalogPreorderVoucher({
+        quoteId: QUOTE,
+        paymentType: "full",
+        file,
+      }),
+    ).resolves.toEqual({
+      quoteId: QUOTE,
+      paymentType: "full",
+      amount: 74.25,
+      paymentStatus: "under_review",
+    });
+    expect(mocks.uploadVoucher).toHaveBeenCalledWith({
+      file,
+      userId: USER,
+      pathPrefix: `quotes:${QUOTE}`,
+    });
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "submit_catalog_preorder_voucher_for_current_user",
+      {
+        p_quote_id: QUOTE,
+        p_payment_type: "full",
+        p_payment_voucher_path:
+          `quotes/${USER}/${QUOTE}/1731600000000-0123456789abcdef.png`,
       },
     );
   });

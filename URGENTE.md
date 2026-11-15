@@ -1592,3 +1592,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** conectar pedido de extra à entidade `quotes` e aos pagamentos existentes, com cálculo servidor-side, reserva/reversão idempotente de Coins e estado de pagamento administrável; preservar frete separado, gate fechado e o isolamento local.
 
 **DO_NOT_REPEAT:** não usar leitura do histórico como prova de checkout; não inserir Coins diretamente no cliente; não reaproveitar o RPC legado que criava compra avulsa marcada como paga; não aplicar migrations em produção.
+
+## Rodada 71 — Comprovante de pagamento em orçamento respondido (15/11/2026)
+
+- A RPC canônica de comprovantes agora aceita `full` para um orçamento respondido comum, calcula o saldo pelo total aprovado menos pagamentos concluídos já existentes (incluindo Coins do mesmo registro) e só muda para `under_review`. A validação de R$50 de entrada e saldo final da pré-venda continua separada; não há caminho de aprovação automática.
+- O serviço do cliente já usa a mesma RPC e agora tem teste explícito da submissão do valor residual de R$74,25 com comprovante privado. Validações locais: `catalog-quote-service.test.ts` — 1 arquivo / 20 testes; `npm run typecheck:app`; ESLint; `security:supabase-access`; `git diff --check` passaram.
+- A migration incremental `20261115230258_tonart_normal_quote_voucher.sql` não foi aplicada nem executada em PostgreSQL; não há banco local/Docker/psql e nenhum banco remoto foi usado. Testes unitários validam o envio ao RPC, não o comportamento de banco nem a confirmação financeira.
+
+**NEXT_ACTION:** criar o pedido de extra como extensão da entidade `quotes`, calculando oferta e desconto no servidor e debitando/reservando Coins no mesmo commit transacional com idempotência; depois ligar pagamento restante, cancelamento/reversão e administração.
+
+**DO_NOT_REPEAT:** não marcar a parcela em reais como paga no envio do comprovante; não aceitar valor de Coins informado pelo cliente sem recalcular saldo/preço no banco; não abrir o gate nem escrever no Supabase produtivo.
