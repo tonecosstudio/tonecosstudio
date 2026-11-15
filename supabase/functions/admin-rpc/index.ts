@@ -15,6 +15,7 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_add_chat_group_member",
   "admin_add_chat_group_members",
   "admin_add_catalog_curation_tag_alias",
+  "admin_remove_catalog_curation_tag_alias",
   "admin_add_coins_to_user",
   "admin_add_holiday",
   "admin_adjust_subscription_credit_credits",
