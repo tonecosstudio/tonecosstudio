@@ -1504,6 +1504,7 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - A prévia mantém a tela e os caminhos normais de Minha Conta, sem aviso ou botão especial de demonstração. Perfil, endereço, preferências, carteira e solicitação pendente usam apenas dados fictícios associados ao cliente local.
 - Removidos a resposta, preço, entrada de pré-venda e avanços administrativos fictícios do orçamento local. O histórico agora mostra somente a solicitação feita pelo cliente; saldo e movimentos de Coins continuam disponíveis como dados da carteira, sem descrições de demonstração.
 - Testes direcionados: 5 arquivos e 38 testes passaram; `npm run typecheck:app`, ESLint dos arquivos alterados e `git diff --check` passaram. Prettier sinaliza formatação antiga nos quatro arquivos conferidos; o formatter foi revertido para evitar diff mecânico extenso.
+- PR #27 segue aberta e não integrada. O Quality Gate #43674614806 (#1572), após o commit `48d9a7b8`, repetiu a falha no job `Catalog Worker offline / no deploy` sem etapas; o endpoint de logs responde 404 `BlobNotFound`, como no run #43672678503. Sem evidência de falha de código e sem reexecução.
 - Nenhuma autenticação ou escrita no Supabase real foi simulada como prova. Nenhum recurso remoto ou produção foi alterado.
 
 **NEXT_ACTION:** sincronizar este ajuste na PR #27 e continuar a integração local da conta sem adicionar dados de resposta administrativa não existentes.
