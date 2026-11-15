@@ -1,3 +1,12 @@
+## Checkpoint 14/11/2026 — limpeza de comprovantes em checkout de assinatura
+
+- **Base → commit funcional:** `main@096831fe` → `1813f583` (`fix(subscriptions): clean invalid payment vouchers`).
+- **Implementado:** o checkout remove o comprovante recém-enviado se a RPC falhar ou devolver resultado inválido; o reenvio também remove o arquivo se a resposta não corresponder à assinatura solicitada. Falha de limpeza não mascara o erro principal.
+- **Validação Windows:** teste direcionado do serviço passou (2 testes), `npm run typecheck:app`, ESLint dos dois arquivos e `git diff --check` passaram.
+- **Host e integração:** `http://127.0.0.1:8080/` respondeu HTTP 200. Testes são simulados; não houve acesso nem escrita no Supabase. A validação real continua sem backend Supabase local compatível. O navegador interno retornou timeout `service_info`.
+- **NEXT_ACTION:** continuar correções locais independentes e sincronizar os commits; validar persistência somente quando houver ambiente local compatível.
+- **DO_NOT_REPEAT:** não tratar testes simulados ou HTTP 200 como prova de persistência; não escrever no Supabase conectado nem publicar em produção.
+
 ## Checkpoint 14/11/2026 — host local isolado do Supabase remoto
 
 - **Base → commits funcionais:** `1e67b4fa` → `8a9fb2c9` (`fix(local): isolate dev Supabase from remote project`) → `18369f30` (`test(local): cover commercial preview boot`).
