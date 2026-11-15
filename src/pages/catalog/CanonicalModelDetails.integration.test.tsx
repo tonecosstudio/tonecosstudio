@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   act,
   fireEvent,
@@ -15,6 +15,11 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 vi.mock("@/config/canonical-catalog-endpoint", () => ({
   CANONICAL_CATALOG_API_BASE: "https://catalog.example.test/catalogo-api",
+}));
+
+const offerServiceMocks = vi.hoisted(() => ({ list: vi.fn() }));
+vi.mock("@/services/commercial/tonart-commercial-offers-service", () => ({
+  listTonartCommercialOffersForModel: offerServiceMocks.list,
 }));
 
 vi.mock("@/components/layouts/Page", () => ({
@@ -73,6 +78,10 @@ afterEach(() => {
   window.localStorage.clear();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
+});
+
+beforeEach(() => {
+  offerServiceMocks.list.mockReset().mockResolvedValue([]);
 });
 
 function mountGallery(options: {
@@ -324,13 +333,53 @@ describe("published model/gallery identity on the public detail page", () => {
     fireEvent.click(screen.getByText("Como funcionam as Coins"));
 
     expect(
-      screen.getByText(/Orçamentos, entrada de pré-venda, parcelas e frete não recebem Coins automaticamente/),
+      screen.getByText(
+        /Orçamentos, entrada de pré-venda, parcelas de plano e frete ficam fora do uso de Coins/,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", {
         name: "Consultar saldo e movimentações de Coins",
       }),
     ).toHaveAttribute("href", "/moedas");
+    expect(io).toHaveBeenCalled();
+  });
+
+  it("shows the configured price, variant and Coin reference without creating a purchase", async () => {
+    vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+    offerServiceMocks.list.mockResolvedValue([
+      {
+        id: "8c10a7c6-46f0-49a6-99be-820c43a9e6f0",
+        catalogModelSlug: "animal-original",
+        scale: "1/10",
+        finishing: "painted",
+        contentsDescription: "Peça pintada, com base incluída.",
+        itemPriceBrl: 237.5,
+        shippingMode: "quote_required",
+        shippingAmountBrl: null,
+        deliveryTerms: "Prazo informado após confirmação do CEP.",
+        coinsEligible: true,
+        subscriberDiscountEligible: false,
+        isActive: true,
+        updatedAt: "2026-11-15T20:00:00.000Z",
+      },
+    ]);
+    const { io } = mountGallery({ total: 1 });
+
+    expect(
+      await screen.findByRole("heading", { name: "Condições da peça" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Escala 1/10 · Pintado")).toBeInTheDocument();
+    expect(screen.getByText(/R\$\s*237,50/)).toBeInTheDocument();
+    expect(screen.getByText(/até 237,50 Coins/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Esta ficha não cria pedido, confirma disponibilidade nem realiza pagamento/,
+      ),
+    ).toBeInTheDocument();
+    expect(offerServiceMocks.list).toHaveBeenCalledWith("animal-original");
     expect(io).toHaveBeenCalled();
   });
 

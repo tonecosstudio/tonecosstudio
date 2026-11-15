@@ -10,6 +10,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import { TonartCommercialOfferDetails } from "@/components/catalog/TonartCommercialOfferDetails";
 import { RelatedModels, relatedCatalogReturnState } from "./RelatedModels";
 import { Page } from "@/components/layouts/Page";
 import {
@@ -825,7 +826,7 @@ export default function CanonicalModelDetails() {
                     <p className="text-sm leading-relaxed text-[hsl(0,0%,56%)]">
                       {publicMediaHold
                         ? "Imagem digital de referência. Este catálogo é somente para consulta e não recebe pedidos ou pagamentos."
-                        : "Disponibilidade e preço são confirmados pela equipe na etapa de orçamento. Esta ficha apresenta somente os dados publicados no catálogo."}
+                        : "Quando houver uma condição comercial cadastrada abaixo, ela identifica a variante e o valor da peça. A equipe confirma disponibilidade, frete e prazo antes de qualquer contratação."}
                     </p>
                     <div className="border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,9%)] p-4">
                       <h2 className="text-sm font-semibold uppercase tracking-wide">
@@ -838,6 +839,10 @@ export default function CanonicalModelDetails() {
                         finalizadas.
                       </p>
                     </div>
+                    <TonartCommercialOfferDetails
+                      modelSlug={model.slug}
+                      enabled={quoteRequestsEnabled}
+                    />
                     <div className="space-y-3">
                       <button
                         type="button"
@@ -942,9 +947,11 @@ export default function CanonicalModelDetails() {
                           </p>
                           <p>
                             Coins podem ser usadas em ofertas extras elegíveis
-                            de toda a TONART, com pagamento integral ou misto
-                            em reais. Orçamentos, entrada de pré-venda, parcelas
-                            e frete não recebem Coins automaticamente.
+                            de toda a TONART, em pagamento integral ou misto
+                            quando a oferta e o checkout aceitarem Coins.
+                            Orçamentos, entrada de pré-venda, parcelas de plano
+                            e frete ficam fora do uso de Coins. Esta ficha não
+                            debita saldo.
                           </p>
                           <Link
                             to="/moedas"
