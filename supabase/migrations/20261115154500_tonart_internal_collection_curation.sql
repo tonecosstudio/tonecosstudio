@@ -25,7 +25,7 @@ CREATE OR REPLACE FUNCTION public.guard_internal_collection_tier_assignment()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = public, pg_temp
-AS $
+AS $guard$
 BEGIN
   IF EXISTS (
     SELECT 1
@@ -39,7 +39,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$;
+$guard$;
 
 DROP TRIGGER IF EXISTS guard_internal_collection_tier_assignment
   ON public.collection_tier_assignments;
@@ -49,7 +49,6 @@ BEFORE INSERT OR UPDATE OF collection_id
 ON public.collection_tier_assignments
 FOR EACH ROW
 EXECUTE FUNCTION public.guard_internal_collection_tier_assignment();
-
 CREATE TABLE IF NOT EXISTS public.catalog_character_identities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   identity_key text NOT NULL UNIQUE,
@@ -440,7 +439,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
-AS $
+AS $alias$
 DECLARE
   v_dimension text;
   v_tag_slug text;
@@ -450,7 +449,55 @@ DECLARE
 BEGIN
   PERFORM public.assert_admin_access();
 
-  IF v_alias_slug !~ '^[a-z0-9][a-z0-9-]{0,79}
+  IF length(v_alias_slug) < 1
+     OR length(v_alias_slug) > 80
+     OR left(v_alias_slug, 1) !~ '^[a-z0-9]'
+     OR v_alias_slug ~ '[^a-z0-9-]' THEN
+    RAISE EXCEPTION 'Invalid curation tag alias slug' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT dimension, slug, status
+    INTO v_dimension, v_tag_slug, v_status
+  FROM public.catalog_curation_tags
+  WHERE id = p_tag_id;
+
+  IF v_dimension IS NULL THEN
+    RAISE EXCEPTION 'Curation tag not found' USING ERRCODE = 'P0002';
+  END IF;
+  IF v_status <> 'active' THEN
+    RAISE EXCEPTION 'Curation tag is not active' USING ERRCODE = '22023';
+  END IF;
+  IF v_alias_slug = v_tag_slug OR EXISTS (
+    SELECT 1
+    FROM public.catalog_curation_tags t
+    WHERE t.dimension = v_dimension
+      AND t.slug = v_alias_slug
+  ) THEN
+    RAISE EXCEPTION 'Alias collides with canonical curation tag slug' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT a.tag_id
+    INTO v_existing_tag_id
+  FROM public.catalog_curation_tag_aliases a
+  WHERE a.dimension = v_dimension
+    AND a.alias_slug = v_alias_slug;
+
+  IF v_existing_tag_id IS NOT NULL AND v_existing_tag_id <> p_tag_id THEN
+    RAISE EXCEPTION 'Alias already belongs to another curation tag' USING ERRCODE = '22023';
+  END IF;
+
+  INSERT INTO public.catalog_curation_tag_aliases (dimension, alias_slug, tag_id)
+  VALUES (v_dimension, v_alias_slug, p_tag_id)
+  ON CONFLICT (dimension, alias_slug) DO NOTHING;
+
+  RETURN jsonb_build_object(
+    'tagId', p_tag_id,
+    'dimension', v_dimension,
+    'aliasSlug', v_alias_slug
+  );
+END;
+$alias$;
+CREATE OR REPLACE FUNCTION public.admin_get_collection_curation_summary(
   p_collection_id uuid
 )
 RETURNS jsonb
@@ -929,556 +976,6 @@ GRANT EXECUTE ON FUNCTION public.admin_list_internal_collections() TO service_ro
 GRANT EXECUTE ON FUNCTION public.admin_ensure_internal_collection(text, text, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_list_catalog_curation_tags() TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_add_catalog_curation_tag_alias(uuid, text) TO service_role;
-GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_summary(uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer) TO service_role;
-GRANT EXECUTE ON FUNCTION public.admin_upsert_collection_curation_models(uuid, jsonb) TO service_role;
-GRANT EXECUTE ON FUNCTION public.admin_verify_catalog_model_identity(text, text, text, text, text, text) TO service_role;
-GRANT EXECUTE ON FUNCTION public.admin_upsert_catalog_curation_tags(jsonb) TO service_role;
-
-COMMENT ON COLUMN public.collections.collection_kind IS
-  'commercial=existing sellable collection; internal=private editorial grouping; hybrid=same collection row also used for internal curation.';
-COMMENT ON COLUMN public.collections.curation_visibility IS
-  'Visibility of editorial curation metadata only. It does not publish or hide the commercial collection.';
-COMMENT ON TABLE public.catalog_collection_curation IS
-  'Private editorial membership of canonical catalog models. selected_for_offer is not publication authorization and never mutates collections.catalog_model_slugs.';
-COMMENT ON TABLE public.catalog_curation_model_tags IS
-  'Controlled, reviewable classifications with provenance. Automatic sources may only create suggestions.';
-COMMENT ON TABLE public.catalog_character_identities IS
-  'Verified editorial grouping for multiple canonical sculptures/variants of the same character; catalog model fields remain authoritative in D1.';
-
-NOTIFY pgrst, 'reload schema';
-COMMIT;
- THEN
-    RAISE EXCEPTION 'Invalid curation tag alias slug' USING ERRCODE = '22023';
-  END IF;
-
-  SELECT dimension, slug, status
-    INTO v_dimension, v_tag_slug, v_status
-  FROM public.catalog_curation_tags
-  WHERE id = p_tag_id;
-
-  IF v_dimension IS NULL THEN
-    RAISE EXCEPTION 'Curation tag not found' USING ERRCODE = 'P0002';
-  END IF;
-  IF v_status <> 'active' THEN
-    RAISE EXCEPTION 'Curation tag is not active' USING ERRCODE = '22023';
-  END IF;
-  IF v_alias_slug = v_tag_slug OR EXISTS (
-    SELECT 1
-    FROM public.catalog_curation_tags t
-    WHERE t.dimension = v_dimension
-      AND t.slug = v_alias_slug
-  ) THEN
-    RAISE EXCEPTION 'Alias collides with canonical curation tag slug' USING ERRCODE = '22023';
-  END IF;
-
-  SELECT a.tag_id
-    INTO v_existing_tag_id
-  FROM public.catalog_curation_tag_aliases a
-  WHERE a.dimension = v_dimension
-    AND a.alias_slug = v_alias_slug;
-
-  IF v_existing_tag_id IS NOT NULL AND v_existing_tag_id <> p_tag_id THEN
-    RAISE EXCEPTION 'Alias already belongs to another curation tag' USING ERRCODE = '22023';
-  END IF;
-
-  INSERT INTO public.catalog_curation_tag_aliases (
-    dimension,
-    alias_slug,
-    tag_id
-  )
-  VALUES (
-    v_dimension,
-    v_alias_slug,
-    p_tag_id
-  )
-  ON CONFLICT (dimension, alias_slug) DO NOTHING;
-
-  RETURN jsonb_build_object(
-    'tagId', p_tag_id,
-    'dimension', v_dimension,
-    'aliasSlug', v_alias_slug
-  );
-END;
-$;
-
-CREATE OR REPLACE FUNCTION public.admin_get_collection_curation_summary(
-  p_collection_id uuid
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_kind text;
-  v_model_count integer;
-  v_distinct_characters integer;
-  v_unverified integer;
-  v_suggested integer;
-  v_approved integer;
-  v_selected integer;
-  v_discarded integer;
-BEGIN
-  PERFORM public.assert_admin_access();
-  SELECT collection_kind INTO v_kind
-  FROM public.collections
-  WHERE id = p_collection_id;
-  IF v_kind IS NULL THEN
-    RAISE EXCEPTION 'Collection not found' USING ERRCODE = 'P0002';
-  END IF;
-  IF v_kind NOT IN ('internal', 'hybrid') THEN
-    RAISE EXCEPTION 'Collection is not enabled for internal curation' USING ERRCODE = '22023';
-  END IF;
-
-  SELECT
-    count(*) FILTER (WHERE cc.state <> 'discarded'),
-    count(DISTINCT mp.character_identity_id)
-      FILTER (WHERE cc.state <> 'discarded' AND mp.identity_verified = true),
-    count(*) FILTER (WHERE cc.state <> 'discarded' AND mp.identity_verified = false),
-    count(*) FILTER (WHERE cc.state = 'suggested'),
-    count(*) FILTER (WHERE cc.state = 'approved'),
-    count(*) FILTER (WHERE cc.state = 'selected_for_offer'),
-    count(*) FILTER (WHERE cc.state = 'discarded')
-  INTO
-    v_model_count,
-    v_distinct_characters,
-    v_unverified,
-    v_suggested,
-    v_approved,
-    v_selected,
-    v_discarded
-  FROM public.catalog_collection_curation cc
-  JOIN public.catalog_curation_model_profiles mp
-    ON mp.catalog_model_id = cc.catalog_model_id
-  WHERE cc.collection_id = p_collection_id;
-
-  RETURN jsonb_build_object(
-    'modelCount', COALESCE(v_model_count, 0),
-    'distinctVerifiedCharacterCount', COALESCE(v_distinct_characters, 0),
-    'unverifiedModelCount', COALESCE(v_unverified, 0),
-    'suggestedCount', COALESCE(v_suggested, 0),
-    'approvedCount', COALESCE(v_approved, 0),
-    'selectedForOfferCount', COALESCE(v_selected, 0),
-    'discardedCount', COALESCE(v_discarded, 0)
-  );
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.admin_get_collection_curation_page(
-  p_collection_id uuid,
-  p_state text DEFAULT NULL,
-  p_offset integer DEFAULT 0,
-  p_limit integer DEFAULT 20
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_kind text;
-  v_state text := NULLIF(btrim(COALESCE(p_state, '')), '');
-  v_total integer;
-  v_items jsonb;
-BEGIN
-  PERFORM public.assert_admin_access();
-  IF p_offset < 0 OR p_limit < 1 OR p_limit > 20 THEN
-    RAISE EXCEPTION 'Invalid curation page bounds' USING ERRCODE = '22023';
-  END IF;
-  IF v_state IS NOT NULL
-     AND v_state NOT IN ('suggested', 'approved', 'selected_for_offer', 'discarded') THEN
-    RAISE EXCEPTION 'Invalid curation state' USING ERRCODE = '22023';
-  END IF;
-
-  SELECT collection_kind INTO v_kind
-  FROM public.collections
-  WHERE id = p_collection_id;
-  IF v_kind IS NULL THEN
-    RAISE EXCEPTION 'Collection not found' USING ERRCODE = 'P0002';
-  END IF;
-  IF v_kind NOT IN ('internal', 'hybrid') THEN
-    RAISE EXCEPTION 'Collection is not enabled for internal curation' USING ERRCODE = '22023';
-  END IF;
-
-  SELECT count(*) INTO v_total
-  FROM public.catalog_collection_curation cc
-  WHERE cc.collection_id = p_collection_id
-    AND (v_state IS NULL OR cc.state = v_state);
-
-  SELECT COALESCE(jsonb_agg(row_payload ORDER BY ordinal), '[]'::jsonb)
-  INTO v_items
-  FROM (
-    SELECT
-      row_number() OVER (ORDER BY cc.updated_at DESC, cc.catalog_model_id) AS ordinal,
-      jsonb_build_object(
-        'modelId', cc.catalog_model_id,
-        'slug', mp.catalog_model_slug,
-        'state', cc.state,
-        'evidenceOrigin', cc.evidence_origin,
-        'evidenceNote', cc.evidence_note,
-        'identityVerified', mp.identity_verified,
-        'characterIdentityId', mp.character_identity_id,
-        'tags', COALESCE((
-          SELECT jsonb_agg(
-            jsonb_build_object(
-              'id', t.id,
-              'dimension', t.dimension,
-              'slug', t.slug,
-              'label', t.label,
-              'reviewState', mt.review_state,
-              'evidenceOrigin', mt.evidence_origin,
-              'evidenceNote', mt.evidence_note
-            )
-            ORDER BY t.dimension, t.label
-          )
-          FROM public.catalog_curation_model_tags mt
-          JOIN public.catalog_curation_tags t ON t.id = mt.tag_id
-          WHERE mt.catalog_model_id = cc.catalog_model_id
-            AND mt.review_state <> 'discarded'
-        ), '[]'::jsonb)
-      ) AS row_payload
-    FROM public.catalog_collection_curation cc
-    JOIN public.catalog_curation_model_profiles mp
-      ON mp.catalog_model_id = cc.catalog_model_id
-    WHERE cc.collection_id = p_collection_id
-      AND (v_state IS NULL OR cc.state = v_state)
-    ORDER BY cc.updated_at DESC, cc.catalog_model_id
-    OFFSET p_offset
-    LIMIT p_limit
-  ) page_rows;
-
-  RETURN jsonb_build_object(
-    'items', v_items,
-    'total', v_total,
-    'offset', p_offset,
-    'limit', p_limit
-  );
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.admin_upsert_collection_curation_models(
-  p_collection_id uuid,
-  p_items jsonb
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_kind text;
-  v_item jsonb;
-  v_id text;
-  v_slug text;
-  v_state text;
-  v_origin text;
-  v_note text;
-  v_count integer := 0;
-BEGIN
-  PERFORM public.assert_admin_access();
-  IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array'
-     OR jsonb_array_length(p_items) < 1 OR jsonb_array_length(p_items) > 50 THEN
-    RAISE EXCEPTION 'Curation items must contain between 1 and 50 models' USING ERRCODE = '22023';
-  END IF;
-
-  SELECT collection_kind INTO v_kind
-  FROM public.collections
-  WHERE id = p_collection_id;
-  IF v_kind IS NULL THEN
-    RAISE EXCEPTION 'Collection not found' USING ERRCODE = 'P0002';
-  END IF;
-  IF v_kind NOT IN ('internal', 'hybrid') THEN
-    RAISE EXCEPTION 'Collection is not enabled for internal curation' USING ERRCODE = '22023';
-  END IF;
-
-  FOR v_item IN SELECT value FROM jsonb_array_elements(p_items) LOOP
-    SELECT model_id, model_slug INTO v_id, v_slug
-    FROM public.admin_validate_catalog_model_reference(
-      v_item->>'modelId',
-      v_item->>'slug'
-    );
-    v_state := NULLIF(btrim(COALESCE(v_item->>'state', '')), '');
-    IF v_state NOT IN ('suggested', 'approved', 'selected_for_offer', 'discarded') THEN
-      RAISE EXCEPTION 'Invalid curation state' USING ERRCODE = '22023';
-    END IF;
-    v_origin := public.admin_validate_catalog_curation_text(
-      v_item->>'evidenceOrigin',
-      'curation evidence origin',
-      240
-    );
-    v_note := public.admin_validate_catalog_curation_text(
-      v_item->>'evidenceNote',
-      'curation evidence note',
-      1000,
-      false
-    );
-    IF v_origin LIKE 'automatic:%' AND v_state <> 'suggested' THEN
-      RAISE EXCEPTION 'Automatic classifications must remain suggestions' USING ERRCODE = '22023';
-    END IF;
-
-    INSERT INTO public.catalog_curation_model_profiles (
-      catalog_model_id,
-      catalog_model_slug,
-      updated_at
-    )
-    VALUES (v_id, v_slug, now())
-    ON CONFLICT (catalog_model_id) DO UPDATE
-      SET catalog_model_slug = EXCLUDED.catalog_model_slug,
-          updated_at = now();
-
-    INSERT INTO public.catalog_collection_curation (
-      collection_id,
-      catalog_model_id,
-      state,
-      evidence_origin,
-      evidence_note,
-      updated_at
-    )
-    VALUES (
-      p_collection_id,
-      v_id,
-      v_state,
-      v_origin,
-      v_note,
-      now()
-    )
-    ON CONFLICT (collection_id, catalog_model_id) DO UPDATE
-      SET state = EXCLUDED.state,
-          evidence_origin = EXCLUDED.evidence_origin,
-          evidence_note = EXCLUDED.evidence_note,
-          updated_at = now();
-
-    v_count := v_count + 1;
-  END LOOP;
-
-  RETURN jsonb_build_object('id', p_collection_id, 'count', v_count);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.admin_verify_catalog_model_identity(
-  p_model_id text,
-  p_model_slug text,
-  p_character_name text,
-  p_franchise text,
-  p_evidence_origin text,
-  p_evidence_note text DEFAULT NULL
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_id text;
-  v_slug text;
-  v_name text;
-  v_franchise text;
-  v_origin text;
-  v_note text;
-  v_identity_key text;
-  v_identity_id uuid;
-BEGIN
-  PERFORM public.assert_admin_access();
-  SELECT model_id, model_slug INTO v_id, v_slug
-  FROM public.admin_validate_catalog_model_reference(p_model_id, p_model_slug);
-  v_name := public.admin_validate_catalog_curation_text(
-    p_character_name,
-    'character name',
-    160
-  );
-  v_franchise := public.admin_validate_catalog_curation_text(
-    p_franchise,
-    'franchise',
-    160
-  );
-  v_origin := public.admin_validate_catalog_curation_text(
-    p_evidence_origin,
-    'identity evidence origin',
-    240
-  );
-  v_note := public.admin_validate_catalog_curation_text(
-    p_evidence_note,
-    'identity evidence note',
-    1000,
-    false
-  );
-  IF v_origin LIKE 'automatic:%' THEN
-    RAISE EXCEPTION 'Automatic identity cannot be marked as verified' USING ERRCODE = '22023';
-  END IF;
-
-  -- Length-prefix avoids ambiguous separators while keeping the stable key free of control chars.
-  v_identity_key := length(v_franchise)::text || ':' || lower(v_franchise) || ':' || lower(v_name);
-
-  INSERT INTO public.catalog_character_identities (
-    identity_key,
-    character_name,
-    franchise,
-    evidence_origin,
-    evidence_note,
-    updated_at
-  )
-  VALUES (
-    v_identity_key,
-    v_name,
-    v_franchise,
-    v_origin,
-    v_note,
-    now()
-  )
-  ON CONFLICT (identity_key) DO UPDATE
-    SET character_name = EXCLUDED.character_name,
-        franchise = EXCLUDED.franchise,
-        evidence_origin = EXCLUDED.evidence_origin,
-        evidence_note = EXCLUDED.evidence_note,
-        updated_at = now()
-  RETURNING id INTO v_identity_id;
-
-  INSERT INTO public.catalog_curation_model_profiles (
-    catalog_model_id,
-    catalog_model_slug,
-    character_identity_id,
-    identity_verified,
-    identity_evidence_origin,
-    identity_evidence_note,
-    updated_at
-  )
-  VALUES (
-    v_id,
-    v_slug,
-    v_identity_id,
-    true,
-    v_origin,
-    v_note,
-    now()
-  )
-  ON CONFLICT (catalog_model_id) DO UPDATE
-    SET catalog_model_slug = EXCLUDED.catalog_model_slug,
-        character_identity_id = EXCLUDED.character_identity_id,
-        identity_verified = true,
-        identity_evidence_origin = EXCLUDED.identity_evidence_origin,
-        identity_evidence_note = EXCLUDED.identity_evidence_note,
-        updated_at = now();
-
-  RETURN jsonb_build_object(
-    'modelId', v_id,
-    'identityId', v_identity_id,
-    'verified', true
-  );
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.admin_upsert_catalog_curation_tags(
-  p_items jsonb
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_item jsonb;
-  v_id text;
-  v_slug text;
-  v_tag_id uuid;
-  v_state text;
-  v_origin text;
-  v_note text;
-  v_count integer := 0;
-BEGIN
-  PERFORM public.assert_admin_access();
-  IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array'
-     OR jsonb_array_length(p_items) < 1 OR jsonb_array_length(p_items) > 100 THEN
-    RAISE EXCEPTION 'Tag items must contain between 1 and 100 classifications' USING ERRCODE = '22023';
-  END IF;
-
-  FOR v_item IN SELECT value FROM jsonb_array_elements(p_items) LOOP
-    SELECT model_id, model_slug INTO v_id, v_slug
-    FROM public.admin_validate_catalog_model_reference(
-      v_item->>'modelId',
-      v_item->>'slug'
-    );
-    BEGIN
-      v_tag_id := (v_item->>'tagId')::uuid;
-    EXCEPTION WHEN others THEN
-      RAISE EXCEPTION 'Invalid curation tag id' USING ERRCODE = '22023';
-    END;
-    IF NOT EXISTS (
-      SELECT 1 FROM public.catalog_curation_tags
-      WHERE id = v_tag_id AND status = 'active'
-    ) THEN
-      RAISE EXCEPTION 'Curation tag not found or inactive' USING ERRCODE = 'P0002';
-    END IF;
-    v_state := NULLIF(btrim(COALESCE(v_item->>'reviewState', '')), '');
-    IF v_state NOT IN ('suggested', 'approved', 'discarded') THEN
-      RAISE EXCEPTION 'Invalid classification review state' USING ERRCODE = '22023';
-    END IF;
-    v_origin := public.admin_validate_catalog_curation_text(
-      v_item->>'evidenceOrigin',
-      'classification evidence origin',
-      240
-    );
-    v_note := public.admin_validate_catalog_curation_text(
-      v_item->>'evidenceNote',
-      'classification evidence note',
-      1000,
-      false
-    );
-    IF v_origin LIKE 'automatic:%' AND v_state <> 'suggested' THEN
-      RAISE EXCEPTION 'Automatic classifications must remain suggestions' USING ERRCODE = '22023';
-    END IF;
-
-    INSERT INTO public.catalog_curation_model_profiles (
-      catalog_model_id,
-      catalog_model_slug,
-      updated_at
-    )
-    VALUES (v_id, v_slug, now())
-    ON CONFLICT (catalog_model_id) DO UPDATE
-      SET catalog_model_slug = EXCLUDED.catalog_model_slug,
-          updated_at = now();
-
-    INSERT INTO public.catalog_curation_model_tags (
-      catalog_model_id,
-      tag_id,
-      review_state,
-      evidence_origin,
-      evidence_note,
-      updated_at
-    )
-    VALUES (
-      v_id,
-      v_tag_id,
-      v_state,
-      v_origin,
-      v_note,
-      now()
-    )
-    ON CONFLICT (catalog_model_id, tag_id) DO UPDATE
-      SET review_state = EXCLUDED.review_state,
-          evidence_origin = EXCLUDED.evidence_origin,
-          evidence_note = EXCLUDED.evidence_note,
-          updated_at = now();
-
-    v_count := v_count + 1;
-  END LOOP;
-
-  RETURN jsonb_build_object('count', v_count);
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.admin_list_internal_collections() FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.admin_ensure_internal_collection(text, text, text) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.admin_list_catalog_curation_tags() FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.admin_get_collection_curation_summary(uuid) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.admin_upsert_collection_curation_models(uuid, jsonb) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.admin_verify_catalog_model_identity(text, text, text, text, text, text) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.admin_upsert_catalog_curation_tags(jsonb) FROM PUBLIC, anon, authenticated;
-
-GRANT EXECUTE ON FUNCTION public.admin_list_internal_collections() TO service_role;
-GRANT EXECUTE ON FUNCTION public.admin_ensure_internal_collection(text, text, text) TO service_role;
-GRANT EXECUTE ON FUNCTION public.admin_list_catalog_curation_tags() TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_summary(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_upsert_collection_curation_models(uuid, jsonb) TO service_role;
