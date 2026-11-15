@@ -120,11 +120,13 @@ export function InternalCollectionCuration() {
   useEffect(() => {
     setOffset(0);
     setMemberIds([]);
+    setCandidateIds([]);
     setIdentityReview(null);
   }, [collection?.id, stateFilter]);
 
   useEffect(() => {
     setMemberIds([]);
+    setIdentityReview(null);
   }, [offset]);
 
   const tagsQuery = useQuery({
