@@ -26,6 +26,7 @@ import {
   addCatalogCurationTagAlias,
   assertCurrentCanonicalCurationModels,
   createCatalogCurationTag,
+  createInternalCollectionTemplate,
   ensureAdminInternalCollection,
   getInternalCollectionCurationPage,
   getInternalCollectionCurationSummary,
@@ -102,6 +103,8 @@ export function InternalCollectionCuration() {
   const [newTagDimension, setNewTagDimension] =
     useState<CatalogCurationTagDimension>("characteristic");
   const [newTagLabel, setNewTagLabel] = useState("");
+  const [newCollectionName, setNewCollectionName] = useState("");
+  const [newCollectionDescription, setNewCollectionDescription] = useState("");
   const [identityReview, setIdentityReview] = useState<{
     model: SubscriptionCatalogModel;
     characterName: string;
@@ -205,6 +208,8 @@ export function InternalCollectionCuration() {
     mutationFn: ensureAdminInternalCollection,
     onSuccess: async (created) => {
       await queryClient.invalidateQueries({ queryKey: COLLECTIONS_QUERY });
+      setNewCollectionName("");
+      setNewCollectionDescription("");
       setCollectionId(created.id);
       toast({
         title: "Coleção interna preparada",
@@ -477,11 +482,11 @@ export function InternalCollectionCuration() {
         <section className="space-y-3" aria-labelledby="curation-seeds-heading">
           <div>
             <h3 id="curation-seeds-heading" className="font-semibold">
-              Coleções editoriais iniciais
+              Coleções editoriais privadas
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Preparar uma coleção cria ou reaproveita o mesmo registro de
-              coleções. Nenhum personagem ou modelo é inventado ou associado.
+              Use um tema inicial ou crie sua própria coleção privada.
+              Nenhum modelo é inventado, associado ou colocado à venda automaticamente.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -506,6 +511,52 @@ export function InternalCollectionCuration() {
                 </Button>
               );
             })}
+          </div>
+          <div className="grid gap-2 pt-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto]">
+            <Input
+              aria-label="Nome da nova coleção editorial"
+              maxLength={160}
+              value={newCollectionName}
+              onChange={(event) => setNewCollectionName(event.target.value)}
+              placeholder="Nova coleção editorial"
+            />
+            <Input
+              aria-label="Descrição da nova coleção editorial"
+              maxLength={2000}
+              value={newCollectionDescription}
+              onChange={(event) => setNewCollectionDescription(event.target.value)}
+              placeholder="Critérios para selecionar os candidatos"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={
+                !newCollectionName.trim() ||
+                !newCollectionDescription.trim() ||
+                createCollection.isPending ||
+                collectionsQuery.isError
+              }
+              onClick={() => {
+                try {
+                  createCollection.mutate(
+                    createInternalCollectionTemplate(
+                      newCollectionName,
+                      newCollectionDescription,
+                    ),
+                  );
+                } catch (error) {
+                  toast({
+                    title: "Coleção editorial inválida",
+                    description:
+                      error instanceof Error ? error.message : "Revise nome e descrição.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Criar privada
+            </Button>
           </div>
         </section>
 
