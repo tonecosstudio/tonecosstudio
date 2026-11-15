@@ -431,7 +431,7 @@ BEGIN
     -- A template must not silently reclassify an existing commercial offer.
     -- Only already-internal or explicitly established hybrid collections can be reused.
     IF v_existing.collection_kind = 'commercial' THEN
-      RAISE EXCEPTION 'Commercial collection slug is reserved; cannot silently convert it to internal curation'
+      RAISE EXCEPTION 'Invalid internal curation slug: reserved by an existing commercial collection'
         USING ERRCODE = '22023';
     END IF;
     IF v_existing.collection_kind NOT IN ('internal', 'hybrid') THEN
