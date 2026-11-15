@@ -1,16 +1,6 @@
 import { useEffect, useState, type ComponentType } from "react";
-import {
-  Calendar,
-  CheckCircle2,
-  Coins,
-  DollarSign,
-  Loader2,
-  Package,
-  RefreshCw,
-  Save,
-} from "lucide-react";
+import { Calendar, CheckCircle2, Coins, Loader2, Package, Save } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
-import { CharacterPricesReference } from "@/components/admin/payments/CharacterPricesReference";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,171 +9,96 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import {
-  useAdminPlansConfiguration,
-  useCoinExchangeRate,
-  useSavePricingTierPlan,
-  type PricingTierPlan,
-} from "@/hooks/admin/useAdminPlansConfiguration";
-import { usePricingSettings } from "@/hooks/usePricingSettings";
+import { useAdminPlansConfiguration, useSavePricingTierPlan, type PricingTierPlan } from "@/hooks/admin/useAdminPlansConfiguration";
+import { decimalToHundredths, type TonartPlanPieceCount } from "@/services/commercial/tonart-commerce-rules";
 import type { AdminPlanType } from "@/services/admin/config/admin-plans-configuration-service";
 
 interface PlanTypeMeta {
-  key: AdminPlanType;
+  key: Exclude<AdminPlanType, "bimestral">;
   label: string;
-  months: number;
+  pieceCount: TonartPlanPieceCount;
   icon: ComponentType<{ className?: string }>;
 }
 
 const PLAN_TYPES: readonly PlanTypeMeta[] = [
-  { key: "avulso", label: "Compra avulsa", months: 0, icon: Package },
-  { key: "bimestral", label: "Bimestral", months: 2, icon: Calendar },
-  { key: "trimestral", label: "Trimestral", months: 3, icon: Calendar },
-  { key: "semestral", label: "Semestral", months: 6, icon: Calendar },
-  { key: "anual", label: "Anual", months: 12, icon: Calendar },
+  { key: "avulso", label: "Avulso", pieceCount: 1, icon: Package },
+  { key: "trimestral", label: "Trimestral", pieceCount: 3, icon: Calendar },
+  { key: "semestral", label: "Semestral", pieceCount: 6, icon: Calendar },
+  { key: "anual", label: "Anual · preparação", pieceCount: 12, icon: Calendar },
 ];
 
-function isPositiveFinite(value: number | null | undefined): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0;
+function isConfiguredAmount(value: string, allowZero = false): boolean {
+  try {
+    const hundredths = decimalToHundredths(value);
+    return allowZero ? true : hundredths > 0;
+  } catch {
+    return false;
+  }
 }
 
-function CoinExchangeRateCard() {
-  const { data: rate, isLoading, isError, error, refetch } = useCoinExchangeRate();
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="flex items-center gap-3 py-6 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Validando a cotação de coins...
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (isError || !rate || !isPositiveFinite(rate.reais_amount) || !isPositiveFinite(rate.coins_amount)) {
-    return (
-      <Card className="border-destructive/40">
-        <CardHeader>
-          <CardTitle>Cotação de coins indisponível</CardTitle>
-          <CardDescription>
-            A cotação deve vir de uma categoria de preço ativa. Nenhum valor local é usado como fallback.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {error instanceof Error && <p className="text-sm text-muted-foreground">{error.message}</p>}
-          <Button variant="outline" size="sm" onClick={() => void refetch()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Tentar novamente
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const unitValue = rate.reais_amount / rate.coins_amount;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Coins className="h-5 w-5" />
-          Cotação de coins
-        </CardTitle>
-        <CardDescription>
-          Somente leitura. Derivada da primeira categoria de preço ativa no SSOT.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Referência</p>
-          <p className="mt-1 text-xl font-bold">R$ {rate.reais_amount.toFixed(2)}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Coins</p>
-          <p className="mt-1 text-xl font-bold">{rate.coins_amount.toLocaleString("pt-BR")}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Valor unitário</p>
-          <p className="mt-1 text-xl font-bold">R$ {unitValue.toFixed(4)}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
+function formatCurrency(value: number | null | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "Não configurado";
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 interface PlanEditorProps {
   meta: PlanTypeMeta;
   existingPlan?: PricingTierPlan;
-  pixDiscountPercentage: number;
-  coinUnitValue: number;
 }
 
-function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }: PlanEditorProps) {
+function PlanEditor({ meta, existingPlan }: PlanEditorProps) {
   const { toast } = useToast();
   const saveMutation = useSavePricingTierPlan();
   const [isEditing, setIsEditing] = useState(!existingPlan);
   const [name, setName] = useState(existingPlan?.name ?? `Plano ${meta.label}`);
-  const [priceFull, setPriceFull] = useState(
-    isPositiveFinite(existingPlan?.price_full ?? existingPlan?.price)
-      ? String(existingPlan?.price_full ?? existingPlan?.price)
+  const [price, setPrice] = useState(
+    typeof existingPlan?.price_full === "number" && existingPlan.price_full > 0
+      ? String(existingPlan.price_full)
       : "",
   );
-  const [deliveries, setDeliveries] = useState(
-    existingPlan?.pieces_per_subscription != null
-      ? String(existingPlan.pieces_per_subscription)
-      : "",
+  const [bonusPerShipment, setBonusPerShipment] = useState(
+    existingPlan ? String(existingPlan.coin_bonus_per_shipment) : "",
   );
-  const [coinsIncluded, setCoinsIncluded] = useState(
-    existingPlan?.base_credits != null ? String(existingPlan.base_credits) : "0",
+  const [bonusCap, setBonusCap] = useState(existingPlan ? String(existingPlan.coin_bonus_cap) : "");
+  const [isActive, setIsActive] = useState(
+    meta.key !== "anual" && (existingPlan?.is_active ?? false),
   );
-  const [modelSelectionLimit, setModelSelectionLimit] = useState<6 | 12>(
-    existingPlan?.model_selection_limit === 12 ? 12 : 6,
-  );
-  const [isActive, setIsActive] = useState(existingPlan?.is_active ?? false);
 
   useEffect(() => {
     setName(existingPlan?.name ?? `Plano ${meta.label}`);
-    setPriceFull(
-      isPositiveFinite(existingPlan?.price_full ?? existingPlan?.price)
-        ? String(existingPlan?.price_full ?? existingPlan?.price)
+    setPrice(
+      typeof existingPlan?.price_full === "number" && existingPlan.price_full > 0
+        ? String(existingPlan.price_full)
         : "",
     );
-    setDeliveries(
-      existingPlan?.pieces_per_subscription != null
-        ? String(existingPlan.pieces_per_subscription)
-        : "",
-    );
-    setCoinsIncluded(existingPlan?.base_credits != null ? String(existingPlan.base_credits) : "0");
-    setModelSelectionLimit(existingPlan?.model_selection_limit === 12 ? 12 : 6);
-    setIsActive(existingPlan?.is_active ?? false);
-  }, [existingPlan, meta.label]);
+    setBonusPerShipment(existingPlan ? String(existingPlan.coin_bonus_per_shipment) : "");
+    setBonusCap(existingPlan ? String(existingPlan.coin_bonus_cap) : "");
+    setIsActive(meta.key !== "anual" && (existingPlan?.is_active ?? false));
+  }, [existingPlan, meta.key, meta.label]);
 
-  const numericPrice = Number(priceFull);
-  const numericDeliveries = Number(deliveries);
-  const numericCoins = Number(coinsIncluded);
-  const pricePix = numericPrice * (1 - pixDiscountPercentage / 100);
-  const priceCoins = numericPrice / coinUnitValue;
-
+  const parsedPrice = Number(price);
+  const parsedBonusPerShipment = Number(bonusPerShipment);
+  const parsedBonusCap = Number(bonusCap);
+  const bonusTotal = Math.min(parsedBonusPerShipment * meta.pieceCount, parsedBonusCap);
+  const amountConfigurationValid =
+    isConfiguredAmount(price) &&
+    Number.isFinite(parsedPrice) &&
+    isConfiguredAmount(bonusPerShipment, true) &&
+    isConfiguredAmount(bonusCap, true) &&
+    Number.isFinite(parsedBonusPerShipment) &&
+    Number.isFinite(parsedBonusCap) &&
+    parsedBonusPerShipment >= 0 &&
+    parsedBonusCap >= parsedBonusPerShipment;
   const canSave =
     name.trim().length > 0 &&
-    Number.isFinite(numericPrice) &&
-    numericPrice > 0 &&
-    Number.isInteger(numericDeliveries) &&
-    numericDeliveries > 0 &&
-    Number.isInteger(numericCoins) &&
-    numericCoins >= 0 &&
-    (meta.months === 0 || modelSelectionLimit === 6 || modelSelectionLimit === 12) &&
-    Number.isFinite(pricePix) &&
-    pricePix > 0 &&
-    Number.isFinite(priceCoins) &&
-    priceCoins > 0;
+    amountConfigurationValid &&
+    (meta.key !== "anual" || !isActive);
 
   const handleSave = () => {
     if (!canSave) {
       toast({
         title: "Plano inválido",
-        description: "Preencha nome, preço e quantidade de entregas com valores oficiais válidos.",
+        description: "Informe o total, o bônus por envio e o limite máximo em centésimos válidos.",
         variant: "destructive",
       });
       return;
@@ -195,70 +110,54 @@ function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }
         planType: meta.key,
         data: {
           name: name.trim(),
-          display_name: name.trim(),
-          price_coins: Math.round(priceCoins),
-          price_brl: numericPrice,
-          price_full: numericPrice,
-          price_pix: pricePix,
-          deposit_amount: 0,
-          coins_included: numericCoins,
-          deliveries_total: numericDeliveries,
-          model_selection_limit: meta.months === 0 ? null : modelSelectionLimit,
-          is_active: isActive,
-          description:
-            meta.months > 0 ? `${meta.months} meses de assinatura` : "Compra avulsa",
+          price_brl: parsedPrice,
+          price_full: parsedPrice,
+          coin_bonus_per_shipment: parsedBonusPerShipment,
+          coin_bonus_cap: parsedBonusCap,
+          deliveries_total: meta.pieceCount,
+          model_selection_limit: meta.pieceCount,
+          is_active: meta.key === "anual" ? false : isActive,
+          description: `${meta.pieceCount} ${meta.pieceCount === 1 ? "peça" : "peças"}; compra integral em pagamento único`,
         },
       },
       {
         onSuccess: () => {
-          toast({ title: "Plano salvo", description: `${name.trim()} foi atualizado.` });
+          toast({
+            title: "Plano salvo",
+            description: `${name.trim()} foi atualizado. O principal permanece como compra de peças.`,
+          });
           setIsEditing(false);
         },
-        onError: (mutationError: Error) => {
-          toast({
-            title: "Erro ao salvar plano",
-            description: mutationError.message,
-            variant: "destructive",
-          });
+        onError: (error: Error) => {
+          toast({ title: "Erro ao salvar plano", description: error.message, variant: "destructive" });
         },
       },
     );
   };
 
   const Icon = meta.icon;
-
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-muted p-3">
-              <Icon className="h-5 w-5" />
-            </div>
+            <div className="rounded-lg bg-muted p-3"><Icon className="h-5 w-5" /></div>
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex flex-wrap items-center gap-2">
                 {meta.label}
-                {existingPlan && isActive && (
-                  <Badge>
-                    <CheckCircle2 className="mr-1 h-3 w-3" />
-                    Ativo
-                  </Badge>
-                )}
+                {existingPlan?.is_active && meta.key !== "anual" && <Badge><CheckCircle2 className="mr-1 h-3 w-3" />Ativo</Badge>}
+                {meta.key === "anual" && <Badge variant="outline">Desativado</Badge>}
               </CardTitle>
-              <CardDescription>
-                {meta.months > 0 ? `${meta.months} meses` : "Compra única"}
-              </CardDescription>
+              <CardDescription>{meta.pieceCount} {meta.pieceCount === 1 ? "peça" : "peças"} · pagamento único</CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Label htmlFor={`plan-active-${meta.key}`}>Ativo</Label>
+            <Label htmlFor={`plan-active-${meta.key}`}>{meta.key === "anual" ? "Indisponível" : "Oferta ativa"}</Label>
             <Switch
               id={`plan-active-${meta.key}`}
-              checked={isActive}
-              onCheckedChange={(checked) => {
-                setIsActive(checked);
-                setIsEditing(true);
-              }}
+              checked={meta.key === "anual" ? false : isActive}
+              disabled={meta.key === "anual"}
+              onCheckedChange={(checked) => { setIsActive(checked); setIsEditing(true); }}
             />
             <Button variant="outline" size="sm" onClick={() => setIsEditing((current) => !current)}>
               {isEditing ? "Fechar edição" : "Editar"}
@@ -272,129 +171,50 @@ function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }
           <>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor={`plan-name-${meta.key}`}>Nome</Label>
-                <Input
-                  id={`plan-name-${meta.key}`}
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
+                <Label htmlFor={`plan-name-${meta.key}`}>Nome da oferta</Label>
+                <Input id={`plan-name-${meta.key}`} value={name} onChange={(event) => setName(event.target.value)} maxLength={120} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor={`plan-price-${meta.key}`}>Preço cheio (R$)</Label>
-                <Input
-                  id={`plan-price-${meta.key}`}
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={priceFull}
-                  onChange={(event) => setPriceFull(event.target.value)}
-                  placeholder="Obrigatório"
-                />
+                <Label htmlFor={`plan-price-${meta.key}`}>Total pelas peças (R$)</Label>
+                <Input id={`plan-price-${meta.key}`} type="number" min="0.01" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="Configurar valor total" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor={`plan-deliveries-${meta.key}`}>Entregas / peças</Label>
-                <Input
-                  id={`plan-deliveries-${meta.key}`}
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={deliveries}
-                  onChange={(event) => setDeliveries(event.target.value)}
-                  placeholder="Obrigatório"
-                />
+                <Label htmlFor={`plan-pieces-${meta.key}`}>Peças do plano</Label>
+                <Input id={`plan-pieces-${meta.key}`} value={`${meta.pieceCount}`} readOnly aria-readonly="true" />
               </div>
-              {meta.months > 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor={`plan-model-limit-${meta.key}`}>Modelos à escolha</Label>
-                  <select
-                    id={`plan-model-limit-${meta.key}`}
-                    value={modelSelectionLimit}
-                    onChange={(event) => {
-                      const value = Number(event.target.value);
-                      if (value === 6 || value === 12) setModelSelectionLimit(value);
-                    }}
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-describedby={`plan-model-limit-help-${meta.key}`}
-                  >
-                    <option value={6}>6 modelos</option>
-                    <option value={12}>12 modelos</option>
-                  </select>
-                  <p id={`plan-model-limit-help-${meta.key}`} className="text-xs text-muted-foreground">
-                    O cliente escolhe essa quantidade entre os modelos curados da coleção.
-                  </p>
-                </div>
-              )}
               <div className="space-y-2">
-                <Label htmlFor={`plan-coins-${meta.key}`}>Coins incluídos</Label>
-                <Input
-                  id={`plan-coins-${meta.key}`}
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={coinsIncluded}
-                  onChange={(event) => setCoinsIncluded(event.target.value)}
-                />
+                <Label htmlFor={`plan-bonus-per-shipment-${meta.key}`}>Coins por peça enviada</Label>
+                <Input id={`plan-bonus-per-shipment-${meta.key}`} type="number" min="0" step="0.01" value={bonusPerShipment} onChange={(event) => setBonusPerShipment(event.target.value)} placeholder="Configurar bônus" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`plan-bonus-cap-${meta.key}`}>Limite de bônus do plano</Label>
+                <Input id={`plan-bonus-cap-${meta.key}`} type="number" min="0" step="0.01" value={bonusCap} onChange={(event) => setBonusCap(event.target.value)} placeholder="Configurar limite" />
               </div>
             </div>
 
             <div className="grid gap-3 rounded-lg border bg-muted/30 p-4 text-sm sm:grid-cols-3">
-              <div>
-                <p className="text-muted-foreground">PIX oficial</p>
-                <strong>{canSave ? `R$ ${pricePix.toFixed(2)}` : "Indisponível"}</strong>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Equivalência em coins</p>
-                <strong>{canSave ? `${Math.round(priceCoins)} coins` : "Indisponível"}</strong>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Desconto PIX aplicado</p>
-                <strong>{pixDiscountPercentage.toFixed(2).replace(".", ",")}%</strong>
-              </div>
+              <div><p className="text-muted-foreground">Total pago uma vez</p><strong>{amountConfigurationValid ? formatCurrency(parsedPrice) : "Não configurado"}</strong></div>
+              <div><p className="text-muted-foreground">Bônus após cada envio PIX confirmado</p><strong>{amountConfigurationValid ? `${parsedBonusPerShipment.toLocaleString("pt-BR")} Coins` : "Não configurado"}</strong></div>
+              <div><p className="text-muted-foreground">Máximo em todo o plano</p><strong>{amountConfigurationValid ? `${bonusTotal.toLocaleString("pt-BR")} Coins` : "Não configurado"}</strong></div>
             </div>
 
+            <p className="text-xs leading-5 text-muted-foreground">
+              O pagamento compra as peças e não é convertido em Coins. Bônus só é lançado após PIX integral confirmado e envio real; cartão, parcelas e frete não geram Coins. O frete é informado à parte.
+              {meta.key === "anual" ? " O plano anual está preparado e permanece desativado." : ""}
+            </p>
             <div className="flex justify-end">
               <Button onClick={handleSave} disabled={!canSave || saveMutation.isPending}>
-                {saveMutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Salvar plano
+                {saveMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Salvar configuração
               </Button>
             </div>
           </>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <div>
-              <p className="text-xs text-muted-foreground">Preço cheio</p>
-              <p className="font-semibold">
-                {isPositiveFinite(existingPlan?.price_full ?? existingPlan?.price)
-                  ? `R$ ${Number(existingPlan?.price_full ?? existingPlan?.price).toFixed(2)}`
-                  : "Não configurado"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Entregas</p>
-              <p className="font-semibold">{existingPlan?.pieces_per_subscription ?? "Não configurado"}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Coins incluídos</p>
-              <p className="font-semibold">{existingPlan?.base_credits ?? 0}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Modelos à escolha</p>
-              <p className="font-semibold">
-                {meta.months === 0
-                  ? "Não se aplica"
-                  : existingPlan?.model_selection_limit
-                    ? `${existingPlan.model_selection_limit} modelos`
-                    : "Configure 6 ou 12"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Status</p>
-              <p className="font-semibold">{isActive ? "Ativo" : "Inativo"}</p>
-            </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div><p className="text-xs text-muted-foreground">Total do plano</p><p className="font-semibold">{formatCurrency(existingPlan?.price_full ?? existingPlan?.price)}</p></div>
+            <div><p className="text-xs text-muted-foreground">Peças</p><p className="font-semibold">{existingPlan?.pieces_per_subscription ?? meta.pieceCount}</p></div>
+            <div><p className="text-xs text-muted-foreground">Coins por envio PIX</p><p className="font-semibold">{existingPlan?.coin_bonus_per_shipment ?? "Não configurado"}</p></div>
+            <div><p className="text-xs text-muted-foreground">Status</p><p className="font-semibold">{meta.key === "anual" ? "Preparado · desativado" : isActive ? "Ativo" : "Inativo"}</p></div>
           </div>
         )}
       </CardContent>
@@ -404,85 +224,25 @@ function PlanEditor({ meta, existingPlan, pixDiscountPercentage, coinUnitValue }
 
 export default function AdminPlansConfiguration() {
   const plansQuery = useAdminPlansConfiguration();
-  const exchangeRateQuery = useCoinExchangeRate();
-  const pricingQuery = usePricingSettings();
-
   const plans = plansQuery.data ?? [];
-  const rate = exchangeRateQuery.data;
-  const officialDiscount = pricingQuery.data?.pixDiscountPercentage;
-  const coinUnitValue =
-    rate && isPositiveFinite(rate.reais_amount) && isPositiveFinite(rate.coins_amount)
-      ? rate.reais_amount / rate.coins_amount
-      : null;
-  const pricingReady =
-    coinUnitValue !== null &&
-    officialDiscount !== undefined &&
-    Number.isFinite(officialDiscount) &&
-    officialDiscount >= 0 &&
-    officialDiscount <= 100;
-
   return (
     <div className="space-y-6">
-      <SEOHead
-        title="Admin - Gestão de Planos & Preços"
-        description="Configuração administrativa de planos usando fontes oficiais"
-        noindex
-      />
-
+      <SEOHead title="Admin - Planos TONART" description="Configuração comercial dos planos de peças e Coins" noindex />
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">Gestão de Planos & Preços</h1>
-        <p className="mt-2 text-muted-foreground">
-          Planos, cotação de coins e desconto PIX sem valores monetários de fallback.
-        </p>
+        <h1 className="text-4xl font-bold tracking-tight">Planos de coleção</h1>
+        <p className="mt-2 text-muted-foreground">Configure totais, quantidade de peças e bônus de envio. O plano não cria saldo livre com o valor principal.</p>
       </div>
-
       <Alert>
-        <DollarSign className="h-4 w-4" />
-        <AlertDescription>
-          A tela só permite salvar planos quando a cotação de coins e o desconto PIX oficial estão válidos.
-        </AlertDescription>
+        <Coins className="h-4 w-4" />
+        <AlertDescription>O bônus do cliente é concedido por peça enviada após pagamento PIX integral confirmado. O plano anual fica configurável, mas não pode ser ativado nesta versão.</AlertDescription>
       </Alert>
-
-      <CharacterPricesReference />
-      <CoinExchangeRateCard />
-
-      {plansQuery.isLoading || pricingQuery.isLoading || exchangeRateQuery.isLoading ? (
-        <Card>
-          <CardContent className="flex items-center gap-3 py-8 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            Validando fontes oficiais...
-          </CardContent>
-        </Card>
-      ) : !pricingReady ? (
-        <Card className="border-destructive/40">
-          <CardHeader>
-            <CardTitle>Edição de planos bloqueada</CardTitle>
-            <CardDescription>
-              Corrija a configuração comercial ou a categoria de preço ativa antes de alterar planos.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => void pricingQuery.refetch()}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Recarregar preços
-            </Button>
-            <Button variant="outline" onClick={() => void exchangeRateQuery.refetch()}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Recarregar cotação
-            </Button>
-          </CardContent>
-        </Card>
+      {plansQuery.isLoading ? (
+        <Card><CardContent className="flex items-center gap-3 py-8 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" />Carregando configuração comercial...</CardContent></Card>
+      ) : plansQuery.isError ? (
+        <Card className="border-destructive/40"><CardHeader><CardTitle>Configuração indisponível</CardTitle><CardDescription>Não foi possível ler o SSOT dos planos. Nenhum preço estimado será usado.</CardDescription></CardHeader><CardContent><Button variant="outline" onClick={() => void plansQuery.refetch()}>Tentar novamente</Button></CardContent></Card>
       ) : (
         <div className="space-y-4">
-          {PLAN_TYPES.map((meta) => (
-            <PlanEditor
-              key={meta.key}
-              meta={meta}
-              existingPlan={plans.find((plan) => plan.plan_type === meta.key)}
-              pixDiscountPercentage={officialDiscount}
-              coinUnitValue={coinUnitValue}
-            />
-          ))}
+          {PLAN_TYPES.map((meta) => <PlanEditor key={meta.key} meta={meta} existingPlan={plans.find((plan) => plan.plan_type === meta.key)} />)}
         </div>
       )}
     </div>

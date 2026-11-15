@@ -37,18 +37,27 @@ on:
       - 'src/services/admin/**'
       - 'src/services/payments/**'
       - 'src/services/subscriptions/**'
+      - 'src/services/commercial/**'
+      - 'supabase/migrations/**'
       - 'src/pages/CatalogModelsArcade*'
+      - 'src/pages/PlansArcade*'
       - 'src/pages/SubscribeCollection.tsx'
       - 'src/pages/__tests__/SubscribeCollection*'
       - 'src/pages/admin/collections/**'
       - 'src/pages/admin/plans/**'
+      - 'src/pages/admin/production/**'
+      - 'src/pages/admin/users/**'
       - 'src/pages/catalog/CanonicalModelDetails*'
       - 'src/pages/commercial/**'
       - 'src/pages/LandingPage*'
       - 'src/components/catalog/**'
+      - 'src/components/arcade/CollectorBenefits.test.tsx'
       - 'src/components/admin/collections/SubscriptionCollectionCuration.tsx'
       - 'src/components/subscription/**'
+      - 'src/hooks/admin/useAdminPlansConfiguration.ts'
       - 'src/hooks/subscription/**'
+      - 'src/integrations/supabase/tonecos-mvp.types.ts'
+      - 'src/types/coins.ts'
       - 'public/_headers'
       - 'package.json'
       - 'package-lock.json'
@@ -250,9 +259,10 @@ jobs:
 
       # Validate the read-only MVP before the independent backend ownership
       # gate; a stale backend pin must not suppress frontend test evidence.
-      - name: Test public MVP and SpecialSTL offline curation
+      - name: Test public MVP, commercial rules and SpecialSTL offline curation
         run: |
           npm run catalog:mvp:test
+          npm run catalog:commerce:test
           node --test scripts/catalog/build-specialstl-review-sheet.test.mjs scripts/catalog/propose-specialstl-quarantine.test.mjs
 
       - name: Verify monorepo ownership and Git blobs

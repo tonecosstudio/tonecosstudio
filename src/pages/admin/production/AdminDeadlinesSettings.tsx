@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   AlertTriangle,
   Calendar,
+  CalendarClock,
   CheckCircle,
   Clock,
   CreditCard,
@@ -35,6 +36,7 @@ const SETTING_LABELS: Record<ProductionDeadlineKey, string> = {
   delivery_interval_days: "Intervalo de entrega",
   character_choice_days: "Prazo para escolher personagem",
   balance_payment_days: "Prazo para pagamento do saldo",
+  tonart_model_change_cutoff_days: "Corte para troca de modelo TONART",
 };
 
 const SETTING_ICONS: Record<ProductionDeadlineKey, typeof Clock> = {
@@ -45,6 +47,7 @@ const SETTING_ICONS: Record<ProductionDeadlineKey, typeof Clock> = {
   delivery_interval_days: RefreshCw,
   character_choice_days: UserCheck,
   balance_payment_days: CreditCard,
+  tonart_model_change_cutoff_days: CalendarClock,
 };
 
 const SETTING_MAX: Record<ProductionDeadlineKey, number> = {
@@ -55,6 +58,7 @@ const SETTING_MAX: Record<ProductionDeadlineKey, number> = {
   delivery_interval_days: 3650,
   character_choice_days: 365,
   balance_payment_days: 365,
+  tonart_model_change_cutoff_days: 365,
 };
 
 export default function AdminDeadlinesSettings() {
@@ -171,8 +175,8 @@ export default function AdminDeadlinesSettings() {
       <div>
         <h2 className="mb-2 text-2xl font-bold">Prazos Operacionais (SSOT)</h2>
         <p className="text-muted-foreground">
-          Estes sete valores em <code>system_settings</code> são a fonte canônica usada por
-          produção, escolha de personagem, envio e cobrança de saldo.
+          Estes oito valores em <code>system_settings</code> são a fonte canônica usada por
+          produção, escolha de personagem, envio, cobrança de saldo e corte de troca dos planos.
         </p>
       </div>
 
@@ -182,6 +186,8 @@ export default function AdminDeadlinesSettings() {
           O prazo de escolha é aplicado quando um pedido entra em
           <code className="mx-1">awaiting_choice</code>. Se a configuração estiver ausente ou
           inválida, o backend bloqueia a abertura da janela em vez de assumir um número de dias.
+          O corte de troca TONART é contado para trás a partir da postagem programada; início de
+          produção também bloqueia a troca, mesmo antes dessa data.
         </AlertDescription>
       </Alert>
 

@@ -312,7 +312,7 @@ describe("published model/gallery identity on the public detail page", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("explains that Coins are applied to answered commercial quotes", async () => {
+  it("explains that Coins apply only to eligible extras, not quotes or plan payments", async () => {
     vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
@@ -321,13 +321,10 @@ describe("published model/gallery identity on the public detail page", () => {
     expect(
       await screen.findByRole("heading", { name: "Animal original" }),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Como usar Coins no orçamento"));
+    fireEvent.click(screen.getByText("Como funcionam as Coins"));
 
     expect(
-      screen.getByText(/Coin, até o menor valor entre/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/A entrada de R\$ 50 da pré-venda não aceita Coins/),
+      screen.getByText(/Orçamentos, entrada de pré-venda, parcelas e frete não recebem Coins automaticamente/),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", {

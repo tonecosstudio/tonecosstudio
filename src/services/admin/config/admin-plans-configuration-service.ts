@@ -1,6 +1,6 @@
 import { adminPlansGateway } from "@/services/admin/config/admin-plans-gateway";
-import { PRICING } from "@/config/constants";
 import { saveSubscriptionPlanConfigurationRpc } from "@/services/admin/config/admin-config-mutations-service";
+import { TONART_PLAN_PIECE_COUNTS, decimalToHundredths, type TonartPlanPieceCount } from "@/services/commercial/tonart-commerce-rules";
 
 export type AdminPlanType = "avulso" | "bimestral" | "trimestral" | "semestral" | "anual";
 
@@ -11,33 +11,24 @@ export interface PricingTierPlan {
   price: number | null;
   price_full: number | null;
   pieces_per_subscription: number | null;
-  base_credits: number | null;
-  bonus_credits: number | null;
+  coin_bonus_per_shipment: number;
+  coin_bonus_cap: number;
   deposit_amount: number | null;
   is_active: boolean;
   bonus_type: "pieces" | "coins" | null;
-  model_selection_limit: 6 | 12 | null;
-}
-
-export interface CoinExchangeRate {
-  id: string;
-  reais_amount: number;
-  coins_amount: number;
+  model_selection_limit: TonartPlanPieceCount | null;
 }
 
 export interface PricingTierPlanSaveData {
   name: string;
-  display_name: string;
-  price_coins: number;
   price_brl: number;
   price_full: number;
-  price_pix: number;
-  deposit_amount: number;
-  coins_included: number;
+  coin_bonus_per_shipment: number;
+  coin_bonus_cap: number;
   deliveries_total: number;
   is_active: boolean;
   description: string;
-  model_selection_limit: 6 | 12 | null;
+  model_selection_limit: TonartPlanPieceCount;
 }
 
 export interface SavePricingTierPlanInput {
@@ -56,6 +47,8 @@ interface SubscriptionPlanConfigurationRow {
   price_pix: number | null;
   coins_included: number | null;
   total_credits: number | null;
+  coin_bonus_per_shipment: number | null;
+  coin_bonus_cap: number | null;
   deliveries_per_cycle: number | null;
   deliveries_total: number | null;
   is_active: boolean | null;
@@ -91,11 +84,14 @@ function normalizePlanType(value: string | null): AdminPlanType | null {
   return PLAN_TYPE_SET.has(value as AdminPlanType) ? (value as AdminPlanType) : null;
 }
 
-function normalizeNonNegativeInteger(value: number | null, label: string, planId: string): number {
+function normalizeNonNegativeAmount(value: number | null, label: string, planId: string): number {
   const normalized = value ?? 0;
-  if (!Number.isInteger(normalized) || normalized < 0) {
+  try {
+    decimalToHundredths(String(normalized));
+  } catch {
     throw new Error(`Configuracao de ${label} invalida no plano ${planId}.`);
   }
+  if (normalized < 0) throw new Error(`Configuracao de ${label} invalida no plano ${planId}.`);
   return normalized;
 }
 
@@ -103,18 +99,15 @@ function mapSubscriptionPlan(row: SubscriptionPlanConfigurationRow): PricingTier
   const planType = normalizePlanType(row.plan_type ?? row.billing_interval);
   const priceFull = row.price_full ?? row.price;
   const deliveriesTotal = row.deliveries_total ?? row.deliveries_per_cycle;
-  const coinsIncluded = normalizeNonNegativeInteger(row.coins_included, "coins_included", row.id);
-  const totalCredits = normalizeNonNegativeInteger(row.total_credits, "total_credits", row.id);
+  const bonusPerShipment = normalizeNonNegativeAmount(row.coin_bonus_per_shipment, "coin_bonus_per_shipment", row.id);
+  const bonusCap = normalizeNonNegativeAmount(row.coin_bonus_cap, "coin_bonus_cap", row.id);
   const selectionLimit = row.model_selection_limit;
 
-  if (selectionLimit !== null && selectionLimit !== 6 && selectionLimit !== 12) {
+  if (selectionLimit !== null && !TONART_PLAN_PIECE_COUNTS.includes(selectionLimit as TonartPlanPieceCount)) {
     throw new Error(`Limite de modelos invalido no plano ${row.id}.`);
   }
-
-  if (coinsIncluded !== totalCredits) {
-    throw new Error(
-      `Configuracao de creditos inconsistente no plano ${row.id}: coins_included e total_credits divergem.`,
-    );
+  if (bonusCap < bonusPerShipment) {
+    throw new Error(`Limite de bônus inferior ao bônus por envio no plano ${row.id}.`);
   }
 
   return {
@@ -124,12 +117,12 @@ function mapSubscriptionPlan(row: SubscriptionPlanConfigurationRow): PricingTier
     price: row.price,
     price_full: priceFull,
     pieces_per_subscription: deliveriesTotal,
-    base_credits: totalCredits,
-    bonus_credits: 0,
+    coin_bonus_per_shipment: bonusPerShipment,
+    coin_bonus_cap: bonusCap,
     deposit_amount: 0,
     is_active: row.is_active ?? false,
     bonus_type: "coins",
-    model_selection_limit: selectionLimit,
+    model_selection_limit: selectionLimit as TonartPlanPieceCount | null,
   };
 }
 
@@ -146,6 +139,8 @@ export async function fetchAdminPricingTierPlans(): Promise<PricingTierPlan[]> {
       price_pix,
       coins_included,
       total_credits,
+      coin_bonus_per_shipment,
+      coin_bonus_cap,
       deliveries_per_cycle,
       deliveries_total,
       is_active,
@@ -161,39 +156,18 @@ export async function fetchAdminPricingTierPlans(): Promise<PricingTierPlan[]> {
   return (data ?? []).map(mapSubscriptionPlan);
 }
 
-export async function fetchCoinExchangeRate(): Promise<CoinExchangeRate> {
-  const { data, error } = await adminPlansGateway
-    .from("price_categories")
-    .select("*")
-    .eq("is_active", true)
-    .order("display_order", { ascending: true })
-    .limit(1);
-
-  if (error) {
-    throw error;
-  }
-
-  const category = data?.[0];
-  if (!category?.id) {
-    throw new Error("Nenhuma categoria de preço ativa disponível para calcular a cotação de coins.");
-  }
-
-  const coinValueInCents = Number(category.coin_value_in_cents);
-  if (!Number.isFinite(coinValueInCents) || coinValueInCents <= 0) {
-    throw new Error("A categoria de preço ativa possui cotação de coins inválida.");
-  }
-
-  return {
-    id: category.id,
-    reais_amount: (coinValueInCents / 100) * PRICING.COIN_EXCHANGE_REFERENCE_COINS,
-    coins_amount: PRICING.COIN_EXCHANGE_REFERENCE_COINS,
-  };
-}
-
 export async function savePricingTierPlan(input: SavePricingTierPlanInput): Promise<void> {
-  const credits = input.data.coins_included;
-  if (!Number.isInteger(credits) || credits < 0) {
-    throw new Error("Quantidade de coins do plano inválida.");
+  decimalToHundredths(String(input.data.price_full));
+  decimalToHundredths(String(input.data.coin_bonus_per_shipment));
+  decimalToHundredths(String(input.data.coin_bonus_cap));
+  if (input.data.coin_bonus_cap < input.data.coin_bonus_per_shipment) {
+    throw new Error("O limite de bônus não pode ser menor que o bônus por envio.");
+  }
+  if (!TONART_PLAN_PIECE_COUNTS.includes(input.data.model_selection_limit)) {
+    throw new Error("Quantidade de peças do plano inválida.");
+  }
+  if (input.planType === "anual" && input.data.is_active) {
+    throw new Error("O plano anual deve permanecer desativado até liberação específica.");
   }
 
   await saveSubscriptionPlanConfigurationRpc({
@@ -206,13 +180,14 @@ export async function savePricingTierPlan(input: SavePricingTierPlanInput): Prom
       slug: input.planType,
       price: input.data.price_brl,
       price_full: input.data.price_full,
-      price_pix: input.data.price_pix,
-      coins_included: credits,
+      price_pix: input.data.price_full,
+      coins_included: 0,
+      coin_bonus_per_shipment: input.data.coin_bonus_per_shipment,
+      coin_bonus_cap: input.data.coin_bonus_cap,
       deliveries_per_cycle: input.data.deliveries_total,
       deliveries_total: input.data.deliveries_total,
       is_active: input.data.is_active,
-      model_selection_limit:
-        input.planType === "avulso" ? null : input.data.model_selection_limit,
+      model_selection_limit: input.data.model_selection_limit,
     },
   });
 }

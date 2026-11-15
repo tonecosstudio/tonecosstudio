@@ -17,6 +17,12 @@ const exact: Record<string, string> = {
     "Confira o cliente, a quantidade e a justificativa do crédito.",
   tonecos_coin_credit_result_invalid:
     "O servidor não confirmou o crédito. Atualize o histórico antes de tentar novamente.",
+  tonecos_coin_reversal_input_invalid:
+    "Informe uma movimentação válida e um motivo com pelo menos quatro caracteres.",
+  tonecos_coin_reversal_result_invalid:
+    "O servidor não confirmou a reversão. Atualize o ledger antes de tentar novamente.",
+  tonecos_local_preview_read_only:
+    "A prévia local permite apenas consulta; alterações de Coins exigem o serviço TONART conectado.",
   tonecos_coin_recipient_email_invalid:
     "Informe um e-mail válido para localizar o cliente.",
   tonecos_coin_recipient_invalid:
@@ -31,6 +37,14 @@ const exact: Record<string, string> = {
     "Confira a quantidade e a justificativa do crédito.",
   "Coin credit reference conflicts with different request":
     "Esta referência já está vinculada a outro crédito. Recarregue a página antes de continuar.",
+  "Coins reversal would create a negative wallet balance":
+    "Esta reversão deixaria o saldo do cliente negativo e não foi registrada.",
+  "Coins reversal reference conflicts with different request":
+    "Esta movimentação já foi revertida com outro motivo. Consulte o histórico antes de continuar.",
+  "Invalid Coins reversal request":
+    "Confira a movimentação e o motivo da reversão.",
+  "Coins entry type is not reversible":
+    "Este tipo de movimentação não pode ser revertido por esta operação.",
 };
 
 function errorMessage(value: unknown): string {

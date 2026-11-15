@@ -34,6 +34,7 @@ const COLLECTION_ID = "33333333-3333-4333-8333-333333333333";
 const SUBSCRIPTION_ID = "44444444-4444-4444-8444-444444444444";
 const OTHER_SUBSCRIPTION_ID = "55555555-5555-4555-8555-555555555555";
 const PAYMENT_ID = "66666666-6666-4666-8666-666666666666";
+const CHECKOUT_REQUEST_ID = "77777777-7777-4777-8777-777777777777";
 const VOUCHER_PATH = `subscriptions/${USER_ID}/1788130800000-a1b2c3d4e5f60708.png`;
 const voucher = () => new File(["proof"], "receipt.png", { type: "image/png" });
 
@@ -64,6 +65,7 @@ describe("subscription checkout voucher cleanup", () => {
         modelSelectionLimit: 6,
         paymentMethod: "pix",
         voucher: file,
+        checkoutRequestId: CHECKOUT_REQUEST_ID,
       })).rejects.toThrow("O envio de comprovantes está indisponível neste ambiente.");
       await expect(resubmitSubscriptionPaymentVoucher({
         subscriptionId: SUBSCRIPTION_ID,
@@ -86,6 +88,7 @@ describe("subscription checkout voucher cleanup", () => {
       modelSelectionLimit: 6,
       paymentMethod: "pix",
       voucher: voucher(),
+      checkoutRequestId: CHECKOUT_REQUEST_ID,
     })).rejects.toThrow("Sua solicitação pode ter sido registrada");
 
     expect(mocks.deletePaymentVoucher).not.toHaveBeenCalled();
@@ -101,6 +104,7 @@ describe("subscription checkout voucher cleanup", () => {
           amount: 300,
           status: "under_review",
         },
+        idempotent: false,
       },
       error: null,
     });
@@ -123,8 +127,53 @@ describe("subscription checkout voucher cleanup", () => {
       modelSelectionLimit: 6,
       paymentMethod: "pix",
       voucher: voucher(),
+      checkoutRequestId: CHECKOUT_REQUEST_ID,
     })).rejects.toThrow("Database rejected the request");
 
+    expect(mocks.deletePaymentVoucher).toHaveBeenCalledExactlyOnceWith(VOUCHER_PATH, USER_ID);
+  });
+
+  it("preserves the uploaded evidence when the transport response is ambiguous", async () => {
+    mocks.rpc.mockRejectedValue(new Error("Network timeout"));
+    await expect(createSubscriptionCheckoutForCurrentUser({
+      planId: PLAN_ID,
+      collectionId: COLLECTION_ID,
+      selectedModelSlugs: Array.from({ length: 6 }, (_, index) => `terror-${index + 1}`),
+      modelSelectionLimit: 6,
+      paymentMethod: "pix",
+      voucher: voucher(),
+      checkoutRequestId: CHECKOUT_REQUEST_ID,
+    })).rejects.toThrow("Network timeout");
+    expect(mocks.deletePaymentVoucher).not.toHaveBeenCalled();
+  });
+
+  it("returns the committed request on retry and removes only the unused retry voucher", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: {
+        subscription: { id: SUBSCRIPTION_ID },
+        payment: {
+          id: PAYMENT_ID,
+          reference_number: "SUB-12345",
+          amount: 1350,
+          status: "paid",
+        },
+        idempotent: true,
+      },
+      error: null,
+    });
+    await expect(createSubscriptionCheckoutForCurrentUser({
+      planId: PLAN_ID,
+      collectionId: COLLECTION_ID,
+      selectedModelSlugs: Array.from({ length: 6 }, (_, index) => `terror-${index + 1}`),
+      modelSelectionLimit: 6,
+      paymentMethod: "pix",
+      voucher: voucher(),
+      checkoutRequestId: CHECKOUT_REQUEST_ID,
+    })).resolves.toMatchObject({
+      subscriptionId: SUBSCRIPTION_ID,
+      status: "paid",
+      idempotent: true,
+    });
     expect(mocks.deletePaymentVoucher).toHaveBeenCalledExactlyOnceWith(VOUCHER_PATH, USER_ID);
   });
 });

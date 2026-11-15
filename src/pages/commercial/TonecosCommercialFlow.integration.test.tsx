@@ -976,8 +976,7 @@ describe("TONART commercial screens: account → request → history → respons
     expect(screen.getAllByText("Desconto Black Friday (50%)")).toHaveLength(1);
   });
 
-  it("applies Coins to an answered quote and explains voucher follow-up", async () => {
-    mocks.coinBalance.mockRejectedValueOnce(new Error("offline"));
+  it("keeps Coins out of quote checkout while preserving its ordinary payment flow", async () => {
     mocks.listMine.mockResolvedValue({
       total: 1,
       limit: 20,
@@ -1019,32 +1018,12 @@ describe("TONART commercial screens: account → request → history → respons
 
     renderApp("/meus-orcamentos");
 
-    const coinBalanceError = await screen.findByRole("alert");
-    expect(coinBalanceError).toHaveTextContent(
-      "Não foi possível carregar seu saldo de Coins",
-    );
-    expect(coinBalanceError).not.toHaveTextContent("offline");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Tentar carregar Coins" }),
-    );
-    expect(await screen.findByText("Use seus Coins")).toBeInTheDocument();
-    expect(screen.getByText(/o comprovante pode ser enviado por aqui/)).toBeInTheDocument();
-    expect(
-      screen.getByText(/se restar algum valor.*comprovante por aqui/i),
-    ).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Quantos Coins deseja usar?"), {
-      target: { value: "20" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Usar Coins" }));
-
-    await waitFor(() =>
-      expect(mocks.applyCoins).toHaveBeenCalledWith({ quoteId: QUOTE, amount: 20 }),
-    );
-    expect(
-      await screen.findByText(
-        "20 Coins aplicados. Restam R$ 100,00 para pagamento.",
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Orçamento respondido.")).toBeInTheDocument();
+    expect(screen.queryByText("Use seus Coins")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Quantos Coins deseja usar?")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Usar Coins" })).not.toBeInTheDocument();
+    expect(mocks.coinBalance).not.toHaveBeenCalled();
+    expect(mocks.applyCoins).not.toHaveBeenCalled();
   });
 
   it("does not display another person's history without a session", async () => {

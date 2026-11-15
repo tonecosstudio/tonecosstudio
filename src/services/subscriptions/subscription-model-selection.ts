@@ -1,4 +1,9 @@
-export type SubscriptionModelSelectionLimit = 6 | 12;
+import {
+  TONART_PLAN_PIECE_COUNTS,
+  type TonartPlanPieceCount,
+} from "@/services/commercial/tonart-commerce-rules";
+
+export type SubscriptionModelSelectionLimit = TonartPlanPieceCount;
 
 const CATALOG_SLUG = /^[a-z0-9][a-z0-9-]{0,239}$/;
 export const MAX_CURATED_SUBSCRIPTION_MODELS = 20;
@@ -18,7 +23,7 @@ export function getSubscriptionModelSelectionIssue(input: {
   selectionLimit: number;
   curatedSlugs?: readonly string[];
 }): SubscriptionModelSelectionIssue | null {
-  if (input.selectionLimit !== 6 && input.selectionLimit !== 12) {
+  if (!TONART_PLAN_PIECE_COUNTS.includes(input.selectionLimit as TonartPlanPieceCount)) {
     return "selection_limit_invalid";
   }
   if (input.selectedSlugs.length !== input.selectionLimit) {

@@ -663,7 +663,7 @@ describe("Original customer account navigation in the commercial app", () => {
       screen.getByText(/Comprovante em análise · R\$\s*300,00/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("25 Coins aplicados ao orçamento"),
+      screen.getByText("25,00 Coins registrados neste histórico"),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ver pagamento" })).toHaveAttribute(
       "href",

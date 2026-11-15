@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import { requireTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
+import { decimalToHundredths } from "@/services/commercial/tonart-commerce-rules";
 
 const tonecos = supabase as unknown as SupabaseClient;
 
@@ -16,14 +17,40 @@ export type TonartAdminCoinEntry = {
   id: string;
   userId: string;
   userEmail: string | null;
-  type: "admin_credit" | "purchase_spend" | "refund";
+  type:
+    | "admin_credit"
+    | "purchase_spend"
+    | "refund"
+    | "shipment_bonus"
+    | "purchase_reversal"
+    | "bonus_reversal"
+    | "legacy_import";
   delta: number;
   reason: string;
   createdAt: string;
+  reversesEntryId: string | null;
 };
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const entryTypes = new Set(["admin_credit", "purchase_spend", "refund"]);
+const entryTypes = new Set([
+  "admin_credit",
+  "purchase_spend",
+  "refund",
+  "shipment_bonus",
+  "purchase_reversal",
+  "bonus_reversal",
+  "legacy_import",
+]);
+
+function isExactCoinAmount(value: unknown): value is number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return false;
+  try {
+    decimalToHundredths(String(Math.abs(value)));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export type TonartAdminQuote = {
   id: string;
@@ -184,15 +211,23 @@ export async function getTonartAdminOverview(): Promise<TonartAdminOverview> {
         ) ||
         typeof entry.type !== "string" ||
         !entryTypes.has(entry.type) ||
-        typeof entry.delta !== "number" ||
-        !Number.isSafeInteger(entry.delta) ||
+        !isExactCoinAmount(entry.delta) ||
         entry.delta === 0 ||
-        (entry.type === "purchase_spend" ? entry.delta > 0 : entry.delta < 0) ||
+        (entry.type === "legacy_import"
+          ? false
+          : ["purchase_spend", "bonus_reversal"].includes(entry.type)
+          ? entry.delta > 0
+          : entry.delta < 0) ||
         typeof entry.reason !== "string" ||
         entry.reason.length < 4 ||
         entry.reason.length > 500 ||
         typeof entry.createdAt !== "string" ||
-        Number.isNaN(Date.parse(entry.createdAt))
+        Number.isNaN(Date.parse(entry.createdAt)) ||
+        !(
+          entry.reversesEntryId === undefined ||
+          entry.reversesEntryId === null ||
+          (typeof entry.reversesEntryId === "string" && uuid.test(entry.reversesEntryId))
+        )
       ) {
         throw new Error("tonart_admin_coin_history_invalid");
       }
@@ -204,6 +239,9 @@ export async function getTonartAdminOverview(): Promise<TonartAdminOverview> {
         delta: entry.delta,
         reason: entry.reason,
         createdAt: entry.createdAt,
+        reversesEntryId: typeof entry.reversesEntryId === "string"
+          ? entry.reversesEntryId
+          : null,
       };
     },
   );

@@ -1,13 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { BarChart3, Coins, Gauge, RefreshCw, Wallet } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
-import { CreditsDashboard } from "@/components/admin/credits/CreditsDashboard";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ADMIN_ROUTES } from "@/config/routes";
+import { ADMIN_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import AdminPlansConfiguration from "../plans/AdminPlansConfiguration";
 import AdminCycleManager from "../production/AdminCycleManager";
-import AdminCoinsSystem from "./AdminCoinsSystem";
 
 type CreditsTab = "dashboard" | "coins" | "cycles" | "plans" | "analytics";
 
@@ -91,12 +90,26 @@ export default function AdminCreditsHub() {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-4">
-            <CreditsDashboard />
+            <div className="space-y-3 rounded-lg border bg-card p-6">
+              <h2 className="text-lg font-semibold">Carteira única TONART</h2>
+              <p className="max-w-2xl text-sm text-muted-foreground">
+                O saldo e o histórico usam o ledger canônico TONART. Os registros antigos serão preservados como histórico importado; novas operações passam pela carteira única.
+              </p>
+              <Button onClick={() => navigate(TONECOS_COMMERCIAL_ROUTES.adminCoins)}>
+                Abrir administração da carteira
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="coins" className="space-y-4">
-            <div className="rounded-lg border bg-card">
-              <AdminCoinsSystem />
+            <div className="space-y-3 rounded-lg border bg-card p-6">
+              <h2 className="text-lg font-semibold">Carteira canônica TONART</h2>
+              <p className="max-w-2xl text-sm text-muted-foreground">
+                O histórico do sistema antigo permanece preservado. Novos créditos e consultas administrativas usam a carteira TONART baseada no ledger único.
+              </p>
+              <Button onClick={() => navigate(TONECOS_COMMERCIAL_ROUTES.adminCoins)}>
+                Abrir administração da carteira
+              </Button>
             </div>
           </TabsContent>
 

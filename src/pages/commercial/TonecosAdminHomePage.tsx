@@ -29,6 +29,10 @@ const quotesEnabled = true;
 const USER_PAGE_SIZE = 25;
 const integer = new Intl.NumberFormat("pt-BR");
 const dates = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
+const coins = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 const brl = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -43,6 +47,10 @@ const coinLabels: Record<TonartAdminCoinEntry["type"], string> = {
   admin_credit: "Crédito",
   purchase_spend: "Utilização",
   refund: "Estorno",
+  shipment_bonus: "Bônus por envio",
+  purchase_reversal: "Estorno de compra",
+  bonus_reversal: "Estorno de bônus",
+  legacy_import: "Histórico anterior",
 };
 
 const originalAdminSubpages = [
@@ -847,7 +855,7 @@ export default function TonecosAdminHomePage() {
                               }
                             >
                               {entry.delta > 0 ? "+" : ""}
-                              {integer.format(entry.delta)}
+                              {coins.format(entry.delta)}
                             </td>
                           </tr>
                         ))}

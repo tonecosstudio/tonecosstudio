@@ -33,6 +33,11 @@ import { UserQuickActions } from "@/components/admin/user/UserQuickActions";
 import { UserOrderFilters } from "@/components/admin/user/UserOrderFilters";
 import { MonthlySelectionsTimeline } from "@/components/admin/user/MonthlySelectionsTimeline";
 import { formatCurrency } from "@/lib/utils";
+
+const coinsFormat = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 import { useUserDetails } from "@/hooks/admin/useUserDetails";
 import { useUserSubscription } from "@/hooks/admin/useUserSubscription";
 import { useUserOrders } from "@/hooks/admin/useUserOrders";
@@ -592,20 +597,20 @@ export default function AdminUserDetails() {
                   <div className="space-y-4">
                     <div className="text-center p-6 rounded-lg bg-blue-50 dark:bg-blue-950">
                       <div className="text-4xl font-bold text-blue-600">
-                        {coinsBalance.available_credits}
+                        {coinsFormat.format(coinsBalance.available_credits)}
                       </div>
                       <div className="text-sm text-muted-foreground mt-2">Coins Disponíveis</div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center p-4 rounded-lg bg-muted/50">
                         <div className="text-2xl font-bold text-green-600">
-                          {coinsBalance.total_earned || 0}
+                          {coinsFormat.format(coinsBalance.total_earned || 0)}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">Total Ganho</div>
                       </div>
                       <div className="text-center p-4 rounded-lg bg-muted/50">
                         <div className="text-2xl font-bold text-orange-600">
-                          {coinsBalance.total_spent || 0}
+                          {coinsFormat.format(coinsBalance.total_spent || 0)}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">Gastos</div>
                       </div>

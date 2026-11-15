@@ -931,19 +931,20 @@ export default function CanonicalModelDetails() {
                     {quoteRequestsEnabled ? (
                       <details className="border-t border-[hsl(0,0%,15%)] pt-4">
                         <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
-                          Como usar Coins no orçamento
+                          Como funcionam as Coins
                         </summary>
                         <div className="space-y-3 pb-4 text-sm leading-relaxed text-[hsl(0,0%,70%)]">
                           <p>
-                            Em um orçamento comum já respondido pela equipe,
-                            você pode usar Coins para abater R$ 1 por Coin, até
-                            o menor valor entre seu saldo disponível e o valor
-                            restante. Você escolhe quantos usar.
+                            O plano de coleção compra as peças contratadas; seu
+                            valor principal não vira Coins. Bônus de plano são
+                            creditados por envio real após pagamento PIX
+                            integral, conforme o benefício configurado.
                           </p>
                           <p>
-                            A entrada de R$ 50 da pré-venda não aceita Coins.
-                            Eles podem ser usados no saldo restante quando a
-                            equipe finalizar o pedido.
+                            Coins podem ser usadas em ofertas extras elegíveis
+                            de toda a TONART, com pagamento integral ou misto
+                            em reais. Orçamentos, entrada de pré-venda, parcelas
+                            e frete não recebem Coins automaticamente.
                           </p>
                           <Link
                             to="/moedas"

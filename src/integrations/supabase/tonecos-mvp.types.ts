@@ -422,6 +422,10 @@ export type Database = {
         Returns: Json;
       };
       tonart_admin_workspace_overview: { Args: never; Returns: Json };
+      admin_reverse_tonecos_coin_entry: {
+        Args: { p_entry_id: string; p_reason: string };
+        Returns: Json;
+      };
     };
     Enums: {
       [_ in never]: never;
