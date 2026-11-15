@@ -86,6 +86,7 @@ export function InternalCollectionCuration() {
   const [stateFilter, setStateFilter] = useState<CatalogCurationState | "all">(
     "all",
   );
+  const [tagFilterId, setTagFilterId] = useState("all");
   const [offset, setOffset] = useState(0);
   const [candidateIds, setCandidateIds] = useState<string[]>([]);
   const [memberIds, setMemberIds] = useState<string[]>([]);
@@ -122,7 +123,7 @@ export function InternalCollectionCuration() {
     setMemberIds([]);
     setCandidateIds([]);
     setIdentityReview(null);
-  }, [collection?.id, stateFilter]);
+  }, [collection?.id, stateFilter, tagFilterId]);
 
   useEffect(() => {
     setMemberIds([]);
@@ -150,12 +151,14 @@ export function InternalCollectionCuration() {
       "admin-internal-catalog-page",
       collection?.id,
       stateFilter,
+      tagFilterId,
       offset,
     ],
     queryFn: () =>
       getInternalCollectionCurationPage({
         collectionId: collection!.id,
         state: stateFilter,
+        tagId: tagFilterId === "all" ? undefined : tagFilterId,
         offset,
         limit: PAGE_SIZE,
       }),
@@ -665,6 +668,22 @@ export function InternalCollectionCuration() {
                         </option>
                       ),
                     )}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="internal-curation-tag-filter">Filtrar classificação</Label>
+                  <select
+                    id="internal-curation-tag-filter"
+                    value={tagFilterId}
+                    onChange={(event) => setTagFilterId(event.target.value)}
+                    className="h-10 max-w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="all">Todas as classificações</option>
+                    {tags.map((tag) => (
+                      <option key={tag.id} value={tag.id}>
+                        {dimensionLabels[tag.dimension]}: {tag.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
