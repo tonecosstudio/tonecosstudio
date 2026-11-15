@@ -20,7 +20,9 @@ RETURNS void
 LANGUAGE plpgsql SECURITY INVOKER SET search_path = ''
 AS $editorialguard$
 BEGIN
-  IF COALESCE(current_setting('request.jwt.claim.role', true), '') <> 'service_role' THEN
+  IF COALESCE(
+    NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', ''
+  ) <> 'service_role' THEN
     RAISE EXCEPTION 'Forbidden: editorial service role required' USING ERRCODE = '42501';
   END IF;
 END;
