@@ -8,6 +8,7 @@ O site está em **pré-lançamento/noindex**. O modo comercial Vercel (conta e o
 
 | Documento | O que responde |
 | --- | --- |
+| [TONART-COLECOES-ASSINATURAS-COINS.md](TONART-COLECOES-ASSINATURAS-COINS.md) | Estratégia de planos, preços, seleção, entregas, Coins e extras; implementação sem autorização automática de lançamento |
 | [README principal](../README.md) | Estado consolidado do MVP, Minha Conta, orçamentos, owners e pendências reais de GO |
 | [AGENTS](../AGENTS.md) | Regras, segurança, owners, entrega rápida e política de mídia |
 | [URGENTE](../URGENTE.md) | Checkpoint operacional atual; os checkpoints antigos abaixo são históricos, não ordens atuais |
