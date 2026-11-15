@@ -1,3 +1,16 @@
+## Checkpoint 15/11/2026 — condições comerciais na ficha do catálogo
+
+- **Base e commit funcional:** branch `codex/local-account-preview-mocks`, PR #27 aberta; `main@e3719062` → checkout `6855f109` → `67633067` (`feat(commercial): display gated product offers`).
+- **Implementado:** a ficha do modelo consulta apenas ofertas ativas daquele slug por uma Edge Function de leitura pública que usa o cliente anon compartilhado e um RPC `SECURITY INVOKER`; RLS e `tonart_extra_commerce_enabled=false` continuam aplicados. A migration restringe colunas públicas e mantém `created_at`/`updated_by` privados. A ficha mostra variante, preço, frete, conteúdo, prazo e elegibilidades Coins/assinante; usa o cálculo canônico de Coins e informa que não cria pedido, não confirma disponibilidade e não debita saldo. O decoder agora é compartilhado com a administração. Nenhum preço ou modelo foi inventado.
+- **Validação Windows:** 5 arquivos / 53 testes focados passaram; `typecheck:app`, ESLint direcionado, Prettier, `git diff --check`, auditorias `security:supabase-access`, `security:supabase-types` e `security:pricing-read-authority` passaram. A integração do produto mantém um aviso preexistente do jsdom para `window.scrollTo`, mas a suíte concluiu com sucesso.
+- **Limite de integração:** não há Deno, Docker nem Supabase local nesta máquina; a Edge Function não recebeu `deno check` e a migration/RLS/RPC não foram executadas em Postgres. Nenhuma migration foi aplicada nem houve escrita remota. A UI é consultiva: checkout de extras, débito/reserva mista de Coins, confirmação de pagamento e ligação ao histórico existente continuam pendentes. O endpoint legado de compra avulsa segue fail-closed; não chamá-lo porque registra pagamento sem confirmação externa.
+- **Actions:** o último run observável ainda é [#43747219770](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43747219770), no SHA `4dcd8d5d`, falhou antes de executar steps; logs retornam `404 BlobNotFound`. Esta alteração não cria workflow paralelo nem tenta reexecuções cegas.
+- **Isolamento:** nenhuma alteração em Supabase de produção, Cloudflare, D1/R2, cobrança, publicação ou indexação.
+
+**NEXT_ACTION:** adaptar a compra extra ao histórico e ao ledger já existentes, com reserva/liberação/estorno idempotentes e total em centavos; primeiro validar migration e RPC em Supabase local isolado. Manter ofertas e checkout fechados até pagamento e persistência reais estarem conectados.
+
+**DO_NOT_REPEAT:** não ativar `tonart_extra_commerce_enabled` ou `tonart_collection_commerce_enabled`; não tratar a exibição da oferta nem mocks como compra/persistência real; não chamar o RPC legado de compra avulsa; não criar outra carteira, histórico, catálogo, endpoint ou workflow.
+
 ## Checkpoint 15/11/2026 — planos, Coins e cadastro de ofertas comerciais
 
 - **Base → commits funcionais/documentais:** `main@e3719062` → `4a62974a` (`feat(commercial): align collection plans and Coins strategy`) → `0aa2b7bf` (`docs: record TONART commercial implementation checkpoint`) → `0316bd4c` (`docs: record TONART commercial gate status`) → `6d91b323` (`feat(commercial): configure canonical TONART offers`) → `4dcd8d5d` (checkpoint documental), na branch `codex/local-account-preview-mocks` da PR #27 existente. PR continua aberta e não integrada.
