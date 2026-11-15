@@ -428,15 +428,22 @@ BEGIN
   LIMIT 1;
 
   IF v_existing.id IS NOT NULL THEN
-    UPDATE public.collections
-       SET collection_kind = CASE
-             WHEN collection_kind = 'commercial' THEN 'hybrid'
-             ELSE collection_kind
-           END,
-           curation_visibility = 'private',
-           updated_at = now()
-     WHERE id = v_existing.id
-     RETURNING * INTO v_existing;
+    -- A template must not silently reclassify an existing commercial offer.
+    -- Only already-internal or explicitly established hybrid collections can be reused.
+    IF v_existing.collection_kind = 'commercial' THEN
+      RAISE EXCEPTION 'Commercial collection slug is reserved; cannot silently convert it to internal curation'
+        USING ERRCODE = '22023';
+    END IF;
+    IF v_existing.collection_kind NOT IN ('internal', 'hybrid') THEN
+      RAISE EXCEPTION 'Invalid collection kind for editorial reuse'
+        USING ERRCODE = '22023';
+    END IF;
+    IF v_existing.curation_visibility <> 'private' THEN
+      UPDATE public.collections
+         SET curation_visibility = 'private', updated_at = now()
+       WHERE id = v_existing.id
+       RETURNING * INTO v_existing;
+    END IF;
     v_id := v_existing.id;
   ELSE
     v_created := public.admin_create_collection(
