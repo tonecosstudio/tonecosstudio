@@ -46,6 +46,13 @@ describe("internal catalog curation service", () => {
       expect(new Set(functions).size).toBe(functions.length);
     }
     expect(migrations[0]).toContain("CREATE TABLE IF NOT EXISTS public.catalog_curation_tags");
+    expect(migrations[0]).toContain("CREATE TABLE IF NOT EXISTS public.tonart_editorial_collections");
+    expect(migrations[0]).toContain("REFERENCES public.tonart_editorial_collections(id)");
+    expect(migrations[0]).toContain("private_api.assert_tonart_curation_service_role()");
+    expect(migrations[0]).toContain("public.is_tonecos_admin()");
+    expect(migrations[0]).not.toContain("public.collections");
+    expect(migrations[0]).not.toContain("public.collection_tier_assignments");
+    expect(migrations[0]).not.toContain("public.assert_admin_access");
     expect(migrations[1]).toContain("CREATE OR REPLACE FUNCTION public.admin_create_catalog_curation_tag(");
     expect(migrations[1]).toContain(
       "REVOKE ALL ON FUNCTION public.admin_create_catalog_curation_tag(text, text, text)",
@@ -99,6 +106,23 @@ describe("internal catalog curation service", () => {
       status: "active",
     });
 
+    await expect(ensureAdminInternalCollection(template)).rejects.toThrow(
+      "catalog_internal_collection_invalid",
+    );
+    expect(mocks.callAdminRpc).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not accept an implicit hybrid collection from the admin RPC", async () => {
+    const template = INTERNAL_COLLECTION_TEMPLATES[0];
+    mocks.callAdminRpc.mockResolvedValue({
+      id: COLLECTION_ID,
+      name: template.name,
+      slug: template.slug,
+      collectionKind: "hybrid",
+      curationVisibility: "private",
+      isActive: false,
+      status: "draft",
+    });
     await expect(ensureAdminInternalCollection(template)).rejects.toThrow(
       "catalog_internal_collection_invalid",
     );
