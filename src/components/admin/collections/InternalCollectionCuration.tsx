@@ -114,6 +114,10 @@ export function InternalCollectionCuration() {
     setMemberIds([]);
   }, [collection?.id, stateFilter]);
 
+  useEffect(() => {
+    setMemberIds([]);
+  }, [offset]);
+
   const tagsQuery = useQuery({
     queryKey: TAGS_QUERY,
     queryFn: listCatalogCurationTags,
@@ -517,11 +521,14 @@ export function InternalCollectionCuration() {
                           key={model.id}
                           type="button"
                           aria-pressed={selected}
+                          disabled={!selected && candidateIds.length >= 50}
                           onClick={() =>
                             setCandidateIds((current) =>
                               selected
                                 ? current.filter((id) => id !== model.id)
-                                : [...current, model.id],
+                                : current.length >= 50
+                                  ? current
+                                  : [...current, model.id],
                             )
                           }
                           className="flex min-w-0 items-center gap-3 rounded-lg border p-3 text-left hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -553,7 +560,7 @@ export function InternalCollectionCuration() {
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs text-muted-foreground">
-                      {candidateIds.length} candidato(s) selecionado(s). Entram
+                      {candidateIds.length}/50 candidato(s) selecionado(s). Entram
                       como “Sugerido” com origem manual registrada.
                     </p>
                     <Button
