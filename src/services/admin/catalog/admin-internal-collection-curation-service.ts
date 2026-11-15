@@ -314,6 +314,28 @@ function assertUniqueCanonicalCurationModels(
   }
 }
 
+/**
+ * Reject editorial approvals for missing/renamed canonical catalog references.
+ * The supplied current catalog snapshot is read from the catalog owner; this
+ * service never creates a second catalog identity or persists a model mirror.
+ */
+export function assertCurrentCanonicalCurationModels(
+  selected: readonly CanonicalCurationModelRef[],
+  current: readonly CanonicalCurationModelRef[],
+): void {
+  assertUniqueCanonicalCurationModels(selected);
+  const currentById = new Map(current.map((model) => [model.modelId, model.slug]));
+  if (
+    selected.some(
+      (model) =>
+        !currentById.has(model.modelId) ||
+        currentById.get(model.modelId) !== model.slug,
+    )
+  ) {
+    throw new Error("catalog_curation_model_reference_stale");
+  }
+}
+
 export async function listAdminInternalCollections(): Promise<
   AdminInternalCollection[]
 > {
