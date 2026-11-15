@@ -381,8 +381,6 @@ export async function getCollectionDetailsBySlug(
     .from("collections")
     .select("id, name, slug, description, cover_image_url, is_active")
     .eq("slug", slug)
-    .eq("is_active", true)
-    .eq("status", "active")
     .maybeSingle();
 
   if (collectionError) throw collectionError;

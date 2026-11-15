@@ -35,15 +35,11 @@ export async function validateCollectionExists(
   try {
     const { data, error } = await supabase
       .from("collections")
-      .select("*")
+      .select("id")
       .eq("id", collectionId)
       .single();
 
-    const collection = data as unknown as
-      | { id: string; collection_kind?: string }
-      | null;
-
-    if (error || !collection || collection.collection_kind === "internal") {
+    if (error || !data) {
       return {
         valid: false,
         error: "Coleção não encontrada",

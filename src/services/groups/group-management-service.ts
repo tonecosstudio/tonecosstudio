@@ -202,15 +202,11 @@ export async function listCollectionsForGroupRules(): Promise<
 > {
   const { data, error } = await supabase
     .from("collections")
-    .select("*")
+    .select("id, name")
     .order("name");
 
   if (error) throw error;
-  return (
-    (data ?? []) as unknown as Array<
-      GroupCollectionOption & { collection_kind?: string }
-    >
-  ).filter((collection) => collection.collection_kind !== "internal");
+  return (data ?? []) as GroupCollectionOption[];
 }
 
 export async function createGroupFromForm(
