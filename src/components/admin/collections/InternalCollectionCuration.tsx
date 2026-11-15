@@ -72,6 +72,10 @@ function modelRef(model: { id: string; slug: string }) {
   return { modelId: model.id, slug: model.slug };
 }
 
+function isPresent<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined;
+}
+
 export function InternalCollectionCuration() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -209,7 +213,7 @@ export function InternalCollectionCuration() {
       if (!collection) throw new Error("Selecione uma coleção interna.");
       const models = candidateIds
         .map((id) => searchModelsById.get(id))
-        .filter((model): model is NonNullable<typeof model> => Boolean(model));
+        .filter(isPresent);
       if (!models.length) throw new Error("Selecione candidatos do catálogo.");
       return saveInternalCollectionCuration({
         collectionId: collection.id,
@@ -337,7 +341,7 @@ export function InternalCollectionCuration() {
   const compareModels = memberIds
     .slice(0, 4)
     .map((id) => liveModelsById.get(id))
-    .filter((model): model is SubscriptionCatalogModel => Boolean(model));
+    .filter(isPresent);
 
   const tagsByDimension = useMemo(() => {
     const grouped = new Map<CatalogCurationTagDimension, CatalogCurationTag[]>();
