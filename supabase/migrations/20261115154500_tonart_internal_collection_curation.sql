@@ -1073,7 +1073,7 @@ GRANT EXECUTE ON FUNCTION public.admin_upsert_catalog_curation_tags(jsonb) TO se
 COMMENT ON TABLE public.tonart_editorial_collections IS
   'Private editorial group authority; no checkout, sale terms, price, catalog copy or publication state.';
 COMMENT ON TABLE public.catalog_collection_curation IS
-  'Private editorial membership of canonical catalog models. selected_for_offer is not publication authorization and never mutates collections.catalog_model_slugs.';
+  'Private editorial membership of canonical catalog models. selected_for_offer is never a commercial offer, checkout or publication authorization.';
 COMMENT ON TABLE public.catalog_curation_model_tags IS
   'Controlled, reviewable classifications with provenance. Automatic sources may only create suggestions.';
 COMMENT ON TABLE public.catalog_character_identities IS
