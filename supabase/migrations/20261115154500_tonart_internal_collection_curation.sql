@@ -304,6 +304,8 @@ BEGIN
     false
   );
 
+  PERFORM pg_advisory_xact_lock(hashtext('tonart-internal-collection:' || v_slug));
+
   SELECT * INTO v_existing
   FROM public.collections
   WHERE slug = v_slug
