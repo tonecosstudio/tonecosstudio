@@ -239,27 +239,33 @@ ALTER TABLE public.catalog_curation_model_tags ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY catalog_character_identities_admin_read
   ON public.catalog_character_identities FOR SELECT
-  USING (public.has_role(auth.uid(), 'admin') OR COALESCE(auth.role(), '') = 'service_role');
+  TO authenticated
+  USING (public.has_role((SELECT auth.uid()), 'admin'));
 
 CREATE POLICY catalog_curation_model_profiles_admin_read
   ON public.catalog_curation_model_profiles FOR SELECT
-  USING (public.has_role(auth.uid(), 'admin') OR COALESCE(auth.role(), '') = 'service_role');
+  TO authenticated
+  USING (public.has_role((SELECT auth.uid()), 'admin'));
 
 CREATE POLICY catalog_curation_tags_admin_read
   ON public.catalog_curation_tags FOR SELECT
-  USING (public.has_role(auth.uid(), 'admin') OR COALESCE(auth.role(), '') = 'service_role');
+  TO authenticated
+  USING (public.has_role((SELECT auth.uid()), 'admin'));
 
 CREATE POLICY catalog_curation_tag_aliases_admin_read
   ON public.catalog_curation_tag_aliases FOR SELECT
-  USING (public.has_role(auth.uid(), 'admin') OR COALESCE(auth.role(), '') = 'service_role');
+  TO authenticated
+  USING (public.has_role((SELECT auth.uid()), 'admin'));
 
 CREATE POLICY catalog_collection_curation_admin_read
   ON public.catalog_collection_curation FOR SELECT
-  USING (public.has_role(auth.uid(), 'admin') OR COALESCE(auth.role(), '') = 'service_role');
+  TO authenticated
+  USING (public.has_role((SELECT auth.uid()), 'admin'));
 
 CREATE POLICY catalog_curation_model_tags_admin_read
   ON public.catalog_curation_model_tags FOR SELECT
-  USING (public.has_role(auth.uid(), 'admin') OR COALESCE(auth.role(), '') = 'service_role');
+  TO authenticated
+  USING (public.has_role((SELECT auth.uid()), 'admin'));
 
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.catalog_character_identities FROM anon, authenticated;
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.catalog_curation_model_profiles FROM anon, authenticated;
