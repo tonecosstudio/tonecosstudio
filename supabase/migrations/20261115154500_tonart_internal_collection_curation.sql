@@ -697,7 +697,8 @@ BEGIN
     RAISE EXCEPTION 'Automatic identity cannot be marked as verified' USING ERRCODE = '22023';
   END IF;
 
-  v_identity_key := lower(v_franchise) || E'\x1f' || lower(v_name);
+  -- Length-prefix avoids ambiguous separators while keeping the stable key free of control chars.
+  v_identity_key := length(v_franchise)::text || ':' || lower(v_franchise) || ':' || lower(v_name);
 
   INSERT INTO public.catalog_character_identities (
     identity_key,
