@@ -786,6 +786,67 @@ describe("TONART commercial screens: account → request → history → respons
     }));
   });
 
+  it("refreshes quote status after a voucher response cannot be confirmed", async () => {
+    const preorder = {
+      id: QUOTE,
+      status: "answered",
+      createdAt: "2026-11-14T00:00:00Z",
+      deadline: null,
+      notes: null,
+      items: [{ slug: "naruto", quantity: 1 }],
+      quotedAmount: 240,
+      listAmount: 300,
+      discountPercent: 20,
+      discountAmount: 60,
+      responseMessage: "Total R$240; sinal de R$50 e saldo na finalização.",
+      whatsapp: null,
+      postalCode: null,
+      scale: "1/10",
+      finishing: "pintado",
+      isPreorder: true,
+      depositAmount: 50,
+      remainingAmount: 190,
+      paymentStatus: "pending",
+      paymentLink: null,
+      pixKey: "pix@tonart.example",
+      paymentInstructions: "Pague R$50 e envie o comprovante.",
+      paymentLinkSentAt: "2026-11-14T00:10:00Z",
+      finalPaymentNotifiedAt: null,
+      readyForFinalPayment: false,
+      paymentVoucherPath: null,
+      paymentVoucherType: null,
+      paymentVoucherRejectionReason: null,
+    };
+    mocks.listMine
+      .mockResolvedValueOnce({ total: 1, limit: 20, offset: 0, rows: [preorder] })
+      .mockResolvedValueOnce({
+        total: 1,
+        limit: 20,
+        offset: 0,
+        rows: [{
+          ...preorder,
+          paymentStatus: "under_review",
+          paymentVoucherPath: `quotes/${USER}/${QUOTE}/1788130800000-a1b2c3d4e5f60708.png`,
+          paymentVoucherType: "deposit",
+        }],
+      });
+    mocks.submitVoucher.mockRejectedValueOnce(
+      new Error("catalog_preorder_voucher_response_invalid"),
+    );
+    renderApp("/meus-orcamentos");
+    const file = new File(["proof"], "pix.png", { type: "image/png" });
+    fireEvent.change(await screen.findByLabelText("Comprovante de pagamento"), {
+      target: { files: [file] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar comprovante" }));
+
+    await waitFor(() => expect(mocks.listMine).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Comprovante em análise")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Enviar comprovante" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("refreshes customer quotes after an administrator responds", async () => {
     renderApp("/meus-orcamentos");
     expect(

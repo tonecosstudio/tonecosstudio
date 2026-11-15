@@ -141,6 +141,13 @@ function QuotePaymentPanel({
       onSuccess();
     } catch (cause) {
       setError(commercialQuoteErrorText(cause));
+      if (
+        cause instanceof Error &&
+        cause.message === "catalog_preorder_voucher_response_invalid"
+      ) {
+        setFile(null);
+        onSuccess();
+      }
     } finally {
       setBusy(false);
     }
