@@ -1582,3 +1582,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** continuar o checkout de ofertas no pedido existente, com pagamento misto e reserva idempotente de Coins, mantendo confirmação financeira como autoridade e o gate fechado até homologação isolada.
 
 **DO_NOT_REPEAT:** não tratar testes/mocks locais como validação da migration ou do Supabase real; não debitar Coins nem marcar compra paga sem confirmação idempotente; não abrir o gate, ativar cobrança ou alterar Supabase/Cloudflare de produção.
+
+## Rodada 70 — Histórico de Coins com centésimos (15/11/2026)
+
+- O histórico do cliente lê pagamentos de Coins do `quote_payments` existente em centésimos exatos, valida valores com até duas casas e soma em inteiros antes de convertê-los para reais. Isso remove a rejeição de usos como 0,25 Coin e evita acumular quantias com ponto flutuante.
+- Validações locais: `catalog-quote-service.test.ts` — 1 arquivo / 19 testes; `npm run typecheck:app`, ESLint dos dois arquivos afetados e `git diff --check` passaram.
+- Essa correção prepara o histórico para pagamentos mistos; não cria compra, reserva Coins nem comprova pagamento. O checkout de extras e reversão idempotente permanecem pendentes, e não existe PostgreSQL local para validar funções transacionais. Nenhum serviço ou banco remoto foi acessado.
+
+**NEXT_ACTION:** conectar pedido de extra à entidade `quotes` e aos pagamentos existentes, com cálculo servidor-side, reserva/reversão idempotente de Coins e estado de pagamento administrável; preservar frete separado, gate fechado e o isolamento local.
+
+**DO_NOT_REPEAT:** não usar leitura do histórico como prova de checkout; não inserir Coins diretamente no cliente; não reaproveitar o RPC legado que criava compra avulsa marcada como paga; não aplicar migrations em produção.

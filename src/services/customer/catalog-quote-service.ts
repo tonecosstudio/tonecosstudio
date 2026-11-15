@@ -17,6 +17,7 @@ import {
   type PublicCatalogModel,
 } from "@/services/catalog/public-catalog-gateway";
 import { MAX_CANONICAL_SELECTION } from "@/services/catalog/public-catalog-selection";
+import { decimalToHundredths } from "@/services/commercial/tonart-commerce-rules";
 import {
   deletePaymentVoucher,
   uploadPaymentVoucher,
@@ -424,7 +425,7 @@ export async function loadMyCatalogQuotePage(
   const { data, error, count } = result;
   if (error) throw error;
 
-  const coinPaymentsByQuote = new Map<string, number>();
+  const coinPaymentsByQuoteHundredths = new Map<string, number>();
   const quoteIds = (data ?? []).map((row) => row.id);
   if (
     quoteIds.some(
@@ -451,18 +452,26 @@ export async function loadMyCatalogQuotePage(
     if (coinPaymentsError) throw coinPaymentsError;
     for (const payment of coinPayments ?? []) {
       const amount = Number(payment.amount);
+      let amountHundredths: number;
+      try {
+        amountHundredths = decimalToHundredths(amount);
+      } catch {
+        throw new Error("catalog_quote_coin_payment_invalid");
+      }
       if (
-        !Number.isSafeInteger(amount) ||
-        amount < 1 ||
+        !Number.isFinite(amount) ||
+        amountHundredths < 1 ||
         amount > 100000 ||
         !quoteIds.includes(payment.quote_id)
       ) {
         throw new Error("catalog_quote_coin_payment_invalid");
       }
-      const applied = (coinPaymentsByQuote.get(payment.quote_id) ?? 0) + amount;
-      if (applied > 100000)
+      const applied =
+        (coinPaymentsByQuoteHundredths.get(payment.quote_id) ?? 0) +
+        amountHundredths;
+      if (applied > 10_000_000)
         throw new Error("catalog_quote_coin_payment_invalid");
-      coinPaymentsByQuote.set(payment.quote_id, applied);
+      coinPaymentsByQuoteHundredths.set(payment.quote_id, applied);
     }
   }
   if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0) {
@@ -586,7 +595,8 @@ export async function loadMyCatalogQuotePage(
         paymentVoucherRejectionReason: paymentSchemaAvailable
           ? validOptionalText(row.payment_voucher_rejection_reason, 500)
           : null,
-        coinAmountApplied: coinPaymentsByQuote.get(row.id) ?? 0,
+        coinAmountApplied:
+          (coinPaymentsByQuoteHundredths.get(row.id) ?? 0) / 100,
       };
     },
   );

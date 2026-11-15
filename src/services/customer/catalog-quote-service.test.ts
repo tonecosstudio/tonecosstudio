@@ -403,7 +403,7 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     expect(mocks.assertCurrentUserId).toHaveBeenCalledWith(USER);
   });
 
-  it("reads applied Coins from the existing payment ledger for the quote owner", async () => {
+  it("reads exact centi-Coin payments from the existing ledger for the quote owner", async () => {
     const quoteQuery = {
       select: vi.fn(),
       eq: vi.fn(),
@@ -459,7 +459,10 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     coinPaymentsQuery.select.mockReturnValue(coinPaymentsQuery);
     coinPaymentsQuery.eq.mockReturnValue(coinPaymentsQuery);
     coinPaymentsQuery.in.mockResolvedValue({
-      data: [{ quote_id: QUOTE, amount: 25 }],
+      data: [
+        { quote_id: QUOTE, amount: 25.25 },
+        { quote_id: QUOTE, amount: 0.5 },
+      ],
       error: null,
     });
     mocks.from.mockImplementation((table: string) =>
@@ -468,7 +471,7 @@ describe("authenticated Tonecos catalog quote boundary", () => {
 
     const page = await loadMyCatalogQuotePage(USER);
 
-    expect(page.rows[0].coinAmountApplied).toBe(25);
+    expect(page.rows[0].coinAmountApplied).toBe(25.75);
     expect(coinPaymentsQuery.eq).toHaveBeenCalledWith("user_id", USER);
     expect(coinPaymentsQuery.eq).toHaveBeenCalledWith("payment_type", "coins");
     expect(coinPaymentsQuery.in).toHaveBeenCalledWith("quote_id", [QUOTE]);
