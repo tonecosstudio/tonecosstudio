@@ -368,7 +368,7 @@ export async function createCatalogCurationTag(input: {
     typeof input.label !== "string" ||
     !input.label.trim() ||
     input.label.trim().length > 120 ||
-    /[\\u0000-\\u001f\\u007f<>]/.test(input.label)
+    Array.from(input.label).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127 || char === "<" || char === ">")
   ) {
     throw new Error("catalog_curation_tag_definition_invalid");
   }
