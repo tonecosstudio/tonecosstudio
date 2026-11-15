@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
   addCatalogCurationTagAlias,
+  assertCurrentCanonicalCurationModels,
   createCatalogCurationTag,
   ensureAdminInternalCollection,
   getInternalCollectionCurationPage,
@@ -269,6 +270,13 @@ export function InternalCollectionCuration() {
         memberIds.includes(item.modelId),
       );
       if (!selected.length) throw new Error("Selecione modelos da curadoria.");
+      // Discarding an orphan is allowed for cleanup; approval requires current catalog evidence.
+      if (bulkState !== "discarded") {
+        assertCurrentCanonicalCurationModels(
+          selected.map((item) => ({ modelId: item.modelId, slug: item.slug })),
+          [...liveModelsById.values()].map(modelRef),
+        );
+      }
       return saveInternalCollectionCuration({
         collectionId: collection.id,
         models: selected.map((item) => ({
@@ -306,6 +314,10 @@ export function InternalCollectionCuration() {
         memberIds.includes(item.modelId),
       );
       if (!selected.length) throw new Error("Selecione modelos da curadoria.");
+      assertCurrentCanonicalCurationModels(
+        selected.map((item) => ({ modelId: item.modelId, slug: item.slug })),
+        [...liveModelsById.values()].map(modelRef),
+      );
       return saveCatalogModelClassifications({
         models: selected.map((item) => ({
           modelId: item.modelId,
@@ -740,6 +752,21 @@ export function InternalCollectionCuration() {
                 </Alert>
               ) : null}
 
+              {!pageModelsQuery.isFetching &&
+                !pageModelsQuery.isError &&
+                page?.items.some(
+                  (item) =>
+                    liveModelsById.get(item.modelId)?.slug !== item.slug,
+                ) && (
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      Alguns candidatos não foram confirmados no catálogo atual.
+                      A aprovação e a classificação desses modelos serão recusadas.
+                      Você pode descartá-los da curadoria.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
               {pageQuery.isLoading ? (
                 <p role="status" className="text-sm text-muted-foreground">
                   Carregando candidatos...
@@ -757,7 +784,9 @@ export function InternalCollectionCuration() {
               ) : (
                 <div className="space-y-3">
                   {page?.items.map((item) => {
-                    const model = liveModelsById.get(item.modelId);
+                    const canonicalModel = liveModelsById.get(item.modelId);
+                    const model =
+                      canonicalModel?.slug === item.slug ? canonicalModel : undefined;
                     const selected = memberIds.includes(item.modelId);
                     return (
                       <article
