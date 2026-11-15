@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
+  addCatalogCurationTagAlias,
   ensureAdminInternalCollection,
   getInternalCollectionCurationPage,
   getInternalCollectionCurationSummary,
@@ -92,6 +93,7 @@ export function InternalCollectionCuration() {
   const [tagId, setTagId] = useState("");
   const [tagReviewState, setTagReviewState] =
     useState<"suggested" | "approved">("suggested");
+  const [aliasDraft, setAliasDraft] = useState("");
 
   const collectionsQuery = useQuery({
     queryKey: COLLECTIONS_QUERY,
@@ -310,6 +312,30 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível classificar os modelos",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      }),
+  });
+
+  const aliasMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedTag) throw new Error("Selecione uma classificação.");
+      return addCatalogCurationTagAlias({
+        tagId: selectedTag.id,
+        alias: aliasDraft,
+      });
+    },
+    onSuccess: async (aliasSlug) => {
+      setAliasDraft("");
+      await queryClient.invalidateQueries({ queryKey: TAGS_QUERY });
+      toast({
+        title: "Sinônimo registrado",
+        description: `${aliasSlug} agora resolve para a classificação selecionada.`,
+      });
+    },
+    onError: (error) =>
+      toast({
+        title: "Não foi possível registrar o sinônimo",
         description: error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
@@ -884,6 +910,59 @@ export function InternalCollectionCuration() {
                     presume licença, direito comercial ou elegibilidade de venda.
                   </p>
                 </div>
+
+                {selectedTag && (
+                  <div className="rounded-lg border p-3">
+                    <div>
+                      <p className="text-sm font-medium">
+                        Sinônimos de {selectedTag.label}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Aliases só ajudam a reconhecer a mesma classificação.
+                        Eles não criam uma nova tag e não são gerados
+                        automaticamente.
+                      </p>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {selectedTag.aliases.length ? (
+                        selectedTag.aliases.map((alias) => (
+                          <Badge key={alias} variant="secondary">
+                            {alias}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          Nenhum sinônimo registrado.
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                      <Input
+                        aria-label={`Novo sinônimo para ${selectedTag.label}`}
+                        value={aliasDraft}
+                        onChange={(event) => setAliasDraft(event.target.value)}
+                        placeholder="Ex: horror classico"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!aliasDraft.trim() || aliasMutation.isPending}
+                        onClick={() => aliasMutation.mutate()}
+                      >
+                        {aliasMutation.isPending && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Adicionar sinônimo
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      O valor é normalizado para slug. Colisões com outra tag
+                      são recusadas em vez de remapeadas.
+                    </p>
+                  </div>
+                )}
               </div>
             </section>
 
