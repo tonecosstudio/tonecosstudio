@@ -13,7 +13,13 @@ ALTER TABLE public.collections
     CHECK (collection_kind IN ('commercial', 'internal', 'hybrid')) NOT VALID,
   DROP CONSTRAINT IF EXISTS collections_curation_visibility_valid,
   ADD CONSTRAINT collections_curation_visibility_valid
-    CHECK (curation_visibility IN ('public', 'private')) NOT VALID;
+    CHECK (curation_visibility IN ('public', 'private')) NOT VALID,
+  DROP CONSTRAINT IF EXISTS collections_internal_private_inactive,
+  ADD CONSTRAINT collections_internal_private_inactive
+    CHECK (
+      collection_kind <> 'internal'
+      OR (curation_visibility = 'private' AND is_active = false)
+    ) NOT VALID;
 
 CREATE TABLE IF NOT EXISTS public.catalog_character_identities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
