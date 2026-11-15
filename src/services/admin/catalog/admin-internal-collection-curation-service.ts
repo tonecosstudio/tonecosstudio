@@ -50,7 +50,7 @@ export type AdminInternalCollection = {
   id: string;
   name: string;
   slug: string;
-  collectionKind: "internal" | "hybrid";
+  collectionKind: "internal";
   curationVisibility: "private";
   isActive: boolean;
   status: string;
@@ -158,7 +158,7 @@ function parseCollection(value: unknown): AdminInternalCollection {
   if (!UUID_PATTERN.test(id) || !CATALOG_SLUG.test(slug)) {
     throw new Error("catalog_internal_collection_invalid");
   }
-  if (row.collectionKind !== "internal" && row.collectionKind !== "hybrid") {
+  if (row.collectionKind !== "internal") {
     throw new Error("catalog_internal_collection_invalid");
   }
   if (row.curationVisibility !== "private" || typeof row.isActive !== "boolean") {
