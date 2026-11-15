@@ -18,6 +18,7 @@ export async function listAdminSubscriptionCollections(): Promise<AdminSubscript
   const { data, error } = await supabase
     .from("collections")
     .select("id, name, slug, is_active, catalog_model_slugs")
+    .neq("collection_kind", "internal")
     .order("name", { ascending: true });
 
   if (error) throw error;
