@@ -21,6 +21,35 @@ ALTER TABLE public.collections
       OR (curation_visibility = 'private' AND is_active = false)
     ) NOT VALID;
 
+CREATE OR REPLACE FUNCTION public.guard_internal_collection_tier_assignment()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $
+BEGIN
+  IF EXISTS (
+    SELECT 1
+      FROM public.collections c
+     WHERE c.id = NEW.collection_id
+       AND c.collection_kind = 'internal'
+  ) THEN
+    RAISE EXCEPTION 'Internal collection cannot receive commercial pricing tier'
+      USING ERRCODE = '22023';
+  END IF;
+
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS guard_internal_collection_tier_assignment
+  ON public.collection_tier_assignments;
+
+CREATE TRIGGER guard_internal_collection_tier_assignment
+BEFORE INSERT OR UPDATE OF collection_id
+ON public.collection_tier_assignments
+FOR EACH ROW
+EXECUTE FUNCTION public.guard_internal_collection_tier_assignment();
+
 CREATE TABLE IF NOT EXISTS public.catalog_character_identities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   identity_key text NOT NULL UNIQUE,
