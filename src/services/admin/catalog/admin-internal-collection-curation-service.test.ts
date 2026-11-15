@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -28,6 +29,34 @@ describe("internal catalog curation service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+
+  it("keeps both curation migrations atomic and the vocabulary RPC admin-only", () => {
+    const paths = [
+      "../../../../supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
+      "../../../../supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
+    ];
+    const migrations = paths.map((path) => readFileSync(new URL(path, import.meta.url), "utf8"));
+    for (const migration of migrations) {
+      expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
+      expect(migration.match(/^COMMIT;$/gm)).toHaveLength(1);
+      expect(migration.trimEnd().endsWith("COMMIT;")).toBe(true);
+      const functions = [...migration.matchAll(/CREATE OR REPLACE FUNCTION public\\.(\\w+)\\(/g)].map(
+        (match) => match[1],
+      );
+      expect(new Set(functions).size).toBe(functions.length);
+    }
+    expect(migrations[0]).toContain("CREATE TABLE IF NOT EXISTS public.catalog_curation_tags");
+    expect(migrations[1]).toContain("CREATE OR REPLACE FUNCTION public.admin_create_catalog_curation_tag(");
+    expect(migrations[1]).toContain(
+      "REVOKE ALL ON FUNCTION public.admin_create_catalog_curation_tag(text, text, text)",
+    );
+    expect(migrations[1]).toContain("FROM PUBLIC, anon, authenticated;");
+    expect(migrations[1]).toContain(
+      "GRANT EXECUTE ON FUNCTION public.admin_create_catalog_curation_tag(text, text, text)",
+    );
+    expect(migrations[1]).toContain("TO service_role;");
+  });
+
 
   it("prepares owner-defined collections without seeding models", async () => {
     const terror = INTERNAL_COLLECTION_TEMPLATES[0];
