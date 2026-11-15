@@ -95,6 +95,11 @@ export function InternalCollectionCuration() {
   const [tagReviewState, setTagReviewState] =
     useState<"suggested" | "approved">("suggested");
   const [aliasDraft, setAliasDraft] = useState("");
+  const [identityReview, setIdentityReview] = useState<{
+    model: SubscriptionCatalogModel;
+    characterName: string;
+    franchise: string;
+  } | null>(null);
 
   const collectionsQuery = useQuery({
     queryKey: COLLECTIONS_QUERY,
@@ -366,16 +371,17 @@ export function InternalCollectionCuration() {
   });
 
   const identityMutation = useMutation({
-    mutationFn: async (model: SubscriptionCatalogModel) =>
+    mutationFn: async (review: NonNullable<typeof identityReview>) =>
       verifyCatalogModelCharacterIdentity({
-        model: modelRef(model),
-        characterName: model.name,
-        franchise: model.franchise,
-        evidenceOrigin: "manual_admin:canonical_catalog_identity",
+        model: modelRef(review.model),
+        characterName: review.characterName.trim(),
+        franchise: review.franchise.trim(),
+        evidenceOrigin: "manual_admin:reviewed_character_identity",
         evidenceNote:
-          "Identidade confirmada manualmente usando nome e franquia exibidos pelo catálogo canônico; a variante continua vinculada ao modelo.",
+          "Nome do personagem e franquia revisados explicitamente pelo administrador; variante preservada no modelo canônico.",
       }),
     onSuccess: async () => {
+      setIdentityReview(null);
       await refreshCollection();
       toast({
         title: "Identidade verificada",
@@ -749,13 +755,82 @@ export function InternalCollectionCuration() {
                               size="sm"
                               variant="outline"
                               disabled={identityMutation.isPending}
-                              onClick={() => identityMutation.mutate(model)}
+                              onClick={() =>
+                                setIdentityReview({
+                                  model,
+                                  characterName: model.name,
+                                  franchise: model.franchise,
+                                })
+                              }
                             >
                               <ShieldCheck className="mr-2 h-4 w-4" />
-                              Confirmar personagem
+                              Revisar identidade
                             </Button>
                           )}
                         </div>
+                        {identityReview?.model.id === item.modelId && (
+                          <div className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2">
+                            <p className="text-sm text-muted-foreground sm:col-span-2">
+                              Confirme o personagem e o universo desta escultura. Os
+                              valores do catálogo são apenas sugestões: o nome do
+                              modelo pode incluir edição, pose ou variante.
+                            </p>
+                            <div className="space-y-1">
+                              <Label htmlFor="curation-character-name">Personagem</Label>
+                              <Input
+                                id="curation-character-name"
+                                maxLength={160}
+                                value={identityReview.characterName}
+                                onChange={(event) =>
+                                  setIdentityReview((current) =>
+                                    current
+                                      ? { ...current, characterName: event.target.value }
+                                      : null,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor="curation-character-franchise">Universo / franquia</Label>
+                              <Input
+                                id="curation-character-franchise"
+                                maxLength={160}
+                                value={identityReview.franchise}
+                                onChange={(event) =>
+                                  setIdentityReview((current) =>
+                                    current
+                                      ? { ...current, franchise: event.target.value }
+                                      : null,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="flex flex-wrap gap-2 sm:col-span-2">
+                              <Button
+                                type="button"
+                                disabled={
+                                  identityMutation.isPending ||
+                                  !identityReview.characterName.trim() ||
+                                  !identityReview.franchise.trim()
+                                }
+                                onClick={() => identityMutation.mutate(identityReview)}
+                              >
+                                {identityMutation.isPending && (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                Confirmar identidade revisada
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                disabled={identityMutation.isPending}
+                                onClick={() => setIdentityReview(null)}
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </article>
                     );
                   })}
