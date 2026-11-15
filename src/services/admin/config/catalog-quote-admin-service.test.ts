@@ -19,6 +19,15 @@ vi.mock("@/integrations/supabase/client", () => ({
 vi.mock("@/services/auth/tonecos-admin-access", () => ({
   requireTonecosAdminAccess: mocks.requireAdmin,
 }));
+vi.mock("@/config/supabase-environment", () => ({
+  LOCAL_SUPABASE_FALLBACK: false,
+  get PREVIEW_READ_ONLY() {
+    return import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  },
+  get SUPABASE_URL() {
+    return import.meta.env.VITE_SUPABASE_URL ?? "";
+  },
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -61,7 +70,10 @@ describe("TONART admin quote directory", () => {
       error: null,
     });
     await expect(loadAdminCatalogQuotePage()).resolves.toEqual({
-      total: 1, limit: 25, offset: 0, rows: [row],
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [row],
     });
     expect(mocks.requireAdmin).toHaveBeenCalledTimes(1);
     expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
@@ -100,12 +112,15 @@ describe("TONART admin quote directory", () => {
   });
 
   it("rejects invalid query bounds before auth/network I/O", async () => {
-    await expect(loadAdminCatalogQuotePage({ quoteId: "../admin" }))
-      .rejects.toThrow("admin_catalog_quote_query_invalid");
-    await expect(loadAdminCatalogQuotePage({ limit: 101 }))
-      .rejects.toThrow("admin_catalog_quote_query_invalid");
-    await expect(loadAdminCatalogQuotePage({ offset: -1 }))
-      .rejects.toThrow("admin_catalog_quote_query_invalid");
+    await expect(
+      loadAdminCatalogQuotePage({ quoteId: "../admin" }),
+    ).rejects.toThrow("admin_catalog_quote_query_invalid");
+    await expect(loadAdminCatalogQuotePage({ limit: 101 })).rejects.toThrow(
+      "admin_catalog_quote_query_invalid",
+    );
+    await expect(loadAdminCatalogQuotePage({ offset: -1 })).rejects.toThrow(
+      "admin_catalog_quote_query_invalid",
+    );
     expect(mocks.requireAdmin).not.toHaveBeenCalled();
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
@@ -129,7 +144,9 @@ describe("TONART admin quote directory", () => {
 
   it("changes status only through the canonical admin RPC", async () => {
     mocks.rpc.mockResolvedValue({ data: QUOTE, error: null });
-    await expect(changeCatalogQuoteStatus(QUOTE, "reviewing")).resolves.toBe(QUOTE);
+    await expect(changeCatalogQuoteStatus(QUOTE, "reviewing")).resolves.toBe(
+      QUOTE,
+    );
     expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
       "admin_update_quote_status",
       { p_quote_id: QUOTE, p_status: "reviewing" },
@@ -137,14 +154,18 @@ describe("TONART admin quote directory", () => {
   });
 
   it("fails closed for invalid responses and malformed RPC rows", async () => {
-    await expect(answerCatalogQuoteRequest(QUOTE, 0, "Proposta"))
-      .rejects.toThrow("admin_catalog_quote_response_invalid");
-    await expect(answerCatalogQuoteRequest(QUOTE, 10, " "))
-      .rejects.toThrow("admin_catalog_quote_response_invalid");
-    await expect(answerCatalogQuoteRequest(QUOTE, 300, "Proposta", 51))
-      .rejects.toThrow("admin_catalog_quote_response_invalid");
-    await expect(answerCatalogQuoteRequest(QUOTE, 0.01, "Proposta", 50))
-      .rejects.toThrow("admin_catalog_quote_response_invalid");
+    await expect(
+      answerCatalogQuoteRequest(QUOTE, 0, "Proposta"),
+    ).rejects.toThrow("admin_catalog_quote_response_invalid");
+    await expect(answerCatalogQuoteRequest(QUOTE, 10, " ")).rejects.toThrow(
+      "admin_catalog_quote_response_invalid",
+    );
+    await expect(
+      answerCatalogQuoteRequest(QUOTE, 300, "Proposta", 51),
+    ).rejects.toThrow("admin_catalog_quote_response_invalid");
+    await expect(
+      answerCatalogQuoteRequest(QUOTE, 0.01, "Proposta", 50),
+    ).rejects.toThrow("admin_catalog_quote_response_invalid");
     expect(mocks.requireAdmin).not.toHaveBeenCalled();
 
     mocks.rpc.mockResolvedValue({
@@ -156,26 +177,30 @@ describe("TONART admin quote directory", () => {
       },
       error: null,
     });
-    await expect(loadAdminCatalogQuotePage())
-      .rejects.toThrow("admin_catalog_quote_row_invalid");
+    await expect(loadAdminCatalogQuotePage()).rejects.toThrow(
+      "admin_catalog_quote_row_invalid",
+    );
 
     mocks.rpc.mockResolvedValueOnce({
       data: {
         total: 1,
         limit: 25,
         offset: 0,
-        rows: [{
-          ...row,
-          status: "answered",
-          quotedAmount: 150,
-          listAmount: 300,
-          discountPercent: 0,
-          discountAmount: 150,
-        }],
+        rows: [
+          {
+            ...row,
+            status: "answered",
+            quotedAmount: 150,
+            listAmount: 300,
+            discountPercent: 0,
+            discountAmount: 150,
+          },
+        ],
       },
       error: null,
     });
-    await expect(loadAdminCatalogQuotePage())
-      .rejects.toThrow("admin_catalog_quote_row_invalid");
+    await expect(loadAdminCatalogQuotePage()).rejects.toThrow(
+      "admin_catalog_quote_row_invalid",
+    );
   });
 });

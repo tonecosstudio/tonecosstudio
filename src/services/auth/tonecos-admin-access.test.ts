@@ -11,6 +11,15 @@ vi.mock("@/integrations/supabase/client", () => ({
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.user,
 }));
+vi.mock("@/config/supabase-environment", () => ({
+  LOCAL_SUPABASE_FALLBACK: false,
+  get PREVIEW_READ_ONLY() {
+    return import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  },
+  get SUPABASE_URL() {
+    return import.meta.env.VITE_SUPABASE_URL ?? "";
+  },
+}));
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");

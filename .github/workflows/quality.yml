@@ -26,6 +26,7 @@ on:
       - 'src/services/catalog/public-catalog-gateway*'
       - 'src/services/catalog/specialstl-quarantine.json'
       - 'src/services/customer/**'
+      - 'src/services/auth/**'
       - 'src/services/coins/**'
       - 'src/services/quotes/**'
       - 'src/services/admin/**'
