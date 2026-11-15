@@ -68,7 +68,7 @@ function modelLabel(model: {
     : model.name;
 }
 
-function modelRef(model: SubscriptionCatalogModel) {
+function modelRef(model: { id: string; slug: string }) {
   return { modelId: model.id, slug: model.slug };
 }
 
@@ -209,7 +209,7 @@ export function InternalCollectionCuration() {
       if (!collection) throw new Error("Selecione uma coleção interna.");
       const models = candidateIds
         .map((id) => searchModelsById.get(id))
-        .filter((model): model is SubscriptionCatalogModel => Boolean(model));
+        .filter((model): model is NonNullable<typeof model> => Boolean(model));
       if (!models.length) throw new Error("Selecione candidatos do catálogo.");
       return saveInternalCollectionCuration({
         collectionId: collection.id,
@@ -632,9 +632,7 @@ export function InternalCollectionCuration() {
                               setMemberIds((current) =>
                                 selected
                                   ? current.filter((id) => id !== item.modelId)
-                                  : current.length >= 4
-                                    ? current
-                                    : [...current, item.modelId],
+                                  : [...current, item.modelId],
                               )
                             }
                             className="mt-1 h-4 w-4"
@@ -735,8 +733,9 @@ export function InternalCollectionCuration() {
                   <h3 className="font-semibold">Comparar variantes</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Selecione até quatro modelos da página. O personagem só é
-                  agrupado depois da confirmação explícita da identidade.
+                  Os quatro primeiros modelos selecionados aparecem lado a
+                  lado; a ação em lote pode incluir toda a página. O personagem
+                  só é agrupado depois da confirmação explícita da identidade.
                 </p>
                 {compareModels.length === 0 ? (
                   <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
