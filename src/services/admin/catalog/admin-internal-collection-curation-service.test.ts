@@ -13,6 +13,7 @@ import {
   ensureAdminInternalCollection,
   getInternalCollectionCurationPage,
   INTERNAL_COLLECTION_TEMPLATES,
+  removeCatalogCurationTagAlias,
   saveCatalogModelClassifications,
   saveInternalCollectionCuration,
 } from "./admin-internal-collection-curation-service";
@@ -97,6 +98,29 @@ describe("internal catalog curation service", () => {
 
     expect(mocks.callAdminRpc).toHaveBeenCalledWith(
       "admin_add_catalog_curation_tag_alias",
+      {
+        p_tag_id: TAG_ID,
+        p_alias_slug: "vilao-principal",
+      },
+    );
+  });
+
+  it("removes only the reviewed alias selected by the admin", async () => {
+    mocks.callAdminRpc.mockResolvedValue({
+      tagId: TAG_ID,
+      aliasSlug: "vilao-principal",
+      removed: true,
+    });
+
+    await expect(
+      removeCatalogCurationTagAlias({
+        tagId: TAG_ID,
+        aliasSlug: "vilao-principal",
+      }),
+    ).resolves.toBe("vilao-principal");
+
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_remove_catalog_curation_tag_alias",
       {
         p_tag_id: TAG_ID,
         p_alias_slug: "vilao-principal",
