@@ -3,6 +3,7 @@ import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CATALOG_SLUG = /^[a-z0-9][a-z0-9-]{0,239}$/;
+const CURATION_ALIAS_SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/;
 
 export type CatalogCurationState =
   | "suggested"
@@ -62,6 +63,7 @@ export type CatalogCurationTag = {
   label: string;
   status: "active" | "deprecated";
   definitionOrigin: string;
+  aliases: string[];
 };
 
 export type CatalogCurationMembershipTag = {
@@ -185,6 +187,14 @@ function parseTag(value: unknown): CatalogCurationTag {
   ) {
     throw new Error("catalog_curation_tag_invalid");
   }
+  if (
+    !Array.isArray(row.aliases) ||
+    row.aliases.some(
+      (alias) => typeof alias !== "string" || !CURATION_ALIAS_SLUG.test(alias),
+    )
+  ) {
+    throw new Error("catalog_curation_tag_invalid");
+  }
   return {
     id,
     dimension: dimension as CatalogCurationTagDimension,
@@ -195,6 +205,7 @@ function parseTag(value: unknown): CatalogCurationTag {
       row.definitionOrigin,
       "catalog_curation_tag_invalid",
     ),
+    aliases: row.aliases as string[],
   };
 }
 
@@ -318,6 +329,42 @@ export async function listCatalogCurationTags(): Promise<CatalogCurationTag[]> {
   const data = await callAdminRpc<unknown>("admin_list_catalog_curation_tags");
   if (!Array.isArray(data)) throw new Error("catalog_curation_tags_invalid");
   return data.map(parseTag);
+}
+
+function normalizeCurationAliasSlug(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+export async function addCatalogCurationTagAlias(input: {
+  tagId: string;
+  alias: string;
+}): Promise<string> {
+  if (!UUID_PATTERN.test(input.tagId)) {
+    throw new Error("catalog_curation_tag_alias_invalid");
+  }
+  const aliasSlug = normalizeCurationAliasSlug(input.alias);
+  if (!CURATION_ALIAS_SLUG.test(aliasSlug)) {
+    throw new Error("catalog_curation_tag_alias_invalid");
+  }
+
+  const data = asRecord(
+    await callAdminRpc<unknown>("admin_add_catalog_curation_tag_alias", {
+      p_tag_id: input.tagId,
+      p_alias_slug: aliasSlug,
+    }),
+    "catalog_curation_tag_alias_result_invalid",
+  );
+  if (data.tagId !== input.tagId || data.aliasSlug !== aliasSlug) {
+    throw new Error("catalog_curation_tag_alias_result_invalid");
+  }
+  return aliasSlug;
 }
 
 export async function getInternalCollectionCurationSummary(
