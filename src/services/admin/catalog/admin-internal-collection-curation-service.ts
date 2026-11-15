@@ -455,11 +455,15 @@ export async function getInternalCollectionCurationSummary(
 export async function getInternalCollectionCurationPage(input: {
   collectionId: string;
   state?: CatalogCurationState | "all";
+  tagId?: string;
   offset?: number;
   limit?: number;
 }): Promise<CatalogCurationPage> {
   if (!UUID_PATTERN.test(input.collectionId)) {
     throw new Error("catalog_internal_collection_id_invalid");
+  }
+  if (input.tagId !== undefined && !UUID_PATTERN.test(input.tagId)) {
+    throw new Error("catalog_curation_tag_filter_invalid");
   }
   const offset = input.offset ?? 0;
   const limit = input.limit ?? 20;
@@ -486,6 +490,7 @@ export async function getInternalCollectionCurationPage(input: {
       p_state: !input.state || input.state === "all" ? null : input.state,
       p_offset: offset,
       p_limit: limit,
+      p_tag_id: input.tagId ?? null,
     }),
     "catalog_curation_page_invalid",
   );
