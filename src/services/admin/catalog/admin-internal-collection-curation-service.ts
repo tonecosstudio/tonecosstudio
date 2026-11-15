@@ -344,6 +344,36 @@ export async function listAdminInternalCollections(): Promise<
   return data.map(parseCollection);
 }
 
+/** Build an owner-named private collection using the existing editorial SSOT. */
+export function createInternalCollectionTemplate(
+  nameInput: string,
+  descriptionInput: string,
+): InternalCollectionTemplate {
+  if (typeof nameInput !== "string" || typeof descriptionInput !== "string") {
+    throw new Error("catalog_internal_collection_template_invalid");
+  }
+  const name = nameInput.trim();
+  const description = descriptionInput.trim();
+  const unsafe = (value: string) =>
+    Array.from(value).some((char) => {
+      const code = char.charCodeAt(0);
+      return code < 32 || code === 127 || char === "<" || char === ">";
+    });
+  const slug = normalizeCurationAliasSlug(name);
+  if (
+    !name ||
+    name.length > 160 ||
+    unsafe(name) ||
+    !description ||
+    description.length > 2000 ||
+    unsafe(description) ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+  ) {
+    throw new Error("catalog_internal_collection_template_invalid");
+  }
+  return { name, slug, description };
+}
+
 export async function ensureAdminInternalCollection(
   template: InternalCollectionTemplate,
 ): Promise<AdminInternalCollection> {
