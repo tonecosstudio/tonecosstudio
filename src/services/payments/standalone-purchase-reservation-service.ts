@@ -41,6 +41,8 @@ export async function getStandalonePurchaseCollectionBySlug(
     `
     )
     .eq("slug", slug)
+    .eq("is_active", true)
+    .eq("status", "active")
     .maybeSingle();
 
   if (error) throw error;
