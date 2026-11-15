@@ -236,14 +236,19 @@ export async function fetchCollectionsWithCharacterCount(): Promise<
   const { data: collections, error } = await supabase
     .from("collections")
     .select("*")
-    .neq("collection_kind", "internal")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
   if (!collections) return [];
 
+  const visibleCollections = (
+    collections as unknown as Array<
+      (typeof collections)[number] & { collection_kind?: string }
+    >
+  ).filter((collection) => collection.collection_kind !== "internal");
+
   const withCount = await Promise.all(
-    collections.map(async (collection) => {
+    visibleCollections.map(async (collection) => {
       const { count, error: countError } = await supabase
         .from("collection_characters")
         .select("*", { count: "exact", head: true })
