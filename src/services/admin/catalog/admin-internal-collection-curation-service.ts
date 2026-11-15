@@ -523,11 +523,13 @@ export async function saveInternalCollectionCuration(input: {
   }
   assertUniqueCanonicalCurationModels(input.models);
   if (!input.evidenceOrigin.trim()) throw new Error("catalog_curation_save_invalid");
-  if (
-    input.evidenceOrigin.startsWith("automatic:") &&
-    input.state !== "suggested"
-  ) {
-    throw new Error("catalog_curation_automatic_must_be_suggested");
+  if (input.evidenceOrigin.trim().toLowerCase().startsWith("automatic:")) {
+    if (input.state !== "suggested") {
+      throw new Error("catalog_curation_automatic_must_be_suggested");
+    }
+    if (!input.evidenceNote?.trim()) {
+      throw new Error("catalog_curation_automatic_evidence_required");
+    }
   }
 
   const data = asRecord(
@@ -565,7 +567,7 @@ export async function verifyCatalogModelCharacterIdentity(input: {
     !input.characterName.trim() ||
     !input.franchise.trim() ||
     !input.evidenceOrigin.trim() ||
-    input.evidenceOrigin.startsWith("automatic:")
+    input.evidenceOrigin.trim().toLowerCase().startsWith("automatic:")
   ) {
     throw new Error("catalog_character_identity_verification_invalid");
   }
@@ -610,11 +612,13 @@ export async function saveCatalogModelClassifications(input: {
     throw new Error("catalog_curation_classification_invalid");
   }
   assertUniqueCanonicalCurationModels(input.models);
-  if (
-    input.evidenceOrigin.startsWith("automatic:") &&
-    input.reviewState !== "suggested"
-  ) {
-    throw new Error("catalog_curation_automatic_must_be_suggested");
+  if (input.evidenceOrigin.trim().toLowerCase().startsWith("automatic:")) {
+    if (input.reviewState !== "suggested") {
+      throw new Error("catalog_curation_automatic_must_be_suggested");
+    }
+    if (!input.evidenceNote?.trim()) {
+      throw new Error("catalog_curation_automatic_evidence_required");
+    }
   }
 
   const data = asRecord(
