@@ -39,6 +39,7 @@ import {
   type CatalogCurationState,
   type CatalogCurationTag,
   type CatalogCurationTagDimension,
+  type CatalogCurationTagReviewState,
 } from "@/services/admin/catalog/admin-internal-collection-curation-service";
 import {
   loadSubscriptionCatalogModels,
@@ -96,7 +97,7 @@ export function InternalCollectionCuration() {
     useState<CatalogCurationState>("suggested");
   const [tagId, setTagId] = useState("");
   const [tagReviewState, setTagReviewState] =
-    useState<"suggested" | "approved">("suggested");
+    useState<CatalogCurationTagReviewState>("suggested");
   const [aliasDraft, setAliasDraft] = useState("");
   const [newTagDimension, setNewTagDimension] =
     useState<CatalogCurationTagDimension>("characteristic");
@@ -1139,13 +1140,14 @@ export function InternalCollectionCuration() {
                     value={tagReviewState}
                     onChange={(event) =>
                       setTagReviewState(
-                        event.target.value as "suggested" | "approved",
+                        event.target.value as CatalogCurationTagReviewState,
                       )
                     }
                     className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                   >
                     <option value="suggested">Sugerida</option>
                     <option value="approved">Aprovada na curadoria</option>
+                    <option value="discarded">Descartar classificação</option>
                   </select>
                   <Button
                     type="button"
