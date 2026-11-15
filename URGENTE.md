@@ -1484,3 +1484,17 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** manter a prévia local como caminho de revisão da conta; validar com Supabase apenas em ambiente isolado com usuário fictício antes de homologar autenticação real.
 
 **DO_NOT_REPEAT:** não recriar painel, botão ou modo especial de demonstração; não tratar dados fictícios como evidência de funcionamento remoto; não publicar em produção nem alterar Supabase/Cloudflare de produção.
+
+## Rodada 65 — Conta local e Coins na ficha do modelo (15/11/2026)
+
+- Base: `main` @ `07091e7120dac8eaac7727527ed59a088aa4f5c8`; código validado em `22ef2a7948aca97c3b1f2f8c239270b37a13ad3f`, branch `codex/local-account-preview-mocks`, PR #27 aberta e não integrada.
+- A ficha comercial do modelo explica o uso de Coins em orçamento comum respondido: 1 Coin abate R$ 1, limitado ao saldo disponível e ao valor restante; a entrada de R$ 50 da pré-venda não aceita Coins. Link para a carteira existente `/moedas`. O conteúdo usa detalhes recolhíveis e o estilo Arcade existente.
+- QA visual no navegador interno: `/modelos` carregou 33 referências na página; `/modelos/nier-10h-nier` abriu ficha e galeria reais do catálogo. O acordeão de Coins expandiu e mostrou as regras e o link para `/moedas`.
+- As páginas locais da conta permanecem normais, com mocks simples de cliente em memória; limpeza de seleção foi movida ao `afterEach` global para impedir vazamento de estado entre testes. Sem serviço, tabela, autenticação ou fluxo de cobrança duplicado.
+- Provas locais: `npm run catalog:mvp:test -- --reporter=dot` — 31 arquivos e 364 testes passaram; após o ajuste final do setup, 4 suítes focadas passaram (58 testes). `npm run typecheck` passou. ESLint terminou sem erros, com 10 avisos `no-explicit-any` existentes em arquivos de teste. Prettier dos arquivos alterados e `git diff --check` passaram.
+- GitHub Actions run [43672678503](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43672678503) falhou no job `Catalog Worker offline / no deploy` sem etapas reportadas; a leitura dos logs retornou `404 BlobNotFound`. Os jobs restantes foram pulados pelas condições de PR. É falha anterior à execução dos checks; não comprova falha no código nem aprovação. Não repetir reexecuções sem mudança na infraestrutura.
+- Mocks só validam a interface e comportamento local; Supabase real, envio de orçamento e resposta admin não foram validados nesta rodada. Produção, Cloudflare, D1, R2 e Supabase remoto não foram alterados.
+
+**NEXT_ACTION:** identificar por que o runner/log do job do Actions não foi disponibilizado; manter a PR aberta até haver sinal de CI interpretável e executar E2E autenticado apenas em ambiente Supabase isolado.
+
+**DO_NOT_REPEAT:** não recriar banner ou modo especial de demonstração; não usar mocks como prova de integração real; não reexecutar repetidamente o job sem mudança externa; não fazer merge ou publicar em produção nesta rodada.
