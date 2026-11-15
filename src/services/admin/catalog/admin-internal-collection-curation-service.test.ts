@@ -51,6 +51,16 @@ describe("internal catalog curation service", () => {
     }
     expect(migrations[0]).toContain("CREATE TABLE IF NOT EXISTS public.catalog_curation_tags");
     expect(migrations[0]).toContain("CREATE TABLE IF NOT EXISTS public.tonart_editorial_collections");
+    expect(migrations[0]).toContain(
+      "REVOKE ALL ON TABLE public.tonart_editorial_collections FROM PUBLIC, anon, authenticated",
+    );
+    expect(migrations[0]).toContain(
+      "REVOKE ALL ON TABLE\\n  public.catalog_character_identities,",
+    );
+    expect(migrations[0]).toContain(
+      "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE\\n  public.catalog_character_identities,",
+    );
+    expect(migrations[0]).not.toContain("REVOKE INSERT, UPDATE, DELETE ON TABLE");
     expect(migrations[0]).toContain("REFERENCES public.tonart_editorial_collections(id)");
     expect(migrations[0]).toContain("private_api.assert_tonart_curation_service_role()");
     expect(migrations[0]).toContain("public.is_tonecos_admin()");
