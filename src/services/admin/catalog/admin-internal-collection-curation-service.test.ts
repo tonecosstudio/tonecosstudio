@@ -40,6 +40,9 @@ describe("internal catalog curation service", () => {
       expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
       expect(migration.match(/^COMMIT;$/gm)).toHaveLength(1);
       expect(migration.trimEnd().endsWith("COMMIT;")).toBe(true);
+      expect(migration).not.toContain("public.assert_admin_access");
+      expect(migration).not.toContain("public.collections");
+      expect(migration).not.toContain("public.collection_tier_assignments");
       const functions = [...migration.matchAll(/CREATE OR REPLACE FUNCTION public\.(\w+)\(/g)].map(
         (match) => match[1],
       );
@@ -54,6 +57,7 @@ describe("internal catalog curation service", () => {
     expect(migrations[0]).not.toContain("public.collection_tier_assignments");
     expect(migrations[0]).not.toContain("public.assert_admin_access");
     expect(migrations[1]).toContain("CREATE OR REPLACE FUNCTION public.admin_create_catalog_curation_tag(");
+    expect(migrations[1]).toContain("private_api.assert_tonart_curation_service_role()");
     expect(migrations[1]).toContain(
       "REVOKE ALL ON FUNCTION public.admin_create_catalog_curation_tag(text, text, text)",
     );
