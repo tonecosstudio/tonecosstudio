@@ -163,6 +163,44 @@ describe("internal catalog curation service", () => {
     );
   });
 
+  it("rejects invalid tag filters before any RPC", async () => {
+    await expect(
+      getInternalCollectionCurationPage({
+        collectionId: COLLECTION_ID,
+        tagId: "not-a-tag-id",
+      }),
+    ).rejects.toThrow("catalog_curation_tag_filter_invalid");
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
+  it("forwards a controlled tag filter to the bounded curation page", async () => {
+    mocks.callAdminRpc.mockResolvedValue({
+      items: [],
+      total: 0,
+      offset: 0,
+      limit: 20,
+    });
+    await expect(
+      getInternalCollectionCurationPage({
+        collectionId: COLLECTION_ID,
+        state: "approved",
+        tagId: TAG_ID,
+        offset: 0,
+        limit: 20,
+      }),
+    ).resolves.toMatchObject({ items: [], total: 0 });
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_get_collection_curation_page",
+      {
+        p_collection_id: COLLECTION_ID,
+        p_state: "approved",
+        p_offset: 0,
+        p_limit: 20,
+        p_tag_id: TAG_ID,
+      },
+    );
+  });
+
   it("reads only one bounded curation page and preserves evidence", async () => {
     mocks.callAdminRpc.mockResolvedValue({
       items: [
@@ -207,6 +245,7 @@ describe("internal catalog curation service", () => {
         p_state: "suggested",
         p_offset: 0,
         p_limit: 20,
+        p_tag_id: null,
       },
     );
   });
