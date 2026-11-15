@@ -1517,7 +1517,7 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - O checkout e reenvio de comprovante de assinatura agora param antes de autenticação, Storage e RPC quando o ambiente é fallback local ou read-only. Não foram criados planos, coleções ou dados comerciais fictícios.
 - O filtro do Quality Gate existente agora inclui os serviços, páginas, testes, hooks e componentes de assinaturas, planos e vouchers. Nenhum workflow paralelo foi criado.
 - Verificações: `subscription-checkout-service.test.ts` — 1 arquivo / 5 testes; `npm run typecheck:app` e ESLint dos arquivos alterados passaram. O endpoint local `127.0.0.1:54321` não está ouvindo e o comando Docker não existe nesta máquina; não há ambiente Supabase local para validar catálogo/planos reais.
-- O run #43674614806 ainda falhou no job sem etapas nem logs (`BlobNotFound`). Nenhuma consulta/escrita em Supabase remoto ou alteração de produção foi feita.
+- Após ampliar o filtro do workflow, o Quality Gate #43676256540 (#1574) repetiu a falha no mesmo job sem etapas; o endpoint de logs retorna 404 `BlobNotFound`, como no run #43674614806 (#1572). Nenhuma consulta/escrita em Supabase remoto ou alteração de produção foi feita.
 
 **NEXT_ACTION:** continuar pela validação dos fluxos de assinatura com um Supabase local disponível; manter a PR #27 aberta até o Quality Gate fornecer execução/logs interpretáveis.
 
