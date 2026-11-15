@@ -55,10 +55,10 @@ describe("internal catalog curation service", () => {
       "REVOKE ALL ON TABLE public.tonart_editorial_collections FROM PUBLIC, anon, authenticated",
     );
     expect(migrations[0]).toContain(
-      "REVOKE ALL ON TABLE\\n  public.catalog_character_identities,",
+      "REVOKE ALL ON TABLE\n  public.catalog_character_identities,",
     );
     expect(migrations[0]).toContain(
-      "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE\\n  public.catalog_character_identities,",
+      "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE\n  public.catalog_character_identities,",
     );
     expect(migrations[0]).not.toContain("REVOKE INSERT, UPDATE, DELETE ON TABLE");
     expect(migrations[0]).toContain("REFERENCES public.tonart_editorial_collections(id)");
