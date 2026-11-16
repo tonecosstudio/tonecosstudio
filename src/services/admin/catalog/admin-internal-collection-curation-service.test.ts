@@ -68,6 +68,20 @@ describe("internal catalog curation service", () => {
     expect(migrations[0]).not.toContain("REVOKE INSERT, UPDATE, DELETE ON TABLE");
     expect(migrations[0]).toContain("REFERENCES public.tonart_editorial_collections(id)");
     expect(migrations[0]).toContain("private_api.assert_tonart_curation_service_role()");
+    for (const helper of [
+      "guard_catalog_curation_tag_alias()",
+      "guard_catalog_curation_tag_slug()",
+      "admin_validate_catalog_curation_text(text, text, integer, boolean)",
+      "admin_validate_catalog_model_reference(text, text)",
+    ]) {
+      expect(migrations[0]).toContain(`REVOKE ALL ON FUNCTION public.${helper}`);
+    }
+    expect(migrations[0]).toContain(
+      "GRANT EXECUTE ON FUNCTION public.admin_validate_catalog_curation_text(text, text, integer, boolean)",
+    );
+    expect(migrations[0]).toContain(
+      "GRANT EXECUTE ON FUNCTION public.admin_validate_catalog_model_reference(text, text)",
+    );
     expect(migrations[0]).toContain("public.is_tonecos_admin()");
     expect(migrations[0]).not.toContain("public.collections");
     expect(migrations[0]).not.toContain("public.collection_tier_assignments");
