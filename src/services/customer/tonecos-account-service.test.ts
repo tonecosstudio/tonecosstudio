@@ -111,7 +111,7 @@ describe("Tonecos authenticated MVP account", () => {
 
   it("exchanges recovery token hash with Supabase Auth for cross-browser password recovery", async () => {
     const tokenHash = "a".repeat(64);
-    mocks.verifyOtp.mockResolvedValue({ data: { user: { id: USER }, session: { access_token: "test" } }, error: null });
+    mocks.verifyOtp.mockResolvedValue({ data: { user: { id: USER }, session: { access_token: "test", user: { id: USER } } }, error: null });
     await expect(verifyTonecosPasswordRecoveryToken(tokenHash)).resolves.toBe(USER);
     expect(mocks.verifyOtp).toHaveBeenCalledExactlyOnceWith({ token_hash: tokenHash, type: "recovery" });
   });
@@ -124,22 +124,56 @@ describe("Tonecos authenticated MVP account", () => {
     expect(mocks.updateUser).not.toHaveBeenCalled();
   });
 
-  it("rejects password recovery without a verified Supabase session", async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: null }, error: null });
+  it("rejects recovery without the prior OTP even when a normal login is active", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
     await expect(completeTonecosPasswordRecovery("StrongPass123!"))
       .rejects.toThrow("tonecos_recovery_session_required");
+    expect(mocks.getUser).not.toHaveBeenCalled();
     expect(mocks.updateUser).not.toHaveBeenCalled();
     await expect(completeTonecosPasswordRecovery("weak"))
       .rejects.toThrow("tonecos_recovery_password_invalid");
   });
 
-  it("updates the password after token verification and signs out to require fresh login", async () => {
+  it("rejects OTP responses whose user and session do not match", async () => {
+    mocks.verifyOtp.mockResolvedValue({
+      data: { user: { id: USER }, session: { access_token: "test", user: { id: "22222222-2222-4222-8222-222222222222" } } },
+      error: null,
+    });
+    await expect(verifyTonecosPasswordRecoveryToken("b".repeat(64)))
+      .rejects.toThrow("tonecos_recovery_link_invalid");
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("changes password only after OTP proof, consumes proof, and signs out", async () => {
+    mocks.verifyOtp.mockResolvedValue({
+      data: { user: { id: USER }, session: { access_token: "test", user: { id: USER } } },
+      error: null,
+    });
+    await expect(verifyTonecosPasswordRecoveryToken("c".repeat(64))).resolves.toBe(USER);
     mocks.getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
     mocks.updateUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
     mocks.signOutCurrentSession.mockResolvedValue(undefined);
     await expect(completeTonecosPasswordRecovery("StrongPass123!")).resolves.toBeUndefined();
     expect(mocks.updateUser).toHaveBeenCalledExactlyOnceWith({ password: "StrongPass123!" });
     expect(mocks.signOutCurrentSession).toHaveBeenCalledTimes(1);
+    await expect(completeTonecosPasswordRecovery("StrongPass123!"))
+      .rejects.toThrow("tonecos_recovery_session_required");
+    expect(mocks.updateUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a different signed-in user after verifying a valid recovery OTP", async () => {
+    mocks.verifyOtp.mockResolvedValue({
+      data: { user: { id: USER }, session: { access_token: "test", user: { id: USER } } },
+      error: null,
+    });
+    await verifyTonecosPasswordRecoveryToken("d".repeat(64));
+    mocks.getUser.mockResolvedValue({
+      data: { user: { id: "22222222-2222-4222-8222-222222222222" } },
+      error: null,
+    });
+    await expect(completeTonecosPasswordRecovery("StrongPass123!"))
+      .rejects.toThrow("tonecos_recovery_session_required");
+    expect(mocks.updateUser).not.toHaveBeenCalled();
   });
   it("registers with Supabase Auth only; confirmation is explicit", async () => {
     mocks.signUpWithPasswordCredentials.mockResolvedValue({ userId: USER, emailConfirmationRequired: true });
