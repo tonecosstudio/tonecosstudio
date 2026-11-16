@@ -152,14 +152,21 @@ const ADMIN_RPC_ALLOWLIST = new Set([
 // Preserve the signed-in administrator JWT when calling them so auth.uid()
 // does not become NULL under the service-role client.
 const ADMIN_USER_CONTEXT_RPCS = new Set([
+  "admin_get_or_create_delivery_cycle",
+  "admin_process_subscription_payment",
+  "admin_save_tonart_commercial_offer",
+  "tonart_admin_commercial_offers_directory",
+  "admin_save_subscription_plan_configuration",
+  "admin_set_subscription_collection_models",
+  "admin_schedule_subscription_deliveries",
+  "admin_update_payment_setting",
+  "admin_update_production_setting",
+  "admin_upsert_system_settings",
+  "admin_verify_subscription_payment_voucher",
   "admin_register_preorder_manual_payment",
   "admin_reject_preorder_payment_voucher",
   "admin_release_preorder_final_payment",
   "admin_send_payment_link",
-  // PR #27 commercial RPCs require auth.uid() / private_api.is_current_admin().
-  // Preserve the verified administrator JWT; service_role has no user identity.
-  "admin_save_tonart_commercial_offer",
-  "tonart_admin_commercial_offers_directory",
 ]);
 
 function json(req: Request, body: unknown, status = 200): Response {
