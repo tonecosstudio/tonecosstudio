@@ -47,6 +47,7 @@ import {
   searchSubscriptionCatalogModels,
   type SubscriptionCatalogModel,
 } from "@/services/subscriptions/subscription-catalog-service";
+import { MAX_CURATED_SUBSCRIPTION_MODELS } from "@/services/subscriptions/subscription-model-selection";
 
 const PAGE_SIZE = 20;
 const COLLECTIONS_QUERY = ["admin-internal-catalog-collections"] as const;
@@ -259,9 +260,23 @@ export function InternalCollectionCuration() {
         .map((id) => searchModelsById.get(id))
         .filter(isPresent);
       if (!models.length) throw new Error("Selecione candidatos do catálogo.");
-      const canonicalModels = await loadSubscriptionCatalogModels(
-        models.map((model) => model.slug),
-      );
+      // The canonical loader enforces a 20-model request limit. Curation
+      // supports up to 50 candidates, so validate in existing loader-sized
+      // batches rather than changing subscription/Coins constraints.
+      const canonicalModels: SubscriptionCatalogModel[] = [];
+      for (
+        let index = 0;
+        index < models.length;
+        index += MAX_CURATED_SUBSCRIPTION_MODELS
+      ) {
+        canonicalModels.push(
+          ...(await loadSubscriptionCatalogModels(
+            models
+              .slice(index, index + MAX_CURATED_SUBSCRIPTION_MODELS)
+              .map((model) => model.slug),
+          )),
+        );
+      }
       assertCurrentCanonicalCurationModels(
         models.map(modelRef),
         canonicalModels.map(modelRef),
