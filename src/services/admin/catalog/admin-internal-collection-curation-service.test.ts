@@ -67,6 +67,8 @@ describe("internal catalog curation service", () => {
     );
     expect(migrations[0]).not.toContain("REVOKE INSERT, UPDATE, DELETE ON TABLE");
     expect(migrations[0]).toContain("REFERENCES public.tonart_editorial_collections(id)");
+    expect(migrations[0]).toContain("IF v_collection.name <> v_name THEN");
+    expect(migrations[0]).toContain("Editorial collection slug belongs to a different name");
     expect(migrations[0]).toContain("private_api.assert_tonart_curation_service_role()");
     for (const helper of [
       "guard_catalog_curation_tag_alias()",
@@ -110,6 +112,12 @@ describe("internal catalog curation service", () => {
       slug: "viloes-do-homem-aranha",
       description: "Revisão editorial de antagonistas",
     });
+    expect(
+      createInternalCollectionTemplate("A".repeat(110), "Revisão editorial").slug,
+    ).toHaveLength(110);
+    expect(
+      createInternalCollectionTemplate("A".repeat(150), "Revisão editorial").slug,
+    ).toHaveLength(120);
     expect(() => createInternalCollectionTemplate("<script>", "Descrição")).toThrow(
       "catalog_internal_collection_template_invalid",
     );
