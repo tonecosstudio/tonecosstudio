@@ -1,3 +1,13 @@
+## CHECKPOINT DE CONTINUIDADE — 16/11/2026 — CORS corrigido e E2E ampliado
+
+- **Correção confirmada no Supabase único:** `admin-rpc` v2 (`verify_jwt=true`) e `tonart-commercial-offers` v2 (`verify_jwt=false`) implantadas com o mesmo `supabase/functions/_shared/cors.ts` da `main`, commit `d3e8515028addf2065dee5f1dd697aa0ef7d1d62`. Origem exata `https://tonartstudio.com.br` retornava preflight 403; após correção, ambas retornaram preflight 200 com `Access-Control-Allow-Origin: https://tonartstudio.com.br`. Consulta de ofertas continuou 200 com `{"data":[]}`, sem abertura comercial. Os testes locais cobriram também `www`, origem não permitida, localhost opcional e preview configurado. Não usar wildcard CORS.
+- **E2E:** `scripts/security/verify-tonart-auth-e2e.mjs` foi ampliado na `main` (`e2070f54705e5232386cac71dd0412eed15ae033`) para testar JWT de usuário preservado no diretório comercial, cliente negado, gate extra fechado e leitura pública vazia, além de RLS e curadoria. `node --check` e execução local com transporte HTTP simulado passaram; simulação de gate indevidamente aberto falhou como esperado. **Ainda não foi executado com os JWTs reais das duas sessões**, portanto não declarar E2E Auth homologado.
+- **Migrations e integridade:** 39 migrations registradas no Supabase versus 304 arquivos SQL na `main`; 18 coincidem em nome e versão, 21 somente em nome, zero registros remotos sem nome correspondente. Não executar `supabase db push` ou marcar as demais migrations como aplicadas sem inspeção do baseline. No banco: 26 tabelas `public`, todas com RLS; dois perfis preservados; ofertas/coleções editoriais/assinaturas continuam vazias; `tonart_collection_commerce_enabled=false` e `tonart_extra_commerce_enabled=false`.
+- **CI:** logs dos quatro jobs em falha continuam indisponíveis (`404 BlobNotFound`), sem steps executados. Ainda não há causa administrativa confirmada, nem CI aprovado. Não disparar retries cegos ou criar workflow paralelo.
+- **Publicação Web:** Vercel `tonart-studio-public` mantém o deployment `dpl_GBx6FhbgZ5TzxxmeMf5C9cMuYh2b` `READY`; as alterações desta rodada são de script de verificação e CORS na função, não exigem novo build do site.
+
+---
+
 ## CHECKPOINT CANÔNICO — 16/11/2026 — TONART, único Supabase DEV, PRs #27 e #28 integradas
 
 - **GitHub:** PR [#27](https://github.com/tonecosstudio/tonecosstudio/pull/27) integrada por squash `6c7823ceae1c19ed19cb45baba55bcf6b2e9cbb1`; PR [#28](https://github.com/tonecosstudio/tonecosstudio/pull/28) integrada por squash `88302056706553bca3525350acc2531e6b59ab6b`. `main` é o SSOT. Commits das branches são históricos e os checkpoints abaixo anteriores a esta seção podem estar superados. Não reabrir PRs ou reproduzir soluções antigas.
