@@ -62,7 +62,8 @@ describe("TONART public Home during image review", () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByRole("heading", { name: /Black Friday Até 50% de desconto/ })).toBeInTheDocument();
+    // Commercial shell does not authorize advertising a discount before offers exist.
+    expect(screen.queryByText(/Até 50% de desconto/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Escolher modelos/ })).toHaveAttribute(
       "href",
       "/modelos?tipo=pre-venda",
