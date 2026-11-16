@@ -137,13 +137,19 @@ async function main() {
         preflight: true,
         valid: (r) => r.status === 200 && r.allowOrigin === origin,
       })),
+      {
+        name: 'public signup is disabled while existing email sign-in remains enabled',
+        path: '/auth/v1/settings',
+        valid: (r) => r.status === 200 &&
+          r.data?.disable_signup === true && r.data?.external?.email === true,
+      },
     ];
     for (const check of checks) {
       const result = await call(check.path, check);
       assert(check.valid(result), 'Anonymous HTTP contract failed: ' + check.name);
       console.log('PASS: ' + check.name);
     }
-    console.log('TONART anonymous HTTP E2E: PASS (8/8, no user tokens or commercial mutations)');
+    console.log('TONART anonymous HTTP E2E: PASS (9/9, no user tokens or commercial mutations)');
     return;
   }
 
