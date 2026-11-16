@@ -351,9 +351,9 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.admin_save_subscription_plan_configuration(uuid, jsonb)
-  FROM PUBLIC, anon, authenticated;
+  FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_save_subscription_plan_configuration(uuid, jsonb)
-  TO service_role;
+  TO authenticated, service_role;
 
 -- One-time plans retain the configured catalog+payment workflow and persist
 -- the exact eligible model set and commercial terms in the customer contract.
@@ -888,9 +888,9 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.admin_schedule_subscription_deliveries(uuid, text, uuid)
-  FROM PUBLIC, anon, authenticated;
+  FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_schedule_subscription_deliveries(uuid, text, uuid)
-  TO service_role;
+  TO authenticated, service_role;
 
 -- Delivery identity and production start are immutable through the customer
 -- flow. Existing legacy deliveries without a plan snapshot are unaffected.
@@ -959,7 +959,7 @@ AS $$
 DECLARE
   v_user_id uuid := auth.uid();
   v_is_admin boolean := COALESCE(current_setting('request.jwt.claim.role', true), '') = 'service_role'
-    OR COALESCE(private_api.has_role(auth.uid(), 'admin'), false);
+    OR COALESCE(private_api.is_current_admin(), false);
   v_subscription_id uuid;
   v_subscription public.subscriptions%ROWTYPE;
   v_delivery public.subscription_deliveries%ROWTYPE;
@@ -1551,6 +1551,31 @@ BEGIN
   RAISE EXCEPTION 'SUBSCRIPTION_PRINCIPAL_IS_NOT_COINS' USING ERRCODE = '22023';
 END;
 $function$;
+REVOKE ALL ON FUNCTION private_api.admin_process_subscription_payment(uuid, numeric, text, text)
+  FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private_api.admin_process_subscription_payment(uuid, numeric, text, text)
+  TO authenticated, service_role;
+
+-- Preserve the old RPC contract while keeping plan principal out of the Coins ledger.
+CREATE OR REPLACE FUNCTION public.admin_process_subscription_payment(
+  p_subscription_id uuid,
+  p_amount numeric,
+  p_payment_method text,
+  p_external_reference text DEFAULT NULL::text
+)
+RETURNS jsonb
+LANGUAGE sql
+SECURITY INVOKER
+SET search_path = ''
+AS $function$
+  SELECT private_api.admin_process_subscription_payment(
+    p_subscription_id, p_amount, p_payment_method, p_external_reference
+  );
+$function$;
+REVOKE ALL ON FUNCTION public.admin_process_subscription_payment(uuid, numeric, text, text)
+  FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_process_subscription_payment(uuid, numeric, text, text)
+  TO authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION public.tonart_admin_customer_coins_balance(p_user_id uuid)
 RETURNS jsonb
@@ -1618,6 +1643,10 @@ BEGIN
   RETURN v_key;
 END;
 $$;
+REVOKE ALL ON FUNCTION public.admin_update_production_setting(text, text)
+  FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_update_production_setting(text, text)
+  TO authenticated, service_role;
 
 -- Keep compatibility entry points but fail closed so no new operation writes
 -- to the retired aggregate wallet or its catalog-independent purchase tables.
