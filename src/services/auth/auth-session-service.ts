@@ -58,11 +58,13 @@ function normalizeAuthError(error: { message?: string }): Error {
  * affecting existing account sign-in or password recovery.
  */
 export async function getTonecosPublicSignupEnabled(): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7_000);
   try {
     const response = await fetch(new URL("/auth/v1/settings", SUPABASE_URL), {
       headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
       cache: "no-store",
-      signal: AbortSignal.timeout(7_000),
+      signal: controller.signal,
     });
     if (!response.ok) return false;
     const settings: unknown = await response.json();
@@ -74,6 +76,8 @@ export async function getTonecosPublicSignupEnabled(): Promise<boolean> {
     return auth.disable_signup === false && auth.external?.email === true;
   } catch {
     return false;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
