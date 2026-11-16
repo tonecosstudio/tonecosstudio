@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
-import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 import type {
   ProcessPaymentResponse,
   ProcessSubscriptionPaymentParams,
@@ -99,25 +98,8 @@ export async function adminAddSubscriptionCoins(params: {
   amount: CoinsAmount;
   reason: string;
 }): Promise<{ success: true; amount: CoinsAmount }> {
-  const adminUserId = await requireAuthenticatedUserId();
-
-  try {
-    await callAdminRpc("admin_add_coins_to_user", {
-      p_user_id: params.user_id,
-      p_amount: params.amount,
-      p_description: `Ajuste manual: ${params.reason}`,
-      p_reference_id: adminUserId,
-      p_reference_type: "admin_adjustment",
-    });
-  } catch (error) {
-    throw new Error(
-      mapSubscriptionPaymentRpcError(
-        error instanceof Error ? error.message : undefined,
-      ),
-    );
-  }
-
-  return { success: true, amount: params.amount };
+  void params;
+  throw new Error("O valor do plano compra as peças; Coins são um bônus separado.");
 }
 
 export async function listSubscriptionPayments(

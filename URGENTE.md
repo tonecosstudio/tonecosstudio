@@ -1,3 +1,31 @@
+## Checkpoint 15/11/2026 — condições comerciais na ficha do catálogo
+
+- **Base e commit funcional:** branch `codex/local-account-preview-mocks`, PR #27 aberta; `main@e3719062` → checkout `6855f109` → `67633067` (`feat(commercial): display gated product offers`).
+- **Implementado:** a ficha do modelo consulta apenas ofertas ativas daquele slug por uma Edge Function de leitura pública que usa o cliente anon compartilhado e um RPC `SECURITY INVOKER`; RLS e `tonart_extra_commerce_enabled=false` continuam aplicados. A migration restringe colunas públicas e mantém `created_at`/`updated_by` privados. A ficha mostra variante, preço, frete, conteúdo, prazo e elegibilidades Coins/assinante; usa o cálculo canônico de Coins e informa que não cria pedido, não confirma disponibilidade e não debita saldo. O decoder agora é compartilhado com a administração. Nenhum preço ou modelo foi inventado.
+- **Validação Windows:** 5 arquivos / 53 testes focados passaram; `typecheck:app`, ESLint direcionado, Prettier, `git diff --check`, auditorias `security:supabase-access`, `security:supabase-types` e `security:pricing-read-authority` passaram. A integração do produto mantém um aviso preexistente do jsdom para `window.scrollTo`, mas a suíte concluiu com sucesso.
+- **Limite de integração:** não há Deno, Docker nem Supabase local nesta máquina; a Edge Function não recebeu `deno check` e a migration/RLS/RPC não foram executadas em Postgres. Nenhuma migration foi aplicada nem houve escrita remota. A UI é consultiva: checkout de extras, débito/reserva mista de Coins, confirmação de pagamento e ligação ao histórico existente continuam pendentes. O endpoint legado de compra avulsa segue fail-closed; não chamá-lo porque registra pagamento sem confirmação externa.
+- **Actions:** a nova execução [#43764463202](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43764463202), no SHA `21d80fc`, também falhou no job `Catalog Worker offline / no deploy` com `steps=[]`; os outros quatro jobs foram pulados e o log retorna `404 BlobNotFound`. O código não foi executado pelo runner; não há prova de CI nem motivo para repetir a execução sem mudança na infraestrutura. Nenhum workflow paralelo foi criado.
+- **Isolamento:** nenhuma alteração em Supabase de produção, Cloudflare, D1/R2, cobrança, publicação ou indexação.
+
+**NEXT_ACTION:** adaptar a compra extra ao histórico e ao ledger já existentes, com reserva/liberação/estorno idempotentes e total em centavos; primeiro validar migration e RPC em Supabase local isolado. Manter ofertas e checkout fechados até pagamento e persistência reais estarem conectados.
+
+**DO_NOT_REPEAT:** não ativar `tonart_extra_commerce_enabled` ou `tonart_collection_commerce_enabled`; não tratar a exibição da oferta nem mocks como compra/persistência real; não chamar o RPC legado de compra avulsa; não criar outra carteira, histórico, catálogo, endpoint ou workflow.
+
+## Checkpoint 15/11/2026 — planos, Coins e cadastro de ofertas comerciais
+
+- **Base → commits funcionais/documentais:** `main@e3719062` → `4a62974a` (`feat(commercial): align collection plans and Coins strategy`) → `0aa2b7bf` (`docs: record TONART commercial implementation checkpoint`) → `0316bd4c` (`docs: record TONART commercial gate status`) → `6d91b323` (`feat(commercial): configure canonical TONART offers`) → `4dcd8d5d` (checkpoint documental), na branch `codex/local-account-preview-mocks` da PR #27 existente. PR continua aberta e não integrada.
+- **Implementado:** planos avulso/3/6/12 compram peças em uma única contratação; preços da matriz usam as configurações existentes. Checkout grava snapshot de preço, pagamento e curadoria, usa seleção exata 1/3/6, cria calendário dos meses 2 a 13, aplica corte de troca configurável de 30 dias no calendário de São Paulo e bloqueia troca após início da produção. O contrato antigo permanece visível no histórico do cliente, sem completar campos ausentes. A administração existente ganhou `/admin/ofertas`, para cadastrar variantes comerciais que referenciam o slug publicado no D1 e configuram escala, acabamento, conteúdo, preço, frete, prazo e elegibilidade sem copiar modelos ou imagens.
+- **Coins:** ledger canônico aceita centésimos e importa histórico/saldos antigos sem apagar lançamentos; RPCs da carteira antiga falham fechadas. Bônus só após pagamento PIX integral e envio confirmado, com idempotência, teto e estorno imutável. Principal do plano e orçamento não viram usos/resgates de Coins.
+- **Gates:** `tonart_collection_commerce_enabled=false` e `tonart_extra_commerce_enabled=false`; planos e ofertas começam inativos, ativação anual é rejeitada, ativação de ofertas e checkout verificam o gate no servidor. A administração não expõe a chave de liberação. Nenhuma cobrança/assinatura foi habilitada nem migration aplicada.
+- **Validação Windows:** 12 arquivos direcionados / 161 testes e regras de cálculo / 9 testes passaram na rodada anterior. Nesta rodada: oferta comercial / 4 testes; `npm run typecheck:app`; Prettier; `git diff --check`; auditoria `security:supabase-access` passaram. ESLint direcionado não concluiu dentro da janela local e foi interrompido. O Quality Gate já existente inclui a suíte comercial e observa migrations; nenhum workflow novo foi criado.
+- **Bloqueios reais:** não há Supabase local, Docker, `psql` ou CLI disponíveis; execução da migration, RLS, concorrência e persistência Supabase continuam sem prova. Nenhuma oferta foi semeada: os valores reais de variante/escala/acabamento, conteúdo, preço, frete e prazo continuam a depender de cadastro comercial validado. A nova configuração referencia o slug D1, mas pedido, reserva atômica de Coins e pagamento misto ainda não estão conectados à oferta. Não inventar esses dados nem tratar testes locais como integração.
+- **Actions/GitHub:** run [#43747219770](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43747219770) no HEAD `4dcd8d5d` falhou no job `Catalog Worker offline / no deploy` antes de qualquer etapa (`steps=[]`); os outros quatro jobs foram pulados. O download retorna `404 BlobNotFound`; a causa raiz não está disponível e o código não chegou a ser validado. Não reexecutar sem mudança observável na infraestrutura.
+- Nenhuma escrita Supabase, aplicação de migration, alteração Cloudflare/D1/R2, cobrança, publicação ou liberação de indexação foi feita.
+
+**NEXT_ACTION:** validar esta migration e seus RPCs num Supabase local isolado; então conectar as ofertas ao histórico/pagamento já existente com reserva, confirmação, liberação e estorno atômicos de Coins. O checkout permanece bloqueado até haver frete, variantes e termos comerciais reais. Aguardar execução interpretável do Quality Gate antes de integrar a PR.
+
+**DO_NOT_REPEAT:** não ativar os gates `tonart_collection_commerce_enabled` e `tonart_extra_commerce_enabled` nem o checkout/anual; não tratar os testes de serviço como prova de atomicidade ou persistência; não reutilizar a tabela `characters` como cópia do catálogo D1; não criar PR/workflow paralelo ou escrever em produção.
+
 ## Checkpoint 15/11/2026 — estratégia de coleções, planos e Coins registrada
 
 - **Base documental → commits:** main com URGENTE blob `1b5ec68401a4f2cbed5b62c18674e4f1614096d5`; estratégia criada em `0086f2f9`, índice atualizado em `d6fb4a38`. Este checkpoint é documental, não uma entrega funcional.
@@ -1481,3 +1509,173 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** quando o conector Cloudflare voltar, criar uma prévia privada do HEAD `834e861` e confirmar em 280/320/360/390 px que “Aspros de Gêmeos” está inteiro; então seguir para a próxima franquia ou página de catálogo.
 
 **DO_NOT_REPEAT:** não usar `ef8ab5fb`; não tratar `0dfc5f86` como prévia do HEAD atual; não gerar build só por documentação; não alterar `main`, produção, Worker, D1, R2, DNS ou migrations.
+
+## Rodada 64 — Prévia local da conta com dados fictícios (14/11/2026)
+
+- Base: `main` @ `07091e7120dac8eaac7727527ed59a088aa4f5c8`; HEAD funcional validado: `a6aa6f89`.
+- A conta local usa as telas e navegação habituais, preenchidas por um perfil fictício em memória. Perfil, endereço e preferências permanecem editáveis nesta sessão; Coins e histórico mostram registros de exemplo pelas páginas já existentes. Não há banner, tela de demonstração ou botão de acesso especial.
+- No fallback local, leitura de perfil, saldo, histórico e preferências não consulta o Supabase; tentativas de criar orçamento, enviar voucher ou alterar Coins são bloqueadas. A configuração só ativa esse fallback em runtime local e evita reaproveitar URL/chave Supabase remotas.
+- QA local: `http://127.0.0.1:8080/perfil` respondeu HTTP 200; navegação visual conferida em perfil, endereço e preferências. TypeScript (`typecheck:app`) e ESLint dos arquivos alterados passaram. O conjunto direcionado passou em 8 arquivos e 147 testes; após o último ajuste de saída, a suíte da conta passou em 2 arquivos e 26 testes.
+- Limite da evidência: mocks locais demonstram a navegação e o estado de interface; não comprovam autenticação, gravação ou consulta real no Supabase. Produção e recursos remotos não foram alterados.
+
+**NEXT_ACTION:** manter a prévia local como caminho de revisão da conta; validar com Supabase apenas em ambiente isolado com usuário fictício antes de homologar autenticação real.
+
+**DO_NOT_REPEAT:** não recriar painel, botão ou modo especial de demonstração; não tratar dados fictícios como evidência de funcionamento remoto; não publicar em produção nem alterar Supabase/Cloudflare de produção.
+
+## Rodada 65 — Conta local e Coins na ficha do modelo (15/11/2026)
+
+- Base: `main` @ `07091e7120dac8eaac7727527ed59a088aa4f5c8`; código validado em `22ef2a7948aca97c3b1f2f8c239270b37a13ad3f`, branch `codex/local-account-preview-mocks`, PR #27 aberta e não integrada.
+- A ficha comercial do modelo explica o uso de Coins em orçamento comum respondido: 1 Coin abate R$ 1, limitado ao saldo disponível e ao valor restante; a entrada de R$ 50 da pré-venda não aceita Coins. Link para a carteira existente `/moedas`. O conteúdo usa detalhes recolhíveis e o estilo Arcade existente.
+- QA visual no navegador interno: `/modelos` carregou 33 referências na página; `/modelos/nier-10h-nier` abriu ficha e galeria reais do catálogo. O acordeão de Coins expandiu e mostrou as regras e o link para `/moedas`.
+- As páginas locais da conta permanecem normais, com mocks simples de cliente em memória; limpeza de seleção foi movida ao `afterEach` global para impedir vazamento de estado entre testes. Sem serviço, tabela, autenticação ou fluxo de cobrança duplicado.
+- Provas locais: `npm run catalog:mvp:test -- --reporter=dot` — 31 arquivos e 364 testes passaram; após o ajuste final do setup, 4 suítes focadas passaram (58 testes). `npm run typecheck` passou. ESLint terminou sem erros, com 10 avisos `no-explicit-any` existentes em arquivos de teste. Prettier dos arquivos alterados e `git diff --check` passaram.
+- GitHub Actions run [43672678503](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43672678503) falhou no job `Catalog Worker offline / no deploy` sem etapas reportadas; a leitura dos logs retornou `404 BlobNotFound`. Os jobs restantes foram pulados pelas condições de PR. É falha anterior à execução dos checks; não comprova falha no código nem aprovação. Não repetir reexecuções sem mudança na infraestrutura.
+- Mocks só validam a interface e comportamento local; Supabase real, envio de orçamento e resposta admin não foram validados nesta rodada. Produção, Cloudflare, D1, R2 e Supabase remoto não foram alterados.
+
+**NEXT_ACTION:** identificar por que o runner/log do job do Actions não foi disponibilizado; manter a PR aberta até haver sinal de CI interpretável e executar E2E autenticado apenas em ambiente Supabase isolado.
+
+**DO_NOT_REPEAT:** não recriar banner ou modo especial de demonstração; não usar mocks como prova de integração real; não reexecutar repetidamente o job sem mudança externa; não fazer merge ou publicar em produção nesta rodada.
+
+## Rodada 66 — Dados locais limitados à conta do cliente (15/11/2026)
+
+- A prévia mantém a tela e os caminhos normais de Minha Conta, sem aviso ou botão especial de demonstração. Perfil, endereço, preferências, carteira e solicitação pendente usam apenas dados fictícios associados ao cliente local.
+- Removidos a resposta, preço, entrada de pré-venda e avanços administrativos fictícios do orçamento local. O histórico agora mostra somente a solicitação feita pelo cliente; saldo e movimentos de Coins continuam disponíveis como dados da carteira, sem descrições de demonstração.
+- Testes direcionados: 5 arquivos e 38 testes passaram; `npm run typecheck:app`, ESLint dos arquivos alterados e `git diff --check` passaram. Prettier sinaliza formatação antiga nos quatro arquivos conferidos; o formatter foi revertido para evitar diff mecânico extenso.
+- PR #27 segue aberta e não integrada. O Quality Gate #43674614806 (#1572), após o commit `48d9a7b8`, repetiu a falha no job `Catalog Worker offline / no deploy` sem etapas; o endpoint de logs responde 404 `BlobNotFound`, como no run #43672678503. Sem evidência de falha de código e sem reexecução.
+- Nenhuma autenticação ou escrita no Supabase real foi simulada como prova. Nenhum recurso remoto ou produção foi alterado.
+
+**NEXT_ACTION:** sincronizar este ajuste na PR #27 e continuar a integração local da conta sem adicionar dados de resposta administrativa não existentes.
+
+**DO_NOT_REPEAT:** não recolocar banner/modo de demonstração ou preço/resposta fabricados; não tratar dados locais como prova de integração real; não fazer merge nem publicar em produção sem sinalização específica.
+
+## Rodada 67 — Conta local normal e bloqueio de upload de assinatura (15/11/2026)
+
+- Conferência no navegador interno em `/perfil`: carregou Minha Conta usual com os dados simples de Marina; navegação de endereço, preferências, orçamento e Coins permanece na estrutura existente, sem aviso ou acesso especial de demonstração.
+- O checkout e reenvio de comprovante de assinatura agora param antes de autenticação, Storage e RPC quando o ambiente é fallback local ou read-only. Não foram criados planos, coleções ou dados comerciais fictícios.
+- O filtro do Quality Gate existente agora inclui os serviços, páginas, testes, hooks e componentes de assinaturas, planos e vouchers. Nenhum workflow paralelo foi criado.
+- Verificações: `subscription-checkout-service.test.ts` — 1 arquivo / 5 testes; `npm run typecheck:app` e ESLint dos arquivos alterados passaram. O endpoint local `127.0.0.1:54321` não está ouvindo e o comando Docker não existe nesta máquina; não há ambiente Supabase local para validar catálogo/planos reais.
+- Após ampliar o filtro do workflow, o Quality Gate #43676256540 (#1574) repetiu a falha no mesmo job sem etapas; o endpoint de logs retorna 404 `BlobNotFound`, como no run #43674614806 (#1572). Nenhuma consulta/escrita em Supabase remoto ou alteração de produção foi feita.
+
+**NEXT_ACTION:** continuar pela validação dos fluxos de assinatura com um Supabase local disponível; manter a PR #27 aberta até o Quality Gate fornecer execução/logs interpretáveis.
+
+**DO_NOT_REPEAT:** não inventar dados de planos/coleções para preencher o preview; não usar mocks como prova do fluxo real; não reexecutar Actions sem mudança de infraestrutura; não publicar ou alterar recursos de produção.
+
+## Rodada 68 — Simulação de Coins na ficha comercial (15/11/2026)
+
+- Base da branch da PR #27: HEAD 54a952d0, remoto confirmado no mesmo SHA; origin/main está contido na branch e não há commits remotos concorrentes nela.
+- As ofertas elegíveis agora consultam a identidade e a carteira existentes e mostram, por variante, Coins aplicados à peça, restante em reais, frete separado e total apenas quando o frete está configurado. A simulação usa priceEligibleExtra e centésimos; erro de consulta não vira saldo zero. Cliente sem sessão recebe caminho para login.
+- A tela informa quando uma eventual condição de assinante não foi aplicada e deixa explícito que não cria pedido, reserva nem débito. Nenhum endpoint de escrita, tabela, carteira ou produto foi adicionado; o gate tonart_extra_commerce_enabled permanece fechado.
+- Validações: TonartOfferCoinsPreview.test.tsx — 1 arquivo / 3 testes; npm run typecheck:app; ESLint dos três arquivos alterados; git diff --check. A consulta com falha foi validada após o tempo da única repetição de rede configurada.
+- Limite: checkout de ofertas extras, criação persistente do pedido, pagamento misto e revisão financeira no admin ainda não estão ligados ao histórico standalone_purchases. Não há Supabase local, Docker, psql ou CLI Supabase nesta máquina; nenhuma migration foi aplicada e nenhum dado remoto foi escrito.
+
+**NEXT_ACTION:** continuar a integração do checkout no histórico/pedidos existentes, com reserva idempotente de Coins e confirmação financeira vinculada; manter o gate fechado e não tratar a simulação da ficha como compra funcional. Preservar a falha de infraestrutura já observada no Quality Gate sem reexecuções sem mudança externa.
+
+**DO_NOT_REPEAT:** não reabrir create_standalone_purchase_atomic nem qualquer caminho que marque pagamento sem evidência; não usar o preview como prova de checkout/Supabase real; não habilitar cobrança, não escrever em Supabase produtivo e não criar carteira ou catálogo duplicado.
+
+## Rodada 69 — Desconto configurável de assinante nas ofertas (15/11/2026)
+
+- A oferta comercial agora persiste o percentual de desconto em basis points (default proposto de 500 = 5%), valida faixa de 0–100% e impede oferta elegível com desconto zero. O admin configura o percentual; diretório administrativo, RPC de gravação, leitura pública e decoder usam o mesmo campo.
+- A ficha mostra o percentual configurado e compara o preço regular com o cenário de assinante. A regra de preço aplica o desconto à peça antes dos Coins; o frete permanece separado. A prévia não cria pedido, reserva peça ou debita carteira. O gate `tonart_extra_commerce_enabled` continua fechado.
+- Validações locais: 5 arquivos de teste / 24 testes passaram; `npm run typecheck:app`, ESLint dos arquivos afetados, `security:supabase-access`, `security:supabase-types`, `security:pricing-read-authority`, auditoria de autoridade comercial e `git diff --check` passaram.
+- A migration `20261115221327_tonart_offer_subscriber_discount.sql` foi criada e revisada contra as migrations existentes, mas não foi aplicada nem validada por PostgreSQL: este checkout não tem Supabase local, Docker ou `psql`, e nenhum banco remoto pode ser usado como substituto. O Quality Gate anterior (#43764463202) falhou antes de iniciar steps, sem logs; nenhuma alegação de CI ou integração real é feita.
+
+**NEXT_ACTION:** continuar o checkout de ofertas no pedido existente, com pagamento misto e reserva idempotente de Coins, mantendo confirmação financeira como autoridade e o gate fechado até homologação isolada.
+
+**DO_NOT_REPEAT:** não tratar testes/mocks locais como validação da migration ou do Supabase real; não debitar Coins nem marcar compra paga sem confirmação idempotente; não abrir o gate, ativar cobrança ou alterar Supabase/Cloudflare de produção.
+
+## Rodada 70 — Histórico de Coins com centésimos (15/11/2026)
+
+- O histórico do cliente lê pagamentos de Coins do `quote_payments` existente em centésimos exatos, valida valores com até duas casas e soma em inteiros antes de convertê-los para reais. Isso remove a rejeição de usos como 0,25 Coin e evita acumular quantias com ponto flutuante.
+- Validações locais: `catalog-quote-service.test.ts` — 1 arquivo / 19 testes; `npm run typecheck:app`, ESLint dos dois arquivos afetados e `git diff --check` passaram.
+- Essa correção prepara o histórico para pagamentos mistos; não cria compra, reserva Coins nem comprova pagamento. O checkout de extras e reversão idempotente permanecem pendentes, e não existe PostgreSQL local para validar funções transacionais. Nenhum serviço ou banco remoto foi acessado.
+
+**NEXT_ACTION:** conectar pedido de extra à entidade `quotes` e aos pagamentos existentes, com cálculo servidor-side, reserva/reversão idempotente de Coins e estado de pagamento administrável; preservar frete separado, gate fechado e o isolamento local.
+
+**DO_NOT_REPEAT:** não usar leitura do histórico como prova de checkout; não inserir Coins diretamente no cliente; não reaproveitar o RPC legado que criava compra avulsa marcada como paga; não aplicar migrations em produção.
+
+## Rodada 71 — Comprovante de pagamento em orçamento respondido (15/11/2026)
+
+- A RPC canônica de comprovantes agora aceita `full` para um orçamento respondido comum, calcula o saldo pelo total aprovado menos pagamentos concluídos já existentes (incluindo Coins do mesmo registro) e só muda para `under_review`. A validação de R$50 de entrada e saldo final da pré-venda continua separada; não há caminho de aprovação automática.
+- O serviço do cliente já usa a mesma RPC e agora tem teste explícito da submissão do valor residual de R$74,25 com comprovante privado. Validações locais: `catalog-quote-service.test.ts` — 1 arquivo / 20 testes; `npm run typecheck:app`; ESLint; `security:supabase-access`; `git diff --check` passaram.
+- A migration incremental `20261115230258_tonart_normal_quote_voucher.sql` não foi aplicada nem executada em PostgreSQL; não há banco local/Docker/psql e nenhum banco remoto foi usado. Testes unitários validam o envio ao RPC, não o comportamento de banco nem a confirmação financeira.
+
+**NEXT_ACTION:** criar o pedido de extra como extensão da entidade `quotes`, calculando oferta e desconto no servidor e debitando/reservando Coins no mesmo commit transacional com idempotência; depois ligar pagamento restante, cancelamento/reversão e administração.
+
+**DO_NOT_REPEAT:** não marcar a parcela em reais como paga no envio do comprovante; não aceitar valor de Coins informado pelo cliente sem recalcular saldo/preço no banco; não abrir o gate nem escrever no Supabase produtivo.
+
+## Rodada 72 — Pedido de oferta extra no histórico e no ledger (15/11/2026)
+
+- Branch existente da PR #27: `codex/local-account-preview-mocks`; `origin/main` permanece contida. Base desta rodada `1d889959`; implementação concluída no commit `dd0acb8d`, sincronizado com `origin/codex/local-account-preview-mocks` por fast-forward (o remoto estava em `7922af2b`, sem commits exclusivos).
+- O checkout de uma oferta do catálogo agora cria um pedido na entidade `quotes` existente, com snapshot imutável de modelo, variante, preço, desconto de assinante, frete, Coins e prazo. O servidor recalcula o valor, reserva Coins até o limite elegível da peça, registra a parcela em `quote_payments` e serializa os escritores da carteira pelo lock por cliente já usado pelo ledger. Uma chave UUID persistida no navegador torna retries seguros sem guardar dados pessoais.
+- Cliente acompanha e pode cancelar pedidos elegíveis na tela de histórico. O cancelamento cria reversão idempotente no ledger e não declara reembolso de reais. Casos com link enviado, pagamento ou comprovante em análise ficam para revisão manual. Admin responde uma oferta apenas com o frete quando necessário; preço e desconto capturados ficam protegidos. A resposta libera o caminho já existente de link/voucher e saldo em reais, com as RPCs de link e conferência ajustadas ao limite real `numeric(10,2)` das tabelas para não criar pedidos que o fluxo de pagamento não aceite.
+- A revisão encontrou e corrigiu duas constraints legadas que bloqueavam o uso de `coins` e o estado `failed`, além de um estado de histórico que confundia pedido cancelado sem frete respondido com orçamento aprovado. Os decoders conferem centavos, composição da oferta e totais.
+- Validações locais: o fluxo de ofertas passou em 7 arquivos / 98 testes; seleção/checkout de planos, painel, regras de corte e settings em 5 arquivos / 29 testes. Também passaram `npm run typecheck:app`, ESLint dos arquivos alterados, Prettier dos arquivos novos e do serviço/teste de histórico selecionados, `git diff --check`, `security:supabase-access`, `security:supabase-types`, `security:pricing-read-authority` e `audit-commercial-authority.mjs`.
+- Limite real: não há PostgreSQL/Supabase local, Docker ou `psql`; a migration não foi aplicada nem executada em banco. Testes e mocks validam decoders, serviços e interface, não integração real. `tonart_extra_commerce_enabled` permanece fechado; nenhum pagamento em reais ou Coins pode ser iniciado até gate habilitado separadamente. Nenhum banco remoto ou recurso de produção foi acessado.
+- O Quality Gate do GitHub anterior (#43764463202) falhou antes dos jobs; os logs continuam indisponíveis (`404 BlobNotFound`). Nenhuma reexecução foi feita.
+
+**NEXT_ACTION:** quando houver PostgreSQL Supabase isolado, aplicar a migration nesse ambiente e validar o fluxo autenticado de ponta a ponta; manter o gate fechado até a homologação comercial.
+
+**DO_NOT_REPEAT:** não validar SQL por mocks ou por projeto remoto; não reaplicar migrations já existentes; não abrir o gate, ativar cobrança/recorrência, fazer merge ou publicar em produção nesta rodada.
+
+## Rodada 73 — Validação SQL isolada de planos, Coins e checkout (16/11/2026)
+
+- As 37 migrations TONART a partir do baseline de clientes foram executadas em um banco PGlite 0.5.16 (PostgreSQL 18.6/WASM) efêmero, com schema e fixtures legados em memória para autenticação, storage, coleções, planos e migração do administrador. Nenhuma migration foi aplicada a Supabase e nenhum arquivo de migration foi alterado.
+- As RPCs passaram verificações de gate fechado por padrão e rejeição com o gate fechado; desconto de assinante de 500 bps antes dos Coins; pagamento misto com 0,25 Coin e frete fora da carteira; retry idempotente; resposta do admin para frete fixo e cotado; limite do débito ao saldo disponível; estorno idempotente; troca de modelo antes do corte de 30 dias e rejeição após o corte.
+- Isso valida execução SQL e regras no PostgreSQL emulado, com fixtures efêmeras. Não comprova Supabase real, Auth/JWT, RLS, Data API, dados existentes ou concorrência com sessões independentes. Os RPCs usam advisory lock por cliente e chaves/índices únicos; a concorrência real ainda exige duas conexões PostgreSQL isoladas.
+- Quality Gate #43785416998 para o HEAD 37f5009f falhou no job `Catalog Worker offline / no deploy` antes dos steps (`steps=null`, sem URL de logs). O download de logs segue 404 `BlobNotFound`; os demais jobs foram pulados pela condição da PR. Nenhuma reexecução foi feita. A PR #27 segue aberta e não mesclada.
+- Checkout local e remoto da branch apontam para 37f5009f; `origin/main` e a base da PR são ancestrais da branch. Não há Docker, `psql` ou Supabase CLI neste host; Supabase de produção, Cloudflare, pagamentos e publicação não foram acessados. O gate extra permanece fechado no código.
+
+**NEXT_ACTION:** quando houver uma stack Supabase local isolada, validar migration e fluxo com Auth/RLS e duas sessões concorrentes; enquanto isso, manter o branch pronto para revisão e não declarar homologação real ou merge aprovado.
+
+**DO_NOT_REPEAT:** não aplicar migrations no Supabase conectado ou de produção; não usar fixtures/PGlite como prova de integração real; não abrir `tonart_extra_commerce_enabled` ou `tonart_collection_commerce_enabled`; não reexecutar o mesmo job sem evidência de restauração do serviço de logs/runner.
+
+## Rodada 74 — PostgreSQL nativo e concorrência de Coins (15/11/2026)
+
+- Com PostgreSQL 18.6 x64 em cluster temporário no Windows, as mesmas 37 migrations e verificações SQL da rodada 73 foram executadas no motor PostgreSQL nativo. O bootstrap continuou usando fixtures locais para os serviços/schema Supabase legados; nenhuma migration foi aplicada ao Supabase e nenhum dado remoto foi acessado.
+- Em duas sessões PostgreSQL independentes, `pg_stat_activity` confirmou a segunda RPC aguardando o advisory lock da primeira. Com duas chaves de checkout distintas e saldo fixture de 10,25 Coins, a primeira compra reservou 10,25, a segunda reservou 0,00, e o ledger recebeu exatamente um débito de `-10,25`. Os processos locais foram encerrados e as portas de teste ficaram sem listener.
+- Isso valida lock, serialização e cálculo no motor PostgreSQL real, mas não Auth/JWT hospedado, RLS, Data API, Storage, dados existentes ou integração Supabase. Coins e checkout continuam protegidos pelos gates fechados.
+- O Quality Gate falhou antes de executar em dois runs da PR: [#43785416998](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43785416998), no SHA `37f5009f`, e [#43795061563](https://github.com/tonecosstudio/tonecosstudio/actions/runs/43795061563), no SHA `25a0860b`. Ambos terminaram em 2 s, com `runner_id=0`, nome de runner vazio e `steps=[]`; os downloads retornam `404 BlobNotFound`. Não há evidência para atribuir a falha ao código nem para identificar a causa interna do serviço. A PR #27 segue aberta e sem merge.
+- O [status público do GitHub](https://www.githubstatus.com/api/v2/summary.json) indicava Actions operacional e nenhum incidente ativo às 02:42 UTC de 16/11, antes do segundo run às 02:55 UTC; isso não identifica a causa específica do runner deste repositório. No host local, `docker`, `podman`, `supabase` e `psql` não estão instalados.
+
+**NEXT_ACTION:** para homologar a integração completa, restaurar a coleta de logs/runner do GitHub Actions e disponibilizar uma stack Supabase isolada para Auth/RLS; preservar o branch atual e os gates fechados até essa validação.
+
+**DO_NOT_REPEAT:** não usar o multiplexador PGlite para alegar concorrência; não tratar PostgreSQL com fixtures locais como prova de integração Supabase; não aplicar migrations no Supabase produtivo nem abrir gates, ativar cobranças ou publicar.
+
+## Rodada 75 — Auth administrativa e reconciliação das migrations comerciais (16/11/2026)
+
+- PR #27 continua na branch `codex/local-account-preview-mocks`, HEAD de partida `ba35ecfe`; `origin/main` (`e3719062`) é ancestral. PR #28 permanece independente em `a846f66e`; não alterei sua curadoria nem sua allowlist editorial.
+- As RPCs comerciais agora usam somente a autoridade existente `private_api.is_current_admin()` com `auth.uid()`. A `admin-rpc` encaminha JWT também para gravação de plano, curadoria comercial, calendário de entregas e configuração de produção; as duas RPCs de oferta já tinham esse encaminhamento e foram preservadas. Chamadas a `public.assert_admin_access()` foram removidas das migrations comerciais; a RPC legada de crédito continua revogada e fail-closed.
+- A importação do ledger antigo só executa quando `public.user_coins` e `public.coin_transactions` existem. O projeto TONART limpo não exige essas tabelas nem `coin_packages`; onde as fontes antigas existirem, o histórico/saldo continua reconciliado, idempotente e protegido contra gravação durante a importação.
+- Validações locais: `typecheck:app` passou; ESLint de `supabase/functions/admin-rpc/index.ts` passou; 6 arquivos direcionados passaram (39 testes: Coins, checkout de plano, ofertas e workspace admin); `git diff --check` passou. Não há `psql`, Docker, Supabase CLI ou instância local neste host; não executei SQL contra banco nesta rodada.
+- Bloqueio confirmado para homologação e merge: o projeto canônico conectado não possui o schema histórico de coleções/planos/assinaturas. A migration `20261114160000` e a cadeia seguinte ainda pressupõem `collections`, `subscription_plans`, `subscriptions`, `subscription_deliveries`, `cycles`, `manual_payments`, `system_settings` e rotinas históricas de calendário/validação. O trecho legado de Coins foi tornado opcional, mas isso não provisiona o domínio de assinaturas ausente nem comprova Auth/RLS, pagamento ou persistência. Não vou inventar uma segunda modelagem sem fonte canônica.
+- O único projeto Supabase disponível é `tonecosstudio-site`; a consulta de branches exige reautenticação e a homologação isolada depende de branch/compute pago. Nenhuma migration, função ou dado foi escrito no projeto conectado. O Quality Gate #43807275698, no commit `e068e5e7`, falhou no job offline sem steps nem URL de logs; build/test, auditorias e cobertura foram pulados. Não houve execução do runner nem rerun manual.
+
+**NEXT_ACTION:** manter a PR #27 aberta até provisionar, de forma autorizada, uma branch Supabase isolada e reconciliar o schema único de assinatura com os serviços já existentes; então executar migration, RPC admin/cliente com JWT real, RLS e concorrência antes de integrar. A PR #28 permanece draft e separada.
+
+**DO_NOT_REPEAT:** não tratar fixture PostgreSQL/mocks como integração real; não aplicar essas migrations em produção; não copiar novamente o catálogo ou ledger; não reexecutar Actions enquanto a falha pré-runner não mudar; não habilitar venda, checkout público ou cobrança.
+
+## Rodada 76 — Reconciliação do schema comercial e identidade admin (16/11/2026)
+
+- Base local: `origin/main` `e3719062`; branch PR #27 antes da rodada `8f01b0bb`. Commit de implementação validado: `98995f3d` (`fix(commercial): reconcile schema and preserve admin identity`). PR #28 continua independente; nenhuma curadoria editorial foi alterada.
+- A cadeia comercial agora provisiona os mesmos objetos de coleção/plano/assinatura que já são referenciados pelas telas e RPCs, sem criar catálogo, carteira ou registros de planos/modelos. Os enums compatíveis ficam em migration separada para confirmar os labels antes do uso. O checkout novo grava `one_time`, e a rota antiga sem seleção de modelos permanece fechada.
+- O RLS substitui policies antigas permissivas por leitura de perfil próprio/admin, histórico do cliente/admin e leitura pública allowlisted. `admin-rpc` preserva o JWT do administrador nas RPCs comerciais que validam `auth.uid()`; os checks SQL usam a autoridade existente `private_api.is_current_admin()`. Foi removida a última referência comercial a `private_api.has_role`; não foi criada uma segunda função de autenticação.
+- Ajuste adicional: `20261114160000` revoga a antiga assinatura privada de checkout somente se ela existir. Isso permite aplicar a cadeia ao schema TONART sem essa função histórica, mantendo a assinatura pública compatível fail-closed.
+- Validações locais no Windows: `typecheck:app`, ESLint do `admin-rpc`, auditoria `audit-supabase-access.mjs`, `audit-commercial-authority.mjs`, `git diff --check`; teste direcionado `tonart-commerce-rules.test.ts` (9/9). Smoke DDL PGlite aplicou as migrations `14140700`, `14155000`, `14160000`, `14223854` e `15120000`. PGlite valida execução DDL em PostgreSQL emulado, não Auth/JWT, Storage, RLS real, concorrência ou integração hospedada.
+- A suíte de comércio de 11 arquivos foi interrompida após o worker iniciar e permanecer sem progresso/saída; não é considerada aprovada. O teste unitário direcionado acima passou.
+- Nenhuma migration/Edge Function foi aplicada ao projeto Supabase conectado, e não houve deploy ou ativação de cobrança/gates. Este host não tem `psql`, Docker ou Supabase CLI. O único projeto disponível continua `tonecosstudio-site`, sem branch isolada autorizada: a homologação exige reautenticação e compute em plano pago. Portanto Auth/RLS real e E2E seguem sem prova. O último Quality Gate conhecido (`#43807275698`, SHA `e068e5e7`) falhou antes do runner; build/test e os demais jobs não iniciaram.
+
+**NEXT_ACTION:** enviar o commit validado à PR #27, inspecionar o novo CI sem rerun manual; manter merge bloqueado até existir ambiente Supabase isolado autorizado para migrations + JWT admin/cliente + RLS + concorrência. Depois executar homologação real e só então integrar; gates comerciais permanecem fechados. PR #28 permanece draft.
+
+**DO_NOT_REPEAT:** não tratar o smoke PGlite como Supabase real; não reaplicar migrações no banco de produção; não instalar/contratar compute pago sem autorização; não abrir gates, checkout ou cobranças; não repetir a suíte ampla sem corrigir a causa do worker sem progresso; não rerun Actions antes de evidência de recuperação do runner/logs.
+
+## Rodada 77 — PR #27 atualizada e integração preservada (16/11/2026)
+
+- Commit de código `98995f3d` e commits de documentação `3530392a` enviados por fast-forward à branch `codex/local-account-preview-mocks`; a PR #27 aponta para `3530392a`. O corpo da PR foi atualizado para descrever a reconciliação já feita e separar verificações locais de homologação hospedada.
+- Comparei o `admin-rpc/index.ts` da PR #27 com a PR #28. Esta branch contém as rotas comerciais; a PR #28 mantém 11 nomes de RPC editorial exclusivos, além das duas rotas comerciais compartilhadas. Nenhuma alteração editorial foi copiada. A integração posterior do arquivo comum deve manter ambos os conjuntos.
+- O Quality Gate novo, run `#43817647000`, falhou no job `Catalog Worker offline / no deploy` sem steps ou URL de logs. Autoridade, cobertura, build/test/segurança e build de produção ficaram skipped. Não houve rerun; CI não aprovado. A PR continua aberta, pronta para revisão, mas sem merge.
+- Confirmei que PR #28 permanece aberta e draft. Nenhuma migration ou Edge Function foi implantada; nenhum banco produtivo, cobrança, deploy ou gate comercial foi alterado.
+- Validações de código e SQL continuam sendo as registradas na Rodada 76; não as repeti nesta rodada. A comparação dos arquivos e `git diff --check` foram executados localmente.
+
+**NEXT_ACTION:** obter ambiente Supabase isolado autorizado e executar a cadeia de migrations, Auth/JWT admin e cliente, RLS, Storage, persistência e concorrência. Só então reconsiderar merge. Na futura integração com a PR #28, reconciliar o arquivo `admin-rpc/index.ts` preservando rotas comerciais e editoriais.
+
+**DO_NOT_REPEAT:** não interpretar `mergeable=true` como gates de CI/homologação satisfeitos; não rerun o run `#43817647000` enquanto continuar sem runner/logs; não migrar o banco conectado de produção; não incorporar a implementação editorial à PR #27.

@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import type { DeliveryAddress, ProfileRow } from "@/lib/profile";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
+import { decimalToHundredths } from "@/services/commercial/tonart-commerce-rules";
 
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 
@@ -171,10 +172,17 @@ export async function fetchAdminUserCoinsBalance(
   const balance = Number(value.balance);
   const totalEarned = Number(value.total_earned);
   const totalSpent = Number(value.total_spent);
+  let exactAmounts = false;
+  try {
+    decimalToHundredths(String(balance));
+    decimalToHundredths(String(totalEarned));
+    decimalToHundredths(String(totalSpent));
+    exactAmounts = true;
+  } catch {
+    exactAmounts = false;
+  }
   if (
-    !Number.isSafeInteger(balance) || balance < 0 ||
-    !Number.isSafeInteger(totalEarned) || totalEarned < 0 ||
-    !Number.isSafeInteger(totalSpent) || totalSpent < 0 ||
+    !exactAmounts || balance < 0 || totalEarned < 0 || totalSpent < 0 ||
     balance !== totalEarned - totalSpent
   ) {
     throw new Error("tonecos_admin_customer_coins_balance_invalid");

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { HelmetProvider } from "react-helmet-async";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -7,6 +7,8 @@ import TonecosAccountPage from "./TonecosAccountPage";
 
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
+  getMyProfile: vi.fn(),
+  signIn: vi.fn(),
 }));
 
 vi.mock("@/config/supabase-environment", () => ({
@@ -18,10 +20,10 @@ vi.mock("@/config/supabase-environment", () => ({
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   changeTonecosPassword: vi.fn(),
   getTonecosCurrentUser: mocks.getCurrentUser,
-  getMyTonecosProfile: vi.fn(),
+  getMyTonecosProfile: mocks.getMyProfile,
   registerTonecosAccount: vi.fn(),
   resendTonecosSignupConfirmation: vi.fn(),
-  signInTonecosAccount: vi.fn(),
+  signInTonecosAccount: mocks.signIn,
   signOutTonecosAccount: vi.fn(),
   updateMyTonecosProfile: vi.fn(),
 }));
@@ -31,8 +33,19 @@ vi.mock("@/pages/commercial/TonecosCustomerSections", () => ({
   ),
 }));
 
-describe("TonecosAccountPage in an isolated local preview", () => {
-  it("explains the unavailable backend and keeps credential fields out of the page", () => {
+describe("TonecosAccountPage with local customer data", () => {
+  it("renders customer data in the normal account screen", async () => {
+    const profile = {
+      id: "00000000-0000-4000-8000-000000000001",
+      email: "marina.oliveira@tonart.local",
+      full_name: "Marina Oliveira",
+      phone: "+55 (11) 90000-0000",
+    };
+    mocks.getCurrentUser.mockResolvedValue({
+      id: profile.id,
+      email: profile.email,
+    });
+    mocks.getMyProfile.mockResolvedValue(profile);
     render(
       <MemoryRouter initialEntries={["/perfil"]}>
         <HelmetProvider>
@@ -43,17 +56,23 @@ describe("TonecosAccountPage in an isolated local preview", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByRole("heading", {
-        name: "Conta indisponível nesta prévia local",
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Explorar modelos" })).toHaveAttribute(
-      "href",
-      "/modelos",
+    await waitFor(() =>
+      expect(
+        screen.getByText("Conectado como marina.oliveira@tonart.local"),
+      ).toBeInTheDocument(),
     );
-    expect(screen.queryByLabelText("E-mail")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Senha")).not.toBeInTheDocument();
-    expect(mocks.getCurrentUser).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.getByLabelText("Nome completo")).toHaveValue(
+        "Marina Oliveira",
+      ),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Minha conta" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/demonstração|prévia local/i),
+    ).not.toBeInTheDocument();
+    expect(mocks.getMyProfile).toHaveBeenCalledOnce();
+    expect(mocks.signIn).not.toHaveBeenCalled();
   });
 });

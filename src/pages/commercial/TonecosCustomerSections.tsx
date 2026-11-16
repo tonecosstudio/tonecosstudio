@@ -26,8 +26,8 @@ import {
   panelClass,
   secondaryClass,
 } from "./CommercialPage";
-import { SubscriptionSection } from "../ProfileSections";
 import { TonecosSubscriptionUnavailablePanel } from "./TonecosSubscriptionUnavailable";
+import TonecosCustomerSubscriptionHistory from "./TonecosCustomerSubscriptionHistory";
 
 type CustomerSection = {
   slug: string;
@@ -848,7 +848,7 @@ function CustomerQuotePayments({ userId }: { userId: string }) {
                 </p>
                 {quote.coinAmountApplied > 0 && (
                   <p className="mt-1 text-xs text-white/50">
-                    {quote.coinAmountApplied} Coins aplicados ao orçamento
+                    {quote.coinAmountApplied.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Coins registrados neste histórico
                   </p>
                 )}
               </div>
@@ -1155,7 +1155,7 @@ function CustomerSectionContent({
   if (slug === "pagamentos") return <CustomerQuotePayments userId={userId} />;
   if (slug === "assinatura" || slug === "assinaturas") {
     return PUBLIC_SUBSCRIPTIONS_ENABLED ? (
-      <SubscriptionSection userId={userId} commercialMvp />
+      <TonecosCustomerSubscriptionHistory userId={userId} />
     ) : (
       <TonecosSubscriptionUnavailablePanel />
     );

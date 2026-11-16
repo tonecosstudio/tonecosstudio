@@ -87,12 +87,6 @@ export default function TonecosAccountPage() {
     setIdentity(undefined);
     setSessionError(false);
     setError("");
-    if (LOCAL_SUPABASE_FALLBACK) {
-      setIdentity(null);
-      return () => {
-        active = false;
-      };
-    }
     getTonecosCurrentUser()
       .then((user) => {
         if (active) setIdentity(user);
@@ -110,7 +104,7 @@ export default function TonecosAccountPage() {
   }, [sessionAttempt]);
 
   useEffect(() => {
-    if (!identity) {
+    if (!identity || LOCAL_SUPABASE_FALLBACK) {
       setIsAdmin(false);
       setAdminCheckError(false);
       return;
@@ -310,7 +304,7 @@ export default function TonecosAccountPage() {
       intro="Acesse seus dados e acompanhe suas solicitações de orçamento. Não há cobrança online nesta etapa."
     >
       <div className={identity ? "mx-auto w-full max-w-5xl" : "mx-auto max-w-xl"}>
-        {!LOCAL_SUPABASE_FALLBACK && error && (
+        {error && (
           <p
             role="alert"
             className="mb-5 border border-red-500/40 p-4 text-sm text-red-200"
@@ -318,7 +312,7 @@ export default function TonecosAccountPage() {
             {error}
           </p>
         )}
-        {!LOCAL_SUPABASE_FALLBACK && notice && (
+        {notice && (
           <p
             role="status"
             className="mb-5 border border-white/20 p-4 text-sm text-white/80"
@@ -326,21 +320,7 @@ export default function TonecosAccountPage() {
             {notice}
           </p>
         )}
-        {LOCAL_SUPABASE_FALLBACK ? (
-          <section role="status" className={panelClass}>
-            <h2 className="text-lg font-semibold">
-              Conta indisponível nesta prévia local
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-white/65">
-              Não há uma instância Supabase local configurada para autenticação
-              e persistência. Cadastro, acesso, dados da conta, Coins e
-              orçamentos não serão conectados ao projeto remoto nesta prévia.
-            </p>
-            <Link className={actionClass + " mt-5"} to="/modelos">
-              Explorar modelos
-            </Link>
-          </section>
-        ) : sessionError ? (
+        {sessionError ? (
           <div className={panelClass}>
             <p className="mb-4 text-sm text-white/70">
               Não foi possível verificar sua sessão. Tente novamente antes de

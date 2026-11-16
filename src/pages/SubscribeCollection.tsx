@@ -75,6 +75,14 @@ export default function SubscribeCollection() {
   const [selectedModelSlugs, setSelectedModelSlugs] = useState<string[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<SubscriptionPaymentMethod>("pix");
   const [voucher, setVoucher] = useState<File | null>(null);
+  const [checkoutRequest, setCheckoutRequest] = useState<{
+    planId: string;
+    collectionId: string;
+    selection: string;
+    paymentMethod: SubscriptionPaymentMethod;
+    voucher: File;
+    id: string;
+  } | null>(null);
   const [checkout, setCheckout] = useState<SubscriptionCheckoutResult | null>(null);
   const [checkoutError, setCheckoutError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,9 +141,7 @@ export default function SubscribeCollection() {
   const selectedPaymentMethodConfigured = paymentMethod === "pix"
     ? Boolean(pixKey)
     : Boolean(paymentLink);
-  const amountDue = selectedPlan
-    ? paymentMethod === "pix" ? selectedPlan.price_pix : selectedPlan.price_full
-    : null;
+  const amountDue = selectedPlan?.price_full ?? null;
 
   useEffect(() => {
     if (paymentSettingsQuery.data && !pixKey && paymentLink) {
@@ -187,6 +193,23 @@ export default function SubscribeCollection() {
         navigate(loginReturnToPath(location.pathname + location.search));
         return;
       }
+      const selection = selectedModelSlugs.join("\u0000");
+      const matchesPrevious = checkoutRequest?.planId === selectedPlan.id &&
+        checkoutRequest.collectionId === selectedCollection.id &&
+        checkoutRequest.selection === selection &&
+        checkoutRequest.paymentMethod === paymentMethod &&
+        checkoutRequest.voucher === voucher;
+      const checkoutRequestId = matchesPrevious && checkoutRequest
+        ? checkoutRequest.id
+        : crypto.randomUUID();
+      setCheckoutRequest({
+        planId: selectedPlan.id,
+        collectionId: selectedCollection.id,
+        selection,
+        paymentMethod,
+        voucher,
+        id: checkoutRequestId,
+      });
       const result = await createSubscriptionCheckoutForCurrentUser({
         planId: selectedPlan.id,
         collectionId: selectedCollection.id,
@@ -194,8 +217,10 @@ export default function SubscribeCollection() {
         modelSelectionLimit: selectedPlan.model_selection_limit,
         paymentMethod,
         voucher,
+        checkoutRequestId,
       });
       setCheckout(result);
+      setCheckoutRequest(null);
     } catch (error) {
       setCheckoutError(
         error instanceof Error
@@ -256,18 +281,21 @@ export default function SubscribeCollection() {
 
   if (checkout) {
     return (
-      <Page title="Solicitação enviada" description="Seu comprovante foi recebido para conferência">
+      <Page title="Solicitação registrada" description="Confira o status do pagamento do seu plano">
         <div className="container mx-auto max-w-2xl px-5 py-16">
           <Card className="border-emerald-500/30">
             <CardContent className="p-6 text-center sm:p-10">
               <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" aria-hidden="true" />
-              <Badge className="mt-5 bg-emerald-600 text-white">Comprovante recebido</Badge>
+              <Badge className="mt-5 bg-emerald-600 text-white">
+                {checkout.status === "paid" ? "Pagamento confirmado" : "Comprovante recebido"}
+              </Badge>
               <h1 className="mt-4 text-3xl font-bold text-slate-950 dark:text-white">
-                Sua solicitação está em análise
+                {checkout.status === "paid" ? "Pagamento confirmado" : "Sua solicitação está em análise"}
               </h1>
               <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-600 dark:text-slate-300">
-                A equipe vai conferir o pagamento. A assinatura só fica ativa depois da aprovação.
-                Você pode acompanhar o registro pela sua conta.
+                {checkout.status === "paid"
+                  ? "Esta tentativa corresponde a um pagamento já confirmado. Nenhuma nova cobrança foi criada."
+                  : "A equipe vai conferir o pagamento. O plano só fica ativo depois da aprovação; você pode acompanhar o registro pela sua conta."}
               </p>
               <div className="my-7 rounded-lg bg-slate-50 p-4 text-left dark:bg-slate-900">
                 <p className="text-xs uppercase tracking-wider text-slate-500">Referência do pagamento</p>
@@ -348,12 +376,16 @@ export default function SubscribeCollection() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-600">Etapa 1</p>
               <h2 id="plans-heading" className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">Escolha seu plano</h2>
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Valores para pagamento à vista</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Compra das peças · sem cobrança mensal recorrente</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {plans.map((plan) => {
               const selected = selectedPlan?.id === plan.id;
-              const perModel = plan.price_pix / plan.model_selection_limit;
+              const perModel = plan.price_full / plan.model_selection_limit;
+              const bonusTotal = Math.min(
+                plan.coin_bonus_per_shipment * plan.deliveries_total,
+                plan.coin_bonus_cap,
+              );
               return (
                 <Card key={plan.id} className={selected ? "border-amber-500 ring-2 ring-amber-500/20" : "transition-colors hover:border-amber-500/50"}>
                   <CardContent className="flex h-full flex-col p-5 sm:p-6">
@@ -361,18 +393,23 @@ export default function SubscribeCollection() {
                       <div>
                         <h3 className="text-lg font-bold text-slate-950 dark:text-white">{plan.name}</h3>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                          Escolha {plan.model_selection_limit} modelos da coleção
+                          Escolha exatamente {plan.model_selection_limit} {plan.model_selection_limit === 1 ? "peça" : "peças"} da coleção
                         </p>
                       </div>
                       {selected && <Check className="h-5 w-5 text-amber-600" aria-label="Selecionado" />}
                     </div>
                     {plan.description && <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{plan.description}</p>}
                     <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-700">
-                      <p className="text-xs text-slate-500 dark:text-slate-400">PIX com desconto ou cartão pelo valor integral</p>
-                      <p className="mt-1 text-3xl font-bold tabular-nums text-slate-950 dark:text-white">{currency.format(plan.price_pix)}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Valor do plano · frete à parte</p>
+                      <p className="mt-1 text-3xl font-bold tabular-nums text-slate-950 dark:text-white">{currency.format(plan.price_full)}</p>
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {currency.format(perModel)} por modelo escolhido · preço integral {currency.format(plan.price_full)}
+                        {currency.format(perModel)} por peça incluída
                       </p>
+                      {bonusTotal > 0 && plan.plan_type !== "anual" && (
+                        <p className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm font-medium text-amber-700 dark:text-amber-300">
+                          Até {bonusTotal.toLocaleString("pt-BR")} Coins no PIX, creditadas por peça enviada
+                        </p>
+                      )}
                     </div>
                     <Button
                       type="button"
@@ -399,7 +436,7 @@ export default function SubscribeCollection() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-600">Etapa 2</p>
             <h2 id="collections-heading" className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">Selecione a coleção</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Cada coleção reúne modelos pré-selecionados. O plano escolhido exige {modelSelectionLimit} modelos.
+              Cada coleção reúne modelos pré-selecionados. O plano escolhido inclui {modelSelectionLimit} peça{modelSelectionLimit === 1 ? "" : "s"}.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -442,10 +479,10 @@ export default function SubscribeCollection() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-600">Etapa 3</p>
               <h2 id="subscription-models-heading" className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
-                Escolha {modelSelectionLimit} modelos
+                Escolha {modelSelectionLimit} peça{modelSelectionLimit === 1 ? "" : "s"}
               </h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Selecione os modelos que você quer incluir entre as opções desta coleção.
+                Selecione modelos distintos da curadoria e defina a ordem dos envios.
               </p>
             </div>
             <p aria-live="polite" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -546,7 +583,7 @@ export default function SubscribeCollection() {
                   className={`rounded-lg border p-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 disabled:cursor-not-allowed disabled:opacity-50 ${paymentMethod === "pix" ? "border-amber-500 bg-amber-500/5" : "border-slate-200 dark:border-slate-700"}`}
                 >
                   <span className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white"><Zap className="h-4 w-4 text-amber-600" /> PIX</span>
-                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{selectedPlan ? currency.format(selectedPlan.price_pix) : "À vista"}</span>
+                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{selectedPlan ? currency.format(selectedPlan.price_full) : "Pagamento único"}</span>
                 </button>
                 <button
                   type="button"
@@ -576,7 +613,7 @@ export default function SubscribeCollection() {
               {paymentMethod === "credit_card" && paymentLink && (
                 <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Pagamento no cartão</p>
-                  <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">Confira o valor de {amountDue !== null ? currency.format(amountDue) : "—"} no ambiente de pagamento.</p>
+                  <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">Valor integral: {amountDue !== null ? currency.format(amountDue) : "—"}. Confira eventuais parcelas e encargos no provedor antes de pagar; não há cobrança mensal recorrente.</p>
                   <Button asChild className="mt-4 w-full sm:w-auto">
                     <a href={paymentLink} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-2 h-4 w-4" /> Abrir pagamento seguro

@@ -6,14 +6,10 @@ import PlansArcade from "@/pages/PlansArcade";
 
 const mocks = vi.hoisted(() => ({
   useSubscribeCollectionCheckout: vi.fn(),
-  usePricingSettings: vi.fn(),
 }));
 
 vi.mock("@/hooks/subscription/useSubscribeCollectionCheckout", () => ({
   useSubscribeCollectionCheckout: mocks.useSubscribeCollectionCheckout,
-}));
-vi.mock("@/hooks/usePricingSettings", () => ({
-  usePricingSettings: mocks.usePricingSettings,
 }));
 vi.mock("@/hooks/useContentSettings", () => ({
   useContentVariable: () => "Consulte as informações de entrega da coleção.",
@@ -58,11 +54,12 @@ describe("PlansArcade curated subscription entry", () => {
         name: "Plano Terror",
         description: "Escolha modelos da coleção.",
         plan_type: "trimestral",
-        price_pix: 270,
-        price_full: 300,
+        price_pix: 705,
+        price_full: 705,
         deliveries_total: 3,
-        total_credits: 120,
-        model_selection_limit: 6,
+        coin_bonus_per_shipment: 5,
+        coin_bonus_cap: 15,
+        model_selection_limit: 3,
         is_active: true,
       }],
       collections: [
@@ -90,12 +87,6 @@ describe("PlansArcade curated subscription entry", () => {
       loadError: null,
       retryLoad: vi.fn(),
     });
-    mocks.usePricingSettings.mockReturnValue({
-      data: { defaultPriceFull: 300 },
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    });
   });
 
   it("routes into the selected curated collection and carries the selected plan", () => {
@@ -103,10 +94,10 @@ describe("PlansArcade curated subscription entry", () => {
 
     const collectionSelect = screen.getByRole("combobox", { name: "Coleção para sua assinatura" });
     expect(collectionSelect).toHaveValue(TERROR_ID);
-    expect(screen.queryByRole("option", { name: "Coleção em preparação · 5 modelos" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Coleção em preparação · 5 modelos" })).toBeInTheDocument();
 
     fireEvent.change(collectionSelect, { target: { value: SCIFI_ID } });
-    fireEvent.click(screen.getByRole("button", { name: "Escolher 6 modelos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Escolher 3 modelos" }));
 
     expect(screen.getByTestId("location")).toHaveTextContent(
       `/colecoes/ficcao-cientifica/assinar?plan=${PLAN_ID}`,

@@ -122,7 +122,7 @@ BEGIN
   )
   VALUES (
     v_reference, v_user_id, v_amount, 'BRL', 'subscription', v_subscription.id::text,
-    v_subscription.id, 'recurring', v_payment_status, v_payment_method, v_notes
+    v_subscription.id, 'one_time', v_payment_status, v_payment_method, v_notes
   )
   RETURNING * INTO v_payment;
 

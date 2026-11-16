@@ -3,6 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import {
   answerCatalogQuoteRequest,
+  answerTonartExtraOrder,
+  cancelAdminTonartExtraOrder,
   changeCatalogQuoteStatus,
   loadAdminCatalogQuotePage,
   type AdminCatalogQuote,
@@ -142,6 +144,7 @@ export default function TonecosAdminQuotesPage() {
   const [responseMessage, setResponseMessage] = useState<
     Record<string, string>
   >({});
+  const [cancelReason, setCancelReason] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -207,28 +210,67 @@ export default function TonecosAdminQuotesPage() {
     setError("");
     setNotice("");
     try {
-      const amount = parseQuoteAmount(price[id] ?? "");
-      const discount = parseDiscountPercent(discountPercent[id] ?? "0");
       const message = (responseMessage[id] ?? "").trim();
       const quote = quotes.find((entry) => entry.id === id);
-      if (!Number.isFinite(amount) || amount <= 0 || amount > 99999999.99 || !Number.isFinite(discount)) {
-        throw new Error("admin_catalog_quote_response_invalid");
+      if (quote?.commercialOfferSnapshot) {
+        let shippingAmount = quote.commercialShippingAmountBrl;
+        if (quote.commercialOfferSnapshot.shippingMode === "quote_required") {
+          shippingAmount = parseQuoteAmount(price[id] ?? "");
+        }
+        if (
+          shippingAmount === null ||
+          !Number.isFinite(shippingAmount) ||
+          shippingAmount < 0 ||
+          shippingAmount > 99999999.99 ||
+          message.length < 1
+        ) {
+          throw new Error("admin_catalog_quote_commercial_response_invalid");
+        }
+        await answerTonartExtraOrder(id, shippingAmount, message);
+      } else {
+        const amount = parseQuoteAmount(price[id] ?? "");
+        const discount = parseDiscountPercent(discountPercent[id] ?? "0");
+        if (!Number.isFinite(amount) || amount <= 0 || amount > 99999999.99 || !Number.isFinite(discount)) {
+          throw new Error("admin_catalog_quote_response_invalid");
+        }
+        const finalAmount = discountedTotal(amount, discount);
+        if (finalAmount <= 0) {
+          throw new Error("admin_catalog_quote_response_invalid");
+        }
+        if (quote?.isPreorder && finalAmount <= (quote.depositAmount ?? 50)) {
+          setError("O total da pré-venda precisa ser maior que a entrada fixa de R$50.");
+          return;
+        }
+        await answerCatalogQuoteRequest(id, amount, message, discount);
       }
-      const finalAmount = discountedTotal(amount, discount);
-      if (finalAmount <= 0) {
-        throw new Error("admin_catalog_quote_response_invalid");
-      }
-      if (quote?.isPreorder && finalAmount <= (quote.depositAmount ?? 50)) {
-        setError("O total da pré-venda precisa ser maior que a entrada fixa de R$50.");
-        return;
-      }
-      await answerCatalogQuoteRequest(id, amount, message, discount);
       setPrice((current) => ({ ...current, [id]: "" }));
       setDiscountPercent((current) => ({ ...current, [id]: "0" }));
       setResponseMessage((current) => ({ ...current, [id]: "" }));
       setNotice(
         "Resposta registrada e disponível na conta do cliente. Para avisá-lo, abra o e-mail ou WhatsApp e confirme o envio manualmente.",
       );
+      setAttempt((current) => current + 1);
+    } catch (err) {
+      setError(commercialQuoteErrorText(err, "admin"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function cancelExtraOrder(quoteId: string) {
+    if (busyId) return;
+    const reason = (cancelReason[quoteId] ?? "").trim();
+    if (reason.length < 4) {
+      setError("Informe um motivo com pelo menos quatro caracteres para o cancelamento.");
+      return;
+    }
+    setBusyId(quoteId);
+    setError("");
+    setNotice("");
+    try {
+      await cancelAdminTonartExtraOrder(quoteId, reason);
+      setCancelReason((current) => ({ ...current, [quoteId]: "" }));
+      setNotice("Pedido cancelado; Coins vinculados foram revertidos. Nenhum valor em reais foi estornado automaticamente.");
       setAttempt((current) => current + 1);
     } catch (err) {
       setError(commercialQuoteErrorText(err, "admin"));
@@ -375,7 +417,7 @@ export default function TonecosAdminQuotesPage() {
             <li key={quote.id} className={panelClass}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-semibold">
-                  Solicitação #{quote.id.slice(0, 8)}
+                  {quote.commercialOfferSnapshot ? "Pedido extra" : "Solicitação"} #{quote.id.slice(0, 8)}
                 </h2>
                 <span className="border border-white/20 px-3 py-1 text-xs">
                   {statusLabels[quote.status] ?? "Em atualização"}
@@ -383,6 +425,11 @@ export default function TonecosAdminQuotesPage() {
                 {quote.isPreorder && (
                   <span className="border border-[hsl(var(--gold-accent)/0.4)] px-3 py-1 text-xs text-[hsl(var(--gold-accent))]">
                     Pré-venda · sinal {brl.format(quote.depositAmount ?? 50)}
+                  </span>
+                )}
+                {quote.commercialOfferSnapshot && (
+                  <span className="border border-[hsl(var(--gold-accent)/0.4)] px-3 py-1 text-xs text-[hsl(var(--gold-accent))]">
+                    Oferta do catálogo · pagamento em análise manual
                   </span>
                 )}
               </div>
@@ -421,6 +468,44 @@ export default function TonecosAdminQuotesPage() {
                 Escala: {quote.scale || "A definir"} · Acabamento:{" "}
                 {quote.finishing || "A definir"}
               </p>
+              {quote.commercialOfferSnapshot && (
+                <dl className="mt-3 grid gap-x-4 gap-y-2 border-l-2 border-[hsl(var(--gold-accent)/0.45)] pl-3 text-xs sm:grid-cols-2">
+                  <div>
+                    <dt className="text-white/50">Preço capturado da peça</dt>
+                    <dd className="mt-1 font-medium text-white/85">
+                      {brl.format(quote.commercialOfferSnapshot.itemPriceBrl)}
+                    </dd>
+                  </div>
+                  {quote.commercialOfferSnapshot.itemDiscountBrl > 0 ? (
+                    <div>
+                      <dt className="text-white/50">Desconto do assinante capturado</dt>
+                      <dd className="mt-1 font-medium text-[hsl(var(--gold-accent))]">
+                        −{brl.format(quote.commercialOfferSnapshot.itemDiscountBrl)}
+                      </dd>
+                    </div>
+                  ) : null}
+                  <div>
+                    <dt className="text-white/50">Coins reservados</dt>
+                    <dd className="mt-1 font-medium text-[hsl(var(--gold-accent))]">
+                      {brl.format(quote.commercialOfferSnapshot.coinsApplied)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-white/50">Frete</dt>
+                    <dd className="mt-1 font-medium text-white/85">
+                      {quote.commercialShippingAmountBrl === null
+                        ? "A informar na resposta"
+                        : brl.format(quote.commercialShippingAmountBrl)}
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-white/50">Conteúdo e prazo da oferta</dt>
+                    <dd className="mt-1 leading-relaxed text-white/75">
+                      {quote.commercialOfferSnapshot.contentsDescription} · {quote.commercialOfferSnapshot.deliveryTerms}
+                    </dd>
+                  </div>
+                </dl>
+              )}
               {quote.notes && (
                 <p className="mt-3 whitespace-pre-wrap text-sm text-white/65">
                   {quote.notes}
@@ -474,7 +559,7 @@ export default function TonecosAdminQuotesPage() {
                     Voltar para novo
                   </button>
                 )}
-                {quote.status !== "archived" && (
+                {quote.status !== "archived" && !quote.commercialOfferSnapshot && (
                   <button
                     type="button"
                     className={secondaryClass}
@@ -486,9 +571,44 @@ export default function TonecosAdminQuotesPage() {
                     Arquivar
                   </button>
                 )}
+                {quote.commercialOfferSnapshot && quote.canCancelExtraOrder && (
+                  <div className="grid w-full gap-2 border-t border-white/10 pt-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <label className="block space-y-1 text-xs text-white/60">
+                      <span>Motivo para cancelar e reverter Coins</span>
+                      <input
+                        className={fieldClass}
+                        value={cancelReason[quote.id] ?? ""}
+                        maxLength={500}
+                        onChange={(event) => setCancelReason((current) => ({
+                          ...current,
+                          [quote.id]: event.currentTarget.value,
+                        }))}
+                        placeholder="Informe o motivo do cancelamento"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className={secondaryClass + " self-end"}
+                      disabled={busyId !== null}
+                      onClick={() => void cancelExtraOrder(quote.id)}
+                    >
+                      {busyId === quote.id ? "Cancelando…" : "Cancelar pedido e reverter Coins"}
+                    </button>
+                  </div>
+                )}
+                {quote.commercialOfferSnapshot && !quote.canCancelExtraOrder && quote.status !== "archived" && (
+                  <p className="w-full pt-2 text-xs text-white/50">
+                    Há instrução ou pagamento em andamento. O cancelamento precisa de conferência manual.
+                  </p>
+                )}
               </div>
               <div className="mt-5 border-t border-white/15 pt-4">
-                {quote.status === "archived" && quote.quotedAmount === null ? (
+                {quote.commercialOfferSnapshot && quote.status === "archived" ? (
+                  <p className="text-sm text-white/60">
+                    Pedido extra cancelado e Coins vinculados revertidos quando aplicável.
+                    {quote.responseMessage ? ` Motivo: ${quote.responseMessage}` : ""}
+                  </p>
+                ) : quote.status === "archived" && quote.quotedAmount === null ? (
                   <p className="text-sm text-white/60">
                     Solicitação arquivada sem valor.
                   </p>
@@ -550,61 +670,79 @@ export default function TonecosAdminQuotesPage() {
                     }}
                     className="grid gap-3 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)]"
                   >
-                    {quote.isPreorder && (
+                    {quote.commercialOfferSnapshot ? (
+                      <div className="space-y-2 text-xs leading-5 text-white/65 sm:col-span-2">
+                        <p>
+                          O preço da peça e o desconto registrados nesta oferta não podem ser alterados. Os Coins já foram reservados; este atendimento calcula apenas o frete e o saldo final.
+                        </p>
+                        <p>
+                          Peça após desconto: {brl.format(quote.commercialOfferSnapshot.itemPriceBrl)} · Coins: {brl.format(quote.commercialOfferSnapshot.coinsApplied)}
+                        </p>
+                      </div>
+                    ) : quote.isPreorder && (
                       <p className="text-xs leading-5 text-white/65 sm:col-span-2">
                         Informe o valor-base antes da promoção. A Black Friday permite até 50% de desconto em todos os modelos; a entrada de R$50 e o saldo são calculados sobre o total final.
                       </p>
                     )}
-                    <label className="block space-y-2 text-sm">
-                      <span>Valor-base antes da promoção (R$)</span>
-                      <input
-                        aria-label={
-                          "Valor-base antes da promoção (R$) " + quote.id.slice(0, 8)
-                        }
-                        className={fieldClass}
-                        type="text"
-                        inputMode="decimal"
-                        required
-                        maxLength={12}
-                        placeholder={quote.isPreorder ? "Ex.: 300,00" : "Ex.: 1.249,90"}
-                        value={price[quote.id] ?? ""}
-                        onChange={(event) =>
-                          setPrice((current) => ({
-                            ...current,
-                            [quote.id]: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                    <label className="block space-y-2 text-sm">
-                      <span>Desconto Black Friday (%)</span>
-                      <input
-                        aria-label={"Desconto Black Friday " + quote.id.slice(0, 8)}
-                        className={fieldClass}
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        max={50}
-                        step={1}
-                        required
-                        value={discountPercent[quote.id] ?? "0"}
-                        onChange={(event) =>
-                          setDiscountPercent((current) => ({
-                            ...current,
-                            [quote.id]: event.target.value,
-                          }))
-                        }
-                      />
-                      {previewTotal ? (
-                        <p className="text-xs text-[hsl(var(--gold-accent))]" aria-live="polite">
-                          Total após desconto: {previewTotal}
+                    {quote.commercialOfferSnapshot ? (
+                      quote.commercialOfferSnapshot.shippingMode === "fixed" ? (
+                        <p className="text-sm text-white/75">
+                          Frete fixo da oferta: {brl.format(quote.commercialShippingAmountBrl ?? 0)}
                         </p>
                       ) : (
-                        <p className="text-xs text-white/50">
-                          Defina um desconto entre 0% e 50%.
-                        </p>
-                      )}
-                    </label>
+                        <label className="block space-y-2 text-sm">
+                          <span>Frete a confirmar com o cliente (R$)</span>
+                          <input
+                            aria-label={"Frete do pedido extra (R$) " + quote.id.slice(0, 8)}
+                            className={fieldClass}
+                            type="text"
+                            inputMode="decimal"
+                            required
+                            maxLength={12}
+                            placeholder="Ex.: 24,90"
+                            value={price[quote.id] ?? ""}
+                            onChange={(event) => setPrice((current) => ({ ...current, [quote.id]: event.currentTarget.value }))}
+                          />
+                        </label>
+                      )
+                    ) : (
+                      <>
+                        <label className="block space-y-2 text-sm">
+                          <span>Valor-base antes da promoção (R$)</span>
+                          <input
+                            aria-label={"Valor-base antes da promoção (R$) " + quote.id.slice(0, 8)}
+                            className={fieldClass}
+                            type="text"
+                            inputMode="decimal"
+                            required
+                            maxLength={12}
+                            placeholder={quote.isPreorder ? "Ex.: 300,00" : "Ex.: 1.249,90"}
+                            value={price[quote.id] ?? ""}
+                            onChange={(event) => setPrice((current) => ({ ...current, [quote.id]: event.target.value }))}
+                          />
+                        </label>
+                        <label className="block space-y-2 text-sm">
+                          <span>Desconto Black Friday (%)</span>
+                          <input
+                            aria-label={"Desconto Black Friday " + quote.id.slice(0, 8)}
+                            className={fieldClass}
+                            type="number"
+                            inputMode="numeric"
+                            min={0}
+                            max={50}
+                            step={1}
+                            required
+                            value={discountPercent[quote.id] ?? "0"}
+                            onChange={(event) => setDiscountPercent((current) => ({ ...current, [quote.id]: event.currentTarget.value }))}
+                          />
+                          {previewTotal ? (
+                            <p className="text-xs text-[hsl(var(--gold-accent))]" aria-live="polite">Total após desconto: {previewTotal}</p>
+                          ) : (
+                            <p className="text-xs text-white/50">Defina um desconto entre 0% e 50%.</p>
+                          )}
+                        </label>
+                      </>
+                    )}
                     <label className="block space-y-2 text-sm">
                       <span>Mensagem ao cliente</span>
                       <textarea

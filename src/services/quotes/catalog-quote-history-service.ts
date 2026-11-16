@@ -2,6 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 import { assertTonecosQuotesEnabled } from "@/config/tonecos-commercial-authority";
+import {
+  isTonecosLocalPreviewEnabled,
+  TONECOS_LOCAL_PREVIEW_QUOTE_ID,
+} from "@/services/customer/tonecos-account-service";
 
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 const uuid =
@@ -20,6 +24,19 @@ export type CatalogQuoteEvent = {
   createdAt: string;
 };
 
+const LOCAL_PREVIEW_QUOTE_EVENTS: CatalogQuoteEvent[] = [
+  {
+    id: 9001,
+    quoteId: TONECOS_LOCAL_PREVIEW_QUOTE_ID,
+    type: "submitted",
+    fromStatus: null,
+    toStatus: "pending",
+    amount: null,
+    responseText: null,
+    createdAt: "2026-11-10T12:00:00.000Z",
+  },
+];
+
 type QuoteEventRow = TonecosMvpDatabase["public"]["Tables"]["quote_events"]["Row"];
 
 /** Reads only events visible through quote_events RLS.
@@ -28,7 +45,7 @@ type QuoteEventRow = TonecosMvpDatabase["public"]["Tables"]["quote_events"]["Row
 export async function loadCatalogQuoteHistory(
   quoteIds: readonly string[],
 ): Promise<Record<string, CatalogQuoteEvent[]>> {
-  assertTonecosQuotesEnabled();
+  if (!isTonecosLocalPreviewEnabled()) assertTonecosQuotesEnabled();
   if (!Array.isArray(quoteIds) || quoteIds.length > 100) {
     throw new Error("catalog_quote_history_ids_invalid");
   }
@@ -38,6 +55,16 @@ export async function loadCatalogQuoteHistory(
     throw new Error("catalog_quote_history_ids_invalid");
   }
   if (ids.length === 0) return {};
+  if (isTonecosLocalPreviewEnabled()) {
+    return Object.fromEntries(
+      ids.map((id) => [
+        id,
+        id.toLowerCase() === TONECOS_LOCAL_PREVIEW_QUOTE_ID
+          ? LOCAL_PREVIEW_QUOTE_EVENTS
+          : [],
+      ]),
+    );
+  }
 
   const query = tonecos
     .from("quote_events")

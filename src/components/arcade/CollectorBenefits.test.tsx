@@ -6,8 +6,8 @@ import { CollectorBenefits } from "./CollectorBenefits";
 describe("CollectorBenefits", () => {
   it("recalculates the preorder balance after the R$50 entry", () => {
     render(<MemoryRouter><CollectorBenefits coinsAvailable={false} /></MemoryRouter>);
-    expect(screen.getByText(/1 Coin abate R\$ 1 em orçamento respondido/)).toBeInTheDocument();
-    expect(screen.getByText(/não aceita Coins/)).toBeInTheDocument();
+    expect(screen.getByText(/o pagamento do plano compra as peças; o principal não vira saldo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Orçamentos, entrada de pré-venda, parcelas e frete não aceitam Coins/i)).toBeInTheDocument();
     const total = screen.getByRole("spinbutton", { name: "Valor da peça (R$)" });
     const result = document.getElementById("preorder-result");
     expect(result?.textContent).toContain("250,00 na finalização.");

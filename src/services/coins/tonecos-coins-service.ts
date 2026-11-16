@@ -1,7 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/tonecos-mvp.types";
-import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
+import {
+  getTonecosCurrentUser,
+  isTonecosLocalPreviewEnabled,
+} from "@/services/customer/tonecos-account-service";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 
 const tonecos = supabase as unknown as SupabaseClient<Database>;
@@ -21,7 +24,14 @@ export type TonecosCoinBalance = {
 export type TonecosCoinEntry = {
   id: string;
   delta: number;
-  type: "admin_credit" | "purchase_spend" | "refund";
+  type:
+    | "admin_credit"
+    | "purchase_spend"
+    | "refund"
+    | "shipment_bonus"
+    | "purchase_reversal"
+    | "bonus_reversal"
+    | "legacy_import";
   reason: string;
   createdAt: string;
 };
@@ -31,6 +41,12 @@ export type TonecosAdminCreditResult = {
   credited: number;
   balance: number;
   transactionId: string;
+  idempotent: boolean;
+};
+
+export type TonecosCoinReversalResult = {
+  transactionId: string;
+  balance: number;
   idempotent: boolean;
 };
 
@@ -44,10 +60,50 @@ export type TonecosQuoteCoinPaymentResult = {
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const coinTypeSet = new Set(["admin_credit", "purchase_spend", "refund"]);
+const coinTypeSet = new Set([
+  "admin_credit",
+  "purchase_spend",
+  "refund",
+  "shipment_bonus",
+  "purchase_reversal",
+  "bonus_reversal",
+  "legacy_import",
+]);
+const LOCAL_PREVIEW_COIN_BALANCE: TonecosCoinBalance = {
+  balance: 150,
+  totalEarned: 150,
+  totalSpent: 0,
+  entryCount: 2,
+  updatedAt: "2026-11-12T16:00:00.000Z",
+};
+const LOCAL_PREVIEW_COIN_ENTRIES: TonecosCoinEntry[] = [
+  {
+    id: "c0000000-0000-4000-8000-000000000001",
+    delta: 100,
+    type: "admin_credit",
+    reason: "Bônus de boas-vindas",
+    createdAt: "2026-11-12T16:00:00.000Z",
+  },
+  {
+    id: "c0000000-0000-4000-8000-000000000002",
+    delta: 50,
+    type: "admin_credit",
+    reason: "Crédito de fidelidade",
+    createdAt: "2026-11-10T12:00:00.000Z",
+  },
+];
 
 function integer(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value);
+}
+function coinHundredths(value: unknown, allowNegative = false): number | null {
+  const raw = typeof value === "number" ? String(value) : typeof value === "string" ? value : "";
+  const pattern = allowNegative ? /^-?\d+(?:\.\d{1,2})?$/ : /^\d+(?:\.\d{1,2})?$/;
+  if (!pattern.test(raw)) return null;
+  const negative = raw.startsWith("-");
+  const [whole, fraction = ""] = (negative ? raw.slice(1) : raw).split(".");
+  const result = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+  return Number.isSafeInteger(result) ? (negative ? -result : result) : null;
 }
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -65,20 +121,26 @@ async function requireOwnAccount(): Promise<string> {
 export async function getMyTonecosCoinBalance(): Promise<TonecosCoinBalance> {
   assertTonecosCoinsEnabled();
   await requireOwnAccount();
+  if (isTonecosLocalPreviewEnabled()) {
+    return { ...LOCAL_PREVIEW_COIN_BALANCE };
+  }
   const { data, error } = await tonecos.rpc("get_my_tonecos_coin_balance");
   if (error) throw error;
   const o = object(data);
-  const { balance, total_earned, total_spent, entry_count, updated_at } = o;
+  const balanceHundredths = coinHundredths(o.balance);
+  const earnedHundredths = coinHundredths(o.total_earned);
+  const spentHundredths = coinHundredths(o.total_spent);
+  const { entry_count, updated_at } = o;
   if (
-    !integer(balance) ||
-    !integer(total_earned) ||
-    !integer(total_spent) ||
+    balanceHundredths === null ||
+    earnedHundredths === null ||
+    spentHundredths === null ||
     !integer(entry_count) ||
-    balance < 0 ||
-    total_earned < 0 ||
-    total_spent < 0 ||
+    balanceHundredths < 0 ||
+    earnedHundredths < 0 ||
+    spentHundredths < 0 ||
     entry_count < 0 ||
-    balance !== total_earned - total_spent ||
+    balanceHundredths !== earnedHundredths - spentHundredths ||
     !(
       updated_at === null ||
       (typeof updated_at === "string" && !Number.isNaN(Date.parse(updated_at)))
@@ -87,9 +149,9 @@ export async function getMyTonecosCoinBalance(): Promise<TonecosCoinBalance> {
     throw new Error("tonecos_coin_balance_invalid");
   }
   return {
-    balance,
-    totalEarned: total_earned,
-    totalSpent: total_spent,
+    balance: balanceHundredths / 100,
+    totalEarned: earnedHundredths / 100,
+    totalSpent: spentHundredths / 100,
     entryCount: entry_count,
     updatedAt: updated_at,
   };
@@ -111,6 +173,9 @@ export async function listMyTonecosCoinEntries(
   ) {
     throw new Error("tonecos_coin_limit_invalid");
   }
+  if (isTonecosLocalPreviewEnabled()) {
+    return LOCAL_PREVIEW_COIN_ENTRIES.slice(offset, offset + limit);
+  }
   const userId = await requireOwnAccount();
   const { data, error } = await tonecos
     .from("tonecos_coin_entries")
@@ -125,8 +190,8 @@ export async function listMyTonecosCoinEntries(
     if (
       typeof r.id !== "string" ||
       !uuidPattern.test(r.id) ||
-      !integer(r.delta) ||
-      r.delta === 0 ||
+      coinHundredths(r.delta, true) === null ||
+      (coinHundredths(r.delta, true) ?? 0) === 0 ||
       typeof r.entry_type !== "string" ||
       !coinTypeSet.has(r.entry_type) ||
       typeof r.reason !== "string" ||
@@ -139,7 +204,7 @@ export async function listMyTonecosCoinEntries(
     }
     return {
       id: r.id,
-      delta: r.delta,
+      delta: Number(r.delta),
       type: r.entry_type as TonecosCoinEntry["type"],
       reason: r.reason,
       createdAt: r.created_at,
@@ -155,6 +220,9 @@ export async function creditTonecosCoins(input: {
   reason: string;
 }): Promise<TonecosAdminCreditResult> {
   assertTonecosCoinsEnabled();
+  if (isTonecosLocalPreviewEnabled()) {
+    throw new Error("tonecos_local_preview_read_only");
+  }
   if (
     typeof input.userId !== "string" ||
     !uuidPattern.test(input.userId) ||
@@ -181,9 +249,9 @@ export async function creditTonecosCoins(input: {
   if (
     o.user_id !== input.userId ||
     o.credited !== input.amount ||
-    !integer(o.balance) ||
-    o.balance < input.amount ||
-    o.balance > 1000000 ||
+    coinHundredths(o.balance) === null ||
+    (coinHundredths(o.balance) ?? 0) < input.amount * 100 ||
+    (coinHundredths(o.balance) ?? Infinity) > 100000000 ||
     typeof o.transaction_id !== "string" ||
     !uuidPattern.test(o.transaction_id) ||
     typeof o.idempotent !== "boolean"
@@ -193,18 +261,58 @@ export async function creditTonecosCoins(input: {
   return {
     userId: o.user_id,
     credited: o.credited,
-    balance: o.balance,
+    balance: Number(o.balance),
     transactionId: o.transaction_id,
     idempotent: o.idempotent,
   };
 }
 
-/** Spends an owner's virtual Coins against one answered quote at R$1 per Coin. */
+/** Reverses an eligible ledger entry atomically; this never refunds BRL or edits an order. */
+export async function reverseTonecosCoinEntry(input: {
+  entryId: string;
+  reason: string;
+}): Promise<TonecosCoinReversalResult> {
+  assertTonecosCoinsEnabled();
+  if (isTonecosLocalPreviewEnabled()) {
+    throw new Error("tonecos_local_preview_read_only");
+  }
+  const reason = typeof input.reason === "string" ? input.reason.trim() : "";
+  if (!uuidPattern.test(input.entryId) || reason.length < 4 || reason.length > 500) {
+    throw new Error("tonecos_coin_reversal_input_invalid");
+  }
+  await requireOwnAccount();
+  const { data, error } = await tonecos.rpc("admin_reverse_tonecos_coin_entry", {
+    p_entry_id: input.entryId,
+    p_reason: reason,
+  });
+  if (error) throw error;
+  const result = object(data);
+  const balanceHundredths = coinHundredths(result.balance);
+  if (
+    typeof result.transaction_id !== "string" ||
+    !uuidPattern.test(result.transaction_id) ||
+    balanceHundredths === null ||
+    balanceHundredths < 0 ||
+    typeof result.idempotent !== "boolean"
+  ) {
+    throw new Error("tonecos_coin_reversal_result_invalid");
+  }
+  return {
+    transactionId: result.transaction_id,
+    balance: balanceHundredths / 100,
+    idempotent: result.idempotent,
+  };
+}
+
+/** Kept only for compatibility with older callers; quotes are never Coins-eligible. */
 export async function applyTonecosCoinsToQuote(input: {
   quoteId: string;
   amount: number;
 }): Promise<TonecosQuoteCoinPaymentResult> {
   assertTonecosCoinsEnabled();
+  if (isTonecosLocalPreviewEnabled()) {
+    throw new Error("tonecos_local_preview_read_only");
+  }
   if (
     typeof input.quoteId !== "string" ||
     !uuidPattern.test(input.quoteId) ||
@@ -214,33 +322,7 @@ export async function applyTonecosCoinsToQuote(input: {
   ) {
     throw new Error("tonecos_coin_quote_payment_input_invalid");
   }
-  await requireOwnAccount();
-  const { data, error } = await tonecos.rpc("apply_tonecos_coins_to_quote", {
-    p_quote_id: input.quoteId.toLowerCase(),
-    p_amount: input.amount,
-  });
-  if (error) throw error;
-  const o = object(data);
-  const remainingAmount = Number(o.remaining_amount);
-  if (
-    o.quote_id !== input.quoteId.toLowerCase() ||
-    o.spent !== input.amount ||
-    !integer(o.balance) ||
-    o.balance < 0 ||
-    o.balance > 1000000 ||
-    !Number.isFinite(remainingAmount) ||
-    remainingAmount < 0 ||
-    typeof o.idempotent !== "boolean"
-  ) {
-    throw new Error("tonecos_coin_quote_payment_result_invalid");
-  }
-  return {
-    quoteId: o.quote_id,
-    spent: o.spent,
-    balance: o.balance,
-    remainingAmount,
-    idempotent: o.idempotent,
-  };
+  throw new Error("tonecos_coins_not_eligible_for_quotes");
 }
 
 export type TonecosCoinRecipient = {
@@ -254,6 +336,9 @@ export async function findTonecosCoinRecipient(
   email: string,
 ): Promise<TonecosCoinRecipient | null> {
   assertTonecosCoinsEnabled();
+  if (isTonecosLocalPreviewEnabled()) {
+    throw new Error("tonecos_local_preview_read_only");
+  }
   const normalized =
     typeof email === "string" ? email.trim().toLowerCase() : "";
   if (

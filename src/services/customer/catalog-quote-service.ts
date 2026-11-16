@@ -1,5 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { assertTonecosQuotesEnabled } from "@/config/tonecos-commercial-authority";
+import {
+  isTonecosLocalPreviewEnabled,
+  TONECOS_LOCAL_PREVIEW_QUOTE_ID,
+  TONECOS_LOCAL_PREVIEW_USER_ID,
+} from "@/services/customer/tonecos-account-service";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
@@ -12,6 +17,11 @@ import {
   type PublicCatalogModel,
 } from "@/services/catalog/public-catalog-gateway";
 import { MAX_CANONICAL_SELECTION } from "@/services/catalog/public-catalog-selection";
+import { decimalToHundredths } from "@/services/commercial/tonart-commerce-rules";
+import {
+  decodeTonartExtraOrderSnapshot,
+  type TonartExtraOrderSnapshot,
+} from "@/services/commercial/tonart-extra-order";
 import {
   deletePaymentVoucher,
   uploadPaymentVoucher,
@@ -57,6 +67,8 @@ export type CustomerCatalogQuote = {
   paymentVoucherType: "deposit" | "final" | "full" | null;
   paymentVoucherRejectionReason: string | null;
   coinAmountApplied: number;
+  commercialOfferSnapshot: TonartExtraOrderSnapshot | null;
+  commercialShippingAmountBrl: number | null;
 };
 
 export type CustomerCatalogQuotePage = {
@@ -67,6 +79,40 @@ export type CustomerCatalogQuotePage = {
 };
 
 const requireCommercialQuoteMode = assertTonecosQuotesEnabled;
+
+const LOCAL_PREVIEW_QUOTE: CustomerCatalogQuote = {
+  id: TONECOS_LOCAL_PREVIEW_QUOTE_ID,
+  status: "pending",
+  createdAt: "2026-11-10T12:00:00.000Z",
+  deadline: null,
+  notes: "Gostaria de receber uma cotação para este modelo.",
+  items: [{ slug: "naruto", quantity: 1 }],
+  quotedAmount: null,
+  listAmount: null,
+  discountPercent: 0,
+  discountAmount: 0,
+  responseMessage: null,
+  whatsapp: "5511900000000",
+  postalCode: "01401000",
+  scale: "1/10",
+  finishing: "pintado",
+  isPreorder: false,
+  depositAmount: null,
+  remainingAmount: null,
+  paymentStatus: null,
+  paymentLink: null,
+  pixKey: null,
+  paymentInstructions: null,
+  paymentLinkSentAt: null,
+  finalPaymentNotifiedAt: null,
+  readyForFinalPayment: false,
+  paymentVoucherPath: null,
+  paymentVoucherType: null,
+  paymentVoucherRejectionReason: null,
+  coinAmountApplied: 0,
+  commercialOfferSnapshot: null,
+  commercialShippingAmountBrl: null,
+};
 
 function validateItems(items: readonly CatalogQuoteItem[]): CatalogQuoteItem[] {
   if (
@@ -112,6 +158,9 @@ export async function submitCatalogQuoteRequest(
   intent: CatalogQuoteIntent = "quote",
 ): Promise<string> {
   requireCommercialQuoteMode();
+  if (isTonecosLocalPreviewEnabled()) {
+    throw new Error("catalog_quote_local_preview_read_only");
+  }
   const safeItems = validateItems(items);
   if (notes !== null && typeof notes !== "string") {
     throw new Error("catalog_quote_notes_invalid");
@@ -192,8 +241,12 @@ type QuoteDbRow = {
   payment_voucher_path?: string | null;
   payment_voucher_type?: string | null;
   payment_voucher_rejection_reason?: string | null;
+  commercial_offer_snapshot?: unknown;
+  commercial_shipping_amount_brl?: number | null;
 };
 
+const QUOTE_HISTORY_SELECT_WITH_COMMERCE =
+  "id,status,created_at,deadline,notes,total_amount,list_amount,discount_percent,discount_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing,is_preorder,deposit_amount,remaining_amount,payment_status,payment_link,pix_key,payment_instructions,payment_link_sent_at,final_payment_notified_at,ready_for_final_payment,payment_voucher_path,payment_voucher_type,payment_voucher_rejection_reason,commercial_offer_snapshot,commercial_shipping_amount_brl";
 const QUOTE_HISTORY_SELECT =
   "id,status,created_at,deadline,notes,total_amount,list_amount,discount_percent,discount_amount,admin_response,requested_catalog_models,catalog_requested_at,customer_whatsapp,postal_code,desired_scale,finishing,is_preorder,deposit_amount,remaining_amount,payment_status,payment_link,pix_key,payment_instructions,payment_link_sent_at,final_payment_notified_at,ready_for_final_payment,payment_voucher_path,payment_voucher_type,payment_voucher_rejection_reason";
 const QUOTE_HISTORY_SELECT_WITHOUT_PROMOTION =
@@ -222,6 +275,10 @@ const PROMOTION_SCHEMA_COLUMNS = [
   "discount_percent",
   "discount_amount",
 ];
+const COMMERCIAL_ORDER_SCHEMA_COLUMNS = [
+  "commercial_offer_snapshot",
+  "commercial_shipping_amount_brl",
+];
 
 function isMissingPreorderSchemaColumn(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
@@ -247,6 +304,20 @@ function isMissingPromotionSchemaColumn(error: unknown): boolean {
   if (value.code !== "42703" && value.code !== "PGRST204") return false;
   const description = `${value.message ?? ""} ${value.details ?? ""}`;
   return PROMOTION_SCHEMA_COLUMNS.some((column) =>
+    new RegExp(`\\b${column}\\b`, "i").test(description),
+  );
+}
+
+function isMissingCommercialOrderSchemaColumn(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const value = error as {
+    code?: unknown;
+    message?: unknown;
+    details?: unknown;
+  };
+  if (value.code !== "42703" && value.code !== "PGRST204") return false;
+  const description = `${value.message ?? ""} ${value.details ?? ""}`;
+  return COMMERCIAL_ORDER_SCHEMA_COLUMNS.some((column) =>
     new RegExp(`\\b${column}\\b`, "i").test(description),
   );
 }
@@ -283,7 +354,7 @@ export async function loadMyCatalogQuotePage(
   userId: string,
   options: { limit?: number; offset?: number; quoteId?: string } = {},
 ): Promise<CustomerCatalogQuotePage> {
-  requireCommercialQuoteMode();
+  if (!isTonecosLocalPreviewEnabled()) requireCommercialQuoteMode();
   const limit = options.limit ?? 20;
   const offset = options.offset ?? 0;
   const quoteId = options.quoteId;
@@ -304,19 +375,45 @@ export async function loadMyCatalogQuotePage(
     throw new Error("catalog_quote_list_query_invalid");
   }
 
+  if (isTonecosLocalPreviewEnabled()) {
+    if (userId !== TONECOS_LOCAL_PREVIEW_USER_ID) {
+      throw new Error("tonecos_login_required");
+    }
+    const matchesSelection =
+      quoteId === undefined || quoteId.toLowerCase() === LOCAL_PREVIEW_QUOTE.id;
+    const rows = matchesSelection && offset === 0 ? [LOCAL_PREVIEW_QUOTE] : [];
+    return {
+      total: matchesSelection ? 1 : 0,
+      limit,
+      offset,
+      rows: rows.slice(0, limit),
+    };
+  }
+
   await assertCurrentUserId(userId);
   // A deep link is resolved by the same protected quotes relation and RLS,
   // not by paging through a customer's history or exposing a public lookup.
   // Fall back only for the known optional preorder/promotion columns.
   let paymentSchemaAvailable = true;
   let promotionSchemaAvailable = true;
+  let commercialOrderSchemaAvailable = true;
   let result = await fetchMyQuotePage(
     userId,
     quoteId,
     limit,
     offset,
-    QUOTE_HISTORY_SELECT,
+    QUOTE_HISTORY_SELECT_WITH_COMMERCE,
   );
+  if (result.error && isMissingCommercialOrderSchemaColumn(result.error)) {
+    commercialOrderSchemaAvailable = false;
+    result = await fetchMyQuotePage(
+      userId,
+      quoteId,
+      limit,
+      offset,
+      QUOTE_HISTORY_SELECT,
+    );
+  }
   if (result.error) {
     if (isMissingPromotionSchemaColumn(result.error)) {
       promotionSchemaAvailable = false;
@@ -369,7 +466,7 @@ export async function loadMyCatalogQuotePage(
   const { data, error, count } = result;
   if (error) throw error;
 
-  const coinPaymentsByQuote = new Map<string, number>();
+  const coinPaymentsByQuoteHundredths = new Map<string, number>();
   const quoteIds = (data ?? []).map((row) => row.id);
   if (
     quoteIds.some(
@@ -396,18 +493,26 @@ export async function loadMyCatalogQuotePage(
     if (coinPaymentsError) throw coinPaymentsError;
     for (const payment of coinPayments ?? []) {
       const amount = Number(payment.amount);
+      let amountHundredths: number;
+      try {
+        amountHundredths = decimalToHundredths(amount);
+      } catch {
+        throw new Error("catalog_quote_coin_payment_invalid");
+      }
       if (
-        !Number.isSafeInteger(amount) ||
-        amount < 1 ||
+        !Number.isFinite(amount) ||
+        amountHundredths < 1 ||
         amount > 100000 ||
         !quoteIds.includes(payment.quote_id)
       ) {
         throw new Error("catalog_quote_coin_payment_invalid");
       }
-      const applied = (coinPaymentsByQuote.get(payment.quote_id) ?? 0) + amount;
-      if (applied > 100000)
+      const applied =
+        (coinPaymentsByQuoteHundredths.get(payment.quote_id) ?? 0) +
+        amountHundredths;
+      if (applied > 10_000_000)
         throw new Error("catalog_quote_coin_payment_invalid");
-      coinPaymentsByQuote.set(payment.quote_id, applied);
+      coinPaymentsByQuoteHundredths.set(payment.quote_id, applied);
     }
   }
   if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0) {
@@ -429,6 +534,10 @@ export async function loadMyCatalogQuotePage(
       ) {
         throw new Error("catalog_quote_row_invalid");
       }
+      const cancelledExtraOrder =
+        row.commercial_offer_snapshot != null &&
+        row.status === "archived" &&
+        row.payment_status === "failed";
       const voucherPath = paymentSchemaAvailable
         ? (row.payment_voucher_path ?? null)
         : null;
@@ -442,15 +551,20 @@ export async function loadMyCatalogQuotePage(
               ? "full"
               : null;
       const quotedAmount =
+        !cancelledExtraOrder &&
         ["answered", "archived"].includes(row.status) &&
         row.total_amount !== null &&
         row.total_amount > 0
           ? row.total_amount
           : null;
       const listAmount = promotionSchemaAvailable
-        ? (validPositiveMoney(row.list_amount) ??
-          validPositiveMoney(row.total_amount))
-        : validPositiveMoney(row.total_amount);
+        ? cancelledExtraOrder
+          ? null
+          : (validPositiveMoney(row.list_amount) ??
+            validPositiveMoney(row.total_amount))
+        : cancelledExtraOrder
+          ? null
+          : validPositiveMoney(row.total_amount);
       const discountPercent = promotionSchemaAvailable
         ? validDiscountPercent(row.discount_percent)
         : 0;
@@ -482,6 +596,66 @@ export async function loadMyCatalogQuotePage(
           ).test(voucherPath))
       ) {
         throw new Error("catalog_quote_voucher_path_invalid");
+      }
+      const commercialOfferSnapshot =
+        commercialOrderSchemaAvailable && row.commercial_offer_snapshot != null
+          ? decodeTonartExtraOrderSnapshot(row.commercial_offer_snapshot)
+          : null;
+      let commercialShippingAmountBrl: number | null = null;
+      const rawCommercialShipping = row.commercial_shipping_amount_brl;
+      if (
+        commercialOrderSchemaAvailable &&
+        rawCommercialShipping !== null &&
+        rawCommercialShipping !== undefined
+      ) {
+        let shippingHundredths: number;
+        try {
+          shippingHundredths = decimalToHundredths(
+            typeof rawCommercialShipping === "number" ||
+              typeof rawCommercialShipping === "string"
+              ? rawCommercialShipping
+              : "",
+          );
+        } catch {
+          throw new Error("catalog_quote_commercial_shipping_invalid");
+        }
+        if (shippingHundredths < 0 || shippingHundredths > 9_999_999_999) {
+          throw new Error("catalog_quote_commercial_shipping_invalid");
+        }
+        commercialShippingAmountBrl = shippingHundredths / 100;
+      }
+      if (
+        commercialOfferSnapshot &&
+        (items.length !== 1 ||
+          items[0].slug !== commercialOfferSnapshot.catalogModelSlug ||
+          items[0].quantity !== 1 ||
+          row.desired_scale !== commercialOfferSnapshot.scale ||
+          row.finishing !==
+            (commercialOfferSnapshot.finishing === "painted"
+              ? "pintado"
+              : "sem pintura") ||
+          (commercialOfferSnapshot.shippingMode === "fixed" &&
+            commercialShippingAmountBrl !==
+              commercialOfferSnapshot.configuredShippingAmountBrl) ||
+          (commercialOfferSnapshot.shippingMode === "quote_required" &&
+            row.status === "answered" &&
+            commercialShippingAmountBrl === null) ||
+          (quotedAmount !== null &&
+            Math.abs(
+              quotedAmount -
+                commercialOfferSnapshot.itemPriceBrl -
+                (commercialShippingAmountBrl ?? 0),
+            ) > 0.001) ||
+          (listAmount !== null &&
+            Math.abs(
+              listAmount -
+                commercialOfferSnapshot.itemPriceBrl -
+                (commercialShippingAmountBrl ?? 0),
+            ) > 0.001) ||
+          discountPercent !== 0 ||
+          discountAmount !== 0)
+      ) {
+        throw new Error("catalog_quote_commercial_order_invalid");
       }
       return {
         id: row.id,
@@ -531,7 +705,10 @@ export async function loadMyCatalogQuotePage(
         paymentVoucherRejectionReason: paymentSchemaAvailable
           ? validOptionalText(row.payment_voucher_rejection_reason, 500)
           : null,
-        coinAmountApplied: coinPaymentsByQuote.get(row.id) ?? 0,
+        coinAmountApplied:
+          (coinPaymentsByQuoteHundredths.get(row.id) ?? 0) / 100,
+        commercialOfferSnapshot,
+        commercialShippingAmountBrl,
       };
     },
   );
@@ -592,6 +769,9 @@ export async function submitCatalogPreorderVoucher(input: {
   previousVoucherPath?: string | null;
 }): Promise<CatalogPreorderVoucherSubmission> {
   requireCommercialQuoteMode();
+  if (isTonecosLocalPreviewEnabled()) {
+    throw new Error("catalog_quote_local_preview_read_only");
+  }
   if (
     !input ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(

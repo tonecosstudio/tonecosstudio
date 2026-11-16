@@ -10,6 +10,7 @@ const DEADLINE_KEYS = [
   "delivery_interval_days",
   "character_choice_days",
   "balance_payment_days",
+  "tonart_model_change_cutoff_days",
 ] as const;
 
 export type ProductionDeadlineKey = (typeof DEADLINE_KEYS)[number];
@@ -32,6 +33,7 @@ const DEADLINE_MAX: Record<ProductionDeadlineKey, number> = {
   delivery_interval_days: 3650,
   character_choice_days: 365,
   balance_payment_days: 365,
+  tonart_model_change_cutoff_days: 365,
 };
 
 function parseDeadlineValue(key: ProductionDeadlineKey, value: unknown): number {

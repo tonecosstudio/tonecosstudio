@@ -1,10 +1,19 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  LOCAL_SUPABASE_FALLBACK,
+  PREVIEW_READ_ONLY,
+} from "@/config/supabase-environment";
 import { requireAuthenticatedUserId } from "@/services/auth/current-user";
 import {
   deletePaymentVoucher,
   uploadPaymentVoucher,
 } from "@/services/payments/payment-voucher-storage-service";
 import { getSubscriptionModelSelectionIssue } from "@/services/subscriptions/subscription-model-selection";
+import {
+  TONART_PLAN_PIECE_COUNTS,
+  decimalToHundredths,
+  type TonartPlanPieceCount,
+} from "@/services/commercial/tonart-commerce-rules";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -19,8 +28,9 @@ export type SubscribePlan = {
   price_pix: number;
   price_full: number;
   deliveries_total: number;
-  total_credits: number | null;
-  model_selection_limit: 6 | 12;
+  coin_bonus_per_shipment: number;
+  coin_bonus_cap: number;
+  model_selection_limit: TonartPlanPieceCount;
   is_active: boolean;
 };
 
@@ -40,7 +50,8 @@ export type SubscriptionCheckoutResult = {
   paymentId: string;
   referenceNumber: string;
   amount: number;
-  status: "under_review";
+  status: "under_review" | "paid";
+  idempotent: boolean;
 };
 
 export type CustomerSubscriptionPayment = {
@@ -59,12 +70,14 @@ type SubscribeCollectionQueryRow = Omit<SubscribeCollectionOption, "image_url" |
 
 type SubscribePlanQueryRow = Omit<
   SubscribePlan,
-  "price_pix" | "price_full" | "deliveries_total" | "total_credits" | "model_selection_limit"
+  | "price_pix" | "price_full" | "deliveries_total"
+  | "coin_bonus_per_shipment" | "coin_bonus_cap" | "model_selection_limit"
 > & {
   price_pix: unknown;
   price_full: unknown;
   deliveries_total: unknown;
-  total_credits: unknown;
+  coin_bonus_per_shipment: unknown;
+  coin_bonus_cap: unknown;
   model_selection_limit: unknown;
 };
 
@@ -77,11 +90,18 @@ interface SubscriptionCheckoutRpcClient {
       p_selected_model_slugs: string[];
       p_payment_method: SubscriptionPaymentMethod;
       p_payment_voucher_url: string;
+      p_checkout_request_id: string;
     },
   ): Promise<{ data: unknown; error: Error | null }>;
 }
 
 const subscriptionCheckoutRpc = supabase as unknown as SubscriptionCheckoutRpcClient;
+
+function assertSubscriptionPaymentWritesAllowed(): void {
+  if (LOCAL_SUPABASE_FALLBACK || PREVIEW_READ_ONLY) {
+    throw new Error("O envio de comprovantes está indisponível neste ambiente.");
+  }
+}
 
 function toSubscribeCollectionOption(row: SubscribeCollectionQueryRow): SubscribeCollectionOption {
   return {
@@ -95,28 +115,43 @@ function toSubscribeCollectionOption(row: SubscribeCollectionQueryRow): Subscrib
 
 function normalizeSubscribePlan(row: SubscribePlanQueryRow): SubscribePlan {
   const priceFull = Number(row.price_full);
-  const pricePix = Number(row.price_pix);
+  // Existing price_pix remains historical data; the plan is one fixed-price
+  // purchase, so its PIX and card totals are both the configured full amount.
+  const pricePix = priceFull;
   const deliveriesTotal = Number(row.deliveries_total);
-  const totalCredits = row.total_credits == null ? null : Number(row.total_credits);
+  const coinBonusPerShipment = Number(row.coin_bonus_per_shipment ?? 0);
+  const coinBonusCap = Number(row.coin_bonus_cap ?? 0);
   const modelSelectionLimit = Number(row.model_selection_limit);
 
   const invalidMoney =
     !Number.isFinite(priceFull) ||
-    !Number.isFinite(pricePix) ||
-    priceFull <= 0 ||
-    pricePix <= 0 ||
-    pricePix > priceFull;
+    priceFull <= 0;
+  try {
+    decimalToHundredths(String(priceFull));
+  } catch {
+    throw new Error(`Preço inválido no plano ${row.id}`);
+  }
   const invalidDeliveries =
     !Number.isFinite(deliveriesTotal) ||
     !Number.isInteger(deliveriesTotal) ||
     deliveriesTotal <= 0;
-  const invalidCredits =
-    totalCredits !== null &&
-    (!Number.isFinite(totalCredits) || !Number.isInteger(totalCredits) || totalCredits < 0);
-  const invalidSelectionLimit =
-    modelSelectionLimit !== 6 && modelSelectionLimit !== 12;
+  let invalidCoinAmount = false;
+  try {
+    decimalToHundredths(String(coinBonusPerShipment));
+    decimalToHundredths(String(coinBonusCap));
+  } catch {
+    invalidCoinAmount = true;
+  }
+  const supportedSelectionLimit = TONART_PLAN_PIECE_COUNTS.includes(
+    modelSelectionLimit as TonartPlanPieceCount,
+  );
+  const invalidSelectionLimit = !supportedSelectionLimit || deliveriesTotal !== modelSelectionLimit;
 
-  if (invalidMoney || invalidDeliveries || invalidCredits || invalidSelectionLimit) {
+  if (
+    invalidMoney || invalidDeliveries || invalidCoinAmount ||
+    coinBonusPerShipment < 0 || coinBonusCap < 0 || coinBonusCap < coinBonusPerShipment ||
+    invalidSelectionLimit
+  ) {
     throw new Error(`Configuração comercial inválida no plano ${row.id}`);
   }
 
@@ -125,8 +160,9 @@ function normalizeSubscribePlan(row: SubscribePlanQueryRow): SubscribePlan {
     price_pix: pricePix,
     price_full: priceFull,
     deliveries_total: deliveriesTotal,
-    total_credits: totalCredits,
-    model_selection_limit: modelSelectionLimit,
+    coin_bonus_per_shipment: coinBonusPerShipment,
+    coin_bonus_cap: coinBonusCap,
+    model_selection_limit: modelSelectionLimit as TonartPlanPieceCount,
   };
 }
 
@@ -134,10 +170,11 @@ export async function listSubscribePlans(): Promise<SubscribePlan[]> {
   const { data, error } = await supabase
     .from("subscription_plans")
     .select(
-      "id, name, description, plan_type, price_pix, price_full, deliveries_total, total_credits, model_selection_limit, is_active",
+      "id, name, description, plan_type, price_pix, price_full, deliveries_total, coin_bonus_per_shipment, coin_bonus_cap, model_selection_limit, is_active",
     )
     .eq("is_active", true)
-    .in("model_selection_limit", [6, 12])
+    .in("plan_type", ["avulso", "trimestral", "semestral"])
+    .in("model_selection_limit", [1, 3, 6, 12])
     .order("display_order", { ascending: true });
 
   if (error) throw error;
@@ -176,14 +213,17 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
   planId: string;
   collectionId: string;
   selectedModelSlugs: string[];
-  modelSelectionLimit: 6 | 12;
+  modelSelectionLimit: TonartPlanPieceCount;
   paymentMethod: SubscriptionPaymentMethod;
   voucher: File;
+  checkoutRequestId: string;
 }): Promise<SubscriptionCheckoutResult> {
+  assertSubscriptionPaymentWritesAllowed();
   if (
     !input ||
     !UUID_PATTERN.test(input.planId) ||
     !UUID_PATTERN.test(input.collectionId) ||
+    !UUID_PATTERN.test(input.checkoutRequestId) ||
     (input.paymentMethod !== "pix" && input.paymentMethod !== "credit_card") ||
     getSubscriptionModelSelectionIssue({
       selectedSlugs: input.selectedModelSlugs,
@@ -202,6 +242,7 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
   });
 
   let data: unknown;
+  let databaseRejected = false;
   try {
     const result = await subscriptionCheckoutRpc.rpc("create_subscription_checkout_for_current_user", {
       p_plan_id: input.planId,
@@ -209,26 +250,40 @@ export async function createSubscriptionCheckoutForCurrentUser(input: {
       p_selected_model_slugs: input.selectedModelSlugs,
       p_payment_method: input.paymentMethod,
       p_payment_voucher_url: voucherPath,
+      p_checkout_request_id: input.checkoutRequestId,
     });
-    if (result.error) throw result.error;
+    if (result.error) {
+      databaseRejected = true;
+      throw result.error;
+    }
     data = result.data;
   } catch (error) {
-    try {
-      await deletePaymentVoucher(voucherPath, userId);
-    } catch {
-      // Preserve the checkout error; an orphaned private object is not exposed.
+    if (databaseRejected) {
+      try {
+        await deletePaymentVoucher(voucherPath, userId);
+      } catch {
+        // Preserve the checkout error; an orphaned private object is not exposed.
+      }
     }
     const message = error instanceof Error ? error.message : "";
     if (message.includes("SUBSCRIPTION_CHECKOUT_EXISTS")) {
       throw new Error(
-        "Já existe uma assinatura ativa ou em análise para esta coleção. Consulte Pagamentos na sua conta.",
+        "Já existe uma solicitação ativa ou em análise para esta coleção. Consulte Meus planos e entregas antes de tentar novamente.",
       );
     }
     throw error;
   }
 
   try {
-    return parseSubscriptionCheckoutResult(data);
+    const parsed = parseSubscriptionCheckoutResult(data);
+    if (parsed.idempotent) {
+      try {
+        await deletePaymentVoucher(voucherPath, userId);
+      } catch {
+        // The committed checkout points to its original voucher; this retry file is private and unused.
+      }
+    }
+    return parsed;
   } catch {
     throw new Error(
       "Não foi possível confirmar o resultado. Sua solicitação pode ter sido registrada; confira Pagamentos na sua conta antes de tentar novamente.",
@@ -262,7 +317,8 @@ function parseSubscriptionCheckoutResult(data: unknown): SubscriptionCheckoutRes
     payment.reference_number.length > 80 ||
     !Number.isFinite(amount) ||
     amount <= 0 ||
-    payment.status !== "under_review"
+    !["under_review", "paid", "approved"].includes(String(payment.status)) ||
+    typeof result.idempotent !== "boolean"
   ) {
     throw new Error("subscription_checkout_result_invalid");
   }
@@ -272,7 +328,8 @@ function parseSubscriptionCheckoutResult(data: unknown): SubscriptionCheckoutRes
     paymentId: payment.id,
     referenceNumber: payment.reference_number,
     amount,
-    status: "under_review",
+    status: payment.status === "under_review" ? "under_review" : "paid",
+    idempotent: result.idempotent,
   };
 }
 
@@ -304,6 +361,7 @@ export async function resubmitSubscriptionPaymentVoucher(input: {
   subscriptionId: string;
   voucher: File;
 }): Promise<SubscriptionCheckoutResult> {
+  assertSubscriptionPaymentWritesAllowed();
   if (!UUID_PATTERN.test(input.subscriptionId) || !(input.voucher instanceof File)) {
     throw new Error("subscription_voucher_resubmission_invalid");
   }

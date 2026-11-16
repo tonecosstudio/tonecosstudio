@@ -81,6 +81,18 @@ describe("canonical TONART admin overview", () => {
       data: {
         ...payload,
         coinEntryCount: 1,
+        recentCoinEntries: [{ ...coin, type: "legacy_import", delta: -7.25 }],
+      },
+      error: null,
+    });
+    await expect(getTonartAdminOverview()).resolves.toMatchObject({
+      recentCoinEntries: [{ type: "legacy_import", delta: -7.25 }],
+    });
+
+    mocks.rpc.mockResolvedValueOnce({
+      data: {
+        ...payload,
+        coinEntryCount: 1,
         recentCoinEntries: [{ ...coin, delta: 0 }],
       },
       error: null,

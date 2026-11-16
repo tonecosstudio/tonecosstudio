@@ -19,11 +19,7 @@ import {
   validatePaymentVoucher,
 } from "@/services/payments/payment-voucher-storage-service";
 import { submitCatalogPreorderVoucher } from "@/services/customer/catalog-quote-service";
-import {
-  applyTonecosCoinsToQuote,
-  getMyTonecosCoinBalance,
-  type TonecosCoinBalance,
-} from "@/services/coins/tonecos-coins-service";
+import { cancelTonartExtraOrder } from "@/services/commercial/tonart-extra-order-service";
 
 const labels: Record<string, string> = {
   pending: "Recebido",
@@ -55,26 +51,18 @@ function getSafePaymentUrl(value: string | null): string | null {
 
 function QuotePaymentPanel({
   row,
-  coinBalance,
-  coinBalanceLoading,
-  coinBalanceError,
-  onRetryCoinBalance,
   onSuccess,
 }: {
   row: CustomerCatalogQuote;
-  coinBalance: TonecosCoinBalance | null;
-  coinBalanceLoading: boolean;
-  coinBalanceError: boolean;
-  onRetryCoinBalance: () => void;
   onSuccess: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [coinAmountInput, setCoinAmountInput] = useState<number | null>(null);
-  const [coinError, setCoinError] = useState("");
-  const [coinNotice, setCoinNotice] = useState("");
+  const [cancelConfirmation, setCancelConfirmation] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState("");
   const paymentStatus = row.paymentStatus ?? "pending";
   const finalPayment =
     paymentStatus === "deposit_paid" && row.readyForFinalPayment;
@@ -107,23 +95,23 @@ function QuotePaymentPanel({
     amount !== null &&
     amount > 0 &&
     instructionsAvailable;
+  const coinsOnlyFullyPaid =
+    row.commercialOfferSnapshot !== null &&
+    paymentStatus === "fully_paid" &&
+    row.commercialOfferSnapshot.coinsApplied >=
+      row.commercialOfferSnapshot.itemPriceBrl &&
+    (row.commercialShippingAmountBrl ?? 0) === 0;
+  const canCancelExtraOrder =
+    row.commercialOfferSnapshot !== null &&
+    row.status !== "archived" &&
+    !["under_review", "deposit_paid"].includes(paymentStatus) &&
+    (paymentStatus === "pending" || coinsOnlyFullyPaid) &&
+    !row.paymentLinkSentAt &&
+    (!row.paymentVoucherPath || Boolean(row.paymentVoucherRejectionReason));
   const preorderBalance =
     row.quotedAmount !== null && row.depositAmount !== null
       ? Math.max(0, row.quotedAmount - row.depositAmount)
       : null;
-  const eligibleForCoins =
-    !row.isPreorder &&
-    row.status === "answered" &&
-    paymentStatus === "pending" &&
-    row.coinAmountApplied === 0 &&
-    row.paymentVoucherPath === null &&
-    amountDue !== null;
-  const maxCoins =
-    eligibleForCoins && coinBalance !== null && amountDue !== null
-      ? Math.min(coinBalance.balance, Math.floor(amountDue))
-      : 0;
-  const coinAmount = maxCoins > 0 ? (coinAmountInput ?? maxCoins) : 0;
-  const coinAmountOutOfRange = coinAmount > maxCoins;
 
   async function sendVoucher() {
     if (!file || !canSubmit || busy) return;
@@ -153,51 +141,44 @@ function QuotePaymentPanel({
     }
   }
 
-  async function applyCoins() {
-    if (busy || maxCoins < 1 || coinAmount < 1) return;
-    setBusy(true);
-    setCoinError("");
-    setCoinNotice("");
+  async function cancelExtraOrder() {
+    if (!row.commercialOfferSnapshot || cancelBusy) return;
+    setCancelBusy(true);
+    setCancelError("");
     try {
-      const result = await applyTonecosCoinsToQuote({
-        quoteId: row.id,
-        amount: coinAmount,
-      });
-      setCoinNotice(
-        result.remainingAmount === 0
-          ? "Coins aplicados. O orçamento foi totalmente quitado."
-          : `${result.spent} Coins aplicados. Restam ${brl.format(result.remainingAmount)} para pagamento.`,
-      );
+      await cancelTonartExtraOrder(row.id);
+      setCancelConfirmation(false);
       onSuccess();
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "";
-      setCoinError(
-        message.includes("Insufficient coin balance")
-          ? "Seu saldo mudou. Atualize a página e tente novamente."
-          : message.includes("exceeds the remaining")
-            ? "A quantidade excede o saldo atual do orçamento. Atualize a página."
-            : "Não foi possível aplicar Coins agora. Atualize a página e tente novamente.",
-      );
+      setCancelError(commercialQuoteErrorText(cause));
     } finally {
-      setBusy(false);
+      setCancelBusy(false);
     }
   }
 
-  if (!row.isPreorder && row.quotedAmount === null) return null;
+  if (
+    !row.isPreorder &&
+    row.quotedAmount === null &&
+    !row.commercialOfferSnapshot
+  ) return null;
 
   return (
     <section className="mt-5 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(0,0%,5%)] p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-[hsl(var(--gold-accent))]">
-            {row.isPreorder
+            {row.commercialOfferSnapshot
+              ? "Pedido extra do catálogo"
+              : row.isPreorder
               ? "Pré-venda com entrada"
               : "Pagamento do orçamento"}
           </h3>
           <p className="mt-1 text-xs leading-5 text-white/60">
-            {row.isPreorder
+            {row.commercialOfferSnapshot
+              ? "O preço e os Coins aplicados ficam registrados nesta oferta. O frete é confirmado conforme a condição informada pela TONART."
+              : row.isPreorder
               ? "R$ 50 de entrada abatidos do total; o restante é pago na finalização."
-              : "Após a resposta da TONART, use Coins ou siga as instruções de pagamento; o comprovante pode ser enviado por aqui."}
+              : "Após a resposta da TONART, siga as instruções de pagamento do orçamento e envie o comprovante por aqui."}
           </p>
         </div>
         {paymentStatus === "under_review" ? (
@@ -215,7 +196,84 @@ function QuotePaymentPanel({
         ) : null}
       </div>
 
-      {row.quotedAmount === null ? (
+      {row.commercialOfferSnapshot ? (
+        <dl className="mt-4 grid grid-cols-2 gap-3 border-y border-white/10 py-3 text-sm">
+          <div>
+            <dt className="text-xs text-white/50">Preço da peça</dt>
+            <dd className="mt-1 font-medium">
+              {brl.format(row.commercialOfferSnapshot.itemPriceBrl)}
+            </dd>
+          </div>
+          {row.commercialOfferSnapshot.itemDiscountBrl > 0 ? (
+            <div>
+              <dt className="text-xs text-white/50">
+                Desconto de assinante ({row.commercialOfferSnapshot.subscriberDiscountBasisPoints / 100}%)
+              </dt>
+              <dd className="mt-1 font-medium text-[hsl(var(--gold-accent))]">
+                −{brl.format(row.commercialOfferSnapshot.itemDiscountBrl)}
+              </dd>
+            </div>
+          ) : null}
+          <div>
+            <dt className="text-xs text-white/50">Frete</dt>
+            <dd className="mt-1 font-medium">
+              {row.commercialShippingAmountBrl !== null
+                ? brl.format(row.commercialShippingAmountBrl)
+                : "A confirmar pela equipe"}
+            </dd>
+          </div>
+          {row.commercialOfferSnapshot.coinsApplied > 0 ? (
+            <div>
+              <dt className="text-xs text-white/50">
+                {row.status === "archived" ? "Coins devolvidos" : "Coins reservados"}
+              </dt>
+              <dd className="mt-1 font-medium text-[hsl(var(--gold-accent))]">
+                {row.status === "archived" ? "+" : "−"}
+                {brl.format(row.commercialOfferSnapshot.coinsApplied)}
+              </dd>
+            </div>
+          ) : null}
+          {row.quotedAmount !== null ? (
+            <>
+              <div>
+                <dt className="text-xs text-white/50">
+                  {row.status === "archived" ? "Total antes do cancelamento" : "Total aprovado"}
+                </dt>
+                <dd className="mt-1 font-medium">{brl.format(row.quotedAmount)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-white/50">Saldo em reais</dt>
+                <dd className="mt-1 font-medium">
+                  {row.remainingAmount === null
+                    ? row.status === "archived"
+                      ? "Sem cobrança pendente"
+                      : paymentStatus === "fully_paid"
+                        ? "R$ 0,00"
+                        : "A confirmar"
+                    : brl.format(row.remainingAmount)}
+                </dd>
+              </div>
+            </>
+          ) : (
+            <div className="col-span-2">
+              <dt className="text-xs text-white/50">Próxima etapa</dt>
+              <dd className="mt-1 text-sm text-white/70">
+                {row.status === "archived"
+                  ? "Pedido cancelado antes da confirmação do frete e do saldo final."
+                  : row.commercialOfferSnapshot.shippingMode === "quote_required"
+                  ? "A equipe confirma o frete e o saldo antes das instruções de pagamento."
+                  : "A equipe revisa o pedido antes de enviar as instruções de pagamento."}
+              </dd>
+            </div>
+          )}
+          <div className="col-span-2 border-t border-white/10 pt-3">
+            <dt className="text-xs text-white/50">Condições e conteúdo</dt>
+            <dd className="mt-1 text-xs leading-relaxed text-white/70">
+              {row.commercialOfferSnapshot.scale} · {row.commercialOfferSnapshot.finishing === "painted" ? "Pintado" : "Sem pintura"} · {row.commercialOfferSnapshot.contentsDescription}
+            </dd>
+          </div>
+        </dl>
+      ) : row.quotedAmount === null ? (
         <p className="mt-4 text-sm text-white/70">
           A equipe está definindo o valor e o prazo. As opções de pagamento
           aparecem após a resposta.
@@ -257,7 +315,7 @@ function QuotePaymentPanel({
             <>
               {row.coinAmountApplied > 0 && (
                 <div>
-                  <dt className="text-xs text-white/50">Coins aplicados</dt>
+                  <dt className="text-xs text-white/50">Coins registrados neste histórico</dt>
                   <dd className="mt-1 font-medium text-[hsl(var(--gold-accent))]">
                     −{brl.format(row.coinAmountApplied)}
                   </dd>
@@ -274,100 +332,6 @@ function QuotePaymentPanel({
         </dl>
       )}
 
-      {eligibleForCoins && coinBalanceLoading && (
-        <p role="status" className="mt-4 text-xs text-white/55">
-          Consultando seu saldo de Coins…
-        </p>
-      )}
-
-      {eligibleForCoins && coinBalanceError && (
-        <div
-          role="alert"
-          className="mt-4 flex flex-col gap-3 border border-amber-400/30 bg-amber-400/5 p-3 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <p className="text-xs leading-5 text-amber-100/80">
-            Não foi possível carregar seu saldo de Coins. O orçamento continua
-            disponível; tente consultar novamente.
-          </p>
-          <button
-            type="button"
-            className={secondaryClass}
-            onClick={onRetryCoinBalance}
-          >
-            Tentar carregar Coins
-          </button>
-        </div>
-      )}
-
-      {eligibleForCoins &&
-        !coinBalanceLoading &&
-        !coinBalanceError &&
-        maxCoins === 0 && (
-          <p className="mt-4 text-xs text-white/50">
-            Não há Coins disponíveis para este orçamento.
-          </p>
-        )}
-
-      {maxCoins > 0 && (
-        <div className="mt-4 space-y-3 border-b border-white/10 pb-4">
-          <div>
-            <h4 className="text-sm font-semibold">Use seus Coins</h4>
-            <p className="mt-1 text-xs leading-5 text-white/55">
-              1 Coin reduz R$ 1 do orçamento. Seu saldo:{" "}
-              {coinBalance?.balance.toLocaleString("pt-BR")} Coins.
-            </p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <label
-              className="block flex-1 space-y-1 text-xs text-white/65"
-              htmlFor={`quote-coins-${row.id}`}
-            >
-              Quantos Coins deseja usar?
-              <input
-                id={`quote-coins-${row.id}`}
-                className="min-h-11 w-full border border-white/20 bg-black px-3 text-sm text-white"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={maxCoins}
-                step={1}
-                value={coinAmount}
-                onChange={(event) =>
-                  setCoinAmountInput(Number(event.target.value))
-                }
-                aria-invalid={coinAmountOutOfRange}
-                aria-describedby={`quote-coins-help-${row.id}`}
-              />
-            </label>
-            <button
-              type="button"
-              className={secondaryClass}
-              disabled={busy || coinAmount < 1 || coinAmountOutOfRange}
-              onClick={() => void applyCoins()}
-            >
-              {busy ? "Aplicando..." : "Usar Coins"}
-            </button>
-          </div>
-          <p
-            id={`quote-coins-help-${row.id}`}
-            className="text-xs text-white/45"
-          >
-            {coinAmountOutOfRange
-              ? `Escolha até ${maxCoins.toLocaleString("pt-BR")} Coins neste orçamento.`
-              : `Até ${maxCoins.toLocaleString("pt-BR")} Coins neste orçamento; se restar algum valor, siga as instruções de pagamento e envie o comprovante por aqui.`}
-          </p>
-          {coinError && (
-            <p role="alert" className="text-sm text-red-300">
-              {coinError}
-            </p>
-          )}
-          {coinNotice && (
-            <p role="status" className="text-sm text-emerald-300">
-              {coinNotice}
-            </p>
-          )}
-        </div>
-      )}
 
       {row.paymentVoucherRejectionReason && (
         <p
@@ -388,7 +352,7 @@ function QuotePaymentPanel({
               : "entrada"}
           . A confirmação só acontece após a conferência da equipe.
         </p>
-      ) : paymentStatus === "fully_paid" ? (
+      ) : row.commercialOfferSnapshot && row.status === "archived" ? null : paymentStatus === "fully_paid" ? (
         <p className="mt-4 text-sm text-white/70">
           O valor total foi confirmado pela TONART.
         </p>
@@ -402,6 +366,12 @@ function QuotePaymentPanel({
           {row.isPreorder
             ? "O valor está definido. A equipe enviará as instruções PIX para você confirmar a entrada."
             : "O valor está definido. A equipe enviará as instruções para pagamento do saldo."}
+        </p>
+      ) : null}
+
+      {row.commercialOfferSnapshot && row.status === "archived" ? (
+        <p role="status" className="mt-4 text-sm text-white/70">
+          Pedido cancelado. A reserva de Coins, se havia, foi devolvida à sua carteira.
         </p>
       ) : null}
 
@@ -501,6 +471,49 @@ function QuotePaymentPanel({
             )}
           </div>
         )}
+      {canCancelExtraOrder ? (
+        <div className="mt-5 border-t border-white/10 pt-4">
+          {!cancelConfirmation ? (
+            <button
+              type="button"
+              className={secondaryClass}
+              onClick={() => {
+                setCancelError("");
+                setCancelConfirmation(true);
+              }}
+            >
+              Cancelar pedido
+            </button>
+          ) : (
+            <div className="space-y-3" role="group" aria-label="Confirmar cancelamento do pedido extra">
+              <p className="text-sm text-white/75">
+                Os Coins reservados serão devolvidos. Se algum valor em reais já foi pago ou o comprovante está em análise, fale com a equipe antes de continuar.
+              </p>
+              {cancelError ? (
+                <p role="alert" className="text-sm text-red-300">{cancelError}</p>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className={secondaryClass}
+                  disabled={cancelBusy}
+                  onClick={() => void cancelExtraOrder()}
+                >
+                  {cancelBusy ? "Cancelando…" : "Confirmar cancelamento"}
+                </button>
+                <button
+                  type="button"
+                  className={secondaryClass}
+                  disabled={cancelBusy}
+                  onClick={() => setCancelConfirmation(false)}
+                >
+                  Manter pedido
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -520,12 +533,6 @@ export default function TonecosMyQuotesPage() {
   const [authError, setAuthError] = useState(false);
   const [authAttempt, setAuthAttempt] = useState(0);
   const [rows, setRows] = useState<CustomerCatalogQuote[]>([]);
-  const [coinBalance, setCoinBalance] = useState<TonecosCoinBalance | null>(
-    null,
-  );
-  const [coinBalanceLoading, setCoinBalanceLoading] = useState(false);
-  const [coinBalanceError, setCoinBalanceError] = useState(false);
-  const [coinBalanceAttempt, setCoinBalanceAttempt] = useState(0);
   const [history, setHistory] = useState<Record<string, CatalogQuoteEvent[]>>(
     {},
   );
@@ -553,45 +560,6 @@ export default function TonecosMyQuotesPage() {
       active = false;
     };
   }, [authAttempt]);
-
-  useEffect(() => {
-    const needsCoins = rows.some(
-      (row) =>
-        !row.isPreorder &&
-        row.status === "answered" &&
-        row.quotedAmount !== null &&
-        (row.paymentStatus ?? "pending") === "pending" &&
-        row.coinAmountApplied === 0 &&
-        row.paymentVoucherPath === null,
-    );
-    if (!userId || !needsCoins) {
-      setCoinBalance(null);
-      setCoinBalanceLoading(false);
-      setCoinBalanceError(false);
-      return;
-    }
-    let active = true;
-    setCoinBalance(null);
-    setCoinBalanceLoading(true);
-    setCoinBalanceError(false);
-    getMyTonecosCoinBalance()
-      .then((balance) => {
-        if (active) {
-          setCoinBalance(balance);
-          setCoinBalanceLoading(false);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setCoinBalance(null);
-          setCoinBalanceLoading(false);
-          setCoinBalanceError(true);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [coinBalanceAttempt, userId, rows]);
 
   useEffect(() => {
     if (!userId || invalidSelection) return;
@@ -867,12 +835,6 @@ export default function TonecosMyQuotesPage() {
                 )}
                 <QuotePaymentPanel
                   row={row}
-                  coinBalance={coinBalance}
-                  coinBalanceLoading={coinBalanceLoading}
-                  coinBalanceError={coinBalanceError}
-                  onRetryCoinBalance={() =>
-                    setCoinBalanceAttempt((value) => value + 1)
-                  }
                   onSuccess={() => setAttempt((value) => value + 1)}
                 />
               </li>

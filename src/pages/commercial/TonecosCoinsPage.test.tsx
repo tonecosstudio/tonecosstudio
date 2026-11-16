@@ -54,12 +54,12 @@ describe("commercial coins account UI", () => {
   it("shows an actual empty ledger as 0 only after successful Supabase read", async () => {
     renderPage();
     expect(
-      await screen.findByText(/1 Coin abate R\$ 1 do valor em aberto/),
+      await screen.findByText(/Coins são bônus e créditos para ofertas extras elegíveis/),
     ).toBeInTheDocument();
     expect(
       await screen.findByText("Nenhuma movimentação registrada."),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("0", { selector: "p" })).toHaveLength(3);
+    expect(screen.getAllByText("0,00", { selector: "p" })).toHaveLength(3);
     expect(mocks.entries).toHaveBeenCalledWith(25, 0);
   });
   it("never displays a fake zero balance when Supabase is offline", async () => {
@@ -99,11 +99,11 @@ describe("commercial coins account UI", () => {
     ]);
     renderPage();
     expect(await screen.findByText("Crédito manual")).toBeInTheDocument();
-    expect(screen.getByText("+20")).toBeInTheDocument();
-    expect(screen.getByText("15", { selector: "p" })).toBeInTheDocument();
+    expect(screen.getByText("+20,00")).toBeInTheDocument();
+    expect(screen.getByText("15,00", { selector: "p" })).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Abrir meus orçamentos" }),
-    ).toHaveAttribute("href", "/meus-orcamentos");
+      screen.getByRole("link", { name: "Explorar modelos" }),
+    ).toHaveAttribute("href", "/modelos");
   });
 
   it("pages through the full append-only coin history", async () => {

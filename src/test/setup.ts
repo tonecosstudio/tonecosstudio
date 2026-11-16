@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { vi } from "vitest";
+import { afterEach, vi } from "vitest";
 import { createMockSupabaseClient } from "./utils/supabase-mocks";
 
 // Mock window.matchMedia
@@ -19,12 +19,17 @@ Object.defineProperty(window, "matchMedia", {
 
 // Mock hasPointerCapture for Radix UI components (fixes jsdom compatibility issue)
 if (typeof Element !== "undefined") {
-  Element.prototype.hasPointerCapture = Element.prototype.hasPointerCapture || function() {
-    return false;
-  };
-  Element.prototype.setPointerCapture = Element.prototype.setPointerCapture || function() {};
-  Element.prototype.releasePointerCapture = Element.prototype.releasePointerCapture || function() {};
-  Element.prototype.scrollIntoView = Element.prototype.scrollIntoView || function() {};
+  Element.prototype.hasPointerCapture =
+    Element.prototype.hasPointerCapture ||
+    function () {
+      return false;
+    };
+  Element.prototype.setPointerCapture =
+    Element.prototype.setPointerCapture || function () {};
+  Element.prototype.releasePointerCapture =
+    Element.prototype.releasePointerCapture || function () {};
+  Element.prototype.scrollIntoView =
+    Element.prototype.scrollIntoView || function () {};
 }
 
 // Mock IntersectionObserver
@@ -87,4 +92,10 @@ beforeAll(() => {
 
 afterAll(() => {
   console.error = originalError;
+});
+
+afterEach(() => {
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem("tonart:pending-quote-selection:v1");
+  }
 });

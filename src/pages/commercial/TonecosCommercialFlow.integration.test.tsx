@@ -40,6 +40,7 @@ const mocks = vi.hoisted(() => {
     submit: vi.fn(),
     listMine: vi.fn(),
     submitVoucher: vi.fn(),
+    cancelExtraOrder: vi.fn(),
     coinBalance: vi.fn(),
     applyCoins: vi.fn(),
     listAdmin: vi.fn(),
@@ -69,6 +70,9 @@ vi.mock("@/services/customer/catalog-quote-service", () => ({
   submitCatalogQuoteRequest: mocks.submit,
   submitCatalogPreorderVoucher: mocks.submitVoucher,
   loadMyCatalogQuotePage: mocks.listMine,
+}));
+vi.mock("@/services/commercial/tonart-extra-order-service", () => ({
+  cancelTonartExtraOrder: mocks.cancelExtraOrder,
 }));
 vi.mock("@/services/payments/payment-voucher-storage-service", () => ({
   ALLOWED_PAYMENT_VOUCHER_TYPES: ["image/jpeg", "image/png", "application/pdf"],
@@ -179,6 +183,12 @@ beforeEach(() => {
     remainingAmount: 100,
     idempotent: false,
   });
+  mocks.cancelExtraOrder.mockResolvedValue({
+    quoteId: QUOTE,
+    coinsReversed: 100,
+    balance: 100,
+    idempotent: false,
+  });
   mocks.listAdmin.mockResolvedValue({
     total: 0,
     limit: 25,
@@ -196,6 +206,75 @@ afterEach(() => {
 });
 
 describe("TONART commercial screens: account → request → history → response", () => {
+  it("lets a customer cancel a fully Coins-funded extra before a cash payment", async () => {
+    mocks.listMine.mockResolvedValue({
+      total: 1,
+      limit: 20,
+      offset: 0,
+      rows: [{
+        id: QUOTE,
+        status: "answered",
+        createdAt: "2026-11-14T00:00:00Z",
+        deadline: null,
+        notes: null,
+        items: [{ slug: "terror-monster", quantity: 1 }],
+        quotedAmount: 100,
+        listAmount: 100,
+        discountPercent: 0,
+        discountAmount: 0,
+        responseMessage: "Frete confirmado.",
+        whatsapp: "5511999999999",
+        postalCode: "01310100",
+        scale: "1/10",
+        finishing: "pintado",
+        isPreorder: false,
+        depositAmount: null,
+        remainingAmount: null,
+        paymentStatus: "fully_paid",
+        paymentLink: null,
+        pixKey: null,
+        paymentInstructions: null,
+        paymentLinkSentAt: null,
+        finalPaymentNotifiedAt: null,
+        readyForFinalPayment: false,
+        paymentVoucherPath: null,
+        paymentVoucherType: null,
+        paymentVoucherRejectionReason: null,
+        coinAmountApplied: 100,
+        commercialShippingAmountBrl: 0,
+        commercialOfferSnapshot: {
+          schemaVersion: 1,
+          offerId: "22222222-2222-4222-8222-222222222222",
+          catalogModelSlug: "terror-monster",
+          scale: "1/10",
+          finishing: "painted",
+          contentsDescription: "Peça pintada.",
+          itemListPriceBrl: 100,
+          itemDiscountBrl: 0,
+          itemPriceBrl: 100,
+          subscriberDiscountEligible: false,
+          subscriberDiscountApplied: false,
+          subscriberDiscountBasisPoints: 0,
+          shippingMode: "fixed",
+          configuredShippingAmountBrl: 0,
+          deliveryTerms: "Prazo informado na oferta.",
+          coinsEligible: true,
+          coinsRequested: 100,
+          coinsApplied: 100,
+          initialCashAmountDueBrl: 0,
+          currency: "BRL",
+        },
+      }],
+    });
+
+    renderApp("/meus-orcamentos");
+    fireEvent.click(await screen.findByRole("button", { name: "Cancelar pedido" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar cancelamento" }));
+    await waitFor(() =>
+      expect(mocks.cancelExtraOrder).toHaveBeenCalledExactlyOnceWith(QUOTE),
+    );
+  });
+
   it("keeps logged-out quote selection and sends visitors to sign in", async () => {
     mocks.getUser.mockResolvedValue(null);
     renderApp("/solicitar-orcamento", true);
@@ -976,8 +1055,7 @@ describe("TONART commercial screens: account → request → history → respons
     expect(screen.getAllByText("Desconto Black Friday (50%)")).toHaveLength(1);
   });
 
-  it("applies Coins to an answered quote and explains voucher follow-up", async () => {
-    mocks.coinBalance.mockRejectedValueOnce(new Error("offline"));
+  it("keeps Coins out of quote checkout while preserving its ordinary payment flow", async () => {
     mocks.listMine.mockResolvedValue({
       total: 1,
       limit: 20,
@@ -1019,32 +1097,12 @@ describe("TONART commercial screens: account → request → history → respons
 
     renderApp("/meus-orcamentos");
 
-    const coinBalanceError = await screen.findByRole("alert");
-    expect(coinBalanceError).toHaveTextContent(
-      "Não foi possível carregar seu saldo de Coins",
-    );
-    expect(coinBalanceError).not.toHaveTextContent("offline");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Tentar carregar Coins" }),
-    );
-    expect(await screen.findByText("Use seus Coins")).toBeInTheDocument();
-    expect(screen.getByText(/o comprovante pode ser enviado por aqui/)).toBeInTheDocument();
-    expect(
-      screen.getByText(/se restar algum valor.*comprovante por aqui/i),
-    ).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Quantos Coins deseja usar?"), {
-      target: { value: "20" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Usar Coins" }));
-
-    await waitFor(() =>
-      expect(mocks.applyCoins).toHaveBeenCalledWith({ quoteId: QUOTE, amount: 20 }),
-    );
-    expect(
-      await screen.findByText(
-        "20 Coins aplicados. Restam R$ 100,00 para pagamento.",
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Orçamento respondido.")).toBeInTheDocument();
+    expect(screen.queryByText("Use seus Coins")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Quantos Coins deseja usar?")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Usar Coins" })).not.toBeInTheDocument();
+    expect(mocks.coinBalance).not.toHaveBeenCalled();
+    expect(mocks.applyCoins).not.toHaveBeenCalled();
   });
 
   it("does not display another person's history without a session", async () => {

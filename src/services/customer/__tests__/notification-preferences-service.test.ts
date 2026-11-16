@@ -2,18 +2,18 @@
  * Tests for Notification Preferences Service
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   fetchNotificationPreferences,
   updateNotificationPreferences,
   shouldSendNotification,
   resetNotificationPreferences,
-} from '../notification-preferences-service';
-import { supabase } from '@/integrations/supabase/client';
-import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/types/notification-preferences';
+} from "../notification-preferences-service";
+import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_NOTIFICATION_PREFERENCES } from "@/types/notification-preferences";
 
 // Mock Supabase client
-vi.mock('@/integrations/supabase/client', () => ({
+vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getUser: vi.fn(),
@@ -22,9 +22,12 @@ vi.mock('@/integrations/supabase/client', () => ({
     rpc: vi.fn(),
   },
 }));
+vi.mock("@/config/supabase-environment", () => ({
+  LOCAL_SUPABASE_FALLBACK: false,
+}));
 
-describe('Notification Preferences Service', () => {
-  const mockUserId = 'user-123';
+describe("Notification Preferences Service", () => {
+  const mockUserId = "user-123";
   const mockUser = { id: mockUserId };
 
   beforeEach(() => {
@@ -38,8 +41,8 @@ describe('Notification Preferences Service', () => {
     });
   });
 
-  describe('fetchNotificationPreferences', () => {
-    it('fetches preferences for authenticated user', async () => {
+  describe("fetchNotificationPreferences", () => {
+    it("fetches preferences for authenticated user", async () => {
       const mockPreferences = {
         production_stage_updates: true,
         item_shipped: false,
@@ -60,13 +63,13 @@ describe('Notification Preferences Service', () => {
 
       const result = await fetchNotificationPreferences();
 
-      expect(supabase.from).toHaveBeenCalledWith('profiles');
-      expect(mockFrom.select).toHaveBeenCalledWith('notification_preferences');
-      expect(mockFrom.eq).toHaveBeenCalledWith('id', mockUserId);
+      expect(supabase.from).toHaveBeenCalledWith("profiles");
+      expect(mockFrom.select).toHaveBeenCalledWith("notification_preferences");
+      expect(mockFrom.eq).toHaveBeenCalledWith("id", mockUserId);
       expect(result).toEqual(mockPreferences);
     });
 
-    it('returns default preferences when none are set', async () => {
+    it("returns default preferences when none are set", async () => {
       const mockFrom = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -83,17 +86,19 @@ describe('Notification Preferences Service', () => {
       expect(result).toEqual(DEFAULT_NOTIFICATION_PREFERENCES);
     });
 
-    it('throws error when user is not authenticated', async () => {
+    it("throws error when user is not authenticated", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: null },
         error: null,
       });
 
-      await expect(fetchNotificationPreferences()).rejects.toThrow('User not authenticated');
+      await expect(fetchNotificationPreferences()).rejects.toThrow(
+        "User not authenticated",
+      );
     });
 
-    it('throws error when database query fails', async () => {
-      const mockError = new Error('Database error');
+    it("throws error when database query fails", async () => {
+      const mockError = new Error("Database error");
       const mockFrom = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -109,8 +114,8 @@ describe('Notification Preferences Service', () => {
     });
   });
 
-  describe('updateNotificationPreferences', () => {
-    it('updates preferences for authenticated user', async () => {
+  describe("updateNotificationPreferences", () => {
+    it("updates preferences for authenticated user", async () => {
       const currentPreferences = {
         production_stage_updates: true,
         item_shipped: true,
@@ -145,23 +150,28 @@ describe('Notification Preferences Service', () => {
 
       const result = await updateNotificationPreferences(updates);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('update_customer_notification_preferences', {
-        p_preferences: expectedPreferences,
-      });
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        "update_customer_notification_preferences",
+        {
+          p_preferences: expectedPreferences,
+        },
+      );
       expect(result).toEqual(expectedPreferences);
     });
 
-    it('throws error when user is not authenticated', async () => {
+    it("throws error when user is not authenticated", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: null },
         error: null,
       });
 
-      await expect(updateNotificationPreferences({})).rejects.toThrow('User not authenticated');
+      await expect(updateNotificationPreferences({})).rejects.toThrow(
+        "User not authenticated",
+      );
     });
 
-    it('throws error when update fails', async () => {
-      const mockError = new Error('Update failed');
+    it("throws error when update fails", async () => {
+      const mockError = new Error("Update failed");
 
       // Mock fetch
       const mockFetchFrom = {
@@ -179,59 +189,61 @@ describe('Notification Preferences Service', () => {
         error: mockError,
       });
 
-      await expect(updateNotificationPreferences({})).rejects.toThrow(mockError);
+      await expect(updateNotificationPreferences({})).rejects.toThrow(
+        mockError,
+      );
     });
   });
 
-  describe('shouldSendNotification', () => {
-    it('calls database function to check preference', async () => {
+  describe("shouldSendNotification", () => {
+    it("calls database function to check preference", async () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: true,
         error: null,
       });
 
-      const result = await shouldSendNotification(mockUserId, 'stage_update');
+      const result = await shouldSendNotification(mockUserId, "stage_update");
 
-      expect(supabase.rpc).toHaveBeenCalledWith('should_send_notification', {
+      expect(supabase.rpc).toHaveBeenCalledWith("should_send_notification", {
         user_id: mockUserId,
-        notification_type: 'stage_update',
+        notification_type: "stage_update",
       });
       expect(result).toBe(true);
     });
 
-    it('returns true when database function returns true', async () => {
+    it("returns true when database function returns true", async () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: true,
         error: null,
       });
 
-      const result = await shouldSendNotification(mockUserId, 'stage_update');
+      const result = await shouldSendNotification(mockUserId, "stage_update");
       expect(result).toBe(true);
     });
 
-    it('returns false when database function returns false', async () => {
+    it("returns false when database function returns false", async () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: false,
         error: null,
       });
 
-      const result = await shouldSendNotification(mockUserId, 'stage_update');
+      const result = await shouldSendNotification(mockUserId, "stage_update");
       expect(result).toBe(false);
     });
 
-    it('returns true on error (fail-safe)', async () => {
+    it("returns true on error (fail-safe)", async () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: null,
-        error: new Error('Database error'),
+        error: new Error("Database error"),
       });
 
-      const result = await shouldSendNotification(mockUserId, 'stage_update');
+      const result = await shouldSendNotification(mockUserId, "stage_update");
       expect(result).toBe(true);
     });
   });
 
-  describe('resetNotificationPreferences', () => {
-    it('resets preferences to defaults', async () => {
+  describe("resetNotificationPreferences", () => {
+    it("resets preferences to defaults", async () => {
       // Mock fetch
       const mockFetchFrom = {
         select: vi.fn().mockReturnThis(),
@@ -257,9 +269,12 @@ describe('Notification Preferences Service', () => {
 
       const result = await resetNotificationPreferences();
 
-      expect(supabase.rpc).toHaveBeenCalledWith('update_customer_notification_preferences', {
-        p_preferences: DEFAULT_NOTIFICATION_PREFERENCES,
-      });
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        "update_customer_notification_preferences",
+        {
+          p_preferences: DEFAULT_NOTIFICATION_PREFERENCES,
+        },
+      );
       expect(result).toEqual(DEFAULT_NOTIFICATION_PREFERENCES);
     });
   });

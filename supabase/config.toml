@@ -323,6 +323,9 @@ enabled = false
 # user_pool_id = "my-user-pool-id"
 # user_pool_region = "us-east-1"
 
+[functions.tonart-commercial-offers]
+verify_jwt = false
+
 # Use Clerk as a third-party provider alongside Supabase Auth.
 [auth.third_party.clerk]
 enabled = false

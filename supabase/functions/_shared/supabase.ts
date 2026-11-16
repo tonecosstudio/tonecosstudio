@@ -25,6 +25,23 @@ function getAnonClientWithAuth(req: Request) {
   });
 }
 
+/** Public data reads use only the anon/publishable key and remain subject to RLS. */
+export function getPublicAnonClient() {
+  const url = getSupabaseUrl();
+  const anon =
+    Deno.env.get("SUPABASE_ANON_KEY") ??
+    Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+  if (!anon) throw new Error("SUPABASE_ANON_KEY is not configured");
+
+  return createClient(url, anon, {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false,
+    },
+  });
+}
+
 function getSupabaseUrl() {
   const url = Deno.env.get("SUPABASE_URL");
   if (!url) throw new Error("SUPABASE_URL is not configured");

@@ -88,6 +88,8 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_save_pricing_tier_plan",
   "admin_save_quick_reply",
   "admin_save_subscription_plan_configuration",
+  "admin_save_tonart_commercial_offer",
+  "tonart_admin_commercial_offers_directory",
   "admin_set_subscription_collection_models",
   "admin_schedule_group_message",
   "admin_schedule_subscription_deliveries",
@@ -139,6 +141,17 @@ const ADMIN_RPC_ALLOWLIST = new Set([
 // Preserve the signed-in administrator JWT when calling them so auth.uid()
 // does not become NULL under the service-role client.
 const ADMIN_USER_CONTEXT_RPCS = new Set([
+  "admin_get_or_create_delivery_cycle",
+  "admin_process_subscription_payment",
+  "admin_save_tonart_commercial_offer",
+  "tonart_admin_commercial_offers_directory",
+  "admin_save_subscription_plan_configuration",
+  "admin_set_subscription_collection_models",
+  "admin_schedule_subscription_deliveries",
+  "admin_update_payment_setting",
+  "admin_update_production_setting",
+  "admin_upsert_system_settings",
+  "admin_verify_subscription_payment_voucher",
   "admin_register_preorder_manual_payment",
   "admin_reject_preorder_payment_voucher",
   "admin_release_preorder_final_payment",

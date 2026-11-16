@@ -6,6 +6,11 @@ import { requireTonecosAdminAccess } from "@/services/auth/tonecos-admin-access"
 import type { CatalogQuoteItem } from "@/services/customer/catalog-quote-service";
 import { MAX_CANONICAL_SELECTION } from "@/services/catalog/public-catalog-selection";
 import { validCatalogSlug } from "@/services/catalog/public-catalog-gateway";
+import {
+  decodeTonartExtraOrderSnapshot,
+  type TonartExtraOrderSnapshot,
+} from "@/services/commercial/tonart-extra-order";
+import { decimalToHundredths } from "@/services/commercial/tonart-commerce-rules";
 
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 const uuid =
@@ -33,6 +38,9 @@ export type AdminCatalogQuote = {
   isPreorder: boolean;
   depositAmount: number | null;
   remainingAmount: number | null;
+  commercialOfferSnapshot: TonartExtraOrderSnapshot | null;
+  commercialShippingAmountBrl: number | null;
+  canCancelExtraOrder: boolean;
 };
 
 export type AdminCatalogQuotePage = {
@@ -89,6 +97,26 @@ function decodeQuote(value: unknown): AdminCatalogQuote {
   const listAmount = row.listAmount == null ? quotedAmount : row.listAmount;
   const discountPercent = row.discountPercent == null ? 0 : row.discountPercent;
   const discountAmount = row.discountAmount == null ? 0 : row.discountAmount;
+  const commercialOfferSnapshot =
+    row.commercialOfferSnapshot == null
+      ? null
+      : decodeTonartExtraOrderSnapshot(row.commercialOfferSnapshot);
+  let commercialShippingAmountBrl: number | null = null;
+  if (row.commercialShippingAmountBrl !== null && row.commercialShippingAmountBrl !== undefined) {
+    try {
+      const raw = row.commercialShippingAmountBrl;
+      const hundredths = decimalToHundredths(
+        typeof raw === "number" || typeof raw === "string" ? raw : "",
+      );
+      if (hundredths < 0 || hundredths > 9_999_999_999) {
+        throw new Error("invalid");
+      }
+      commercialShippingAmountBrl = hundredths / 100;
+    } catch {
+      throw new Error("admin_catalog_quote_commercial_shipping_invalid");
+    }
+  }
+  const items = decodeItems(row.items);
   if (
     typeof row.id !== "string" ||
     !uuid.test(row.id) ||
@@ -132,9 +160,32 @@ function decodeQuote(value: unknown): AdminCatalogQuote {
     typeof row.finishing !== "string" ||
     !(row.isPreorder === undefined || typeof row.isPreorder === "boolean") ||
     !(row.depositAmount === undefined || row.depositAmount === null || (typeof row.depositAmount === "number" && Number.isFinite(row.depositAmount) && row.depositAmount > 0)) ||
-    !(row.remainingAmount === undefined || row.remainingAmount === null || (typeof row.remainingAmount === "number" && Number.isFinite(row.remainingAmount) && row.remainingAmount > 0))
+    !(row.remainingAmount === undefined || row.remainingAmount === null || (typeof row.remainingAmount === "number" && Number.isFinite(row.remainingAmount) && row.remainingAmount > 0)) ||
+    !(row.canCancelExtraOrder === undefined || typeof row.canCancelExtraOrder === "boolean")
   ) {
     throw new Error("admin_catalog_quote_row_invalid");
+  }
+  if (commercialOfferSnapshot && (
+    items.length !== 1 ||
+    items[0].slug !== commercialOfferSnapshot.catalogModelSlug ||
+    items[0].quantity !== 1 ||
+    row.scale !== commercialOfferSnapshot.scale ||
+    row.finishing !== (commercialOfferSnapshot.finishing === "painted" ? "pintado" : "sem pintura") ||
+    (commercialOfferSnapshot.shippingMode === "fixed" &&
+      commercialShippingAmountBrl !== commercialOfferSnapshot.configuredShippingAmountBrl) ||
+    (commercialOfferSnapshot.shippingMode === "quote_required" &&
+      row.status === "answered" && commercialShippingAmountBrl === null) ||
+    (quotedAmount !== null && Math.abs(
+      quotedAmount - commercialOfferSnapshot.itemPriceBrl -
+        (commercialShippingAmountBrl ?? 0)
+    ) > 0.001) ||
+    (listAmount !== null && Math.abs(
+      listAmount - commercialOfferSnapshot.itemPriceBrl -
+        (commercialShippingAmountBrl ?? 0)
+    ) > 0.001) ||
+    discountPercent !== 0 || discountAmount !== 0
+  )) {
+    throw new Error("admin_catalog_quote_commercial_terms_invalid");
   }
 
   return {
@@ -145,7 +196,7 @@ function decodeQuote(value: unknown): AdminCatalogQuote {
     status: row.status,
     createdAt: row.createdAt,
     notes: row.notes as string | null,
-    items: decodeItems(row.items),
+    items,
     quotedAmount,
     listAmount,
     discountPercent,
@@ -158,6 +209,9 @@ function decodeQuote(value: unknown): AdminCatalogQuote {
     isPreorder: row.isPreorder === true,
     depositAmount: (row.depositAmount ?? null) as number | null,
     remainingAmount: (row.remainingAmount ?? null) as number | null,
+    commercialOfferSnapshot,
+    commercialShippingAmountBrl,
+    canCancelExtraOrder: row.canCancelExtraOrder === true,
   };
 }
 
@@ -259,6 +313,72 @@ export async function answerCatalogQuoteRequest(
   if (error) throw error;
   if (data !== quoteId) throw new Error("admin_catalog_quote_result_invalid");
   return data;
+}
+
+/** Finalizes only the freight and response for an immutable catalog extra order. */
+export async function answerTonartExtraOrder(
+  quoteId: string,
+  shippingAmount: number,
+  message: string,
+): Promise<string> {
+  assertCommercialMode();
+  const responseMessage = typeof message === "string" ? message.trim() : "";
+  let shippingHundredths: number;
+  try {
+    shippingHundredths = decimalToHundredths(shippingAmount);
+  } catch {
+    throw new Error("admin_catalog_quote_commercial_shipping_invalid");
+  }
+  if (
+    !uuid.test(quoteId) ||
+    shippingHundredths < 0 ||
+    shippingHundredths > 9_999_999_999 ||
+    responseMessage.length < 1 ||
+    responseMessage.length > 2000
+  ) {
+    throw new Error("admin_catalog_quote_commercial_response_invalid");
+  }
+  await requireTonecosAdminAccess();
+  const { data, error } = await tonecos.rpc("admin_answer_tonart_extra_order", {
+    p_quote_id: quoteId.toLowerCase(),
+    p_shipping_amount: shippingHundredths / 100,
+    p_message: responseMessage,
+  });
+  if (error) throw error;
+  if (data !== quoteId.toLowerCase()) {
+    throw new Error("admin_catalog_quote_commercial_result_invalid");
+  }
+  return data;
+}
+
+/** Cancels an extra order only through the server's payment checks and ledger reversal. */
+export async function cancelAdminTonartExtraOrder(
+  quoteId: string,
+  reason: string,
+): Promise<void> {
+  assertCommercialMode();
+  const normalizedReason = typeof reason === "string" ? reason.trim() : "";
+  if (!uuid.test(quoteId) || normalizedReason.length < 4 || normalizedReason.length > 500) {
+    throw new Error("admin_catalog_quote_cancellation_invalid");
+  }
+  await requireTonecosAdminAccess();
+  const { data, error } = await tonecos.rpc("admin_cancel_tonart_extra_order", {
+    p_quote_id: quoteId.toLowerCase(),
+    p_reason: normalizedReason,
+  });
+  if (error) throw error;
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("admin_catalog_quote_cancellation_invalid");
+  }
+  const result = data as Record<string, unknown>;
+  if (
+    result.quote_id !== quoteId.toLowerCase() ||
+    result.status !== "archived" ||
+    result.payment_status !== "failed" ||
+    typeof result.idempotent !== "boolean"
+  ) {
+    throw new Error("admin_catalog_quote_cancellation_invalid");
+  }
 }
 
 /** Uses the canonical quote status RPC; no browser-side table mutations. */

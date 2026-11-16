@@ -10,6 +10,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import { TonartCommercialOfferDetails } from "@/components/catalog/TonartCommercialOfferDetails";
 import { RelatedModels, relatedCatalogReturnState } from "./RelatedModels";
 import { Page } from "@/components/layouts/Page";
 import {
@@ -101,7 +102,9 @@ function shouldRequestPreorder(state: unknown): boolean {
   const raw = (state as Record<string, unknown>).catalogReturnSearch;
   if (typeof raw !== "string" || raw.length > 1024) return false;
   const params = new URLSearchParams(raw);
-  return params.getAll("tipo").length === 1 && params.get("tipo") === "pre-venda";
+  return (
+    params.getAll("tipo").length === 1 && params.get("tipo") === "pre-venda"
+  );
 }
 
 /** Use only a bounded same-page snapshot for adjacent-model links. */
@@ -161,7 +164,8 @@ export default function CanonicalModelDetails() {
   const location = useLocation();
   const catalogReturnTo = catalogReturnPath(location.state);
   const quoteRequestPath =
-    PUBLIC_ROUTES.quoteRequest + (shouldRequestPreorder(location.state) ? "?tipo=pre-venda" : "");
+    PUBLIC_ROUTES.quoteRequest +
+    (shouldRequestPreorder(location.state) ? "?tipo=pre-venda" : "");
   const adjacentModels = adjacentCatalogModels(
     location.state,
     slug,
@@ -781,7 +785,9 @@ export default function CanonicalModelDetails() {
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[hsl(0,0%,56%)]">Altura de referência</dt>
+                        <dt className="text-[hsl(0,0%,56%)]">
+                          Altura de referência
+                        </dt>
                         <dd className="mt-1 font-medium">
                           {model.heightCm !== null
                             ? model.heightCm.toLocaleString("pt-BR") + " cm"
@@ -791,7 +797,9 @@ export default function CanonicalModelDetails() {
                       {model.collection ? (
                         <div className="col-span-2">
                           <dt className="text-[hsl(0,0%,56%)]">Coleção</dt>
-                          <dd className="mt-1 break-words font-medium">{model.collection}</dd>
+                          <dd className="mt-1 break-words font-medium">
+                            {model.collection}
+                          </dd>
                         </div>
                       ) : null}
                       <div>
@@ -818,16 +826,23 @@ export default function CanonicalModelDetails() {
                     <p className="text-sm leading-relaxed text-[hsl(0,0%,56%)]">
                       {publicMediaHold
                         ? "Imagem digital de referência. Este catálogo é somente para consulta e não recebe pedidos ou pagamentos."
-                        : "Disponibilidade e preço são confirmados pela equipe na etapa de orçamento. Esta ficha apresenta somente os dados publicados no catálogo."}
+                        : "Quando houver uma condição comercial cadastrada abaixo, ela identifica a variante e o valor da peça. A equipe confirma disponibilidade, frete e prazo antes de qualquer contratação."}
                     </p>
                     <div className="border-l-2 border-[hsl(var(--gold-accent))] bg-[hsl(0,0%,9%)] p-4">
-                      <h2 className="text-sm font-semibold uppercase tracking-wide">Peça sob consulta</h2>
+                      <h2 className="text-sm font-semibold uppercase tracking-wide">
+                        Peça sob consulta
+                      </h2>
                       <p className="mt-2 text-sm leading-relaxed text-[hsl(0,0%,70%)]">
-                        Valor, tamanho final, acabamento, prazo de produção e entrega
-                        precisam ser confirmados pela equipe. As imagens são renders
-                        digitais de referência, não fotos de peças finalizadas.
+                        Valor, tamanho final, acabamento, prazo de produção e
+                        entrega precisam ser confirmados pela equipe. As imagens
+                        são renders digitais de referência, não fotos de peças
+                        finalizadas.
                       </p>
                     </div>
+                    <TonartCommercialOfferDetails
+                      modelSlug={model.slug}
+                      enabled={quoteRequestsEnabled}
+                    />
                     <div className="space-y-3">
                       <button
                         type="button"
@@ -911,19 +926,51 @@ export default function CanonicalModelDetails() {
                             Até 50% de desconto nesta referência.
                           </p>
                           <p className="mt-1 text-xs leading-5 text-[hsl(0,0%,62%)]">
-                            A equipe informa o preço-base, o desconto aplicado e o total final na resposta ao orçamento, antes de qualquer pagamento.
+                            A equipe informa o preço-base, o desconto aplicado e
+                            o total final na resposta ao orçamento, antes de
+                            qualquer pagamento.
                           </p>
                         </aside>
                       ) : null}
                     </div>
+                    {quoteRequestsEnabled ? (
+                      <details className="border-t border-[hsl(0,0%,15%)] pt-4">
+                        <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                          Como funcionam as Coins
+                        </summary>
+                        <div className="space-y-3 pb-4 text-sm leading-relaxed text-[hsl(0,0%,70%)]">
+                          <p>
+                            O plano de coleção compra as peças contratadas; seu
+                            valor principal não vira Coins. Bônus de plano são
+                            creditados por envio real após pagamento PIX
+                            integral, conforme o benefício configurado.
+                          </p>
+                          <p>
+                            Coins podem ser usadas em ofertas extras elegíveis
+                            de toda a TONART, em pagamento integral ou misto
+                            quando a oferta e o checkout aceitarem Coins.
+                            Orçamentos, entrada de pré-venda, parcelas de plano
+                            e frete ficam fora do uso de Coins. Esta ficha não
+                            debita saldo.
+                          </p>
+                          <Link
+                            to="/moedas"
+                            className="inline-flex min-h-11 items-center text-sm font-semibold text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+                          >
+                            Consultar saldo e movimentações de Coins
+                          </Link>
+                        </div>
+                      </details>
+                    ) : null}
                     <details className="border-t border-[hsl(0,0%,15%)] pt-4">
                       <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
                         Como preparar sua solicitação
                       </summary>
                       <p className="pb-3 text-sm leading-relaxed text-[hsl(0,0%,70%)]">
-                        Anote o tamanho desejado, suas preferências de acabamento e
-                        o CEP de entrega. Essas informações ajudam a equipe a avaliar
-                        as possibilidades para esta referência.
+                        Anote o tamanho desejado, suas preferências de
+                        acabamento e o CEP de entrega. Essas informações ajudam
+                        a equipe a avaliar as possibilidades para esta
+                        referência.
                         {quoteRequestsEnabled
                           ? " Ao solicitar o orçamento, você poderá complementar sua seleção no formulário."
                           : " Neste catálogo de consulta, a seleção não é enviada à equipe."}

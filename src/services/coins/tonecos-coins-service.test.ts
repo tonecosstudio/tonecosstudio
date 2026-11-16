@@ -5,6 +5,7 @@ import {
   listMyTonecosCoinEntries,
   creditTonecosCoins,
   findTonecosCoinRecipient,
+  reverseTonecosCoinEntry,
 } from "./tonecos-coins-service";
 
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -15,12 +16,18 @@ const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   from: vi.fn(),
   user: vi.fn(),
+  isLocalPreviewActive: vi.fn(() => false),
+  assertCommercialEnabled: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { rpc: mocks.rpc, from: mocks.from },
 }));
 vi.mock("@/services/customer/tonecos-account-service", () => ({
+  isTonecosLocalPreviewEnabled: mocks.isLocalPreviewActive,
   getTonecosCurrentUser: mocks.user,
+}));
+vi.mock("@/config/tonecos-commercial-authority", () => ({
+  assertTonecosCommercialEnabled: mocks.assertCommercialEnabled,
 }));
 
 beforeEach(() => {
@@ -32,10 +39,31 @@ beforeEach(() => {
   vi.stubEnv("VITE_TONECOS_COINS_ENABLED", "true");
   vi.stubEnv("VITE_SUPABASE_URL", "https://icmtmaakjucmuzxnofkd.supabase.co");
   mocks.user.mockResolvedValue({ id: USER, email: "cliente@example.test" });
+  mocks.isLocalPreviewActive.mockReturnValue(false);
+  mocks.assertCommercialEnabled.mockReset();
+  mocks.assertCommercialEnabled.mockImplementation(() => undefined);
 });
 afterEach(() => vi.unstubAllEnvs());
 
 describe("Tonecos Coins ledger authority", () => {
+  it("serves the local customer's wallet data without calling Supabase", async () => {
+    mocks.isLocalPreviewActive.mockReturnValue(true);
+    mocks.user.mockResolvedValue({
+      id: "00000000-0000-4000-8000-000000000001",
+      email: "marina.oliveira@tonart.local",
+    });
+
+    await expect(getMyTonecosCoinBalance()).resolves.toMatchObject({
+      balance: 150,
+      totalEarned: 150,
+      totalSpent: 0,
+      entryCount: 2,
+    });
+    await expect(listMyTonecosCoinEntries()).resolves.toHaveLength(2);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
   it("reads private coins with quotes disabled, without reactivating quotes", async () => {
     vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "false");
     mocks.rpc.mockResolvedValue({
@@ -102,6 +130,9 @@ describe("Tonecos Coins ledger authority", () => {
 
   it("blocks read-only previews and ignores the retired coins feature switch", async () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
+    mocks.assertCommercialEnabled.mockImplementationOnce(() => {
+      throw new Error("tonecos_commercial_mvp_disabled");
+    });
     await expect(getMyTonecosCoinBalance()).rejects.toThrow(
       "tonecos_commercial_mvp_disabled",
     );
@@ -174,6 +205,21 @@ describe("Tonecos Coins ledger authority", () => {
     expect(q.range).toHaveBeenCalledWith(0, 9);
     await listMyTonecosCoinEntries(10, 25);
     expect(q.range).toHaveBeenLastCalledWith(25, 34);
+    q.range.mockResolvedValueOnce({
+      data: [
+        {
+          id: TX,
+          delta: -7.25,
+          entry_type: "legacy_import",
+          reason: "Histórico Coins legado (spend): compra antiga",
+          created_at: "2026-10-05T08:00:00Z",
+        },
+      ],
+      error: null,
+    });
+    await expect(listMyTonecosCoinEntries(10)).resolves.toMatchObject([
+      { type: "legacy_import", delta: -7.25 },
+    ]);
     await expect(listMyTonecosCoinEntries(100)).rejects.toThrow(
       "tonecos_coin_limit_invalid",
     );
@@ -326,33 +372,11 @@ describe("Tonecos Coins ledger authority", () => {
     ).rejects.toThrow("tonecos_coin_credit_result_invalid");
   });
 
-  it("applies an authenticated coin balance through the quote payment RPC", async () => {
-    mocks.rpc.mockResolvedValue({
-      data: {
-        quote_id: QUOTE,
-        spent: 23,
-        balance: 7,
-        remaining_amount: 129.5,
-        idempotent: false,
-      },
-      error: null,
-    });
+  it("keeps quote redemption closed because quotes are not eligible offers", async () => {
     await expect(
       applyTonecosCoinsToQuote({ quoteId: QUOTE, amount: 23 }),
-    ).resolves.toEqual({
-      quoteId: QUOTE,
-      spent: 23,
-      balance: 7,
-      remainingAmount: 129.5,
-      idempotent: false,
-    });
-    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
-      "apply_tonecos_coins_to_quote",
-      {
-        p_quote_id: QUOTE,
-        p_amount: 23,
-      },
-    );
+    ).rejects.toThrow("tonecos_coins_not_eligible_for_quotes");
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("rejects invalid coin amounts before contacting the database", async () => {
@@ -360,5 +384,25 @@ describe("Tonecos Coins ledger authority", () => {
       applyTonecosCoinsToQuote({ quoteId: QUOTE, amount: 0 }),
     ).rejects.toThrow("tonecos_coin_quote_payment_input_invalid");
     expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("validates and returns an idempotent Coins reversal result with exact hundredths", async () => {
+    mocks.rpc.mockResolvedValueOnce({
+      data: { transaction_id: TX, balance: "24.50", idempotent: true },
+      error: null,
+    });
+    await expect(reverseTonecosCoinEntry({ entryId: REF, reason: "Correção solicitada" })).resolves.toEqual({
+      transactionId: TX,
+      balance: 24.5,
+      idempotent: true,
+    });
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("admin_reverse_tonecos_coin_entry", {
+      p_entry_id: REF,
+      p_reason: "Correção solicitada",
+    });
+
+    await expect(reverseTonecosCoinEntry({ entryId: REF, reason: "x" })).rejects.toThrow(
+      "tonecos_coin_reversal_input_invalid",
+    );
   });
 });

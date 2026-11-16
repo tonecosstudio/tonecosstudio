@@ -14,12 +14,16 @@ import {
   secondaryClass,
 } from "./CommercialPage";
 
-const format = new Intl.NumberFormat("pt-BR");
+const format = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const PAGE_SIZE = 25;
 const types: Record<TonecosCoinEntry["type"], string> = {
   admin_credit: "Crédito",
-  purchase_spend: "Utilização",
+  purchase_spend: "Compra extra",
   refund: "Estorno",
+  shipment_bonus: "Bônus por envio",
+  purchase_reversal: "Estorno de compra",
+  bonus_reversal: "Estorno de bônus",
+  legacy_import: "Histórico anterior",
 };
 
 export default function TonecosCoinsPage() {
@@ -54,7 +58,7 @@ export default function TonecosCoinsPage() {
   }, [reload, offset]);
 
   return (
-    <CommercialPage title="Minhas moedas" intro="Consulte seu saldo e histórico. Em orçamento comum respondido pela equipe, 1 Coin abate R$ 1 do valor em aberto, limitado ao saldo disponível. Coins são créditos virtuais, sem transferência, saque ou conversão em dinheiro; não pagam a entrada de R$ 50 da pré-venda.">
+    <CommercialPage title="Minha carteira TONART" intro="Coins são bônus e créditos para ofertas extras elegíveis em toda a TONART. Em ofertas habilitadas, cada Coin vale R$ 1 e você pode completar o pagamento em reais; o frete é pago à parte. Orçamentos, entrada de pré-venda e parcelas de plano não aceitam Coins.">
       {busy && <p role="status">Consultando histórico de moedas...</p>}
       {guest === true && !busy && <div className={panelClass}>
         <p className="mb-4 text-white/70">Entre para consultar suas moedas.</p>
@@ -72,14 +76,14 @@ export default function TonecosCoinsPage() {
         <div className="grid gap-4 sm:grid-cols-3" aria-label="Resumo de moedas">
           <div className={panelClass}>
             <p className="text-xs uppercase tracking-widest text-white/50">Saldo disponível</p>
-            <p className="mt-3 text-3xl font-semibold tabular-nums text-[hsl(var(--gold-accent))]">{format.format(balance.balance)} <span className="text-sm">moedas</span></p>
+            <p className="mt-3 text-3xl font-semibold tabular-nums text-[hsl(var(--gold-accent))]">{format.format(balance.balance)} <span className="text-sm">Coins</span></p>
           </div>
           <div className={panelClass}>
-            <p className="text-xs uppercase tracking-widest text-white/50">Recebidas</p>
+            <p className="text-xs uppercase tracking-widest text-white/50">Entradas</p>
             <p className="mt-3 text-2xl font-semibold tabular-nums">{format.format(balance.totalEarned)}</p>
           </div>
           <div className={panelClass}>
-            <p className="text-xs uppercase tracking-widest text-white/50">Utilizadas</p>
+            <p className="text-xs uppercase tracking-widest text-white/50">Saídas</p>
             <p className="mt-3 text-2xl font-semibold tabular-nums">{format.format(balance.totalSpent)}</p>
           </div>
         </div>
@@ -89,22 +93,21 @@ export default function TonecosCoinsPage() {
               panelClass +
               " mt-5 flex flex-col gap-4 border-[hsl(var(--gold-accent)/0.35)] sm:flex-row sm:items-center sm:justify-between"
             }
-            aria-label="Usar Coins em um orçamento"
+            aria-label="Usar Coins em uma oferta elegível"
           >
             <div className="max-w-2xl">
               <h2 className="text-base font-semibold">
-                Aproveite seu saldo em um orçamento
+                Use seu saldo em compras extras elegíveis
               </h2>
               <p className="mt-2 text-sm leading-6 text-white/60">
-                Acesse um orçamento comum já respondido para escolher quantos
-                Coins aplicar ao valor em aberto.
+                Quando uma oferta tiver preço e elegibilidade configurados, você poderá pagar com Coins ou combinar Coins e reais. Preços e disponibilidade aparecem na própria oferta.
               </p>
             </div>
             <Link
               className={actionClass + " shrink-0"}
-              to={TONECOS_COMMERCIAL_ROUTES.history}
+              to="/modelos"
             >
-              Abrir meus orçamentos
+              Explorar modelos
             </Link>
           </section>
         )}

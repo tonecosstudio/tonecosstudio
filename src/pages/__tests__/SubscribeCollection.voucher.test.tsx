@@ -34,8 +34,9 @@ vi.mock("@/config/canonical-catalog-endpoint", () => ({
 }));
 
 const COLLECTION_ID = "11111111-1111-4111-8111-111111111111";
-const PLAN_6_ID = "22222222-2222-4222-8222-222222222222";
-const PLAN_12_ID = "33333333-3333-4333-8333-333333333333";
+const PLAN_3_ID = "22222222-2222-4222-8222-222222222222";
+const PLAN_6_ID = "33333333-3333-4333-8333-333333333333";
+const CHECKOUT_REQUEST_ID = "77777777-7777-4777-8777-777777777777";
 const MODEL_SLUGS = Array.from({ length: 20 }, (_, index) => `terror-model-${index + 1}`);
 const CATALOG_MODELS = MODEL_SLUGS.map((slug, index) => ({
   id: `model-${index + 1}`,
@@ -58,16 +59,17 @@ const CATALOG_MODELS = MODEL_SLUGS.map((slug, index) => ({
   imageUrl: null,
 }));
 
-function plan(limit: 6 | 12) {
+function plan(limit: 3 | 6) {
   return {
-    id: limit === 6 ? PLAN_6_ID : PLAN_12_ID,
+    id: limit === 3 ? PLAN_3_ID : PLAN_6_ID,
     name: `Plano ${limit} modelos`,
     description: null,
-    plan_type: "trimestral",
-    price_pix: 300,
-    price_full: 360,
-    deliveries_total: 3,
-    total_credits: null,
+    plan_type: limit === 3 ? "trimestral" : "semestral",
+    price_pix: limit === 3 ? 705 : 1350,
+    price_full: limit === 3 ? 705 : 1350,
+    deliveries_total: limit,
+    coin_bonus_per_shipment: 5,
+    coin_bonus_cap: limit === 3 ? 15 : 30,
     model_selection_limit: limit,
     is_active: true,
   };
@@ -102,9 +104,10 @@ async function modelButtons() {
 describe("SubscribeCollection curated model checkout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("crypto", { randomUUID: () => CHECKOUT_REQUEST_ID });
 
     mocks.useSubscribeCollectionCheckout.mockReturnValue({
-      plans: [plan(6), plan(12)],
+      plans: [plan(3), plan(6)],
       plansLoading: false,
       collections: [{
         id: COLLECTION_ID,
@@ -134,15 +137,50 @@ describe("SubscribeCollection curated model checkout", () => {
       referenceNumber: "TON-TEST-12345",
       amount: 300,
       status: "under_review",
+      idempotent: false,
     });
   });
 
-  it("submits exactly six selected models from the curated collection with the voucher", async () => {
+  it("submits exactly three selected models from the curated collection with the voucher", async () => {
     const user = userEvent.setup();
     renderPage();
 
     const models = await modelButtons();
     await screen.findByText("Chave PIX");
+
+    for (const model of models.slice(0, 3)) {
+      fireEvent.click(model);
+    }
+
+    expect(screen.getByText("3 de 3 selecionados")).toBeInTheDocument();
+    expect(models[3]).toBeDisabled();
+    await attachVoucher(user);
+    await user.click(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i }));
+
+    await waitFor(() => {
+      expect(mocks.checkout).toHaveBeenCalledWith({
+        planId: PLAN_3_ID,
+        collectionId: COLLECTION_ID,
+        selectedModelSlugs: MODEL_SLUGS.slice(0, 3),
+        modelSelectionLimit: 3,
+        paymentMethod: "pix",
+        voucher: expect.any(File),
+        checkoutRequestId: CHECKOUT_REQUEST_ID,
+      });
+    });
+    expect(await screen.findByRole("heading", { name: "Sua solicitação está em análise" })).toBeInTheDocument();
+  });
+
+  it("switches to the six-piece plan and prevents submitting an incomplete selection", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const models = await modelButtons();
+    await user.click(screen.getAllByRole("button", { name: "Selecionar plano" })[0]);
+
+    expect(screen.getByRole("heading", { name: "Escolha 6 peças" })).toBeInTheDocument();
+    await attachVoucher(user);
+    expect(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i })).toBeDisabled();
 
     for (const model of models.slice(0, 6)) {
       fireEvent.click(model);
@@ -150,49 +188,16 @@ describe("SubscribeCollection curated model checkout", () => {
 
     expect(screen.getByText("6 de 6 selecionados")).toBeInTheDocument();
     expect(models[6]).toBeDisabled();
-    await attachVoucher(user);
-    await user.click(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i }));
-
-    await waitFor(() => {
-      expect(mocks.checkout).toHaveBeenCalledWith({
-        planId: PLAN_6_ID,
-        collectionId: COLLECTION_ID,
-        selectedModelSlugs: MODEL_SLUGS.slice(0, 6),
-        modelSelectionLimit: 6,
-        paymentMethod: "pix",
-        voucher: expect.any(File),
-      });
-    });
-    expect(await screen.findByRole("heading", { name: "Sua solicitação está em análise" })).toBeInTheDocument();
-  });
-
-  it("switches to the twelve-model plan and prevents submitting an incomplete selection", async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    const models = await modelButtons();
-    await user.click(screen.getAllByRole("button", { name: "Selecionar plano" })[0]);
-
-    expect(screen.getByRole("heading", { name: "Escolha 12 modelos" })).toBeInTheDocument();
-    await attachVoucher(user);
-    expect(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i })).toBeDisabled();
-
-    for (const model of models.slice(0, 12)) {
-      fireEvent.click(model);
-    }
-
-    expect(screen.getByText("12 de 12 selecionados")).toBeInTheDocument();
-    expect(models[12]).toBeDisabled();
     expect(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i })).toBeEnabled();
     expect(mocks.checkout).not.toHaveBeenCalled();
   });
 
   it("preselects the plan supplied by the plans page", async () => {
-    renderPage(`/assinar/terror?plan=${PLAN_12_ID}`);
+    renderPage(`/assinar/terror?plan=${PLAN_6_ID}`);
 
     await modelButtons();
 
-    expect(await screen.findByText("0 de 12 selecionados")).toBeInTheDocument();
+    expect(await screen.findByText("0 de 6 selecionados")).toBeInTheDocument();
   });
 
   it("uses the secure card link, full price, and review proof for card checkout", async () => {
@@ -209,9 +214,9 @@ describe("SubscribeCollection curated model checkout", () => {
     const checkoutLink = await screen.findByRole("link", { name: /Abrir pagamento seguro/i });
     expect(checkoutLink).toHaveAttribute("href", "https://checkout.example/tonart");
     expect(checkoutLink).toHaveAttribute("target", "_blank");
-    expect(screen.getByText(/Confira o valor de R\$\s?360,00/)).toBeInTheDocument();
+    expect(screen.getByText(/Valor integral: R\$\s?705,00/)).toBeInTheDocument();
 
-    for (const model of models.slice(0, 6)) {
+    for (const model of models.slice(0, 3)) {
       fireEvent.click(model);
     }
     await attachVoucher(user);
@@ -219,12 +224,13 @@ describe("SubscribeCollection curated model checkout", () => {
 
     await waitFor(() => {
       expect(mocks.checkout).toHaveBeenCalledWith({
-        planId: PLAN_6_ID,
+        planId: PLAN_3_ID,
         collectionId: COLLECTION_ID,
-        selectedModelSlugs: MODEL_SLUGS.slice(0, 6),
-        modelSelectionLimit: 6,
+        selectedModelSlugs: MODEL_SLUGS.slice(0, 3),
+        modelSelectionLimit: 3,
         paymentMethod: "credit_card",
         voucher: expect.any(File),
+        checkoutRequestId: CHECKOUT_REQUEST_ID,
       });
     });
   });

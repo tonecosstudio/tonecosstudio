@@ -4,6 +4,7 @@ import {
   loadMyCatalogQuotePage,
   quoteItemsFromSelection,
   submitCatalogQuoteRequest,
+  submitCatalogPreorderVoucher,
 } from "./catalog-quote-service";
 import type { PublicCatalogModel } from "@/services/catalog/public-catalog-gateway";
 
@@ -13,12 +14,30 @@ const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   from: vi.fn(),
   assertCurrentUserId: vi.fn(),
+  requireAuthenticatedUserId: vi.fn(),
+  uploadVoucher: vi.fn(),
+  deleteVoucher: vi.fn(),
+  isLocalPreviewActive: vi.fn(() => false),
+  assertQuotesEnabled: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { rpc: mocks.rpc, from: mocks.from },
 }));
+vi.mock("@/config/tonecos-commercial-authority", () => ({
+  assertTonecosQuotesEnabled: mocks.assertQuotesEnabled,
+}));
 vi.mock("@/services/auth/current-user", () => ({
   assertCurrentUserId: mocks.assertCurrentUserId,
+  requireAuthenticatedUserId: mocks.requireAuthenticatedUserId,
+}));
+vi.mock("@/services/payments/payment-voucher-storage-service", () => ({
+  uploadPaymentVoucher: mocks.uploadVoucher,
+  deletePaymentVoucher: mocks.deleteVoucher,
+}));
+vi.mock("@/services/customer/tonecos-account-service", () => ({
+  isTonecosLocalPreviewEnabled: mocks.isLocalPreviewActive,
+  TONECOS_LOCAL_PREVIEW_QUOTE_ID: "a0000000-0000-4000-8000-000000000001",
+  TONECOS_LOCAL_PREVIEW_USER_ID: "00000000-0000-4000-8000-000000000001",
 }));
 
 beforeEach(() => {
@@ -29,10 +48,38 @@ beforeEach(() => {
   vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
   vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
   mocks.assertCurrentUserId.mockResolvedValue(USER);
+  mocks.requireAuthenticatedUserId.mockResolvedValue(USER);
+  mocks.uploadVoucher.mockResolvedValue(
+    `quotes/${USER}/${QUOTE}/1731600000000-0123456789abcdef.png`,
+  );
+  mocks.deleteVoucher.mockResolvedValue(undefined);
+  mocks.isLocalPreviewActive.mockReturnValue(false);
+  mocks.assertQuotesEnabled.mockReset();
+  mocks.assertQuotesEnabled.mockImplementation(() => undefined);
 });
 afterEach(() => vi.unstubAllEnvs());
 
 describe("authenticated Tonecos catalog quote boundary", () => {
+  it("serves the customer's local pending request without Supabase access", async () => {
+    mocks.isLocalPreviewActive.mockReturnValue(true);
+    const page = await loadMyCatalogQuotePage(
+      "00000000-0000-4000-8000-000000000001",
+    );
+
+    expect(page.total).toBe(1);
+    expect(page.rows[0]).toMatchObject({
+      id: "a0000000-0000-4000-8000-000000000001",
+      status: "pending",
+      quotedAmount: null,
+      responseMessage: null,
+      isPreorder: false,
+      depositAmount: null,
+      remainingAmount: null,
+    });
+    expect(mocks.assertCurrentUserId).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
   it("converts only slugs into unpriced quote items, without mirroring catalog data", () => {
     const models = [
       {
@@ -137,6 +184,45 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     );
   });
 
+  it("submits a full-payment voucher through the same quote payment authority", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: {
+        quote_id: QUOTE,
+        payment_type: "full",
+        amount: 74.25,
+        payment_status: "under_review",
+      },
+      error: null,
+    });
+    const file = new File(["PIX proof"], "pix.png", { type: "image/png" });
+
+    await expect(
+      submitCatalogPreorderVoucher({
+        quoteId: QUOTE,
+        paymentType: "full",
+        file,
+      }),
+    ).resolves.toEqual({
+      quoteId: QUOTE,
+      paymentType: "full",
+      amount: 74.25,
+      paymentStatus: "under_review",
+    });
+    expect(mocks.uploadVoucher).toHaveBeenCalledWith({
+      file,
+      userId: USER,
+      pathPrefix: `quotes:${QUOTE}`,
+    });
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "submit_catalog_preorder_voucher_for_current_user",
+      {
+        p_quote_id: QUOTE,
+        p_payment_type: "full",
+        p_payment_voucher_path: `quotes/${USER}/${QUOTE}/1731600000000-0123456789abcdef.png`,
+      },
+    );
+  });
+
   it("rejects invalid quote contact and finishing before network or login I/O", async () => {
     for (const preferences of [
       { whatsapp: "not-a-phone" },
@@ -160,6 +246,9 @@ describe("authenticated Tonecos catalog quote boundary", () => {
 
   it("blocks read-only previews and ignores the retired quote feature switch", async () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
+    mocks.assertQuotesEnabled.mockImplementationOnce(() => {
+      throw new Error("catalog_quotes_not_enabled");
+    });
     await expect(
       submitCatalogQuoteRequest(USER, [{ slug: "naruto", quantity: 1 }]),
     ).rejects.toThrow("catalog_quotes_not_enabled");
@@ -367,7 +456,7 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     expect(mocks.assertCurrentUserId).toHaveBeenCalledWith(USER);
   });
 
-  it("reads applied Coins from the existing payment ledger for the quote owner", async () => {
+  it("reads exact centi-Coin payments from the existing ledger for the quote owner", async () => {
     const quoteQuery = {
       select: vi.fn(),
       eq: vi.fn(),
@@ -423,7 +512,10 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     coinPaymentsQuery.select.mockReturnValue(coinPaymentsQuery);
     coinPaymentsQuery.eq.mockReturnValue(coinPaymentsQuery);
     coinPaymentsQuery.in.mockResolvedValue({
-      data: [{ quote_id: QUOTE, amount: 25 }],
+      data: [
+        { quote_id: QUOTE, amount: 25.25 },
+        { quote_id: QUOTE, amount: 0.5 },
+      ],
       error: null,
     });
     mocks.from.mockImplementation((table: string) =>
@@ -432,10 +524,104 @@ describe("authenticated Tonecos catalog quote boundary", () => {
 
     const page = await loadMyCatalogQuotePage(USER);
 
-    expect(page.rows[0].coinAmountApplied).toBe(25);
+    expect(page.rows[0].coinAmountApplied).toBe(25.75);
     expect(coinPaymentsQuery.eq).toHaveBeenCalledWith("user_id", USER);
     expect(coinPaymentsQuery.eq).toHaveBeenCalledWith("payment_type", "coins");
     expect(coinPaymentsQuery.in).toHaveBeenCalledWith("quote_id", [QUOTE]);
+  });
+
+  it("does not present an extra cancelled before freight confirmation as an approved quote", async () => {
+    const quoteQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      not: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    };
+    for (const method of ["select", "eq", "not", "order"] as const) {
+      quoteQuery[method].mockReturnValue(quoteQuery);
+    }
+    quoteQuery.range.mockResolvedValue({
+      data: [
+        {
+          id: QUOTE,
+          status: "archived",
+          created_at: "2026-11-15T00:00:00Z",
+          deadline: null,
+          notes: null,
+          total_amount: 237.5,
+          list_amount: 237.5,
+          discount_percent: 0,
+          discount_amount: 0,
+          admin_response: "Cancelamento solicitado pelo cliente.",
+          requested_catalog_models: [{ slug: "terror-monster", quantity: 1 }],
+          catalog_requested_at: "2026-11-15T00:00:00Z",
+          customer_whatsapp: "11999999999",
+          postal_code: "01310100",
+          desired_scale: "1/10",
+          finishing: "pintado",
+          is_preorder: false,
+          deposit_amount: null,
+          remaining_amount: null,
+          payment_status: "failed",
+          payment_link: null,
+          pix_key: null,
+          payment_instructions: null,
+          payment_link_sent_at: null,
+          final_payment_notified_at: null,
+          ready_for_final_payment: false,
+          payment_voucher_path: null,
+          payment_voucher_type: null,
+          payment_voucher_rejection_reason: null,
+          commercial_shipping_amount_brl: null,
+          commercial_offer_snapshot: {
+            schemaVersion: 1,
+            offerId: "33333333-3333-4333-8333-333333333333",
+            catalogModelSlug: "terror-monster",
+            scale: "1/10",
+            finishing: "painted",
+            contentsDescription: "Peça pintada conforme a oferta.",
+            itemListPriceBrl: 250,
+            itemDiscountBrl: 12.5,
+            itemPriceBrl: 237.5,
+            subscriberDiscountEligible: true,
+            subscriberDiscountApplied: true,
+            subscriberDiscountBasisPoints: 500,
+            shippingMode: "quote_required",
+            configuredShippingAmountBrl: null,
+            deliveryTerms: "Prazo informado na oferta.",
+            coinsEligible: true,
+            coinsRequested: 30.25,
+            coinsApplied: 30.25,
+            initialCashAmountDueBrl: 207.25,
+            currency: "BRL",
+          },
+        },
+      ],
+      error: null,
+      count: 1,
+    });
+    const coinPaymentsQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      in: vi.fn(),
+    };
+    coinPaymentsQuery.select.mockReturnValue(coinPaymentsQuery);
+    coinPaymentsQuery.eq.mockReturnValue(coinPaymentsQuery);
+    coinPaymentsQuery.in.mockResolvedValue({ data: [], error: null });
+    mocks.from.mockImplementation((table: string) =>
+      table === "quotes" ? quoteQuery : coinPaymentsQuery,
+    );
+
+    const page = await loadMyCatalogQuotePage(USER);
+
+    expect(page.rows[0]).toMatchObject({
+      status: "archived",
+      quotedAmount: null,
+      listAmount: null,
+      commercialShippingAmountBrl: null,
+      commercialOfferSnapshot: { coinsApplied: 30.25 },
+    });
   });
 
   it("preserves ordinary quote history while preorder payment columns await migration", async () => {

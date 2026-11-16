@@ -23,12 +23,17 @@ import {
 import { panelClass, secondaryClass } from "./CommercialPage";
 import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
 import TonartAdminOriginalSection from "./TonartAdminOriginalSection";
+import TonartCommercialOffersAdmin from "./TonartCommercialOffersAdmin";
 
 const coinsEnabled = true;
 const quotesEnabled = true;
 const USER_PAGE_SIZE = 25;
 const integer = new Intl.NumberFormat("pt-BR");
 const dates = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
+const coins = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 const brl = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -43,9 +48,14 @@ const coinLabels: Record<TonartAdminCoinEntry["type"], string> = {
   admin_credit: "Crédito",
   purchase_spend: "Utilização",
   refund: "Estorno",
+  shipment_bonus: "Bônus por envio",
+  purchase_reversal: "Estorno de compra",
+  bonus_reversal: "Estorno de bônus",
+  legacy_import: "Histórico anterior",
 };
 
 const originalAdminSubpages = [
+  { parent: "catalog-hub", path: TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers, label: "Ofertas comerciais TONART" },
   { parent: "catalog-hub", path: ADMIN_ROUTES.catalogCollections, label: "Coleções do catálogo" },
   { parent: "production-dashboard", path: ADMIN_ROUTES.productionKanban, label: "Quadro de produção" },
   { parent: "production-dashboard", path: ADMIN_ROUTES.productionList, label: "Lista de produção" },
@@ -419,13 +429,17 @@ export default function TonecosAdminHomePage() {
           )}
 
           {selectedSubpage && (
-            <TonartAdminOriginalSection
-              section={selectedSubpage}
-              overview={overview}
-              loading={loading}
-              quotesEnabled={quotesEnabled}
-              parentPath={activeItem?.path ?? ADMIN_ROUTES.home}
-            />
+            selectedSubpage.path === TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers ? (
+              <TonartCommercialOffersAdmin />
+            ) : (
+              <TonartAdminOriginalSection
+                section={selectedSubpage}
+                overview={overview}
+                loading={loading}
+                quotesEnabled={quotesEnabled}
+                parentPath={activeItem?.path ?? ADMIN_ROUTES.home}
+              />
+            )
           )}
           {(isProduction || isAnalytics) && (
             <TonartAdminOriginalSection
@@ -847,7 +861,7 @@ export default function TonecosAdminHomePage() {
                               }
                             >
                               {entry.delta > 0 ? "+" : ""}
-                              {integer.format(entry.delta)}
+                              {coins.format(entry.delta)}
                             </td>
                           </tr>
                         ))}
