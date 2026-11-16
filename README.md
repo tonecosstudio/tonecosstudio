@@ -90,5 +90,6 @@ Node 24+, `npm ci`, `npm run release:verify` quando aplicável. Verificar CI, co
 - [AGENTS.md](AGENTS.md): regras e owners.
 - [URGENTE.md](URGENTE.md): checkpoint operacional de maior prioridade, atualizado por evidências.
 - [docs/README.md](docs/README.md): índice da documentação operacional.
+- [docs/TONART-COLECOES-ASSINATURAS-COINS.md](docs/TONART-COLECOES-ASSINATURAS-COINS.md): decisões comerciais; a seção 4.1 documenta a curadoria editorial privada da PR #28, independente de preços, checkout e Coins. **Implementação em draft, sem publicação produtiva.**
 - [docs/MIGRACAO_CATALOGO_MONOREPO.md](docs/MIGRACAO_CATALOGO_MONOREPO.md): plano de migração _ainda não autorizada_; seções com SHA ou PR antiga são históricas.
 - [docs/TONECOS_CATALOG_FIRST_PARTY_PROXY.md](docs/TONECOS_CATALOG_FIRST_PARTY_PROXY.md): proxy first-party e cache.
