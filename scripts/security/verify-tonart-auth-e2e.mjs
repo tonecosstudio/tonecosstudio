@@ -114,6 +114,33 @@ async function main() {
     'Administrator read-only editorial RPC did not succeed');
   console.log('PASS: admin-rpc denies customer and accepts administrator');
 
+  // This RPC intentionally uses the caller's JWT in admin-rpc (rather than a
+  // service-role RPC). It proves auth.uid() survives the Edge Function hop.
+  const commercialRequest = {
+    functionName: 'tonart_admin_commercial_offers_directory', args: {},
+  };
+  const customerCommercial = await call('/functions/v1/admin-rpc', {
+    token: customerJwt, method: 'POST', body: commercialRequest,
+  });
+  assert(customerCommercial.status === 403,
+    'Customer was allowed into the commercial administration RPC');
+  const adminCommercial = await call('/functions/v1/admin-rpc', {
+    token: adminJwt, method: 'POST', body: commercialRequest,
+  });
+  assert(adminCommercial.status === 200 && adminCommercial.data?.ok === true &&
+    adminCommercial.data?.data?.commerce_enabled === false &&
+    Array.isArray(adminCommercial.data?.data?.rows),
+    'Admin commercial RPC failed or extra commerce was unexpectedly enabled');
+  console.log('PASS: commercial admin RPC retains user JWT; checkout gate remains closed');
+
+  const publicOffers = await call('/functions/v1/tonart-commercial-offers', {
+    method: 'POST', body: { modelSlug: 'tonart-e2e-gate-probe' },
+  });
+  assert(publicOffers.status === 200 && Array.isArray(publicOffers.data?.data) &&
+    publicOffers.data.data.length === 0,
+    'Commercial public offers gate returned unexpected results');
+  console.log('PASS: unauthenticated public offer lookup stays empty with commerce disabled');
+
   const unauthRpc = await call('/functions/v1/admin-rpc', {
     method: 'POST', body: rpcRequest,
   });
