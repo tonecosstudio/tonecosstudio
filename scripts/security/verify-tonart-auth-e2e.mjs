@@ -56,14 +56,14 @@ async function main() {
       'Both credentials must be real access JWTs, not passwords or API keys');
   }
 
-  async function call(path, { token, method = 'GET', body, origin, preflight = false } = {}) {
+  async function call(path, { token, method = 'GET', body, origin, preflight = false, preflightMethod = 'POST', preflightHeaders = 'authorization,apikey,content-type' } = {}) {
     const headers = { apikey: key };
     if (token) headers.Authorization = `Bearer ${token}`;
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (origin) headers.Origin = origin;
     if (preflight) {
-      headers['Access-Control-Request-Method'] = 'POST';
-      headers['Access-Control-Request-Headers'] = 'authorization,apikey,content-type';
+      headers['Access-Control-Request-Method'] = preflightMethod;
+      headers['Access-Control-Request-Headers'] = preflightHeaders;
     }
     const response = await fetch(`${PROJECT_URL}${path}`, {
       method,
@@ -138,9 +138,21 @@ async function main() {
         valid: (r) => r.status === 200 && r.allowOrigin === origin,
       })),
       {
+        name: 'Supabase Auth settings CORS supports browser preflight',
+        path: '/auth/v1/settings',
+        method: 'OPTIONS',
+        origin,
+        preflight: true,
+        preflightMethod: 'GET',
+        preflightHeaders: 'apikey',
+        valid: (r) => r.status === 200 &&
+          (r.allowOrigin === origin || r.allowOrigin === '*'),
+      },
+      {
         name: 'public signup is disabled while existing email sign-in remains enabled',
         path: '/auth/v1/settings',
-        valid: (r) => r.status === 200 &&
+        origin,
+        valid: (r) => r.status === 200 && r.allowOrigin === origin &&
           r.data?.disable_signup === true && r.data?.external?.email === true,
       },
     ];
@@ -149,7 +161,7 @@ async function main() {
       assert(check.valid(result), 'Anonymous HTTP contract failed: ' + check.name);
       console.log('PASS: ' + check.name);
     }
-    console.log('TONART anonymous HTTP E2E: PASS (9/9, no user tokens or commercial mutations)');
+    console.log('TONART anonymous HTTP E2E: PASS (10/10, no user tokens or commercial mutations)');
     return;
   }
 
