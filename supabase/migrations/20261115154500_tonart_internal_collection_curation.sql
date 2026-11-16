@@ -279,7 +279,7 @@ CREATE POLICY catalog_curation_model_tags_admin_read
   TO authenticated
   USING (public.is_tonecos_admin());
 
-REVOKE ALL ON TABLE public.tonart_editorial_collections FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE public.tonart_editorial_collections FROM PUBLIC, anon, authenticated, service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tonart_editorial_collections TO service_role;
 -- Supabase grants ALL table privileges to anon/authenticated by default,
 -- including TRUNCATE (not restricted by RLS). These are private RPC-only tables.
@@ -290,7 +290,7 @@ REVOKE ALL ON TABLE
   public.catalog_curation_tag_aliases,
   public.catalog_collection_curation,
   public.catalog_curation_model_tags
-  FROM PUBLIC, anon, authenticated;
+  FROM PUBLIC, anon, authenticated, service_role;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
   public.catalog_character_identities,
@@ -626,7 +626,7 @@ DECLARE
   v_items jsonb;
 BEGIN
   PERFORM private_api.assert_tonart_curation_service_role();
-  IF p_offset < 0 OR p_limit < 1 OR p_limit > 20 THEN
+  IF p_offset IS NULL OR p_limit IS NULL OR p_offset < 0 OR p_limit < 1 OR p_limit > 20 THEN
     RAISE EXCEPTION 'Invalid curation page bounds' USING ERRCODE = '22023';
   END IF;
   IF v_state IS NOT NULL
