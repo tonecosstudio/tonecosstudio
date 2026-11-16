@@ -53,7 +53,11 @@ describe("internal catalog curation service", () => {
     expect(migrations[0]).toContain("CREATE TABLE IF NOT EXISTS public.catalog_curation_tags");
     expect(migrations[0]).toContain("CREATE TABLE IF NOT EXISTS public.tonart_editorial_collections");
     expect(migrations[0]).toContain(
-      "REVOKE ALL ON TABLE public.tonart_editorial_collections FROM PUBLIC, anon, authenticated",
+      "REVOKE ALL ON TABLE public.tonart_editorial_collections FROM PUBLIC, anon, authenticated, service_role",
+    );
+    expect(migrations[0]).toContain("FROM PUBLIC, anon, authenticated, service_role;");
+    expect(migrations[0]).toContain(
+      "IF p_offset IS NULL OR p_limit IS NULL OR p_offset < 0",
     );
     expect(migrations[0]).toContain(
       "REVOKE ALL ON TABLE\n  public.catalog_character_identities,",
