@@ -320,10 +320,14 @@ export function InternalCollectionCuration() {
         memberIds.includes(item.modelId),
       );
       if (!selected.length) throw new Error("Selecione modelos da curadoria.");
-      assertCurrentCanonicalCurationModels(
-        selected.map((item) => ({ modelId: item.modelId, slug: item.slug })),
-        [...liveModelsById.values()].map(modelRef),
-      );
+      // Keep cleanup possible when a canonical model has been removed or renamed.
+      // New/approved classifications always require a current catalog match.
+      if (tagReviewState !== "discarded") {
+        assertCurrentCanonicalCurationModels(
+          selected.map((item) => ({ modelId: item.modelId, slug: item.slug })),
+          [...liveModelsById.values()].map(modelRef),
+        );
+      }
       return saveCatalogModelClassifications({
         models: selected.map((item) => ({
           modelId: item.modelId,
