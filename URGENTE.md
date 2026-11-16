@@ -1628,3 +1628,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** quando houver uma stack Supabase local isolada, validar migration e fluxo com Auth/RLS e duas sessões concorrentes; enquanto isso, manter o branch pronto para revisão e não declarar homologação real ou merge aprovado.
 
 **DO_NOT_REPEAT:** não aplicar migrations no Supabase conectado ou de produção; não usar fixtures/PGlite como prova de integração real; não abrir `tonart_extra_commerce_enabled` ou `tonart_collection_commerce_enabled`; não reexecutar o mesmo job sem evidência de restauração do serviço de logs/runner.
+
+## Rodada 74 — PostgreSQL nativo e concorrência de Coins (15/11/2026)
+
+- Com PostgreSQL 18.6 x64 em cluster temporário no Windows, as mesmas 37 migrations e verificações SQL da rodada 73 foram executadas no motor PostgreSQL nativo. O bootstrap continuou usando fixtures locais para os serviços/schema Supabase legados; nenhuma migration foi aplicada ao Supabase e nenhum dado remoto foi acessado.
+- Em duas sessões PostgreSQL independentes, `pg_stat_activity` confirmou a segunda RPC aguardando o advisory lock da primeira. Com duas chaves de checkout distintas e saldo fixture de 10,25 Coins, a primeira compra reservou 10,25, a segunda reservou 0,00, e o ledger recebeu exatamente um débito de `-10,25`. Os processos locais foram encerrados e as portas de teste ficaram sem listener.
+- Isso valida lock, serialização e cálculo no motor PostgreSQL real, mas não Auth/JWT hospedado, RLS, Data API, Storage, dados existentes ou integração Supabase. Coins e checkout continuam protegidos pelos gates fechados.
+- O Quality Gate #43785416998 ainda é o último run de PR disponível: o job terminou em 2 s, com `runner_id=0`, nome de runner vazio e `steps=[]`; o download de logs retorna `404 BlobNotFound`. Não há evidência para atribuir o erro ao código nem para identificar a causa interna do serviço, e nenhum run novo foi disparado. Esse run é do SHA `37f5009f`; o HEAD atual da PR #27 é `5964e185`. A PR segue aberta e sem merge.
+
+**NEXT_ACTION:** para homologar a integração completa, restaurar a coleta de logs/runner do GitHub Actions e disponibilizar uma stack Supabase isolada para Auth/RLS; preservar o branch atual e os gates fechados até essa validação.
+
+**DO_NOT_REPEAT:** não usar o multiplexador PGlite para alegar concorrência; não tratar PostgreSQL com fixtures locais como prova de integração Supabase; não aplicar migrations no Supabase produtivo nem abrir gates, ativar cobranças ou publicar.
