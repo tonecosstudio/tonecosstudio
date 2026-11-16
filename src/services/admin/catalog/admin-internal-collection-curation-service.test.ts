@@ -175,6 +175,30 @@ describe("internal catalog curation service", () => {
     expect(mocks.callAdminRpc.mock.calls[0][1]).not.toHaveProperty("models");
   });
 
+  it("rejects active or published editorial collection responses", async () => {
+    const template = INTERNAL_COLLECTION_TEMPLATES[0];
+    const safeResponse = {
+      id: COLLECTION_ID,
+      name: template.name,
+      slug: template.slug,
+      collectionKind: "internal",
+      curationVisibility: "private",
+      isActive: false,
+      status: "draft",
+    };
+    for (const unsafe of [
+      { ...safeResponse, isActive: true },
+      { ...safeResponse, status: "active" },
+      { ...safeResponse, status: "inactive" },
+    ]) {
+      mocks.callAdminRpc.mockResolvedValueOnce(unsafe);
+      await expect(ensureAdminInternalCollection(template)).rejects.toThrow(
+        "catalog_internal_collection_invalid",
+      );
+    }
+    expect(mocks.callAdminRpc).toHaveBeenCalledTimes(3);
+  });
+
   it("does not accept a commercial collection as an internal curation template", async () => {
     const template = INTERNAL_COLLECTION_TEMPLATES[0];
     mocks.callAdminRpc.mockResolvedValue({
