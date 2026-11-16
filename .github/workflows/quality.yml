@@ -26,10 +26,6 @@ on:
       - 'src/pages/catalog/CanonicalModelDetails*'
       - 'src/pages/LandingPage*'
       - 'src/components/catalog/**'
-      - 'src/components/admin/collections/InternalCollectionCuration.tsx'
-      - 'src/services/admin/catalog/admin-internal-collection-curation-service*'
-      - 'src/pages/admin/collections/AdminCollectionsHub.tsx'
-      - 'supabase/migrations/20261115154*_tonart_*curation*.sql'
       - 'public/_headers'
       - 'package.json'
       - 'package-lock.json'
@@ -206,40 +202,9 @@ jobs:
         if: always()
         run: node scripts/security/audit-commercial-authority.mjs
 
-
-  # Reuse the existing Quality Gate workflow. This PR does not change the
-  # Cloudflare Worker, so avoid running unrelated catalog build/test suites.
-  curation-validation:
-    name: TONART internal curation / offline
-    if: github.event_name == 'pull_request' && github.event.pull_request.number == 28
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-
-      - name: Use Node.js 24
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install locked dependencies
-        run: npm ci
-
-      - name: Validate app types
-        run: npm run typecheck:app
-
-      - name: Test curation service and migration contracts
-        run: npm run test -- src/services/admin/catalog/admin-internal-collection-curation-service.test.ts
-
   catalog-offline:
     name: Catalog Worker offline / no deploy
-    if: github.event_name == 'pull_request' && github.event.pull_request.number != 28
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
