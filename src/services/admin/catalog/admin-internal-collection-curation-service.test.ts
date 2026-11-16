@@ -32,6 +32,66 @@ describe("internal catalog curation service", () => {
     vi.clearAllMocks();
   });
 
+  it("preserves all commercial admin identities and private editorial RPCs in the single gateway", () => {
+    const gateway = readFileSync(
+      new URL("../../../../supabase/functions/admin-rpc/index.ts", import.meta.url),
+      "utf8",
+    );
+    const entries = (registry: string): string[] => {
+      const start = gateway.indexOf(`const ${registry} = new Set([`);
+      expect(start).toBeGreaterThanOrEqual(0);
+      const end = gateway.indexOf("]);", start);
+      expect(end).toBeGreaterThan(start);
+      return [...gateway.slice(start, end).matchAll(/"([^"]+)"/g)].map(
+        (match) => match[1],
+      );
+    };
+
+    const allowed = entries("ADMIN_RPC_ALLOWLIST");
+    const userContext = entries("ADMIN_USER_CONTEXT_RPCS");
+    expect(new Set(allowed).size).toBe(allowed.length);
+    expect(new Set(userContext).size).toBe(userContext.length);
+    for (const name of userContext) expect(allowed).toContain(name);
+
+    // The 15 user-JWT RPCs are the full verified commercial contract from PR #27.
+    for (const name of [
+      "admin_get_or_create_delivery_cycle",
+      "admin_process_subscription_payment",
+      "admin_save_tonart_commercial_offer",
+      "tonart_admin_commercial_offers_directory",
+      "admin_save_subscription_plan_configuration",
+      "admin_set_subscription_collection_models",
+      "admin_schedule_subscription_deliveries",
+      "admin_update_payment_setting",
+      "admin_update_production_setting",
+      "admin_upsert_system_settings",
+      "admin_verify_subscription_payment_voucher",
+      "admin_register_preorder_manual_payment",
+      "admin_reject_preorder_payment_voucher",
+      "admin_release_preorder_final_payment",
+      "admin_send_payment_link",
+    ]) {
+      expect(userContext).toContain(name);
+    }
+    // Editorial RPCs remain service-scoped after the admin gateway check.
+    for (const name of [
+      "admin_create_catalog_curation_tag",
+      "admin_add_catalog_curation_tag_alias",
+      "admin_remove_catalog_curation_tag_alias",
+      "admin_get_collection_curation_page",
+      "admin_get_collection_curation_summary",
+      "admin_ensure_internal_collection",
+      "admin_list_catalog_curation_tags",
+      "admin_list_internal_collections",
+      "admin_upsert_catalog_curation_tags",
+      "admin_upsert_collection_curation_models",
+      "admin_verify_catalog_model_identity",
+    ]) {
+      expect(allowed).toContain(name);
+      expect(userContext).not.toContain(name);
+    }
+  });
+
   it("keeps both curation migrations atomic and the vocabulary RPC admin-only", () => {
     const paths = [
       "../../../../supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
