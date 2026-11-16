@@ -365,7 +365,7 @@ export function createInternalCollectionTemplate(
       const code = char.charCodeAt(0);
       return code < 32 || code === 127 || char === "<" || char === ">";
     });
-  const slug = normalizeCurationAliasSlug(name);
+  const slug = normalizeCurationAliasSlug(name, 120);
   if (
     !name ||
     name.length > 160 ||
@@ -405,7 +405,7 @@ export async function listCatalogCurationTags(): Promise<CatalogCurationTag[]> {
   return data.map(parseTag);
 }
 
-function normalizeCurationAliasSlug(value: string): string {
+function normalizeCurationAliasSlug(value: string, maxLength = 80): string {
   return value
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -413,7 +413,7 @@ function normalizeCurationAliasSlug(value: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
+    .slice(0, maxLength);
 }
 
 export async function createCatalogCurationTag(input: {
