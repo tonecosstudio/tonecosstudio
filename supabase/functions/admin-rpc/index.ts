@@ -96,6 +96,8 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_save_pricing_tier_plan",
   "admin_save_quick_reply",
   "admin_save_subscription_plan_configuration",
+  "admin_save_tonart_commercial_offer",
+  "tonart_admin_commercial_offers_directory",
   "admin_set_subscription_collection_models",
   "admin_upsert_catalog_curation_tags",
   "admin_upsert_collection_curation_models",
