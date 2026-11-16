@@ -1,3 +1,12 @@
+## CHECKPOINT — 16/11/2026 — vitrine comercial sem promoção não autorizada
+
+- **Produção publicada:** `tonart-studio-public` deployment `dpl_8TSit4xbse6JZmET16dRB23H47aL`, `READY`, commit `8c1e59f063480bcfbb8335eeaf115681b4b4ad35`, alias `https://tonartstudio.com.br`. Uma única compilação de produção, com **52 testes Node aprovados**. Não repetir o deploy.
+- **Bug corrigido:** o bundle anterior `LandingPage-CZIT_lfs.js` incluía a chamada pública `Black Friday — Até 50% de desconto` apesar de os gates de vendas estarem fechados. `LandingPage.tsx` removeu apenas esse banner não comprovado (commit `20ca0b0028112fe3397257c8177d9f30910a7578`); teste atual `LandingPage.readonly.test.tsx` exige a ausência da promoção também no shell comercial (commit `8c1e59f063480bcfbb8335eeaf115681b4b4ad35`). **O shell comercial permanece disponível; não confundir com venda/checkout liberado.**
+- **Prova HTTP pós-deploy:** bundle `LandingPage-Ce-aP3Mp.js` não contém `Black Friday` nem `Até 50% de desconto`; `/login`, `/modelos` = 200; proxy canônico de categorias = 200/7 e catálogo = 200/3; `/robots.txt` = 200; sitemap e assets inexistentes = 404. Teste público anterior também comprovou 6/6 capas com Range 206 de um byte, sem baixar imagens completas.
+- **Pendente real:** E2E de duas sessões JWT válidas não foi executado; UI de navegador autenticado não foi homologada. GitHub Actions continua bloqueado antes de alocar runners; não criar workflow paralelo. Não houve mudança em Supabase/migrations/gates nem em outro repositório ou branch local.
+
+---
+
 ## CHECKPOINT DE CONTINUIDADE — 16/11/2026 — Vercel produção: fallback SPA corrigido e publicado
 
 - **Causa raiz da falha HTTP pública:** `vercel.json` usava `/(.*)` para reescrever qualquer arquivo estático ausente como `index.html`, dando `200 text/html` a `/sitemap.xml`, `/favicon.ico` e recursos desconhecidos. O sitemap é intencionalmente removido em modo `noindex`, conforme `scripts/seo/generate-public-index.mjs`.
