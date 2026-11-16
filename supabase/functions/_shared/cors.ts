@@ -1,9 +1,12 @@
 function getAllowedOrigins(): string[] {
   const configured = Deno.env.get("ALLOWED_ORIGINS") ?? Deno.env.get("SITE_URL") ?? "";
-  const origins = configured
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  // Keep the public production origins in this single shared CORS authority.
+  // Optional ALLOWED_ORIGINS/SITE_URL extend this list for controlled previews.
+  const origins = [
+    "https://tonartstudio.com.br",
+    "https://www.tonartstudio.com.br",
+    ...configured.split(",").map((origin) => origin.trim()).filter(Boolean),
+  ];
 
   if (Deno.env.get("ALLOW_LOCAL_ORIGINS") === "true") {
     origins.push("http://localhost:5173", "http://127.0.0.1:5173");
