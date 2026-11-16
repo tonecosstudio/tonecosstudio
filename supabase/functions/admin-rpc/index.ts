@@ -143,6 +143,10 @@ const ADMIN_RPC_ALLOWLIST = new Set([
 const ADMIN_USER_CONTEXT_RPCS = new Set([
   "admin_save_tonart_commercial_offer",
   "tonart_admin_commercial_offers_directory",
+  "admin_save_subscription_plan_configuration",
+  "admin_set_subscription_collection_models",
+  "admin_schedule_subscription_deliveries",
+  "admin_update_production_setting",
   "admin_register_preorder_manual_payment",
   "admin_reject_preorder_payment_voucher",
   "admin_release_preorder_final_payment",

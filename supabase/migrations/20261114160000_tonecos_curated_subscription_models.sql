@@ -92,7 +92,9 @@ DECLARE
   v_values text[] := ARRAY[]::text[];
   v_result_id uuid;
 BEGIN
-  PERFORM public.assert_admin_access();
+  IF (SELECT auth.uid()) IS NULL OR NOT (SELECT private_api.is_current_admin()) THEN
+    RAISE EXCEPTION 'Admin access required' USING ERRCODE = '42501';
+  END IF;
 
   IF p_data IS NULL OR jsonb_typeof(p_data) <> 'object' THEN
     RAISE EXCEPTION 'Subscription plan payload must be an object' USING ERRCODE = '22023';
@@ -192,7 +194,9 @@ DECLARE
   v_slugs text[] := COALESCE(p_model_slugs, '{}'::text[]);
   v_count integer;
 BEGIN
-  PERFORM public.assert_admin_access();
+  IF (SELECT auth.uid()) IS NULL OR NOT (SELECT private_api.is_current_admin()) THEN
+    RAISE EXCEPTION 'Admin access required' USING ERRCODE = '42501';
+  END IF;
   IF p_collection_id IS NULL THEN
     RAISE EXCEPTION 'Collection is required' USING ERRCODE = '22023';
   END IF;

@@ -228,7 +228,9 @@ DECLARE
   v_pieces integer;
   v_type text := lower(NULLIF(btrim(COALESCE(p_data->>'plan_type', p_data->>'billing_interval', '')), ''));
 BEGIN
-  PERFORM public.assert_admin_access();
+  IF (SELECT auth.uid()) IS NULL OR NOT (SELECT private_api.is_current_admin()) THEN
+    RAISE EXCEPTION 'Admin access required' USING ERRCODE = '42501';
+  END IF;
   IF p_data IS NULL OR jsonb_typeof(p_data) <> 'object' THEN
     RAISE EXCEPTION 'Subscription plan payload must be an object' USING ERRCODE = '22023';
   END IF;
@@ -763,7 +765,9 @@ DECLARE
   v_sixth_delivery_id uuid;
   i integer;
 BEGIN
-  PERFORM public.assert_admin_access();
+  IF (SELECT auth.uid()) IS NULL OR NOT (SELECT private_api.is_current_admin()) THEN
+    RAISE EXCEPTION 'Admin access required' USING ERRCODE = '42501';
+  END IF;
   IF p_subscription_id IS NULL OR p_entry_cycle_id IS NULL THEN
     RAISE EXCEPTION 'SUBSCRIPTION_AND_ENTRY_CYCLE_REQUIRED' USING ERRCODE = '22023';
   END IF;
@@ -1110,10 +1114,37 @@ ALTER TABLE public.tonecos_coin_entries
     ) NOT VALID;
 
 ALTER TABLE public.tonecos_coin_entries
-  ADD COLUMN IF NOT EXISTS imported_legacy_coin_transaction_id uuid
-    REFERENCES public.coin_transactions(id) ON DELETE RESTRICT,
-  ADD COLUMN IF NOT EXISTS imported_legacy_wallet_id uuid
-    REFERENCES public.user_coins(id) ON DELETE RESTRICT;
+  ADD COLUMN IF NOT EXISTS imported_legacy_coin_transaction_id uuid,
+  ADD COLUMN IF NOT EXISTS imported_legacy_wallet_id uuid;
+
+-- Keep the optional history links when the old monolith tables exist, but do
+-- not make the clean TONART baseline depend on tables it intentionally omits.
+DO $legacy_coin_constraints$
+BEGIN
+  IF to_regclass('public.coin_transactions') IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM pg_constraint
+        WHERE conname = 'tonecos_coin_entries_legacy_transaction_fkey'
+          AND conrelid = 'public.tonecos_coin_entries'::regclass
+     ) THEN
+    EXECUTE 'ALTER TABLE public.tonecos_coin_entries
+      ADD CONSTRAINT tonecos_coin_entries_legacy_transaction_fkey
+      FOREIGN KEY (imported_legacy_coin_transaction_id)
+      REFERENCES public.coin_transactions(id) ON DELETE RESTRICT';
+  END IF;
+  IF to_regclass('public.user_coins') IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM pg_constraint
+        WHERE conname = 'tonecos_coin_entries_legacy_wallet_fkey'
+          AND conrelid = 'public.tonecos_coin_entries'::regclass
+     ) THEN
+    EXECUTE 'ALTER TABLE public.tonecos_coin_entries
+      ADD CONSTRAINT tonecos_coin_entries_legacy_wallet_fkey
+      FOREIGN KEY (imported_legacy_wallet_id)
+      REFERENCES public.user_coins(id) ON DELETE RESTRICT';
+  END IF;
+END;
+$legacy_coin_constraints$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS tonecos_coin_entries_legacy_transaction_unique
   ON public.tonecos_coin_entries(imported_legacy_coin_transaction_id)
@@ -1122,99 +1153,121 @@ CREATE UNIQUE INDEX IF NOT EXISTS tonecos_coin_entries_legacy_wallet_unique
   ON public.tonecos_coin_entries(imported_legacy_wallet_id)
   WHERE imported_legacy_wallet_id IS NOT NULL;
 
--- Freeze legacy writes until the exact old ledger and wallet total have both
--- been imported and the fail-closed compatibility RPCs are committed.
-LOCK TABLE public.user_coins, public.coin_transactions, public.coin_packages
-  IN SHARE ROW EXCLUSIVE MODE;
-
--- Preserve the old wallet's append-only history and reconcile any aggregate
--- balance drift into the same canonical ledger. Source rows remain untouched.
-INSERT INTO public.tonecos_coin_entries (
-  user_id, entry_type, delta, reference_key, reason, created_by, created_at,
-  imported_legacy_coin_transaction_id
-)
-SELECT
-  old_entry.user_id,
-  'legacy_import',
-  old_entry.amount::numeric(12,2),
-  CASE
-    WHEN EXISTS (
-      SELECT 1 FROM public.tonecos_coin_entries existing
-       WHERE existing.user_id = old_entry.user_id
-         AND existing.reference_key = old_entry.id
-    ) THEN gen_random_uuid()
-    ELSE old_entry.id
-  END,
-  left(
-    'Histórico Coins legado (' || old_entry.transaction_type::text || '): ' ||
-    COALESCE(NULLIF(btrim(old_entry.description), ''), 'sem descrição'),
-    500
-  ),
-  NULL,
-  old_entry.created_at,
-  old_entry.id
-FROM public.coin_transactions old_entry
-WHERE old_entry.amount <> 0
-  AND NOT EXISTS (
-    SELECT 1 FROM public.tonecos_coin_entries imported
-     WHERE imported.imported_legacy_coin_transaction_id = old_entry.id
-  )
-ON CONFLICT DO NOTHING;
-
-INSERT INTO public.tonecos_coin_entries (
-  user_id, entry_type, delta, reference_key, reason, created_by, created_at,
-  imported_legacy_wallet_id
-)
-SELECT
-  wallet.user_id,
-  'legacy_import',
-  (wallet.balance::numeric(12,2) - COALESCE(SUM(old_entry.amount), 0))::numeric(12,2),
-  CASE
-    WHEN EXISTS (
-      SELECT 1 FROM public.tonecos_coin_entries existing
-       WHERE existing.user_id = wallet.user_id
-         AND existing.reference_key = wallet.id
-    ) THEN gen_random_uuid()
-    ELSE wallet.id
-  END,
-  'Reconciliação do saldo histórico da carteira Coins',
-  NULL,
-  wallet.updated_at,
-  wallet.id
-FROM public.user_coins wallet
-LEFT JOIN public.coin_transactions old_entry ON old_entry.user_id = wallet.user_id
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.tonecos_coin_entries imported
-   WHERE imported.imported_legacy_wallet_id = wallet.id
-)
-GROUP BY wallet.id, wallet.user_id, wallet.balance, wallet.updated_at
-HAVING wallet.balance::numeric(12,2) - COALESCE(SUM(old_entry.amount), 0) <> 0
-ON CONFLICT DO NOTHING;
-
-DO $$
+-- Preserve legacy transaction history and reconcile aggregate balances only
+-- when both authoritative legacy sources exist. The fresh project starts with
+-- the append-only canonical ledger and has no legacy balance to import.
+DO $legacy_coin_migration$
+DECLARE
+  v_balance_mismatch boolean;
 BEGIN
-  IF EXISTS (
-    SELECT 1
+  IF to_regclass('public.user_coins') IS NOT NULL
+     AND to_regclass('public.coin_transactions') IS NOT NULL THEN
+    EXECUTE 'LOCK TABLE public.user_coins, public.coin_transactions
+      IN SHARE ROW EXCLUSIVE MODE';
+
+    EXECUTE $sql$
+      INSERT INTO public.tonecos_coin_entries (
+        user_id, entry_type, delta, reference_key, reason, created_by, created_at,
+        imported_legacy_coin_transaction_id
+      )
+      SELECT
+        old_entry.user_id,
+        'legacy_import',
+        old_entry.amount::numeric(12,2),
+        CASE
+          WHEN EXISTS (
+            SELECT 1 FROM public.tonecos_coin_entries existing
+             WHERE existing.user_id = old_entry.user_id
+               AND existing.reference_key = old_entry.id
+          ) THEN gen_random_uuid()
+          ELSE old_entry.id
+        END,
+        left(
+          'Histórico Coins legado (' || old_entry.transaction_type::text || '): ' ||
+          COALESCE(NULLIF(btrim(old_entry.description), ''), 'sem descrição'),
+          500
+        ),
+        NULL,
+        old_entry.created_at,
+        old_entry.id
+      FROM public.coin_transactions old_entry
+      WHERE old_entry.amount <> 0
+        AND NOT EXISTS (
+          SELECT 1 FROM public.tonecos_coin_entries imported
+           WHERE imported.imported_legacy_coin_transaction_id = old_entry.id
+        )
+      ON CONFLICT DO NOTHING
+    $sql$;
+
+    EXECUTE $sql$
+      INSERT INTO public.tonecos_coin_entries (
+        user_id, entry_type, delta, reference_key, reason, created_by, created_at,
+        imported_legacy_wallet_id
+      )
+      SELECT
+        wallet.user_id,
+        'legacy_import',
+        (wallet.balance::numeric(12,2) - COALESCE(SUM(old_entry.amount), 0))::numeric(12,2),
+        CASE
+          WHEN EXISTS (
+            SELECT 1 FROM public.tonecos_coin_entries existing
+             WHERE existing.user_id = wallet.user_id
+               AND existing.reference_key = wallet.id
+          ) THEN gen_random_uuid()
+          ELSE wallet.id
+        END,
+        'Reconciliação do saldo histórico da carteira Coins',
+        NULL,
+        wallet.updated_at,
+        wallet.id
       FROM public.user_coins wallet
-      LEFT JOIN (
-        SELECT e.user_id, SUM(e.delta) AS imported_balance
-          FROM public.tonecos_coin_entries e
-         WHERE e.imported_legacy_coin_transaction_id IS NOT NULL
-            OR e.imported_legacy_wallet_id IS NOT NULL
-         GROUP BY e.user_id
-      ) imported ON imported.user_id = wallet.user_id
-     WHERE COALESCE(imported.imported_balance, 0) <> wallet.balance
-  ) THEN
-    RAISE EXCEPTION 'TONART_LEGACY_COIN_BALANCE_RECONCILIATION_FAILED';
+      LEFT JOIN public.coin_transactions old_entry ON old_entry.user_id = wallet.user_id
+      WHERE NOT EXISTS (
+        SELECT 1 FROM public.tonecos_coin_entries imported
+         WHERE imported.imported_legacy_wallet_id = wallet.id
+      )
+      GROUP BY wallet.id, wallet.user_id, wallet.balance, wallet.updated_at
+      HAVING wallet.balance::numeric(12,2) - COALESCE(SUM(old_entry.amount), 0) <> 0
+      ON CONFLICT DO NOTHING
+    $sql$;
+
+    EXECUTE $sql$
+      SELECT EXISTS (
+        SELECT 1
+          FROM public.user_coins wallet
+          LEFT JOIN (
+            SELECT e.user_id, SUM(e.delta) AS imported_balance
+              FROM public.tonecos_coin_entries e
+             WHERE e.imported_legacy_coin_transaction_id IS NOT NULL
+                OR e.imported_legacy_wallet_id IS NOT NULL
+             GROUP BY e.user_id
+          ) imported ON imported.user_id = wallet.user_id
+         WHERE COALESCE(imported.imported_balance, 0) <> wallet.balance
+      )
+    $sql$ INTO v_balance_mismatch;
+    IF v_balance_mismatch THEN
+      RAISE EXCEPTION 'TONART_LEGACY_COIN_BALANCE_RECONCILIATION_FAILED';
+    END IF;
+  ELSE
+    RAISE NOTICE 'Skipping legacy Coins import; public.user_coins and public.coin_transactions are not both provisioned.';
+  END IF;
+
+  IF to_regclass('public.coin_packages') IS NOT NULL THEN
+    EXECUTE 'LOCK TABLE public.coin_packages IN SHARE ROW EXCLUSIVE MODE';
+    EXECUTE 'UPDATE public.coin_packages SET is_active = false, updated_at = now() WHERE is_active IS TRUE';
+    EXECUTE 'REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+      ON TABLE public.coin_packages FROM PUBLIC, anon, authenticated';
+  END IF;
+  IF to_regclass('public.user_coins') IS NOT NULL THEN
+    EXECUTE 'REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+      ON TABLE public.user_coins FROM PUBLIC, anon, authenticated';
+  END IF;
+  IF to_regclass('public.coin_transactions') IS NOT NULL THEN
+    EXECUTE 'REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+      ON TABLE public.coin_transactions FROM PUBLIC, anon, authenticated';
   END IF;
 END;
-$$;
-
--- Retire catalog-independent legacy top-up packages without deleting history.
-UPDATE public.coin_packages SET is_active = false, updated_at = now() WHERE is_active IS TRUE;
-REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
-  ON TABLE public.user_coins, public.coin_transactions, public.coin_packages
-  FROM PUBLIC, anon, authenticated;
+$legacy_coin_migration$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS tonecos_coin_entries_reversal_unique
   ON public.tonecos_coin_entries(reverses_entry_id)
@@ -1539,7 +1592,9 @@ DECLARE
   v_value text := public.admin_validate_setting_value(p_value, 64);
   v_number integer;
 BEGIN
-  PERFORM public.assert_admin_access();
+  IF (SELECT auth.uid()) IS NULL OR NOT (SELECT private_api.is_current_admin()) THEN
+    RAISE EXCEPTION 'Admin access required' USING ERRCODE = '42501';
+  END IF;
   IF v_key NOT IN (
     'monthly_production_limit', 'production_days_min', 'shipping_business_days',
     'sales_duration_days', 'delivery_interval_days', 'monthly_capacity',
@@ -1576,7 +1631,8 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-  PERFORM public.assert_admin_access();
+  -- Retired compatibility RPC; keep it fail-closed without depending on the
+  -- removed legacy admin helper.
   RAISE EXCEPTION 'LEGACY_COIN_WALLET_DISABLED' USING ERRCODE = '22023';
 END;
 $$;
