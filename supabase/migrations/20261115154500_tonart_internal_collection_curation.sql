@@ -1063,6 +1063,22 @@ BEGIN
 END;
 $$;
 
+-- Internal helpers and trigger functions must not remain callable through public RPC.
+-- PostgreSQL grants EXECUTE to PUBLIC for newly created functions by default.
+REVOKE ALL ON FUNCTION public.guard_catalog_curation_tag_alias()
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.guard_catalog_curation_tag_slug()
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.admin_validate_catalog_curation_text(text, text, integer, boolean)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.admin_validate_catalog_model_reference(text, text)
+  FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_validate_catalog_curation_text(text, text, integer, boolean)
+  TO service_role;
+GRANT EXECUTE ON FUNCTION public.admin_validate_catalog_model_reference(text, text)
+  TO service_role;
+
 REVOKE ALL ON FUNCTION public.admin_list_internal_collections() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_ensure_internal_collection(text, text, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_list_catalog_curation_tags() FROM PUBLIC, anon, authenticated;
