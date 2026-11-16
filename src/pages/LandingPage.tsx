@@ -221,15 +221,6 @@ export default function LandingPage() {
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[hsl(var(--gold-accent)/0.3)] to-transparent" />
       </section>
 
-      {commercialMvpAvailable && (
-        <section aria-label="Black Friday TONART" className="border-y border-[hsl(var(--gold-accent)/0.2)] bg-[hsl(var(--gold-accent)/0.05)] px-5 py-4 sm:px-8">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2">
-            <h2 className="flex flex-wrap items-baseline gap-x-4 gap-y-1"><span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,80%)]">Black Friday</span><span className="text-lg font-semibold text-[hsl(var(--gold-accent))]">Até 50% de desconto</span></h2>
-            <p className="text-xs leading-5 text-[hsl(0,0%,65%)]">Todos os produtos participam. Percentual e valor final sob consulta.</p>
-          </div>
-        </section>
-      )}
-
       {/* Do not render an empty "Recent models" showcase while no photographs are approved. */}
       {catalogMediaOnHold ? (hasApprovedRenders ? <ApprovedHomeHighlights gateway={gateway} /> : (
         <section aria-labelledby="catalog-curation-heading" className="relative border-y border-[hsl(var(--gold-accent)/0.12)] bg-[hsl(0,0%,5%)] px-6 py-14 sm:py-20">
