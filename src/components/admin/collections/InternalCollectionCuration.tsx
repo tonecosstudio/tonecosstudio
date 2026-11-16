@@ -259,6 +259,13 @@ export function InternalCollectionCuration() {
         .map((id) => searchModelsById.get(id))
         .filter(isPresent);
       if (!models.length) throw new Error("Selecione candidatos do catálogo.");
+      const canonicalModels = await loadSubscriptionCatalogModels(
+        models.map((model) => model.slug),
+      );
+      assertCurrentCanonicalCurationModels(
+        models.map(modelRef),
+        canonicalModels.map(modelRef),
+      );
       return saveInternalCollectionCuration({
         collectionId: collection.id,
         models: models.map(modelRef),
@@ -439,15 +446,17 @@ export function InternalCollectionCuration() {
   });
 
   const identityMutation = useMutation({
-    mutationFn: async (review: NonNullable<typeof identityReview>) =>
-      verifyCatalogModelCharacterIdentity({
+    mutationFn: async (review: NonNullable<typeof identityReview>) => {
+      await assertFreshCanonicalSelection([modelRef(review.model)]);
+      return verifyCatalogModelCharacterIdentity({
         model: modelRef(review.model),
         characterName: review.characterName.trim(),
         franchise: review.franchise.trim(),
         evidenceOrigin: "manual_admin:reviewed_character_identity",
         evidenceNote:
           "Nome do personagem e franquia revisados explicitamente pelo administrador; variante preservada no modelo canônico.",
-      }),
+      });
+    },
     onSuccess: async () => {
       setIdentityReview(null);
       await refreshCollection();
