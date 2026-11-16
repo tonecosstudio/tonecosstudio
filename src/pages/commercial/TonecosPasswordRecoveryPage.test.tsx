@@ -10,6 +10,8 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import Recovery from "./TonecosPasswordRecoveryPage";
 
+const USER = "11111111-1111-4111-8111-111111111111";
+
 const mocks = vi.hoisted(() => ({
   user: vi.fn(),
   request: vi.fn(),
@@ -88,7 +90,7 @@ describe("Tonecos password recovery screen", () => {
 
   it("validates recovery links across browsers using the token hash, then shows a new password form", async () => {
     const tokenHash = "a".repeat(64);
-    mocks.verify.mockResolvedValue(undefined);
+    mocks.verify.mockResolvedValue(USER);
     mocks.user.mockResolvedValue({
       id: "11111111-1111-4111-8111-111111111111",
       email: "cliente@example.com",
@@ -100,10 +102,26 @@ describe("Tonecos password recovery screen", () => {
       await screen.findByRole("button", { name: "Salvar nova senha" }),
     ).toBeInTheDocument();
     expect(mocks.verify).toHaveBeenCalledExactlyOnceWith(tokenHash);
-    expect(mocks.user).toHaveBeenCalledTimes(1);
+    expect(mocks.user).not.toHaveBeenCalled();
     expect(
       screen.getByRole("link", { name: "Voltar ao login" }),
     ).toHaveAttribute("href", "/login?next=%2Fsolicitar-orcamento");
+  });
+
+  it("retries the recovery token from memory after removing it from the URL", async () => {
+    const tokenHash = "e".repeat(64);
+    mocks.verify
+      .mockRejectedValueOnce(new Error("temporary network outage"))
+      .mockResolvedValueOnce(USER);
+    show("/recuperar-senha?action=update&next=%2Fperfil&token_hash=" + tokenHash + "&type=recovery");
+    fireEvent.click(await screen.findByRole("button", { name: "Verificar novamente" }));
+    expect(
+      await screen.findByRole("button", { name: "Salvar nova senha" }),
+    ).toBeInTheDocument();
+    expect(mocks.verify).toHaveBeenCalledTimes(2);
+    expect(mocks.verify).toHaveBeenNthCalledWith(1, tokenHash);
+    expect(mocks.verify).toHaveBeenNthCalledWith(2, tokenHash);
+    expect(mocks.user).not.toHaveBeenCalled();
   });
 
   it("blocks password changes when recovery token verification fails", async () => {
@@ -125,7 +143,7 @@ describe("Tonecos password recovery screen", () => {
   });
 
   it("shows and hides the new password independently of confirmation", async () => {
-    mocks.verify.mockResolvedValue(undefined);
+    mocks.verify.mockResolvedValue(USER);
     mocks.user.mockResolvedValue({
       id: "11111111-1111-4111-8111-111111111111",
       email: "cliente@example.com",
@@ -154,7 +172,7 @@ describe("Tonecos password recovery screen", () => {
     expect(mocks.complete).not.toHaveBeenCalled();
   });
   it("requires matching strong passwords with verified session before submitting", async () => {
-    mocks.verify.mockResolvedValue(undefined);
+    mocks.verify.mockResolvedValue(USER);
     mocks.user.mockResolvedValue({
       id: "11111111-1111-4111-8111-111111111111",
       email: "cliente@example.com",

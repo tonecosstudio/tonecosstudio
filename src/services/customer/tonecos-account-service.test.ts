@@ -112,7 +112,7 @@ describe("Tonecos authenticated MVP account", () => {
   it("exchanges recovery token hash with Supabase Auth for cross-browser password recovery", async () => {
     const tokenHash = "a".repeat(64);
     mocks.verifyOtp.mockResolvedValue({ data: { user: { id: USER }, session: { access_token: "test" } }, error: null });
-    await expect(verifyTonecosPasswordRecoveryToken(tokenHash)).resolves.toBeUndefined();
+    await expect(verifyTonecosPasswordRecoveryToken(tokenHash)).resolves.toBe(USER);
     expect(mocks.verifyOtp).toHaveBeenCalledExactlyOnceWith({ token_hash: tokenHash, type: "recovery" });
   });
 

@@ -14,7 +14,6 @@ import {
 import { isPasswordPolicyCompliant } from "@/config/auth";
 import {
   completeTonecosPasswordRecovery,
-  getTonecosCurrentUser,
   requestTonecosPasswordReset,
   verifyTonecosPasswordRecoveryToken,
 } from "@/services/customer/tonecos-account-service";
@@ -35,6 +34,11 @@ export default function TonecosPasswordRecoveryPage() {
   const returnTo = resolveTonecosCustomerReturnPath(params.get("next"));
   const recoveryToken = params.get("token_hash");
   const recoveryType = params.get("type");
+  // The one-time proof is kept only in memory after clearing the URL.
+  // This permits retrying a transient verification failure without leaking
+  // the token back into browser history.
+  const recoveryTokenRef = useRef(recoveryToken);
+  const recoveryTypeRef = useRef(recoveryType);
   const validationStarted = useRef(false);
   const [verified, setVerified] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
@@ -46,30 +50,34 @@ export default function TonecosPasswordRecoveryPage() {
 
   const refreshSession = useCallback(async () => {
     setError("");
+    setVerified(null);
+    // Remove any one-time token from the URL, including malformed links.
+    if (recoveryToken) {
+      navigate(tonecosRecoveryPath(returnTo, true), { replace: true });
+    }
+    const token = recoveryTokenRef.current;
     try {
-      // An ordinary signed-in session does not prove ownership of a recovery link.
-      // Do not permit the password-reset screen to bypass the current-password flow.
-      if (!recoveryToken || recoveryType !== "recovery") {
+      // An ordinary signed-in session is never proof of recovery ownership.
+      if (!token || recoveryTypeRef.current !== "recovery") {
         setVerified(false);
         setError("Não foi possível validar o link. Solicite um novo e-mail de recuperação.");
         return;
       }
-      // Clear the single-use token from browser history before exchanging it.
-      navigate(tonecosRecoveryPath(returnTo, true), { replace: true });
-      await verifyTonecosPasswordRecoveryToken(recoveryToken);
-      const user = await getTonecosCurrentUser();
-      setVerified(Boolean(user));
-      if (!user)
-        setError(
-          "Não foi possível validar o link. Solicite um novo e-mail de recuperação.",
-        );
+      // Supabase Auth verifies the token and returns the authenticated owner.
+      // Do not make a redundant getUser request which could fail after the OTP
+      // has already been consumed.
+      const verifiedUserId = await verifyTonecosPasswordRecoveryToken(token);
+      recoveryTokenRef.current = null;
+      setVerified(Boolean(verifiedUserId));
+      if (!verifiedUserId)
+        setError("Não foi possível validar o link. Solicite um novo e-mail de recuperação.");
     } catch {
       setVerified(false);
       setError(
         "Não foi possível validar o link. Ele pode ter expirado ou já ter sido utilizado.",
       );
     }
-  }, [navigate, recoveryToken, recoveryType, returnTo]);
+  }, [navigate, recoveryToken, returnTo]);
   useEffect(() => {
     if (update && !validationStarted.current) {
       validationStarted.current = true;
