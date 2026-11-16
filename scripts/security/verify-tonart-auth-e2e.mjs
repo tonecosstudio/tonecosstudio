@@ -5,6 +5,8 @@
  *   # Set TONART_SUPABASE_PUBLISHABLE_KEY, TONART_ADMIN_JWT and
  *   # TONART_CUSTOMER_JWT through a trusted private environment.
  *   node scripts/security/verify-tonart-auth-e2e.mjs
+ *   # Public-only (one publishable key, no user credentials):
+ *   node scripts/security/verify-tonart-auth-e2e.mjs --anonymous
  *
  * Obtain each short-lived token through a normal sign-in to the existing TONART
  * Supabase project. Do not commit tokens, put them in CI secrets, or paste them
@@ -42,17 +44,27 @@ function assertRows(value, label) {
 }
 
 async function main() {
+  const anonymousMode = process.argv.length === 3 && process.argv[2] === '--anonymous';
+  assert(process.argv.length === 2 || anonymousMode,
+    'Usage: node verify-tonart-auth-e2e.mjs [--anonymous]');
   const key = requiredEnvironment('TONART_SUPABASE_PUBLISHABLE_KEY');
-  const adminJwt = requiredEnvironment('TONART_ADMIN_JWT');
-  const customerJwt = requiredEnvironment('TONART_CUSTOMER_JWT');
-  assert(adminJwt !== customerJwt, 'Admin and customer must use distinct Auth sessions');
-  assert(adminJwt.split('.').length === 3 && customerJwt.split('.').length === 3,
-    'Both credentials must be real access JWTs, not passwords or API keys');
+  const adminJwt = anonymousMode ? null : requiredEnvironment('TONART_ADMIN_JWT');
+  const customerJwt = anonymousMode ? null : requiredEnvironment('TONART_CUSTOMER_JWT');
+  if (!anonymousMode) {
+    assert(adminJwt !== customerJwt, 'Admin and customer must use distinct Auth sessions');
+    assert(adminJwt.split('.').length === 3 && customerJwt.split('.').length === 3,
+      'Both credentials must be real access JWTs, not passwords or API keys');
+  }
 
-  async function call(path, { token, method = 'GET', body } = {}) {
+  async function call(path, { token, method = 'GET', body, origin, preflight = false } = {}) {
     const headers = { apikey: key };
     if (token) headers.Authorization = `Bearer ${token}`;
     if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (origin) headers.Origin = origin;
+    if (preflight) {
+      headers['Access-Control-Request-Method'] = 'POST';
+      headers['Access-Control-Request-Headers'] = 'authorization,apikey,content-type';
+    }
     const response = await fetch(`${PROJECT_URL}${path}`, {
       method,
       headers,
@@ -63,7 +75,76 @@ async function main() {
     const text = await response.text();
     let data;
     try { data = text ? JSON.parse(text) : null; } catch { data = null; }
-    return { status: response.status, data };
+    return {
+      status: response.status,
+      data,
+      allowOrigin: response.headers.get('access-control-allow-origin'),
+    };
+  }
+
+  if (anonymousMode) {
+    const origin = 'https://tonartstudio.com.br';
+    const deny = (result) => result.status === 401 || result.status === 403;
+    const noRows = (result) => result.status === 200 &&
+      Array.isArray(result.data) && result.data.length === 0;
+    const checks = [
+      {
+        name: 'profiles are private',
+        path: '/rest/v1/profiles?select=id',
+        valid: (r) => deny(r) || noRows(r),
+      },
+      {
+        name: 'commerce switches are not readable by anon',
+        path: '/rest/v1/system_settings?select=key,value&key=in.(tonart_collection_commerce_enabled,tonart_extra_commerce_enabled)',
+        valid: (r) => deny(r) || noRows(r),
+      },
+      {
+        name: 'administrator role is not public',
+        path: '/rest/v1/rpc/is_tonecos_admin',
+        method: 'POST',
+        body: {},
+        valid: (r) => deny(r) || r.status === 404 ||
+          (r.status === 200 && r.data === false),
+      },
+      {
+        name: 'admin-rpc requires user JWT',
+        path: '/functions/v1/admin-rpc',
+        method: 'POST',
+        body: { functionName: 'admin_list_internal_collections', args: {} },
+        valid: (r) => r.status === 401,
+      },
+      {
+        name: 'invalid user JWT is rejected',
+        path: '/functions/v1/admin-rpc',
+        method: 'POST',
+        token: 'invalid.jwt.signature',
+        body: { functionName: 'admin_list_internal_collections', args: {} },
+        valid: (r) => r.status === 401,
+      },
+      {
+        name: 'public commercial offers remain empty',
+        path: '/functions/v1/tonart-commercial-offers',
+        method: 'POST',
+        body: { modelSlug: 'tonart-e2e-gate-probe' },
+        valid: (r) => r.status === 200 && Array.isArray(r.data?.data) &&
+          r.data.data.length === 0,
+      },
+      ...['admin-rpc', 'tonart-commercial-offers'].map((name) => ({
+        name: name + ' CORS allows canonical site',
+        path: '/functions/v1/' + name,
+        method: 'OPTIONS',
+        origin,
+        preflight: true,
+        valid: (r) => r.status === 200 && r.allowOrigin === origin,
+      })),
+    ];
+    for (const check of checks) {
+      const result = await call(check.path, check);
+      assert(check.valid(result), 'Anonymous HTTP contract failed: ' + check.name);
+      console.log('PASS: ' + check.name);
+    }
+    console.log('TONART anonymous HTTP E2E: PASS (8/8, no user tokens or writes)');
+    return;
   }
 
   const [adminUser, customerUser] = await Promise.all([
