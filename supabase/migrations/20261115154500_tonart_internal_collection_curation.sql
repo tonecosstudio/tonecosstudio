@@ -397,6 +397,12 @@ BEGIN
   IF v_collection.id IS NULL THEN
     RAISE EXCEPTION 'Internal collection not found' USING ERRCODE = 'P0002';
   END IF;
+  -- Slugs normalized from distinct names can collide (including truncation).
+  -- Preserve the existing row and fail, never silently reuse a different group.
+  IF v_collection.name <> v_name THEN
+    RAISE EXCEPTION 'Editorial collection slug belongs to a different name'
+      USING ERRCODE = '23505';
+  END IF;
   RETURN jsonb_build_object(
     'id', v_collection.id, 'name', v_collection.name, 'slug', v_collection.slug,
     'collectionKind', 'internal', 'curationVisibility', 'private',
