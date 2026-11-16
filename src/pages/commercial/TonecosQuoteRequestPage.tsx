@@ -17,6 +17,7 @@ import {
 } from "./CommercialPage";
 import { commercialQuoteErrorText } from "./commercial-quote-error-text";
 import TonecosCustomerContactSummary from "./TonecosCustomerContactSummary";
+import { useTonecosSignupAvailability } from "@/hooks/auth/useTonecosSignupAvailability";
 
 type Identity = { id: string; email: string | null };
 type CustomerProfile = Awaited<ReturnType<typeof getMyTonecosProfile>>;
@@ -37,6 +38,9 @@ export default function TonecosQuoteRequestPage() {
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState<Identity | null | undefined>(undefined);
   const [authError, setAuthError] = useState(false);
+  const signupAvailability = useTonecosSignupAvailability(
+    user === null && !authError && selectedModels.length > 0,
+  );
   const [authAttempt, setAuthAttempt] = useState(0);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
@@ -164,8 +168,10 @@ export default function TonecosQuoteRequestPage() {
         ) : user === null && selectedModels.length > 0 ? (
           <div className={panelClass}>
             <p className="mb-5 text-sm leading-relaxed text-white/70">
-              Entre ou crie uma conta para enviar a seleção e acompanhar a
-              resposta da TONART Studio.
+              Entre com sua conta para enviar a seleção e acompanhar a resposta
+              da TONART Studio.
+              {signupAvailability === "disabled" &&
+                " Novos cadastros estão fechados nesta etapa."}
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -174,12 +180,14 @@ export default function TonecosQuoteRequestPage() {
               >
                 Entrar
               </Link>
-              <Link
-                className={secondaryClass}
-                to={TONECOS_COMMERCIAL_ROUTES.login + "?mode=signup&next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)}
-              >
-                Criar conta
-              </Link>
+              {signupAvailability === "enabled" && (
+                <Link
+                  className={secondaryClass}
+                  to={TONECOS_COMMERCIAL_ROUTES.login + "?mode=signup&next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)}
+                >
+                  Criar conta
+                </Link>
+              )}
             </div>
           </div>
         ) : null}

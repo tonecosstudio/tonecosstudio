@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import {
+  SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_URL,
+} from "@/config/supabase-environment";
+import {
   checkRateLimit,
   RATE_LIMITS,
   resetRateLimit,
@@ -46,6 +50,31 @@ function normalizeAuthError(error: { message?: string }): Error {
   }
 
   return error instanceof Error ? error : new Error(message);
+}
+
+/**
+ * Read the existing Supabase Auth signup policy; do not duplicate it in UI
+ * flags. If settings cannot be verified, keep visitor signup closed without
+ * affecting existing account sign-in or password recovery.
+ */
+export async function getTonecosPublicSignupEnabled(): Promise<boolean> {
+  try {
+    const response = await fetch(new URL("/auth/v1/settings", SUPABASE_URL), {
+      headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
+      cache: "no-store",
+      signal: AbortSignal.timeout(7_000),
+    });
+    if (!response.ok) return false;
+    const settings: unknown = await response.json();
+    if (!settings || typeof settings !== "object") return false;
+    const auth = settings as {
+      disable_signup?: unknown;
+      external?: { email?: unknown };
+    };
+    return auth.disable_signup === false && auth.external?.email === true;
+  } catch {
+    return false;
+  }
 }
 
 export async function getCurrentAuthSession(): Promise<Session | null> {

@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearAllRateLimits, RATE_LIMITS } from "@/lib/security/rate-limiter";
+vi.mock("@/config/supabase-environment", () => ({
+  SUPABASE_URL: "https://icmtmaakjucmuzxnofkd.supabase.co",
+  SUPABASE_PUBLISHABLE_KEY: "public-key-for-tests",
+}));
 
 const { authMock } = vi.hoisted(() => ({
   authMock: {
@@ -21,6 +25,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import {
+  getTonecosPublicSignupEnabled,
   resendSignupConfirmation,
   sendPasswordResetEmail,
   signInWithPasswordCredentials,
@@ -276,5 +281,46 @@ describe("auth-session-service rate limits", () => {
       "reset@example.com",
       { redirectTo: "https://ordax.example/reset" },
     );
+  });
+});
+
+
+describe("Supabase Auth signup availability is canonical and fail-closed", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("allows signup only when Supabase Auth explicitly enables email signup", async () => {
+    const request = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ disable_signup: false, external: { email: true } }),
+    });
+    vi.stubGlobal("fetch", request);
+    await expect(getTonecosPublicSignupEnabled()).resolves.toBe(true);
+    expect(request).toHaveBeenCalledWith(
+      new URL("https://icmtmaakjucmuzxnofkd.supabase.co/auth/v1/settings"),
+      expect.objectContaining({
+        headers: { apikey: "public-key-for-tests" },
+        cache: "no-store",
+      }),
+    );
+  });
+
+  it.each([
+    { disable_signup: true, external: { email: true } },
+    { disable_signup: false, external: { email: false } },
+    { external: { email: true } },
+    null,
+  ])("hides signup on disabled or malformed settings: %j", async (settings) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => settings,
+    }));
+    await expect(getTonecosPublicSignupEnabled()).resolves.toBe(false);
+  });
+
+  it("fails closed when the settings API is unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+    await expect(getTonecosPublicSignupEnabled()).resolves.toBe(false);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+    await expect(getTonecosPublicSignupEnabled()).resolves.toBe(false);
   });
 });

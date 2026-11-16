@@ -47,8 +47,12 @@ const mocks = vi.hoisted(() => {
     answerAdmin: vi.fn(),
     changeStatus: vi.fn(),
     hasAdmin: vi.fn(),
+    signupAvailability: vi.fn(),
   };
 });
+vi.mock("@/hooks/auth/useTonecosSignupAvailability", () => ({
+  useTonecosSignupAvailability: mocks.signupAvailability,
+}));
 vi.mock("@/services/customer/tonecos-account-service", () => ({
   getTonecosCurrentUser: mocks.getUser,
   signInTonecosAccount: mocks.signIn,
@@ -146,6 +150,7 @@ beforeEach(() => {
   vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
   mocks.getUser.mockResolvedValue({ id: USER, email: "cliente@example.com" });
   mocks.hasAdmin.mockResolvedValue(false);
+  mocks.signupAvailability.mockReturnValue("enabled");
   mocks.getProfile.mockResolvedValue({
     id: USER,
     email: "cliente@example.com",
@@ -1351,6 +1356,29 @@ describe("TONART commercial screens: account → request → history → respons
     expect(
       await screen.findByText(/Nova confirmação solicitada/),
     ).toBeInTheDocument();
+  });
+
+  it("hides signup and preserves login/recovery when Auth closes signup", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    mocks.signupAvailability.mockReturnValue("disabled");
+    renderApp("/login?mode=signup&next=%2Fsolicitar-orcamento");
+    expect(await screen.findByRole("button", { name: "Entrar" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cadastrar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Criar conta" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Novos cadastros estão fechados nesta etapa/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Esqueci minha senha" })).toBeInTheDocument();
+    expect(mocks.signUp).not.toHaveBeenCalled();
+  });
+
+  it("preserves selected quote models and only offers login when signup is closed", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    mocks.signupAvailability.mockReturnValue("disabled");
+    renderApp("/solicitar-orcamento", true);
+    expect(await screen.findByRole("link", { name: "Entrar" })).toHaveAttribute(
+      "href", "/login?next=%2Fsolicitar-orcamento",
+    );
+    expect(screen.queryByRole("link", { name: "Criar conta" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Novos cadastros estão fechados nesta etapa/)).toBeInTheDocument();
   });
 
   it("shows account confirmation instead of claiming that signup is already active", async () => {
