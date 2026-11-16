@@ -1667,3 +1667,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** enviar o commit validado à PR #27, inspecionar o novo CI sem rerun manual; manter merge bloqueado até existir ambiente Supabase isolado autorizado para migrations + JWT admin/cliente + RLS + concorrência. Depois executar homologação real e só então integrar; gates comerciais permanecem fechados. PR #28 permanece draft.
 
 **DO_NOT_REPEAT:** não tratar o smoke PGlite como Supabase real; não reaplicar migrações no banco de produção; não instalar/contratar compute pago sem autorização; não abrir gates, checkout ou cobranças; não repetir a suíte ampla sem corrigir a causa do worker sem progresso; não rerun Actions antes de evidência de recuperação do runner/logs.
+
+## Rodada 77 — PR #27 atualizada e integração preservada (16/11/2026)
+
+- Commit de código `98995f3d` e commits de documentação `3530392a` enviados por fast-forward à branch `codex/local-account-preview-mocks`; a PR #27 aponta para `3530392a`. O corpo da PR foi atualizado para descrever a reconciliação já feita e separar verificações locais de homologação hospedada.
+- Comparei o `admin-rpc/index.ts` da PR #27 com a PR #28. Esta branch contém as rotas comerciais; a PR #28 mantém 11 nomes de RPC editorial exclusivos, além das duas rotas comerciais compartilhadas. Nenhuma alteração editorial foi copiada. A integração posterior do arquivo comum deve manter ambos os conjuntos.
+- O Quality Gate novo, run `#43817647000`, falhou no job `Catalog Worker offline / no deploy` sem steps ou URL de logs. Autoridade, cobertura, build/test/segurança e build de produção ficaram skipped. Não houve rerun; CI não aprovado. A PR continua aberta, pronta para revisão, mas sem merge.
+- Confirmei que PR #28 permanece aberta e draft. Nenhuma migration ou Edge Function foi implantada; nenhum banco produtivo, cobrança, deploy ou gate comercial foi alterado.
+- Validações de código e SQL continuam sendo as registradas na Rodada 76; não as repeti nesta rodada. A comparação dos arquivos e `git diff --check` foram executados localmente.
+
+**NEXT_ACTION:** obter ambiente Supabase isolado autorizado e executar a cadeia de migrations, Auth/JWT admin e cliente, RLS, Storage, persistência e concorrência. Só então reconsiderar merge. Na futura integração com a PR #28, reconciliar o arquivo `admin-rpc/index.ts` preservando rotas comerciais e editoriais.
+
+**DO_NOT_REPEAT:** não interpretar `mergeable=true` como gates de CI/homologação satisfeitos; não rerun o run `#43817647000` enquanto continuar sem runner/logs; não migrar o banco conectado de produção; não incorporar a implementação editorial à PR #27.
