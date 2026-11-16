@@ -8,7 +8,7 @@ O site está em **pré-lançamento/noindex**. O modo comercial Vercel (conta e o
 
 | Documento | O que responde |
 | --- | --- |
-| [TONART-COLECOES-ASSINATURAS-COINS.md](TONART-COLECOES-ASSINATURAS-COINS.md) | Estratégia de planos, preços, seleção, entregas, Coins e extras; implementação sem autorização automática de lançamento |
+| [TONART-COLECOES-ASSINATURAS-COINS.md](TONART-COLECOES-ASSINATURAS-COINS.md) | Estratégia comercial de planos, entregas, preços, Coins e extras; seção 4.1 delimita a curadoria editorial privada da PR #28 e os gates de integração com a PR #27 |
 | [README principal](../README.md) | Estado consolidado do MVP, Minha Conta, orçamentos, owners e pendências reais de GO |
 | [AGENTS](../AGENTS.md) | Regras, segurança, owners, entrega rápida e política de mídia |
 | [URGENTE](../URGENTE.md) | Checkpoint operacional atual; os checkpoints antigos abaixo são históricos, não ordens atuais |
@@ -28,6 +28,12 @@ O site está em **pré-lançamento/noindex**. O modo comercial Vercel (conta e o
 - Supabase TONART ativo: `profiles` e `quotes` com RLS, RPC `submit_catalog_quote_request`; não inferir E2E de usuário real a partir de schema.
 - Pendente: confirmação E2E autenticada de cadastro/login/recovery/orçamento/resposta, QA visual, revisão jurídica e direitos de mídia, autorização específica para indexação. Seções legadas da Minha Conta não integram o MVP funcional de orçamento.
 - **Quarentena SpecialSTL** permanece por identidade confirmada (264 registros) e somente pode ser liberada por evidência de direitos e render legítimo da escultura correta. Imagens comuns permanecem visíveis.
+
+## Curadoria editorial interna — checkpoint de 16/11/2026
+
+A [PR #28](https://github.com/tonecosstudio/tonecosstudio/pull/28) organiza candidatos privados por personagem/franquia/variante, tags controladas e coleções internas, preservando o catálogo único Cloudflare D1/R2. **Não é oferta comercial, não cria preço, não movimenta Coins e não publica modelos**. A descrição técnica e os caminhos canônicos estão na [seção 4.1 do documento comercial](TONART-COLECOES-ASSINATURAS-COINS.md#41-curadoria-editorial-privada--separacao-do-comercio-pr-28). O trabalho de ofertas/assinaturas/Coins permanece na [PR #27](https://github.com/tonecosstudio/tonecosstudio/pull/27); não combinar ou sobrescrever seus arquivos sem reconciliar alterações.
+
+Provas executadas em isolamento na revisão `f7df5baf`: **21/21 Vitest**, **28/28 verificações SQL** com as duas migrations aplicadas em PostgreSQL isolado, typecheck estrito apenas do serviço, build Vercel de preview **READY**. A PR #28 segue em *draft*: **faltam** `npm run typecheck:app` integral e homologação de login administrativo/RPC/RLS no Supabase autorizado; nada foi aplicado ao Supabase produtivo, nem integrado à `main`. O checkpoint de 15/11 em `URGENTE.md` sobre planos e Coins é histórico, não prova de conclusão comercial.
 
 ## Manutenção de documentação
 
