@@ -32,6 +32,7 @@ import PasswordField from "./PasswordField";
 import { TonecosCustomerWorkspace } from "./TonecosCustomerSections";
 import { commercialAccountErrorText } from "./commercial-account-error-text";
 import { LOCAL_SUPABASE_FALLBACK } from "@/config/supabase-environment";
+import { useTonecosSignupAvailability } from "@/hooks/auth/useTonecosSignupAvailability";
 
 type Identity = { id: string; email: string | null };
 const safeNext = new Set<string>([
@@ -52,13 +53,24 @@ export default function TonecosAccountPage() {
   const next = safeNext.has(requestedNext ?? "")
     ? requestedNext!
     : resolveTonecosCustomerReturnPath(requestedNext);
-  const [mode, setMode] = useState(
-    params.get("mode") === "signup" ? "signup" : "login",
-  );
+  const requestedSignup = params.get("mode") === "signup";
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [identity, setIdentity] = useState<Identity | null | undefined>(
     undefined,
   );
   const [sessionError, setSessionError] = useState(false);
+  const signupAvailability = useTonecosSignupAvailability(
+    identity === null && !sessionError,
+  );
+  const signupMode = mode === "signup" && signupAvailability === "enabled";
+
+  useEffect(() => {
+    if (signupAvailability === "disabled") {
+      setMode("login");
+    } else if (signupAvailability === "enabled" && requestedSignup) {
+      setMode("signup");
+    }
+  }, [signupAvailability, requestedSignup]);
   const [sessionAttempt, setSessionAttempt] = useState(0);
   const [profileError, setProfileError] = useState(false);
   const [profileAttempt, setProfileAttempt] = useState(0);
@@ -175,7 +187,7 @@ export default function TonecosAccountPage() {
     setError("");
     setNotice("");
     try {
-      if (mode === "signup") {
+      if (signupMode) {
         const result = await registerTonecosAccount({
           email,
           password,
@@ -545,7 +557,7 @@ export default function TonecosAccountPage() {
           <div className={panelClass}>
             <div className="mb-6 flex gap-3" aria-label="Acesso à conta">
               <button
-                className={mode === "login" ? actionClass : secondaryClass}
+                className={!signupMode ? actionClass : secondaryClass}
                 type="button"
                 onClick={() => {
                   setMode("login");
@@ -556,8 +568,9 @@ export default function TonecosAccountPage() {
               >
                 Acessar conta
               </button>
-              <button
-                className={mode === "signup" ? actionClass : secondaryClass}
+              {signupAvailability === "enabled" && (
+                <button
+                  className={signupMode ? actionClass : secondaryClass}
                 type="button"
                 onClick={() => {
                   setMode("signup");
@@ -567,15 +580,22 @@ export default function TonecosAccountPage() {
                 }}
               >
                 Cadastrar
-              </button>
+                </button>
+              )}
             </div>
+            {requestedSignup && signupAvailability === "disabled" && (
+              <p role="status" className="mb-5 text-sm text-white/70">
+                Novos cadastros estão fechados nesta etapa. Entre com uma conta
+                existente ou use a recuperação de senha.
+              </p>
+            )}
             <form
               onSubmit={(event) => {
                 void submitAccess(event);
               }}
               className="space-y-5"
             >
-              {mode === "signup" && (
+              {signupMode && (
                 <label className="block space-y-2 text-sm">
                   <span>Nome completo</span>
                   <input
@@ -601,17 +621,17 @@ export default function TonecosAccountPage() {
                 />
               </label>
               <PasswordField
-                key={mode}
+                key={signupMode ? "signup" : "login"}
                 label="Senha"
                 value={password}
                 onChange={setPassword}
                 required
-                minLength={mode === "signup" ? 12 : 1}
+                minLength={signupMode ? 12 : 1}
                 autoComplete={
-                  mode === "signup" ? "new-password" : "current-password"
+                  signupMode ? "new-password" : "current-password"
                 }
               />
-              {mode === "login" && (
+              {!signupMode && (
                 <div className="text-right">
                   <Link
                     className="text-xs text-[hsl(var(--gold-accent))] underline underline-offset-4"
@@ -621,7 +641,7 @@ export default function TonecosAccountPage() {
                   </Link>
                 </div>
               )}
-              {mode === "signup" && (
+              {signupMode && (
                 <p className="text-xs text-white/55">
                   Use pelo menos 12 caracteres, incluindo maiúscula, minúscula,
                   número e símbolo.
@@ -630,12 +650,12 @@ export default function TonecosAccountPage() {
               <button type="submit" disabled={busy} className={actionClass}>
                 {busy
                   ? "Processando..."
-                  : mode === "signup"
+                  : signupMode
                     ? "Criar conta"
                     : "Entrar"}
               </button>
             </form>
-            {mode === "login" && (
+            {!signupMode && (
               <div className="mt-5 border-t border-white/15 pt-5">
                 <p className="mb-3 text-xs text-white/60">
                   {confirmationPending

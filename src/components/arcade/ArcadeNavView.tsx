@@ -1,10 +1,11 @@
-/** Canonical visual navigation shared by public-readonly and commercial modes. No auth imports. */
+/** Canonical visual navigation shared by public-readonly and commercial modes. Uses the canonical signup availability hook. */
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Bell, Menu, X } from "lucide-react";
 import { CoinCounter } from "@/components/arcade/CoinCounter";
 import { BRAND_SHORT_NAME } from "@/config/brand";
 import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
+import { useTonecosSignupAvailability } from "@/hooks/auth/useTonecosSignupAvailability";
 import {
   ADMIN_ROUTES,
   AUTH_ROUTES,
@@ -51,6 +52,8 @@ export function ArcadeNavView({
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const signupAvailability = useTonecosSignupAvailability(!visibleUser && !PREVIEW_READ_ONLY);
+  const showPublicSignup = !visibleUser && !PREVIEW_READ_ONLY && signupAvailability === "enabled";
 
   // Navigation may happen outside the menu (browser Back, catalog cards,
   // footer links). Never leave an expanded mobile menu on the next page.
@@ -157,7 +160,7 @@ export function ArcadeNavView({
               ENTRAR
             </button>
           )}
-          {!visibleUser && !PREVIEW_READ_ONLY && (
+          {showPublicSignup && (
             <Link
               to={`${PUBLIC_ROUTES.login}?mode=signup`}
               className="hidden sm:inline-flex min-h-10 items-center border border-[hsl(var(--gold-accent)/0.4)] px-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]"
@@ -204,7 +207,7 @@ export function ArcadeNavView({
             {link.label}
           </Link>
         ))}
-        {!visibleUser && !PREVIEW_READ_ONLY && (
+        {showPublicSignup && (
           <Link
             to={`${PUBLIC_ROUTES.login}?mode=signup`}
             onClick={() => setMobileOpen(false)}

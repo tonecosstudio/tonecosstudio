@@ -29,6 +29,9 @@ const PROFILE_SELECT = "id,email,full_name,phone,whatsapp,cpf,birth_date,deliver
 const PROFILE_SELECT_WITHOUT_TAX_DETAILS = "id,email,full_name,phone,whatsapp,delivery_address,preferred_contact_channel,quote_updates,production_updates,marketing_emails,created_at,updated_at" as const;
 let localPreviewProfile: AccountProfile | null = null;
 let localPreviewSignedOut = false;
+// In-memory recovery proof, established only by Supabase's one-time OTP
+// exchange. It must not outlive the completed or signed-out session.
+let verifiedRecoveryUserId: string | null = null;
 
 function createLocalPreviewProfile(): AccountProfile {
   const now = new Date().toISOString();
@@ -250,6 +253,7 @@ export async function changeTonecosPassword(input: {
 
 export async function signOutTonecosAccount(): Promise<void> {
   assertTonecosCommercialEnabled();
+  verifiedRecoveryUserId = null;
   if (LOCAL_SUPABASE_FALLBACK) {
     localPreviewProfile = null;
     localPreviewSignedOut = true;
@@ -524,8 +528,9 @@ export async function requestTonecosPasswordReset(
 /** Validate the one-time recovery token directly with Supabase Auth.
  * Unlike the PKCE callback code, this works across browsers/devices without a stored verifier.
  */
-export async function verifyTonecosPasswordRecoveryToken(tokenHash: string): Promise<void> {
+export async function verifyTonecosPasswordRecoveryToken(tokenHash: string): Promise<string> {
   assertTonecosCommercialEnabled();
+  verifiedRecoveryUserId = null;
   if (typeof tokenHash !== "string" || !/^[A-Za-z0-9_-]{32,512}$/.test(tokenHash)) {
     throw new Error("tonecos_recovery_link_invalid");
   }
@@ -533,9 +538,14 @@ export async function verifyTonecosPasswordRecoveryToken(tokenHash: string): Pro
     token_hash: tokenHash,
     type: "recovery",
   });
-  if (error || !data?.user || !data.session) {
+  if (error || !data?.user?.id || !data.session ||
+      data.session.user?.id !== data.user.id) {
     throw new Error("tonecos_recovery_link_invalid");
   }
+  verifiedRecoveryUserId = data.user.id;
+  // The verified Auth response already contains the session owner; avoid a
+  // second network round-trip before allowing the local recovery form.
+  return data.user.id;
 }
 
 /** Recovered sessions are verified by Supabase Auth, never by browser query params. */
@@ -545,10 +555,20 @@ export async function completeTonecosPasswordRecovery(password: string): Promise
       !isPasswordPolicyCompliant(password)) {
     throw new Error("tonecos_recovery_password_invalid");
   }
+  const expectedId = verifiedRecoveryUserId;
+  if (!expectedId) throw new Error("tonecos_recovery_session_required");
   const { data, error } = await tonecos.auth.getUser();
   if (error) throw error;
-  if (!data.user) throw new Error("tonecos_recovery_session_required");
+  if (!data.user || data.user.id !== expectedId) {
+    verifiedRecoveryUserId = null;
+    throw new Error("tonecos_recovery_session_required");
+  }
   const result = await tonecos.auth.updateUser({ password });
   if (result.error) throw result.error;
+  if (result.data?.user?.id !== expectedId) {
+    verifiedRecoveryUserId = null;
+    throw new Error("tonecos_recovery_session_required");
+  }
+  verifiedRecoveryUserId = null;
   await signOutCurrentSession();
 }

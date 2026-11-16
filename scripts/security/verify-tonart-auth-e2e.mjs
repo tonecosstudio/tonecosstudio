@@ -56,14 +56,14 @@ async function main() {
       'Both credentials must be real access JWTs, not passwords or API keys');
   }
 
-  async function call(path, { token, method = 'GET', body, origin, preflight = false } = {}) {
+  async function call(path, { token, method = 'GET', body, origin, preflight = false, preflightMethod = 'POST', preflightHeaders = 'authorization,apikey,content-type' } = {}) {
     const headers = { apikey: key };
     if (token) headers.Authorization = `Bearer ${token}`;
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (origin) headers.Origin = origin;
     if (preflight) {
-      headers['Access-Control-Request-Method'] = 'POST';
-      headers['Access-Control-Request-Headers'] = 'authorization,apikey,content-type';
+      headers['Access-Control-Request-Method'] = preflightMethod;
+      headers['Access-Control-Request-Headers'] = preflightHeaders;
     }
     const response = await fetch(`${PROJECT_URL}${path}`, {
       method,
@@ -129,6 +129,15 @@ async function main() {
         valid: (r) => r.status === 200 && Array.isArray(r.data?.data) &&
           r.data.data.length === 0,
       },
+      ...['submit_catalog_quote_request', 'submit_catalog_preorder_request'].map((name) => ({
+        name: name + ' requires a real customer session',
+        path: '/rest/v1/rpc/' + name,
+        method: 'POST',
+        origin,
+        body: { p_models: [] },
+        valid: (r) => r.status === 401 &&
+          r.data?.code === '42501' && r.allowOrigin === origin,
+      })),
       ...['admin-rpc', 'tonart-commercial-offers'].map((name) => ({
         name: name + ' CORS allows canonical site',
         path: '/functions/v1/' + name,
@@ -137,13 +146,31 @@ async function main() {
         preflight: true,
         valid: (r) => r.status === 200 && r.allowOrigin === origin,
       })),
+      {
+        name: 'Supabase Auth settings CORS supports browser preflight',
+        path: '/auth/v1/settings',
+        method: 'OPTIONS',
+        origin,
+        preflight: true,
+        preflightMethod: 'GET',
+        preflightHeaders: 'apikey',
+        valid: (r) => r.status === 200 &&
+          (r.allowOrigin === origin || r.allowOrigin === '*'),
+      },
+      {
+        name: 'public signup is disabled while existing email sign-in remains enabled',
+        path: '/auth/v1/settings',
+        origin,
+        valid: (r) => r.status === 200 && r.allowOrigin === origin &&
+          r.data?.disable_signup === true && r.data?.external?.email === true,
+      },
     ];
     for (const check of checks) {
       const result = await call(check.path, check);
       assert(check.valid(result), 'Anonymous HTTP contract failed: ' + check.name);
       console.log('PASS: ' + check.name);
     }
-    console.log('TONART anonymous HTTP E2E: PASS (8/8, no user tokens or commercial mutations)');
+    console.log('TONART anonymous HTTP E2E: PASS (12/12, no user tokens or commercial mutations)');
     return;
   }
 
