@@ -156,6 +156,10 @@ const ADMIN_USER_CONTEXT_RPCS = new Set([
   "admin_reject_preorder_payment_voucher",
   "admin_release_preorder_final_payment",
   "admin_send_payment_link",
+  // PR #27 commercial RPCs require auth.uid() / private_api.is_current_admin().
+  // Preserve the verified administrator JWT; service_role has no user identity.
+  "admin_save_tonart_commercial_offer",
+  "tonart_admin_commercial_offers_directory",
 ]);
 
 function json(req: Request, body: unknown, status = 200): Response {
