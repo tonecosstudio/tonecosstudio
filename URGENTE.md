@@ -1616,3 +1616,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** quando houver PostgreSQL Supabase isolado, aplicar a migration nesse ambiente e validar o fluxo autenticado de ponta a ponta; manter o gate fechado até a homologação comercial.
 
 **DO_NOT_REPEAT:** não validar SQL por mocks ou por projeto remoto; não reaplicar migrations já existentes; não abrir o gate, ativar cobrança/recorrência, fazer merge ou publicar em produção nesta rodada.
+
+## Rodada 73 — Validação SQL isolada de planos, Coins e checkout (16/11/2026)
+
+- As 37 migrations TONART a partir do baseline de clientes foram executadas em um banco PGlite 0.5.16 (PostgreSQL 18.6/WASM) efêmero, com schema e fixtures legados em memória para autenticação, storage, coleções, planos e migração do administrador. Nenhuma migration foi aplicada a Supabase e nenhum arquivo de migration foi alterado.
+- As RPCs passaram verificações de gate fechado por padrão e rejeição com o gate fechado; desconto de assinante de 500 bps antes dos Coins; pagamento misto com 0,25 Coin e frete fora da carteira; retry idempotente; resposta do admin para frete fixo e cotado; limite do débito ao saldo disponível; estorno idempotente; troca de modelo antes do corte de 30 dias e rejeição após o corte.
+- Isso valida execução SQL e regras no PostgreSQL emulado, com fixtures efêmeras. Não comprova Supabase real, Auth/JWT, RLS, Data API, dados existentes ou concorrência com sessões independentes. Os RPCs usam advisory lock por cliente e chaves/índices únicos; a concorrência real ainda exige duas conexões PostgreSQL isoladas.
+- Quality Gate #43785416998 para o HEAD 37f5009f falhou no job `Catalog Worker offline / no deploy` antes dos steps (`steps=null`, sem URL de logs). O download de logs segue 404 `BlobNotFound`; os demais jobs foram pulados pela condição da PR. Nenhuma reexecução foi feita. A PR #27 segue aberta e não mesclada.
+- Checkout local e remoto da branch apontam para 37f5009f; `origin/main` e a base da PR são ancestrais da branch. Não há Docker, `psql` ou Supabase CLI neste host; Supabase de produção, Cloudflare, pagamentos e publicação não foram acessados. O gate extra permanece fechado no código.
+
+**NEXT_ACTION:** quando houver uma stack Supabase local isolada, validar migration e fluxo com Auth/RLS e duas sessões concorrentes; enquanto isso, manter o branch pronto para revisão e não declarar homologação real ou merge aprovado.
+
+**DO_NOT_REPEAT:** não aplicar migrations no Supabase conectado ou de produção; não usar fixtures/PGlite como prova de integração real; não abrir `tonart_extra_commerce_enabled` ou `tonart_collection_commerce_enabled`; não reexecutar o mesmo job sem evidência de restauração do serviço de logs/runner.
