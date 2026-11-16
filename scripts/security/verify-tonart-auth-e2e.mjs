@@ -133,6 +133,28 @@ async function main() {
     'Admin commercial RPC failed or extra commerce was unexpectedly enabled');
   console.log('PASS: commercial admin RPC retains user JWT; checkout gate remains closed');
 
+  // Prove BOTH commercial switches are closed at the single database authority.
+  // An empty offers table alone would also return [] with an open gate.
+  const gateKeys = [
+    'tonart_collection_commerce_enabled',
+    'tonart_extra_commerce_enabled',
+  ];
+  const gateQuery = '/rest/v1/system_settings?select=key,value&key=in.(' +
+    gateKeys.join(',') + ')';
+  const [adminGateRead, customerGateRead] = await Promise.all([
+    call(gateQuery, { token: adminJwt }),
+    call(gateQuery, { token: customerJwt }),
+  ]);
+  assert(adminGateRead.status === 200 && Array.isArray(adminGateRead.data),
+    'Admin cannot read canonical commercial gates');
+  assert(customerGateRead.status === 200 && Array.isArray(customerGateRead.data) &&
+    customerGateRead.data.length === 0,
+    'Commercial gate settings were visible to the customer');
+  const gates = new Map(adminGateRead.data.map((row) => [row.key, row.value]));
+  assert(gates.size === gateKeys.length && gateKeys.every((key) => gates.get(key) === 'false'),
+    'A commercial gate is missing or enabled on the server');
+  console.log('PASS: both authoritative commerce gates are false and hidden from customer');
+
   const publicOffers = await call('/functions/v1/tonart-commercial-offers', {
     method: 'POST', body: { modelSlug: 'tonart-e2e-gate-probe' },
   });
