@@ -43,4 +43,16 @@ describe("TONART shared public/mobile navigation", () => {
         .toHaveAttribute("aria-expanded", "false");
     });
   });
+
+  it("connects the menu trigger to the mobile links and restores focus on Escape", async () => {
+    renderNavigation("/modelos", "/universo");
+    const trigger = screen.getByRole("button", { name: "Abrir menu" });
+    expect(trigger).toHaveAttribute("aria-controls", "tonart-mobile-navigation");
+
+    fireEvent.click(trigger);
+    expect(screen.getByRole("button", { name: "Fechar menu" })).toHaveAttribute("aria-expanded", "true");
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "false"));
+    expect(trigger).toHaveFocus();
+  });
 });

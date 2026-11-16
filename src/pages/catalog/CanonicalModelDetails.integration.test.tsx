@@ -345,7 +345,7 @@ describe("published model/gallery identity on the public detail page", () => {
     expect(io).toHaveBeenCalled();
   });
 
-  it("shows the configured price, variant and Coin reference without creating a purchase", async () => {
+  it("shows configured price, variant and Coins eligibility without assuming a wallet balance", async () => {
     vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
@@ -373,11 +373,9 @@ describe("published model/gallery identity on the public detail page", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Escala 1/10 · Pintado")).toBeInTheDocument();
     expect(screen.getByText(/R\$\s*237,50/)).toBeInTheDocument();
-    expect(screen.getByText(/até 237,50 Coins/)).toBeInTheDocument();
+    expect(screen.getByText(/Elegível para Coins no valor da peça/)).toBeInTheDocument();
     expect(
-      screen.getByText(
-        /Esta ficha não cria pedido, confirma disponibilidade nem realiza pagamento/,
-      ),
+      screen.getByText(/Esta ficha não reserva a peça nem realiza pagamento/),
     ).toBeInTheDocument();
     expect(offerServiceMocks.list).toHaveBeenCalledWith("animal-original");
     expect(io).toHaveBeenCalled();

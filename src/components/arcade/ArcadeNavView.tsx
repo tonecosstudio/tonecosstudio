@@ -1,11 +1,17 @@
 /** Canonical visual navigation shared by public-readonly and commercial modes. No auth imports. */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Bell, Menu, X } from "lucide-react";
 import { CoinCounter } from "@/components/arcade/CoinCounter";
 import { BRAND_SHORT_NAME } from "@/config/brand";
 import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
-import { ADMIN_ROUTES, AUTH_ROUTES, PUBLIC_COLLECTIONS_ENABLED, PUBLIC_ROUTES, PUBLIC_SUBSCRIPTIONS_ENABLED } from "@/config/routes";
+import {
+  ADMIN_ROUTES,
+  AUTH_ROUTES,
+  PUBLIC_COLLECTIONS_ENABLED,
+  PUBLIC_ROUTES,
+  PUBLIC_SUBSCRIPTIONS_ENABLED,
+} from "@/config/routes";
 
 const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
 
@@ -44,12 +50,24 @@ export function ArcadeNavView({
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   // Navigation may happen outside the menu (browser Back, catalog cards,
   // footer links). Never leave an expanded mobile menu on the next page.
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setMobileOpen(false);
+      mobileMenuButtonRef.current?.focus();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [mobileOpen]);
 
   const isActive = (path: string) => {
     if (path === PUBLIC_ROUTES.home) {
@@ -62,14 +80,17 @@ export function ArcadeNavView({
   };
 
   const linkClass = (path: string) =>
-    `inline-flex min-h-11 items-center text-[10px] tracking-[0.2em] uppercase transition-colors font-mono ${
+    `inline-flex min-h-11 items-center font-mono text-[10px] uppercase tracking-[0.2em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] ${
       isActive(path)
         ? "text-[hsl(var(--gold-accent))]"
         : "text-[hsl(0,0%,55%)] hover:text-[hsl(var(--gold-accent))]"
     }`;
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-[hsl(var(--gold-accent)/0.15)] bg-[hsl(0,0%,5%)]/95 backdrop-blur-md">
+    <nav
+      aria-label="Navegação principal"
+      className="sticky top-0 z-40 border-b border-[hsl(var(--gold-accent)/0.15)] bg-[hsl(0,0%,5%)]/95 backdrop-blur-md"
+    >
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-6">
         <Link
           to={PUBLIC_ROUTES.home}
@@ -83,13 +104,23 @@ export function ArcadeNavView({
 
         <div className="hidden items-center gap-5 lg:flex">
           {navLinks.map((link) => (
-            <Link key={link.to} to={link.to} className={linkClass(link.to)}>
+            <Link
+              key={link.to}
+              to={link.to}
+              aria-current={isActive(link.to) ? "page" : undefined}
+              className={linkClass(link.to)}
+            >
               {link.label}
             </Link>
           ))}
           {visibleUser &&
             authNavLinks.map((link) => (
-              <Link key={link.to} to={link.to} className={linkClass(link.to)}>
+              <Link
+                key={link.to}
+                to={link.to}
+                aria-current={isActive(link.to) ? "page" : undefined}
+                className={linkClass(link.to)}
+              >
                 {link.label}
               </Link>
             ))}
@@ -106,8 +137,9 @@ export function ArcadeNavView({
         <div className="flex items-center gap-3">
           {visibleUser && (
             <button
+              type="button"
               onClick={() => navigate(AUTH_ROUTES.notifications)}
-              className="relative text-[hsl(0,0%,55%)] transition-colors hover:text-[hsl(var(--gold-accent))]"
+              className="relative inline-flex h-11 w-11 items-center justify-center text-[hsl(0,0%,55%)] transition-colors hover:text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
               aria-label="Abrir notificações"
             >
               <Bell className="h-4 w-4" />
@@ -118,8 +150,9 @@ export function ArcadeNavView({
           )}
           {!visibleUser && !PREVIEW_READ_ONLY && (
             <button
+              type="button"
               onClick={() => navigate(PUBLIC_ROUTES.login)}
-              className="border border-[hsl(var(--gold-accent)/0.4)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.1)]"
+              className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent)/0.4)] px-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
             >
               ENTRAR
             </button>
@@ -138,10 +171,13 @@ export function ArcadeNavView({
             </span>
           )}
           <button
-            onClick={() => setMobileOpen(!mobileOpen)}
+            ref={mobileMenuButtonRef}
+            type="button"
+            onClick={() => setMobileOpen((open) => !open)}
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-[hsl(0,0%,55%)] transition-colors hover:text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] lg:hidden"
             aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
             aria-expanded={mobileOpen}
+            aria-controls="tonart-mobile-navigation"
           >
             {mobileOpen ? (
               <X className="h-5 w-5" />
@@ -152,58 +188,62 @@ export function ArcadeNavView({
         </div>
       </div>
 
-      {mobileOpen && (
-        <div className="animate-fade-in space-y-3 border-t border-[hsl(var(--gold-accent)/0.1)] bg-[hsl(0,0%,5%)]/98 px-4 py-4 backdrop-blur-md lg:hidden">
-          {navLinks.map((link) => (
+      <div
+        id="tonart-mobile-navigation"
+        hidden={!mobileOpen}
+        className="animate-fade-in space-y-3 border-t border-[hsl(var(--gold-accent)/0.1)] bg-[hsl(0,0%,5%)]/98 px-4 py-4 backdrop-blur-md lg:hidden"
+      >
+        {navLinks.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            onClick={() => setMobileOpen(false)}
+            aria-current={isActive(link.to) ? "page" : undefined}
+            className={`flex min-h-11 items-center ${linkClass(link.to)}`}
+          >
+            {link.label}
+          </Link>
+        ))}
+        {!visibleUser && !PREVIEW_READ_ONLY && (
+          <Link
+            to={`${PUBLIC_ROUTES.login}?mode=signup`}
+            onClick={() => setMobileOpen(false)}
+            className={`flex min-h-11 items-center ${linkClass(PUBLIC_ROUTES.login)}`}
+          >
+            CRIAR CONTA
+          </Link>
+        )}
+        {visibleUser &&
+          authNavLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
               onClick={() => setMobileOpen(false)}
+              aria-current={isActive(link.to) ? "page" : undefined}
               className={`flex min-h-11 items-center ${linkClass(link.to)}`}
             >
               {link.label}
             </Link>
           ))}
-          {!visibleUser && !PREVIEW_READ_ONLY && (
-            <Link
-              to={`${PUBLIC_ROUTES.login}?mode=signup`}
-              onClick={() => setMobileOpen(false)}
-              className={`flex min-h-11 items-center ${linkClass(PUBLIC_ROUTES.login)}`}
-            >
-              CRIAR CONTA
-            </Link>
-          )}
-          {visibleUser &&
-            authNavLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                onClick={() => setMobileOpen(false)}
-                className={`flex min-h-11 items-center ${linkClass(link.to)}`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          {visibleUser && (
-            <Link
-              to={AUTH_ROUTES.notifications}
-              onClick={() => setMobileOpen(false)}
-              className={`flex min-h-11 items-center ${linkClass(AUTH_ROUTES.notifications)}`}
-            >
-              NOTIFICACOES
-            </Link>
-          )}
-          {!PREVIEW_READ_ONLY && isAdmin && (
-            <Link
-              to={ADMIN_ROUTES.home}
-              onClick={() => setMobileOpen(false)}
-              className="flex min-h-11 items-center font-mono text-[10px] uppercase tracking-[0.2em] text-red-500"
-            >
-              ADMIN
-            </Link>
-          )}
-        </div>
-      )}
+        {visibleUser && (
+          <Link
+            to={AUTH_ROUTES.notifications}
+            onClick={() => setMobileOpen(false)}
+            className={`flex min-h-11 items-center ${linkClass(AUTH_ROUTES.notifications)}`}
+          >
+            NOTIFICAÇÕES
+          </Link>
+        )}
+        {!PREVIEW_READ_ONLY && isAdmin && (
+          <Link
+            to={ADMIN_ROUTES.home}
+            onClick={() => setMobileOpen(false)}
+            className="flex min-h-11 items-center font-mono text-[10px] uppercase tracking-[0.2em] text-red-500"
+          >
+            ADMIN
+          </Link>
+        )}
+      </div>
     </nav>
   );
 }
