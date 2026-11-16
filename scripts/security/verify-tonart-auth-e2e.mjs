@@ -143,7 +143,7 @@ async function main() {
       assert(check.valid(result), 'Anonymous HTTP contract failed: ' + check.name);
       console.log('PASS: ' + check.name);
     }
-    console.log('TONART anonymous HTTP E2E: PASS (8/8, no user tokens or writes)');
+    console.log('TONART anonymous HTTP E2E: PASS (8/8, no user tokens or commercial mutations)');
     return;
   }
 
