@@ -161,7 +161,13 @@ function parseCollection(value: unknown): AdminInternalCollection {
   if (row.collectionKind !== "internal") {
     throw new Error("catalog_internal_collection_invalid");
   }
-  if (row.curationVisibility !== "private" || typeof row.isActive !== "boolean") {
+  // This response is editorial-only. Never accept an active/published row
+  // even if a malformed or stale RPC labels it as internal.
+  if (
+    row.curationVisibility !== "private" ||
+    row.isActive !== false ||
+    row.status !== "draft"
+  ) {
     throw new Error("catalog_internal_collection_invalid");
   }
   return {
