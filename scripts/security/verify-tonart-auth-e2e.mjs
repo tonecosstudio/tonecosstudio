@@ -129,6 +129,15 @@ async function main() {
         valid: (r) => r.status === 200 && Array.isArray(r.data?.data) &&
           r.data.data.length === 0,
       },
+      ...['submit_catalog_quote_request', 'submit_catalog_preorder_request'].map((name) => ({
+        name: name + ' requires a real customer session',
+        path: '/rest/v1/rpc/' + name,
+        method: 'POST',
+        origin,
+        body: { p_models: [] },
+        valid: (r) => r.status === 401 &&
+          r.data?.code === '42501' && r.allowOrigin === origin,
+      })),
       ...['admin-rpc', 'tonart-commercial-offers'].map((name) => ({
         name: name + ' CORS allows canonical site',
         path: '/functions/v1/' + name,
@@ -161,7 +170,7 @@ async function main() {
       assert(check.valid(result), 'Anonymous HTTP contract failed: ' + check.name);
       console.log('PASS: ' + check.name);
     }
-    console.log('TONART anonymous HTTP E2E: PASS (10/10, no user tokens or commercial mutations)');
+    console.log('TONART anonymous HTTP E2E: PASS (12/12, no user tokens or commercial mutations)');
     return;
   }
 
