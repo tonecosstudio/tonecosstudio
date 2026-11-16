@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   answerCatalogQuoteRequest,
+  answerTonartExtraOrder,
+  cancelAdminTonartExtraOrder,
   changeCatalogQuoteStatus,
   listAdminCatalogQuotes,
   loadAdminCatalogQuotePage,
@@ -61,6 +63,9 @@ const row = {
   isPreorder: false,
   depositAmount: null,
   remainingAmount: null,
+  commercialOfferSnapshot: null,
+  commercialShippingAmountBrl: null,
+  canCancelExtraOrder: false,
 };
 
 describe("TONART admin quote directory", () => {
@@ -100,6 +105,59 @@ describe("TONART admin quote directory", () => {
       p_status: undefined,
       p_limit: 1,
       p_offset: 0,
+    });
+  });
+
+  it("decodes an extra order snapshot and its server cancellation eligibility", async () => {
+    const snapshot = {
+      schemaVersion: 1,
+      offerId: "33333333-3333-4333-8333-333333333333",
+      catalogModelSlug: "terror-monster",
+      scale: "1/10",
+      finishing: "painted",
+      contentsDescription: "Peça pintada conforme a oferta.",
+      itemListPriceBrl: 250,
+      itemDiscountBrl: 12.5,
+      itemPriceBrl: 237.5,
+      subscriberDiscountEligible: true,
+      subscriberDiscountApplied: true,
+      subscriberDiscountBasisPoints: 500,
+      shippingMode: "fixed",
+      configuredShippingAmountBrl: 20.25,
+      deliveryTerms: "Prazo informado na oferta.",
+      coinsEligible: true,
+      coinsRequested: 30.25,
+      coinsApplied: 30.25,
+      initialCashAmountDueBrl: 207.25,
+      currency: "BRL",
+    };
+    mocks.rpc.mockResolvedValue({
+      data: {
+        total: 1,
+        limit: 25,
+        offset: 0,
+        rows: [
+          {
+            ...row,
+            commercialOfferSnapshot: snapshot,
+            commercialShippingAmountBrl: 20.25,
+            canCancelExtraOrder: true,
+            items: [{ slug: "terror-monster", quantity: 1 }],
+            scale: "1/10",
+            finishing: "pintado",
+          },
+        ],
+      },
+      error: null,
+    });
+    await expect(loadAdminCatalogQuotePage()).resolves.toMatchObject({
+      rows: [
+        {
+          commercialOfferSnapshot: snapshot,
+          commercialShippingAmountBrl: 20.25,
+          canCancelExtraOrder: true,
+        },
+      ],
     });
   });
 
@@ -150,6 +208,48 @@ describe("TONART admin quote directory", () => {
     expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
       "admin_update_quote_status",
       { p_quote_id: QUOTE, p_status: "reviewing" },
+    );
+  });
+
+  it("answers an extra order with freight only and preserves its catalog price", async () => {
+    mocks.rpc.mockResolvedValue({ data: QUOTE, error: null });
+    await expect(
+      answerTonartExtraOrder(QUOTE, 24.9, "Frete confirmado para seu CEP."),
+    ).resolves.toBe(QUOTE);
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "admin_answer_tonart_extra_order",
+      {
+        p_quote_id: QUOTE,
+        p_shipping_amount: 24.9,
+        p_message: "Frete confirmado para seu CEP.",
+      },
+    );
+  });
+
+  it("cancels an extra order through the protected reversal RPC", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: {
+        quote_id: QUOTE,
+        status: "archived",
+        payment_status: "failed",
+        coins_reversed: 25.25,
+        balance: 40.75,
+        idempotent: false,
+      },
+      error: null,
+    });
+    await expect(
+      cancelAdminTonartExtraOrder(
+        QUOTE,
+        "Cancelamento solicitado pelo cliente.",
+      ),
+    ).resolves.toBeUndefined();
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "admin_cancel_tonart_extra_order",
+      {
+        p_quote_id: QUOTE,
+        p_reason: "Cancelamento solicitado pelo cliente.",
+      },
     );
   });
 

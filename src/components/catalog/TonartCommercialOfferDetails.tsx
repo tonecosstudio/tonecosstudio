@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { TonartOfferCoinsPreview } from "@/components/catalog/TonartOfferCoinsPreview";
+import { TonartExtraCheckoutForm } from "@/components/catalog/TonartExtraCheckoutForm";
 import { validCatalogSlug } from "@/services/catalog/public-catalog-gateway";
 import { listTonartCommercialOffersForModel } from "@/services/commercial/tonart-commercial-offers-service";
 
@@ -136,6 +137,7 @@ export function TonartCommercialOfferDetails({
               </ul>
             ) : null}
             <TonartOfferCoinsPreview offer={offer} />
+            <TonartExtraCheckoutForm offer={offer} />
           </li>
         ))}
       </ul>

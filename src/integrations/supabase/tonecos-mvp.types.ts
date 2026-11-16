@@ -113,6 +113,10 @@ export type Database = {
         Row: {
           admin_response: string | null;
           catalog_requested_at: string;
+          checkout_request_id: string | null;
+          commercial_offer_id: string | null;
+          commercial_offer_snapshot: Json | null;
+          commercial_shipping_amount_brl: number | null;
           created_at: string;
           customer_whatsapp: string | null;
           deposit_amount: number | null;
@@ -146,6 +150,10 @@ export type Database = {
         Insert: {
           admin_response?: string | null;
           catalog_requested_at?: string;
+          checkout_request_id?: string | null;
+          commercial_offer_id?: string | null;
+          commercial_offer_snapshot?: Json | null;
+          commercial_shipping_amount_brl?: number | null;
           created_at?: string;
           customer_whatsapp?: string | null;
           deposit_amount?: number | null;
@@ -179,6 +187,10 @@ export type Database = {
         Update: {
           admin_response?: string | null;
           catalog_requested_at?: string;
+          checkout_request_id?: string | null;
+          commercial_offer_id?: string | null;
+          commercial_offer_snapshot?: Json | null;
+          commercial_shipping_amount_brl?: number | null;
           created_at?: string;
           customer_whatsapp?: string | null;
           deposit_amount?: number | null;
@@ -363,6 +375,22 @@ export type Database = {
         };
         Returns: string;
       };
+      admin_answer_tonart_extra_order: {
+        Args: {
+          p_message: string;
+          p_quote_id: string;
+          p_shipping_amount: number;
+        };
+        Returns: string;
+      };
+      admin_cancel_tonart_extra_order: {
+        Args: { p_quote_id: string; p_reason: string };
+        Returns: Json;
+      };
+      cancel_tonart_extra_order_for_current_user: {
+        Args: { p_quote_id: string };
+        Returns: Json;
+      };
       apply_tonecos_coins_to_quote: {
         Args: { p_amount: number; p_quote_id: string };
         Returns: Json;
@@ -397,6 +425,16 @@ export type Database = {
           p_payment_type: string;
           p_payment_voucher_path: string;
           p_quote_id: string;
+        };
+        Returns: Json;
+      };
+      submit_tonart_extra_order_for_current_user: {
+        Args: {
+          p_checkout_request_id: string;
+          p_coins_amount: number;
+          p_offer_id: string;
+          p_postal_code: string;
+          p_whatsapp: string;
         };
         Returns: Json;
       };

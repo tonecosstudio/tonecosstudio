@@ -19,6 +19,7 @@ import {
   validatePaymentVoucher,
 } from "@/services/payments/payment-voucher-storage-service";
 import { submitCatalogPreorderVoucher } from "@/services/customer/catalog-quote-service";
+import { cancelTonartExtraOrder } from "@/services/commercial/tonart-extra-order-service";
 
 const labels: Record<string, string> = {
   pending: "Recebido",
@@ -59,6 +60,9 @@ function QuotePaymentPanel({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [cancelConfirmation, setCancelConfirmation] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState("");
   const paymentStatus = row.paymentStatus ?? "pending";
   const finalPayment =
     paymentStatus === "deposit_paid" && row.readyForFinalPayment;
@@ -91,6 +95,19 @@ function QuotePaymentPanel({
     amount !== null &&
     amount > 0 &&
     instructionsAvailable;
+  const coinsOnlyFullyPaid =
+    row.commercialOfferSnapshot !== null &&
+    paymentStatus === "fully_paid" &&
+    row.commercialOfferSnapshot.coinsApplied >=
+      row.commercialOfferSnapshot.itemPriceBrl &&
+    (row.commercialShippingAmountBrl ?? 0) === 0;
+  const canCancelExtraOrder =
+    row.commercialOfferSnapshot !== null &&
+    row.status !== "archived" &&
+    !["under_review", "deposit_paid"].includes(paymentStatus) &&
+    (paymentStatus === "pending" || coinsOnlyFullyPaid) &&
+    !row.paymentLinkSentAt &&
+    (!row.paymentVoucherPath || Boolean(row.paymentVoucherRejectionReason));
   const preorderBalance =
     row.quotedAmount !== null && row.depositAmount !== null
       ? Math.max(0, row.quotedAmount - row.depositAmount)
@@ -124,19 +141,42 @@ function QuotePaymentPanel({
     }
   }
 
-  if (!row.isPreorder && row.quotedAmount === null) return null;
+  async function cancelExtraOrder() {
+    if (!row.commercialOfferSnapshot || cancelBusy) return;
+    setCancelBusy(true);
+    setCancelError("");
+    try {
+      await cancelTonartExtraOrder(row.id);
+      setCancelConfirmation(false);
+      onSuccess();
+    } catch (cause) {
+      setCancelError(commercialQuoteErrorText(cause));
+    } finally {
+      setCancelBusy(false);
+    }
+  }
+
+  if (
+    !row.isPreorder &&
+    row.quotedAmount === null &&
+    !row.commercialOfferSnapshot
+  ) return null;
 
   return (
     <section className="mt-5 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(0,0%,5%)] p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-[hsl(var(--gold-accent))]">
-            {row.isPreorder
+            {row.commercialOfferSnapshot
+              ? "Pedido extra do catálogo"
+              : row.isPreorder
               ? "Pré-venda com entrada"
               : "Pagamento do orçamento"}
           </h3>
           <p className="mt-1 text-xs leading-5 text-white/60">
-            {row.isPreorder
+            {row.commercialOfferSnapshot
+              ? "O preço e os Coins aplicados ficam registrados nesta oferta. O frete é confirmado conforme a condição informada pela TONART."
+              : row.isPreorder
               ? "R$ 50 de entrada abatidos do total; o restante é pago na finalização."
               : "Após a resposta da TONART, siga as instruções de pagamento do orçamento e envie o comprovante por aqui."}
           </p>
@@ -156,7 +196,84 @@ function QuotePaymentPanel({
         ) : null}
       </div>
 
-      {row.quotedAmount === null ? (
+      {row.commercialOfferSnapshot ? (
+        <dl className="mt-4 grid grid-cols-2 gap-3 border-y border-white/10 py-3 text-sm">
+          <div>
+            <dt className="text-xs text-white/50">Preço da peça</dt>
+            <dd className="mt-1 font-medium">
+              {brl.format(row.commercialOfferSnapshot.itemPriceBrl)}
+            </dd>
+          </div>
+          {row.commercialOfferSnapshot.itemDiscountBrl > 0 ? (
+            <div>
+              <dt className="text-xs text-white/50">
+                Desconto de assinante ({row.commercialOfferSnapshot.subscriberDiscountBasisPoints / 100}%)
+              </dt>
+              <dd className="mt-1 font-medium text-[hsl(var(--gold-accent))]">
+                −{brl.format(row.commercialOfferSnapshot.itemDiscountBrl)}
+              </dd>
+            </div>
+          ) : null}
+          <div>
+            <dt className="text-xs text-white/50">Frete</dt>
+            <dd className="mt-1 font-medium">
+              {row.commercialShippingAmountBrl !== null
+                ? brl.format(row.commercialShippingAmountBrl)
+                : "A confirmar pela equipe"}
+            </dd>
+          </div>
+          {row.commercialOfferSnapshot.coinsApplied > 0 ? (
+            <div>
+              <dt className="text-xs text-white/50">
+                {row.status === "archived" ? "Coins devolvidos" : "Coins reservados"}
+              </dt>
+              <dd className="mt-1 font-medium text-[hsl(var(--gold-accent))]">
+                {row.status === "archived" ? "+" : "−"}
+                {brl.format(row.commercialOfferSnapshot.coinsApplied)}
+              </dd>
+            </div>
+          ) : null}
+          {row.quotedAmount !== null ? (
+            <>
+              <div>
+                <dt className="text-xs text-white/50">
+                  {row.status === "archived" ? "Total antes do cancelamento" : "Total aprovado"}
+                </dt>
+                <dd className="mt-1 font-medium">{brl.format(row.quotedAmount)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-white/50">Saldo em reais</dt>
+                <dd className="mt-1 font-medium">
+                  {row.remainingAmount === null
+                    ? row.status === "archived"
+                      ? "Sem cobrança pendente"
+                      : paymentStatus === "fully_paid"
+                        ? "R$ 0,00"
+                        : "A confirmar"
+                    : brl.format(row.remainingAmount)}
+                </dd>
+              </div>
+            </>
+          ) : (
+            <div className="col-span-2">
+              <dt className="text-xs text-white/50">Próxima etapa</dt>
+              <dd className="mt-1 text-sm text-white/70">
+                {row.status === "archived"
+                  ? "Pedido cancelado antes da confirmação do frete e do saldo final."
+                  : row.commercialOfferSnapshot.shippingMode === "quote_required"
+                  ? "A equipe confirma o frete e o saldo antes das instruções de pagamento."
+                  : "A equipe revisa o pedido antes de enviar as instruções de pagamento."}
+              </dd>
+            </div>
+          )}
+          <div className="col-span-2 border-t border-white/10 pt-3">
+            <dt className="text-xs text-white/50">Condições e conteúdo</dt>
+            <dd className="mt-1 text-xs leading-relaxed text-white/70">
+              {row.commercialOfferSnapshot.scale} · {row.commercialOfferSnapshot.finishing === "painted" ? "Pintado" : "Sem pintura"} · {row.commercialOfferSnapshot.contentsDescription}
+            </dd>
+          </div>
+        </dl>
+      ) : row.quotedAmount === null ? (
         <p className="mt-4 text-sm text-white/70">
           A equipe está definindo o valor e o prazo. As opções de pagamento
           aparecem após a resposta.
@@ -235,7 +352,7 @@ function QuotePaymentPanel({
               : "entrada"}
           . A confirmação só acontece após a conferência da equipe.
         </p>
-      ) : paymentStatus === "fully_paid" ? (
+      ) : row.commercialOfferSnapshot && row.status === "archived" ? null : paymentStatus === "fully_paid" ? (
         <p className="mt-4 text-sm text-white/70">
           O valor total foi confirmado pela TONART.
         </p>
@@ -249,6 +366,12 @@ function QuotePaymentPanel({
           {row.isPreorder
             ? "O valor está definido. A equipe enviará as instruções PIX para você confirmar a entrada."
             : "O valor está definido. A equipe enviará as instruções para pagamento do saldo."}
+        </p>
+      ) : null}
+
+      {row.commercialOfferSnapshot && row.status === "archived" ? (
+        <p role="status" className="mt-4 text-sm text-white/70">
+          Pedido cancelado. A reserva de Coins, se havia, foi devolvida à sua carteira.
         </p>
       ) : null}
 
@@ -348,6 +471,49 @@ function QuotePaymentPanel({
             )}
           </div>
         )}
+      {canCancelExtraOrder ? (
+        <div className="mt-5 border-t border-white/10 pt-4">
+          {!cancelConfirmation ? (
+            <button
+              type="button"
+              className={secondaryClass}
+              onClick={() => {
+                setCancelError("");
+                setCancelConfirmation(true);
+              }}
+            >
+              Cancelar pedido
+            </button>
+          ) : (
+            <div className="space-y-3" role="group" aria-label="Confirmar cancelamento do pedido extra">
+              <p className="text-sm text-white/75">
+                Os Coins reservados serão devolvidos. Se algum valor em reais já foi pago ou o comprovante está em análise, fale com a equipe antes de continuar.
+              </p>
+              {cancelError ? (
+                <p role="alert" className="text-sm text-red-300">{cancelError}</p>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className={secondaryClass}
+                  disabled={cancelBusy}
+                  onClick={() => void cancelExtraOrder()}
+                >
+                  {cancelBusy ? "Cancelando…" : "Confirmar cancelamento"}
+                </button>
+                <button
+                  type="button"
+                  className={secondaryClass}
+                  disabled={cancelBusy}
+                  onClick={() => setCancelConfirmation(false)}
+                >
+                  Manter pedido
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

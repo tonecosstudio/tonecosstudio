@@ -61,6 +61,22 @@ const exact: Record<string, string> = {
     "Sua sessão expirou. Entre novamente para continuar.",
   "Customer account not initialized":
     "Não foi possível preparar sua conta para o orçamento. Atualize a página e tente novamente.",
+  TONART_EXTRA_COMMERCE_DISABLED:
+    "Pedidos extras ainda não estão disponíveis neste ambiente.",
+  TONART_COMMERCIAL_OFFER_UNAVAILABLE:
+    "Esta oferta não está mais disponível. Atualize a página para conferir as opções atuais.",
+  TONART_EXTRA_ORDER_ITEM_PRICE_INVALID:
+    "Esta oferta está sem um preço final válido. A equipe TONART precisa revisar a configuração.",
+  TONART_EXTRA_ORDER_PAYMENT_INSTRUCTIONS_ALREADY_SENT:
+    "As instruções de pagamento já foram enviadas. Fale com a equipe TONART para solicitar o cancelamento.",
+  TONART_EXTRA_ORDER_CASH_PAYMENT_REQUIRES_MANUAL_REVIEW:
+    "Há um pagamento em reais ou comprovante em análise. Fale com a equipe TONART para continuar.",
+  TONART_EXTRA_ORDER_COIN_ENTRY_INVALID:
+    "A reserva de Coins deste pedido precisa de conferência da equipe TONART.",
+  TONART_EXTRA_ORDER_COIN_PAYMENT_INCONSISTENT:
+    "O registro de Coins deste pedido precisa de conferência da equipe TONART.",
+  TONART_EXTRA_ORDER_COIN_REVERSAL_INCONSISTENT:
+    "A devolução de Coins deste pedido precisa de conferência da equipe TONART.",
   "Select between 1 and 50 models":
     "Selecione entre 1 e 50 modelos válidos para solicitar um orçamento.",
   "Quote notes exceed 2000 characters":

@@ -31,4 +31,15 @@ describe("commercial quote error copy", () => {
       commercialQuoteErrorText(new Error("Admin access required"), "admin"),
     ).toBe("Acesso administrativo não autorizado.");
   });
+
+  it("explains extra order availability and cancellation boundaries", () => {
+    expect(
+      commercialQuoteErrorText(new Error("TONART_EXTRA_COMMERCE_DISABLED")),
+    ).toContain("ainda não estão disponíveis neste ambiente");
+    expect(
+      commercialQuoteErrorText(
+        new Error("TONART_EXTRA_ORDER_PAYMENT_INSTRUCTIONS_ALREADY_SENT"),
+      ),
+    ).toContain("As instruções de pagamento já foram enviadas");
+  });
 });

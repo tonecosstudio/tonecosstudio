@@ -218,8 +218,7 @@ describe("authenticated Tonecos catalog quote boundary", () => {
       {
         p_quote_id: QUOTE,
         p_payment_type: "full",
-        p_payment_voucher_path:
-          `quotes/${USER}/${QUOTE}/1731600000000-0123456789abcdef.png`,
+        p_payment_voucher_path: `quotes/${USER}/${QUOTE}/1731600000000-0123456789abcdef.png`,
       },
     );
   });
@@ -529,6 +528,100 @@ describe("authenticated Tonecos catalog quote boundary", () => {
     expect(coinPaymentsQuery.eq).toHaveBeenCalledWith("user_id", USER);
     expect(coinPaymentsQuery.eq).toHaveBeenCalledWith("payment_type", "coins");
     expect(coinPaymentsQuery.in).toHaveBeenCalledWith("quote_id", [QUOTE]);
+  });
+
+  it("does not present an extra cancelled before freight confirmation as an approved quote", async () => {
+    const quoteQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      not: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    };
+    for (const method of ["select", "eq", "not", "order"] as const) {
+      quoteQuery[method].mockReturnValue(quoteQuery);
+    }
+    quoteQuery.range.mockResolvedValue({
+      data: [
+        {
+          id: QUOTE,
+          status: "archived",
+          created_at: "2026-11-15T00:00:00Z",
+          deadline: null,
+          notes: null,
+          total_amount: 237.5,
+          list_amount: 237.5,
+          discount_percent: 0,
+          discount_amount: 0,
+          admin_response: "Cancelamento solicitado pelo cliente.",
+          requested_catalog_models: [{ slug: "terror-monster", quantity: 1 }],
+          catalog_requested_at: "2026-11-15T00:00:00Z",
+          customer_whatsapp: "11999999999",
+          postal_code: "01310100",
+          desired_scale: "1/10",
+          finishing: "pintado",
+          is_preorder: false,
+          deposit_amount: null,
+          remaining_amount: null,
+          payment_status: "failed",
+          payment_link: null,
+          pix_key: null,
+          payment_instructions: null,
+          payment_link_sent_at: null,
+          final_payment_notified_at: null,
+          ready_for_final_payment: false,
+          payment_voucher_path: null,
+          payment_voucher_type: null,
+          payment_voucher_rejection_reason: null,
+          commercial_shipping_amount_brl: null,
+          commercial_offer_snapshot: {
+            schemaVersion: 1,
+            offerId: "33333333-3333-4333-8333-333333333333",
+            catalogModelSlug: "terror-monster",
+            scale: "1/10",
+            finishing: "painted",
+            contentsDescription: "Peça pintada conforme a oferta.",
+            itemListPriceBrl: 250,
+            itemDiscountBrl: 12.5,
+            itemPriceBrl: 237.5,
+            subscriberDiscountEligible: true,
+            subscriberDiscountApplied: true,
+            subscriberDiscountBasisPoints: 500,
+            shippingMode: "quote_required",
+            configuredShippingAmountBrl: null,
+            deliveryTerms: "Prazo informado na oferta.",
+            coinsEligible: true,
+            coinsRequested: 30.25,
+            coinsApplied: 30.25,
+            initialCashAmountDueBrl: 207.25,
+            currency: "BRL",
+          },
+        },
+      ],
+      error: null,
+      count: 1,
+    });
+    const coinPaymentsQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      in: vi.fn(),
+    };
+    coinPaymentsQuery.select.mockReturnValue(coinPaymentsQuery);
+    coinPaymentsQuery.eq.mockReturnValue(coinPaymentsQuery);
+    coinPaymentsQuery.in.mockResolvedValue({ data: [], error: null });
+    mocks.from.mockImplementation((table: string) =>
+      table === "quotes" ? quoteQuery : coinPaymentsQuery,
+    );
+
+    const page = await loadMyCatalogQuotePage(USER);
+
+    expect(page.rows[0]).toMatchObject({
+      status: "archived",
+      quotedAmount: null,
+      listAmount: null,
+      commercialShippingAmountBrl: null,
+      commercialOfferSnapshot: { coinsApplied: 30.25 },
+    });
   });
 
   it("preserves ordinary quote history while preorder payment columns await migration", async () => {
