@@ -191,6 +191,21 @@ export function InternalCollectionCuration() {
     [pageModelsQuery.data],
   );
 
+  // Revalidate against the canonical catalog at the moment of each approval.
+  // Never trust an earlier cached page snapshot as proof that a model still exists.
+  const assertFreshCanonicalSelection = async (
+    selected: readonly { modelId: string; slug: string }[],
+  ) => {
+    const refreshed = await pageModelsQuery.refetch({ throwOnError: true });
+    if (refreshed.status !== "success" || !Array.isArray(refreshed.data)) {
+      throw new Error("O catálogo canônico não pôde ser confirmado.");
+    }
+    assertCurrentCanonicalCurationModels(
+      selected,
+      refreshed.data.map(modelRef),
+    );
+  };
+
   const searchQuery = useQuery({
     queryKey: ["admin-internal-catalog-search", search.trim()],
     queryFn: ({ signal }) =>
@@ -278,9 +293,8 @@ export function InternalCollectionCuration() {
       if (!selected.length) throw new Error("Selecione modelos da curadoria.");
       // Discarding an orphan is allowed for cleanup; approval requires current catalog evidence.
       if (bulkState !== "discarded") {
-        assertCurrentCanonicalCurationModels(
+        await assertFreshCanonicalSelection(
           selected.map((item) => ({ modelId: item.modelId, slug: item.slug })),
-          [...liveModelsById.values()].map(modelRef),
         );
       }
       return saveInternalCollectionCuration({
@@ -323,9 +337,8 @@ export function InternalCollectionCuration() {
       // Keep cleanup possible when a canonical model has been removed or renamed.
       // New/approved classifications always require a current catalog match.
       if (tagReviewState !== "discarded") {
-        assertCurrentCanonicalCurationModels(
+        await assertFreshCanonicalSelection(
           selected.map((item) => ({ modelId: item.modelId, slug: item.slug })),
-          [...liveModelsById.values()].map(modelRef),
         );
       }
       return saveCatalogModelClassifications({
