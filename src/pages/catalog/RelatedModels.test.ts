@@ -157,6 +157,32 @@ describe("TONART related model selection", () => {
     expect(groups[0].title).not.toMatch(/personagem|versões/i);
   });
 
+  it("does not silently turn accent differences into canonical aliases", () => {
+    const groups = selectRelatedModelGroups(
+      { ...current, name: "Zoro", collection: null },
+      [related("accent-other", "Zoró", "Outra obra", { collection: null })],
+    );
+    expect(groups).toHaveLength(1);
+    expect(groups[0].kind).toBe("franchise");
+    expect(groups[0].title).toBe("Explore Dragon Ball");
+  });
+
+  it("matches only canonical Unicode-equivalent displayed names", () => {
+    const groups = selectRelatedModelGroups(
+      { ...current, name: "José", collection: null },
+      [
+        related("composed", "JOSE\u0301", "Outra estatueta", { collection: null }),
+        related("different", "Jose", "Sem acento", { collection: null }),
+      ],
+    );
+    expect(groups.map((group) => group.kind)).toEqual([
+      "name-match",
+      "franchise",
+    ]);
+    expect(groups[0].items.map((item) => item.id).toEqual(["composed"]);
+    expect(groups[1].items.map((item) => item.id).toEqual(["different"]);
+  });
+
   it("does not infer a common character from similar or partial titles", () => {
     const groups = selectRelatedModelGroups(current, [
       related("goku-black", "Goku Black", "Pose", { collection: null }),
