@@ -722,12 +722,13 @@ describe("internal catalog curation service", () => {
     mocks.callAdminRpc.mockResolvedValue({
       modelId: MODEL_ID,
       identityId: characterId,
-      removed: true,
+      unlinked: true,
     });
     await expect(
       unlinkCatalogModelCharacterIdentity({
         model: { modelId: MODEL_ID, slug: "cena-entre-personagens" },
         characterId,
+        reason: "Associação editorial atribuída ao personagem incorreto",
       }),
     ).resolves.toBeUndefined();
     expect(mocks.callAdminRpc).toHaveBeenCalledExactlyOnceWith(
@@ -736,6 +737,7 @@ describe("internal catalog curation service", () => {
         p_model_id: MODEL_ID,
         p_model_slug: "cena-entre-personagens",
         p_character_identity_id: characterId,
+        p_reason: "Associação editorial atribuída ao personagem incorreto",
       },
     );
   });
@@ -745,25 +747,41 @@ describe("internal catalog curation service", () => {
       unlinkCatalogModelCharacterIdentity({
         model: { modelId: MODEL_ID, slug: "cena-entre-personagens" },
         characterId: "not-a-uuid",
+        reason: "Personagem incorreto",
+      }),
+    ).rejects.toThrow("catalog_character_identity_unlink_invalid");
+    await expect(
+      unlinkCatalogModelCharacterIdentity({
+        model: { modelId: MODEL_ID, slug: "cena-entre-personagens" },
+        characterId: "44444444-4444-4444-8444-444444444444",
+        reason: " ",
+      }),
+    ).rejects.toThrow("catalog_character_identity_unlink_invalid");
+    await expect(
+      unlinkCatalogModelCharacterIdentity({
+        model: { modelId: MODEL_ID, slug: "cena-entre-personagens" },
+        characterId: "44444444-4444-4444-8444-444444444444",
+        reason: "Associação <não revisada>",
       }),
     ).rejects.toThrow("catalog_character_identity_unlink_invalid");
     expect(mocks.callAdminRpc).not.toHaveBeenCalled();
 
     const characterId = "44444444-4444-4444-8444-444444444444";
     for (const response of [
-      { modelId: MODEL_ID, identityId: characterId, removed: false },
+      { modelId: MODEL_ID, identityId: characterId, unlinked: false },
       {
         modelId: MODEL_ID,
         identityId: "55555555-5555-4555-8555-555555555555",
-        removed: true,
+        unlinked: true,
       },
-      { modelId: "wrong-id", identityId: characterId, removed: true },
+      { modelId: "wrong-id", identityId: characterId, unlinked: true },
     ]) {
       mocks.callAdminRpc.mockResolvedValueOnce(response);
       await expect(
         unlinkCatalogModelCharacterIdentity({
           model: { modelId: MODEL_ID, slug: "cena-entre-personagens" },
           characterId,
+          reason: "Relação incorreta",
         }),
       ).rejects.toThrow("catalog_character_identity_unlink_result_invalid");
     }
@@ -809,12 +827,27 @@ describe("internal catalog curation service", () => {
       "CREATE OR REPLACE FUNCTION public.admin_unlink_catalog_model_character",
     );
     expect(migration).toContain(
+      "UPDATE public.catalog_curation_model_characters",
+    );
+    expect(migration).not.toContain(
       "DELETE FROM public.catalog_curation_model_characters",
     );
+    expect(migration).toContain("unlinked_at timestamptz");
+    expect(migration).toContain("unlink_reason text");
+    expect(migration).toContain("review_history jsonb");
+    expect(migration).toContain("jsonb_array_length(review_history) <= 100");
+    expect(migration).toContain("'action', 'unlinked'");
+    expect(migration).toContain("'action', 'restored'");
+    expect(migration).toContain("AND cmc.unlinked_at IS NULL");
+    expect(migration).toContain("AND unlinked_at IS NULL");
     expect(migration).toContain(
       "AND character_identity_id = p_character_identity_id",
     );
-    expect(migration).toContain("GET DIAGNOSTICS v_deleted = ROW_COUNT");
+    expect(migration).toContain("GET DIAGNOSTICS v_updated = ROW_COUNT");
+    expect(migration).toContain("p_reason text");
+    expect(migration).toContain("p_reason, 'identity unlink reason', 1000");
+    expect(migration).toContain("AND character_identity_id = p_character_identity_id");
+    expect(migration).toContain("ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE");
     expect(migration).toContain(
       "GRANT EXECUTE ON FUNCTION public.admin_unlink_catalog_model_character",
     );
