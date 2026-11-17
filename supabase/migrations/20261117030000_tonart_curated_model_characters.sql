@@ -318,13 +318,16 @@ BEGIN
     v_note,
     now()
   )
-  ON CONFLICT (identity_key) DO UPDATE
-    SET character_name = EXCLUDED.character_name,
-        franchise = EXCLUDED.franchise,
-        evidence_origin = EXCLUDED.evidence_origin,
-        evidence_note = EXCLUDED.evidence_note,
-        updated_at = now()
+  -- Preserve the first reviewed evidence on the shared identity. New evidence
+  -- belongs to its model-character link; it must not rewrite other models.
+  ON CONFLICT (identity_key) DO NOTHING
   RETURNING id INTO v_identity_id;
+
+  IF v_identity_id IS NULL THEN
+    SELECT id INTO STRICT v_identity_id
+    FROM public.catalog_character_identities
+    WHERE identity_key = v_identity_key;
+  END IF;
 
   -- The catalog model remains a single canonical reference.
   INSERT INTO public.catalog_curation_model_profiles (
@@ -364,6 +367,55 @@ END;
 $$;
 
 
+-- Detach one verified model-character link without deleting the shared identity.
+-- A stale model reference or absent link must fail, never report fake success.
+CREATE OR REPLACE FUNCTION public.admin_unlink_catalog_model_character(
+  p_model_id text,
+  p_model_slug text,
+  p_character_identity_id uuid
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $
+DECLARE
+  v_model_id text;
+  v_model_slug text;
+  v_deleted integer;
+BEGIN
+  PERFORM private_api.assert_tonart_curation_service_role();
+  IF p_character_identity_id IS NULL THEN
+    RAISE EXCEPTION 'Character identity is required' USING ERRCODE = '22023';
+  END IF;
+  SELECT model_id, model_slug INTO v_model_id, v_model_slug
+  FROM public.admin_validate_catalog_model_reference(p_model_id, p_model_slug);
+
+  -- An orphaned catalog model can be cleaned up using its exact stored
+  -- reference, but no mismatched or stale slug can remove a different link.
+  PERFORM 1
+  FROM public.catalog_curation_model_profiles
+  WHERE catalog_model_id = v_model_id AND catalog_model_slug = v_model_slug
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Canonical curation model reference mismatch' USING ERRCODE = 'P0002';
+  END IF;
+
+  DELETE FROM public.catalog_curation_model_characters
+  WHERE catalog_model_id = v_model_id
+    AND character_identity_id = p_character_identity_id;
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+  IF v_deleted <> 1 THEN
+    RAISE EXCEPTION 'Verified character link not found' USING ERRCODE = 'P0002';
+  END IF;
+  RETURN jsonb_build_object(
+    'modelId', v_model_id,
+    'identityId', p_character_identity_id,
+    'removed', true
+  );
+END;
+$;
+
 REVOKE ALL ON FUNCTION public.admin_get_collection_curation_summary(uuid)
   FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer, uuid)
@@ -372,7 +424,11 @@ REVOKE ALL ON FUNCTION public.admin_verify_catalog_model_identity(text, text, te
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_summary(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer, uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.admin_verify_catalog_model_identity(text, text, text, text, text, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.admin_verify_catalog_model_identity(text, text, text, text, text, text, text) TO service_role;
+REVOKE ALL ON FUNCTION public.admin_unlink_catalog_model_character(text, text, uuid)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_unlink_catalog_model_character(text, text, uuid)
+  TO service_role;
 
 -- No parallel identity source or legacy compatibility columns after cutover.
 ALTER TABLE public.catalog_curation_model_profiles
