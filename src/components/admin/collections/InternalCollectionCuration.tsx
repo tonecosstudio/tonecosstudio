@@ -112,6 +112,7 @@ export function InternalCollectionCuration() {
     model: { modelId: string; slug: string };
     characterId: string;
     characterName: string;
+    reason: string;
   } | null>(null);
 
   const collectionsQuery = useQuery({
@@ -510,14 +511,15 @@ export function InternalCollectionCuration() {
       unlinkCatalogModelCharacterIdentity({
         model: review.model,
         characterId: review.characterId,
+        reason: review.reason,
       }),
     onSuccess: async () => {
       setUnlinkReview(null);
       await refreshCollection();
       toast({
-        title: "Vínculo removido",
+        title: "Vínculo desvinculado",
         description:
-          "A associação foi removida desta estatueta; a identidade do personagem e seus outros modelos continuam preservados.",
+          "A justificativa ficou registrada na curadoria desta estatueta. A identidade do personagem e seus outros vínculos foram preservados.",
       });
     },
     onError: (error) =>
@@ -1053,6 +1055,7 @@ export function InternalCollectionCuration() {
                                           },
                                           characterId: character.id,
                                           characterName: character.name,
+                                          reason: "",
                                         });
                                       }}
                                     >
@@ -1115,13 +1118,34 @@ export function InternalCollectionCuration() {
                               Desvincular{" "}
                               <strong>{unlinkReview.characterName}</strong>{" "}
                               desta estatueta? A identidade e suas associações
-                              com outros modelos permanecem preservadas.
+                              com outros modelos permanecem preservadas. A justificativa ficará registrada no histórico editorial.
                             </p>
+                            <div className="space-y-1">
+                              <Label htmlFor="curation-character-unlink-reason">
+                                Motivo da desvinculação
+                              </Label>
+                              <Input
+                                id="curation-character-unlink-reason"
+                                maxLength={1000}
+                                value={unlinkReview.reason}
+                                placeholder="Descreva a associação incorreta"
+                                onChange={(event) =>
+                                  setUnlinkReview((current) =>
+                                    current
+                                      ? { ...current, reason: event.target.value }
+                                      : null,
+                                  )
+                                }
+                              />
+                            </div>
                             <div className="flex flex-wrap gap-2">
                               <Button
                                 type="button"
                                 variant="destructive"
-                                disabled={unlinkMutation.isPending}
+                                disabled={
+                                  unlinkMutation.isPending ||
+                                  unlinkReview.reason.trim().length < 3
+                                }
                                 onClick={() =>
                                   unlinkMutation.mutate(unlinkReview)
                                 }
