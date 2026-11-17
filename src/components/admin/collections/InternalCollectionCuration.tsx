@@ -496,7 +496,9 @@ export function InternalCollectionCuration() {
       setIdentityReview(null);
       await refreshCollection();
       toast({
-        title: review.restoreId ? "Vínculo restaurado" : "Identidade verificada",
+        title: review.restoreId
+          ? "Vínculo restaurado"
+          : "Identidade verificada",
         description: review.restoreId
           ? "A associação foi reavaliada e restaurada na curadoria privada; o histórico foi preservado."
           : "Vínculo revisado e adicionado sem substituir os demais personagens desta estatueta. Não foi publicado no catálogo.",
@@ -1111,16 +1113,20 @@ export function InternalCollectionCuration() {
                                       )}
                                     </div>
                                     <p className="mt-1 text-muted-foreground">
-                                      Motivo registrado: {character.unlinkReason}
+                                      Motivo registrado:{" "}
+                                      {character.unlinkReason}
                                     </p>
                                     <p className="mt-1 text-muted-foreground">
-                                      {character.reviewCount} eventos editoriais registrados
+                                      {character.reviewCount} eventos editoriais
+                                      registrados
                                     </p>
                                   </div>
                                 ))}
-                                {item.inactiveCharacterCount > item.inactiveCharacters.length && (
+                                {item.inactiveCharacterCount >
+                                  item.inactiveCharacters.length && (
                                   <p className="text-xs text-muted-foreground">
-                                    Exibindo os {item.inactiveCharacters.length} registros mais recentes.
+                                    Exibindo os {item.inactiveCharacters.length}{" "}
+                                    registros mais recentes.
                                   </p>
                                 )}
                               </div>

@@ -772,18 +772,24 @@ describe("internal catalog curation service", () => {
       unlinkReason: "Associação incorreta",
       reviewCount: 1,
     };
-    const response = (inactiveCharacters: unknown[], count: unknown, characters: unknown[] = []) => ({
-      items: [{
-        modelId: MODEL_ID,
-        slug: "cena-entre-personagens",
-        state: "approved",
-        evidenceOrigin: "manual_admin:collection",
-        evidenceNote: null,
-        characters,
-        inactiveCharacters,
-        inactiveCharacterCount: count,
-        tags: [],
-      }],
+    const response = (
+      inactiveCharacters: unknown[],
+      count: unknown,
+      characters: unknown[] = [],
+    ) => ({
+      items: [
+        {
+          modelId: MODEL_ID,
+          slug: "cena-entre-personagens",
+          state: "approved",
+          evidenceOrigin: "manual_admin:collection",
+          evidenceNote: null,
+          characters,
+          inactiveCharacters,
+          inactiveCharacterCount: count,
+          tags: [],
+        },
+      ],
       total: 1,
       offset: 0,
       limit: 20,
@@ -795,10 +801,13 @@ describe("internal catalog curation service", () => {
       response([{ ...inactive, unlinkReason: "<script>" }], 1),
       response([{ ...inactive, reviewCount: 101 }], 1),
       response([inactive], 0),
-      response(Array.from({ length: 13 }, (_, index) => ({
-        ...inactive,
-        id: "44444444-4444-4444-8444-" + (111111111111 + index),
-      })), 13),
+      response(
+        Array.from({ length: 13 }, (_, index) => ({
+          ...inactive,
+          id: "44444444-4444-4444-8444-" + (111111111111 + index),
+        })),
+        13,
+      ),
     ]) {
       mocks.callAdminRpc.mockResolvedValueOnce(payload);
       await expect(
@@ -947,7 +956,9 @@ describe("internal catalog curation service", () => {
     expect(migration).toContain("'inactiveCharacters', COALESCE((");
     expect(migration).toContain("'inactiveCharacterCount', (");
     expect(migration).toContain("'unlinkReason', archived.unlink_reason");
-    expect(migration).toContain("'reviewCount', jsonb_array_length(archived.review_history)");
+    expect(migration).toContain(
+      "'reviewCount', jsonb_array_length(archived.review_history)",
+    );
     expect(migration).toContain("LIMIT 12");
     expect(migration).toContain("AND cmc.unlinked_at IS NOT NULL");
     expect(migration).toContain("AND unlinked_at IS NULL");
