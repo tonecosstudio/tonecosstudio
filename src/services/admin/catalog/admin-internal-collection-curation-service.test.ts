@@ -792,7 +792,11 @@ describe("internal catalog curation service", () => {
     );
     expect(migration).toContain("Maximum 12 verified characters per model");
     expect(migration).toContain("ON CONFLICT (identity_key) DO NOTHING");
-    expect(migration).not.toContain("evidence_origin = EXCLUDED.evidence_origin");
+    const sharedIdentityUpsert = migration.split(
+      "INSERT INTO public.catalog_character_identities (",
+    )[1]?.split("-- The catalog model remains a single canonical reference.")[0];
+    expect(sharedIdentityUpsert).toBeDefined();
+    expect(sharedIdentityUpsert).not.toContain("evidence_origin = EXCLUDED.evidence_origin");
     expect(migration).toContain("CREATE OR REPLACE FUNCTION public.admin_unlink_catalog_model_character");
     expect(migration).toContain("DELETE FROM public.catalog_curation_model_characters");
     expect(migration).toContain("AND character_identity_id = p_character_identity_id");
