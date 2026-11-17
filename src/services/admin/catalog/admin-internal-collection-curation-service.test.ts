@@ -601,6 +601,117 @@ describe("internal catalog curation service", () => {
     );
   });
 
+  it("preserves several reviewed identities on one catalog model without a duplicate profile", async () => {
+    const characters = [
+      {
+        id: "44444444-4444-4444-8444-444444444444",
+        name: "Zoro",
+        franchise: "One Piece",
+        evidenceOrigin: "manual_admin:reviewed",
+        evidenceNote: "Confirmado na imagem",
+      },
+      {
+        id: "55555555-5555-4555-8555-555555555555",
+        name: "Sanji",
+        franchise: "One Piece",
+        evidenceOrigin: "manual_admin:reviewed",
+        evidenceNote: null,
+      },
+    ];
+    mocks.callAdminRpc.mockResolvedValue({
+      items: [{
+        modelId: MODEL_ID,
+        slug: "cena-entre-personagens",
+        state: "approved",
+        evidenceOrigin: "manual_admin:collection",
+        evidenceNote: null,
+        characters,
+        tags: [],
+      }],
+      total: 1,
+      offset: 0,
+      limit: 20,
+    });
+    const page = await getInternalCollectionCurationPage({
+      collectionId: COLLECTION_ID,
+    });
+    expect(page.items).toHaveLength(1);
+    expect(page.items[0].characters).toEqual(characters);
+    expect(page.items[0]).not.toHaveProperty("characterIdentityId");
+    expect(page.items[0]).not.toHaveProperty("identityVerified");
+  });
+
+  it("fails closed on duplicated or unreviewed character links", async () => {
+    const character = {
+      id: "44444444-4444-4444-8444-444444444444",
+      name: "Zoro",
+      franchise: "One Piece",
+      evidenceOrigin: "manual_admin:reviewed",
+      evidenceNote: null,
+    };
+    const makeResponse = (characters: unknown[]) => ({
+      items: [{
+        modelId: MODEL_ID,
+        slug: "cena-entre-personagens",
+        state: "approved",
+        evidenceOrigin: "manual_admin:collection",
+        evidenceNote: null,
+        characters,
+        tags: [],
+      }],
+      total: 1,
+      offset: 0,
+      limit: 20,
+    });
+    for (const characters of [
+      [character, character],
+      [{ ...character, id: "not-a-uuid" }],
+      [{ ...character, evidenceOrigin: "automatic:image-guess" }],
+      [{ ...character, name: "<script>" }],
+      Array.from({ length: 13 }, (_, index) => ({
+        ...character,
+        id: "44444444-4444-4444-8444-" + (111111111111 + index),
+      })),
+    ]) {
+      mocks.callAdminRpc.mockResolvedValueOnce(makeResponse(characters));
+      await expect(getInternalCollectionCurationPage({
+        collectionId: COLLECTION_ID,
+      })).rejects.toThrow(/catalog_curation_/);
+    }
+  });
+
+  it("stages a lossless and private many-to-many cutover with no second writer", () => {
+    const migration = readFileSync(
+      new URL(
+        "../../../../supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
+    expect(migration.trimEnd().endsWith("COMMIT;")).toBe(true);
+    expect(migration).toContain("CREATE TABLE public.catalog_curation_model_characters");
+    expect(migration).toContain("PRIMARY KEY (catalog_model_id, character_identity_id)");
+    expect(migration).toContain("WHERE identity_verified = true");
+    expect(migration).toContain("IF v_legacy <> v_links");
+    expect(migration).toContain("ENABLE ROW LEVEL SECURITY");
+    expect(migration).toContain("FROM PUBLIC, anon, authenticated, service_role");
+    expect(migration).toContain("TO service_role;");
+    expect(migration).toContain("DROP COLUMN character_identity_id");
+    expect(migration).toContain("DROP COLUMN identity_verified");
+    expect(migration).toContain("ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE");
+    expect(migration).toContain("Maximum 12 verified characters per model");
+    expect(migration).toContain("private_api.assert_tonart_curation_service_role()");
+    expect(migration).not.toContain("CREATE POLICY catalog_curation_model_characters_public");
+    for (const rpc of [
+      "admin_get_collection_curation_summary",
+      "admin_get_collection_curation_page",
+      "admin_verify_catalog_model_identity",
+    ]) {
+      expect(migration.split("CREATE OR REPLACE FUNCTION public." + rpc + "(")).toHaveLength(2);
+    }
+  });
+
   it("reads only one bounded curation page and preserves evidence", async () => {
     mocks.callAdminRpc.mockResolvedValue({
       items: [
@@ -610,8 +721,7 @@ describe("internal catalog curation service", () => {
           state: "suggested",
           evidenceOrigin: "manual_admin:canonical_catalog_search",
           evidenceNote: "Revisar variante",
-          identityVerified: false,
-          characterIdentityId: null,
+          characters: [],
           tags: [],
         },
       ],
