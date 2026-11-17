@@ -676,6 +676,38 @@ describe("internal catalog curation service", () => {
     expect(page.items[0]).not.toHaveProperty("identityVerified");
   });
 
+  it("accepts 21 distinct reviewed characters on one canonical model", async () => {
+    const characters = Array.from({ length: 21 }, (_, index) => ({
+      id: "44444444-4444-4444-8444-" + (111111111111 + index),
+      name: "Character " + (index + 1),
+      franchise: "One Piece",
+      evidenceOrigin: "manual_admin:reviewed",
+      evidenceNote: null,
+    }));
+    mocks.callAdminRpc.mockResolvedValue({
+      items: [{
+        modelId: MODEL_ID,
+        slug: "cena-entre-personagens",
+        state: "approved",
+        evidenceOrigin: "manual_admin:collection",
+        evidenceNote: null,
+        characters,
+        inactiveCharacters: [],
+        inactiveCharacterCount: 0,
+        tags: [],
+      }],
+      total: 1,
+      offset: 0,
+      limit: 20,
+    });
+    const page = await getInternalCollectionCurationPage({
+      collectionId: COLLECTION_ID,
+    });
+    expect(page.items).toHaveLength(1);
+    expect(page.items[0].characters).toEqual(characters);
+    expect(new Set(page.items[0].characters.map((person) => person.id)).size).toBe(21);
+  });
+
   it("fails closed on duplicated or unreviewed character links", async () => {
     const character = {
       id: "44444444-4444-4444-8444-444444444444",
@@ -707,10 +739,6 @@ describe("internal catalog curation service", () => {
       [{ ...character, id: "not-a-uuid" }],
       [{ ...character, evidenceOrigin: "automatic:image-guess" }],
       [{ ...character, name: "<script>" }],
-      Array.from({ length: 13 }, (_, index) => ({
-        ...character,
-        id: "44444444-4444-4444-8444-" + (111111111111 + index),
-      })),
     ]) {
       mocks.callAdminRpc.mockResolvedValueOnce(makeResponse(characters));
       await expect(
@@ -911,7 +939,8 @@ describe("internal catalog curation service", () => {
     expect(migration).toContain(
       "ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE",
     );
-    expect(migration).toContain("Maximum 12 verified characters per model");
+    expect(migration).not.toContain("Maximum 12 verified characters per model");
+    expect(migration).not.toContain(") >= 12 THEN");
     expect(migration).toContain("ON CONFLICT (identity_key) DO NOTHING");
     const sharedIdentityUpsert = migration
       .split("INSERT INTO public.catalog_character_identities (")[1]
@@ -1097,9 +1126,8 @@ describe("internal catalog curation service", () => {
       "Private page/summary failed to reflect restored character",
     );
     expect(acceptance).toContain("has_function_privilege('authenticated'");
-    expect(acceptance).toContain(
-      "Thirteenth active character was not rejected",
-    );
+    expect(acceptance).toContain("Expected 21 active character links");
+    expect(acceptance).toContain("Twenty-first verified character was rejected");
     expect(acceptance).toContain(
       "Editorial function accepted non-service JWT claims",
     );
