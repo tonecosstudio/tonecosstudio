@@ -219,6 +219,39 @@ BEGIN
           WHERE cmc.catalog_model_id = cc.catalog_model_id
             AND cmc.unlinked_at IS NULL
         ), '[]'::jsonb),
+        -- Private editorial review only: never expose this through public catalog.
+        -- Bound the archived preview independently of lifetime review history.
+        'inactiveCharacterCount', (
+          SELECT count(*) FROM public.catalog_curation_model_characters cmc
+          WHERE cmc.catalog_model_id = cc.catalog_model_id
+            AND cmc.unlinked_at IS NOT NULL
+        ),
+        'inactiveCharacters', COALESCE((
+          SELECT jsonb_agg(
+            jsonb_build_object(
+              'id', archived.id,
+              'name', archived.character_name,
+              'franchise', archived.franchise,
+              'evidenceOrigin', archived.evidence_origin,
+              'evidenceNote', archived.evidence_note,
+              'unlinkedAt', archived.unlinked_at,
+              'unlinkReason', archived.unlink_reason,
+              'reviewCount', jsonb_array_length(archived.review_history)
+            ) ORDER BY archived.unlinked_at DESC, archived.id
+          )
+          FROM (
+            SELECT ci.id, ci.character_name, ci.franchise,
+              cmc.evidence_origin, cmc.evidence_note, cmc.unlinked_at,
+              cmc.unlink_reason, cmc.review_history
+            FROM public.catalog_curation_model_characters cmc
+            JOIN public.catalog_character_identities ci
+              ON ci.id = cmc.character_identity_id
+            WHERE cmc.catalog_model_id = cc.catalog_model_id
+              AND cmc.unlinked_at IS NOT NULL
+            ORDER BY cmc.unlinked_at DESC, ci.id
+            LIMIT 12
+          ) archived
+        ), '[]'::jsonb),
         'tags', COALESCE((
           SELECT jsonb_agg(
             jsonb_build_object(
