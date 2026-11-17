@@ -378,7 +378,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
-AS $
+AS $$
 DECLARE
   v_model_id text;
   v_model_slug text;
@@ -414,7 +414,7 @@ BEGIN
     'removed', true
   );
 END;
-$;
+$$;
 
 REVOKE ALL ON FUNCTION public.admin_get_collection_curation_summary(uuid)
   FROM PUBLIC, anon, authenticated;
