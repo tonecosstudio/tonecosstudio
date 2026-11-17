@@ -107,6 +107,7 @@ export function InternalCollectionCuration() {
     model: SubscriptionCatalogModel;
     characterName: string;
     franchise: string;
+    restoreId?: string;
   } | null>(null);
   const [unlinkReview, setUnlinkReview] = useState<{
     model: { modelId: string; slug: string };
@@ -483,18 +484,22 @@ export function InternalCollectionCuration() {
         model: modelRef(review.model),
         characterName: review.characterName.trim(),
         franchise: review.franchise.trim(),
-        evidenceOrigin: "manual_admin:reviewed_character_identity",
-        evidenceNote:
-          "Nome do personagem e franquia revisados explicitamente pelo administrador; variante preservada no modelo canônico.",
+        evidenceOrigin: review.restoreId
+          ? "manual_admin:reviewed_character_restoration"
+          : "manual_admin:reviewed_character_identity",
+        evidenceNote: review.restoreId
+          ? "Identidade anteriormente desvinculada, restaurada após revisão editorial explícita."
+          : "Nome do personagem e franquia revisados explicitamente pelo administrador; variante preservada no modelo canônico.",
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (_identityId, review) => {
       setIdentityReview(null);
       await refreshCollection();
       toast({
-        title: "Identidade verificada",
-        description:
-          "Vínculo revisado e adicionado sem substituir os demais personagens desta estatueta. Não foi publicado no catálogo.",
+        title: review.restoreId ? "Vínculo restaurado" : "Identidade verificada",
+        description: review.restoreId
+          ? "A associação foi reavaliada e restaurada na curadoria privada; o histórico foi preservado."
+          : "Vínculo revisado e adicionado sem substituir os demais personagens desta estatueta. Não foi publicado no catálogo.",
       });
     },
     onError: (error) =>
@@ -1065,6 +1070,61 @@ export function InternalCollectionCuration() {
                                 ))}
                               </div>
                             )}
+                            {item.inactiveCharacterCount > 0 && (
+                              <div
+                                className="mt-3 space-y-2 border-t pt-3"
+                                aria-label="Personagens anteriormente desvinculados"
+                              >
+                                <p className="text-xs font-medium text-muted-foreground">
+                                  Desvinculados ({item.inactiveCharacterCount})
+                                </p>
+                                {item.inactiveCharacters.map((character) => (
+                                  <div
+                                    key={character.id}
+                                    className="rounded-md border p-3 text-xs"
+                                  >
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <span className="font-medium">
+                                        {character.name} · {character.franchise}
+                                      </span>
+                                      {model && item.characters.length < 12 && (
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          disabled={
+                                            identityMutation.isPending ||
+                                            unlinkMutation.isPending
+                                          }
+                                          onClick={() => {
+                                            setUnlinkReview(null);
+                                            setIdentityReview({
+                                              model,
+                                              characterName: character.name,
+                                              franchise: character.franchise,
+                                              restoreId: character.id,
+                                            });
+                                          }}
+                                        >
+                                          Revisar restauração
+                                        </Button>
+                                      )}
+                                    </div>
+                                    <p className="mt-1 text-muted-foreground">
+                                      Motivo registrado: {character.unlinkReason}
+                                    </p>
+                                    <p className="mt-1 text-muted-foreground">
+                                      {character.reviewCount} eventos editoriais registrados
+                                    </p>
+                                  </div>
+                                ))}
+                                {item.inactiveCharacterCount > item.inactiveCharacters.length && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Exibindo os {item.inactiveCharacters.length} registros mais recentes.
+                                  </p>
+                                )}
+                              </div>
+                            )}
                             {item.tags.length > 0 && (
                               <div className="mt-3 flex flex-wrap gap-2">
                                 {item.tags.map((tag) => (
@@ -1174,11 +1234,9 @@ export function InternalCollectionCuration() {
                         {identityReview?.model.id === item.modelId && (
                           <div className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2">
                             <p className="text-sm text-muted-foreground sm:col-span-2">
-                              Confirme cada personagem e sua franquia. Uma cena
-                              pode conter vários personagens; cada vínculo exige
-                              revisão manual e não substitui os anteriores. O
-                              nome do modelo é apenas uma sugestão, não uma
-                              identidade verificada.
+                              {identityReview.restoreId
+                                ? "Confirme a restauração deste personagem previamente desvinculado. O nome e a franquia ficam preservados; a reaprovação será registrada no histórico editorial."
+                                : "Confirme cada personagem e sua franquia. Uma cena pode conter vários personagens; cada vínculo exige revisão manual e não substitui os anteriores. O nome do modelo é apenas uma sugestão, não uma identidade verificada."}
                             </p>
                             <div className="space-y-1">
                               <Label htmlFor="curation-character-name">
@@ -1187,6 +1245,7 @@ export function InternalCollectionCuration() {
                               <Input
                                 id="curation-character-name"
                                 maxLength={160}
+                                disabled={Boolean(identityReview.restoreId)}
                                 value={identityReview.characterName}
                                 onChange={(event) =>
                                   setIdentityReview((current) =>
@@ -1207,6 +1266,7 @@ export function InternalCollectionCuration() {
                               <Input
                                 id="curation-character-franchise"
                                 maxLength={160}
+                                disabled={Boolean(identityReview.restoreId)}
                                 value={identityReview.franchise}
                                 onChange={(event) =>
                                   setIdentityReview((current) =>
@@ -1235,7 +1295,9 @@ export function InternalCollectionCuration() {
                                 {identityMutation.isPending && (
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 )}
-                                Confirmar identidade revisada
+                                {identityReview.restoreId
+                                  ? "Confirmar restauração revisada"
+                                  : "Confirmar identidade revisada"}
                               </Button>
                               <Button
                                 type="button"
