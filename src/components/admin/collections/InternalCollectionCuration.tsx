@@ -37,6 +37,7 @@ import {
   saveCatalogModelClassifications,
   saveInternalCollectionCuration,
   verifyCatalogModelCharacterIdentity,
+  unlinkCatalogModelCharacterIdentity,
   type CatalogCurationState,
   type CatalogCurationTag,
   type CatalogCurationTagDimension,
@@ -107,6 +108,11 @@ export function InternalCollectionCuration() {
     characterName: string;
     franchise: string;
   } | null>(null);
+  const [unlinkReview, setUnlinkReview] = useState<{
+    model: { modelId: string; slug: string };
+    characterId: string;
+    characterName: string;
+  } | null>(null);
 
   const collectionsQuery = useQuery({
     queryKey: COLLECTIONS_QUERY,
@@ -129,11 +135,13 @@ export function InternalCollectionCuration() {
     setMemberIds([]);
     setCandidateIds([]);
     setIdentityReview(null);
+    setUnlinkReview(null);
   }, [collection?.id, stateFilter, tagFilterId]);
 
   useEffect(() => {
     setMemberIds([]);
     setIdentityReview(null);
+    setUnlinkReview(null);
   }, [offset]);
 
   const tagsQuery = useQuery({
@@ -493,6 +501,29 @@ export function InternalCollectionCuration() {
         title: "Não foi possível verificar a identidade",
         description:
           error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      }),
+  });
+
+  const unlinkMutation = useMutation({
+    mutationFn: async (review: NonNullable<typeof unlinkReview>) =>
+      unlinkCatalogModelCharacterIdentity({
+        model: review.model,
+        characterId: review.characterId,
+      }),
+    onSuccess: async () => {
+      setUnlinkReview(null);
+      await refreshCollection();
+      toast({
+        title: "Vínculo removido",
+        description:
+          "A associação foi removida desta estatueta; a identidade do personagem e seus outros modelos continuam preservados.",
+      });
+    },
+    onError: (error) =>
+      toast({
+        title: "Não foi possível desvincular o personagem",
+        description: error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -996,9 +1027,28 @@ export function InternalCollectionCuration() {
                                 aria-label="Personagens com identidade revisada"
                               >
                                 {item.characters.map((character) => (
-                                  <Badge key={character.id} variant="outline">
-                                    {character.name} · {character.franchise}
-                                  </Badge>
+                                  <div key={character.id} className="flex items-center gap-2">
+                                    <Badge variant="outline">
+                                      {character.name} · {character.franchise}
+                                    </Badge>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      disabled={unlinkMutation.isPending || identityMutation.isPending}
+                                      aria-label={`Desvincular ${character.name} desta estatueta`}
+                                      onClick={() => {
+                                        setIdentityReview(null);
+                                        setUnlinkReview({
+                                          model: { modelId: item.modelId, slug: item.slug },
+                                          characterId: character.id,
+                                          characterName: character.name,
+                                        });
+                                      }}
+                                    >
+                                      Desvincular
+                                    </Button>
+                                  </div>
                                 ))}
                               </div>
                             )}
@@ -1045,6 +1095,39 @@ export function InternalCollectionCuration() {
                             </Button>
                           )}
                         </div>
+                        {unlinkReview?.model.modelId === item.modelId && (
+                          <div
+                            role="group"
+                            aria-label="Confirmar desvinculação de personagem"
+                            className="mt-4 space-y-3 rounded-md border border-destructive/50 p-4"
+                          >
+                            <p className="text-sm">
+                              Desvincular <strong>{unlinkReview.characterName}</strong> desta estatueta?
+                              A identidade e suas associações com outros modelos permanecem preservadas.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                disabled={unlinkMutation.isPending}
+                                onClick={() => unlinkMutation.mutate(unlinkReview)}
+                              >
+                                {unlinkMutation.isPending && (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                Confirmar desvinculação
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                disabled={unlinkMutation.isPending}
+                                onClick={() => setUnlinkReview(null)}
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                         {identityReview?.model.id === item.modelId && (
                           <div className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2">
                             <p className="text-sm text-muted-foreground sm:col-span-2">
