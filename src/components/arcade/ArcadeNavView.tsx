@@ -52,8 +52,11 @@ export function ArcadeNavView({
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
-  const signupAvailability = useTonecosSignupAvailability(!visibleUser && !PREVIEW_READ_ONLY);
-  const showPublicSignup = !visibleUser && !PREVIEW_READ_ONLY && signupAvailability === "enabled";
+  const signupAvailability = useTonecosSignupAvailability(
+    !visibleUser && !PREVIEW_READ_ONLY,
+  );
+  const showPublicSignup =
+    !visibleUser && !PREVIEW_READ_ONLY && signupAvailability === "enabled";
 
   // Navigation may happen outside the menu (browser Back, catalog cards,
   // footer links). Never leave an expanded mobile menu on the next page.
