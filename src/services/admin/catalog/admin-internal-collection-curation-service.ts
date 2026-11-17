@@ -260,7 +260,7 @@ function parseVerifiedCharacter(value: unknown): CatalogVerifiedCharacter {
   const franchise = asString(row.franchise, "catalog_curation_character_invalid");
   const evidenceOrigin = asString(row.evidenceOrigin, "catalog_curation_character_invalid");
   const evidenceNote = asOptionalString(row.evidenceNote, "catalog_curation_character_invalid");
-  const unsafe = /[<>\\u0000-\\u001f\\u007f]/;
+  const unsafe = /[<>\u0000-\u001f\u007f]/;
   if (
     !UUID_PATTERN.test(id) || name.length > 160 || franchise.length > 160 ||
     evidenceOrigin.length > 240 || unsafe.test(name) ||
