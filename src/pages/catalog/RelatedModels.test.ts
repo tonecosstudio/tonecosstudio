@@ -1,9 +1,19 @@
-import { describe, expect, it } from "vitest";
-import type {
-  PublicCatalogDetail,
-  PublicCatalogModel,
+import { createElement } from "react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  createPublicCatalogGateway,
+  type PublicCatalogDetail,
+  type PublicCatalogModel,
 } from "@/services/catalog/public-catalog-gateway";
-import { catalogDiscoveryTags, relatedCatalogReturnState, selectRelatedModelGroups } from "./RelatedModels";
+import {
+  RelatedModels,
+  catalogDiscoveryTags,
+  relatedCatalogReturnState,
+  selectRelatedModelGroups,
+} from "./RelatedModels";
 
 const current: PublicCatalogDetail = {
   id: "mdl-current",
@@ -189,5 +199,67 @@ describe("TONART canonical discovery tags", () => {
       .toEqual([]);
     expect(catalogDiscoveryTags({ ...current, franchise: "   " }))
       .toEqual([]);
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("TONART catalog discovery visibility", () => {
+  function renderDiscovery() {
+    const gateway = {
+      listPage: vi.fn(async () => ({ items: [], nextCursor: null })),
+      mediaUrl: vi.fn(() => null),
+    } as unknown as ReturnType<typeof createPublicCatalogGateway>;
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(
+          QueryClientProvider,
+          { client },
+          createElement(RelatedModels, {
+            model: current,
+            gateway,
+            returnPath: "/modelos",
+          }),
+        ),
+      ),
+    );
+    return { ...view, gateway };
+  }
+
+  it("shows taxonomy links without triggering a related-model query until in view", () => {
+    vi.stubGlobal("IntersectionObserver", class {
+      observe() {}
+      disconnect() {}
+    });
+    const { gateway } = renderDiscovery();
+    expect(screen.getByRole("navigation", { name: "Explorar filtros do catálogo" }))
+      .toBeTruthy();
+    expect(screen.getByRole("link", { name: "Explorar universo Dragon Ball" })
+      .getAttribute("href")).toBe("/universo/anime/dragon-ball");
+    expect(screen.queryByRole("heading", { name: "Explore mais modelos" }))
+      .toBeNull();
+    expect(gateway.listPage).not.toHaveBeenCalled();
+  });
+
+  it("keeps category, universe and name search accessible with no eligible siblings", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    const { gateway } = renderDiscovery();
+    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+    await waitFor(() => {
+      expect(gateway.listPage).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole("heading", { name: "Explore mais modelos" }))
+        .toBeNull();
+    });
+    expect(screen.getByRole("link", { name: "Ver categoria Anime" })
+      .getAttribute("href")).toBe("/modelos?category=anime");
+    expect(screen.getByRole("link", { name: "Explorar universo Dragon Ball" }))
+      .toBeTruthy();
+    expect(screen.getByRole("link", { name: "Buscar modelos pelo nome Goku" }))
+      .toBeTruthy();
   });
 });
