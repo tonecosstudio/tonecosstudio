@@ -356,15 +356,15 @@ export function RelatedModels({
   const canSearchByName = catalogDiscoveryTags(model).some(
     (tag) => tag.kind === "name-search",
   );
-  const shouldSearchCharacter =
+  const shouldSearchName =
     isRequested &&
     canQuery &&
     relatedQuery.isSuccess &&
     !initialGroups.some((group) => group.kind === "name-match") &&
     canSearchByName;
-  const characterQuery = useQuery({
+  const nameQuery = useQuery({
     queryKey: [
-      "tonecos-catalog-related-character",
+      "tonecos-catalog-related-name",
       model.categorySlug,
       model.franchiseSlug,
       model.name.trim(),
@@ -379,15 +379,15 @@ export function RelatedModels({
         },
         signal,
       ),
-    enabled: shouldSearchCharacter,
+    enabled: shouldSearchName,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
 
   const groups = useMemo(() => {
-    // Search results may contain partial-title matches; never mislabel them
-    // as related characters or add them to an unrelated franchise group.
-    const exactNameMatches = (characterQuery.data?.items ?? []).filter(
+    // Indexed search can contain partial-title matches. Only exact displayed
+    // names belong in the name-match group; no verified identity is inferred.
+    const exactNameMatches = (nameQuery.data?.items ?? []).filter(
       (item) => exactKey(item.name) === exactKey(model.name),
     );
     return selectRelatedModelGroups(
@@ -396,14 +396,14 @@ export function RelatedModels({
         (item) => gateway.mediaUrl(item.coverStorageKey) !== null,
       ),
     );
-  }, [model, gateway, relatedQuery.data, characterQuery.data]);
-  const waitingForCharacter = shouldSearchCharacter && characterQuery.isPending;
+  }, [model, gateway, relatedQuery.data, nameQuery.data]);
+  const waitingForName = shouldSearchName && nameQuery.isPending;
   // A transient failure must not silently erase the recommendations.
   // Existing verified groups remain usable if a background refetch fails.
   const recoverableError =
     isRequested &&
     groups.length === 0 &&
-    (relatedQuery.isError || (shouldSearchCharacter && characterQuery.isError));
+    (relatedQuery.isError || (shouldSearchName && nameQuery.isError));
 
   if (!canQuery) return null;
   // Taxonomy links are independent from related-model discovery. This page
@@ -423,7 +423,7 @@ export function RelatedModels({
   if (
     isRequested &&
     observerAvailable &&
-    (relatedQuery.isPending || waitingForCharacter)
+    (relatedQuery.isPending || waitingForName)
   ) {
     return discoveryLinks;
   }
@@ -431,7 +431,7 @@ export function RelatedModels({
     isRequested &&
     !recoverableError &&
     relatedQuery.isSuccess &&
-    !waitingForCharacter &&
+    !waitingForName &&
     groups.length === 0
   )
     return discoveryLinks;
@@ -483,14 +483,14 @@ export function RelatedModels({
               type="button"
               onClick={() => {
                 if (relatedQuery.isError) void relatedQuery.refetch();
-                else void characterQuery.refetch();
+                else void nameQuery.refetch();
               }}
               className="min-h-11 border border-[hsl(var(--gold-accent)/0.5)] px-4 text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline-2"
             >
               Tentar novamente
             </button>
           </div>
-        ) : relatedQuery.isPending || waitingForCharacter ? (
+        ) : relatedQuery.isPending || waitingForName ? (
           <p role="status" className="mt-4 text-sm text-[hsl(0,0%,56%)]">
             Procurando modelos relacionados…
           </p>
