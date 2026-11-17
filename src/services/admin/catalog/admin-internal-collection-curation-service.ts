@@ -769,6 +769,34 @@ export async function verifyCatalogModelCharacterIdentity(input: {
   return identityId;
 }
 
+/** Remove only the reviewed link, never the character identity or other models.
+ * An orphaned catalog model can be cleaned up with its stored exact ID/slug.
+ */
+export async function unlinkCatalogModelCharacterIdentity(input: {
+  model: CanonicalCurationModelRef;
+  characterId: string;
+}): Promise<void> {
+  validateCanonicalCurationModelRef(input.model);
+  if (!UUID_PATTERN.test(input.characterId)) {
+    throw new Error("catalog_character_identity_unlink_invalid");
+  }
+  const data = asRecord(
+    await callAdminRpc<unknown>("admin_unlink_catalog_model_character", {
+      p_model_id: input.model.modelId,
+      p_model_slug: input.model.slug,
+      p_character_identity_id: input.characterId,
+    }),
+    "catalog_character_identity_unlink_result_invalid",
+  );
+  if (
+    data.modelId !== input.model.modelId ||
+    data.identityId !== input.characterId ||
+    data.removed !== true
+  ) {
+    throw new Error("catalog_character_identity_unlink_result_invalid");
+  }
+}
+
 export async function saveCatalogModelClassifications(input: {
   models: readonly CanonicalCurationModelRef[];
   tagId: string;
