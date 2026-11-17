@@ -16,11 +16,21 @@ CREATE TABLE public.catalog_curation_model_characters (
   ),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
+  unlinked_at timestamptz,
+  unlink_reason text,
+  CONSTRAINT catalog_curation_link_review_state_valid CHECK (
+    (unlinked_at IS NULL AND unlink_reason IS NULL)
+    OR
+    (unlinked_at IS NOT NULL AND unlink_reason IS NOT NULL
+      AND length(unlink_reason) BETWEEN 3 AND 1000
+      AND unlink_reason !~ '[[:cntrl:]<>]')
+  ),
   PRIMARY KEY (catalog_model_id, character_identity_id)
 );
 
 CREATE INDEX idx_catalog_curation_model_characters_identity
-  ON public.catalog_curation_model_characters(character_identity_id, catalog_model_id);
+  ON public.catalog_curation_model_characters(character_identity_id, catalog_model_id)
+  WHERE unlinked_at IS NULL;
 
 ALTER TABLE public.catalog_curation_model_characters ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.catalog_curation_model_characters
@@ -90,6 +100,7 @@ BEGIN
         AND NOT EXISTS (
           SELECT 1 FROM public.catalog_curation_model_characters cmc
           WHERE cmc.catalog_model_id = cc.catalog_model_id
+            AND cmc.unlinked_at IS NULL
         )
     ),
     count(*) FILTER (WHERE cc.state = 'suggested'),
@@ -113,6 +124,7 @@ BEGIN
   FROM public.catalog_collection_curation cc
   JOIN public.catalog_curation_model_characters cmc
     ON cmc.catalog_model_id = cc.catalog_model_id
+      AND cmc.unlinked_at IS NULL
   WHERE cc.collection_id = p_collection_id AND cc.state <> 'discarded';
 
   RETURN jsonb_build_object(
@@ -199,6 +211,7 @@ BEGIN
           JOIN public.catalog_character_identities ci
             ON ci.id = cmc.character_identity_id
           WHERE cmc.catalog_model_id = cc.catalog_model_id
+            AND cmc.unlinked_at IS NULL
         ), '[]'::jsonb),
         'tags', COALESCE((
           SELECT jsonb_agg(
@@ -342,20 +355,24 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.catalog_curation_model_characters
     WHERE catalog_model_id = v_id AND character_identity_id = v_identity_id
+      AND unlinked_at IS NULL
   ) AND (
     SELECT count(*) FROM public.catalog_curation_model_characters
-    WHERE catalog_model_id = v_id
+    WHERE catalog_model_id = v_id AND unlinked_at IS NULL
   ) >= 12 THEN
     RAISE EXCEPTION 'Maximum 12 verified characters per model' USING ERRCODE = '22023';
   END IF;
 
-  -- An additional verified character never overwrites an existing link.
+  -- Re-reviewing a previously unlinked identity restores this SAME relation.
+  -- The identity and its original record are never duplicated.
   INSERT INTO public.catalog_curation_model_characters (
     catalog_model_id, character_identity_id, evidence_origin, evidence_note, updated_at
   ) VALUES (v_id, v_identity_id, v_origin, v_note, now())
   ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE
     SET evidence_origin = EXCLUDED.evidence_origin,
         evidence_note = EXCLUDED.evidence_note,
+        unlinked_at = NULL,
+        unlink_reason = NULL,
         updated_at = now();
 
   RETURN jsonb_build_object(
@@ -367,12 +384,13 @@ END;
 $$;
 
 
--- Detach one verified model-character link without deleting the shared identity.
--- A stale model reference or absent link must fail, never report fake success.
+-- Revise one relation with a reason. No physical deletion and no parallel audit.
+-- A stale model reference or already-unlinked link must fail closed.
 CREATE OR REPLACE FUNCTION public.admin_unlink_catalog_model_character(
   p_model_id text,
   p_model_slug text,
-  p_character_identity_id uuid
+  p_character_identity_id uuid,
+  p_reason text
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -382,12 +400,16 @@ AS $$
 DECLARE
   v_model_id text;
   v_model_slug text;
-  v_deleted integer;
+  v_reason text;
+  v_updated integer;
 BEGIN
   PERFORM private_api.assert_tonart_curation_service_role();
   IF p_character_identity_id IS NULL THEN
     RAISE EXCEPTION 'Character identity is required' USING ERRCODE = '22023';
   END IF;
+  v_reason := public.admin_validate_catalog_curation_text(
+    p_reason, 'identity unlink reason', 1000
+  );
   SELECT model_id, model_slug INTO v_model_id, v_model_slug
   FROM public.admin_validate_catalog_model_reference(p_model_id, p_model_slug);
 
@@ -401,17 +423,21 @@ BEGIN
     RAISE EXCEPTION 'Canonical curation model reference mismatch' USING ERRCODE = 'P0002';
   END IF;
 
-  DELETE FROM public.catalog_curation_model_characters
+  UPDATE public.catalog_curation_model_characters
+  SET unlinked_at = now(),
+      unlink_reason = v_reason,
+      updated_at = now()
   WHERE catalog_model_id = v_model_id
-    AND character_identity_id = p_character_identity_id;
-  GET DIAGNOSTICS v_deleted = ROW_COUNT;
-  IF v_deleted <> 1 THEN
-    RAISE EXCEPTION 'Verified character link not found' USING ERRCODE = 'P0002';
+    AND character_identity_id = p_character_identity_id
+    AND unlinked_at IS NULL;
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+  IF v_updated <> 1 THEN
+    RAISE EXCEPTION 'Active verified character link not found' USING ERRCODE = 'P0002';
   END IF;
   RETURN jsonb_build_object(
     'modelId', v_model_id,
     'identityId', p_character_identity_id,
-    'removed', true
+    'unlinked', true
   );
 END;
 $$;
@@ -425,9 +451,9 @@ REVOKE ALL ON FUNCTION public.admin_verify_catalog_model_identity(text, text, te
 GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_summary(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer, uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_verify_catalog_model_identity(text, text, text, text, text, text, text) TO service_role;
-REVOKE ALL ON FUNCTION public.admin_unlink_catalog_model_character(text, text, uuid)
+REVOKE ALL ON FUNCTION public.admin_unlink_catalog_model_character(text, text, uuid, text)
   FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.admin_unlink_catalog_model_character(text, text, uuid)
+GRANT EXECUTE ON FUNCTION public.admin_unlink_catalog_model_character(text, text, uuid, text)
   TO service_role;
 
 -- No parallel identity source or legacy compatibility columns after cutover.
@@ -439,7 +465,7 @@ ALTER TABLE public.catalog_curation_model_profiles
   DROP COLUMN identity_evidence_note;
 
 COMMENT ON TABLE public.catalog_curation_model_characters IS
-  'Private reviewed links between canonical catalog model IDs and character identities. Not a public catalog or commercial offer.';
+  'Single private editorial link authority with review evidence and reversible unlink history. Not a public catalog or commercial offer.';
 
 NOTIFY pgrst, 'reload schema';
 COMMIT;
