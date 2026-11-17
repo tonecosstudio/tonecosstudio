@@ -179,8 +179,8 @@ describe("TONART related model selection", () => {
       "name-match",
       "franchise",
     ]);
-    expect(groups[0].items.map((item) => item.id).toEqual(["composed"]);
-    expect(groups[1].items.map((item) => item.id).toEqual(["different"]);
+    expect(groups[0].items.map((item) => item.id)).toEqual(["composed"]);
+    expect(groups[1].items.map((item) => item.id)).toEqual(["different"]);
   });
 
   it("does not infer a common character from similar or partial titles", () => {
