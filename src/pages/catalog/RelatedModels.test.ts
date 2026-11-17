@@ -93,7 +93,7 @@ describe("related-model navigation context", () => {
 });
 
 describe("TONART related model selection", () => {
-  it("prioritizes exact same-character variants, collection and franchise without overlap", () => {
+  it("groups exact names, collection and franchise without asserting character identity", () => {
     const groups = selectRelatedModelGroups(current, [
       related("goku-ssj", "Goku", "Super Saiyajin"),
       related("vegeta", "Vegeta", "Armadura"),
@@ -109,7 +109,7 @@ describe("TONART related model selection", () => {
     ]);
 
     expect(groups.map((group) => group.title)).toEqual([
-      "Outras versões de Goku",
+      "Modelos com o nome Goku",
       "Da mesma coleção",
       "Explore Dragon Ball",
     ]);
@@ -144,6 +144,17 @@ describe("TONART related model selection", () => {
       "goku-2",
       "goku-3",
     ]);
+  });
+
+  it("never labels an identical model title as a verified character identity", () => {
+    const unrelated = related("second-sculpture", "Goku", "Cena coletiva", {
+      collection: null,
+    });
+    const groups = selectRelatedModelGroups(current, [unrelated]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].kind).toBe("name-match");
+    expect(groups[0].title).toBe("Modelos com o nome Goku");
+    expect(groups[0].title).not.toMatch(/personagem|versões/i);
   });
 
   it("does not infer a common character from similar or partial titles", () => {
