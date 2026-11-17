@@ -3,7 +3,7 @@ import type {
   PublicCatalogDetail,
   PublicCatalogModel,
 } from "@/services/catalog/public-catalog-gateway";
-import { relatedCatalogReturnState, selectRelatedModelGroups } from "./RelatedModels";
+import { catalogDiscoveryTags, relatedCatalogReturnState, selectRelatedModelGroups } from "./RelatedModels";
 
 const current: PublicCatalogDetail = {
   id: "mdl-current",
@@ -126,5 +126,68 @@ describe("TONART related model selection", () => {
     ]);
     expect(groups).toHaveLength(1);
     expect(groups[0].title).toBe("Explore Dragon Ball");
+  });
+});
+
+describe("TONART canonical discovery tags", () => {
+  it("links category and universe from the published catalog without another index", () => {
+    expect(catalogDiscoveryTags(current)).toEqual([
+      {
+        kind: "category",
+        label: "Anime",
+        accessibleLabel: "Ver categoria Anime",
+        to: "/modelos?category=anime",
+      },
+      {
+        kind: "universe",
+        label: "Dragon Ball",
+        accessibleLabel: "Explorar universo Dragon Ball",
+        to: "/universo/anime/dragon-ball",
+      },
+      {
+        kind: "name-search",
+        label: "Goku",
+        accessibleLabel: "Buscar modelos pelo nome Goku",
+        to: "/modelos?q=Goku&category=anime&franchise=dragon-ball",
+      },
+    ]);
+  });
+
+  it("encodes names as bounded search hints, not invented character-page identities", () => {
+    const tags = catalogDiscoveryTags({
+      ...current,
+      name: "Roronoa Zoro & Sanji",
+      franchise: "One Piece",
+      franchiseSlug: "one-piece",
+    });
+    expect(tags.map((tag) => tag.label)).toEqual([
+      "Anime", "One Piece", "Roronoa Zoro & Sanji",
+    ]);
+    expect(tags[2].kind).toBe("name-search");
+    expect(tags[2].to).toBe(
+      "/modelos?q=Roronoa+Zoro+%26+Sanji&category=anime&franchise=one-piece",
+    );
+    expect(tags.every((tag) => !tag.to.includes("/personagem/"))).toBe(true);
+  });
+
+  it("skips unsafe or unsupported name queries while retaining valid taxonomy", () => {
+    expect(catalogDiscoveryTags({ ...current, name: "Go" })).toHaveLength(2);
+    expect(catalogDiscoveryTags({ ...current, name: "A".repeat(81) }))
+      .toHaveLength(2);
+    expect(catalogDiscoveryTags({ ...current, name: "Goku\\nAdmin" }))
+      .toHaveLength(2);
+    expect(catalogDiscoveryTags({ ...current, name: "<admin>" }))
+      .toHaveLength(2);
+  });
+
+  it("fails closed on invalid catalog scope and never constructs external links", () => {
+    expect(catalogDiscoveryTags({ ...current, categorySlug: "../admin" }))
+      .toEqual([]);
+    expect(catalogDiscoveryTags({ ...current, franchiseSlug: "https://evil.test" }))
+      .toEqual([]);
+    expect(catalogDiscoveryTags({ ...current, category: "   " }))
+      .toEqual([]);
+    expect(catalogDiscoveryTags({ ...current, franchise: "   " }))
+      .toEqual([]);
   });
 });
