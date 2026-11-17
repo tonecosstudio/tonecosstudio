@@ -347,7 +347,6 @@ function parseMembership(value: unknown): CatalogCurationMembership {
     typeof state !== "string" ||
     !curationStates.has(state as CatalogCurationState) ||
     !Array.isArray(row.characters) ||
-    row.characters.length > 12 ||
     !Array.isArray(row.inactiveCharacters) ||
     row.inactiveCharacters.length > 12 ||
     !Array.isArray(row.tags)

@@ -440,19 +440,9 @@ BEGIN
   ON CONFLICT (catalog_model_id) DO UPDATE
     SET catalog_model_slug = EXCLUDED.catalog_model_slug, updated_at = now();
 
-  -- Lock the model row so the 12-link bound is safe under concurrent reviews.
-  PERFORM 1 FROM public.catalog_curation_model_profiles
-    WHERE catalog_model_id = v_id FOR UPDATE;
-  IF NOT EXISTS (
-    SELECT 1 FROM public.catalog_curation_model_characters
-    WHERE catalog_model_id = v_id AND character_identity_id = v_identity_id
-      AND unlinked_at IS NULL
-  ) AND (
-    SELECT count(*) FROM public.catalog_curation_model_characters
-    WHERE catalog_model_id = v_id AND unlinked_at IS NULL
-  ) >= 12 THEN
-    RAISE EXCEPTION 'Maximum 12 verified characters per model' USING ERRCODE = '22023';
-  END IF;
+  -- No arbitrary per-model character ceiling: large dioramas may contain
+  -- more than twelve reviewed identities. Uniqueness is enforced by the
+  -- composite primary key, not by a count gate.
 
   -- An already-active approval is idempotent: do not rewrite original proof.
   -- Reapproval of a detached link preserves the FIRST evidence on the same

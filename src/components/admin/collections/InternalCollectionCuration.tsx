@@ -1089,7 +1089,7 @@ export function InternalCollectionCuration() {
                                       <span className="font-medium">
                                         {character.name} · {character.franchise}
                                       </span>
-                                      {model && item.characters.length < 12 && (
+                                      {model && (
                                         <Button
                                           type="button"
                                           size="sm"
@@ -1151,7 +1151,7 @@ export function InternalCollectionCuration() {
                                 : ""}
                             </p>
                           </div>
-                          {model && item.characters.length < 12 && (
+                          {model && (
                             <Button
                               type="button"
                               size="sm"
