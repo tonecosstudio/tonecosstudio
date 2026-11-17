@@ -21,6 +21,7 @@ import {
   saveCatalogModelClassifications,
   saveInternalCollectionCuration,
   verifyCatalogModelCharacterIdentity,
+  unlinkCatalogModelCharacterIdentity,
 } from "./admin-internal-collection-curation-service";
 
 const COLLECTION_ID = "11111111-1111-4111-8111-111111111111";
@@ -86,6 +87,7 @@ describe("internal catalog curation service", () => {
       "admin_upsert_catalog_curation_tags",
       "admin_upsert_collection_curation_models",
       "admin_verify_catalog_model_identity",
+      "admin_unlink_catalog_model_character",
     ]) {
       expect(allowed).toContain(name);
       expect(userContext).not.toContain(name);
@@ -715,6 +717,54 @@ describe("internal catalog curation service", () => {
     }
   });
 
+  it("unlinks only the explicitly confirmed identity from one model", async () => {
+    const characterId = "44444444-4444-4444-8444-444444444444";
+    mocks.callAdminRpc.mockResolvedValue({
+      modelId: MODEL_ID,
+      identityId: characterId,
+      removed: true,
+    });
+    await expect(
+      unlinkCatalogModelCharacterIdentity({
+        model: { modelId: MODEL_ID, slug: "cena-entre-personagens" },
+        characterId,
+      }),
+    ).resolves.toBeUndefined();
+    expect(mocks.callAdminRpc).toHaveBeenCalledExactlyOnceWith(
+      "admin_unlink_catalog_model_character",
+      {
+        p_model_id: MODEL_ID,
+        p_model_slug: "cena-entre-personagens",
+        p_character_identity_id: characterId,
+      },
+    );
+  });
+
+  it("rejects invalid unlink requests and mismatched deletion receipts", async () => {
+    await expect(
+      unlinkCatalogModelCharacterIdentity({
+        model: { modelId: MODEL_ID, slug: "cena-entre-personagens" },
+        characterId: "not-a-uuid",
+      }),
+    ).rejects.toThrow("catalog_character_identity_unlink_invalid");
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+
+    const characterId = "44444444-4444-4444-8444-444444444444";
+    for (const response of [
+      { modelId: MODEL_ID, identityId: characterId, removed: false },
+      { modelId: MODEL_ID, identityId: "55555555-5555-4555-8555-555555555555", removed: true },
+      { modelId: "wrong-id", identityId: characterId, removed: true },
+    ]) {
+      mocks.callAdminRpc.mockResolvedValueOnce(response);
+      await expect(
+        unlinkCatalogModelCharacterIdentity({
+          model: { modelId: MODEL_ID, slug: "cena-entre-personagens" },
+          characterId,
+        }),
+      ).rejects.toThrow("catalog_character_identity_unlink_result_invalid");
+    }
+  });
+
   it("stages a lossless and private many-to-many cutover with no second writer", () => {
     const migration = readFileSync(
       "supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
@@ -741,6 +791,14 @@ describe("internal catalog curation service", () => {
       "ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE",
     );
     expect(migration).toContain("Maximum 12 verified characters per model");
+    expect(migration).toContain("ON CONFLICT (identity_key) DO NOTHING");
+    expect(migration).not.toContain("evidence_origin = EXCLUDED.evidence_origin");
+    expect(migration).toContain("CREATE OR REPLACE FUNCTION public.admin_unlink_catalog_model_character");
+    expect(migration).toContain("DELETE FROM public.catalog_curation_model_characters");
+    expect(migration).toContain("AND character_identity_id = p_character_identity_id");
+    expect(migration).toContain("GET DIAGNOSTICS v_deleted = ROW_COUNT");
+    expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.admin_unlink_catalog_model_character");
+    expect(migration).toContain("REVOKE ALL ON FUNCTION public.admin_unlink_catalog_model_character");
     expect(migration).toContain(
       "private_api.assert_tonart_curation_service_role()",
     );
@@ -751,6 +809,7 @@ describe("internal catalog curation service", () => {
       "admin_get_collection_curation_summary",
       "admin_get_collection_curation_page",
       "admin_verify_catalog_model_identity",
+      "admin_unlink_catalog_model_character",
     ]) {
       expect(
         migration.split("CREATE OR REPLACE FUNCTION public." + rpc + "("),
