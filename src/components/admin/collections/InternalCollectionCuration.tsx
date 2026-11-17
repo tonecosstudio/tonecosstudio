@@ -478,7 +478,7 @@ export function InternalCollectionCuration() {
       toast({
         title: "Identidade verificada",
         description:
-          "Esculturas com o mesmo nome de personagem e franquia verificados agora podem ser contadas como um personagem distinto.",
+          "Vínculo revisado e adicionado sem substituir os demais personagens desta estatueta. Não foi publicado no catálogo.",
       });
     },
     onError: (error) =>
@@ -916,10 +916,10 @@ export function InternalCollectionCuration() {
                                 {model ? modelLabel(model) : item.slug}
                               </h4>
                               <Badge variant="outline">{stateLabels[item.state]}</Badge>
-                              {item.identityVerified ? (
+                              {item.characters.length > 0 ? (
                                 <Badge variant="secondary">
                                   <ShieldCheck className="mr-1 h-3 w-3" />
-                                  Personagem verificado
+                                  {item.characters.length} personagem(ns) verificado(s)
                                 </Badge>
                               ) : (
                                 <Badge variant="outline">Identidade pendente</Badge>
@@ -930,6 +930,15 @@ export function InternalCollectionCuration() {
                                 ? `${model.franchise} · ${model.category} · ${model.slug}`
                                 : `Referência canônica: ${item.slug}`}
                             </p>
+                            {item.characters.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2" aria-label="Personagens com identidade revisada">
+                                {item.characters.map((character) => (
+                                  <Badge key={character.id} variant="outline">
+                                    {character.name} · {character.franchise}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                             {item.tags.length > 0 && (
                               <div className="mt-3 flex flex-wrap gap-2">
                                 {item.tags.map((tag) => (
@@ -945,7 +954,7 @@ export function InternalCollectionCuration() {
                               {item.evidenceNote ? ` · ${item.evidenceNote}` : ""}
                             </p>
                           </div>
-                          {model && !item.identityVerified && (
+                          {model && item.characters.length < 12 && (
                             <Button
                               type="button"
                               size="sm"
@@ -954,22 +963,23 @@ export function InternalCollectionCuration() {
                               onClick={() =>
                                 setIdentityReview({
                                   model,
-                                  characterName: model.name,
+                                  characterName: item.characters.length ? "" : model.name,
                                   franchise: model.franchise,
                                 })
                               }
                             >
                               <ShieldCheck className="mr-2 h-4 w-4" />
-                              Revisar identidade
+                              {item.characters.length ? "Adicionar personagem" : "Revisar identidade"}
                             </Button>
                           )}
                         </div>
                         {identityReview?.model.id === item.modelId && (
                           <div className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2">
                             <p className="text-sm text-muted-foreground sm:col-span-2">
-                              Confirme o personagem e o universo desta escultura. Os
-                              valores do catálogo são apenas sugestões: o nome do
-                              modelo pode incluir edição, pose ou variante.
+                              Confirme cada personagem e sua franquia. Uma cena pode
+                              conter vários personagens; cada vínculo exige revisão
+                              manual e não substitui os anteriores. O nome do modelo
+                              é apenas uma sugestão, não uma identidade verificada.
                             </p>
                             <div className="space-y-1">
                               <Label htmlFor="curation-character-name">Personagem</Label>
