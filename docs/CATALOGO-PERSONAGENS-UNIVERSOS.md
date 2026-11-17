@@ -4,7 +4,7 @@
 
 ## Primeiro incremento de código (branch de desenvolvimento, 16/11/2026)
 
-**Escopo codificado e validado proporcionalmente em checkout isolado no Desktop Windows:** Vitest `RelatedModels.test.ts` **11/11 PASS** (1 arquivo, exit 0); execução adicional do helper publicado em Node/TypeScript **7 verificações PASS** (exit 0); ESLint direcionado aos dois arquivos **PASS** (exit 0). A execução de CI do GitHub ainda não está confirmada; essa evidência não constitui publicação ou E2E de personagem.
+**Escopo codificado e validado proporcionalmente em checkout isolado no Desktop Windows:** Vitest `RelatedModels.test.ts` **11/11 PASS** (1 arquivo, exit 0); execução adicional do helper publicado em Node/TypeScript **7 verificações PASS** (exit 0); ESLint direcionado aos dois arquivos **PASS** (exit 0); TypeScript integral do app (`tsc -p tsconfig.app.json --pretty false --noEmit`) **PASS** (exit 0, Desktop Windows). A execução de CI do GitHub ainda não está confirmada; essa evidência não constitui publicação ou E2E de personagem.
 
 - `src/pages/catalog/RelatedModels.tsx` passa a produzir **chips navegáveis** a partir dos metadados públicos canônicos: categoria (`/modelos?category=...`), universo (`/universo/:themeKey/:franchiseKey`) e **busca por nome** no catálogo (com `q`, categoria e franquia). Os links usam apenas slugs validados, codificação segura, acessibilidade e o design atual.
 - A busca por nome não é chamada de identidade de personagem: nomes iguais em modelos/obras não substituem a confirmação editorial. A ficha de personagem com biografia **continua bloqueada** até um índice público versionado de personagens confirmados.
