@@ -955,6 +955,7 @@ describe("internal catalog curation service", () => {
     expect(migration).toContain("AND cmc.unlinked_at IS NULL");
     expect(migration).toContain("'inactiveCharacters', COALESCE((");
     expect(migration).toContain("'inactiveCharacterCount', (");
+    expect(migration).toContain("idx_catalog_curation_model_characters_archived");
     expect(migration).toContain("'unlinkReason', archived.unlink_reason");
     expect(migration).toContain(
       "'reviewCount', jsonb_array_length(archived.review_history)",
@@ -1014,6 +1015,24 @@ describe("internal catalog curation service", () => {
     expect(acceptance).toContain("public.admin_verify_catalog_model_identity(");
     expect(acceptance).toContain(
       "public.admin_unlink_catalog_model_character(",
+    );
+    expect(acceptance).toContain(
+      "public.admin_ensure_internal_collection(",
+    );
+    expect(acceptance).toContain(
+      "public.admin_upsert_collection_curation_models(",
+    );
+    expect(acceptance).toContain(
+      "public.admin_get_collection_curation_page(",
+    );
+    expect(acceptance).toContain(
+      "public.admin_get_collection_curation_summary(",
+    );
+    expect(acceptance).toContain(
+      "Private page/summary failed to keep inactive links separate",
+    );
+    expect(acceptance).toContain(
+      "Private page/summary failed to reflect restored character",
     );
     expect(acceptance).toContain("has_function_privilege('authenticated'");
     expect(acceptance).toContain(

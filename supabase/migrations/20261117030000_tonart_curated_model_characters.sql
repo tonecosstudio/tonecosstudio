@@ -38,6 +38,13 @@ CREATE INDEX idx_catalog_curation_model_characters_identity
   ON public.catalog_curation_model_characters(character_identity_id, catalog_model_id)
   WHERE unlinked_at IS NULL;
 
+-- The private curation page lists at most 12 archived links per model.
+CREATE INDEX idx_catalog_curation_model_characters_archived
+  ON public.catalog_curation_model_characters(
+    catalog_model_id, unlinked_at DESC, character_identity_id
+  )
+  WHERE unlinked_at IS NOT NULL;
+
 ALTER TABLE public.catalog_curation_model_characters ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.catalog_curation_model_characters
   FROM PUBLIC, anon, authenticated, service_role;

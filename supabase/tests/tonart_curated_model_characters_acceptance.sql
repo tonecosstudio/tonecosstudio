@@ -52,6 +52,10 @@ DECLARE
   v_receipt jsonb;
   v_count integer;
   v_original_origin text;
+  v_collection_id uuid;
+  v_page jsonb;
+  v_summary jsonb;
+  v_member jsonb;
   v_history jsonb;
   v_expected_failure boolean;
   v_n integer;
@@ -154,6 +158,50 @@ BEGIN
     RAISE EXCEPTION 'One model failed to accept two distinct characters';
   END IF;
 
+  -- Exercise the ACTUAL private page and summary contracts, not only raw rows.
+  -- Both model members belong to this single transaction and disappear at ROLLBACK.
+  v_receipt := public.admin_ensure_internal_collection(
+    'TONART QA ' || substr(v_suffix, 1, 16),
+    'tonart-qa-' || substr(v_suffix, 1, 16),
+    'Staging-only character identity acceptance'
+  );
+  v_collection_id := (v_receipt->>'id')::uuid;
+  v_receipt := public.admin_upsert_collection_curation_models(
+    v_collection_id,
+    jsonb_build_array(
+      jsonb_build_object(
+        'modelId', v_model_a, 'slug', v_slug_a, 'state', 'approved',
+        'evidenceOrigin', 'manual_admin:acceptance_collection'
+      ),
+      jsonb_build_object(
+        'modelId', v_model_b, 'slug', v_slug_b, 'state', 'approved',
+        'evidenceOrigin', 'manual_admin:acceptance_collection'
+      )
+    )
+  );
+  IF (v_receipt->>'count')::integer IS DISTINCT FROM 2 THEN
+    RAISE EXCEPTION 'Collection curation failed to link two canonical models';
+  END IF;
+  v_page := public.admin_get_collection_curation_page(
+    v_collection_id, NULL, 0, 20, NULL
+  );
+  v_summary := public.admin_get_collection_curation_summary(v_collection_id);
+  IF jsonb_array_length(v_page->'items') <> 2
+     OR (v_page->>'total')::integer <> 2
+     OR (v_summary->>'distinctVerifiedCharacterCount')::integer <> 2
+     OR (v_summary->>'unverifiedModelCount')::integer <> 0
+     OR (v_summary->>'approvedCount')::integer <> 2 THEN
+    RAISE EXCEPTION 'Initial private summary/page lost verified character links';
+  END IF;
+  SELECT members.value INTO STRICT v_member
+  FROM jsonb_array_elements(v_page->'items') AS members(value)
+  WHERE members.value->>'modelId' = v_model_a;
+  IF jsonb_array_length(v_member->'characters') <> 2
+     OR jsonb_array_length(v_member->'inactiveCharacters') <> 0
+     OR (v_member->>'inactiveCharacterCount')::integer <> 0 THEN
+    RAISE EXCEPTION 'Initial private page returned incorrect active/archive state';
+  END IF;
+
   -- Idempotent re-approval of an ACTIVE link cannot modify first link proof.
   PERFORM public.admin_verify_catalog_model_identity(
     v_model_a, v_slug_a, v_name_a, v_franchise,
@@ -217,6 +265,23 @@ BEGIN
     RAISE EXCEPTION 'Unlink reason was not recorded';
   END IF;
 
+  v_page := public.admin_get_collection_curation_page(
+    v_collection_id, NULL, 0, 20, NULL
+  );
+  v_summary := public.admin_get_collection_curation_summary(v_collection_id);
+  SELECT members.value INTO STRICT v_member
+  FROM jsonb_array_elements(v_page->'items') AS members(value)
+  WHERE members.value->>'modelId' = v_model_a;
+  IF jsonb_array_length(v_member->'characters') <> 1
+     OR jsonb_array_length(v_member->'inactiveCharacters') <> 1
+     OR (v_member->>'inactiveCharacterCount')::integer <> 1
+     OR (v_member->'inactiveCharacters'->0->>'id')::uuid IS DISTINCT FROM v_id_a
+     OR (v_member->'inactiveCharacters'->0->>'reviewCount')::integer <> 1
+     OR (v_summary->>'distinctVerifiedCharacterCount')::integer <> 2
+     OR (v_summary->>'unverifiedModelCount')::integer <> 0 THEN
+    RAISE EXCEPTION 'Private page/summary failed to keep inactive links separate';
+  END IF;
+
   v_expected_failure := false;
   BEGIN
     PERFORM public.admin_unlink_catalog_model_character(
@@ -244,6 +309,20 @@ BEGIN
      OR (v_history->1->>'action') IS DISTINCT FROM 'restored'
      OR (v_history->1->>'note') IS DISTINCT FROM 'Restored after manual reassessment' THEN
     RAISE EXCEPTION 'Restoration lost previous approval, link, or review history';
+  END IF;
+
+  v_page := public.admin_get_collection_curation_page(
+    v_collection_id, NULL, 0, 20, NULL
+  );
+  v_summary := public.admin_get_collection_curation_summary(v_collection_id);
+  SELECT members.value INTO STRICT v_member
+  FROM jsonb_array_elements(v_page->'items') AS members(value)
+  WHERE members.value->>'modelId' = v_model_a;
+  IF jsonb_array_length(v_member->'characters') <> 2
+     OR jsonb_array_length(v_member->'inactiveCharacters') <> 0
+     OR (v_member->>'inactiveCharacterCount')::integer <> 0
+     OR (v_summary->>'distinctVerifiedCharacterCount')::integer <> 2 THEN
+    RAISE EXCEPTION 'Private page/summary failed to reflect restored character';
   END IF;
 
   -- A 101st review event is forbidden, without corrupting the valid history.
