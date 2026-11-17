@@ -253,6 +253,12 @@ function parseMembershipTag(value: unknown): CatalogCurationMembershipTag {
   };
 }
 
+function hasUnsafeCurationCharacter(value: string): boolean {
+  return Array.from(value).some((char) =>
+    char === "<" || char === ">" || char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127
+  );
+}
+
 function parseVerifiedCharacter(value: unknown): CatalogVerifiedCharacter {
   const row = asRecord(value, "catalog_curation_character_invalid");
   const id = asString(row.id, "catalog_curation_character_invalid");
@@ -260,13 +266,13 @@ function parseVerifiedCharacter(value: unknown): CatalogVerifiedCharacter {
   const franchise = asString(row.franchise, "catalog_curation_character_invalid");
   const evidenceOrigin = asString(row.evidenceOrigin, "catalog_curation_character_invalid");
   const evidenceNote = asOptionalString(row.evidenceNote, "catalog_curation_character_invalid");
-  const unsafe = /[<>\u0000-\u001f\u007f]/;
+
   if (
     !UUID_PATTERN.test(id) || name.length > 160 || franchise.length > 160 ||
-    evidenceOrigin.length > 240 || unsafe.test(name) ||
-    unsafe.test(franchise) || unsafe.test(evidenceOrigin) ||
+    evidenceOrigin.length > 240 || hasUnsafeCurationCharacter(name) ||
+    hasUnsafeCurationCharacter(franchise) || hasUnsafeCurationCharacter(evidenceOrigin) ||
     evidenceOrigin.toLowerCase().startsWith("automatic:") ||
-    (evidenceNote !== null && (evidenceNote.length > 1000 || unsafe.test(evidenceNote)))
+    (evidenceNote !== null && (evidenceNote.length > 1000 || hasUnsafeCurationCharacter(evidenceNote)))
   ) {
     throw new Error("catalog_curation_character_invalid");
   }
@@ -318,7 +324,7 @@ export function validateCanonicalCurationModelRef(
     typeof model.modelId !== "string" ||
     !model.modelId ||
     model.modelId.length > 160 ||
-    /[\s<>\u0000-\u001f\u007f]/.test(model.modelId) ||
+    (/\s/.test(model.modelId) || hasUnsafeCurationCharacter(model.modelId)) ||
     !CATALOG_SLUG.test(model.slug)
   ) {
     throw new Error("catalog_curation_model_reference_invalid");
