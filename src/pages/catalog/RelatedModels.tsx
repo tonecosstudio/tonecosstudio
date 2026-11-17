@@ -66,9 +66,10 @@ export function relatedCatalogReturnState(returnPath: string): {
 }
 
 function exactKey(value: string | null | undefined): string {
+  // Canonical Unicode composition and case/space folding preserve accents.
+  // Treating distinct diacritics as aliases would invent editorial identity.
   return (value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .normalize("NFC")
     .toLocaleLowerCase("pt-BR")
     .replace(/\s+/g, " ")
     .trim();
