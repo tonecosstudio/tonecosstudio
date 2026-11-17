@@ -85,6 +85,12 @@ export type CatalogVerifiedCharacter = {
   evidenceNote: string | null;
 };
 
+export type CatalogUnlinkedCharacter = CatalogVerifiedCharacter & {
+  unlinkedAt: string;
+  unlinkReason: string;
+  reviewCount: number;
+};
+
 export type CatalogCurationMembership = {
   modelId: string;
   slug: string;
@@ -92,6 +98,8 @@ export type CatalogCurationMembership = {
   evidenceOrigin: string;
   evidenceNote: string | null;
   characters: CatalogVerifiedCharacter[];
+  inactiveCharacters: CatalogUnlinkedCharacter[];
+  inactiveCharacterCount: number;
   tags: CatalogCurationMembershipTag[];
 };
 
@@ -298,6 +306,36 @@ function parseVerifiedCharacter(value: unknown): CatalogVerifiedCharacter {
   return { id, name, franchise, evidenceOrigin, evidenceNote };
 }
 
+function parseUnlinkedCharacter(value: unknown): CatalogUnlinkedCharacter {
+  const row = asRecord(value, "catalog_curation_unlinked_character_invalid");
+  const character = parseVerifiedCharacter(value);
+  const unlinkedAt = asString(
+    row.unlinkedAt,
+    "catalog_curation_unlinked_character_invalid",
+  );
+  const unlinkReason = asString(
+    row.unlinkReason,
+    "catalog_curation_unlinked_character_invalid",
+  );
+  const reviewCount = asNonNegativeInteger(
+    row.reviewCount,
+    "catalog_curation_unlinked_character_invalid",
+  );
+  if (
+    unlinkedAt.length > 64 ||
+    !Number.isFinite(Date.parse(unlinkedAt)) ||
+    hasUnsafeCurationCharacter(unlinkedAt) ||
+    unlinkReason.length < 3 ||
+    unlinkReason.length > 1000 ||
+    hasUnsafeCurationCharacter(unlinkReason) ||
+    reviewCount < 1 ||
+    reviewCount > 100
+  ) {
+    throw new Error("catalog_curation_unlinked_character_invalid");
+  }
+  return { ...character, unlinkedAt, unlinkReason, reviewCount };
+}
+
 function parseMembership(value: unknown): CatalogCurationMembership {
   const row = asRecord(value, "catalog_curation_membership_invalid");
   const modelId = asString(row.modelId, "catalog_curation_membership_invalid");
@@ -310,14 +348,25 @@ function parseMembership(value: unknown): CatalogCurationMembership {
     !curationStates.has(state as CatalogCurationState) ||
     !Array.isArray(row.characters) ||
     row.characters.length > 12 ||
+    !Array.isArray(row.inactiveCharacters) ||
+    row.inactiveCharacters.length > 12 ||
     !Array.isArray(row.tags)
   ) {
     throw new Error("catalog_curation_membership_invalid");
   }
   const characters = row.characters.map(parseVerifiedCharacter);
+  const inactiveCharacters = row.inactiveCharacters.map(parseUnlinkedCharacter);
+  const inactiveCharacterCount = asNonNegativeInteger(
+    row.inactiveCharacterCount,
+    "catalog_curation_membership_invalid",
+  );
+  const allCharacterIds = [
+    ...characters.map((character) => character.id),
+    ...inactiveCharacters.map((character) => character.id),
+  ];
   if (
-    new Set(characters.map((character) => character.id)).size !==
-    characters.length
+    new Set(allCharacterIds).size !== allCharacterIds.length ||
+    inactiveCharacterCount < inactiveCharacters.length
   ) {
     throw new Error("catalog_curation_membership_invalid");
   }
@@ -334,6 +383,8 @@ function parseMembership(value: unknown): CatalogCurationMembership {
       "catalog_curation_membership_invalid",
     ),
     characters,
+    inactiveCharacters,
+    inactiveCharacterCount,
     tags: row.tags.map(parseMembershipTag),
   };
 }
