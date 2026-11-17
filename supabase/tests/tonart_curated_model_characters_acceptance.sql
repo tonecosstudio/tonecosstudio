@@ -86,6 +86,24 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
+  -- The SQL gateway must reject a forged browser-role claim even when the
+  -- staging connection itself has elevated database privileges.
+  PERFORM set_config('request.jwt.claims', '{"role":"authenticated"}', true);
+  v_expected_failure := false;
+  BEGIN
+    PERFORM public.admin_verify_catalog_model_identity(
+      v_model_a, v_slug_a, v_name_a, v_franchise,
+      'manual_admin:acceptance_unauthorized', NULL
+    );
+  EXCEPTION WHEN SQLSTATE '42501' THEN
+    v_expected_failure := true;
+  END;
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Editorial function accepted non-service JWT claims'
+      USING ERRCODE = '42501';
+  END IF;
+
   -- Two models with the same reviewed character share precisely ONE identity.
   v_receipt := public.admin_verify_catalog_model_identity(
     v_model_a, v_slug_a, v_name_a, v_franchise,
@@ -111,6 +129,19 @@ BEGIN
     RAISE EXCEPTION 'Second model rewrote original identity provenance';
   END IF;
 
+  v_expected_failure := false;
+  BEGIN
+    PERFORM public.admin_verify_catalog_model_identity(
+      v_model_a, v_slug_a, v_name_b, v_franchise,
+      'automatic:unreviewed_guess', NULL
+    );
+  EXCEPTION WHEN SQLSTATE '22023' THEN
+    v_expected_failure := true;
+  END;
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Unreviewed automatic identity was accepted';
+  END IF;
+
   v_receipt := public.admin_verify_catalog_model_identity(
     v_model_a, v_slug_a, v_name_b, v_franchise,
     'manual_admin:acceptance_second_character', NULL
@@ -132,6 +163,31 @@ BEGIN
       WHERE catalog_model_id = v_model_a AND character_identity_id = v_id_a)
        IS DISTINCT FROM 'manual_admin:acceptance_original' THEN
     RAISE EXCEPTION 'Idempotent review rewrote original link provenance';
+  END IF;
+
+  -- Missing explanations and mismatched slugs cannot revoke any relation.
+  v_expected_failure := false;
+  BEGIN
+    PERFORM public.admin_unlink_catalog_model_character(
+      v_model_a, v_slug_a, v_id_a, ' '
+    );
+  EXCEPTION WHEN SQLSTATE '22023' THEN
+    v_expected_failure := true;
+  END;
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Blank unlink explanation was accepted';
+  END IF;
+
+  v_expected_failure := false;
+  BEGIN
+    PERFORM public.admin_unlink_catalog_model_character(
+      v_model_a, v_slug_b, v_id_a, 'Wrong model slug must fail'
+    );
+  EXCEPTION WHEN SQLSTATE 'P0002' THEN
+    v_expected_failure := true;
+  END;
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Mismatched model slug was allowed to unlink a character';
   END IF;
 
   -- Detach only A: keep row, original identity and the link on model B.
@@ -188,6 +244,28 @@ BEGIN
      OR (v_history->1->>'action') IS DISTINCT FROM 'restored'
      OR (v_history->1->>'note') IS DISTINCT FROM 'Restored after manual reassessment' THEN
     RAISE EXCEPTION 'Restoration lost previous approval, link, or review history';
+  END IF;
+
+  -- A 101st review event is forbidden, without corrupting the valid history.
+  v_expected_failure := false;
+  BEGIN
+    UPDATE public.catalog_curation_model_characters
+      SET review_history = (
+        SELECT jsonb_agg(jsonb_build_object('action', 'acceptance_overflow'))
+        FROM generate_series(1, 101)
+      )
+    WHERE catalog_model_id = v_model_a AND character_identity_id = v_id_a;
+  EXCEPTION WHEN SQLSTATE '23514' THEN
+    v_expected_failure := true;
+  END;
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Unbounded character audit history was accepted';
+  END IF;
+  SELECT review_history INTO STRICT v_history
+  FROM public.catalog_curation_model_characters
+  WHERE catalog_model_id = v_model_a AND character_identity_id = v_id_a;
+  IF jsonb_array_length(v_history) <> 2 THEN
+    RAISE EXCEPTION 'History overflow attempt corrupted existing decisions';
   END IF;
 
   -- The 12-active-character ceiling must be enforced server-side.

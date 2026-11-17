@@ -920,6 +920,24 @@ describe("internal catalog curation service", () => {
     expect(acceptance).toContain(
       "Thirteenth active character was not rejected",
     );
+    expect(acceptance).toContain(
+      "Editorial function accepted non-service JWT claims",
+    );
+    expect(acceptance).toContain(
+      "Unreviewed automatic identity was accepted",
+    );
+    expect(acceptance).toContain(
+      "Blank unlink explanation was accepted",
+    );
+    expect(acceptance).toContain(
+      "Mismatched model slug was allowed to unlink a character",
+    );
+    expect(acceptance).toContain(
+      "Unbounded character audit history was accepted",
+    );
+    expect(acceptance).toContain(
+      "History overflow attempt corrupted existing decisions",
+    );
   });
 
   it("reads only one bounded curation page and preserves evidence", async () => {
