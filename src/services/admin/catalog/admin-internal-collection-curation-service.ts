@@ -775,9 +775,16 @@ export async function verifyCatalogModelCharacterIdentity(input: {
 export async function unlinkCatalogModelCharacterIdentity(input: {
   model: CanonicalCurationModelRef;
   characterId: string;
+  reason: string;
 }): Promise<void> {
   validateCanonicalCurationModelRef(input.model);
-  if (!UUID_PATTERN.test(input.characterId)) {
+  const reason = input.reason.trim();
+  if (
+    !UUID_PATTERN.test(input.characterId) ||
+    reason.length < 3 ||
+    reason.length > 1000 ||
+    hasUnsafeCurationCharacter(reason)
+  ) {
     throw new Error("catalog_character_identity_unlink_invalid");
   }
   const data = asRecord(
@@ -785,13 +792,14 @@ export async function unlinkCatalogModelCharacterIdentity(input: {
       p_model_id: input.model.modelId,
       p_model_slug: input.model.slug,
       p_character_identity_id: input.characterId,
+      p_reason: reason,
     }),
     "catalog_character_identity_unlink_result_invalid",
   );
   if (
     data.modelId !== input.model.modelId ||
     data.identityId !== input.characterId ||
-    data.removed !== true
+    data.unlinked !== true
   ) {
     throw new Error("catalog_character_identity_unlink_result_invalid");
   }
