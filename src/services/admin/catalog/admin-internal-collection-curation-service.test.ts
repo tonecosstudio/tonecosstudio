@@ -821,17 +821,17 @@ describe("internal catalog curation service", () => {
     expect(sharedIdentityUpsert).not.toContain(
       "evidence_origin = EXCLUDED.evidence_origin",
     );
-    const linkUpsert = migration.split(
-      "INSERT INTO public.catalog_curation_model_characters (",
-    )[2]?.split("RETURN jsonb_build_object(")[0];
+    const linkUpsert = migration
+      .split("INSERT INTO public.catalog_curation_model_characters (")[2]
+      ?.split("RETURN jsonb_build_object(")[0];
     expect(linkUpsert).toBeDefined();
-    expect(linkUpsert).toContain("ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE");
+    expect(linkUpsert).toContain(
+      "ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE",
+    );
     expect(linkUpsert).not.toContain(
       "evidence_origin = EXCLUDED.evidence_origin",
     );
-    expect(linkUpsert).not.toContain(
-      "evidence_note = EXCLUDED.evidence_note",
-    );
+    expect(linkUpsert).not.toContain("evidence_note = EXCLUDED.evidence_note");
     expect(migration.match(/AS \$\$/g)).toHaveLength(4);
     expect(migration.match(/\$\$;/g)).toHaveLength(4);
     expect(migration).toContain(
@@ -902,33 +902,21 @@ describe("internal catalog curation service", () => {
     expect(acceptance).toContain(
       "current_setting('tonart.curation_acceptance_stage', true)",
     );
-    expect(acceptance).toContain(
-      "IS DISTINCT FROM 'staging'",
-    );
-    expect(acceptance).toContain(
-      "SET LOCAL request.jwt.claims",
-    );
-    expect(acceptance).toContain(
-      "public.admin_verify_catalog_model_identity(",
-    );
+    expect(acceptance).toContain("IS DISTINCT FROM 'staging'");
+    expect(acceptance).toContain("SET LOCAL request.jwt.claims");
+    expect(acceptance).toContain("public.admin_verify_catalog_model_identity(");
     expect(acceptance).toContain(
       "public.admin_unlink_catalog_model_character(",
     );
-    expect(acceptance).toContain(
-      "has_function_privilege('authenticated'",
-    );
+    expect(acceptance).toContain("has_function_privilege('authenticated'");
     expect(acceptance).toContain(
       "Thirteenth active character was not rejected",
     );
     expect(acceptance).toContain(
       "Editorial function accepted non-service JWT claims",
     );
-    expect(acceptance).toContain(
-      "Unreviewed automatic identity was accepted",
-    );
-    expect(acceptance).toContain(
-      "Blank unlink explanation was accepted",
-    );
+    expect(acceptance).toContain("Unreviewed automatic identity was accepted");
+    expect(acceptance).toContain("Blank unlink explanation was accepted");
     expect(acceptance).toContain(
       "Mismatched model slug was allowed to unlink a character",
     );
