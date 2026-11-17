@@ -369,26 +369,23 @@ BEGIN
     RAISE EXCEPTION 'Maximum 12 verified characters per model' USING ERRCODE = '22023';
   END IF;
 
-  -- Re-reviewing a previously unlinked identity restores this SAME relation.
-  -- The identity and its original record are never duplicated.
+  -- An already-active approval is idempotent: do not rewrite original proof.
+  -- Reapproval of a detached link preserves the FIRST evidence on the same
+  -- relation and records the NEW reviewed evidence in its bounded history.
   INSERT INTO public.catalog_curation_model_characters (
     catalog_model_id, character_identity_id, evidence_origin, evidence_note, updated_at
   ) VALUES (v_id, v_identity_id, v_origin, v_note, now())
   ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE
-    SET evidence_origin = EXCLUDED.evidence_origin,
-        evidence_note = EXCLUDED.evidence_note,
-        review_history = CASE
-          WHEN public.catalog_curation_model_characters.unlinked_at IS NOT NULL
-          THEN public.catalog_curation_model_characters.review_history ||
-            jsonb_build_array(jsonb_build_object(
-              'action', 'restored', 'at', now(),
-              'origin', EXCLUDED.evidence_origin
-            ))
-          ELSE public.catalog_curation_model_characters.review_history
-        END,
+    SET review_history = public.catalog_curation_model_characters.review_history ||
+          jsonb_build_array(jsonb_build_object(
+            'action', 'restored', 'at', now(),
+            'origin', EXCLUDED.evidence_origin,
+            'note', EXCLUDED.evidence_note
+          )),
         unlinked_at = NULL,
         unlink_reason = NULL,
-        updated_at = now();
+        updated_at = now()
+    WHERE public.catalog_curation_model_characters.unlinked_at IS NOT NULL;
 
   RETURN jsonb_build_object(
     'modelId', v_id,
