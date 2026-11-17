@@ -999,6 +999,34 @@ describe("internal catalog curation service", () => {
     }
   });
 
+  it("grants each private migration RPC with its exact PostgreSQL definition signature", () => {
+    const migration = readFileSync(
+      "supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
+    const declared = new Map(
+      [...migration.matchAll(
+        /CREATE OR REPLACE FUNCTION public\.(\w+)\(([\s\S]*?)\)\s*RETURNS\s/g,
+      )].map((match) => [
+        match[1],
+        match[2].split(",").map((argument) =>
+          argument.trim().split(/\s+/)[1],
+        ).join(","),
+      ]),
+    );
+    expect(declared.size).toBe(4);
+    const access = [...migration.matchAll(
+      /(?:GRANT EXECUTE|REVOKE ALL) ON FUNCTION public\.(\w+)\(([^)]*)\)/g,
+    )];
+    expect(access).toHaveLength(8);
+    for (const [, name, signature] of access) {
+      expect(declared.has(name)).toBe(true);
+      expect(signature.split(",").map((type) => type.trim()).join(",")).toBe(
+        declared.get(name),
+      );
+    }
+  });
+
   it("keeps the PostgreSQL acceptance run staging-gated, transaction-scoped and reversible", () => {
     const acceptance = readFileSync(
       "supabase/tests/tonart_curated_model_characters_acceptance.sql",

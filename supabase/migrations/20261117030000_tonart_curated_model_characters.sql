@@ -505,7 +505,7 @@ REVOKE ALL ON FUNCTION public.admin_verify_catalog_model_identity(text, text, te
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_summary(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_get_collection_curation_page(uuid, text, integer, integer, uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.admin_verify_catalog_model_identity(text, text, text, text, text, text, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.admin_verify_catalog_model_identity(text, text, text, text, text, text) TO service_role;
 REVOKE ALL ON FUNCTION public.admin_unlink_catalog_model_character(text, text, uuid, text)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_unlink_catalog_model_character(text, text, uuid, text)
