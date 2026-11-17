@@ -821,6 +821,17 @@ describe("internal catalog curation service", () => {
     expect(sharedIdentityUpsert).not.toContain(
       "evidence_origin = EXCLUDED.evidence_origin",
     );
+    const linkUpsert = migration.split(
+      "INSERT INTO public.catalog_curation_model_characters (",
+    )[2]?.split("RETURN jsonb_build_object(")[0];
+    expect(linkUpsert).toBeDefined();
+    expect(linkUpsert).toContain("ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE");
+    expect(linkUpsert).not.toContain(
+      "evidence_origin = EXCLUDED.evidence_origin",
+    );
+    expect(linkUpsert).not.toContain(
+      "evidence_note = EXCLUDED.evidence_note",
+    );
     expect(migration.match(/AS \$\$/g)).toHaveLength(4);
     expect(migration.match(/\$\$;/g)).toHaveLength(4);
     expect(migration).toContain(
@@ -838,6 +849,10 @@ describe("internal catalog curation service", () => {
     expect(migration).toContain("jsonb_array_length(review_history) <= 100");
     expect(migration).toContain("'action', 'unlinked'");
     expect(migration).toContain("'action', 'restored'");
+    expect(migration).toContain("'note', EXCLUDED.evidence_note");
+    expect(migration).toContain(
+      "WHERE public.catalog_curation_model_characters.unlinked_at IS NOT NULL",
+    );
     expect(migration).toContain("AND cmc.unlinked_at IS NULL");
     expect(migration).toContain("AND unlinked_at IS NULL");
     expect(migration).toContain(
