@@ -1732,3 +1732,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** obter ambiente Supabase isolado autorizado e executar a cadeia de migrations, Auth/JWT admin e cliente, RLS, Storage, persistência e concorrência. Só então reconsiderar merge. Na futura integração com a PR #28, reconciliar o arquivo `admin-rpc/index.ts` preservando rotas comerciais e editoriais.
 
 **DO_NOT_REPEAT:** não interpretar `mergeable=true` como gates de CI/homologação satisfeitos; não rerun o run `#43817647000` enquanto continuar sem runner/logs; não migrar o banco conectado de produção; não incorporar a implementação editorial à PR #27.
+
+## Decisão de produto — fichas de personagens e exploração de universos (16/11/2026)
+
+- **Base/HEAD antes deste checkpoint:** `main` no commit `f5028ec39511d8511ebb49c7e77c410b71986ff9`; alterações documentais integradas diretamente à `main` sem deploy.
+- **Decisão do proprietário:** implementar fichas próprias de personagens com biografia verificada opcional, idade contextual, tags por categoria/franquia/personagem, links para outras estatuetas do personagem e “Explore {franquia}”.
+- **SSOT/contrato:** [docs/CATALOGO-PERSONAGENS-UNIVERSOS.md](docs/CATALOGO-PERSONAGENS-UNIVERSOS.md); descoberta adicionada em `AGENTS.md` e `docs/README.md`. Reutilizar `CanonicalModelDetails`, `RelatedModels`, catálogo Worker/D1/R2 e curadoria privada integrada na PR #28; reconhecer que `CatalogCharacterArcade` ainda redireciona porque inexiste índice público canônico de personagens.
+- **Provas:** leitura de arquivos e contratos da `main`; arquivos documentais confirmados por commits `9aa66221`, `76db5a78` e `f5028ec3`. **Nenhum código de implementação, migração, teste de runtime, publicação Worker/Vercel ou indexação foi feito nesta rodada.**
+- **Bloqueios:** identidade editorial publicada e contrato público do Worker ainda não implementados/atestados; conteúdo biográfico requer fonte e revisão; deploy, direitos de mídia e SEO dependem de seus gates explícitos.
+
+**NEXT_ACTION:** iniciar Fase A da especificação, verificar o estado atual após outros agentes e só então avançar em vínculos de identidade/projeção pública e UI existente, com testes proporcionais.
+
+**DO_NOT_REPEAT:** não criar outro catálogo ou fonte de tags, não copiar biografias em cada modelo, não ativar Supabase legado público, não reexecutar migrations já aplicadas, não abrir Workflows/deploy por esta alteração documental.
