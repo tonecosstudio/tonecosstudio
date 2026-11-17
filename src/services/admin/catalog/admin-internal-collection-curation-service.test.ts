@@ -97,7 +97,9 @@ describe("internal catalog curation service", () => {
       "../../../../supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
       "../../../../supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
     ];
-    const migrations = paths.map((path) => readFileSync(new URL(path, import.meta.url), "utf8"));
+    const migrations = paths.map((path) =>
+      readFileSync(new URL(path, import.meta.url), "utf8").replace(/\r\n/g, "\n"),
+    );
     for (const migration of migrations) {
       expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
       expect(migration.match(/^COMMIT;$/gm)).toHaveLength(1);
@@ -682,12 +684,9 @@ describe("internal catalog curation service", () => {
 
   it("stages a lossless and private many-to-many cutover with no second writer", () => {
     const migration = readFileSync(
-      new URL(
-        "../../../../supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
-        import.meta.url,
-      ),
+      "supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
       "utf8",
-    );
+    ).replace(/\r\n/g, "\n");
     expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
     expect(migration.trimEnd().endsWith("COMMIT;")).toBe(true);
     expect(migration).toContain("CREATE TABLE public.catalog_curation_model_characters");
