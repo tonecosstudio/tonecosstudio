@@ -891,6 +891,37 @@ describe("internal catalog curation service", () => {
     }
   });
 
+  it("keeps the PostgreSQL acceptance run staging-gated, transaction-scoped and reversible", () => {
+    const acceptance = readFileSync(
+      "supabase/tests/tonart_curated_model_characters_acceptance.sql",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
+    expect(acceptance.match(/^BEGIN;$/gm)).toHaveLength(1);
+    expect(acceptance.match(/^ROLLBACK;$/gm)).toHaveLength(1);
+    expect(acceptance).not.toMatch(/^COMMIT;$/gm);
+    expect(acceptance).toContain(
+      "current_setting('tonart.curation_acceptance_stage', true)",
+    );
+    expect(acceptance).toContain(
+      "IS DISTINCT FROM 'staging'",
+    );
+    expect(acceptance).toContain(
+      "SET LOCAL request.jwt.claims",
+    );
+    expect(acceptance).toContain(
+      "public.admin_verify_catalog_model_identity(",
+    );
+    expect(acceptance).toContain(
+      "public.admin_unlink_catalog_model_character(",
+    );
+    expect(acceptance).toContain(
+      "has_function_privilege('authenticated'",
+    );
+    expect(acceptance).toContain(
+      "Thirteenth active character was not rejected",
+    );
+  });
+
   it("reads only one bounded curation page and preserves evidence", async () => {
     mocks.callAdminRpc.mockResolvedValue({
       items: [
