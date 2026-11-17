@@ -4,15 +4,15 @@
 
 ## Primeiro incremento de código (branch de desenvolvimento, 16/11/2026)
 
-**Escopo codificado e validado proporcionalmente em checkout isolado no Desktop Windows:** Vitest `RelatedModels.test.ts` **11/11 PASS** (1 arquivo, exit 0); execução adicional do helper publicado em Node/TypeScript **7 verificações PASS** (exit 0); ESLint direcionado aos dois arquivos **PASS** (exit 0); TypeScript integral do app (`tsc -p tsconfig.app.json --pretty false --noEmit`) **PASS** (exit 0, Desktop Windows). A execução de CI do GitHub ainda não está confirmada; essa evidência não constitui publicação ou E2E de personagem.
+**Escopo codificado e validado proporcionalmente em checkout isolado no Desktop Windows:** Vitest `RelatedModels.test.ts` **13/13 PASS** (1 arquivo, exit 0, incluindo dois testes de visibilidade); execução adicional do helper publicado em Node/TypeScript **7 verificações PASS** (exit 0); ESLint direcionado aos dois arquivos **PASS** (exit 0); TypeScript integral do app (`tsc -p tsconfig.app.json --pretty false --noEmit`) **PASS** (exit 0, Desktop Windows). O Quality Gate da PR #30 agora é disparado porque `.github/workflows/quality.yml` monitora `src/pages/catalog/RelatedModels*`; porém a execução [#44005474851](https://github.com/tonecosstudio/tonecosstudio/actions/runs/44005474851) falhou **antes da alocação do runner**, com 0 steps, sem executar testes. Isso não constitui publicação nem E2E de personagem.
 
 - `src/pages/catalog/RelatedModels.tsx` passa a produzir **chips navegáveis** a partir dos metadados públicos canônicos: categoria (`/modelos?category=...`), universo (`/universo/:themeKey/:franchiseKey`) e **busca por nome** no catálogo (com `q`, categoria e franquia). Os links usam apenas slugs validados, codificação segura, acessibilidade e o design atual.
 - A busca por nome não é chamada de identidade de personagem: nomes iguais em modelos/obras não substituem a confirmação editorial. A ficha de personagem com biografia **continua bloqueada** até um índice público versionado de personagens confirmados.
 - `src/pages/catalog/RelatedModels.test.ts` contém regressões dos links, Unicode/URL encoding, limites de pesquisa, homônimos implícitos, slugs inválidos e ausência de link inventado.
-- O componente de recomendações existente continua com busca limitada/lazy e sem novo endpoint. A seção ainda pode se ocultar quando **nenhum outro modelo elegível** é encontrado; isso preserva a regressão atual e impede conflito com a PR #29, que modifica a ficha pai e seus testes.
+- O componente de recomendações continua com busca limitada/lazy, sem endpoint adicional. **Os chips ficam visíveis mesmo durante o carregamento, em erro ou quando nenhuma outra estatueta elegível é encontrada**. Nesse último caso, apenas a seção de recomendações vazia desaparece. A implementação continua isolada da PR #29, que modifica a ficha pai e seus testes.
 - Não tocar em `CanonicalModelDetails` nesta branch: a **PR #29** já altera essa tela e o teste de integração. Quando ela se integrar, acrescentar a navegação de categoria/universo diretamente na ficha pai, independente da presença de recomendações, e só depois criar links de personagem verificados.
 
-**Próximo incremento (ainda não implementado):** reconciliar identidades editoriais da PR #28 com os IDs do Worker, publicar somente perfis revisados via contrato público canônico, criar página por identidade verificável e trocar o chip de busca por link real do personagem. Até então, **não inventar biografias nem usar Supabase privado como leitura pública**.
+**Próximo incremento (ainda não implementado):** aproveitar `catalog_character_identities` e os vínculos `identity_verified`, reconciliar o caso multicaracteres (cardinalidade atual 0/1), definir dados biográficos revisáveis e publicar somente perfis revisados via contrato público canônico; então criar página por identidade verificável e trocar o chip de busca por link real do personagem. Até então, **não inventar biografias nem usar Supabase privado como leitura pública**.
 
 ## Objetivo e experiência do visitante
 
@@ -37,6 +37,18 @@ No `main` inspecionado em 16/11:
 - `src/config/routes.ts` já declara `catalogUniverseCharacter` e `catalogCharacter`; a primeira rota atualmente atende navegação de catálogo. **Auditar deep links e colisões antes de definir a URL canônica**; manter redirects apenas quando houver resolução inequívoca.
 - A curadoria administrativa privada incorporada na **PR #28** já tem identidades, aliases, vocabulário e tags controladas: `src/services/admin/catalog/admin-internal-collection-curation-service.ts`, `src/components/admin/collections/InternalCollectionCuration.tsx`, `supabase/migrations/20261115154500_tonart_internal_collection_curation.sql` e `20261115154600_tonart_curation_controlled_tag_creation.sql`. **Reutilizar os contratos existentes**, sem reexecutar migrations aplicadas.
 - O catálogo público tem **um único owner de leitura/publicação**: Cloudflare Worker `tonecos-catalogo-api` (D1/R2); o publicador ativo do Worker segue em `washingtonmsdj/catalogo` até cutover M5 autorizado. `services/catalogo/` neste repositório é candidato offline. Nenhum frontend deve escrever diretamente no D1, buscar biografias no Supabase privativo nem publicar o Worker por conta desta especificação.
+
+## Conciliação comprovada da curadoria de identidades (16/11/2026)
+
+Inspeção da migration existente `supabase/migrations/20261115154500_tonart_internal_collection_curation.sql`:
+
+- `public.catalog_character_identities` já contém identidade estável `id`/ `identity_key`, `character_name`, `franchise` e origem/evidência. **Ainda não tem** sinopse, biografia, idade contextual, obra/meios ou estado de publicação desses textos.
+- `public.catalog_curation_model_profiles` é a autoridade privada que relaciona o **ID e slug do modelo no Worker** a uma identidade opcional (`character_identity_id`), com `identity_verified` e evidência obrigatória para identidade confirmada.
+- Essa relação atual admite **no máximo um personagem por modelo**. Cenas com dois ou mais personagens, já previstas na experiência desejada, exigem uma evolução de cardinalidade **no mesmo owner editorial**; reconciliar/migrar o vínculo existente antes de adotar uma tabela de associação, sem manter dois escritores ou duas verdades independentes.
+- `public.catalog_curation_model_tags` liga modelos a `catalog_curation_tags`, com `review_state` e origem; as dimensões atuais são `theme_genre`, `characteristic`, `narrative_role`. **Categoria e franquia dos chips são obtidas do Worker**, não recriadas como tags privadas.
+- Essas tabelas possuem **acesso administrativo privado**; não expô-las a anônimos via Supabase para acelerar a ficha pública. Definir revisão de texto e projeção de leitura publicada no catálogo autorizado antes de abrir páginas de personagem.
+
+**Regra de implementação:** preservar os IDs de identidade já atribuídos e a segurança RLS, acrescentar as relações estritamente necessárias com migração compatível e reversível, e não confundir curadoria aprovada com liberação comercial ou licença de mídia. Nenhuma migration adicional foi criada ou executada neste incremento.
 
 ## Modelo lógico a consolidar, sem duplicação
 
