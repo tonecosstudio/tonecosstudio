@@ -103,7 +103,7 @@ export function catalogDiscoveryTags(
   const length = Array.from(name).length;
   // The Worker search contract allows 3–80 Unicode characters. Avoid
   // control characters and never present title-based search as identity.
-  if (length >= 3 && length <= 80 && !/[\\u0000-\\u001f\\u007f<>]/.test(name)) {
+  if (length >= 3 && length <= 80 && !Array.from(name).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127 || char === "<" || char === ">")) {
     const params = new URLSearchParams({
       q: name,
       category: model.categorySlug,
