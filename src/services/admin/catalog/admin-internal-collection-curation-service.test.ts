@@ -752,7 +752,11 @@ describe("internal catalog curation service", () => {
     const characterId = "44444444-4444-4444-8444-444444444444";
     for (const response of [
       { modelId: MODEL_ID, identityId: characterId, removed: false },
-      { modelId: MODEL_ID, identityId: "55555555-5555-4555-8555-555555555555", removed: true },
+      {
+        modelId: MODEL_ID,
+        identityId: "55555555-5555-4555-8555-555555555555",
+        removed: true,
+      },
       { modelId: "wrong-id", identityId: characterId, removed: true },
     ]) {
       mocks.callAdminRpc.mockResolvedValueOnce(response);
@@ -792,19 +796,31 @@ describe("internal catalog curation service", () => {
     );
     expect(migration).toContain("Maximum 12 verified characters per model");
     expect(migration).toContain("ON CONFLICT (identity_key) DO NOTHING");
-    const sharedIdentityUpsert = migration.split(
-      "INSERT INTO public.catalog_character_identities (",
-    )[1]?.split("-- The catalog model remains a single canonical reference.")[0];
+    const sharedIdentityUpsert = migration
+      .split("INSERT INTO public.catalog_character_identities (")[1]
+      ?.split("-- The catalog model remains a single canonical reference.")[0];
     expect(sharedIdentityUpsert).toBeDefined();
-    expect(sharedIdentityUpsert).not.toContain("evidence_origin = EXCLUDED.evidence_origin");
+    expect(sharedIdentityUpsert).not.toContain(
+      "evidence_origin = EXCLUDED.evidence_origin",
+    );
     expect(migration.match(/AS \$\$/g)).toHaveLength(4);
     expect(migration.match(/\$\$;/g)).toHaveLength(4);
-    expect(migration).toContain("CREATE OR REPLACE FUNCTION public.admin_unlink_catalog_model_character");
-    expect(migration).toContain("DELETE FROM public.catalog_curation_model_characters");
-    expect(migration).toContain("AND character_identity_id = p_character_identity_id");
+    expect(migration).toContain(
+      "CREATE OR REPLACE FUNCTION public.admin_unlink_catalog_model_character",
+    );
+    expect(migration).toContain(
+      "DELETE FROM public.catalog_curation_model_characters",
+    );
+    expect(migration).toContain(
+      "AND character_identity_id = p_character_identity_id",
+    );
     expect(migration).toContain("GET DIAGNOSTICS v_deleted = ROW_COUNT");
-    expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.admin_unlink_catalog_model_character");
-    expect(migration).toContain("REVOKE ALL ON FUNCTION public.admin_unlink_catalog_model_character");
+    expect(migration).toContain(
+      "GRANT EXECUTE ON FUNCTION public.admin_unlink_catalog_model_character",
+    );
+    expect(migration).toContain(
+      "REVOKE ALL ON FUNCTION public.admin_unlink_catalog_model_character",
+    );
     expect(migration).toContain(
       "private_api.assert_tonart_curation_service_role()",
     );

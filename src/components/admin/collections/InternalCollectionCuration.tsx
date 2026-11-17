@@ -523,7 +523,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível desvincular o personagem",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -1027,7 +1028,10 @@ export function InternalCollectionCuration() {
                                 aria-label="Personagens com identidade revisada"
                               >
                                 {item.characters.map((character) => (
-                                  <div key={character.id} className="flex items-center gap-2">
+                                  <div
+                                    key={character.id}
+                                    className="flex items-center gap-2"
+                                  >
                                     <Badge variant="outline">
                                       {character.name} · {character.franchise}
                                     </Badge>
@@ -1035,12 +1039,18 @@ export function InternalCollectionCuration() {
                                       type="button"
                                       size="sm"
                                       variant="ghost"
-                                      disabled={unlinkMutation.isPending || identityMutation.isPending}
+                                      disabled={
+                                        unlinkMutation.isPending ||
+                                        identityMutation.isPending
+                                      }
                                       aria-label={`Desvincular ${character.name} desta estatueta`}
                                       onClick={() => {
                                         setIdentityReview(null);
                                         setUnlinkReview({
-                                          model: { modelId: item.modelId, slug: item.slug },
+                                          model: {
+                                            modelId: item.modelId,
+                                            slug: item.slug,
+                                          },
                                           characterId: character.id,
                                           characterName: character.name,
                                         });
@@ -1102,15 +1112,19 @@ export function InternalCollectionCuration() {
                             className="mt-4 space-y-3 rounded-md border border-destructive/50 p-4"
                           >
                             <p className="text-sm">
-                              Desvincular <strong>{unlinkReview.characterName}</strong> desta estatueta?
-                              A identidade e suas associações com outros modelos permanecem preservadas.
+                              Desvincular{" "}
+                              <strong>{unlinkReview.characterName}</strong>{" "}
+                              desta estatueta? A identidade e suas associações
+                              com outros modelos permanecem preservadas.
                             </p>
                             <div className="flex flex-wrap gap-2">
                               <Button
                                 type="button"
                                 variant="destructive"
                                 disabled={unlinkMutation.isPending}
-                                onClick={() => unlinkMutation.mutate(unlinkReview)}
+                                onClick={() =>
+                                  unlinkMutation.mutate(unlinkReview)
+                                }
                               >
                                 {unlinkMutation.isPending && (
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -1,11 +1,16 @@
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { logAdminAction } from "../_shared/security-logger.ts";
-import { assertAdmin, errorToStatus, getServiceClient } from "../_shared/supabase.ts";
+import {
+  assertAdmin,
+  errorToStatus,
+  getServiceClient,
+} from "../_shared/supabase.ts";
 
 type JsonObject = Record<string, unknown>;
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const ADMIN_RPC_ALLOWLIST = new Set([
   "create_admin_notification",
@@ -190,9 +195,8 @@ function parseRequestBody(value: unknown): {
   args: JsonObject;
 } {
   const body = asObject(value, "request body");
-  const functionName = typeof body.functionName === "string"
-    ? body.functionName.trim()
-    : "";
+  const functionName =
+    typeof body.functionName === "string" ? body.functionName.trim() : "";
 
   if (!/^[a-z0-9_]+$/.test(functionName)) {
     throw new Error("Invalid admin RPC function name");
@@ -253,9 +257,10 @@ async function updateCollectionBasePrice(
   service: ReturnType<typeof getServiceClient>,
   args: JsonObject,
 ): Promise<JsonObject> {
-  const collectionTypeId = typeof args.p_collection_type_id === "string"
-    ? args.p_collection_type_id.trim()
-    : "";
+  const collectionTypeId =
+    typeof args.p_collection_type_id === "string"
+      ? args.p_collection_type_id.trim()
+      : "";
   const newBasePrice = args.p_new_base_price_coins;
 
   if (!UUID_PATTERN.test(collectionTypeId)) {
@@ -278,7 +283,10 @@ async function updateCollectionBasePrice(
   const oldPrice = current.base_price_coins;
   const { data: updated, error: updateError } = await service
     .from("collection_base_pricing")
-    .update({ base_price_coins: newBasePrice as number, updated_at: new Date().toISOString() })
+    .update({
+      base_price_coins: newBasePrice as number,
+      updated_at: new Date().toISOString(),
+    })
     .eq("collection_type_id", collectionTypeId)
     .select("collection_type_id, base_price_coins")
     .single();
