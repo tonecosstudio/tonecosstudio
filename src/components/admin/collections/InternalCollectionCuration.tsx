@@ -66,10 +66,7 @@ const dimensionLabels: Record<CatalogCurationTagDimension, string> = {
   narrative_role: "Papel narrativo",
 };
 
-function modelLabel(model: {
-  name: string;
-  variantName: string;
-}) {
+function modelLabel(model: { name: string; variantName: string }) {
   return model.variantName
     ? `${model.name} · ${model.variantName}`
     : model.name;
@@ -95,8 +92,7 @@ export function InternalCollectionCuration() {
   const [offset, setOffset] = useState(0);
   const [candidateIds, setCandidateIds] = useState<string[]>([]);
   const [memberIds, setMemberIds] = useState<string[]>([]);
-  const [bulkState, setBulkState] =
-    useState<CatalogCurationState>("suggested");
+  const [bulkState, setBulkState] = useState<CatalogCurationState>("suggested");
   const [tagId, setTagId] = useState("");
   const [tagReviewState, setTagReviewState] =
     useState<CatalogCurationTagReviewState>("suggested");
@@ -239,7 +235,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível preparar a coleção",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -304,7 +301,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível adicionar os candidatos",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -347,14 +345,16 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível atualizar a curadoria",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
 
   const tagMutation = useMutation({
     mutationFn: async () => {
-      if (!page || !tagId) throw new Error("Selecione modelos e classificação.");
+      if (!page || !tagId)
+        throw new Error("Selecione modelos e classificação.");
       const selected = page.items.filter((item) =>
         memberIds.includes(item.modelId),
       );
@@ -388,7 +388,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível classificar os modelos",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -411,7 +412,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível criar a classificação",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -435,7 +437,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível registrar o sinônimo",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -458,7 +461,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível remover o sinônimo",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -487,7 +491,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível verificar a identidade",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -499,7 +504,10 @@ export function InternalCollectionCuration() {
     .filter(isPresent);
 
   const tagsByDimension = useMemo(() => {
-    const grouped = new Map<CatalogCurationTagDimension, CatalogCurationTag[]>();
+    const grouped = new Map<
+      CatalogCurationTagDimension,
+      CatalogCurationTag[]
+    >();
     tags.forEach((tag) => {
       grouped.set(tag.dimension, [...(grouped.get(tag.dimension) ?? []), tag]);
     });
@@ -514,9 +522,9 @@ export function InternalCollectionCuration() {
             <CardTitle>Curadoria interna de modelos</CardTitle>
             <CardDescription className="mt-2 max-w-4xl leading-6">
               Organize candidatos editoriais usando os mesmos IDs do catálogo.
-              Esta área é privada: aprovar, classificar ou selecionar para oferta
-              não publica a coleção, não altera preços e não autoriza direitos
-              comerciais.
+              Esta área é privada: aprovar, classificar ou selecionar para
+              oferta não publica a coleção, não altera preços e não autoriza
+              direitos comerciais.
             </CardDescription>
           </div>
           <Badge variant="outline">Privado por padrão</Badge>
@@ -529,8 +537,8 @@ export function InternalCollectionCuration() {
               Coleções editoriais privadas
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Use um tema inicial ou crie sua própria coleção privada.
-              Nenhum modelo é inventado, associado ou colocado à venda automaticamente.
+              Use um tema inicial ou crie sua própria coleção privada. Nenhum
+              modelo é inventado, associado ou colocado à venda automaticamente.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -550,7 +558,11 @@ export function InternalCollectionCuration() {
                       : createCollection.mutate(template)
                   }
                 >
-                  {existing ? <Check className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
+                  {existing ? (
+                    <Check className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Plus className="mr-2 h-4 w-4" />
+                  )}
                   {template.name}
                 </Button>
               );
@@ -568,7 +580,9 @@ export function InternalCollectionCuration() {
               aria-label="Descrição da nova coleção editorial"
               maxLength={2000}
               value={newCollectionDescription}
-              onChange={(event) => setNewCollectionDescription(event.target.value)}
+              onChange={(event) =>
+                setNewCollectionDescription(event.target.value)
+              }
               placeholder="Critérios para selecionar os candidatos"
             />
             <Button
@@ -592,7 +606,9 @@ export function InternalCollectionCuration() {
                   toast({
                     title: "Coleção editorial inválida",
                     description:
-                      error instanceof Error ? error.message : "Revise nome e descrição.",
+                      error instanceof Error
+                        ? error.message
+                        : "Revise nome e descrição.",
                     variant: "destructive",
                   });
                 }
@@ -611,35 +627,40 @@ export function InternalCollectionCuration() {
             </AlertDescription>
           </Alert>
         ) : collectionsQuery.isLoading ? (
-          <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+          <p
+            role="status"
+            className="flex items-center gap-2 text-sm text-muted-foreground"
+          >
             <Loader2 className="h-4 w-4 animate-spin" /> Carregando curadoria...
           </p>
         ) : collections.length === 0 ? (
           <p className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">
-            Nenhuma coleção interna foi preparada. Use uma das opções acima; isso
-            não cria modelos nem publica ofertas.
+            Nenhuma coleção interna foi preparada. Use uma das opções acima;
+            isso não cria modelos nem publica ofertas.
           </p>
         ) : (
           <>
             {summaryQuery.isError && (
               <Alert variant="destructive">
                 <AlertDescription>
-                  Não foi possível carregar as estatísticas desta coleção.
-                  Os indicadores não representam valores zerados.
+                  Não foi possível carregar as estatísticas desta coleção. Os
+                  indicadores não representam valores zerados.
                 </AlertDescription>
               </Alert>
             )}
             {tagsQuery.isError && (
               <Alert variant="destructive">
                 <AlertDescription>
-                  Não foi possível carregar o vocabulário de classificações.
-                  A indisponibilidade não significa ausência de tags.
+                  Não foi possível carregar o vocabulário de classificações. A
+                  indisponibilidade não significa ausência de tags.
                 </AlertDescription>
               </Alert>
             )}
             <section className="grid gap-4 lg:grid-cols-[minmax(220px,0.8fr)_minmax(0,2fr)]">
               <div className="space-y-2">
-                <Label htmlFor="internal-curation-collection">Coleção interna</Label>
+                <Label htmlFor="internal-curation-collection">
+                  Coleção interna
+                </Label>
                 <select
                   id="internal-curation-collection"
                   value={collection?.id ?? ""}
@@ -655,7 +676,9 @@ export function InternalCollectionCuration() {
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-lg border p-4">
-                  <p className="text-xs text-muted-foreground">Modelos candidatos</p>
+                  <p className="text-xs text-muted-foreground">
+                    Modelos candidatos
+                  </p>
                   <p className="mt-2 text-2xl font-semibold tabular-nums">
                     {summaryQuery.data?.modelCount ?? "—"}
                   </p>
@@ -679,7 +702,10 @@ export function InternalCollectionCuration() {
               </div>
             </section>
 
-            <section className="space-y-3" aria-labelledby="candidate-search-heading">
+            <section
+              className="space-y-3"
+              aria-labelledby="candidate-search-heading"
+            >
               <div>
                 <h3 id="candidate-search-heading" className="font-semibold">
                   Encontrar candidatos no catálogo
@@ -753,7 +779,10 @@ export function InternalCollectionCuration() {
                               loading="lazy"
                             />
                           ) : (
-                            <span className="h-14 w-14 shrink-0 rounded-md bg-muted" aria-hidden="true" />
+                            <span
+                              className="h-14 w-14 shrink-0 rounded-md bg-muted"
+                              aria-hidden="true"
+                            />
                           )}
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium">
@@ -763,8 +792,15 @@ export function InternalCollectionCuration() {
                               {model.franchise} · {model.category}
                             </span>
                           </span>
-                          <span className="shrink-0 text-primary" aria-hidden="true">
-                            {selected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                          <span
+                            className="shrink-0 text-primary"
+                            aria-hidden="true"
+                          >
+                            {selected ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <Plus className="h-4 w-4" />
+                            )}
                           </span>
                         </button>
                       );
@@ -772,15 +808,19 @@ export function InternalCollectionCuration() {
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs text-muted-foreground">
-                      {candidateIds.length}/50 candidato(s) selecionado(s). Entram
-                      como “Sugerido” com origem manual registrada.
+                      {candidateIds.length}/50 candidato(s) selecionado(s).
+                      Entram como “Sugerido” com origem manual registrada.
                     </p>
                     <Button
                       type="button"
-                      disabled={!candidateIds.length || candidateMutation.isPending}
+                      disabled={
+                        !candidateIds.length || candidateMutation.isPending
+                      }
                       onClick={() => candidateMutation.mutate()}
                     >
-                      {candidateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {candidateMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
                       Adicionar candidatos
                     </Button>
                   </div>
@@ -788,7 +828,10 @@ export function InternalCollectionCuration() {
               )}
             </section>
 
-            <section className="space-y-4" aria-labelledby="curation-list-heading">
+            <section
+              className="space-y-4"
+              aria-labelledby="curation-list-heading"
+            >
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h3 id="curation-list-heading" className="font-semibold">
@@ -799,7 +842,9 @@ export function InternalCollectionCuration() {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="internal-curation-state-filter">Filtrar estado</Label>
+                  <Label htmlFor="internal-curation-state-filter">
+                    Filtrar estado
+                  </Label>
                   <select
                     id="internal-curation-state-filter"
                     value={stateFilter}
@@ -821,7 +866,9 @@ export function InternalCollectionCuration() {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="internal-curation-tag-filter">Filtrar classificação</Label>
+                  <Label htmlFor="internal-curation-tag-filter">
+                    Filtrar classificação
+                  </Label>
                   <select
                     id="internal-curation-tag-filter"
                     value={tagFilterId}
@@ -857,8 +904,8 @@ export function InternalCollectionCuration() {
                   <Alert variant="destructive">
                     <AlertDescription>
                       Alguns candidatos não foram confirmados no catálogo atual.
-                      A aprovação e a classificação desses modelos serão recusadas.
-                      Você pode descartá-los da curadoria.
+                      A aprovação e a classificação desses modelos serão
+                      recusadas. Você pode descartá-los da curadoria.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -882,7 +929,9 @@ export function InternalCollectionCuration() {
                   {page?.items.map((item) => {
                     const canonicalModel = liveModelsById.get(item.modelId);
                     const model =
-                      canonicalModel?.slug === item.slug ? canonicalModel : undefined;
+                      canonicalModel?.slug === item.slug
+                        ? canonicalModel
+                        : undefined;
                     const selected = memberIds.includes(item.modelId);
                     return (
                       <article
@@ -911,21 +960,29 @@ export function InternalCollectionCuration() {
                               loading="lazy"
                             />
                           ) : (
-                            <span className="h-16 w-16 rounded-md bg-muted" aria-hidden="true" />
+                            <span
+                              className="h-16 w-16 rounded-md bg-muted"
+                              aria-hidden="true"
+                            />
                           )}
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <h4 className="font-medium">
                                 {model ? modelLabel(model) : item.slug}
                               </h4>
-                              <Badge variant="outline">{stateLabels[item.state]}</Badge>
+                              <Badge variant="outline">
+                                {stateLabels[item.state]}
+                              </Badge>
                               {item.characters.length > 0 ? (
                                 <Badge variant="secondary">
                                   <ShieldCheck className="mr-1 h-3 w-3" />
-                                  {item.characters.length} personagem(ns) verificado(s)
+                                  {item.characters.length} personagem(ns)
+                                  verificado(s)
                                 </Badge>
                               ) : (
-                                <Badge variant="outline">Identidade pendente</Badge>
+                                <Badge variant="outline">
+                                  Identidade pendente
+                                </Badge>
                               )}
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">
@@ -934,7 +991,10 @@ export function InternalCollectionCuration() {
                                 : `Referência canônica: ${item.slug}`}
                             </p>
                             {item.characters.length > 0 && (
-                              <div className="mt-3 flex flex-wrap gap-2" aria-label="Personagens com identidade revisada">
+                              <div
+                                className="mt-3 flex flex-wrap gap-2"
+                                aria-label="Personagens com identidade revisada"
+                              >
                                 {item.characters.map((character) => (
                                   <Badge key={character.id} variant="outline">
                                     {character.name} · {character.franchise}
@@ -946,15 +1006,20 @@ export function InternalCollectionCuration() {
                               <div className="mt-3 flex flex-wrap gap-2">
                                 {item.tags.map((tag) => (
                                   <Badge key={tag.id} variant="secondary">
-                                    {dimensionLabels[tag.dimension]}: {tag.label}
-                                    {tag.reviewState === "suggested" ? " · sugestão" : ""}
+                                    {dimensionLabels[tag.dimension]}:{" "}
+                                    {tag.label}
+                                    {tag.reviewState === "suggested"
+                                      ? " · sugestão"
+                                      : ""}
                                   </Badge>
                                 ))}
                               </div>
                             )}
                             <p className="mt-3 text-xs text-muted-foreground">
                               Origem: {item.evidenceOrigin}
-                              {item.evidenceNote ? ` · ${item.evidenceNote}` : ""}
+                              {item.evidenceNote
+                                ? ` · ${item.evidenceNote}`
+                                : ""}
                             </p>
                           </div>
                           {model && item.characters.length < 12 && (
@@ -966,26 +1031,33 @@ export function InternalCollectionCuration() {
                               onClick={() =>
                                 setIdentityReview({
                                   model,
-                                  characterName: item.characters.length ? "" : model.name,
+                                  characterName: item.characters.length
+                                    ? ""
+                                    : model.name,
                                   franchise: model.franchise,
                                 })
                               }
                             >
                               <ShieldCheck className="mr-2 h-4 w-4" />
-                              {item.characters.length ? "Adicionar personagem" : "Revisar identidade"}
+                              {item.characters.length
+                                ? "Adicionar personagem"
+                                : "Revisar identidade"}
                             </Button>
                           )}
                         </div>
                         {identityReview?.model.id === item.modelId && (
                           <div className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2">
                             <p className="text-sm text-muted-foreground sm:col-span-2">
-                              Confirme cada personagem e sua franquia. Uma cena pode
-                              conter vários personagens; cada vínculo exige revisão
-                              manual e não substitui os anteriores. O nome do modelo
-                              é apenas uma sugestão, não uma identidade verificada.
+                              Confirme cada personagem e sua franquia. Uma cena
+                              pode conter vários personagens; cada vínculo exige
+                              revisão manual e não substitui os anteriores. O
+                              nome do modelo é apenas uma sugestão, não uma
+                              identidade verificada.
                             </p>
                             <div className="space-y-1">
-                              <Label htmlFor="curation-character-name">Personagem</Label>
+                              <Label htmlFor="curation-character-name">
+                                Personagem
+                              </Label>
                               <Input
                                 id="curation-character-name"
                                 maxLength={160}
@@ -993,14 +1065,19 @@ export function InternalCollectionCuration() {
                                 onChange={(event) =>
                                   setIdentityReview((current) =>
                                     current
-                                      ? { ...current, characterName: event.target.value }
+                                      ? {
+                                          ...current,
+                                          characterName: event.target.value,
+                                        }
                                       : null,
                                   )
                                 }
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label htmlFor="curation-character-franchise">Universo / franquia</Label>
+                              <Label htmlFor="curation-character-franchise">
+                                Universo / franquia
+                              </Label>
                               <Input
                                 id="curation-character-franchise"
                                 maxLength={160}
@@ -1008,7 +1085,10 @@ export function InternalCollectionCuration() {
                                 onChange={(event) =>
                                   setIdentityReview((current) =>
                                     current
-                                      ? { ...current, franchise: event.target.value }
+                                      ? {
+                                          ...current,
+                                          franchise: event.target.value,
+                                        }
                                       : null,
                                   )
                                 }
@@ -1022,7 +1102,9 @@ export function InternalCollectionCuration() {
                                   !identityReview.characterName.trim() ||
                                   !identityReview.franchise.trim()
                                 }
-                                onClick={() => identityMutation.mutate(identityReview)}
+                                onClick={() =>
+                                  identityMutation.mutate(identityReview)
+                                }
                               >
                                 {identityMutation.isPending && (
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1052,17 +1134,22 @@ export function InternalCollectionCuration() {
                     type="button"
                     variant="outline"
                     disabled={offset === 0 || pageQuery.isFetching}
-                    onClick={() => setOffset((value) => Math.max(0, value - PAGE_SIZE))}
+                    onClick={() =>
+                      setOffset((value) => Math.max(0, value - PAGE_SIZE))
+                    }
                   >
                     Anterior
                   </Button>
                   <span className="text-xs text-muted-foreground">
-                    {offset + 1}–{Math.min(offset + PAGE_SIZE, page.total)} de {page.total}
+                    {offset + 1}–{Math.min(offset + PAGE_SIZE, page.total)} de{" "}
+                    {page.total}
                   </span>
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={offset + PAGE_SIZE >= page.total || pageQuery.isFetching}
+                    disabled={
+                      offset + PAGE_SIZE >= page.total || pageQuery.isFetching
+                    }
                     onClick={() => setOffset((value) => value + PAGE_SIZE)}
                   >
                     Próxima
@@ -1078,9 +1165,9 @@ export function InternalCollectionCuration() {
                   <h3 className="font-semibold">Comparar variantes</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Os quatro primeiros modelos selecionados aparecem lado a
-                  lado; a ação em lote pode incluir toda a página. O personagem
-                  só é agrupado depois da confirmação explícita da identidade.
+                  Os quatro primeiros modelos selecionados aparecem lado a lado;
+                  a ação em lote pode incluir toda a página. O personagem só é
+                  agrupado depois da confirmação explícita da identidade.
                 </p>
                 {compareModels.length === 0 ? (
                   <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
@@ -1092,7 +1179,8 @@ export function InternalCollectionCuration() {
                       <div key={model.id} className="rounded-lg border p-3">
                         <p className="font-medium">{model.name}</p>
                         <p className="mt-1 text-sm">
-                          Variante: {model.variantName || "Sem variante informada"}
+                          Variante:{" "}
+                          {model.variantName || "Sem variante informada"}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {model.franchise} · {model.slug}
@@ -1127,13 +1215,15 @@ export function InternalCollectionCuration() {
                     disabled={!memberIds.length || stateMutation.isPending}
                     onClick={() => stateMutation.mutate()}
                   >
-                    {stateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {stateMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
                     Aplicar estado a {memberIds.length || 0} modelo(s)
                   </Button>
                   {bulkState === "selected_for_offer" && (
                     <p className="text-xs text-muted-foreground">
-                      “Selecionado para oferta” é somente decisão editorial.
-                      A seleção comercial existente continua separada e exige sua
+                      “Selecionado para oferta” é somente decisão editorial. A
+                      seleção comercial existente continua separada e exige sua
                       própria aprovação.
                     </p>
                   )}
@@ -1184,33 +1274,44 @@ export function InternalCollectionCuration() {
                   ))}
                 </div>
                 <div className="space-y-3 rounded-lg border p-3">
-                  <p className="text-sm font-medium">Definir nova classificação</p>
+                  <p className="text-sm font-medium">
+                    Definir nova classificação
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    Acrescente uma classificação ao vocabulário privado, separada
-                    por dimensão. Isso não atribui a tag a nenhum modelo.
+                    Acrescente uma classificação ao vocabulário privado,
+                    separada por dimensão. Isso não atribui a tag a nenhum
+                    modelo.
                   </p>
                   <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
                     <div className="space-y-1">
-                      <Label htmlFor="internal-curation-new-tag-dimension">Dimensão</Label>
+                      <Label htmlFor="internal-curation-new-tag-dimension">
+                        Dimensão
+                      </Label>
                       <select
                         id="internal-curation-new-tag-dimension"
                         value={newTagDimension}
                         onChange={(event) =>
-                          setNewTagDimension(event.target.value as CatalogCurationTagDimension)
+                          setNewTagDimension(
+                            event.target.value as CatalogCurationTagDimension,
+                          )
                         }
                         className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                       >
-                        {(Object.keys(dimensionLabels) as CatalogCurationTagDimension[]).map(
-                          (dimension) => (
-                            <option key={dimension} value={dimension}>
-                              {dimensionLabels[dimension]}
-                            </option>
-                          ),
-                        )}
+                        {(
+                          Object.keys(
+                            dimensionLabels,
+                          ) as CatalogCurationTagDimension[]
+                        ).map((dimension) => (
+                          <option key={dimension} value={dimension}>
+                            {dimensionLabels[dimension]}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="internal-curation-new-tag-name">Nome</Label>
+                      <Label htmlFor="internal-curation-new-tag-name">
+                        Nome
+                      </Label>
                       <Input
                         id="internal-curation-new-tag-name"
                         value={newTagLabel}
@@ -1223,7 +1324,9 @@ export function InternalCollectionCuration() {
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={!newTagLabel.trim() || createTagMutation.isPending}
+                    disabled={
+                      !newTagLabel.trim() || createTagMutation.isPending
+                    }
                     onClick={() => createTagMutation.mutate()}
                   >
                     {createTagMutation.isPending && (
@@ -1258,18 +1361,20 @@ export function InternalCollectionCuration() {
                     type="button"
                     variant="outline"
                     disabled={
-                      !memberIds.length ||
-                      !selectedTag ||
-                      tagMutation.isPending
+                      !memberIds.length || !selectedTag || tagMutation.isPending
                     }
                     onClick={() => tagMutation.mutate()}
                   >
-                    {tagMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Aplicar {selectedTag?.label ?? "classificação"} a {memberIds.length || 0}
+                    {tagMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Aplicar {selectedTag?.label ?? "classificação"} a{" "}
+                    {memberIds.length || 0}
                   </Button>
                   <p className="text-xs text-muted-foreground">
                     A classificação registra a origem da revisão. Ela não
-                    presume licença, direito comercial ou elegibilidade de venda.
+                    presume licença, direito comercial ou elegibilidade de
+                    venda.
                   </p>
                 </div>
 

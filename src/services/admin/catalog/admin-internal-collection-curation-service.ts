@@ -25,26 +25,27 @@ export type InternalCollectionTemplate = {
   description: string;
 };
 
-export const INTERNAL_COLLECTION_TEMPLATES: readonly InternalCollectionTemplate[] = [
-  {
-    name: "Terror",
-    slug: "terror",
-    description:
-      "Candidatos editoriais para uma futura coleção de terror. A associação interna não publica nem autoriza venda.",
-  },
-  {
-    name: "Digimon",
-    slug: "digimon",
-    description:
-      "Candidatos editoriais encontrados pela franquia canônica Digimon. A associação interna não publica nem autoriza venda.",
-  },
-  {
-    name: "Inimigos da Vizinhança",
-    slug: "inimigos-da-vizinhanca",
-    description:
-      "Candidatos editoriais a antagonistas relacionados ao universo do Homem-Aranha. Cada associação exige revisão e evidência.",
-  },
-] as const;
+export const INTERNAL_COLLECTION_TEMPLATES: readonly InternalCollectionTemplate[] =
+  [
+    {
+      name: "Terror",
+      slug: "terror",
+      description:
+        "Candidatos editoriais para uma futura coleção de terror. A associação interna não publica nem autoriza venda.",
+    },
+    {
+      name: "Digimon",
+      slug: "digimon",
+      description:
+        "Candidatos editoriais encontrados pela franquia canônica Digimon. A associação interna não publica nem autoriza venda.",
+    },
+    {
+      name: "Inimigos da Vizinhança",
+      slug: "inimigos-da-vizinhanca",
+      description:
+        "Candidatos editoriais a antagonistas relacionados ao universo do Homem-Aranha. Cada associação exige revisão e evidência.",
+    },
+  ] as const;
 
 export type AdminInternalCollection = {
   id: string;
@@ -254,8 +255,12 @@ function parseMembershipTag(value: unknown): CatalogCurationMembershipTag {
 }
 
 function hasUnsafeCurationCharacter(value: string): boolean {
-  return Array.from(value).some((char) =>
-    char === "<" || char === ">" || char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127
+  return Array.from(value).some(
+    (char) =>
+      char === "<" ||
+      char === ">" ||
+      char.charCodeAt(0) < 32 ||
+      char.charCodeAt(0) === 127,
   );
 }
 
@@ -263,16 +268,30 @@ function parseVerifiedCharacter(value: unknown): CatalogVerifiedCharacter {
   const row = asRecord(value, "catalog_curation_character_invalid");
   const id = asString(row.id, "catalog_curation_character_invalid");
   const name = asString(row.name, "catalog_curation_character_invalid");
-  const franchise = asString(row.franchise, "catalog_curation_character_invalid");
-  const evidenceOrigin = asString(row.evidenceOrigin, "catalog_curation_character_invalid");
-  const evidenceNote = asOptionalString(row.evidenceNote, "catalog_curation_character_invalid");
+  const franchise = asString(
+    row.franchise,
+    "catalog_curation_character_invalid",
+  );
+  const evidenceOrigin = asString(
+    row.evidenceOrigin,
+    "catalog_curation_character_invalid",
+  );
+  const evidenceNote = asOptionalString(
+    row.evidenceNote,
+    "catalog_curation_character_invalid",
+  );
 
   if (
-    !UUID_PATTERN.test(id) || name.length > 160 || franchise.length > 160 ||
-    evidenceOrigin.length > 240 || hasUnsafeCurationCharacter(name) ||
-    hasUnsafeCurationCharacter(franchise) || hasUnsafeCurationCharacter(evidenceOrigin) ||
+    !UUID_PATTERN.test(id) ||
+    name.length > 160 ||
+    franchise.length > 160 ||
+    evidenceOrigin.length > 240 ||
+    hasUnsafeCurationCharacter(name) ||
+    hasUnsafeCurationCharacter(franchise) ||
+    hasUnsafeCurationCharacter(evidenceOrigin) ||
     evidenceOrigin.toLowerCase().startsWith("automatic:") ||
-    (evidenceNote !== null && (evidenceNote.length > 1000 || hasUnsafeCurationCharacter(evidenceNote)))
+    (evidenceNote !== null &&
+      (evidenceNote.length > 1000 || hasUnsafeCurationCharacter(evidenceNote)))
   ) {
     throw new Error("catalog_curation_character_invalid");
   }
@@ -296,7 +315,10 @@ function parseMembership(value: unknown): CatalogCurationMembership {
     throw new Error("catalog_curation_membership_invalid");
   }
   const characters = row.characters.map(parseVerifiedCharacter);
-  if (new Set(characters.map((character) => character.id)).size !== characters.length) {
+  if (
+    new Set(characters.map((character) => character.id)).size !==
+    characters.length
+  ) {
     throw new Error("catalog_curation_membership_invalid");
   }
   return {
@@ -324,7 +346,8 @@ export function validateCanonicalCurationModelRef(
     typeof model.modelId !== "string" ||
     !model.modelId ||
     model.modelId.length > 160 ||
-    (/\s/.test(model.modelId) || hasUnsafeCurationCharacter(model.modelId)) ||
+    /\s/.test(model.modelId) ||
+    hasUnsafeCurationCharacter(model.modelId) ||
     !CATALOG_SLUG.test(model.slug)
   ) {
     throw new Error("catalog_curation_model_reference_invalid");
@@ -356,7 +379,9 @@ export function assertCurrentCanonicalCurationModels(
   current: readonly CanonicalCurationModelRef[],
 ): void {
   assertUniqueCanonicalCurationModels(selected);
-  const currentById = new Map(current.map((model) => [model.modelId, model.slug]));
+  const currentById = new Map(
+    current.map((model) => [model.modelId, model.slug]),
+  );
   if (
     selected.some(
       (model) =>
@@ -372,7 +397,8 @@ export async function listAdminInternalCollections(): Promise<
   AdminInternalCollection[]
 > {
   const data = await callAdminRpc<unknown>("admin_list_internal_collections");
-  if (!Array.isArray(data)) throw new Error("catalog_internal_collections_invalid");
+  if (!Array.isArray(data))
+    throw new Error("catalog_internal_collections_invalid");
   return data.map(parseCollection);
 }
 
@@ -452,7 +478,13 @@ export async function createCatalogCurationTag(input: {
     typeof input.label !== "string" ||
     !input.label.trim() ||
     input.label.trim().length > 120 ||
-    Array.from(input.label).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127 || char === "<" || char === ">")
+    Array.from(input.label).some(
+      (char) =>
+        char.charCodeAt(0) < 32 ||
+        char.charCodeAt(0) === 127 ||
+        char === "<" ||
+        char === ">",
+    )
   ) {
     throw new Error("catalog_curation_tag_definition_invalid");
   }
@@ -461,11 +493,14 @@ export async function createCatalogCurationTag(input: {
   if (!CURATION_ALIAS_SLUG.test(slug)) {
     throw new Error("catalog_curation_tag_definition_invalid");
   }
-  const data = await callAdminRpc<unknown>("admin_create_catalog_curation_tag", {
-    p_dimension: input.dimension,
-    p_slug: slug,
-    p_label: label,
-  });
+  const data = await callAdminRpc<unknown>(
+    "admin_create_catalog_curation_tag",
+    {
+      p_dimension: input.dimension,
+      p_slug: slug,
+      p_label: label,
+    },
+  );
   const tag = parseTag(data);
   if (
     tag.dimension !== input.dimension ||
@@ -546,7 +581,10 @@ export async function getInternalCollectionCurationSummary(
     "catalog_curation_summary_invalid",
   );
   return {
-    modelCount: asNonNegativeInteger(data.modelCount, "catalog_curation_summary_invalid"),
+    modelCount: asNonNegativeInteger(
+      data.modelCount,
+      "catalog_curation_summary_invalid",
+    ),
     distinctVerifiedCharacterCount: asNonNegativeInteger(
       data.distinctVerifiedCharacterCount,
       "catalog_curation_summary_invalid",
@@ -616,9 +654,16 @@ export async function getInternalCollectionCurationPage(input: {
     }),
     "catalog_curation_page_invalid",
   );
-  if (!Array.isArray(data.items)) throw new Error("catalog_curation_page_invalid");
-  const parsedOffset = asNonNegativeInteger(data.offset, "catalog_curation_page_invalid");
-  const parsedLimit = asNonNegativeInteger(data.limit, "catalog_curation_page_invalid");
+  if (!Array.isArray(data.items))
+    throw new Error("catalog_curation_page_invalid");
+  const parsedOffset = asNonNegativeInteger(
+    data.offset,
+    "catalog_curation_page_invalid",
+  );
+  const parsedLimit = asNonNegativeInteger(
+    data.limit,
+    "catalog_curation_page_invalid",
+  );
   if (parsedLimit < 1 || parsedLimit > 20 || parsedOffset !== offset) {
     throw new Error("catalog_curation_page_invalid");
   }
@@ -637,14 +682,18 @@ export async function saveInternalCollectionCuration(input: {
   evidenceOrigin: string;
   evidenceNote?: string;
 }): Promise<number> {
-  if (!UUID_PATTERN.test(input.collectionId) || !curationStates.has(input.state)) {
+  if (
+    !UUID_PATTERN.test(input.collectionId) ||
+    !curationStates.has(input.state)
+  ) {
     throw new Error("catalog_curation_save_invalid");
   }
   if (input.models.length < 1 || input.models.length > 50) {
     throw new Error("catalog_curation_save_invalid");
   }
   assertUniqueCanonicalCurationModels(input.models);
-  if (!input.evidenceOrigin.trim()) throw new Error("catalog_curation_save_invalid");
+  if (!input.evidenceOrigin.trim())
+    throw new Error("catalog_curation_save_invalid");
   if (input.evidenceOrigin.trim().toLowerCase().startsWith("automatic:")) {
     if (input.state !== "suggested") {
       throw new Error("catalog_curation_automatic_must_be_suggested");
@@ -670,7 +719,10 @@ export async function saveInternalCollectionCuration(input: {
   if (data.id !== input.collectionId) {
     throw new Error("catalog_curation_save_result_invalid");
   }
-  const count = asNonNegativeInteger(data.count, "catalog_curation_save_result_invalid");
+  const count = asNonNegativeInteger(
+    data.count,
+    "catalog_curation_save_result_invalid",
+  );
   if (count !== input.models.length) {
     throw new Error("catalog_curation_save_result_invalid");
   }

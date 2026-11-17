@@ -33,7 +33,10 @@ describe("internal catalog curation service", () => {
   });
 
   it("preserves all commercial admin identities and private editorial RPCs in the single gateway", () => {
-    const gateway = readFileSync("supabase/functions/admin-rpc/index.ts", "utf8");
+    const gateway = readFileSync(
+      "supabase/functions/admin-rpc/index.ts",
+      "utf8",
+    );
     const entries = (registry: string): string[] => {
       const start = gateway.indexOf(`const ${registry} = new Set([`);
       expect(start).toBeGreaterThanOrEqual(0);
@@ -95,7 +98,10 @@ describe("internal catalog curation service", () => {
       "../../../../supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
     ];
     const migrations = paths.map((path) =>
-      readFileSync(new URL(path, import.meta.url), "utf8").replace(/\r\n/g, "\n"),
+      readFileSync(new URL(path, import.meta.url), "utf8").replace(
+        /\r\n/g,
+        "\n",
+      ),
     );
     for (const migration of migrations) {
       expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
@@ -104,17 +110,23 @@ describe("internal catalog curation service", () => {
       expect(migration).not.toContain("public.assert_admin_access");
       expect(migration).not.toContain("public.collections");
       expect(migration).not.toContain("public.collection_tier_assignments");
-      const functions = [...migration.matchAll(/CREATE OR REPLACE FUNCTION public\.(\w+)\(/g)].map(
-        (match) => match[1],
-      );
+      const functions = [
+        ...migration.matchAll(/CREATE OR REPLACE FUNCTION public\.(\w+)\(/g),
+      ].map((match) => match[1]);
       expect(new Set(functions).size).toBe(functions.length);
     }
-    expect(migrations[0]).toContain("CREATE TABLE IF NOT EXISTS public.catalog_curation_tags");
-    expect(migrations[0]).toContain("CREATE TABLE IF NOT EXISTS public.tonart_editorial_collections");
+    expect(migrations[0]).toContain(
+      "CREATE TABLE IF NOT EXISTS public.catalog_curation_tags",
+    );
+    expect(migrations[0]).toContain(
+      "CREATE TABLE IF NOT EXISTS public.tonart_editorial_collections",
+    );
     expect(migrations[0]).toContain(
       "REVOKE ALL ON TABLE public.tonart_editorial_collections FROM PUBLIC, anon, authenticated, service_role",
     );
-    expect(migrations[0]).toContain("FROM PUBLIC, anon, authenticated, service_role;");
+    expect(migrations[0]).toContain(
+      "FROM PUBLIC, anon, authenticated, service_role;",
+    );
     expect(migrations[0]).toContain(
       "IF p_offset IS NULL OR p_limit IS NULL OR p_offset < 0",
     );
@@ -124,18 +136,28 @@ describe("internal catalog curation service", () => {
     expect(migrations[0]).toContain(
       "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE\n  public.catalog_character_identities,",
     );
-    expect(migrations[0]).not.toContain("REVOKE INSERT, UPDATE, DELETE ON TABLE");
-    expect(migrations[0]).toContain("REFERENCES public.tonart_editorial_collections(id)");
+    expect(migrations[0]).not.toContain(
+      "REVOKE INSERT, UPDATE, DELETE ON TABLE",
+    );
+    expect(migrations[0]).toContain(
+      "REFERENCES public.tonart_editorial_collections(id)",
+    );
     expect(migrations[0]).toContain("IF v_collection.name <> v_name THEN");
-    expect(migrations[0]).toContain("Editorial collection slug belongs to a different name");
-    expect(migrations[0]).toContain("private_api.assert_tonart_curation_service_role()");
+    expect(migrations[0]).toContain(
+      "Editorial collection slug belongs to a different name",
+    );
+    expect(migrations[0]).toContain(
+      "private_api.assert_tonart_curation_service_role()",
+    );
     for (const helper of [
       "guard_catalog_curation_tag_alias()",
       "guard_catalog_curation_tag_slug()",
       "admin_validate_catalog_curation_text(text, text, integer, boolean)",
       "admin_validate_catalog_model_reference(text, text)",
     ]) {
-      expect(migrations[0]).toContain(`REVOKE ALL ON FUNCTION public.${helper}`);
+      expect(migrations[0]).toContain(
+        `REVOKE ALL ON FUNCTION public.${helper}`,
+      );
     }
     expect(migrations[0]).toContain(
       "GRANT EXECUTE ON FUNCTION public.admin_validate_catalog_curation_text(text, text, integer, boolean)",
@@ -147,8 +169,12 @@ describe("internal catalog curation service", () => {
     expect(migrations[0]).not.toContain("public.collections");
     expect(migrations[0]).not.toContain("public.collection_tier_assignments");
     expect(migrations[0]).not.toContain("public.assert_admin_access");
-    expect(migrations[1]).toContain("CREATE OR REPLACE FUNCTION public.admin_create_catalog_curation_tag(");
-    expect(migrations[1]).toContain("private_api.assert_tonart_curation_service_role()");
+    expect(migrations[1]).toContain(
+      "CREATE OR REPLACE FUNCTION public.admin_create_catalog_curation_tag(",
+    );
+    expect(migrations[1]).toContain(
+      "private_api.assert_tonart_curation_service_role()",
+    );
     expect(migrations[1]).toContain(
       "REVOKE ALL ON FUNCTION public.admin_create_catalog_curation_tag(text, text, text)",
     );
@@ -158,7 +184,6 @@ describe("internal catalog curation service", () => {
     );
     expect(migrations[1]).toContain("TO service_role;");
   });
-
 
   it("builds valid custom editorial collections without inventing models", () => {
     expect(
@@ -172,14 +197,16 @@ describe("internal catalog curation service", () => {
       description: "Revisão editorial de antagonistas",
     });
     expect(
-      createInternalCollectionTemplate("A".repeat(110), "Revisão editorial").slug,
+      createInternalCollectionTemplate("A".repeat(110), "Revisão editorial")
+        .slug,
     ).toHaveLength(110);
     expect(
-      createInternalCollectionTemplate("A".repeat(150), "Revisão editorial").slug,
+      createInternalCollectionTemplate("A".repeat(150), "Revisão editorial")
+        .slug,
     ).toHaveLength(120);
-    expect(() => createInternalCollectionTemplate("<script>", "Descrição")).toThrow(
-      "catalog_internal_collection_template_invalid",
-    );
+    expect(() =>
+      createInternalCollectionTemplate("<script>", "Descrição"),
+    ).toThrow("catalog_internal_collection_template_invalid");
     expect(() => createInternalCollectionTemplate("  ", "Descrição")).toThrow(
       "catalog_internal_collection_template_invalid",
     );
@@ -313,7 +340,10 @@ describe("internal catalog curation service", () => {
     ).toThrow("catalog_curation_model_reference_stale");
     expect(() =>
       assertCurrentCanonicalCurationModels(selected, [
-        { modelId: "44444444-4444-4444-8444-444444444444", slug: "modelo-real" },
+        {
+          modelId: "44444444-4444-4444-8444-444444444444",
+          slug: "modelo-real",
+        },
       ]),
     ).toThrow("catalog_curation_model_reference_stale");
 
@@ -618,15 +648,17 @@ describe("internal catalog curation service", () => {
       },
     ];
     mocks.callAdminRpc.mockResolvedValue({
-      items: [{
-        modelId: MODEL_ID,
-        slug: "cena-entre-personagens",
-        state: "approved",
-        evidenceOrigin: "manual_admin:collection",
-        evidenceNote: null,
-        characters,
-        tags: [],
-      }],
+      items: [
+        {
+          modelId: MODEL_ID,
+          slug: "cena-entre-personagens",
+          state: "approved",
+          evidenceOrigin: "manual_admin:collection",
+          evidenceNote: null,
+          characters,
+          tags: [],
+        },
+      ],
       total: 1,
       offset: 0,
       limit: 20,
@@ -649,15 +681,17 @@ describe("internal catalog curation service", () => {
       evidenceNote: null,
     };
     const makeResponse = (characters: unknown[]) => ({
-      items: [{
-        modelId: MODEL_ID,
-        slug: "cena-entre-personagens",
-        state: "approved",
-        evidenceOrigin: "manual_admin:collection",
-        evidenceNote: null,
-        characters,
-        tags: [],
-      }],
+      items: [
+        {
+          modelId: MODEL_ID,
+          slug: "cena-entre-personagens",
+          state: "approved",
+          evidenceOrigin: "manual_admin:collection",
+          evidenceNote: null,
+          characters,
+          tags: [],
+        },
+      ],
       total: 1,
       offset: 0,
       limit: 20,
@@ -673,9 +707,11 @@ describe("internal catalog curation service", () => {
       })),
     ]) {
       mocks.callAdminRpc.mockResolvedValueOnce(makeResponse(characters));
-      await expect(getInternalCollectionCurationPage({
-        collectionId: COLLECTION_ID,
-      })).rejects.toThrow(/catalog_curation_/);
+      await expect(
+        getInternalCollectionCurationPage({
+          collectionId: COLLECTION_ID,
+        }),
+      ).rejects.toThrow(/catalog_curation_/);
     }
   });
 
@@ -686,25 +722,39 @@ describe("internal catalog curation service", () => {
     ).replace(/\r\n/g, "\n");
     expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
     expect(migration.trimEnd().endsWith("COMMIT;")).toBe(true);
-    expect(migration).toContain("CREATE TABLE public.catalog_curation_model_characters");
-    expect(migration).toContain("PRIMARY KEY (catalog_model_id, character_identity_id)");
+    expect(migration).toContain(
+      "CREATE TABLE public.catalog_curation_model_characters",
+    );
+    expect(migration).toContain(
+      "PRIMARY KEY (catalog_model_id, character_identity_id)",
+    );
     expect(migration).toContain("WHERE identity_verified = true");
     expect(migration).toContain("IF v_legacy <> v_links");
     expect(migration).toContain("ENABLE ROW LEVEL SECURITY");
-    expect(migration).toContain("FROM PUBLIC, anon, authenticated, service_role");
+    expect(migration).toContain(
+      "FROM PUBLIC, anon, authenticated, service_role",
+    );
     expect(migration).toContain("TO service_role;");
     expect(migration).toContain("DROP COLUMN character_identity_id");
     expect(migration).toContain("DROP COLUMN identity_verified");
-    expect(migration).toContain("ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE");
+    expect(migration).toContain(
+      "ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE",
+    );
     expect(migration).toContain("Maximum 12 verified characters per model");
-    expect(migration).toContain("private_api.assert_tonart_curation_service_role()");
-    expect(migration).not.toContain("CREATE POLICY catalog_curation_model_characters_public");
+    expect(migration).toContain(
+      "private_api.assert_tonart_curation_service_role()",
+    );
+    expect(migration).not.toContain(
+      "CREATE POLICY catalog_curation_model_characters_public",
+    );
     for (const rpc of [
       "admin_get_collection_curation_summary",
       "admin_get_collection_curation_page",
       "admin_verify_catalog_model_identity",
     ]) {
-      expect(migration.split("CREATE OR REPLACE FUNCTION public." + rpc + "(")).toHaveLength(2);
+      expect(
+        migration.split("CREATE OR REPLACE FUNCTION public." + rpc + "("),
+      ).toHaveLength(2);
     }
   });
 
