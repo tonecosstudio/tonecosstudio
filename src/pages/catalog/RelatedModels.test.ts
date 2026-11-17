@@ -174,7 +174,7 @@ describe("TONART canonical discovery tags", () => {
     expect(catalogDiscoveryTags({ ...current, name: "Go" })).toHaveLength(2);
     expect(catalogDiscoveryTags({ ...current, name: "A".repeat(81) }))
       .toHaveLength(2);
-    expect(catalogDiscoveryTags({ ...current, name: "Goku\\nAdmin" }))
+    expect(catalogDiscoveryTags({ ...current, name: "Goku" + String.fromCharCode(10) + "Admin" }))
       .toHaveLength(2);
     expect(catalogDiscoveryTags({ ...current, name: "<admin>" }))
       .toHaveLength(2);
