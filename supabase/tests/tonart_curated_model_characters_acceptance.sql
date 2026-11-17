@@ -347,30 +347,35 @@ BEGIN
     RAISE EXCEPTION 'History overflow attempt corrupted existing decisions';
   END IF;
 
-  -- The 12-active-character ceiling must be enforced server-side.
-  FOR v_n IN 3..12 LOOP
+  -- Verify an actual large diorama: the same model can link 21 separately
+  -- reviewed identities. The collection stays one model row and the private
+  -- RPC returns all active identities, not only the first twelve.
+  FOR v_n IN 3..20 LOOP
     PERFORM public.admin_verify_catalog_model_identity(
       v_model_a, v_slug_a, 'TONART acceptance extra ' || v_n || ' ' || v_suffix,
-      v_franchise, 'manual_admin:acceptance_limit', NULL
+      v_franchise, 'manual_admin:acceptance_large_diorama', NULL
     );
   END LOOP;
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_a, v_slug_a, 'TONART acceptance twenty-first ' || v_suffix,
+    v_franchise, 'manual_admin:acceptance_large_diorama', NULL
+  );
   SELECT count(*) INTO v_count
   FROM public.catalog_curation_model_characters
   WHERE catalog_model_id = v_model_a AND unlinked_at IS NULL;
-  IF v_count <> 12 THEN
-    RAISE EXCEPTION 'Expected exactly 12 active character links, found %', v_count;
+  IF v_count <> 21 THEN
+    RAISE EXCEPTION 'Expected 21 active character links, found %', v_count;
   END IF;
-  v_expected_failure := false;
-  BEGIN
-    PERFORM public.admin_verify_catalog_model_identity(
-      v_model_a, v_slug_a, 'TONART acceptance over-limit ' || v_suffix,
-      v_franchise, 'manual_admin:acceptance_limit', NULL
-    );
-  EXCEPTION WHEN SQLSTATE '22023' THEN
-    v_expected_failure := true;
-  END;
-  IF NOT v_expected_failure THEN
-    RAISE EXCEPTION 'Thirteenth active character was not rejected';
+  v_page := public.admin_get_collection_curation_page(
+    v_collection_id, NULL, 0, 20, NULL
+  );
+  v_summary := public.admin_get_collection_curation_summary(v_collection_id);
+  SELECT members.value INTO STRICT v_member
+  FROM jsonb_array_elements(v_page->'items') AS members(value)
+  WHERE members.value->>'modelId' = v_model_a;
+  IF jsonb_array_length(v_member->'characters') <> 21
+     OR (v_summary->>'distinctVerifiedCharacterCount')::integer <> 21 THEN
+    RAISE EXCEPTION 'Twenty-first verified character was rejected';
   END IF;
 
   RAISE NOTICE 'TONART character staging acceptance PASS (transaction rolled back)';
