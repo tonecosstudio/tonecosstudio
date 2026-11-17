@@ -1744,3 +1744,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** iniciar Fase A da especificação, verificar o estado atual após outros agentes e só então avançar em vínculos de identidade/projeção pública e UI existente, com testes proporcionais.
 
 **DO_NOT_REPEAT:** não criar outro catálogo ou fonte de tags, não copiar biografias em cada modelo, não ativar Supabase legado público, não reexecutar migrations já aplicadas, não abrir Workflows/deploy por esta alteração documental.
+
+## Incremento de catálogo — chips de descoberta sem identidade inventada (16/11/2026)
+
+- **Base:** `main` `8ec7e33a`. **Branch em implementação:** `feat/catalog-character-discovery-20261116`; `main` ainda não contém a mudança de código.
+- **Alterações:** `src/pages/catalog/RelatedModels.tsx` gera chips `category`, `universe` e `name-search` sobre campos publicados pelo Worker, com links internos, slugs validados e busca URL-encoded. O nome do modelo é tratado apenas como consulta, sem afirmar identidade editorial. Sem novos endpoints, JSON estático de personagens, Supabase público, mídia, preços, deploy ou alteração da ficha pai.
+- **Testes adicionados:** `src/pages/catalog/RelatedModels.test.ts` cobre rotas canônicas, filtros, nome com caracteres especiais, limites e escopos inválidos. Execução no Desktop em worktree temporário: **aguarda resultado nesta etapa**; não tratar a presença de testes como prova de aprovação.
+- **Documento funcional atualizado:** `docs/CATALOGO-PERSONAGENS-UNIVERSOS.md` registra primeiro incremento e as lacunas remanescentes. **PR #29 em andamento** modifica `CanonicalModelDetails`, portanto esta branch não toca na ficha pai nem nos testes de integração da PR #29.
+- **PENDÊNCIAS:** integrar/validar o incremento, publicar contrato de personagem verificado sem reaproveitar curadoria privada como índice aberto, criar páginas biográficas, ampliar chips independentes das sugestões e definir tags por IDs canônicos após conciliação editorial.
+
+**NEXT_ACTION:** concluir prova direcionada de `RelatedModels.test.ts`, abrir PR pequena e conferir gates. Quando PR #29 for integrada, evoluir a ficha principal de forma não concorrente. Respeitar NO-GO atual de publicação/SEO/checkout.
+
+**DO_NOT_REPEAT:** não criar tabela, segundo banco, novo Worker, perfil falso, arquivo JSON de biografias hardcoded, links para personagem sem identidade confirmada ou atualização de PR #29 por esta branch.
