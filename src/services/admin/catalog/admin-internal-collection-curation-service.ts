@@ -76,14 +76,21 @@ export type CatalogCurationMembershipTag = {
   evidenceNote: string | null;
 };
 
+export type CatalogVerifiedCharacter = {
+  id: string;
+  name: string;
+  franchise: string;
+  evidenceOrigin: string;
+  evidenceNote: string | null;
+};
+
 export type CatalogCurationMembership = {
   modelId: string;
   slug: string;
   state: CatalogCurationState;
   evidenceOrigin: string;
   evidenceNote: string | null;
-  identityVerified: boolean;
-  characterIdentityId: string | null;
+  characters: CatalogVerifiedCharacter[];
   tags: CatalogCurationMembershipTag[];
 };
 
@@ -246,6 +253,26 @@ function parseMembershipTag(value: unknown): CatalogCurationMembershipTag {
   };
 }
 
+function parseVerifiedCharacter(value: unknown): CatalogVerifiedCharacter {
+  const row = asRecord(value, "catalog_curation_character_invalid");
+  const id = asString(row.id, "catalog_curation_character_invalid");
+  const name = asString(row.name, "catalog_curation_character_invalid");
+  const franchise = asString(row.franchise, "catalog_curation_character_invalid");
+  const evidenceOrigin = asString(row.evidenceOrigin, "catalog_curation_character_invalid");
+  const evidenceNote = asOptionalString(row.evidenceNote, "catalog_curation_character_invalid");
+  const unsafe = /[<>\\u0000-\\u001f\\u007f]/;
+  if (
+    !UUID_PATTERN.test(id) || name.length > 160 || franchise.length > 160 ||
+    evidenceOrigin.length > 240 || unsafe.test(name) ||
+    unsafe.test(franchise) || unsafe.test(evidenceOrigin) ||
+    evidenceOrigin.toLowerCase().startsWith("automatic:") ||
+    (evidenceNote !== null && (evidenceNote.length > 1000 || unsafe.test(evidenceNote)))
+  ) {
+    throw new Error("catalog_curation_character_invalid");
+  }
+  return { id, name, franchise, evidenceOrigin, evidenceNote };
+}
+
 function parseMembership(value: unknown): CatalogCurationMembership {
   const row = asRecord(value, "catalog_curation_membership_invalid");
   const modelId = asString(row.modelId, "catalog_curation_membership_invalid");
@@ -256,20 +283,14 @@ function parseMembership(value: unknown): CatalogCurationMembership {
     !CATALOG_SLUG.test(slug) ||
     typeof state !== "string" ||
     !curationStates.has(state as CatalogCurationState) ||
-    typeof row.identityVerified !== "boolean" ||
+    !Array.isArray(row.characters) ||
+    row.characters.length > 12 ||
     !Array.isArray(row.tags)
   ) {
     throw new Error("catalog_curation_membership_invalid");
   }
-  const identityId = row.characterIdentityId;
-  if (
-    identityId !== null &&
-    identityId !== undefined &&
-    (typeof identityId !== "string" || !UUID_PATTERN.test(identityId))
-  ) {
-    throw new Error("catalog_curation_membership_invalid");
-  }
-  if (row.identityVerified !== (typeof identityId === "string")) {
+  const characters = row.characters.map(parseVerifiedCharacter);
+  if (new Set(characters.map((character) => character.id)).size !== characters.length) {
     throw new Error("catalog_curation_membership_invalid");
   }
   return {
@@ -284,8 +305,7 @@ function parseMembership(value: unknown): CatalogCurationMembership {
       row.evidenceNote,
       "catalog_curation_membership_invalid",
     ),
-    identityVerified: row.identityVerified,
-    characterIdentityId: (identityId as string | null | undefined) ?? null,
+    characters,
     tags: row.tags.map(parseMembershipTag),
   };
 }
