@@ -171,7 +171,9 @@ describe("TONART related model selection", () => {
     const groups = selectRelatedModelGroups(
       { ...current, name: "José", collection: null },
       [
-        related("composed", "JOSE\u0301", "Outra estatueta", { collection: null }),
+        related("composed", "JOSE\u0301", "Outra estatueta", {
+          collection: null,
+        }),
         related("different", "Jose", "Sem acento", { collection: null }),
       ],
     );
