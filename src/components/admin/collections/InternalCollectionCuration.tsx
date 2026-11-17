@@ -214,7 +214,10 @@ export function InternalCollectionCuration() {
     enabled: Array.from(search.trim()).length >= 3,
     staleTime: 30_000,
   });
-  const searchResults = searchQuery.data?.items ?? [];
+  const searchResults = useMemo(
+    () => searchQuery.data?.items ?? [],
+    [searchQuery.data?.items],
+  );
   const searchModelsById = useMemo(
     () => new Map(searchResults.map((model) => [model.id, model] as const)),
     [searchResults],
