@@ -846,8 +846,12 @@ describe("internal catalog curation service", () => {
     expect(migration).toContain("GET DIAGNOSTICS v_updated = ROW_COUNT");
     expect(migration).toContain("p_reason text");
     expect(migration).toContain("p_reason, 'identity unlink reason', 1000");
-    expect(migration).toContain("AND character_identity_id = p_character_identity_id");
-    expect(migration).toContain("ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE");
+    expect(migration).toContain(
+      "AND character_identity_id = p_character_identity_id",
+    );
+    expect(migration).toContain(
+      "ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE",
+    );
     expect(migration).toContain(
       "GRANT EXECUTE ON FUNCTION public.admin_unlink_catalog_model_character",
     );

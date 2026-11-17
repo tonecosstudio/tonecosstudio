@@ -1118,7 +1118,9 @@ export function InternalCollectionCuration() {
                               Desvincular{" "}
                               <strong>{unlinkReview.characterName}</strong>{" "}
                               desta estatueta? A identidade e suas associações
-                              com outros modelos permanecem preservadas. A justificativa ficará registrada no histórico editorial.
+                              com outros modelos permanecem preservadas. A
+                              justificativa ficará registrada no histórico
+                              editorial.
                             </p>
                             <div className="space-y-1">
                               <Label htmlFor="curation-character-unlink-reason">
@@ -1132,7 +1134,10 @@ export function InternalCollectionCuration() {
                                 onChange={(event) =>
                                   setUnlinkReview((current) =>
                                     current
-                                      ? { ...current, reason: event.target.value }
+                                      ? {
+                                          ...current,
+                                          reason: event.target.value,
+                                        }
                                       : null,
                                   )
                                 }
