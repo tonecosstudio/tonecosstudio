@@ -12,6 +12,7 @@ import {
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { formatModelCountLabel } from "@/lib/catalog-model-count";
 import { CanonicalUniverseFolders } from "@/pages/catalog/CanonicalUniverseFolders";
+import { CatalogUniverseEditorialPanel } from "@/pages/catalog/CatalogUniverseEditorialPanel";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
 import { createPublicCatalogGateway, validCatalogFolder } from "@/services/catalog/public-catalog-gateway";
@@ -219,6 +220,12 @@ export default function CatalogArcade() {
               Ver todos os modelos
             </Link>
           </nav>
+          {themeKey && franchiseKey ? (
+            <CatalogUniverseEditorialPanel
+              categorySlug={themeKey}
+              franchiseSlug={franchiseKey}
+            />
+          ) : null}
           <ArcadeSectionTitle>
             {franchiseKey ? "PASTAS E MODELOS" : themeKey ? "FRANQUIAS DA CATEGORIA" : "CATEGORIAS"}
           </ArcadeSectionTitle>

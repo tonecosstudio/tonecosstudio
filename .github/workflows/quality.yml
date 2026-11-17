@@ -8,6 +8,15 @@ on:
     branches:
       - main
     paths:
+      - 'docs/review/**'
+      - 'scripts/catalog/character-catalog-inventory*'
+      - 'src/CatalogMvpShell.tsx'
+      - 'src/config/catalog-editorial-projection*'
+      - 'src/pages/CatalogArcade.tsx'
+      - 'src/pages/CatalogCharacterArcade*'
+      - 'src/pages/catalog/ApprovedEditorialProfiles*'
+      - 'src/pages/catalog/CatalogUniverseEditorialPanel*'
+      - 'src/services/catalog/public-catalog-editorial-projection*'
       - 'services/catalogo/**'
       - 'config/catalog-code-consolidation.json'
       - 'scripts/architecture/catalog-monorepo.test.mjs'
@@ -264,6 +273,7 @@ jobs:
           npm run catalog:mvp:test
           npm run catalog:commerce:test
           node --test scripts/catalog/build-specialstl-review-sheet.test.mjs scripts/catalog/propose-specialstl-quarantine.test.mjs
+          node --test scripts/catalog/character-catalog-inventory.test.mjs
 
       - name: Verify monorepo ownership and Git blobs
         run: npm run catalog:monorepo:check

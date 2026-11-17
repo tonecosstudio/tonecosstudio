@@ -83,7 +83,7 @@ export function CatalogMvpShell({
                   <Route path={PUBLIC_ROUTES.catalog} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseTheme} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseFranchise} element={<Universe />} />
-                  <Route path={PUBLIC_ROUTES.catalogUniverseCharacter} element={<Universe />} />
+                  <Route path={PUBLIC_ROUTES.catalogUniverseCharacter} element={<HistoricalCharacter />} />
                   <Route path={PUBLIC_ROUTES.catalogCharacter} element={<HistoricalCharacter />} />
                   <Route path={PUBLIC_ROUTES.catalogModels} element={<Models />} />
                   <Route path={PUBLIC_ROUTES.catalogDetails} element={<Details />} />

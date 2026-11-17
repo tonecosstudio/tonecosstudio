@@ -279,6 +279,17 @@ test("merges candidate and published inventories once per ID and preserves prove
   assert.equal(merged[2].sourceStatus, "published_only");
   assert.equal(inventory.models[0].characterReview.status, "pending_evidence");
   assert.match(inventory.models[1].catalogEvidence.scope, /does not prove character identity/);
+  assert.deepEqual(
+    inventory.models[0].identityCandidate.names.map((candidate) => candidate.value),
+    ["Candidate Name", "Public Name"],
+  );
+  assert.equal(inventory.models[0].identityCandidate.verified, false);
+  assert.equal(inventory.models[0].identityCandidate.reviewRequired, true);
+  assert.ok(inventory.models[0].identityCandidate.ambiguityCodes.includes(
+    "candidate_sources_disagree_on_model_name",
+  ));
+  assert.equal(inventory.models[0].identityCandidate.franchises.verified, false);
+  assert.equal(inventory.models[0].identityCandidate.franchises.candidates.length, 2);
 });
 
 test("exports a spreadsheet-safe review queue with empty biography and evidence fields", () => {
@@ -303,6 +314,8 @@ test("exports a spreadsheet-safe review queue with empty biography and evidence 
   const [header, record] = csv.trimEnd().split("\r\n");
 
   assert.match(header, /identity_evidence,biography_status,biography_synopsis/);
+  assert.match(header, /identity_candidate_names,candidate_status,candidate_sources/);
+  assert.equal(new Set(header.split(",")).size, header.split(",").length);
   assert.match(record, /"Hero, ""First Edition"""/);
   assert.match(record, /pending_evidence,,,,not_started_identity_unverified/);
 });

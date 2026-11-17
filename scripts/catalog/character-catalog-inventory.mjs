@@ -163,6 +163,98 @@ export async function fetchPublishedCatalogModels({
   return { models, pages, source: new URL("api/catalog", base).toString() };
 }
 
+function buildIdentityCandidates(model, defaultSource) {
+  const records = [];
+  if (model.candidateContract) {
+    records.push({
+      source: "PR #26 offline candidate contract",
+      fields: model.candidateContract,
+    });
+  }
+  if (model.publicCatalog !== null) {
+    records.push({
+      source: model.publicCatalog ? "canonical public catalog gateway" : defaultSource,
+      fields: model.publicCatalog ?? model,
+    });
+  }
+
+  const names = new Map();
+  const supportingLabels = new Map();
+  const franchises = new Map();
+  const addLabel = (target, value, field, source) => {
+    if (typeof value !== "string" || !value.trim()) return;
+    const label = value.trim();
+    const record = target.get(label) ?? { value: label, evidence: [] };
+    if (!record.evidence.some((item) => item.source === source && item.field === field)) {
+      record.evidence.push({
+        source,
+        field,
+        modelId: model.id ?? model.modelId,
+        observedValue: label,
+      });
+    }
+    target.set(label, record);
+  };
+
+  for (const record of records) {
+    const fields = record.fields;
+    addLabel(
+      names,
+      fields.name,
+      record.source === "PR #26 offline candidate contract" ? "displayName" : "name",
+      record.source,
+    );
+    for (const [field, value] of [
+      ["variantName", fields.variantName],
+      ["collection", fields.collection],
+      ["folderPath", fields.folderPath],
+    ]) {
+      addLabel(supportingLabels, value, field, record.source);
+    }
+    if (typeof fields.franchise === "string" && fields.franchise.trim()) {
+      const key = `${fields.franchiseSlug ?? ""}\u0000${fields.franchise.trim()}`;
+      const franchise = franchises.get(key) ?? {
+        label: fields.franchise.trim(),
+        slug: fields.franchiseSlug ?? null,
+        evidence: [],
+      };
+      franchise.evidence.push({
+        source: record.source,
+        field: record.source === "PR #26 offline candidate contract" ? "franchiseName" : "franchise",
+        modelId: model.id ?? model.modelId,
+        observedValue: fields.franchise.trim(),
+      });
+      franchises.set(key, franchise);
+    }
+  }
+
+  const ambiguityCodes = [
+    "catalog_title_may_not_be_a_character_name",
+    "catalog_franchise_is_navigation_metadata_only",
+  ];
+  if (supportingLabels.size > 0) {
+    ambiguityCodes.push("variant_collection_and_folder_labels_are_not_aliases");
+  }
+  if (names.size > 1) ambiguityCodes.push("candidate_sources_disagree_on_model_name");
+  if (franchises.size > 1) ambiguityCodes.push("candidate_sources_disagree_on_franchise");
+
+  return {
+    status: "unverified_candidate",
+    names: [...names.values()],
+    supportingLabels: [...supportingLabels.values()],
+    reviewRequired: true,
+    verified: false,
+    ambiguityCodes,
+    note: "Exact catalog labels are review leads only; identity needs independent evidence and human approval.",
+    franchises: {
+      status: "catalog_context_only",
+      candidates: [...franchises.values()],
+      reviewRequired: true,
+      verified: false,
+    },
+  };
+}
+
 export function buildCharacterReviewInventory({ models, source, capturedAt }) {
   const countsByCategory = new Map();
   const countsByFranchise = new Map();
@@ -196,6 +288,7 @@ export function buildCharacterReviewInventory({ models, source, capturedAt }) {
         fields: ["category", "category_slug", "franchise", "franchise_slug"],
         scope: "Catalog metadata is provenance for the model row only; it does not prove character identity.",
       },
+      identityCandidate: buildIdentityCandidates(model, source),
       characterReview: {
         status: "pending_evidence",
         characterId: null,
@@ -312,20 +405,26 @@ export function mergeCandidateAndPublicModels(candidate, publicModels) {
           : "published_only",
       candidateContract: candidateModel ? {
         slug: candidateModel.slug,
+        name: candidateModel.name,
         variantName: candidateModel.variantName,
         category: candidateModel.category,
         categorySlug: candidateModel.categorySlug,
         franchise: candidateModel.franchise,
         franchiseSlug: candidateModel.franchiseSlug,
+        collection: candidateModel.collection,
+        folderPath: candidateModel.folderPath,
         published: candidateModel.published,
       } : null,
       publicCatalog: publicModel ? {
         slug: publicModel.slug,
+        name: publicModel.name,
         variantName: publicModel.variantName,
         category: publicModel.category,
         categorySlug: publicModel.categorySlug,
         franchise: publicModel.franchise,
         franchiseSlug: publicModel.franchiseSlug,
+        collection: publicModel.collection,
+        folderPath: publicModel.folderPath,
       } : null,
       sources,
     };
@@ -378,6 +477,17 @@ const REVIEW_CSV_COLUMNS = [
   "candidate_contract_franchise_slug",
   "public_catalog_slug",
   "catalog_evidence_scope",
+  "identity_candidate_names",
+  "candidate_status",
+  "candidate_sources",
+  "supporting_labels",
+  "candidate_ambiguities",
+  "identity_review_required",
+  "identity_verified",
+  "franchise_candidates",
+  "franchise_sources",
+  "franchise_review_required",
+  "franchise_verified",
   "identity_status",
   "character_id",
   "candidate_name",
@@ -423,6 +533,17 @@ export function serializeReviewQueueCsv(inventory) {
       candidate_contract_franchise_slug: model.candidateContract?.franchiseSlug,
       public_catalog_slug: model.publicCatalog?.slug,
       catalog_evidence_scope: model.catalogEvidence.scope,
+      identity_candidate_names: model.identityCandidate.names.map((candidate) => candidate.value).join(" | "),
+      candidate_status: model.identityCandidate.status,
+      candidate_sources: JSON.stringify(model.identityCandidate.names.flatMap((candidate) => candidate.evidence)),
+      supporting_labels: JSON.stringify(model.identityCandidate.supportingLabels),
+      candidate_ambiguities: model.identityCandidate.ambiguityCodes.join(" | "),
+      identity_review_required: model.identityCandidate.reviewRequired,
+      identity_verified: model.identityCandidate.verified,
+      franchise_candidates: model.identityCandidate.franchises.candidates.map((candidate) => candidate.label).join(" | "),
+      franchise_sources: JSON.stringify(model.identityCandidate.franchises.candidates.flatMap((candidate) => candidate.evidence)),
+      franchise_review_required: model.identityCandidate.franchises.reviewRequired,
+      franchise_verified: model.identityCandidate.franchises.verified,
       identity_status: model.characterReview.status,
       character_id: model.characterReview.characterId,
       candidate_name: model.characterReview.candidateName,
