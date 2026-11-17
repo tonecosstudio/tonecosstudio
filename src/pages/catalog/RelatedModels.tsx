@@ -349,14 +349,18 @@ export function RelatedModels({
   // A sorted franchise page may not contain the character at all. Only in
   // that case, one additional indexed name search can recover exact matches.
   // Never walk cursors or fetch every model in a large franchise.
-  const characterSearchLength = Array.from(model.name.trim()).length;
+  // Use the same validated name-search rule as the visible discovery link.
+  // Do not issue an indexed character query for unsafe/control-character
+  // names, even when the catalog lists a model with such metadata.
+  const canSearchByName = catalogDiscoveryTags(model).some(
+    (tag) => tag.kind === "name-search",
+  );
   const shouldSearchCharacter =
     isRequested &&
     canQuery &&
     relatedQuery.isSuccess &&
     !initialGroups.some((group) => group.kind === "character") &&
-    characterSearchLength >= 3 &&
-    characterSearchLength <= 80;
+    canSearchByName;
   const characterQuery = useQuery({
     queryKey: [
       "tonecos-catalog-related-character",
