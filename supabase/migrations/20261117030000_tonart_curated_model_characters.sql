@@ -18,6 +18,12 @@ CREATE TABLE public.catalog_curation_model_characters (
   updated_at timestamptz NOT NULL DEFAULT now(),
   unlinked_at timestamptz,
   unlink_reason text,
+  review_history jsonb NOT NULL DEFAULT '[]'::jsonb,
+  CONSTRAINT catalog_curation_link_history_bounded CHECK (
+    CASE WHEN jsonb_typeof(review_history) = 'array'
+      THEN jsonb_array_length(review_history) <= 100
+      ELSE false END
+  ),
   CONSTRAINT catalog_curation_link_review_state_valid CHECK (
     (unlinked_at IS NULL AND unlink_reason IS NULL)
     OR
@@ -371,6 +377,15 @@ BEGIN
   ON CONFLICT (catalog_model_id, character_identity_id) DO UPDATE
     SET evidence_origin = EXCLUDED.evidence_origin,
         evidence_note = EXCLUDED.evidence_note,
+        review_history = CASE
+          WHEN public.catalog_curation_model_characters.unlinked_at IS NOT NULL
+          THEN public.catalog_curation_model_characters.review_history ||
+            jsonb_build_array(jsonb_build_object(
+              'action', 'restored', 'at', now(),
+              'origin', EXCLUDED.evidence_origin
+            ))
+          ELSE public.catalog_curation_model_characters.review_history
+        END,
         unlinked_at = NULL,
         unlink_reason = NULL,
         updated_at = now();
@@ -426,6 +441,9 @@ BEGIN
   UPDATE public.catalog_curation_model_characters
   SET unlinked_at = now(),
       unlink_reason = v_reason,
+      review_history = review_history || jsonb_build_array(
+        jsonb_build_object('action', 'unlinked', 'at', now(), 'reason', v_reason)
+      ),
       updated_at = now()
   WHERE catalog_model_id = v_model_id
     AND character_identity_id = p_character_identity_id
@@ -465,7 +483,7 @@ ALTER TABLE public.catalog_curation_model_profiles
   DROP COLUMN identity_evidence_note;
 
 COMMENT ON TABLE public.catalog_curation_model_characters IS
-  'Single private editorial link authority with review evidence and reversible unlink history. Not a public catalog or commercial offer.';
+  'Single private editorial link authority with bounded append-only unlink/restore decisions in the same relation. Not a public catalog or commercial offer.';
 
 NOTIFY pgrst, 'reload schema';
 COMMIT;
