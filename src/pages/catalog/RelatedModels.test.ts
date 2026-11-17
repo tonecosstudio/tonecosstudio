@@ -285,25 +285,28 @@ describe("TONART catalog discovery visibility", () => {
     ["too long", "A".repeat(81)],
     ["control character", "Goku" + String.fromCharCode(10) + "Admin"],
     ["unsafe markup", "<admin>"],
-  ])("avoids extra indexed searches for %s while keeping valid filters", async (_case, name) => {
-    vi.stubGlobal("IntersectionObserver", undefined);
-    const { gateway } = renderDiscovery({ ...current, name });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Ver sugestões relacionadas" }),
-    );
-    await waitFor(() => {
-      expect(gateway.listPage).toHaveBeenCalledTimes(1);
+  ])(
+    "avoids extra indexed searches for %s while keeping valid filters",
+    async (_case, name) => {
+      vi.stubGlobal("IntersectionObserver", undefined);
+      const { gateway } = renderDiscovery({ ...current, name });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Ver sugestões relacionadas" }),
+      );
+      await waitFor(() => {
+        expect(gateway.listPage).toHaveBeenCalledTimes(1);
+        expect(
+          screen.queryByRole("heading", { name: "Explore mais modelos" }),
+        ).toBeNull();
+      });
       expect(
-        screen.queryByRole("heading", { name: "Explore mais modelos" }),
+        screen.getByRole("link", { name: "Explorar universo Dragon Ball" }),
+      ).toBeTruthy();
+      expect(
+        screen.queryByRole("link", { name: /Buscar modelos pelo nome/ }),
       ).toBeNull();
-    });
-    expect(
-      screen.getByRole("link", { name: "Explorar universo Dragon Ball" }),
-    ).toBeTruthy();
-    expect(
-      screen.queryByRole("link", { name: /Buscar modelos pelo nome/ }),
-    ).toBeNull();
-  });
+    },
+  );
 
   it("keeps category, universe and name search accessible with no eligible siblings", async () => {
     vi.stubGlobal("IntersectionObserver", undefined);
