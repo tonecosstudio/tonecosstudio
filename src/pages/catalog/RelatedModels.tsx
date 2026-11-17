@@ -119,6 +119,37 @@ export function catalogDiscoveryTags(
   return tags;
 }
 
+/** Navigation remains visible even if this item has no eligible siblings. */
+export function CatalogDiscoveryLinks({
+  model,
+}: {
+  model: Pick<
+    PublicCatalogDetail,
+    "category" | "categorySlug" | "franchise" | "franchiseSlug" | "name"
+  >;
+}) {
+  const tags = catalogDiscoveryTags(model);
+  if (tags.length === 0) return null;
+
+  return (
+    <nav aria-label="Explorar filtros do catálogo" className="mt-6 flex flex-wrap items-center gap-2">
+      <span className="mr-1 text-xs uppercase tracking-wider text-[hsl(0,0%,56%)]">
+        Explorar por
+      </span>
+      {tags.map((tag) => (
+        <Link
+          key={tag.kind}
+          to={tag.to}
+          aria-label={tag.accessibleLabel}
+          className="inline-flex min-h-11 items-center rounded-full border border-[hsl(0,0%,28%)] px-3 py-2 text-sm text-[hsl(0,0%,88%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.7)] hover:text-[hsl(var(--gold-accent))] focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {tag.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 /**
  * Only catalog-authoritative fields may establish a relationship.
  * An identical name within the same franchise is a conservative character
@@ -297,19 +328,25 @@ export function RelatedModels({
   );
 
   if (!canQuery) return null;
-  // Do not display an empty section while waiting for the viewport trigger.
-  // Keep an invisible intersection target; older browsers retain a manual button.
+  // Taxonomy links are independent from related-model discovery. This page
+  // may have zero additional eligible models, or the lazy query may fail.
+  const discoveryLinks = <CatalogDiscoveryLinks model={model} />;
   const observerAvailable = typeof IntersectionObserver !== "undefined";
   if (!isRequested && observerAvailable) {
-    return <section ref={sectionRef} aria-hidden="true" className="h-px" />;
+    return (
+      <>
+        {discoveryLinks}
+        <section ref={sectionRef} aria-hidden="true" className="h-px" />
+      </>
+    );
   }
-  // With automatic discovery, reveal the section only after eligible models
-  // exist. Older browsers retain the explicit button and its loading status.
-  if (isRequested && observerAvailable && (relatedQuery.isPending || waitingForCharacter)) return null;
+  // With automatic discovery, reveal recommendations only after eligible
+  // models exist. The already-published category/universe links remain usable.
+  if (isRequested && observerAvailable && (relatedQuery.isPending || waitingForCharacter)) {
+    return discoveryLinks;
+  }
   if (isRequested && !recoverableError && relatedQuery.isSuccess &&
-      !waitingForCharacter && groups.length === 0) return null;
-
-  const discoveryTags = catalogDiscoveryTags(model);
+      !waitingForCharacter && groups.length === 0) return discoveryLinks;
 
   const franchisePath = PUBLIC_ROUTES.catalogModels + "?" +
     new URLSearchParams({
@@ -318,7 +355,9 @@ export function RelatedModels({
     }).toString();
 
   return (
-    <section ref={sectionRef} aria-label="Explore mais modelos" className="mt-12 border-t border-[hsl(0,0%,20%)] pt-8">
+    <>
+      {discoveryLinks}
+      <section ref={sectionRef} aria-label="Explore mais modelos" className="mt-12 border-t border-[hsl(0,0%,20%)] pt-8">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-xl font-semibold uppercase tracking-[0.08em] text-[hsl(0,0%,94%)]">
           Explore mais modelos
@@ -332,21 +371,6 @@ export function RelatedModels({
           </Link>
         ) : null}
       </div>
-      <nav aria-label="Explorar filtros do catálogo" className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-xs uppercase tracking-wider text-[hsl(0,0%,56%)]">
-          Explorar por
-        </span>
-        {discoveryTags.map((tag) => (
-          <Link
-            key={tag.kind}
-            to={tag.to}
-            aria-label={tag.accessibleLabel}
-            className="inline-flex min-h-11 items-center rounded-full border border-[hsl(0,0%,28%)] px-3 py-2 text-sm text-[hsl(0,0%,88%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.7)] hover:text-[hsl(var(--gold-accent))] focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            {tag.label}
-          </Link>
-        ))}
-      </nav>
       {!isRequested ? (
         <button
           type="button"
@@ -417,6 +441,7 @@ export function RelatedModels({
           ))}
         </div>
       )}
-    </section>
+      </section>
+    </>
   );
 }
