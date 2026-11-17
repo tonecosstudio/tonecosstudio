@@ -2,6 +2,51 @@
 -- Stage with the matching frontend/service release. No D1/R2 or public changes.
 BEGIN;
 
+-- Fail promptly rather than waiting indefinitely for a busy active editor.
+SET LOCAL lock_timeout = '15s';
+
+-- Freeze the legacy scalar writer BEFORE the first backfill read. This blocks
+-- INSERT/UPDATE/DELETE while allowing ordinary SELECTs until the final ALTER
+-- TABLE requires a short ACCESS EXCLUSIVE lock. Keep it for the transaction.
+-- Without this lock, concurrent legacy RPC writes could be lost at cutover.
+LOCK TABLE public.catalog_curation_model_profiles IN SHARE ROW EXCLUSIVE MODE;
+
+-- The exact three legacy RPCs are being replaced below. An additional
+-- function consuming the removed columns would otherwise silently break after
+-- COMMIT, because PL/pgSQL function bodies do not always track column dependencies.
+DO $cutover_preflight$
+BEGIN
+  IF to_regprocedure('public.admin_get_collection_curation_summary(uuid)') IS NULL
+     OR to_regprocedure('public.admin_get_collection_curation_page(uuid,text,integer,integer,uuid)') IS NULL
+     OR to_regprocedure('public.admin_verify_catalog_model_identity(text,text,text,text,text,text)') IS NULL
+  THEN
+    RAISE EXCEPTION 'Missing canonical scalar curation RPC: cutover blocked'
+      USING ERRCODE = '42P01';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace ns ON ns.oid = p.pronamespace
+    WHERE ns.nspname IN ('public', 'private_api')
+      AND p.prokind = 'f'
+      AND p.oid NOT IN (
+        to_regprocedure('public.admin_get_collection_curation_summary(uuid)')::oid,
+        to_regprocedure('public.admin_get_collection_curation_page(uuid,text,integer,integer,uuid)')::oid,
+        to_regprocedure('public.admin_verify_catalog_model_identity(text,text,text,text,text,text)')::oid
+      )
+      AND (
+        position('identity_verified' in pg_get_functiondef(p.oid)) > 0
+        OR position('character_identity_id' in pg_get_functiondef(p.oid)) > 0
+        OR position('identity_evidence_origin' in pg_get_functiondef(p.oid)) > 0
+        OR position('identity_evidence_note' in pg_get_functiondef(p.oid)) > 0
+      )
+  ) THEN
+    RAISE EXCEPTION 'Unexpected dependent curation function: cutover blocked'
+      USING ERRCODE = '2BP01';
+  END IF;
+END;
+$cutover_preflight$;
+
 CREATE TABLE public.catalog_curation_model_characters (
   catalog_model_id text NOT NULL REFERENCES public.catalog_curation_model_profiles(catalog_model_id) ON DELETE CASCADE,
   character_identity_id uuid NOT NULL REFERENCES public.catalog_character_identities(id) ON DELETE RESTRICT,

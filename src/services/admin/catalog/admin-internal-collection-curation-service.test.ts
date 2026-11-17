@@ -999,6 +999,40 @@ describe("internal catalog curation service", () => {
     }
   });
 
+  it("locks legacy writers and rejects unreviewed dependencies before the destructive cutover", () => {
+    const migration = readFileSync(
+      "supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
+    const lockPosition = migration.indexOf(
+      "LOCK TABLE public.catalog_curation_model_profiles IN SHARE ROW EXCLUSIVE MODE",
+    );
+    const backfillPosition = migration.indexOf(
+      "INSERT INTO public.catalog_curation_model_characters (",
+    );
+    const dropPosition = migration.indexOf(
+      "DROP COLUMN character_identity_id",
+    );
+    expect(migration).toContain("SET LOCAL lock_timeout = '15s'");
+    expect(lockPosition).toBeGreaterThan(0);
+    expect(backfillPosition).toBeGreaterThan(lockPosition);
+    expect(dropPosition).toBeGreaterThan(backfillPosition);
+    expect(migration).toContain("DO $cutover_preflight$");
+    expect(migration).toContain(
+      "Unexpected dependent curation function: cutover blocked",
+    );
+    for (const rpc of [
+      "admin_get_collection_curation_summary(uuid)",
+      "admin_get_collection_curation_page(uuid,text,integer,integer,uuid)",
+      "admin_verify_catalog_model_identity(text,text,text,text,text,text)",
+    ]) {
+      expect(migration).toContain("to_regprocedure('public." + rpc + "')");
+    }
+    expect(migration).not.toContain(
+      "LOCK TABLE public.catalog_curation_model_profiles IN ACCESS EXCLUSIVE MODE",
+    );
+  });
+
   it("grants each private migration RPC with its exact PostgreSQL definition signature", () => {
     const migration = readFileSync(
       "supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
