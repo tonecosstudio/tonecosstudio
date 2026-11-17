@@ -1,6 +1,18 @@
 # TONART — Fichas de personagens, universos e descoberta relacionada
 
-**Estado:** requisito de produto definido pelo proprietário em 16/11/2026; **implementação ainda pendente**, sem autorização implícita de deploy, indexação, alterações no Worker produtivo ou liberação comercial. Este documento é a especificação funcional de referência, **não** uma nova fonte de verdade para o catálogo.
+**Estado:** requisito de produto definido em 16/11/2026; **implementação incremental iniciada em branch, ainda não integrada nem publicada**, sem autorização implícita de deploy, indexação, alterações no Worker produtivo ou liberação comercial. Este documento é a especificação funcional de referência, **não** uma nova fonte de verdade para o catálogo.
+
+## Primeiro incremento de código (branch de desenvolvimento, 16/11/2026)
+
+**Escopo já codificado; testes ainda sujeitos à execução de CI/ambiente local:**
+
+- `src/pages/catalog/RelatedModels.tsx` passa a produzir **chips navegáveis** a partir dos metadados públicos canônicos: categoria (`/modelos?category=...`), universo (`/universo/:themeKey/:franchiseKey`) e **busca por nome** no catálogo (com `q`, categoria e franquia). Os links usam apenas slugs validados, codificação segura, acessibilidade e o design atual.
+- A busca por nome não é chamada de identidade de personagem: nomes iguais em modelos/obras não substituem a confirmação editorial. A ficha de personagem com biografia **continua bloqueada** até um índice público versionado de personagens confirmados.
+- `src/pages/catalog/RelatedModels.test.ts` contém regressões dos links, Unicode/URL encoding, limites de pesquisa, homônimos implícitos, slugs inválidos e ausência de link inventado.
+- O componente de recomendações existente continua com busca limitada/lazy e sem novo endpoint. A seção ainda pode se ocultar quando **nenhum outro modelo elegível** é encontrado; isso preserva a regressão atual e impede conflito com a PR #29, que modifica a ficha pai e seus testes.
+- Não tocar em `CanonicalModelDetails` nesta branch: a **PR #29** já altera essa tela e o teste de integração. Quando ela se integrar, acrescentar a navegação de categoria/universo diretamente na ficha pai, independente da presença de recomendações, e só depois criar links de personagem verificados.
+
+**Próximo incremento (ainda não implementado):** reconciliar identidades editoriais da PR #28 com os IDs do Worker, publicar somente perfis revisados via contrato público canônico, criar página por identidade verificável e trocar o chip de busca por link real do personagem. Até então, **não inventar biografias nem usar Supabase privado como leitura pública**.
 
 ## Objetivo e experiência do visitante
 
