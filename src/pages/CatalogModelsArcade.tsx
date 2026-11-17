@@ -62,6 +62,9 @@ export default function CatalogModelsArcade() {
   const category = searchParams.get("category")?.trim() ?? "";
   const franchise = searchParams.get("franchise")?.trim() ?? "";
   const folder = searchParams.get("folder")?.trim() ?? "";
+  const quoteRequestPath =
+    PUBLIC_ROUTES.quoteRequest +
+    (searchParams.get("tipo") === "pre-venda" ? "?tipo=pre-venda" : "");
   const [draft, setDraft] = useState(search);
   // Deep links already contain the selected IDs. In a public image-review
   // build, avoid extra category/franchise reads just to populate closed selects.
@@ -755,7 +758,7 @@ export default function CatalogModelsArcade() {
             </p>
             {selectedModels.length > 0 && import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" ? (
               <SheetClose asChild>
-                <Link to={PUBLIC_ROUTES.quoteRequest}
+                <Link to={quoteRequestPath}
                   className="mb-3 inline-flex min-h-11 w-full items-center justify-center bg-[hsl(var(--gold-accent))] px-4 text-sm font-semibold text-black hover:brightness-110">
                   Solicitar orçamento dos modelos
                 </Link>

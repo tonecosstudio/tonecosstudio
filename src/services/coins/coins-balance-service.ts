@@ -1,45 +1,20 @@
-import { supabase } from "@/integrations/supabase/client";
-import { assertCurrentUserId, requireAuthenticatedUserId } from "@/services/auth/current-user";
+import { assertCurrentUserId } from "@/services/auth/current-user";
+import { getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
+import { getMyTonecosCoinBalance } from "@/services/coins/tonecos-coins-service";
 import type { CoinsBalanceResponse, UserId } from "@/types/coins";
 
+/** Compatibility adapter: all customer balances now come from the TONART ledger. */
 export async function fetchCoinsBalance(userId?: UserId | null): Promise<CoinsBalanceResponse> {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    targetUserId = await requireAuthenticatedUserId();
-  } else {
-    await assertCurrentUserId(targetUserId);
-  }
-
-  const { data, error } = await supabase
-    .from("user_coins")
-    .select("balance, total_earned, total_spent, updated_at")
-    .eq("user_id", targetUserId)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`Erro ao buscar saldo de coins: ${error.message}`);
-  }
-
-  if (!data) {
-    const now = new Date().toISOString();
-
-    return {
-      user_id: targetUserId,
-      balance: 0,
-      total_earned: 0,
-      total_spent: 0,
-      last_updated: now,
-      updated_at: now,
-    };
-  }
-
+  if (userId) await assertCurrentUserId(userId);
+  const identity = await getTonecosCurrentUser();
+  if (!identity) throw new Error("tonecos_login_required");
+  const balance = await getMyTonecosCoinBalance();
   return {
-    user_id: targetUserId,
-    balance: data.balance,
-    total_earned: data.total_earned,
-    total_spent: data.total_spent,
-    last_updated: data.updated_at,
-    updated_at: data.updated_at,
+    user_id: identity.id,
+    balance: balance.balance,
+    total_earned: balance.totalEarned,
+    total_spent: balance.totalSpent,
+    last_updated: balance.updatedAt,
+    updated_at: balance.updatedAt,
   };
 }

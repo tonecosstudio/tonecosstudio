@@ -182,6 +182,7 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   }
   const overlays = contract.staging.localOverlays ?? {};
   assert.deepEqual(Object.keys(overlays).sort(), [
+    'config/catalog-production-model-contract.json',
     'tools/test_worker_folder_counts.mjs', 'worker/index.ts', 'worker/publicQueryBudget.ts', 'wrangler.jsonc',
   ]);
   // The immutable import snapshot gates the INITIAL M5 release, not later
@@ -204,8 +205,13 @@ test('staged files preserve immutable import pins and explicit local overlays, w
     assert.equal(existsSync(actualPath), true, 'Canonical catalog file missing: ' + path);
     if (contract.migration.phase !== 'cutover-complete') {
       const buf = readFileSync(actualPath);
-      const actual = createHash('sha1').update('blob ' + buf.byteLength).update(Buffer.from([0])).update(buf).digest('hex');
-      assert.equal(actual, overlays[path]?.localBlob ?? sourceBlob,
+      // Imported blobs may themselves use CRLF, while Git can expand LF blobs
+      // to CRLF in a Windows checkout. Accept either exact bytes or only the
+      // transport-level CRLF normalization; any content drift still fails.
+      const canonical = Buffer.from(buf.toString('utf8').replace(/\r\n/g, '\n'));
+      const blobHash = bytes => createHash('sha1').update('blob ' + bytes.byteLength).update(Buffer.from([0])).update(bytes).digest('hex');
+      const expected = overlays[path]?.localBlob ?? sourceBlob;
+      assert.ok([blobHash(buf), blobHash(canonical)].includes(expected),
         'Unexpected candidate import drift in ' + path);
     }
   }
@@ -223,6 +229,32 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   assert.ok(existsSync(join(root, contract.target.serviceRoot, 'tools/test_worker_entry_integration.mjs')));
   assert.equal(contract.migration.targetD1MigrationEnabled, false);
   // Publisher ownership is phase-dependent and validated in the M5 gate above.
+});
+
+test('the model contract reconciles candidate and public catalog IDs without editorial identity claims', () => {
+  const modelContract = JSON.parse(source('services/catalogo/config/catalog-production-model-contract.json'));
+  const models = modelContract.models;
+  const reconciliation = modelContract.reconciliation;
+  assert.equal(modelContract.source.productionModels, 2609);
+  assert.equal(modelContract.source.publishedModels, 2575);
+  assert.equal(models.length, 2609);
+  assert.equal(models.filter(model => Number(model.published) === 1).length, 2575);
+  assert.equal(models.filter(model => Number(model.published) === 0).length, 34);
+  assert.equal(new Set(models.map(model => model.id)).size, 2609);
+  assert.equal(new Set(models.map(model => model.slug)).size, 2609);
+  assert.equal(new Set(models.map(model => model.code)).size, 2609);
+  assert.equal(reconciliation.setCounts.importedCandidateIds, 2596);
+  assert.equal(reconciliation.setCounts.sharedCandidateAndPublicIds, 2562);
+  assert.equal(reconciliation.setCounts.candidateOnlyIds, 34);
+  assert.equal(reconciliation.setCounts.publicOnlyIds, 13);
+  assert.match(reconciliation.evidenceInventoryCommit, sha);
+  assert.equal(reconciliation.evidenceInventoryPath, 'docs/review/character-catalog-review-queue.csv');
+  assert.match(reconciliation.editorialReview, /unverified|não verificad/i);
+  assert.ok(models.every(model =>
+    !Object.hasOwn(model, 'characterId') &&
+    !Object.hasOwn(model, 'biography') &&
+    !Object.hasOwn(model, 'identityVerified')),
+  'Catalog metadata must not mark editorial character identities verified');
 });
 
 test('M5 snapshot is a pinned observation, not production approval', () => {

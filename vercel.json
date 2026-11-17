@@ -11,7 +11,7 @@
       "destination": "/api/catalogo-proxy?path=:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\\.).*)",
       "destination": "/index.html"
     }
   ],

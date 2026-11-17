@@ -9,6 +9,10 @@ type PaymentUserRow = {
   created_at: string | null;
 };
 
+type QuotePaymentUserRow = PaymentUserRow & {
+  status: string | null;
+};
+
 type QuoteUserRow = {
   user_id: string | null;
 };
@@ -20,23 +24,50 @@ export interface CustomerRelationshipSummary {
   lastApprovedPaymentAtByUserId: Map<string, string>;
 }
 
+function isUnavailableLegacyTable(
+  error: { code?: string; message?: string; details?: string },
+  table: string,
+): boolean {
+  const code = error.code;
+  const message = `${error.message ?? ""} ${error.details ?? ""}`.toLowerCase();
+  return (code === "42P01" || code === "PGRST205") && message.includes(table);
+}
+
 export async function fetchCustomerRelationshipSummary(): Promise<CustomerRelationshipSummary> {
-  const [subscriptionsResult, paymentsResult, quotesResult] = await Promise.all([
+  const [subscriptionsResult, paymentsResult, quotePaymentsResult, quotesResult] = await Promise.all([
     supabase.from("subscriptions").select("user_id").eq("status", "active"),
     supabase
       .from("manual_payments")
       .select("user_id, created_at")
       .eq("status", "approved")
       .order("created_at", { ascending: false }),
+    supabase
+      .from("quote_payments")
+      .select("user_id, created_at, status")
+      .eq("status", "completed")
+      .order("created_at", { ascending: false }),
     supabase.from("quotes").select("user_id"),
   ]);
 
-  if (subscriptionsResult.error) {
+  if (
+    subscriptionsResult.error &&
+    !isUnavailableLegacyTable(subscriptionsResult.error, "subscriptions")
+  ) {
     throw subscriptionsResult.error;
   }
 
-  if (paymentsResult.error) {
+  if (
+    paymentsResult.error &&
+    !isUnavailableLegacyTable(paymentsResult.error, "manual_payments")
+  ) {
     throw paymentsResult.error;
+  }
+
+  if (
+    quotePaymentsResult.error &&
+    !isUnavailableLegacyTable(quotePaymentsResult.error, "quote_payments")
+  ) {
+    throw quotePaymentsResult.error;
   }
 
   if (quotesResult.error) {
@@ -52,7 +83,14 @@ export async function fetchCustomerRelationshipSummary(): Promise<CustomerRelati
   const buyerIds = new Set<string>();
   const lastApprovedPaymentAtByUserId = new Map<string, string>();
 
-  for (const payment of (paymentsResult.data ?? []) as PaymentUserRow[]) {
+  const approvedPayments = [
+    ...((paymentsResult.data ?? []) as PaymentUserRow[]),
+    ...((quotePaymentsResult.data ?? []) as QuotePaymentUserRow[]),
+  ].sort((left, right) =>
+    (right.created_at ?? "").localeCompare(left.created_at ?? "")
+  );
+
+  for (const payment of approvedPayments) {
     if (!payment.user_id) {
       continue;
     }

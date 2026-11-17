@@ -14,11 +14,13 @@ import "./styles/landing-page.css";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 createRoot(document.getElementById("root")!).render(
-  <ErrorBoundary>
-    <HelmetProvider>
-      <Suspense fallback={<div role="status" className="min-h-screen bg-black text-white" aria-label="Carregando catálogo" />}>
-        <App />
-      </Suspense>
-    </HelmetProvider>
-  </ErrorBoundary>
+  <>
+    <ErrorBoundary>
+      <HelmetProvider>
+        <Suspense fallback={<div role="status" className="min-h-screen bg-black text-white" aria-label="Carregando catálogo" />}>
+          <App />
+        </Suspense>
+      </HelmetProvider>
+    </ErrorBoundary>
+  </>,
 );

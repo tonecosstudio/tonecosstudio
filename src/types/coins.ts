@@ -11,9 +11,7 @@
 // TIPOS BASE
 // ============================================================================
 
-/**
- * Quantidade de coins (sempre inteiro positivo)
- */
+/** Coins support exact hundredths, for example 237.50 Coins. */
 export type CoinsAmount = number;
 
 /**
@@ -38,12 +36,12 @@ export interface CoinsBalance {
   user_id: UserId;
   /** Saldo atual em coins */
   balance: CoinsAmount;
-  /** Total earned credits, excluding refunds */
+  /** Total positive Coins ledger entries */
   total_earned: CoinsAmount;
-  /** Net spent credits after refunds */
+  /** Absolute total of negative Coins ledger entries */
   total_spent: CoinsAmount;
   /** Última atualização do saldo */
-  updated_at: string;
+  updated_at: string | null;
 }
 
 // ============================================================================
@@ -362,14 +360,14 @@ export interface CoinsBalanceResponse {
   user_id: UserId;
   /** Saldo atual */
   balance: CoinsAmount;
-  /** Total earned credits, excluding refunds */
+  /** Total positive Coins ledger entries */
   total_earned: CoinsAmount;
-  /** Net spent credits after refunds */
+  /** Absolute total of negative Coins ledger entries */
   total_spent: CoinsAmount;
   /** Última atualização */
-  last_updated: string;
+  last_updated: string | null;
   /** Database updated_at timestamp */
-  updated_at: string;
+  updated_at: string | null;
 }
 
 /**

@@ -7,9 +7,10 @@
 
 - o bucket **deve permanecer privado** (`public = false`);
 - somente usuários autenticados podem enviar arquivos;
-- o objeto fica em `subscriptions/<user-id>/<arquivo>`;
+- o objeto fica em `subscriptions/<user-id>/<arquivo>` ou, para uma pré-venda do catálogo, `quotes/<user-id>/<quote-id>/<arquivo>`;
 - a policy de `storage.objects` deve conferir que o `<user-id>` do caminho é o
-  mesmo `auth.uid()`;
+  mesmo `auth.uid()` e, no caso de `quotes`, que a solicitação é uma pré-venda
+  pertencente à conta atual;
 - administradores podem ler comprovantes conforme a policy do bucket;
 - o componente retorna apenas o **object path** privado, nunca `getPublicUrl()`;
 - URLs públicas ou signed URLs de longa duração não devem ser persistidas nas
@@ -19,7 +20,8 @@
 
 A configuração canônica do bucket e das policies está em:
 
-`supabase/migrations/20260831011000_secure_payment_voucher_storage.sql`
+`supabase/migrations/20260915205645_secure_payment_voucher_storage.sql` and the
+quote extension `supabase/migrations/20261114140837_tonart_preorder_quote_payment_flow.sql`.
 
 Não recrie o bucket manualmente como público e não adicione policy de leitura
 para `public` ou `anon`.
@@ -35,8 +37,9 @@ para `public` ou `anon`.
 />
 ```
 
-`pathPrefix` usa `subscriptions` por padrão. Outros destinos são rejeitados pelo
-serviço enquanto não houver contrato de Storage/RLS específico para eles.
+`pathPrefix` usa `subscriptions` por padrão. Para uma pré-venda use
+`quotes:<quote-id>`; o serviço valida o UUID e monta o caminho com o usuário
+autenticado. Outros destinos continuam rejeitados.
 
 ## Estrutura do objeto
 
@@ -45,12 +48,19 @@ payment-vouchers/
 └── subscriptions/
     └── <auth.uid()>/
         └── <timestamp>-<random-token>.<ext>
+
+payment-vouchers/
+└── quotes/
+    └── <auth.uid()>/
+        └── <quote-id>/
+            └── <timestamp>-<random-token>.<ext>
 ```
 
 Exemplo:
 
 ```text
 subscriptions/11111111-1111-4111-8111-111111111111/1788130800000-a1b2c3d4e5f60708.jpg
+quotes/11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222/1788130800000-a1b2c3d4e5f60708.jpg
 ```
 
 O caminho salvo no banco não inclui URL, host ou token temporário.

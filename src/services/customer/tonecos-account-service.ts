@@ -2,15 +2,131 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database as TonecosMvpDatabase } from "@/integrations/supabase/tonecos-mvp.types";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
+import { LOCAL_SUPABASE_FALLBACK } from "@/config/supabase-environment";
 import { isPasswordPolicyCompliant } from "@/config/auth";
-import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import {
-  sendPasswordResetEmail, signInWithPasswordCredentials, signOutCurrentSession,
+  resolveTonecosCustomerReturnPath,
+  tonecosLoginReturnPath,
+  tonecosRecoveryPath,
+} from "@/config/routes";
+import {
+  resendSignupConfirmation,
+  sendPasswordResetEmail,
+  signInWithPasswordCredentials,
+  signOutCurrentSession,
   signUpWithPasswordCredentials,
 } from "@/services/auth/auth-session-service";
 
 const tonecos = supabase as unknown as SupabaseClient<TonecosMvpDatabase>;
 type AccountProfile = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Row"];
+type ProfileUpdate = TonecosMvpDatabase["public"]["Tables"]["profiles"]["Update"];
+type TonecosAccountProfile = AccountProfile & { taxDetailsAvailable?: boolean };
+export const TONECOS_LOCAL_PREVIEW_USER_ID =
+  "00000000-0000-4000-8000-000000000001";
+export const TONECOS_LOCAL_PREVIEW_QUOTE_ID =
+  "a0000000-0000-4000-8000-000000000001";
+const PROFILE_SELECT = "id,email,full_name,phone,whatsapp,cpf,birth_date,delivery_address,preferred_contact_channel,quote_updates,production_updates,marketing_emails,created_at,updated_at" as const;
+const PROFILE_SELECT_WITHOUT_TAX_DETAILS = "id,email,full_name,phone,whatsapp,delivery_address,preferred_contact_channel,quote_updates,production_updates,marketing_emails,created_at,updated_at" as const;
+let localPreviewProfile: AccountProfile | null = null;
+let localPreviewSignedOut = false;
+// In-memory recovery proof, established only by Supabase's one-time OTP
+// exchange. It must not outlive the completed or signed-out session.
+let verifiedRecoveryUserId: string | null = null;
+
+function createLocalPreviewProfile(): AccountProfile {
+  const now = new Date().toISOString();
+  return {
+    id: TONECOS_LOCAL_PREVIEW_USER_ID,
+    email: "marina.oliveira@tonart.local",
+    full_name: "Marina Oliveira",
+    phone: "+55 (11) 90000-0000",
+    whatsapp: "5511900000000",
+    cpf: null,
+    birth_date: null,
+    delivery_address: {
+      street: "Rua das Palmeiras",
+      number: "128",
+      complement: "",
+      neighborhood: "Jardim Paulista",
+      city: "São Paulo",
+      state: "SP",
+      zipCode: "01401000",
+      country: "BR",
+    },
+    preferred_contact_channel: "email",
+    quote_updates: true,
+    production_updates: true,
+    marketing_emails: false,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+function requireLocalPreviewProfile(): AccountProfile {
+  if (!LOCAL_SUPABASE_FALLBACK) {
+    throw new Error("tonecos_local_preview_unavailable");
+  }
+  if (localPreviewSignedOut) throw new Error("tonecos_login_required");
+  if (!localPreviewProfile) {
+    localPreviewProfile = createLocalPreviewProfile();
+  }
+  return localPreviewProfile;
+}
+
+function updateLocalPreviewProfile(changes: ProfileUpdate): AccountProfile {
+  const profile = requireLocalPreviewProfile();
+  localPreviewProfile = {
+    ...profile,
+    ...changes,
+    updated_at: new Date().toISOString(),
+  };
+  return { ...localPreviewProfile };
+}
+
+export function isTonecosLocalPreviewEnabled(): boolean {
+  return LOCAL_SUPABASE_FALLBACK;
+}
+
+function isMissingTaxProfileColumn(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const value = error as { code?: unknown; message?: unknown; details?: unknown };
+  if (value.code !== "42703" && value.code !== "PGRST204") return false;
+  const description = `${value.message ?? ""} ${value.details ?? ""}`;
+  return /\b(cpf|birth_date)\b/i.test(description);
+}
+
+function markTaxDetailsUnavailable(data: unknown): TonecosAccountProfile {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("tonecos_account_profile_invalid");
+  }
+  return {
+    ...(data as Omit<AccountProfile, "cpf" | "birth_date">),
+    cpf: null,
+    birth_date: null,
+    taxDetailsAvailable: false,
+  };
+}
+
+export type TonecosDeliveryAddress = {
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: "BR";
+};
+export type TonecosContactPreferences = {
+  preferredContactChannel: "email" | "whatsapp" | "phone" | null;
+  quoteUpdates: boolean;
+};
+
+const BRAZIL_STATES = new Set([
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
+  "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+]);
+
 
 function cleanText(input: unknown, limit: number, required = false): string | null {
   if (typeof input !== "string") throw new Error("tonecos_account_input_invalid");
@@ -53,16 +169,35 @@ function originRedirect(path: string): string {
   return new URL(path, window.location.origin).toString();
 }
 
+function confirmationRedirect(returnTo?: string): string {
+  return originRedirect(tonecosLoginReturnPath(returnTo));
+}
+
 /** The only identity provider for Tonecos is Supabase Auth in the Tonecos project. */
 export async function registerTonecosAccount(input: {
-  email: string; password: string; fullName: string;
+  email: string;
+  password: string;
+  fullName: string;
+  returnTo?: string;
 }): Promise<{ userId: string | null; emailConfirmationRequired: boolean }> {
   assertTonecosCommercialEnabled();
   const credentials = validateRegistrationCredentials(input.email, input.password);
   const fullName = cleanText(input.fullName, 160, true)!;
   return signUpWithPasswordCredentials({
     ...credentials, fullName,
-    emailRedirectTo: originRedirect(TONECOS_COMMERCIAL_ROUTES.login),
+    emailRedirectTo: confirmationRedirect(input.returnTo),
+  });
+}
+
+export async function resendTonecosSignupConfirmation(
+  email: string,
+  returnTo?: string,
+): Promise<void> {
+  assertTonecosCommercialEnabled();
+  const normalized = validateEmail(email);
+  await resendSignupConfirmation({
+    email: normalized,
+    emailRedirectTo: confirmationRedirect(returnTo),
   });
 }
 
@@ -71,13 +206,69 @@ export async function signInTonecosAccount(email: string, password: string): Pro
   return signInWithPasswordCredentials(validateSignInCredentials(email, password));
 }
 
+/** Changes an authenticated account password only after re-verifying the current password.
+ * A successful change signs the account out so the new credential must be used immediately.
+ */
+export async function changeTonecosPassword(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<void> {
+  assertTonecosCommercialEnabled();
+  if (
+    typeof input.currentPassword !== "string" ||
+    input.currentPassword.length === 0 ||
+    input.currentPassword.length > 1024
+  ) {
+    throw new Error("tonecos_current_password_invalid");
+  }
+  if (
+    typeof input.newPassword !== "string" ||
+    input.newPassword.length > 1024 ||
+    !isPasswordPolicyCompliant(input.newPassword) ||
+    input.newPassword === input.currentPassword
+  ) {
+    throw new Error("tonecos_new_password_invalid");
+  }
+
+  const current = await getTonecosCurrentUser();
+  if (!current?.email) throw new Error("tonecos_login_required");
+
+  const verifiedUserId = await signInWithPasswordCredentials({
+    email: current.email,
+    password: input.currentPassword,
+  });
+  if (verifiedUserId !== current.id) {
+    throw new Error("tonecos_account_session_mismatch");
+  }
+
+  const { data, error } = await tonecos.auth.updateUser({
+    password: input.newPassword,
+  });
+  if (error) throw error;
+  if (!data.user || data.user.id !== current.id) {
+    throw new Error("tonecos_password_update_incomplete");
+  }
+  await signOutCurrentSession();
+}
+
 export async function signOutTonecosAccount(): Promise<void> {
   assertTonecosCommercialEnabled();
+  verifiedRecoveryUserId = null;
+  if (LOCAL_SUPABASE_FALLBACK) {
+    localPreviewProfile = null;
+    localPreviewSignedOut = true;
+    return;
+  }
   await signOutCurrentSession();
 }
 
 export async function getTonecosCurrentUser(): Promise<{ id: string; email: string | null } | null> {
   assertTonecosCommercialEnabled();
+  if (LOCAL_SUPABASE_FALLBACK) {
+    if (localPreviewSignedOut) return null;
+    const profile = requireLocalPreviewProfile();
+    return { id: profile.id, email: profile.email };
+  }
   // A signed-out visitor has no session; that is not an authentication failure.
   // This is only a local preflight: an existing session must still be verified by getUser().
   const { data: stored, error: sessionError } = await tonecos.auth.getSession();
@@ -95,20 +286,28 @@ export async function getTonecosCurrentUser(): Promise<{ id: string; email: stri
 }
 
 async function currentAccountId(): Promise<string> {
+  if (LOCAL_SUPABASE_FALLBACK) return requireLocalPreviewProfile().id;
   const { data, error } = await tonecos.auth.getUser();
   if (error) throw error;
   if (!data.user) throw new Error("tonecos_login_required");
   return data.user.id;
 }
 
-export async function getMyTonecosProfile(): Promise<AccountProfile> {
+export async function getMyTonecosProfile(): Promise<TonecosAccountProfile> {
   assertTonecosCommercialEnabled();
+  if (LOCAL_SUPABASE_FALLBACK) return { ...requireLocalPreviewProfile() };
   const id = await currentAccountId();
-  const { data, error } = await tonecos.from("profiles")
-    .select("id,email,full_name,phone,created_at,updated_at")
+  const profile = await tonecos.from("profiles")
+    .select(PROFILE_SELECT)
     .eq("id", id).single();
-  if (error) throw error;
-  return data;
+  if (!profile.error) return profile.data;
+  if (!isMissingTaxProfileColumn(profile.error)) throw profile.error;
+
+  const compatibleProfile = await tonecos.from("profiles")
+    .select(PROFILE_SELECT_WITHOUT_TAX_DETAILS)
+    .eq("id", id).single();
+  if (compatibleProfile.error) throw compatibleProfile.error;
+  return markTaxDetailsUnavailable(compatibleProfile.data);
 }
 
 export async function updateMyTonecosProfile(input: {
@@ -121,29 +320,217 @@ export async function updateMyTonecosProfile(input: {
     throw new Error("tonecos_account_phone_invalid");
   }
   const id = await currentAccountId();
-  const { data, error } = await tonecos.from("profiles")
+  if (LOCAL_SUPABASE_FALLBACK) {
+    return updateLocalPreviewProfile({ full_name, phone });
+  }
+  const profile = await tonecos.from("profiles")
     .update({ full_name, phone })
     .eq("id", id)
-    .select("id,email,full_name,phone,created_at,updated_at").single();
-  if (error) throw error;
-  return data;
+    .select(PROFILE_SELECT).single();
+  if (!profile.error) return profile.data;
+  if (!isMissingTaxProfileColumn(profile.error)) throw profile.error;
+
+  const compatibleProfile = await tonecos.from("profiles")
+    .update({ full_name, phone })
+    .eq("id", id)
+    .select(PROFILE_SELECT_WITHOUT_TAX_DETAILS).single();
+  if (compatibleProfile.error) throw compatibleProfile.error;
+  return markTaxDetailsUnavailable(compatibleProfile.data);
+}
+
+/**
+ * Updates only already-granted customer columns of public.profiles.
+ * Never uses the legacy monorepo profile services or a second customer table.
+ */
+async function updateMyComplementaryProfile(changes: ProfileUpdate): Promise<TonecosAccountProfile> {
+  assertTonecosCommercialEnabled();
+  const id = await currentAccountId();
+  if (LOCAL_SUPABASE_FALLBACK) return updateLocalPreviewProfile(changes);
+  const profile = await tonecos.from("profiles")
+    .update(changes)
+    .eq("id", id)
+    .select(PROFILE_SELECT).single();
+  if (!profile.error) return profile.data;
+  if (!isMissingTaxProfileColumn(profile.error)) throw profile.error;
+
+  if (changes.cpf || changes.birth_date) {
+    throw new Error("tonecos_account_tax_details_unavailable");
+  }
+  const compatibleChanges = { ...changes };
+  delete compatibleChanges.cpf;
+  delete compatibleChanges.birth_date;
+  const compatibleProfile = await tonecos.from("profiles")
+    .update(compatibleChanges)
+    .eq("id", id)
+    .select(PROFILE_SELECT_WITHOUT_TAX_DETAILS).single();
+  if (compatibleProfile.error) throw compatibleProfile.error;
+  return markTaxDetailsUnavailable(compatibleProfile.data);
+}
+
+export async function updateMyTonecosWhatsapp(raw: string): Promise<AccountProfile> {
+  assertTonecosCommercialEnabled();
+  return updateMyComplementaryProfile({ whatsapp: normalizeWhatsapp(raw) });
+}
+
+export async function updateMyTonecosPersonalData(input: {
+  whatsapp: string;
+  cpf: string;
+  birthDate: string;
+}): Promise<AccountProfile> {
+  assertTonecosCommercialEnabled();
+  if (!input || typeof input !== "object") {
+    throw new Error("tonecos_account_personal_data_invalid");
+  }
+  const changes: ProfileUpdate = {
+    whatsapp: normalizeWhatsapp(input.whatsapp),
+    cpf: normalizeCpf(input.cpf),
+    birth_date: normalizeBirthDate(input.birthDate),
+  };
+  return updateMyComplementaryProfile(changes);
+}
+
+function normalizeWhatsapp(raw: string): string | null {
+  if (typeof raw !== "string" || (raw && !/^[+\d\s().-]*$/.test(raw))) {
+    throw new Error("tonecos_account_whatsapp_invalid");
+  }
+  const whatsapp = raw.replace(/\D/g, "") || null;
+  if (whatsapp && !/^(55)?[1-9][0-9]{9,10}$/.test(whatsapp)) {
+    throw new Error("tonecos_account_whatsapp_invalid");
+  }
+  return whatsapp;
+}
+
+function normalizeCpf(raw: string): string | null {
+  if (typeof raw !== "string" || (raw && !/^[\d.\-\s]*$/.test(raw))) {
+    throw new Error("tonecos_account_cpf_invalid");
+  }
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) {
+    throw new Error("tonecos_account_cpf_invalid");
+  }
+
+  const checkDigit = (length: number) => {
+    const sum = digits
+      .slice(0, length)
+      .split("")
+      .reduce((total, digit, index) => total + Number(digit) * (length + 1 - index), 0);
+    const remainder = sum % 11;
+    return remainder < 2 ? 0 : 11 - remainder;
+  };
+
+  if (checkDigit(9) !== Number(digits[9]) || checkDigit(10) !== Number(digits[10])) {
+    throw new Error("tonecos_account_cpf_invalid");
+  }
+  return digits;
+}
+
+function normalizeBirthDate(raw: string): string | null {
+  if (typeof raw !== "string") throw new Error("tonecos_account_birth_date_invalid");
+  const birthDate = raw.trim();
+  if (!birthDate) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+    throw new Error("tonecos_account_birth_date_invalid");
+  }
+
+  const parsed = new Date(`${birthDate}T00:00:00.000Z`);
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.toISOString().slice(0, 10) !== birthDate
+  ) {
+    throw new Error("tonecos_account_birth_date_invalid");
+  }
+
+  const today = new Date();
+  const latestAllowed = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  if (birthDate > latestAllowed) {
+    throw new Error("tonecos_account_birth_date_invalid");
+  }
+  return birthDate;
+}
+
+export async function updateMyTonecosDeliveryAddress(
+  input: TonecosDeliveryAddress | null,
+): Promise<AccountProfile> {
+  assertTonecosCommercialEnabled();
+  if (input === null) return updateMyComplementaryProfile({ delivery_address: null });
+  const keys = Object.keys(input ?? {});
+  if (keys.some((key) => ![
+    "street", "number", "complement", "neighborhood", "city", "state", "zipCode", "country",
+  ].includes(key))) throw new Error("tonecos_account_address_invalid");
+  const text = (value: unknown, max: number, optional = false) => {
+    if (typeof value !== "string") throw new Error("tonecos_account_address_invalid");
+    const cleaned = value.trim();
+    if ((!optional && !cleaned) || cleaned.length > max) {
+      throw new Error("tonecos_account_address_invalid");
+    }
+    return cleaned;
+  };
+  const street = text(input.street, 160);
+  const number = text(input.number, 20);
+  const neighborhood = text(input.neighborhood, 100);
+  const city = text(input.city, 100);
+  const state = text(input.state, 2);
+  const postalInput = text(input.zipCode, 9);
+  if (!/^\d{5}-?\d{3}$/.test(postalInput)) {
+    throw new Error("tonecos_account_address_invalid");
+  }
+  const zipCode = postalInput.replace("-", "");
+  if (!BRAZIL_STATES.has(state) || input.country !== "BR") {
+    throw new Error("tonecos_account_address_invalid");
+  }
+  const complement = input.complement === undefined
+    ? undefined : text(input.complement, 160, true);
+  const delivery_address: TonecosDeliveryAddress = {
+    street, number, neighborhood, city, state, zipCode, country: "BR",
+    ...(complement ? { complement } : {}),
+  };
+  return updateMyComplementaryProfile({ delivery_address });
+}
+
+export async function updateMyTonecosContactPreferences(
+  input: TonecosContactPreferences,
+): Promise<AccountProfile> {
+  assertTonecosCommercialEnabled();
+  if (
+    !input ||
+    !(
+      input.preferredContactChannel === null ||
+      ["email", "whatsapp", "phone"].includes(input.preferredContactChannel)
+    ) ||
+    typeof input.quoteUpdates !== "boolean" ||
+    Object.keys(input).some(
+      (key) => !["preferredContactChannel", "quoteUpdates"].includes(key),
+    )
+  ) {
+    throw new Error("tonecos_account_preferences_invalid");
+  }
+  return updateMyComplementaryProfile({
+    preferred_contact_channel: input.preferredContactChannel,
+    quote_updates: input.quoteUpdates,
+  });
 }
 
 /** Delegates rate-limiting to the existing canonical Supabase Auth service. */
-export async function requestTonecosPasswordReset(email: string): Promise<void> {
+export async function requestTonecosPasswordReset(
+  email: string,
+  returnTo?: string,
+): Promise<void> {
   assertTonecosCommercialEnabled();
   const normalized = validateEmail(email);
+  const safeReturn = resolveTonecosCustomerReturnPath(returnTo);
   await sendPasswordResetEmail({
     email: normalized,
-    redirectTo: originRedirect(TONECOS_COMMERCIAL_ROUTES.recovery + "?action=update"),
+    redirectTo: originRedirect(tonecosRecoveryPath(safeReturn, true)),
   });
 }
 
 /** Validate the one-time recovery token directly with Supabase Auth.
  * Unlike the PKCE callback code, this works across browsers/devices without a stored verifier.
  */
-export async function verifyTonecosPasswordRecoveryToken(tokenHash: string): Promise<void> {
+export async function verifyTonecosPasswordRecoveryToken(tokenHash: string): Promise<string> {
   assertTonecosCommercialEnabled();
+  verifiedRecoveryUserId = null;
   if (typeof tokenHash !== "string" || !/^[A-Za-z0-9_-]{32,512}$/.test(tokenHash)) {
     throw new Error("tonecos_recovery_link_invalid");
   }
@@ -151,9 +538,14 @@ export async function verifyTonecosPasswordRecoveryToken(tokenHash: string): Pro
     token_hash: tokenHash,
     type: "recovery",
   });
-  if (error || !data?.user || !data.session) {
+  if (error || !data?.user?.id || !data.session ||
+      data.session.user?.id !== data.user.id) {
     throw new Error("tonecos_recovery_link_invalid");
   }
+  verifiedRecoveryUserId = data.user.id;
+  // The verified Auth response already contains the session owner; avoid a
+  // second network round-trip before allowing the local recovery form.
+  return data.user.id;
 }
 
 /** Recovered sessions are verified by Supabase Auth, never by browser query params. */
@@ -163,10 +555,20 @@ export async function completeTonecosPasswordRecovery(password: string): Promise
       !isPasswordPolicyCompliant(password)) {
     throw new Error("tonecos_recovery_password_invalid");
   }
+  const expectedId = verifiedRecoveryUserId;
+  if (!expectedId) throw new Error("tonecos_recovery_session_required");
   const { data, error } = await tonecos.auth.getUser();
   if (error) throw error;
-  if (!data.user) throw new Error("tonecos_recovery_session_required");
+  if (!data.user || data.user.id !== expectedId) {
+    verifiedRecoveryUserId = null;
+    throw new Error("tonecos_recovery_session_required");
+  }
   const result = await tonecos.auth.updateUser({ password });
   if (result.error) throw result.error;
+  if (result.data?.user?.id !== expectedId) {
+    verifiedRecoveryUserId = null;
+    throw new Error("tonecos_recovery_session_required");
+  }
+  verifiedRecoveryUserId = null;
   await signOutCurrentSession();
 }

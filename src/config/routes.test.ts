@@ -17,6 +17,8 @@ import {
   loginReturnToPath,
   paymentDetailsPath,
   profileSectionPath,
+  resolveTonecosCustomerReturnPath,
+  tonecosLoginReturnPath,
   resolveCatalogModelIdFromParam,
   resolveProfileRouteSectionId,
   resolveProfileSectionId,
@@ -89,6 +91,43 @@ describe("route helpers", () => {
     expect(resolveProfileRouteSectionId("payment")).toBeNull();
     expect(resolveProfileSectionId("payments")).toBeNull();
     expect(resolveProfileSectionId("orders")).toBeNull();
+  });
+
+  it("returns customers to the exact recovered account section after login", () => {
+    expect(resolveTonecosCustomerReturnPath("/perfil/dados-pessoais")).toBe(
+      "/perfil/dados-pessoais",
+    );
+    expect(resolveTonecosCustomerReturnPath("/perfil/endereco")).toBe(
+      "/perfil/endereco",
+    );
+    expect(tonecosLoginReturnPath("/perfil/pedidos")).toBe(
+      "/login?next=%2Fperfil%2Fpedidos",
+    );
+    expect(resolveTonecosCustomerReturnPath("/admin")).toBe("/perfil");
+    expect(resolveTonecosCustomerReturnPath("//evil.example")).toBe("/perfil");
+    expect(resolveTonecosCustomerReturnPath("/perfil/../../admin")).toBe(
+      "/perfil",
+    );
+    expect(resolveTonecosCustomerReturnPath("/perfil/endereco?redirect=/admin")).toBe(
+      "/perfil",
+    );
+  });
+
+  it("preserves only an exact quote link through customer authentication", () => {
+    const quotePath = "/meus-orcamentos?quote=22222222-2222-4222-8222-222222222222";
+    expect(resolveTonecosCustomerReturnPath(quotePath)).toBe(quotePath);
+    expect(tonecosLoginReturnPath(quotePath)).toBe(
+      "/login?next=" + encodeURIComponent(quotePath),
+    );
+    for (const invalid of [
+      "/meus-orcamentos?quote=../../../admin",
+      quotePath + "&next=/admin",
+      quotePath + "#trick",
+      "/meus-orcamentos?quote=",
+      "/meus-orcamentos?quote=22222222",
+    ]) {
+      expect(resolveTonecosCustomerReturnPath(invalid)).toBe("/perfil");
+    }
   });
 
   it("accepts only bounded internal action paths", () => {

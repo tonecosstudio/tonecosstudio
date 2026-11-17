@@ -1,18 +1,36 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { answerCatalogQuoteRequest, listAdminCatalogQuotes } from "./catalog-quote-admin-service";
+import {
+  answerCatalogQuoteRequest,
+  answerTonartExtraOrder,
+  cancelAdminTonartExtraOrder,
+  changeCatalogQuoteStatus,
+  listAdminCatalogQuotes,
+  loadAdminCatalogQuotePage,
+} from "./catalog-quote-admin-service";
 
 const QUOTE = "22222222-2222-4222-8222-222222222222";
+const USER = "11111111-1111-4111-8111-111111111111";
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
-  from: vi.fn(),
-  requireAuthenticatedUserId: vi.fn(),
+  requireAdmin: vi.fn(),
 }));
+
 vi.mock("@/integrations/supabase/client", () => ({
-  supabase: { rpc: mocks.rpc, from: mocks.from },
+  supabase: { rpc: mocks.rpc },
 }));
-vi.mock("@/services/auth/current-user", () => ({
-  requireAuthenticatedUserId: mocks.requireAuthenticatedUserId,
+vi.mock("@/services/auth/tonecos-admin-access", () => ({
+  requireTonecosAdminAccess: mocks.requireAdmin,
 }));
+vi.mock("@/config/supabase-environment", () => ({
+  LOCAL_SUPABASE_FALLBACK: false,
+  get PREVIEW_READ_ONLY() {
+    return import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+  },
+  get SUPABASE_URL() {
+    return import.meta.env.VITE_SUPABASE_URL ?? "";
+  },
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("VITE_SUPABASE_URL", "https://icmtmaakjucmuzxnofkd.supabase.co");
@@ -20,110 +38,269 @@ beforeEach(() => {
   vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
   vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
   vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
-  mocks.requireAuthenticatedUserId.mockResolvedValue("admin-1");
-  mocks.rpc.mockImplementation(async (name: string) =>
-    name === "is_tonecos_admin"
-      ? { data: true, error: null }
-      : { data: QUOTE, error: null },
-  );
+  mocks.requireAdmin.mockResolvedValue(undefined);
 });
 afterEach(() => vi.unstubAllEnvs());
 
-describe("admin catalog quote response boundary", () => {
-  it("checks the Tonecos-specific role before invoking the pricing RPC", async () => {
-    await expect(answerCatalogQuoteRequest(QUOTE, 279.9)).resolves.toBe(QUOTE);
-    expect(mocks.requireAuthenticatedUserId).toHaveBeenCalledTimes(1);
-    expect(mocks.rpc).toHaveBeenNthCalledWith(1, "is_tonecos_admin");
-    expect(mocks.rpc).toHaveBeenNthCalledWith(2, "answer_catalog_quote_request", {
-      p_quote_id: QUOTE, p_amount: 279.9,
+const row = {
+  id: QUOTE,
+  userId: USER,
+  customerName: "Cliente",
+  customerEmail: "cliente@example.test",
+  status: "pending",
+  createdAt: "2026-11-13T12:00:00Z",
+  notes: null,
+  quotedAmount: null,
+  listAmount: null,
+  discountPercent: 0,
+  discountAmount: 0,
+  responseMessage: null,
+  items: [{ slug: "naruto", quantity: 1 }],
+  whatsapp: null,
+  postalCode: null,
+  scale: "a definir",
+  finishing: "a definir",
+  isPreorder: false,
+  depositAmount: null,
+  remainingAmount: null,
+  commercialOfferSnapshot: null,
+  commercialShippingAmountBrl: null,
+  canCancelExtraOrder: false,
+};
+
+describe("TONART admin quote directory", () => {
+  it("loads a complete paginated queue through the protected RPC", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: { total: 1, limit: 25, offset: 0, rows: [row] },
+      error: null,
     });
-    expect(mocks.from).not.toHaveBeenCalled();
+    await expect(loadAdminCatalogQuotePage()).resolves.toEqual({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [row],
+    });
+    expect(mocks.requireAdmin).toHaveBeenCalledTimes(1);
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "tonart_admin_quotes_directory",
+      {
+        p_quote_id: undefined,
+        p_status: undefined,
+        p_limit: 25,
+        p_offset: 0,
+      },
+    );
   });
 
-  it("never contacts Supabase for read-only preview or disabled feature", async () => {
-    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
-    await expect(answerCatalogQuoteRequest(QUOTE, 279)).rejects.toThrow("catalog_quotes_not_enabled");
-    await expect(listAdminCatalogQuotes()).rejects.toThrow("catalog_quotes_not_enabled");
-    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
-    vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "false");
-    await expect(answerCatalogQuoteRequest(QUOTE, 279)).rejects.toThrow("catalog_quotes_not_enabled");
+  it("retrieves an exact quote independently of queue position", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: { total: 1, limit: 1, offset: 0, rows: [row] },
+      error: null,
+    });
+    await expect(
+      loadAdminCatalogQuotePage({ quoteId: QUOTE, limit: 1 }),
+    ).resolves.toMatchObject({ total: 1, rows: [row] });
+    expect(mocks.rpc).toHaveBeenCalledWith("tonart_admin_quotes_directory", {
+      p_quote_id: QUOTE,
+      p_status: undefined,
+      p_limit: 1,
+      p_offset: 0,
+    });
+  });
+
+  it("decodes an extra order snapshot and its server cancellation eligibility", async () => {
+    const snapshot = {
+      schemaVersion: 1,
+      offerId: "33333333-3333-4333-8333-333333333333",
+      catalogModelSlug: "terror-monster",
+      scale: "1/10",
+      finishing: "painted",
+      contentsDescription: "Peça pintada conforme a oferta.",
+      itemListPriceBrl: 250,
+      itemDiscountBrl: 12.5,
+      itemPriceBrl: 237.5,
+      subscriberDiscountEligible: true,
+      subscriberDiscountApplied: true,
+      subscriberDiscountBasisPoints: 500,
+      shippingMode: "fixed",
+      configuredShippingAmountBrl: 20.25,
+      deliveryTerms: "Prazo informado na oferta.",
+      coinsEligible: true,
+      coinsRequested: 30.25,
+      coinsApplied: 30.25,
+      initialCashAmountDueBrl: 207.25,
+      currency: "BRL",
+    };
+    mocks.rpc.mockResolvedValue({
+      data: {
+        total: 1,
+        limit: 25,
+        offset: 0,
+        rows: [
+          {
+            ...row,
+            commercialOfferSnapshot: snapshot,
+            commercialShippingAmountBrl: 20.25,
+            canCancelExtraOrder: true,
+            items: [{ slug: "terror-monster", quantity: 1 }],
+            scale: "1/10",
+            finishing: "pintado",
+          },
+        ],
+      },
+      error: null,
+    });
+    await expect(loadAdminCatalogQuotePage()).resolves.toMatchObject({
+      rows: [
+        {
+          commercialOfferSnapshot: snapshot,
+          commercialShippingAmountBrl: 20.25,
+          canCancelExtraOrder: true,
+        },
+      ],
+    });
+  });
+
+  it("keeps the bounded compatibility helper", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: { total: 1, limit: 10, offset: 0, rows: [row] },
+      error: null,
+    });
+    await expect(listAdminCatalogQuotes(10)).resolves.toEqual([row]);
+  });
+
+  it("rejects invalid query bounds before auth/network I/O", async () => {
+    await expect(
+      loadAdminCatalogQuotePage({ quoteId: "../admin" }),
+    ).rejects.toThrow("admin_catalog_quote_query_invalid");
+    await expect(loadAdminCatalogQuotePage({ limit: 101 })).rejects.toThrow(
+      "admin_catalog_quote_query_invalid",
+    );
+    await expect(loadAdminCatalogQuotePage({ offset: -1 })).rejects.toThrow(
+      "admin_catalog_quote_query_invalid",
+    );
+    expect(mocks.requireAdmin).not.toHaveBeenCalled();
     expect(mocks.rpc).not.toHaveBeenCalled();
-    expect(mocks.from).not.toHaveBeenCalled();
   });
 
-  it("rejects invalid quote IDs and amounts before authentication", async () => {
-    for (const amount of [0, -1, NaN, Infinity, 1.001, 100000000]) {
-      await expect(answerCatalogQuoteRequest(QUOTE, amount))
-        .rejects.toThrow("admin_catalog_quote_response_invalid");
-    }
-    await expect(answerCatalogQuoteRequest("../other", 100))
-      .rejects.toThrow("admin_catalog_quote_response_invalid");
-    expect(mocks.requireAuthenticatedUserId).not.toHaveBeenCalled();
-    expect(mocks.rpc).not.toHaveBeenCalled();
+  it("answers only after admin verification with base value, discount and message", async () => {
+    mocks.rpc.mockResolvedValue({ data: QUOTE, error: null });
+    await expect(
+      answerCatalogQuoteRequest(QUOTE, 300, "Proposta válida por 7 dias.", 50),
+    ).resolves.toBe(QUOTE);
+    expect(mocks.requireAdmin).toHaveBeenCalledTimes(1);
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "answer_catalog_quote_request",
+      {
+        p_quote_id: QUOTE,
+        p_amount: 300,
+        p_message: "Proposta válida por 7 dias.",
+        p_discount_percent: 50,
+      },
+    );
   });
 
-  it("fails closed for unauthenticated user and for false admin role", async () => {
-    mocks.requireAuthenticatedUserId.mockRejectedValueOnce(new Error("User not authenticated"));
-    await expect(answerCatalogQuoteRequest(QUOTE, 200)).rejects.toThrow("User not authenticated");
-    expect(mocks.rpc).not.toHaveBeenCalled();
-    mocks.rpc.mockResolvedValueOnce({ data: false, error: null });
-    await expect(answerCatalogQuoteRequest(QUOTE, 200)).rejects.toThrow("Admin access required");
-    expect(mocks.rpc).toHaveBeenCalledTimes(1);
+  it("changes status only through the canonical admin RPC", async () => {
+    mocks.rpc.mockResolvedValue({ data: QUOTE, error: null });
+    await expect(changeCatalogQuoteStatus(QUOTE, "reviewing")).resolves.toBe(
+      QUOTE,
+    );
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "admin_update_quote_status",
+      { p_quote_id: QUOTE, p_status: "reviewing" },
+    );
   });
 
-  it("propagates role and pricing RPC failures without browser DML", async () => {
-    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "not authorized" } });
-    await expect(answerCatalogQuoteRequest(QUOTE, 200)).rejects.toMatchObject({ message: "not authorized" });
-    mocks.rpc.mockResolvedValueOnce({ data: true, error: null });
-    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "pricing denied" } });
-    await expect(answerCatalogQuoteRequest(QUOTE, 200)).rejects.toMatchObject({ message: "pricing denied" });
-    mocks.rpc.mockResolvedValueOnce({ data: true, error: null });
-    mocks.rpc.mockResolvedValueOnce({ data: "other", error: null });
-    await expect(answerCatalogQuoteRequest(QUOTE, 200))
-      .rejects.toThrow("admin_catalog_quote_result_invalid");
-    expect(mocks.from).not.toHaveBeenCalled();
+  it("answers an extra order with freight only and preserves its catalog price", async () => {
+    mocks.rpc.mockResolvedValue({ data: QUOTE, error: null });
+    await expect(
+      answerTonartExtraOrder(QUOTE, 24.9, "Frete confirmado para seu CEP."),
+    ).resolves.toBe(QUOTE);
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "admin_answer_tonart_extra_order",
+      {
+        p_quote_id: QUOTE,
+        p_shipping_amount: 24.9,
+        p_message: "Frete confirmado para seu CEP.",
+      },
+    );
   });
 
-  it("lists only bounded catalog requests with a trusted role check", async () => {
-    const query = { select: vi.fn(), not: vi.fn(), order: vi.fn(), limit: vi.fn() };
-    query.select.mockReturnValue(query); query.not.mockReturnValue(query);
-    query.order.mockReturnValue(query);
-    query.limit.mockResolvedValue({ data: [{
-      id: QUOTE, user_id: "client-1", status: "pending", created_at: "2026-11-05T00:00:00Z",
-      notes: "1/5", total_amount: null,
-      requested_catalog_models: [{ slug: "naruto", quantity: 1 }],
-    }], error: null });
-    const contacts = { select: vi.fn(), in: vi.fn() };
-    contacts.select.mockReturnValue(contacts);
-    contacts.in.mockResolvedValue({ data: [
-      { id: "client-1", email: "client@example.test", full_name: "Cliente Exemplo" },
-    ], error: null });
-    mocks.from.mockImplementation((table: string) =>
-      table === "quotes" ? query : contacts);
-    const rows = await listAdminCatalogQuotes(10);
-    expect(mocks.from).toHaveBeenCalledWith("profiles");
-    expect(contacts.in).toHaveBeenCalledWith("id", ["client-1"]);
-    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("is_tonecos_admin");
-    expect(query.not).toHaveBeenCalledWith("catalog_requested_at", "is", null);
-    expect(query.limit).toHaveBeenCalledWith(10);
-    expect(rows).toMatchObject([{
-      id: QUOTE, status: "pending", quotedAmount: null,
-      customerEmail: "client@example.test", customerName: "Cliente Exemplo",
-      items: [{ slug: "naruto", quantity: 1 }],
-    }]);
+  it("cancels an extra order through the protected reversal RPC", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: {
+        quote_id: QUOTE,
+        status: "archived",
+        payment_status: "failed",
+        coins_reversed: 25.25,
+        balance: 40.75,
+        idempotent: false,
+      },
+      error: null,
+    });
+    await expect(
+      cancelAdminTonartExtraOrder(
+        QUOTE,
+        "Cancelamento solicitado pelo cliente.",
+      ),
+    ).resolves.toBeUndefined();
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+      "admin_cancel_tonart_extra_order",
+      {
+        p_quote_id: QUOTE,
+        p_reason: "Cancelamento solicitado pelo cliente.",
+      },
+    );
   });
 
-  it("rejects malformed rows and oversized admin queries", async () => {
-    await expect(listAdminCatalogQuotes(1000)).rejects.toThrow("admin_catalog_quote_limit_invalid");
-    const query = { select: vi.fn(), not: vi.fn(), order: vi.fn(), limit: vi.fn() };
-    query.select.mockReturnValue(query); query.not.mockReturnValue(query);
-    query.order.mockReturnValue(query);
-    query.limit.mockResolvedValue({ data: [{
-      id: QUOTE, user_id: "client-1", status: "pending", created_at: "2026-11-05T00:00:00Z",
-      notes: null, total_amount: null,
-      requested_catalog_models: [{ slug: "../admin", quantity: 1 }],
-    }], error: null });
-    mocks.from.mockReturnValue(query);
-    await expect(listAdminCatalogQuotes()).rejects.toThrow("admin_catalog_quote_item_invalid");
+  it("fails closed for invalid responses and malformed RPC rows", async () => {
+    await expect(
+      answerCatalogQuoteRequest(QUOTE, 0, "Proposta"),
+    ).rejects.toThrow("admin_catalog_quote_response_invalid");
+    await expect(answerCatalogQuoteRequest(QUOTE, 10, " ")).rejects.toThrow(
+      "admin_catalog_quote_response_invalid",
+    );
+    await expect(
+      answerCatalogQuoteRequest(QUOTE, 300, "Proposta", 51),
+    ).rejects.toThrow("admin_catalog_quote_response_invalid");
+    await expect(
+      answerCatalogQuoteRequest(QUOTE, 0.01, "Proposta", 50),
+    ).rejects.toThrow("admin_catalog_quote_response_invalid");
+    expect(mocks.requireAdmin).not.toHaveBeenCalled();
+
+    mocks.rpc.mockResolvedValue({
+      data: {
+        total: 1,
+        limit: 25,
+        offset: 0,
+        rows: [{ ...row, customerEmail: "" }],
+      },
+      error: null,
+    });
+    await expect(loadAdminCatalogQuotePage()).rejects.toThrow(
+      "admin_catalog_quote_row_invalid",
+    );
+
+    mocks.rpc.mockResolvedValueOnce({
+      data: {
+        total: 1,
+        limit: 25,
+        offset: 0,
+        rows: [
+          {
+            ...row,
+            status: "answered",
+            quotedAmount: 150,
+            listAmount: 300,
+            discountPercent: 0,
+            discountAmount: 150,
+          },
+        ],
+      },
+      error: null,
+    });
+    await expect(loadAdminCatalogQuotePage()).rejects.toThrow(
+      "admin_catalog_quote_row_invalid",
+    );
   });
 });

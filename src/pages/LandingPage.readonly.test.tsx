@@ -39,9 +39,40 @@ describe("TONART public Home during image review", () => {
         <MemoryRouter><LandingPage /></MemoryRouter>
       </QueryClientProvider>,
     );
-    expect(screen.getByRole("link", { name: /EXPLORAR MODELOS/ })).toHaveAttribute("href", "/modelos");
+    expect(screen.getByRole("link", { name: /VER CATÁLOGO/ })).toHaveAttribute("href", "/modelos");
     expect(screen.getByRole("link", { name: /CONHEÇA O ESTÚDIO/ })).toHaveAttribute("href", "/sobre");
+    expect(screen.getByRole("link", { name: /Fale com a TONART/ })).toHaveAttribute("href", "/contato");
+    expect(screen.queryByRole("heading", { name: /Black Friday/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Escolher modelos|Consultar meus Coins/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Referências em curadoria" })).not.toBeInTheDocument();
+    view.unmount();
+    client.clear();
+  });
+
+  it("shows pre-sale and the Coins wallet in the commercial MVP", () => {
+    vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+    vi.stubEnv("VITE_TONECOS_COINS_ENABLED", "true");
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ items: [] })));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter><LandingPage /></MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // Commercial shell does not authorize advertising a discount before offers exist.
+    expect(screen.queryByText(/Até 50% de desconto/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Escolher modelos/ })).toHaveAttribute(
+      "href",
+      "/modelos?tipo=pre-venda",
+    );
+    expect(screen.getByRole("link", { name: /Acessar minha carteira/ })).toHaveAttribute(
+      "href",
+      "/moedas",
+    );
+
     view.unmount();
     client.clear();
   });

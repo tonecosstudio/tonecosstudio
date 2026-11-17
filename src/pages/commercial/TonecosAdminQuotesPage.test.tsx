@@ -1,12 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 
 const mocks = vi.hoisted(() => ({
-  list: vi.fn(), answer: vi.fn(), status: vi.fn(),
+  page: vi.fn(),
+  answer: vi.fn(),
+  status: vi.fn(),
+  history: vi.fn(),
+}));
+vi.mock("@/services/quotes/catalog-quote-history-service", () => ({
+  loadCatalogQuoteHistory: mocks.history,
 }));
 vi.mock("@/services/admin/config/catalog-quote-admin-service", () => ({
-  listAdminCatalogQuotes: mocks.list,
+  loadAdminCatalogQuotePage: mocks.page,
   answerCatalogQuoteRequest: mocks.answer,
   changeCatalogQuoteStatus: mocks.status,
 }));
@@ -16,62 +29,322 @@ import TonecosAdminQuotesPage from "./TonecosAdminQuotesPage";
 const quoteA = {
   id: "33333333-3333-4333-8333-333333333333",
   userId: "11111111-1111-4111-8111-111111111111",
-  customerName: "Cliente A", customerEmail: "clientea@example.com",
-  status: "pending", createdAt: "2026-11-11T18:00:00Z",
-  notes: null, items: [{ slug: "modelo-a", quantity: 1 }],
-  quotedAmount: null, whatsapp: null, postalCode: null,
-  scale: "1/10", finishing: "pintado",
+  customerName: "Cliente A",
+  customerEmail: "clientea@example.com",
+  status: "pending",
+  createdAt: "2026-11-11T18:00:00Z",
+  notes: null,
+  items: [{ slug: "modelo-a", quantity: 1 }],
+  quotedAmount: null,
+  responseMessage: null,
+  whatsapp: null,
+  postalCode: null,
+  scale: "1/10",
+  finishing: "pintado",
 };
 const quoteB = {
   ...quoteA,
   id: "44444444-4444-4444-8444-444444444444",
-  customerName: "Cliente B", customerEmail: "clienteb@example.com",
+  customerName: "Cliente B",
+  customerEmail: "clienteb@example.com",
   items: [{ slug: "modelo-b", quantity: 1 }],
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.list.mockResolvedValue([quoteA, quoteB]);
+  mocks.page.mockResolvedValue({
+    total: 2,
+    limit: 25,
+    offset: 0,
+    rows: [quoteA, quoteB],
+  });
+  mocks.history.mockResolvedValue({});
 });
 afterEach(cleanup);
 
 function show(url = "/admin/orcamentos") {
   return render(
     <MemoryRouter initialEntries={[url]}>
-      <TonecosAdminQuotesPage />
+      <HelmetProvider>
+        <TonecosAdminQuotesPage />
+      </HelmetProvider>
     </MemoryRouter>,
   );
 }
 
-describe("TONART administrative quote deep links", () => {
-  it("opens a selected quote using the canonical queue without creating a separate inbox", async () => {
+describe("TONART administrative quote directory", () => {
+  it("opens an exact deep link instead of depending on the newest 50 rows", async () => {
+    mocks.page.mockResolvedValueOnce({
+      total: 1,
+      limit: 1,
+      offset: 0,
+      rows: [quoteB],
+    });
     show("/admin/orcamentos?quote=" + quoteB.id);
-    expect(await screen.findByText("Solicitação #44444444")).toBeInTheDocument();
-    expect(screen.queryByText("Solicitação #33333333")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver todos os orçamentos" }))
-      .toHaveAttribute("href", "/admin/orcamentos");
-    expect(mocks.list).toHaveBeenCalledTimes(1);
-    expect(mocks.status).not.toHaveBeenCalled();
-    expect(mocks.answer).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText("Solicitação #44444444"),
+    ).toBeInTheDocument();
+    expect(mocks.page).toHaveBeenCalledWith({
+      quoteId: quoteB.id,
+      limit: 1,
+      offset: 0,
+    });
+    expect(mocks.history).toHaveBeenCalledWith([quoteB.id]);
   });
 
-  it("does not return unrelated quote details when reference is invalid", async () => {
+  it("does not query the service for a malformed quote reference", async () => {
     show("/admin/orcamentos?quote=not-a-uuid");
-    expect(await screen.findByRole("alert")).toHaveTextContent("Referência de orçamento inválida");
-    expect(screen.queryByText("Solicitação #33333333")).not.toBeInTheDocument();
-    expect(screen.queryByText("Solicitação #44444444")).not.toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Referência de orçamento inválida",
+    );
+    expect(mocks.page).not.toHaveBeenCalled();
   });
 
-  it("explains bounded queue limitations when a valid quote is outside the recent list", async () => {
+  it("reports an exact quote as missing without showing unrelated records", async () => {
+    mocks.page.mockResolvedValueOnce({
+      total: 0,
+      limit: 1,
+      offset: 0,
+      rows: [],
+    });
     show("/admin/orcamentos?quote=55555555-5555-4555-8555-555555555555");
-    expect(await screen.findByText(/não está entre as 50 mais recentes carregadas/)).toBeInTheDocument();
+    expect(
+      await screen.findByText("Solicitação não encontrada."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Solicitação #33333333")).not.toBeInTheDocument();
   });
 
-  it("preserves the unfiltered operational quote queue", async () => {
+  it("sends grouped Brazilian prices at their full value, never a truncated amount", async () => {
+    mocks.answer.mockResolvedValue(quoteA.id);
     show();
-    expect(await screen.findByText("Solicitação #33333333")).toBeInTheDocument();
-    expect(screen.getByText("Solicitação #44444444")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Ver todos os orçamentos" })).not.toBeInTheDocument();
+    await screen.findByText("Solicitação #33333333");
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Valor-base antes da promoção (R$) 33333333" }),
+      { target: { value: "1.249,90" } },
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Mensagem ao cliente 33333333" }),
+      { target: { value: "Proposta válida por sete dias." } },
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Registrar resposta" })[0],
+    );
+    await waitFor(() =>
+      expect(mocks.answer).toHaveBeenCalledWith(
+        quoteA.id,
+        1249.9,
+        "Proposta válida por sete dias.",
+        0,
+      ),
+    );
+  });
+
+  it("records a Black Friday discount up to 50 percent on the quoted base", async () => {
+    mocks.answer.mockResolvedValue(quoteA.id);
+    show();
+    await screen.findByText("Solicitação #33333333");
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Valor-base antes da promoção (R$) 33333333" }),
+      { target: { value: "300,00" } },
+    );
+    fireEvent.change(
+      screen.getByRole("spinbutton", { name: "Desconto Black Friday 33333333" }),
+      { target: { value: "50" } },
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Mensagem ao cliente 33333333" }),
+      { target: { value: "Condição válida durante a Black Friday." } },
+    );
+    expect(screen.getByText(/Total após desconto:.*150,00/)).toBeInTheDocument();
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Registrar resposta" })[0],
+    );
+    await waitFor(() =>
+      expect(mocks.answer).toHaveBeenCalledWith(
+        quoteA.id,
+        300,
+        "Condição válida durante a Black Friday.",
+        50,
+      ),
+    );
+  });
+
+  it("rejects malformed currency input before calling the privileged quote service", async () => {
+    show();
+    await screen.findByText("Solicitação #33333333");
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Valor-base antes da promoção (R$) 33333333" }),
+      { target: { value: "1.249,999" } },
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Mensagem ao cliente 33333333" }),
+      { target: { value: "Confirmação de preço" } },
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Registrar resposta" })[0],
+    );
+    expect(mocks.answer).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+  });
+
+  it("prepares the recorded quote response in the existing email client", async () => {
+    mocks.page.mockResolvedValueOnce({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [
+        {
+          ...quoteA,
+          status: "answered",
+          quotedAmount: 1249.9,
+          responseMessage: "Proposta válida por 7 dias.",
+        },
+      ],
+    });
+    show();
+    const link = await screen.findByRole("link", {
+      name: "Preparar e-mail de resposta",
+    });
+    const href = link.getAttribute("href") ?? "";
+    expect(href).toContain("mailto:clientea%40example.com");
+    const decoded = decodeURIComponent(href);
+    expect(decoded.replace(/\u00a0/g, " ")).toContain("R$ 1.249,90");
+    expect(decoded).toContain("Proposta válida por 7 dias.");
+    expect(decoded).toContain("tonartstudio.com.br/meus-orcamentos");
+    expect(
+      screen.getByText(/Confirme o envio manualmente/),
+    ).toBeInTheDocument();
+  });
+
+  it("includes the Black Friday base, discount and final value in customer communication", async () => {
+    mocks.page.mockResolvedValueOnce({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [{
+        ...quoteA,
+        status: "answered",
+        quotedAmount: 150,
+        listAmount: 300,
+        discountPercent: 50,
+        discountAmount: 150,
+        responseMessage: "Condição válida por sete dias.",
+      }],
+    });
+
+    show();
+
+    const link = await screen.findByRole("link", {
+      name: "Preparar e-mail de resposta",
+    });
+    const body = decodeURIComponent(link.getAttribute("href") ?? "").replace(/\u00a0/g, " ");
+    expect(body).toContain("Valor antes da Black Friday: R$ 300,00");
+    expect(body).toContain("Black Friday (50%): −R$ 150,00");
+    expect(body).toContain("Valor final com desconto: R$ 150,00");
+  });
+
+  it("offers a WhatsApp reply only for a valid recorded customer number", async () => {
+    mocks.page.mockResolvedValueOnce({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [
+        {
+          ...quoteA,
+          whatsapp: "71999887766",
+          status: "answered",
+          quotedAmount: 1249.9,
+          responseMessage: "Proposta válida por 7 dias.",
+        },
+      ],
+    });
+    show();
+    const link = await screen.findByRole("link", {
+      name: "Preparar mensagem no WhatsApp",
+    });
+    const href = link.getAttribute("href") ?? "";
+    expect(href).toMatch(/^https:\/\/wa\.me\/5571999887766\?text=/);
+    expect(decodeURIComponent(href).replace(/\u00a0/g, " ")).toContain(
+      "R$ 1.249,90",
+    );
+    expect(decodeURIComponent(href)).toContain("Proposta válida por 7 dias.");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("never offers a WhatsApp link for an invalid stored number", async () => {
+    mocks.page.mockResolvedValueOnce({
+      total: 1,
+      limit: 25,
+      offset: 0,
+      rows: [
+        {
+          ...quoteA,
+          whatsapp: "phone-invalid",
+          status: "answered",
+          quotedAmount: 1249.9,
+          responseMessage: "Proposta válida por 7 dias.",
+        },
+      ],
+    });
+    show();
+    expect(
+      await screen.findByRole("link", { name: "Preparar e-mail de resposta" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Preparar mensagem no WhatsApp" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("refreshes the administrator queue to show newly submitted requests", async () => {
+    show();
+    await screen.findByText("Solicitação #33333333");
+    await waitFor(() => expect(mocks.page).toHaveBeenCalledTimes(1));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Atualizar solicitações" }),
+    );
+    await waitFor(() => expect(mocks.page).toHaveBeenCalledTimes(2));
+  });
+
+  it("filters the complete protected queue by status", async () => {
+    show();
+    await screen.findByText("Solicitação #33333333");
+    fireEvent.change(screen.getByLabelText("Filtrar orçamentos por situação"), {
+      target: { value: "reviewing" },
+    });
+    await waitFor(() =>
+      expect(mocks.page).toHaveBeenLastCalledWith({
+        status: "reviewing",
+        limit: 25,
+        offset: 0,
+      }),
+    );
+  });
+
+  it("paginates without loading the complete queue in the browser", async () => {
+    mocks.page.mockResolvedValueOnce({
+      total: 30,
+      limit: 25,
+      offset: 0,
+      rows: [quoteA, quoteB],
+    });
+    show();
+    expect(
+      await screen.findByRole("button", { name: "Próxima" }),
+    ).toBeEnabled();
+
+    mocks.page.mockResolvedValueOnce({
+      total: 30,
+      limit: 25,
+      offset: 25,
+      rows: [quoteB],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Próxima" }));
+    await waitFor(() =>
+      expect(mocks.page).toHaveBeenLastCalledWith({
+        status: null,
+        limit: 25,
+        offset: 25,
+      }),
+    );
   });
 });

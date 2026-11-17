@@ -1,5 +1,6 @@
 import { APP_ROUTES } from "./routes";
 import { BRAND_NAME } from "./brand";
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./supabase-environment";
 
 /**
  * Runtime constants that are safe to define in the browser bundle.
@@ -10,8 +11,8 @@ import { BRAND_NAME } from "./brand";
  */
 
 export const ENV = {
-  SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || "",
-  SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
   APP_VERSION: import.meta.env.VITE_APP_VERSION || "0.1.0",
   IS_PRODUCTION: import.meta.env.PROD,
   IS_DEVELOPMENT: import.meta.env.DEV,

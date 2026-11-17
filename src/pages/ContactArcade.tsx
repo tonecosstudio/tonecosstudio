@@ -40,7 +40,11 @@ type ContactFormData = z.infer<typeof authenticatedContactFormSchema>;
 export default function ContactArcade() {
   const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
   const PUBLIC_MVP = PREVIEW_READ_ONLY && isCatalogPublicMvpEnabled();
-  const emailHref = PUBLIC_MVP ? buildSafeMailtoHref(CONTACT.CONTACT_EMAIL) : null;
+  const COMMERCIAL_MVP = import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true";
+  const emailHref =
+    PUBLIC_MVP || COMMERCIAL_MVP
+      ? buildSafeMailtoHref(CONTACT.CONTACT_EMAIL)
+      : null;
   const navigate = useNavigate();
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -101,19 +105,29 @@ export default function ContactArcade() {
           <div className="p-6 md:p-8 relative overflow-hidden">
             <FloatingParticles />
 
-            {PREVIEW_READ_ONLY || !user ? (
+            {PREVIEW_READ_ONLY || COMMERCIAL_MVP || !user ? (
               <div className="relative z-10 space-y-4 text-center" role="status">
                 <h2 className="text-lg font-medium text-[hsl(0,0%,94%)]">
-                  {PUBLIC_MVP ? (emailHref ? "FALE COM A TONART" : "CATÁLOGO DE REFERÊNCIAS") : (PREVIEW_READ_ONLY ? "CONTATO EM PREPARAÇÃO" : "Atendimento pela sua conta")}
+                  {PUBLIC_MVP || COMMERCIAL_MVP
+                    ? emailHref
+                      ? "FALE COM A TONART"
+                      : "CONTATO EM PREPARAÇÃO"
+                    : PREVIEW_READ_ONLY
+                      ? "CONTATO EM PREPARAÇÃO"
+                      : "Atendimento pela sua conta"}
                 </h2>
                 <p className="text-sm text-[hsl(0,0%,65%)]">
                   {PUBLIC_MVP
-                    ? (emailHref
-                        ? "Para falar sobre um modelo, escreva por e-mail. Este catálogo é informativo e não recebe pedidos pelo site."
-                        : "Explore os modelos publicados. O atendimento pelo site ainda não recebe mensagens ou pedidos.")
-                    : PREVIEW_READ_ONLY
-                      ? "Esta prévia é somente leitura e não recebe mensagens. Explore o catálogo enquanto o atendimento é homologado."
-                      : "Para enviar uma mensagem ao suporte, entre na sua conta. Assim a equipe poderá acompanhar sua solicitação pelo perfil."}
+                    ? emailHref
+                      ? "Para falar sobre um modelo, escreva por e-mail. Este catálogo é informativo e não recebe pedidos pelo site."
+                      : "Explore os modelos publicados. O atendimento pelo site ainda não recebe mensagens ou pedidos."
+                    : COMMERCIAL_MVP
+                      ? emailHref
+                        ? "Para dúvidas sobre conta, orçamento ou modelos, use o e-mail oficial. Respostas de orçamento continuam registradas na sua conta."
+                        : "O canal de contato por e-mail ainda não está configurado. Acompanhe respostas de orçamento pela sua conta."
+                      : PREVIEW_READ_ONLY
+                        ? "Esta prévia é somente leitura e não recebe mensagens. Explore o catálogo enquanto o atendimento é homologado."
+                        : "Para enviar uma mensagem ao suporte, entre na sua conta. Assim a equipe poderá acompanhar sua solicitação pelo perfil."}
                 </p>
                 {emailHref ? (
                   <a href={emailHref} className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))]">
@@ -121,10 +135,16 @@ export default function ContactArcade() {
                   </a>
                 ) : (
                   <Link
-                    to={PREVIEW_READ_ONLY ? PUBLIC_ROUTES.catalogModels : loginReturnToPath(PUBLIC_ROUTES.contact)}
+                    to={
+                      PREVIEW_READ_ONLY || COMMERCIAL_MVP
+                        ? PUBLIC_ROUTES.catalogModels
+                        : loginReturnToPath(PUBLIC_ROUTES.contact)
+                    }
                     className="inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent))] px-5 font-mono text-xs uppercase tracking-[0.1em] text-[hsl(var(--gold-accent))]"
                   >
-                    {PREVIEW_READ_ONLY ? "EXPLORAR MODELOS" : "Entrar para enviar mensagem"}
+                    {PREVIEW_READ_ONLY || COMMERCIAL_MVP
+                      ? "EXPLORAR MODELOS"
+                      : "Entrar para enviar mensagem"}
                   </Link>
                 )}
               </div>
@@ -203,7 +223,7 @@ export default function ContactArcade() {
 
         <div
           className={
-            CONTACT.CONTACT_EMAIL
+            CONTACT.CONTACT_EMAIL && !COMMERCIAL_MVP
               ? "grid sm:grid-cols-2 gap-4 mt-6"
               : "grid gap-4 mt-6"
           }
@@ -221,17 +241,19 @@ export default function ContactArcade() {
               </div>
             </ArcadeCard>
           ) : null}
-          <ArcadeCard>
-            <div className="p-5 text-center">
-              <MessageSquare className="w-5 h-5 text-[hsl(var(--gold-accent))] mx-auto mb-3" />
-              <h3 className="font-mono text-xs text-[hsl(0,0%,80%)] tracking-wider mb-1">
-                Chat no Perfil
-              </h3>
-              <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider">
-                Acesse seu perfil para suporte
-              </p>
-            </div>
-          </ArcadeCard>
+          {!COMMERCIAL_MVP ? (
+            <ArcadeCard>
+              <div className="p-5 text-center">
+                <MessageSquare className="w-5 h-5 text-[hsl(var(--gold-accent))] mx-auto mb-3" />
+                <h3 className="font-mono text-xs text-[hsl(0,0%,80%)] tracking-wider mb-1">
+                  Chat no Perfil
+                </h3>
+                <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider">
+                  Acesse seu perfil para suporte
+                </p>
+              </div>
+            </ArcadeCard>
+          ) : null}
         </div>
       </section>
 

@@ -315,9 +315,19 @@ export function createPublicCatalogGateway(
   let base: URL;
   try {
     const raw = baseUrl.trim();
-    if (!raw || !raw.startsWith("https://")) throw new Error("invalid_origin");
+    if (!raw) throw new Error("invalid_origin");
     base = new URL(raw.endsWith("/") ? raw : `${raw}/`);
     if (base.username || base.password || base.search || base.hash) {
+      throw new Error("invalid_origin");
+    }
+    const localDevelopmentProxy =
+      import.meta.env.DEV &&
+      typeof window !== "undefined" &&
+      base.protocol === "http:" &&
+      ["localhost", "127.0.0.1"].includes(base.hostname) &&
+      base.pathname === "/catalogo-api/" &&
+      base.origin === window.location.origin;
+    if (base.protocol !== "https:" && !localDevelopmentProxy) {
       throw new Error("invalid_origin");
     }
   } catch {

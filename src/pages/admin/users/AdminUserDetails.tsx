@@ -33,6 +33,11 @@ import { UserQuickActions } from "@/components/admin/user/UserQuickActions";
 import { UserOrderFilters } from "@/components/admin/user/UserOrderFilters";
 import { MonthlySelectionsTimeline } from "@/components/admin/user/MonthlySelectionsTimeline";
 import { formatCurrency } from "@/lib/utils";
+
+const coinsFormat = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 import { useUserDetails } from "@/hooks/admin/useUserDetails";
 import { useUserSubscription } from "@/hooks/admin/useUserSubscription";
 import { useUserOrders } from "@/hooks/admin/useUserOrders";
@@ -293,7 +298,7 @@ export default function AdminUserDetails() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-muted-foreground">Último login</div>
+                  <div className="text-sm font-medium text-muted-foreground">Perfil atualizado</div>
                   <div className="text-base mt-1">
                     {profile.updated_at
                       ? new Date(profile.updated_at).toLocaleString("pt-BR")
@@ -312,21 +317,27 @@ export default function AdminUserDetails() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Notificações por Email</span>
-                  <Badge variant={profile.email_notifications ? "default" : "secondary"}>
-                    {profile.email_notifications ? "Ativo" : "Inativo"}
+                  <span className="text-sm">Canal de contato preferido</span>
+                  <Badge variant="secondary">
+                    {profile.preferred_contact_channel ?? "Não definido"}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Atualizações de Pedidos</span>
-                  <Badge variant={profile.order_updates ? "default" : "secondary"}>
-                    {profile.order_updates ? "Ativo" : "Inativo"}
+                  <span className="text-sm">Preferência: atualizações de orçamento</span>
+                  <Badge variant={profile.quote_updates ? "default" : "secondary"}>
+                    {profile.quote_updates ? "Ativa" : "Inativa"}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Emails de Marketing</span>
+                  <span className="text-sm">Preferência: atualizações de produção</span>
+                  <Badge variant={profile.production_updates ? "default" : "secondary"}>
+                    {profile.production_updates ? "Ativa" : "Inativa"}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Emails de marketing</span>
                   <Badge variant={profile.marketing_emails ? "default" : "secondary"}>
-                    {profile.marketing_emails ? "Ativo" : "Inativo"}
+                    {profile.marketing_emails ? "Ativa" : "Inativa"}
                   </Badge>
                 </div>
               </CardContent>
@@ -586,20 +597,20 @@ export default function AdminUserDetails() {
                   <div className="space-y-4">
                     <div className="text-center p-6 rounded-lg bg-blue-50 dark:bg-blue-950">
                       <div className="text-4xl font-bold text-blue-600">
-                        {coinsBalance.available_credits}
+                        {coinsFormat.format(coinsBalance.available_credits)}
                       </div>
                       <div className="text-sm text-muted-foreground mt-2">Coins Disponíveis</div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center p-4 rounded-lg bg-muted/50">
                         <div className="text-2xl font-bold text-green-600">
-                          {coinsBalance.total_earned || 0}
+                          {coinsFormat.format(coinsBalance.total_earned || 0)}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">Total Ganho</div>
                       </div>
                       <div className="text-center p-4 rounded-lg bg-muted/50">
                         <div className="text-2xl font-bold text-orange-600">
-                          {coinsBalance.total_spent || 0}
+                          {coinsFormat.format(coinsBalance.total_spent || 0)}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">Gastos</div>
                       </div>

@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import type { PublicCatalogModel } from "@/services/catalog/public-catalog-gateway";
 import specialstlQuarantine from "@/services/catalog/specialstl-quarantine.json";
@@ -11,13 +17,22 @@ vi.mock("@/config/canonical-catalog-endpoint", () => ({
   CANONICAL_CATALOG_API_BASE: "https://catalog.example.test/catalogo-api",
 }));
 
+const offerServiceMocks = vi.hoisted(() => ({ list: vi.fn() }));
+vi.mock("@/services/commercial/tonart-commercial-offers-service", () => ({
+  listTonartCommercialOffersForModel: offerServiceMocks.list,
+}));
+
 vi.mock("@/components/layouts/Page", () => ({
   Page: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 
 vi.mock("@/components/arcade/ArcadeLayout", () => ({
-  ArcadeCard: ({ children }: { children: ReactNode }) => <section>{children}</section>,
-  ArcadeSectionTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
+  ArcadeCard: ({ children }: { children: ReactNode }) => (
+    <section>{children}</section>
+  ),
+  ArcadeSectionTitle: ({ children }: { children: ReactNode }) => (
+    <h2>{children}</h2>
+  ),
 }));
 
 import CanonicalModelDetails from "./CanonicalModelDetails";
@@ -60,8 +75,13 @@ const image = {
 };
 
 afterEach(() => {
+  window.localStorage.clear();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
+});
+
+beforeEach(() => {
+  offerServiceMocks.list.mockReset().mockResolvedValue([]);
 });
 
 function mountGallery(options: {
@@ -85,32 +105,50 @@ function mountGallery(options: {
     if (url.pathname.endsWith("/api/catalog")) {
       if (url.searchParams.has("q")) {
         if (options.relatedSearchError) {
-          return Response.json({ error: "search unavailable" }, { status: 503 });
+          return Response.json(
+            { error: "search unavailable" },
+            { status: 503 },
+          );
         }
-        return Response.json({ items: options.characterItems ?? [], nextCursor: null });
+        return Response.json({
+          items: options.characterItems ?? [],
+          nextCursor: null,
+        });
       }
       relatedPageAttempts += 1;
       if (options.relatedPageFailsFirst && relatedPageAttempts === 1) {
         return Response.json({ error: "catalog unavailable" }, { status: 503 });
       }
-      return Response.json({ items: options.relatedItems ?? [], nextCursor: null });
+      return Response.json({
+        items: options.relatedItems ?? [],
+        nextCursor: null,
+      });
     }
     if (url.pathname.endsWith("/api/models/animal-nova-pose")) {
       return Response.json({
-        ...model, id: "mdl-124", slug: "animal-nova-pose",
-        code: "TS-124", variant_name: "Nova pose",
-        image_count: 0, gallery_version: 0, cover_storage_key: null,
+        ...model,
+        id: "mdl-124",
+        slug: "animal-nova-pose",
+        code: "TS-124",
+        variant_name: "Nova pose",
+        image_count: 0,
+        gallery_version: 0,
+        cover_storage_key: null,
       });
     }
     if (url.pathname.endsWith("/api/models/animal-original")) {
       if (options.restricted) {
-        return Response.json({ ...model, id: specialstlQuarantine.confirmed[0].modelId });
+        return Response.json({
+          ...model,
+          id: specialstlQuarantine.confirmed[0].modelId,
+        });
       }
       return Response.json(
         options.cyclicPage
           ? { ...model, image_count: 3 }
           : options.repeatedImageAcrossPages ||
-              options.completeWithStrayCursor || options.incompleteWithoutCursor
+              options.completeWithStrayCursor ||
+              options.incompleteWithoutCursor
             ? { ...model, image_count: 2 }
             : model,
       );
@@ -122,17 +160,22 @@ function mountGallery(options: {
           throw new Error("unexpected_extra_gallery_read");
         }
         return Response.json({
-          items: [{
-            ...image,
-            id: cursor === null ? "img-1" : "img-2",
-            role: cursor === null ? "cover" : "gallery",
-            variantKeys: cursor === null ? image.variantKeys : {
-              thumb: "media/mdl-123/2/thumb.webp",
-              card: "media/mdl-123/2/card.webp",
-              detail: "media/mdl-123/2/detail.webp",
-              original: null,
+          items: [
+            {
+              ...image,
+              id: cursor === null ? "img-1" : "img-2",
+              role: cursor === null ? "cover" : "gallery",
+              variantKeys:
+                cursor === null
+                  ? image.variantKeys
+                  : {
+                      thumb: "media/mdl-123/2/thumb.webp",
+                      card: "media/mdl-123/2/card.webp",
+                      detail: "media/mdl-123/2/detail.webp",
+                      original: null,
+                    },
             },
-          }],
+          ],
           total: 2,
           // The Worker erroneously announces another page after all images arrived.
           nextCursor: cursor === null ? "page-2" : "page-3",
@@ -141,7 +184,10 @@ function mountGallery(options: {
       }
       if (options.incompleteWithoutCursor) {
         return Response.json({
-          items: [image], total: 2, nextCursor: null, version: 9,
+          items: [image],
+          total: 2,
+          nextCursor: null,
+          version: 9,
         });
       }
       if (options.repeatedImageAcrossPages) {
@@ -150,9 +196,7 @@ function mountGallery(options: {
           throw new Error("unexpected_gallery_cursor");
         }
         return Response.json({
-          items: [
-            { ...image, role: cursor === null ? "cover" : "gallery" },
-          ],
+          items: [{ ...image, role: cursor === null ? "cover" : "gallery" }],
           total: 2,
           nextCursor: cursor === null ? "page-2" : null,
           version: 9,
@@ -160,27 +204,40 @@ function mountGallery(options: {
       }
       if (options.cyclicPage) {
         const cursor = url.searchParams.get("cursor");
-        const nextCursor = cursor === null
-          ? "page-2"
-          : cursor === "page-2"
-            ? "page-3"
-            : "page-2";
-        const imageId = cursor === null ? "img-1" : cursor === "page-2" ? "img-2" : "img-3";
+        const nextCursor =
+          cursor === null
+            ? "page-2"
+            : cursor === "page-2"
+              ? "page-3"
+              : "page-2";
+        const imageId =
+          cursor === null ? "img-1" : cursor === "page-2" ? "img-2" : "img-3";
         if (cursor !== null && cursor !== "page-2" && cursor !== "page-3") {
           throw new Error("unexpected_gallery_cursor");
         }
         return Response.json({
-          items: [{ ...image, id: imageId, role: cursor === null ? "cover" : "gallery" }],
+          items: [
+            {
+              ...image,
+              id: imageId,
+              role: cursor === null ? "cover" : "gallery",
+            },
+          ],
           total: 3,
           nextCursor,
           version: 9,
         });
       }
       return Response.json({
-        items: [{
-          ...image,
-          variantKeys: { ...image.variantKeys, card: options.coverKey ?? coverKey },
-        }],
+        items: [
+          {
+            ...image,
+            variantKeys: {
+              ...image.variantKeys,
+              card: options.coverKey ?? coverKey,
+            },
+          },
+        ],
         total: options.total,
         nextCursor: null,
         version: 9,
@@ -189,28 +246,52 @@ function mountGallery(options: {
     throw new Error("unexpected_catalog_request: " + url.pathname);
   });
   vi.stubGlobal("fetch", io);
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   if (options.cachedFranchiseItems) {
-    const decoded: PublicCatalogModel[] = options.cachedFranchiseItems.map((row) => ({
-      id: row.id, slug: row.slug, code: row.code, name: row.name,
-      variantName: row.variant_name, category: row.category,
-      categorySlug: row.category_slug, franchise: row.franchise,
-      franchiseSlug: row.franchise_slug, collection: row.collection,
-      folderPath: row.folder_path, imageCount: row.image_count,
-      galleryVersion: row.gallery_version, coverStorageKey: row.cover_storage_key,
-    }));
-    client.setQueryData([
-      "tonecos-catalog-list", JSON.stringify(["", "games", "exemplo", ""]), undefined,
-    ], { items: decoded, nextCursor: null });
+    const decoded: PublicCatalogModel[] = options.cachedFranchiseItems.map(
+      (row) => ({
+        id: row.id,
+        slug: row.slug,
+        code: row.code,
+        name: row.name,
+        variantName: row.variant_name,
+        category: row.category,
+        categorySlug: row.category_slug,
+        franchise: row.franchise,
+        franchiseSlug: row.franchise_slug,
+        collection: row.collection,
+        folderPath: row.folder_path,
+        imageCount: row.image_count,
+        galleryVersion: row.gallery_version,
+        coverStorageKey: row.cover_storage_key,
+      }),
+    );
+    client.setQueryData(
+      [
+        "tonecos-catalog-list",
+        JSON.stringify(["", "games", "exemplo", ""]),
+        undefined,
+      ],
+      { items: decoded, nextCursor: null },
+    );
   }
   const view = render(
     <QueryClientProvider client={client}>
       <CatalogBrowsingProvider>
-      <MemoryRouter initialEntries={[{ pathname: "/modelos/animal-original", state: options.returnState }]}>
-        <Routes>
-          <Route path="/modelos/:id" element={<CanonicalModelDetails />} />
-        </Routes>
-      </MemoryRouter>
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: "/modelos/animal-original",
+              state: options.returnState,
+            },
+          ]}
+        >
+          <Routes>
+            <Route path="/modelos/:id" element={<CanonicalModelDetails />} />
+          </Routes>
+        </MemoryRouter>
       </CatalogBrowsingProvider>
     </QueryClientProvider>,
   );
@@ -223,19 +304,102 @@ describe("published model/gallery identity on the public detail page", () => {
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
     const { io } = mountGallery({ total: 1 });
-    expect(await screen.findByRole("heading", { name: "Animal original" })).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Animal original" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", {
+        name: "Ver imagem 1 de Animal original",
+      }),
+    ).toBeInTheDocument();
     expect(io).toHaveBeenCalled();
-    expect(screen.queryByRole("heading", { name: "Ficha em preparação" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Ficha em preparação" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Como usar Coins no orçamento"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("explains that Coins apply only to eligible extras, not quotes or plan payments", async () => {
+    vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+    const { io } = mountGallery({ total: 1 });
+
+    expect(
+      await screen.findByRole("heading", { name: "Animal original" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Como funcionam as Coins"));
+
+    expect(
+      screen.getByText(
+        /Orçamentos, entrada de pré-venda, parcelas de plano e frete ficam fora do uso de Coins/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: "Consultar saldo e movimentações de Coins",
+      }),
+    ).toHaveAttribute("href", "/moedas");
+    expect(io).toHaveBeenCalled();
+  });
+
+  it("shows the configured price, variant and Coin reference without creating a purchase", async () => {
+    vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+    offerServiceMocks.list.mockResolvedValue([
+      {
+        id: "8c10a7c6-46f0-49a6-99be-820c43a9e6f0",
+        catalogModelSlug: "animal-original",
+        scale: "1/10",
+        finishing: "painted",
+        contentsDescription: "Peça pintada, com base incluída.",
+        itemPriceBrl: 237.5,
+        shippingMode: "quote_required",
+        shippingAmountBrl: null,
+        deliveryTerms: "Prazo informado após confirmação do CEP.",
+        coinsEligible: true,
+        subscriberDiscountEligible: false,
+        isActive: true,
+        updatedAt: "2026-11-15T20:00:00.000Z",
+      },
+    ]);
+    const { io } = mountGallery({ total: 1 });
+
+    expect(
+      await screen.findByRole("heading", { name: "Condições da peça" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Escala 1/10 · Pintado")).toBeInTheDocument();
+    expect(screen.getByText(/R\$\s*237,50/)).toBeInTheDocument();
+    expect(screen.getByText(/até 237,50 Coins/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Esta ficha não cria pedido, confirma disponibilidade nem realiza pagamento/,
+      ),
+    ).toBeInTheDocument();
+    expect(offerServiceMocks.list).toHaveBeenCalledWith("animal-original");
+    expect(io).toHaveBeenCalled();
   });
 
   it("keeps the gallery operational despite the retired media-review flag", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     vi.stubGlobal("IntersectionObserver", undefined);
     const { io } = mountGallery({ total: 1 });
-    expect(await screen.findByRole("heading", { name: "Animal original" })).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" })).toBeInTheDocument();
-    await waitFor(() => expect(io.mock.calls.some(([url]) => String(url).includes("/images?"))).toBe(true));
+    expect(
+      await screen.findByRole("heading", { name: "Animal original" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", {
+        name: "Ver imagem 1 de Animal original",
+      }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        io.mock.calls.some(([url]) => String(url).includes("/images?")),
+      ).toBe(true),
+    );
     expect(screen.queryByText("Imagem em revisão")).not.toBeInTheDocument();
   });
 
@@ -250,40 +414,71 @@ describe("published model/gallery identity on the public detail page", () => {
         catalogSiblingSlugs: ["animal-original", "robo-armadura"],
       },
       relatedItems: [
-        { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
-          variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
+        {
+          ...model,
+          id: "mdl-124",
+          code: "TS-124",
+          slug: "animal-nova-pose",
+          variant_name: "Nova pose",
+          cover_storage_key: "media/mdl-124/card.webp",
+        },
       ],
     });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver sugestões relacionadas" }),
+    );
     const suggestion = await screen.findByRole("link", {
       name: "Ver modelo Animal original — Nova pose",
     });
     fireEvent.click(suggestion);
 
-    const previous = await screen.findByRole("link", { name: "Voltar ao modelo anterior" });
+    const previous = await screen.findByRole("link", {
+      name: "Voltar ao modelo anterior",
+    });
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Animal original" }))
-        .toHaveFocus();
-      expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "auto" });
+      expect(
+        screen.getByRole("heading", { name: "Animal original" }),
+      ).toHaveFocus();
+      expect(scrollTo).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: "auto",
+      });
     });
     expect(scrollTo).toHaveBeenCalledTimes(1);
     expect(previous).toHaveAttribute("href", "/modelos/animal-original");
-    expect(screen.getByRole("link", { name: "Voltar ao catálogo" }))
-      .toHaveAttribute("href", "/modelos?q=escultura&category=games&franchise=exemplo");
+    expect(
+      screen.getByRole("link", { name: "Voltar ao catálogo" }),
+    ).toHaveAttribute(
+      "href",
+      "/modelos?q=escultura&category=games&franchise=exemplo",
+    );
     // Stale adjacent-sibling snapshots from the source page must not be reused.
-    expect(screen.queryByRole("link", { name: "Próximo modelo" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Próximo modelo" }),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(previous);
-    expect(await screen.findByRole("heading", { name: "Animal original" }))
-      .toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Animal original" }),
+    ).toBeInTheDocument();
     // This explicit return must not reset the reader's position again.
     expect(scrollTo).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("link", { name: "Voltar ao modelo anterior" }))
-      .not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Voltar ao catálogo" }))
-      .toHaveAttribute("href", "/modelos?q=escultura&category=games&franchise=exemplo");
-    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(1);
+    expect(
+      screen.queryByRole("link", { name: "Voltar ao modelo anterior" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Voltar ao catálogo" }),
+    ).toHaveAttribute(
+      "href",
+      "/modelos?q=escultura&category=games&franchise=exemplo",
+    );
+    expect(
+      io.mock.calls.filter(([url]) => url.includes("/api/catalog")),
+    ).toHaveLength(1);
   });
 
   it("preserves Universe folder return on a recommended model", async () => {
@@ -292,55 +487,93 @@ describe("published model/gallery identity on the public detail page", () => {
       total: 1,
       returnState: {
         catalogReturnUniverse: {
-          category: "games", franchise: "exemplo", folder: "heroes/figures",
+          category: "games",
+          franchise: "exemplo",
+          folder: "heroes/figures",
         },
       },
       relatedItems: [
-        { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
-          variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
+        {
+          ...model,
+          id: "mdl-124",
+          code: "TS-124",
+          slug: "animal-nova-pose",
+          variant_name: "Nova pose",
+          cover_storage_key: "media/mdl-124/card.webp",
+        },
       ],
     });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
-    fireEvent.click(await screen.findByRole("link", {
-      name: "Ver modelo Animal original — Nova pose",
-    }));
-    expect(await screen.findByRole("link", { name: "Voltar à pasta" }))
-      .toHaveAttribute("href", "/universo/games/exemplo?folder=heroes%2Ffigures");
-    expect(screen.getByRole("link", { name: "Voltar ao modelo anterior" }))
-      .toHaveAttribute("href", "/modelos/animal-original");
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver sugestões relacionadas" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("link", {
+        name: "Ver modelo Animal original — Nova pose",
+      }),
+    );
+    expect(
+      await screen.findByRole("link", { name: "Voltar à pasta" }),
+    ).toHaveAttribute(
+      "href",
+      "/universo/games/exemplo?folder=heroes%2Ffigures",
+    );
+    expect(
+      screen.getByRole("link", { name: "Voltar ao modelo anterior" }),
+    ).toHaveAttribute("href", "/modelos/animal-original");
   });
 
   it("automatically loads exactly one related page when scrolled near the hidden section", async () => {
-    let onIntersect: ((entries: Array<{ isIntersecting: boolean }>) => void) | undefined;
+    let onIntersect:
+      | ((entries: Array<{ isIntersecting: boolean }>) => void)
+      | undefined;
     class FakeIntersectionObserver {
       constructor(callback: IntersectionObserverCallback) {
-        onIntersect = (entries) => callback(
-          entries as IntersectionObserverEntry[],
-          this as unknown as IntersectionObserver,
-        );
+        onIntersect = (entries) =>
+          callback(
+            entries as IntersectionObserverEntry[],
+            this as unknown as IntersectionObserver,
+          );
       }
       observe() {}
       disconnect() {}
     }
     vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
 
-    const { io } = mountGallery({ total: 1, relatedItems: [
-      { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
-        variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
-    ] });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    expect(screen.queryByRole("heading", { name: "Explore mais modelos" }))
-      .not.toBeInTheDocument();
+    const { io } = mountGallery({
+      total: 1,
+      relatedItems: [
+        {
+          ...model,
+          id: "mdl-124",
+          code: "TS-124",
+          slug: "animal-nova-pose",
+          variant_name: "Nova pose",
+          cover_storage_key: "media/mdl-124/card.webp",
+        },
+      ],
+    });
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    expect(
+      screen.queryByRole("heading", { name: "Explore mais modelos" }),
+    ).not.toBeInTheDocument();
     expect(io).toHaveBeenCalledTimes(2);
 
     await act(async () => {
       onIntersect?.([{ isIntersecting: true }]);
     });
-    expect(await screen.findByRole("heading", {
-      name: "Outras versões de Animal original",
-    })).toBeInTheDocument();
-    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(1);
+    expect(
+      await screen.findByRole("heading", {
+        name: "Outras versões de Animal original",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      io.mock.calls.filter(([url]) => url.includes("/api/catalog")),
+    ).toHaveLength(1);
   });
 
   it("offers one user-initiated retry when suggestions fail, with no automatic retry", async () => {
@@ -349,43 +582,82 @@ describe("published model/gallery identity on the public detail page", () => {
       total: 1,
       relatedPageFailsFirst: true,
       relatedItems: [
-        { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
-          variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
+        {
+          ...model,
+          id: "mdl-124",
+          code: "TS-124",
+          slug: "animal-nova-pose",
+          variant_name: "Nova pose",
+          cover_storage_key: "media/mdl-124/card.webp",
+        },
       ],
     });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver sugestões relacionadas" }),
+    );
 
-    const retry = await screen.findByRole("button", { name: "Tentar novamente" });
-    expect(screen.getByText("Não foi possível carregar sugestões agora.")).toBeInTheDocument();
-    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(1);
+    const retry = await screen.findByRole("button", {
+      name: "Tentar novamente",
+    });
+    expect(
+      screen.getByText("Não foi possível carregar sugestões agora."),
+    ).toBeInTheDocument();
+    expect(
+      io.mock.calls.filter(([url]) => url.includes("/api/catalog")),
+    ).toHaveLength(1);
 
     fireEvent.click(retry);
-    expect(await screen.findByRole("link", {
-      name: "Ver modelo Animal original — Nova pose",
-    })).toHaveAttribute("href", "/modelos/animal-nova-pose");
-    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(2);
-    expect(screen.queryByRole("button", { name: "Tentar novamente" }))
-      .not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", {
+        name: "Ver modelo Animal original — Nova pose",
+      }),
+    ).toHaveAttribute("href", "/modelos/animal-nova-pose");
+    expect(
+      io.mock.calls.filter(([url]) => url.includes("/api/catalog")),
+    ).toHaveLength(2);
+    expect(
+      screen.queryByRole("button", { name: "Tentar novamente" }),
+    ).not.toBeInTheDocument();
   });
 
   it("hides the section when its single bounded response has no eligible related models", async () => {
     // Exercise the manual fallback regardless of environment polyfills.
     vi.stubGlobal("IntersectionObserver", undefined);
-    const { io } = mountGallery({ total: 1, relatedItems: [
-      { ...model, id: "mdl-other", slug: "outro-universo", code: "TS-other",
-        franchise_slug: "outra-franquia" },
-      { ...model, id: specialstlQuarantine.confirmed[0].modelId,
-        slug: "modelo-em-quarentena", code: "TS-quarentena" },
-    ] });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
-    await waitFor(() => {
-      expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog")))
-        .toHaveLength(2);
+    const { io } = mountGallery({
+      total: 1,
+      relatedItems: [
+        {
+          ...model,
+          id: "mdl-other",
+          slug: "outro-universo",
+          code: "TS-other",
+          franchise_slug: "outra-franquia",
+        },
+        {
+          ...model,
+          id: specialstlQuarantine.confirmed[0].modelId,
+          slug: "modelo-em-quarentena",
+          code: "TS-quarentena",
+        },
+      ],
     });
-    expect(screen.queryByRole("heading", { name: "Explore mais modelos" }))
-      .not.toBeInTheDocument();
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver sugestões relacionadas" }),
+    );
+    await waitFor(() => {
+      expect(
+        io.mock.calls.filter(([url]) => url.includes("/api/catalog")),
+      ).toHaveLength(2);
+    });
+    expect(
+      screen.queryByRole("heading", { name: "Explore mais modelos" }),
+    ).not.toBeInTheDocument();
   });
 
   it("finds an exact character beyond the first franchise page with one bounded fallback", async () => {
@@ -393,30 +665,60 @@ describe("published model/gallery identity on the public detail page", () => {
     const { io } = mountGallery({
       total: 1,
       relatedItems: [
-        { ...model, id: "mdl-125", code: "TS-125", slug: "robo-armadura",
-          name: "Robô", variant_name: "Armadura",
-          cover_storage_key: "media/mdl-125/card.webp" },
+        {
+          ...model,
+          id: "mdl-125",
+          code: "TS-125",
+          slug: "robo-armadura",
+          name: "Robô",
+          variant_name: "Armadura",
+          cover_storage_key: "media/mdl-125/card.webp",
+        },
       ],
       characterItems: [
-        { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
-          variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
-        { ...model, id: "mdl-126", code: "TS-126", slug: "animal-parecido",
-          name: "Animal original preto", variant_name: "Escultura",
-          cover_storage_key: "media/mdl-126/card.webp" },
+        {
+          ...model,
+          id: "mdl-124",
+          code: "TS-124",
+          slug: "animal-nova-pose",
+          variant_name: "Nova pose",
+          cover_storage_key: "media/mdl-124/card.webp",
+        },
+        {
+          ...model,
+          id: "mdl-126",
+          code: "TS-126",
+          slug: "animal-parecido",
+          name: "Animal original preto",
+          variant_name: "Escultura",
+          cover_storage_key: "media/mdl-126/card.webp",
+        },
       ],
     });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
     expect(io).toHaveBeenCalledTimes(2);
-    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver sugestões relacionadas" }),
+    );
 
-    expect(await screen.findByRole("heading", {
-      name: "Outras versões de Animal original",
-    })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Explore Exemplo" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver modelo Animal original — Nova pose" }))
-      .toHaveAttribute("href", "/modelos/animal-nova-pose");
-    expect(screen.queryByRole("link", { name: /Animal original preto/ }))
-      .not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", {
+        name: "Outras versões de Animal original",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Explore Exemplo" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: "Ver modelo Animal original — Nova pose",
+      }),
+    ).toHaveAttribute("href", "/modelos/animal-nova-pose");
+    expect(
+      screen.queryByRole("link", { name: /Animal original preto/ }),
+    ).not.toBeInTheDocument();
 
     const requests = io.mock.calls
       .filter(([url]) => url.includes("/api/catalog"))
@@ -436,20 +738,35 @@ describe("published model/gallery identity on the public detail page", () => {
     const { io } = mountGallery({
       total: 1,
       relatedItems: [
-        { ...model, id: "mdl-125", code: "TS-125", slug: "robo-armadura",
-          name: "Robô", variant_name: "Armadura",
-          cover_storage_key: "media/mdl-125/card.webp" },
+        {
+          ...model,
+          id: "mdl-125",
+          code: "TS-125",
+          slug: "robo-armadura",
+          name: "Robô",
+          variant_name: "Armadura",
+          cover_storage_key: "media/mdl-125/card.webp",
+        },
       ],
       relatedSearchError: true,
     });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
-    expect(await screen.findByRole("heading", { name: "Explore Exemplo" }))
-      .toBeInTheDocument();
-    expect(screen.queryByRole("heading", {
-      name: "Outras versões de Animal original",
-    })).not.toBeInTheDocument();
-    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(2);
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver sugestões relacionadas" }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Explore Exemplo" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Outras versões de Animal original",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      io.mock.calls.filter(([url]) => url.includes("/api/catalog")),
+    ).toHaveLength(2);
   });
 
   it("reuses the validated first page from the franchise catalog without a second read", async () => {
@@ -457,19 +774,36 @@ describe("published model/gallery identity on the public detail page", () => {
     const { io } = mountGallery({
       total: 1,
       cachedFranchiseItems: [
-        { ...model, id: "mdl-124", code: "TS-124",
-          slug: "animal-nova-pose", variant_name: "Nova pose",
-          cover_storage_key: "media/mdl-124/card.webp" },
+        {
+          ...model,
+          id: "mdl-124",
+          code: "TS-124",
+          slug: "animal-nova-pose",
+          variant_name: "Nova pose",
+          cover_storage_key: "media/mdl-124/card.webp",
+        },
       ],
     });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
     expect(io).toHaveBeenCalledTimes(2);
-    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
-    expect(await screen.findByRole("heading", { name: "Outras versões de Animal original" }))
-      .toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver modelo Animal original — Nova pose" }))
-      .toHaveAttribute("href", "/modelos/animal-nova-pose");
-    expect(io.mock.calls.filter(([url]) => url.includes("/api/catalog"))).toHaveLength(0);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver sugestões relacionadas" }),
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: "Outras versões de Animal original",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: "Ver modelo Animal original — Nova pose",
+      }),
+    ).toHaveAttribute("href", "/modelos/animal-nova-pose");
+    expect(
+      io.mock.calls.filter(([url]) => url.includes("/api/catalog")),
+    ).toHaveLength(0);
     expect(io).toHaveBeenCalledTimes(2);
   });
 
@@ -479,34 +813,77 @@ describe("published model/gallery identity on the public detail page", () => {
     const { io } = mountGallery({
       total: 1,
       relatedItems: [
-        { ...model, id: "mdl-124", code: "TS-124", slug: "animal-nova-pose",
-          variant_name: "Nova pose", cover_storage_key: "media/mdl-124/card.webp" },
-        { ...model, id: "mdl-125", code: "TS-125", slug: "robo-armadura",
-          name: "Robô", variant_name: "Armadura", cover_storage_key: "media/mdl-125/card.webp" },
-        { ...model, id: "mdl-126", code: "TS-126", slug: "outro-universo",
-          name: "Outro", variant_name: "Pose", franchise_slug: "outro",
-          cover_storage_key: "media/mdl-126/card.webp" },
-        { ...model, id: specialstlQuarantine.confirmed[0].modelId, code: "TS-127",
-          slug: "modelo-em-revisao", name: "Em revisão", variant_name: "Pose",
-          cover_storage_key: "media/mdl-127/card.webp" },
+        {
+          ...model,
+          id: "mdl-124",
+          code: "TS-124",
+          slug: "animal-nova-pose",
+          variant_name: "Nova pose",
+          cover_storage_key: "media/mdl-124/card.webp",
+        },
+        {
+          ...model,
+          id: "mdl-125",
+          code: "TS-125",
+          slug: "robo-armadura",
+          name: "Robô",
+          variant_name: "Armadura",
+          cover_storage_key: "media/mdl-125/card.webp",
+        },
+        {
+          ...model,
+          id: "mdl-126",
+          code: "TS-126",
+          slug: "outro-universo",
+          name: "Outro",
+          variant_name: "Pose",
+          franchise_slug: "outro",
+          cover_storage_key: "media/mdl-126/card.webp",
+        },
+        {
+          ...model,
+          id: specialstlQuarantine.confirmed[0].modelId,
+          code: "TS-127",
+          slug: "modelo-em-revisao",
+          name: "Em revisão",
+          variant_name: "Pose",
+          cover_storage_key: "media/mdl-127/card.webp",
+        },
       ],
     });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
     expect(io).toHaveBeenCalledTimes(2);
-    fireEvent.click(screen.getByRole("button", { name: "Ver sugestões relacionadas" }));
-    expect(await screen.findByRole("heading", {
-      name: "Outras versões de Animal original",
-    })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Explore Exemplo" }))
-      .toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver todos de Exemplo" }))
-      .toHaveAttribute("href", "/modelos?category=games&franchise=exemplo");
-    expect(screen.getByRole("link", { name: "Ver modelo Animal original — Nova pose" }))
-      .toHaveAttribute("href", "/modelos/animal-nova-pose");
-    expect(screen.queryByRole("link", { name: /Ver modelo Outro/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Em revisão/ })).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver sugestões relacionadas" }),
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: "Outras versões de Animal original",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Explore Exemplo" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Ver todos de Exemplo" }),
+    ).toHaveAttribute("href", "/modelos?category=games&franchise=exemplo");
+    expect(
+      screen.getByRole("link", {
+        name: "Ver modelo Animal original — Nova pose",
+      }),
+    ).toHaveAttribute("href", "/modelos/animal-nova-pose");
+    expect(
+      screen.queryByRole("link", { name: /Ver modelo Outro/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Em revisão/ }),
+    ).not.toBeInTheDocument();
 
-    const catalogRequests = io.mock.calls.filter(([url]) => url.includes("/api/catalog"));
+    const catalogRequests = io.mock.calls.filter(([url]) =>
+      url.includes("/api/catalog"),
+    );
     expect(catalogRequests).toHaveLength(1);
     const request = new URL(catalogRequests[0][0]);
     expect(request.searchParams.get("category")).toBe("games");
@@ -518,13 +895,20 @@ describe("published model/gallery identity on the public detail page", () => {
 
   it("explains intentionally quarantined image without offering a retry or gallery", async () => {
     const { io } = mountGallery({ total: 1, restricted: true });
-    expect(await screen.findByRole("heading", { name: "Modelo indisponível" })).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("Esta referência não está disponível no momento");
-    expect(screen.queryByRole("button", { name: "Tentar novamente" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("img", { name: /Referência visual de/ })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Modelo indisponível" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Esta referência não está disponível no momento",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Tentar novamente" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: /Referência visual de/ }),
+    ).not.toBeInTheDocument();
     expect(io).toHaveBeenCalledTimes(1);
   });
-
 
   it("allows provisional selection directly from the model detail without a write request", async () => {
     const { io } = mountGallery({ total: 1 });
@@ -532,15 +916,22 @@ describe("published model/gallery identity on the public detail page", () => {
       name: "Adicionar à seleção",
     });
     expect(add).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText(/Minha seleção: 0 de 50 modelos\./)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Minha seleção: 0 de 50 modelos\./),
+    ).toBeInTheDocument();
     fireEvent.click(add);
     const remove = screen.getByRole("button", { name: "Remover da seleção" });
     expect(remove).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText(/Minha seleção: 1 de 50 modelos\./)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Minha seleção: 1 de 50 modelos\./),
+    ).toBeInTheDocument();
     fireEvent.click(remove);
-    expect(screen.getByRole("button", { name: "Adicionar à seleção" }))
-      .toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText(/Minha seleção: 0 de 50 modelos\./)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Adicionar à seleção" }),
+    ).toHaveAttribute("aria-pressed", "false");
+    expect(
+      screen.getByText(/Minha seleção: 0 de 50 modelos\./),
+    ).toBeInTheDocument();
     expect(io).toHaveBeenCalledTimes(2);
     for (const [url, options] of io.mock.calls) {
       expect(url).toContain("/api/models/animal-original");
@@ -548,37 +939,114 @@ describe("published model/gallery identity on the public detail page", () => {
     }
   });
 
+  it("does not navigate to a quote when a new model cannot fit in the full selection", async () => {
+    vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+
+    const items: PublicCatalogModel[] = Array.from(
+      { length: 50 },
+      (_, index) => ({
+        id: "selected-" + index,
+        slug: "selected-" + index,
+        code: "TS-SEL-" + index,
+        name: "Selecionado " + index,
+        variantName: "",
+        category: "Games",
+        categorySlug: "games",
+        franchise: "Exemplo",
+        franchiseSlug: "exemplo",
+        collection: null,
+        folderPath: null,
+        imageCount: 0,
+        galleryVersion: 0,
+        coverStorageKey: null,
+      }),
+    );
+    window.localStorage.setItem(
+      "tonart:pending-quote-selection:v1",
+      JSON.stringify({
+        expiresAt: Date.now() + 60_000,
+        items,
+      }),
+    );
+
+    mountGallery({ total: 1 });
+
+    const add = await screen.findByRole("button", {
+      name: "Adicionar à seleção",
+    });
+    expect(add).toBeDisabled();
+    expect(
+      screen.queryByRole("link", {
+        name: "Solicitar orçamento deste modelo",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Solicitar orçamento deste modelo",
+      }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText(
+        "Sua seleção já tem 50 modelos. Remova um modelo antes de incluir esta referência no orçamento.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("uses published card/thumbnail variants only if their image requests fail", async () => {
     mountGallery({ total: 1 });
-    const thumbnail = await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    const main = screen.getByRole("img", { name: "Referência visual de Animal original" });
-    expect(main).toHaveAttribute("src", "https://catalog.example.test/catalogo-api/media/mdl-123/1/detail.webp");
+    const thumbnail = await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    const main = screen.getByRole("img", {
+      name: "Referência visual de Animal original",
+    });
+    expect(main).toHaveAttribute(
+      "src",
+      "https://catalog.example.test/catalogo-api/media/mdl-123/1/detail.webp",
+    );
     expect(main).toHaveAttribute("fetchpriority", "high");
 
     const thumbImage = thumbnail.querySelector("img")!;
-    expect(thumbImage).toHaveAttribute("src", "https://catalog.example.test/catalogo-api/media/mdl-123/1/thumb.webp");
+    expect(thumbImage).toHaveAttribute(
+      "src",
+      "https://catalog.example.test/catalogo-api/media/mdl-123/1/thumb.webp",
+    );
     expect(thumbImage).toHaveAttribute("fetchpriority", "low");
     fireEvent.error(main);
-    expect(screen.getByRole("img", { name: "Referência visual de Animal original" }))
-      .toHaveAttribute("src", "https://catalog.example.test/catalogo-api/media/mdl-123/1/card.webp");
+    expect(
+      screen.getByRole("img", { name: "Referência visual de Animal original" }),
+    ).toHaveAttribute(
+      "src",
+      "https://catalog.example.test/catalogo-api/media/mdl-123/1/card.webp",
+    );
     fireEvent.error(thumbImage);
     expect(thumbnail.querySelector("img")).toHaveAttribute(
-      "src", "https://catalog.example.test/catalogo-api/media/mdl-123/1/card.webp",
+      "src",
+      "https://catalog.example.test/catalogo-api/media/mdl-123/1/card.webp",
     );
   });
 
   it("renders a single approved cover without inventing extra photographs", async () => {
     const { io } = mountGallery({ total: 1 });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    expect(screen.getByRole("link", { name: "Voltar ao catálogo" }))
-      .toHaveAttribute("href", "/modelos");
-    expect(screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"))
-      .toHaveTextContent("1");
-    expect(screen.queryByRole("button", { name: "Carregar mais imagens" }))
-      .not.toBeInTheDocument();
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    expect(
+      screen.getByRole("link", { name: "Voltar ao catálogo" }),
+    ).toHaveAttribute("href", "/modelos");
+    expect(
+      screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"),
+    ).toHaveTextContent("1");
+    expect(
+      screen.queryByRole("button", { name: "Carregar mais imagens" }),
+    ).not.toBeInTheDocument();
     expect(io).toHaveBeenCalledTimes(2);
     for (const [url, init] of io.mock.calls) {
-      expect(url).toContain("https://catalog.example.test/catalogo-api/api/models/animal-original");
+      expect(url).toContain(
+        "https://catalog.example.test/catalogo-api/api/models/animal-original",
+      );
       expect(init).toMatchObject({ method: "GET", credentials: "omit" });
     }
   });
@@ -588,16 +1056,23 @@ describe("published model/gallery identity on the public detail page", () => {
       total: 1,
       returnState: {
         catalogReturnSearch: "q=escultura&category=games",
-        catalogSiblingSlugs: ["outro-original", "animal-original", "terceiro-original"],
+        catalogSiblingSlugs: [
+          "outro-original",
+          "animal-original",
+          "terceiro-original",
+        ],
       },
     });
     const prev = screen.getByRole("link", { name: "Modelo anterior" });
     const next = screen.getByRole("link", { name: "Próximo modelo" });
     expect(prev).toHaveAttribute("href", "/modelos/outro-original");
     expect(next).toHaveAttribute("href", "/modelos/terceiro-original");
-    expect(screen.getByRole("link", { name: "Voltar ao catálogo" }))
-      .toHaveAttribute("href", "/modelos?q=escultura&category=games");
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    expect(
+      screen.getByRole("link", { name: "Voltar ao catálogo" }),
+    ).toHaveAttribute("href", "/modelos?q=escultura&category=games");
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
     expect(io).toHaveBeenCalledTimes(2);
   });
 
@@ -605,41 +1080,77 @@ describe("published model/gallery identity on the public detail page", () => {
     const { io } = mountGallery({
       total: 1,
       returnState: {
-        catalogReturnUniverse: { category: "games", franchise: "nier", folder: "heroes" },
+        catalogReturnUniverse: {
+          category: "games",
+          franchise: "nier",
+          folder: "heroes",
+        },
         universeSiblingSlugs: ["other-one", "animal-original", "other-two"],
       },
     });
-    expect(screen.getByRole("link", { name: "Voltar à pasta" }))
-      .toHaveAttribute("href", "/universo/games/nier?folder=heroes");
-    expect(screen.getByRole("navigation", {
-      name: "Navegação entre modelos desta pasta do Universo",
-    })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Modelo anterior" }))
-      .toHaveAttribute("href", "/modelos/other-one");
-    expect(screen.getByRole("link", { name: "Próximo modelo" }))
-      .toHaveAttribute("href", "/modelos/other-two");
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    expect(
+      screen.getByRole("link", { name: "Voltar à pasta" }),
+    ).toHaveAttribute("href", "/universo/games/nier?folder=heroes");
+    expect(
+      screen.getByRole("navigation", {
+        name: "Navegação entre modelos desta pasta do Universo",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Modelo anterior" }),
+    ).toHaveAttribute("href", "/modelos/other-one");
+    expect(
+      screen.getByRole("link", { name: "Próximo modelo" }),
+    ).toHaveAttribute("href", "/modelos/other-two");
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
     expect(io).toHaveBeenCalledTimes(2);
   });
 
   it("rejects invalid and mixed Universe navigation snapshots", async () => {
     const scope = { category: "games", franchise: "nier", folder: "heroes" };
     const invalid = [
-      { catalogReturnUniverse: scope, universeSiblingSlugs: ["animal-original", "../admin"] },
-      { catalogReturnUniverse: scope, universeSiblingSlugs: ["animal-original", "animal-original"] },
-      { catalogReturnUniverse: scope, universeSiblingSlugs: [
-        "animal-original", ...Array.from({ length: 8 }, (_, i) => "other-" + i),
-      ] },
-      { catalogReturnUniverse: scope, universeSiblingSlugs: ["a-model", "b-model"] },
-      { catalogReturnUniverse: scope, universeSiblingSlugs: ["animal-original", "other-one"],
-        catalogSiblingSlugs: ["animal-original", "other-two"] },
-      { catalogReturnUniverse: { category: "https://outside.test", franchise: "nier" },
-        universeSiblingSlugs: ["animal-original", "other-one"] },
+      {
+        catalogReturnUniverse: scope,
+        universeSiblingSlugs: ["animal-original", "../admin"],
+      },
+      {
+        catalogReturnUniverse: scope,
+        universeSiblingSlugs: ["animal-original", "animal-original"],
+      },
+      {
+        catalogReturnUniverse: scope,
+        universeSiblingSlugs: [
+          "animal-original",
+          ...Array.from({ length: 8 }, (_, i) => "other-" + i),
+        ],
+      },
+      {
+        catalogReturnUniverse: scope,
+        universeSiblingSlugs: ["a-model", "b-model"],
+      },
+      {
+        catalogReturnUniverse: scope,
+        universeSiblingSlugs: ["animal-original", "other-one"],
+        catalogSiblingSlugs: ["animal-original", "other-two"],
+      },
+      {
+        catalogReturnUniverse: {
+          category: "https://outside.test",
+          franchise: "nier",
+        },
+        universeSiblingSlugs: ["animal-original", "other-one"],
+      },
     ];
     for (const returnState of invalid) {
       const view = mountGallery({ total: 1, returnState });
-      expect(screen.queryByRole("link", { name: "Modelo anterior" })).not.toBeInTheDocument();
-      expect(screen.queryByRole("link", { name: "Próximo modelo" })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "Modelo anterior" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "Próximo modelo" }),
+      ).not.toBeInTheDocument();
       view.unmount();
     }
   });
@@ -648,17 +1159,32 @@ describe("published model/gallery identity on the public detail page", () => {
     const unsafe = [
       { catalogSiblingSlugs: ["animal-original", "../admin"] },
       { catalogSiblingSlugs: ["animal-original", "animal-original"] },
-      { catalogSiblingSlugs: ["animal-original", ...Array.from({ length: 36 }, (_, i) => "other-" + i)] },
+      {
+        catalogSiblingSlugs: [
+          "animal-original",
+          ...Array.from({ length: 36 }, (_, i) => "other-" + i),
+        ],
+      },
       { catalogSiblingSlugs: ["other-one", "other-two"] },
-      { catalogSiblingSlugs: ["animal-original", "other-one"], catalogReturnUniverse: {
-        category: "games", franchise: "nier",
-      } },
+      {
+        catalogSiblingSlugs: ["animal-original", "other-one"],
+        catalogReturnUniverse: {
+          category: "games",
+          franchise: "nier",
+        },
+      },
     ];
     for (const returnState of unsafe) {
       const view = mountGallery({ total: 1, returnState });
-      await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-      expect(screen.queryByRole("link", { name: "Modelo anterior" })).not.toBeInTheDocument();
-      expect(screen.queryByRole("link", { name: "Próximo modelo" })).not.toBeInTheDocument();
+      await screen.findByRole("button", {
+        name: "Ver imagem 1 de Animal original",
+      });
+      expect(
+        screen.queryByRole("link", { name: "Modelo anterior" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "Próximo modelo" }),
+      ).not.toBeInTheDocument();
       view.unmount();
     }
   });
@@ -692,8 +1218,9 @@ describe("published model/gallery identity on the public detail page", () => {
         },
       },
     });
-    expect(await screen.findByRole("link", { name: "Voltar ao catálogo" }))
-      .toHaveAttribute("href", "/modelos");
+    expect(
+      await screen.findByRole("link", { name: "Voltar ao catálogo" }),
+    ).toHaveAttribute("href", "/modelos");
     unmount();
 
     mountGallery({
@@ -706,8 +1233,9 @@ describe("published model/gallery identity on the public detail page", () => {
         },
       },
     });
-    expect(await screen.findByRole("link", { name: "Voltar ao catálogo" }))
-      .toHaveAttribute("href", "/modelos");
+    expect(
+      await screen.findByRole("link", { name: "Voltar ao catálogo" }),
+    ).toHaveAttribute("href", "/modelos");
   });
 
   it("restores valid catalog search filters without changing their values", async () => {
@@ -718,11 +1246,12 @@ describe("published model/gallery identity on the public detail page", () => {
           "q=escultura&category=games&franchise=nier&folder=heroes%2Ffigures",
       },
     });
-    expect(await screen.findByRole("link", { name: "Voltar ao catálogo" }))
-      .toHaveAttribute(
-        "href",
-        "/modelos?q=escultura&category=games&franchise=nier&folder=heroes%2Ffigures",
-      );
+    expect(
+      await screen.findByRole("link", { name: "Voltar ao catálogo" }),
+    ).toHaveAttribute(
+      "href",
+      "/modelos?q=escultura&category=games&franchise=nier&folder=heroes%2Ffigures",
+    );
   });
 
   it("rejects invalid catalog return filters using the same gateway constraints", async () => {
@@ -739,42 +1268,64 @@ describe("published model/gallery identity on the public detail page", () => {
         total: 1,
         returnState: { catalogReturnSearch },
       });
-      expect(await screen.findByRole("link", { name: "Voltar ao catálogo" }))
-        .toHaveAttribute("href", "/modelos");
+      expect(
+        await screen.findByRole("link", { name: "Voltar ao catálogo" }),
+      ).toHaveAttribute("href", "/modelos");
       view.unmount();
     }
   });
 
   it("stops gallery reads once the published total is received despite an extra cursor", async () => {
     const { io } = mountGallery({ total: 2, completeWithStrayCursor: true });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
-    await screen.findByRole("button", { name: "Ver imagem 2 de Animal original" });
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Carregar mais imagens" }),
+    );
+    await screen.findByRole("button", {
+      name: "Ver imagem 2 de Animal original",
+    });
 
-    expect(screen.queryByRole("button", { name: "Carregar mais imagens" }))
-      .not.toBeInTheDocument();
-    expect(screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"))
-      .toHaveTextContent("2");
+    expect(
+      screen.queryByRole("button", { name: "Carregar mais imagens" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"),
+    ).toHaveTextContent("2");
     // One detail request and two gallery pages, never the stale third cursor.
     expect(io).toHaveBeenCalledTimes(3);
   });
 
   it("navigates previous and next among loaded approved images without extra API requests", async () => {
     const { io } = mountGallery({ total: 2, completeWithStrayCursor: true });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    expect(screen.queryByRole("button", { name: "Próxima imagem" })).not.toBeInTheDocument();
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    expect(
+      screen.queryByRole("button", { name: "Próxima imagem" }),
+    ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
-    await screen.findByRole("button", { name: "Ver imagem 2 de Animal original" });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Carregar mais imagens" }),
+    );
+    await screen.findByRole("button", {
+      name: "Ver imagem 2 de Animal original",
+    });
     expect(screen.getByText("Imagem 1 de 2 carregadas")).toBeInTheDocument();
     expect(io).toHaveBeenCalledTimes(3);
 
     fireEvent.click(screen.getByRole("button", { name: "Próxima imagem" }));
-    expect(screen.getByRole("img", { name: "Referência visual de Animal original" }))
-      .toHaveAttribute("src", "https://catalog.example.test/catalogo-api/media/mdl-123/2/detail.webp");
+    expect(
+      screen.getByRole("img", { name: "Referência visual de Animal original" }),
+    ).toHaveAttribute(
+      "src",
+      "https://catalog.example.test/catalogo-api/media/mdl-123/2/detail.webp",
+    );
     expect(screen.getByText("Imagem 2 de 2 carregadas")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ver imagem 2 de Animal original" }))
-      .toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("button", { name: "Ver imagem 2 de Animal original" }),
+    ).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.click(screen.getByRole("button", { name: "Próxima imagem" }));
     expect(screen.getByText("Imagem 1 de 2 carregadas")).toBeInTheDocument();
@@ -785,15 +1336,24 @@ describe("published model/gallery identity on the public detail page", () => {
 
   it("supports scoped keyboard arrows and Home/End with focus and live position updates", async () => {
     const { io } = mountGallery({ total: 2, completeWithStrayCursor: true });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
-    const second = await screen.findByRole("button", { name: "Ver imagem 2 de Animal original" });
-    const first = screen.getByRole("button", { name: "Ver imagem 1 de Animal original" });
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Carregar mais imagens" }),
+    );
+    const second = await screen.findByRole("button", {
+      name: "Ver imagem 2 de Animal original",
+    });
+    const first = screen.getByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
     const counter = screen.getByText("Imagem 1 de 2 carregadas");
     expect(counter).toHaveAttribute("aria-live", "polite");
     expect(counter).toHaveAttribute("aria-atomic", "true");
-    expect(screen.getByRole("group", { name: "Miniaturas da galeria" }))
-      .toHaveAttribute("aria-describedby");
+    expect(
+      screen.getByRole("group", { name: "Miniaturas da galeria" }),
+    ).toHaveAttribute("aria-describedby");
     expect(io).toHaveBeenCalledTimes(3);
 
     first.focus();
@@ -830,42 +1390,62 @@ describe("published model/gallery identity on the public detail page", () => {
   it("blocks a truncated gallery with no next cursor rather than showing a false total", async () => {
     const { io } = mountGallery({ total: 2, incompleteWithoutCursor: true });
     await screen.findByText("A galeria não pôde ser carregada.");
-    expect(screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"))
-      .toHaveTextContent("Indisponível");
-    expect(screen.queryByRole("button", { name: "Ver imagem 1 de Animal original" }))
-      .not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Carregar mais imagens" }))
-      .not.toBeInTheDocument();
+    expect(
+      screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"),
+    ).toHaveTextContent("Indisponível");
+    expect(
+      screen.queryByRole("button", { name: "Ver imagem 1 de Animal original" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Carregar mais imagens" }),
+    ).not.toBeInTheDocument();
     expect(io).toHaveBeenCalledTimes(2);
   });
 
   it("fails closed on an image ID repeated across two valid gallery pages", async () => {
     const { io } = mountGallery({ total: 2, repeatedImageAcrossPages: true });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
-    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Carregar mais imagens" }),
+    );
 
     await screen.findByText("A galeria não pôde ser carregada.");
     expect(
       screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"),
     ).toHaveTextContent("Indisponível");
-    expect(screen.queryByRole("button", { name: "Ver imagem 1 de Animal original" }))
-      .not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Carregar mais imagens" }))
-      .not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Ver imagem 1 de Animal original" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Carregar mais imagens" }),
+    ).not.toBeInTheDocument();
     expect(io).toHaveBeenCalledTimes(3);
   });
 
   it("stops a non-adjacent gallery cursor cycle and preserves fetched images", async () => {
     const { io } = mountGallery({ total: 3, cyclicPage: true });
-    await screen.findByRole("button", { name: "Ver imagem 1 de Animal original" });
+    await screen.findByRole("button", {
+      name: "Ver imagem 1 de Animal original",
+    });
 
-    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
-    await screen.findByRole("button", { name: "Ver imagem 2 de Animal original" });
-    fireEvent.click(screen.getByRole("button", { name: "Carregar mais imagens" }));
-    await screen.findByRole("button", { name: "Ver imagem 3 de Animal original" });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Carregar mais imagens" }),
+    );
+    await screen.findByRole("button", {
+      name: "Ver imagem 2 de Animal original",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Carregar mais imagens" }),
+    );
+    await screen.findByRole("button", {
+      name: "Ver imagem 3 de Animal original",
+    });
 
-    expect(screen.queryByRole("button", { name: "Carregar mais imagens" }))
-      .not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Carregar mais imagens" }),
+    ).not.toBeInTheDocument();
     // The model selection also uses role="status"; target the gallery
     // message specifically and preserve its accessibility semantics.
     expect(
@@ -879,13 +1459,19 @@ describe("published model/gallery identity on the public detail page", () => {
 
   it("blocks a stale gallery total instead of claiming unverified published images", async () => {
     const { io } = mountGallery({ total: 2 });
-    await screen.findByRole("alert", { name: "" }).catch(() => screen.getByText("A galeria não pôde ser carregada."));
+    await screen
+      .findByRole("alert", { name: "" })
+      .catch(() => screen.getByText("A galeria não pôde ser carregada."));
     await waitFor(() => {
-      expect(screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"))
-        .toHaveTextContent("Indisponível");
+      expect(
+        screen
+          .getByText("Imagens publicadas")
+          .parentElement?.querySelector("dd"),
+      ).toHaveTextContent("Indisponível");
     });
-    expect(screen.queryByRole("button", { name: "Ver imagem 1 de Animal original" }))
-      .not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Ver imagem 1 de Animal original" }),
+    ).not.toBeInTheDocument();
     expect(io).toHaveBeenCalledTimes(2);
   });
 
@@ -895,8 +1481,9 @@ describe("published model/gallery identity on the public detail page", () => {
       coverKey: "media/mdl-other/1/card.webp",
     });
     await screen.findByText("A galeria não pôde ser carregada.");
-    expect(screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"))
-      .toHaveTextContent("Indisponível");
+    expect(
+      screen.getByText("Imagens publicadas").parentElement?.querySelector("dd"),
+    ).toHaveTextContent("Indisponível");
     expect(io).toHaveBeenCalledTimes(2);
   });
 });

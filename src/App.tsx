@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MainLayout } from "@/components/layouts/MainLayout";
@@ -16,6 +16,7 @@ import {
   ADMIN_ROUTES,
   AUTH_ROUTES,
   PUBLIC_COLLECTIONS_ENABLED,
+  PUBLIC_SUBSCRIPTIONS_ENABLED,
   PUBLIC_ROUTES,
 } from "@/config/routes";
 
@@ -57,9 +58,6 @@ const CustomerOrderProgressPage = lazy(
 const GroupsArcade = lazy(() => import("./pages/GroupsArcade"));
 const MemberGroupDetailsPage = lazy(
   () => import("./pages/MemberGroupDetailsPage"),
-);
-const SubscriberDashboardArcade = lazy(
-  () => import("./pages/SubscriberDashboardArcade"),
 );
 
 const AdminHome = lazy(() => import("./pages/admin/analytics/AdminHome"));
@@ -175,7 +173,7 @@ function AppContent() {
               <Route
                 path={PUBLIC_ROUTES.plans}
                 element={
-                  PUBLIC_COLLECTIONS_ENABLED ? (
+                  PUBLIC_SUBSCRIPTIONS_ENABLED ? (
                     <PlansArcade />
                   ) : (
                     <HiddenCollectionsPage />
@@ -288,7 +286,7 @@ function AppContent() {
               <Route
                 path={AUTH_ROUTES.subscribeCollection}
                 element={
-                  PUBLIC_COLLECTIONS_ENABLED ? (
+                  PUBLIC_SUBSCRIPTIONS_ENABLED ? (
                     <RequireAuth>
                       <SubscribeCollection />
                     </RequireAuth>
@@ -348,9 +346,9 @@ function AppContent() {
               <Route
                 path={AUTH_ROUTES.subscriberDashboard}
                 element={
-                  PUBLIC_COLLECTIONS_ENABLED ? (
+                  PUBLIC_SUBSCRIPTIONS_ENABLED ? (
                     <RequireAuth>
-                      <SubscriberDashboardArcade />
+                      <Navigate to="/perfil/assinaturas" replace />
                     </RequireAuth>
                   ) : (
                     <HiddenCollectionsPage />
@@ -608,6 +606,14 @@ function AppContent() {
               />
               <Route
                 path={ADMIN_ROUTES.paymentCalculator}
+                element={
+                  <RequireAdmin>
+                    <AdminPaymentHub />
+                  </RequireAdmin>
+                }
+              />
+              <Route
+                path={ADMIN_ROUTES.preorders}
                 element={
                   <RequireAdmin>
                     <AdminPaymentHub />

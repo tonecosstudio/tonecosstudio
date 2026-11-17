@@ -14,6 +14,9 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "reopen_monthly_sales",
   "admin_add_chat_group_member",
   "admin_add_chat_group_members",
+  "admin_create_catalog_curation_tag",
+  "admin_add_catalog_curation_tag_alias",
+  "admin_remove_catalog_curation_tag_alias",
   "admin_add_coins_to_user",
   "admin_add_holiday",
   "admin_adjust_subscription_credit_credits",
@@ -58,7 +61,12 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_edit_chat_group_message",
   "admin_edit_internal_support_note",
   "admin_extend_character_choice_deadline",
+  "admin_get_collection_curation_page",
+  "admin_get_collection_curation_summary",
   "admin_get_collections_for_bulk_assign",
+  "admin_ensure_internal_collection",
+  "admin_list_catalog_curation_tags",
+  "admin_list_internal_collections",
   "admin_get_or_create_delivery_cycle",
   "admin_get_or_create_notification_settings",
   "admin_get_pricing_tiers_snapshot",
@@ -71,10 +79,12 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_mark_subscription_delivery_delivered_from_tracking",
   "admin_publish_catalog_import_item",
   "admin_process_subscription_payment",
+  "admin_verify_subscription_payment_voucher",
   "admin_remove_chat_group_member",
   "admin_register_chat_group_attachment",
   "admin_record_order_status_history",
   "admin_register_preorder_manual_payment",
+  "admin_reject_preorder_payment_voucher",
   "admin_reject_character_choice",
   "admin_reject_manual_payment_with_notification",
   "admin_reject_standalone_payment_voucher",
@@ -86,6 +96,12 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_save_pricing_tier_plan",
   "admin_save_quick_reply",
   "admin_save_subscription_plan_configuration",
+  "admin_save_tonart_commercial_offer",
+  "tonart_admin_commercial_offers_directory",
+  "admin_set_subscription_collection_models",
+  "admin_upsert_catalog_curation_tags",
+  "admin_upsert_collection_curation_models",
+  "admin_verify_catalog_model_identity",
   "admin_schedule_group_message",
   "admin_schedule_subscription_deliveries",
   "admin_send_chat_group_message",
@@ -130,6 +146,27 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_upsert_catalog_character",
   "admin_upsert_price_category",
   "admin_upsert_system_settings",
+]);
+
+// These RPCs validate auth.uid() and the canonical admin helper inside SQL.
+// Preserve the signed-in administrator JWT when calling them so auth.uid()
+// does not become NULL under the service-role client.
+const ADMIN_USER_CONTEXT_RPCS = new Set([
+  "admin_get_or_create_delivery_cycle",
+  "admin_process_subscription_payment",
+  "admin_save_tonart_commercial_offer",
+  "tonart_admin_commercial_offers_directory",
+  "admin_save_subscription_plan_configuration",
+  "admin_set_subscription_collection_models",
+  "admin_schedule_subscription_deliveries",
+  "admin_update_payment_setting",
+  "admin_update_production_setting",
+  "admin_upsert_system_settings",
+  "admin_verify_subscription_payment_voucher",
+  "admin_register_preorder_manual_payment",
+  "admin_reject_preorder_payment_voucher",
+  "admin_release_preorder_final_payment",
+  "admin_send_payment_link",
 ]);
 
 function json(req: Request, body: unknown, status = 200): Response {
@@ -300,7 +337,10 @@ Deno.serve(async (req) => {
       return json(req, { ok: true, data });
     }
 
-    const { data, error } = await service.rpc(functionName, args);
+    const rpcClient = ADMIN_USER_CONTEXT_RPCS.has(functionName)
+      ? admin.client
+      : service;
+    const { data, error } = await rpcClient.rpc(functionName, args);
 
     if (error) {
       const mapped = mapRpcError(error.message || "");

@@ -13,19 +13,25 @@ import {
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
 import { useState } from "react";
-import { useActiveSubscriptionPlans } from "@/hooks/subscription/useActiveSubscriptionPlans";
-import { PUBLIC_ROUTES } from "@/config/routes";
-import { usePricingSettings } from "@/hooks/usePricingSettings";
+import { useSubscribeCollectionCheckout } from "@/hooks/subscription/useSubscribeCollectionCheckout";
+import { PUBLIC_ROUTES, subscribeCollectionPath } from "@/config/routes";
 
 export default function PlansArcade() {
   const navigate = useNavigate();
   const faqFirstDelivery = useContentVariable("faqFirstDelivery", "Carregando...");
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
 
-  const plansQuery = useActiveSubscriptionPlans();
-  const pricingQuery = usePricingSettings();
+  const {
+    plans = [],
+    collections = [],
+    plansLoading,
+    collectionsLoading,
+    loadError,
+    retryLoad,
+  } = useSubscribeCollectionCheckout();
+  const [selectedCollections, setSelectedCollections] = useState<Record<string, string>>({});
 
-  if (plansQuery.isLoading || pricingQuery.isLoading) {
+  if (plansLoading || collectionsLoading) {
     return (
       <Page title="Carregando planos" description="Carregando preços e planos oficiais">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-20">
@@ -42,7 +48,7 @@ export default function PlansArcade() {
     );
   }
 
-  if (plansQuery.isError || pricingQuery.isError || !pricingQuery.data) {
+  if (loadError) {
     return (
       <Page
         title="Planos indisponíveis"
@@ -55,10 +61,7 @@ export default function PlansArcade() {
           </p>
           <button
             type="button"
-            onClick={() => {
-              void plansQuery.refetch();
-              void pricingQuery.refetch();
-            }}
+            onClick={retryLoad}
             className="px-5 py-3 border border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))] font-mono text-xs tracking-[0.15em] uppercase"
           >
             Tentar novamente
@@ -68,9 +71,6 @@ export default function PlansArcade() {
     );
   }
 
-  const plans = plansQuery.data ?? [];
-  const standalonePrice = pricingQuery.data.defaultPriceFull;
-
   const getPlanMeta = (planType: string) => {
     switch (planType) {
       case "trimestral":
@@ -78,148 +78,93 @@ export default function PlansArcade() {
           icon: Sparkles,
           rarity: "ÉPICO",
           color: "hsl(var(--gold-accent))",
-          badge: "Mais escolhido",
         };
       case "semestral":
         return {
           icon: Crown,
           rarity: "LENDÁRIO",
           color: "hsl(280,80%,65%)",
-          badge: "Melhor valor",
+        };
+      case "avulso":
+        return {
+          icon: Shield,
+          rarity: "AVULSO",
+          color: "hsl(200,70%,60%)",
         };
       default:
         return {
           icon: Shield,
           rarity: "RARO",
           color: "hsl(200,70%,60%)",
-          badge: null,
         };
     }
   };
 
   const faqs = [
     {
-      q: "Como funciona nesta fase?",
-      a: "Nesta fase, o lancamento fica focado no universo publicado. Voce pode explorar os modelos disponiveis e acompanhar futuras liberacoes.",
+      q: "Como funciona a assinatura?",
+      a: "Escolha uma coleção preparada pela TONART e selecione exatamente as peças do plano. O valor compra as peças; o pagamento pode ser à vista ou parcelado conforme o meio de pagamento configurado. Não há cobrança mensal recorrente.",
     },
     {
-      q: "Os planos ja estao ativos?",
-      a: "Os planos seguem apresentados como referencia comercial, mas o acesso principal agora e pelo universo publicado.",
+      q: "Quais modelos posso escolher?",
+      a: "Cada coleção tem uma curadoria própria. Você escolhe exatamente 1, 3 ou 6 modelos entre as identidades publicadas e elegíveis para o plano.",
     },
     { q: "Quando recebo a primeira peca?", a: faqFirstDelivery },
     {
-      q: "Posso cancelar a qualquer momento?",
-      a: "Sim. Quando um plano estiver ativo para sua conta, o cancelamento continua disponivel conforme as regras da compra.",
+      q: "Quando a assinatura fica ativa?",
+      a: "Depois que a equipe confirmar o pagamento enviado. Você pode acompanhar o status pela sua conta.",
     },
     {
-      q: "Como acompanho novidades?",
-      a: "Use o catalogo/universo como entrada principal e acompanhe as proximas liberacoes por la.",
+      q: "Como recebo Coins?",
+      a: "Os planos trimestral e semestral podem conceder Coins apenas no PIX, conforme cada peça é enviada. O pagamento do plano compra as peças e não vira saldo de Coins.",
+    },
+    {
+      q: "Há cobrança mensal?",
+      a: "Não. O valor integral do plano é pago uma vez. As entregas acontecem em ciclos mensais e o frete é informado separadamente antes da contratação.",
+    },
+    {
+      q: "Posso escolher qualquer modelo do catálogo?",
+      a: "A escolha é feita dentro da curadoria da coleção. Assim, os modelos apresentados no checkout correspondem às opções preparadas para aquela assinatura.",
     },
   ];
 
   return (
     <Page
-      title="Planos | ORDAX Command Center"
-      description="Consulte os formatos comerciais da ORDAX e explore o universo publicado."
-      keywords={["planos", "universo", "catalogo", "ordax"]}
+      title="Planos de assinatura | TONART Studio"
+      description="Escolha uma coleção curada e selecione modelos do catálogo para sua assinatura TONART."
+      keywords={["planos", "assinaturas", "coleções", "catálogo", "TONART"]}
     >
       <ArcadeHero
         badge="Escolha seu Tier"
         title="PLANOS"
         subtitle=">> EXPLORE. ACOMPANHE. EVOLUA."
         stats={[
-          { value: plans.length + 1, label: "Opções" },
-          { value: "∞", label: "Trocas" },
+          { value: plans.length, label: "Planos configurados" },
+          { value: "1 / 3 / 6 / 12", label: "Peças por plano" },
         ]}
       />
 
       <section className="max-w-7xl mx-auto px-4 md:px-6 pb-16 relative z-10">
-        <ArcadeSectionTitle>Selecione seu Tier</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Planos e modelos</ArcadeSectionTitle>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <ArcadeCard>
-            <div
-              className="p-6 flex flex-col h-full"
-              onMouseEnter={() => setHoveredPlan("avulso")}
-              onMouseLeave={() => setHoveredPlan(null)}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 px-2 py-0.5 bg-[hsl(200,70%,50%)/0.1] border border-[hsl(200,70%,50%)/0.3]">
-                  <Shield className="w-3 h-3 text-[hsl(200,70%,60%)]" />
-                  <span className="font-mono text-[9px] tracking-widest uppercase text-[hsl(200,70%,60%)]">
-                    RARO
-                  </span>
-                </div>
-              </div>
-
-              <h3
-                className="text-3xl font-black tracking-[0.1em] mb-2"
-                style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-              >
-                AVULSO
-              </h3>
-              <p className="text-[hsl(0,0%,40%)] font-mono text-[10px] tracking-wider mb-6">
-                Compra única sem compromisso
-              </p>
-
-              <div className="text-center mb-6 py-4 border-y border-[hsl(0,0%,12%)]">
-                <span
-                  className="text-4xl font-black text-[hsl(0,0%,98%)]"
-                  style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-                >
-                  R${" "}
-                  {standalonePrice.toLocaleString("pt-BR", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
-                  })}
-                </span>
-                <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider mt-1">
-                  por personagem
-                </p>
-              </div>
-
-              <ul className="space-y-3 mb-6 flex-1">
-                {["1 peça", "Pintada à mão", "Produção limitada", "Certificado", "Embalagem premium"].map(
-                  (f) => (
-                    <li
-                      key={f}
-                      className="flex items-center gap-2 font-mono text-xs text-[hsl(0,0%,60%)]"
-                    >
-                      <Check className="w-3.5 h-3.5 text-[hsl(200,70%,60%)] shrink-0" />
-                      {f}
-                    </li>
-                  ),
-                )}
-              </ul>
-
-              <button
-                onClick={() => navigate(PUBLIC_ROUTES.catalog)}
-                className="w-full py-3 border border-[hsl(0,0%,20%)] text-[hsl(0,0%,60%)] hover:border-[hsl(var(--gold-accent)/0.5)] hover:text-[hsl(var(--gold-accent))] font-mono text-xs tracking-[0.15em] uppercase transition-all flex items-center justify-center gap-2"
-              >
-                Ver Universo <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <div className="h-[3px] relative overflow-hidden">
-              <div className="absolute inset-0 bg-[hsl(0,0%,10%)]" />
-              <div
-                className="absolute inset-y-0 left-0 bg-[hsl(200,70%,60%)] transition-all duration-700 ease-out"
-                style={{ width: hoveredPlan === "avulso" ? "100%" : "0%" }}
-              />
-            </div>
-          </ArcadeCard>
-
           {plans.map((plan) => {
             const meta = getPlanMeta(plan.plan_type);
             const Icon = meta.icon;
             const priceFull = plan.price_full;
             const deliveries = plan.deliveries_total;
-            const totalCredits = plan.total_credits ?? 0;
-            const perUnit = (priceFull / deliveries).toLocaleString("pt-BR", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            });
+            const bonusTotal = Math.min(
+              plan.coin_bonus_per_shipment * deliveries,
+              plan.coin_bonus_cap,
+            );
             const isHovered = hoveredPlan === plan.id;
-            const isSemestral = plan.plan_type === "semestral";
+            const eligibleCollections = collections.filter(
+              (collection) => collection.catalog_model_slugs.length >= plan.model_selection_limit,
+            );
+            const selectedCollection =
+              eligibleCollections.find((collection) => collection.id === selectedCollections[plan.id]) ??
+              eligibleCollections[0] ??
+              null;
 
             return (
               <ArcadeCard key={plan.id}>
@@ -228,12 +173,6 @@ export default function PlansArcade() {
                   onMouseEnter={() => setHoveredPlan(plan.id)}
                   onMouseLeave={() => setHoveredPlan(null)}
                 >
-                  {meta.badge && (
-                    <div className="absolute -top-px left-1/2 -translate-x-1/2 px-4 py-1 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] font-mono text-[9px] tracking-[0.2em] uppercase font-bold z-20">
-                      {meta.badge}
-                    </div>
-                  )}
-
                   <div className="flex items-center justify-between mb-4 mt-2">
                     <div
                       className="flex items-center gap-2 px-2 py-0.5"
@@ -264,34 +203,31 @@ export default function PlansArcade() {
                       className="text-4xl font-black"
                       style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", color: meta.color }}
                     >
-                      R$ {perUnit}
+                      {priceFull.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                     </span>
                     <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider mt-1">
-                      por personagem • Total: R$ {priceFull.toLocaleString("pt-BR")}
+                      valor integral, pago uma vez · frete à parte
                     </p>
                   </div>
 
-                  {totalCredits > 0 && (
+                  {bonusTotal > 0 && plan.plan_type !== "anual" && (
                     <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)]">
                       <Coins className="w-4 h-4 text-[hsl(var(--gold-accent))]" />
                       <span className="font-mono text-xs tracking-wider text-[hsl(var(--gold-accent))]">
-                        {totalCredits.toLocaleString("pt-BR")} coins inclusos
+                        Até {bonusTotal.toLocaleString("pt-BR")} Coins · PIX e peça enviada
                       </span>
                     </div>
                   )}
 
                   <ul className="space-y-3 mb-6 flex-1">
                     {[
-                      `${deliveries} peça${deliveries > 1 ? "s" : ""}${isSemestral ? " (6 + 1 bônus)" : ""}`,
-                      totalCredits > 0
-                        ? `${totalCredits.toLocaleString("pt-BR")} coins para o catálogo`
-                        : "",
-                      "Pintadas à mão",
-                      "Produção limitada",
-                      "Certificado",
-                      "Embalagem premium",
+                      `Escolha ${plan.model_selection_limit} modelos da coleção`,
+                      `${deliveries} peça${deliveries > 1 ? "s" : ""} em envios mensais, começando no segundo mês`,
+                      bonusTotal > 0 && plan.plan_type !== "anual"
+                        ? `${plan.coin_bonus_per_shipment.toLocaleString("pt-BR")} Coins por envio confirmado à vista, até o limite do plano`
+                        : "Compra das peças · sem cobrança mensal recorrente",
+                      "Ativação após confirmação do pagamento",
                     ]
-                      .filter(Boolean)
                       .map((f) => (
                         <li
                           key={f}
@@ -303,20 +239,54 @@ export default function PlansArcade() {
                       ))}
                   </ul>
 
-                  <button
-                    onClick={() => navigate(PUBLIC_ROUTES.catalog)}
-                    className="w-full py-3 font-mono text-xs tracking-[0.15em] uppercase transition-all flex items-center justify-center gap-2"
-                    style={{
-                      background: `${meta.color}`,
-                      color: "hsl(0,0%,5%)",
-                    }}
-                  >
-                    Explorar Universo <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-
-                  {isSemestral && (
-                    <p className="text-center font-mono text-[9px] text-[hsl(280,80%,65%)] tracking-wider mt-3">
-                      ★ Inclui peça exclusiva para membros
+                  {eligibleCollections.length > 0 ? (
+                    <div className="space-y-3">
+                      <label
+                        htmlFor={`subscription-collection-${plan.id}`}
+                        className="block font-mono text-[10px] uppercase tracking-wider text-[hsl(0,0%,55%)]"
+                      >
+                        Coleção para sua assinatura
+                      </label>
+                      <select
+                        id={`subscription-collection-${plan.id}`}
+                        value={selectedCollection?.id ?? ""}
+                        onChange={(event) =>
+                          setSelectedCollections((current) => ({
+                            ...current,
+                            [plan.id]: event.target.value,
+                          }))
+                        }
+                        className="h-11 w-full border border-[hsl(0,0%,20%)] bg-[hsl(0,0%,7%)] px-3 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent))]"
+                      >
+                        {eligibleCollections.map((collection) => (
+                          <option key={collection.id} value={collection.id}>
+                            {collection.name} · {collection.catalog_model_slugs.length} modelos
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (selectedCollection) {
+                            navigate(
+                              `${subscribeCollectionPath(selectedCollection.slug)}?plan=${encodeURIComponent(plan.id)}`,
+                            );
+                          }
+                        }}
+                        disabled={!selectedCollection}
+                        className="w-full py-3 font-mono text-xs tracking-[0.15em] uppercase transition-all flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        style={{
+                          background: `${meta.color}`,
+                          color: "hsl(0,0%,5%)",
+                        }}
+                      >
+                        Escolher {plan.model_selection_limit} modelos
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="min-h-11 border border-dashed border-[hsl(0,0%,20%)] px-3 py-3 text-center font-mono text-[10px] uppercase tracking-wider text-[hsl(0,0%,45%)]">
+                      Nenhuma coleção tem {plan.model_selection_limit} modelos curados no momento.
                     </p>
                   )}
                 </div>
@@ -346,10 +316,10 @@ export default function PlansArcade() {
       <ArcadeCTA
         badge="Pronto para a Missão?"
         title="COMECE AGORA"
-        description="Explore o universo publicado e inicie sua jornada de colecionador."
+        description="Escolha uma coleção e selecione as peças incluídas no plano."
         primaryAction={{
-          label: "VER UNIVERSO",
-          href: PUBLIC_ROUTES.catalog,
+          label: "EXPLORAR MODELOS",
+          href: PUBLIC_ROUTES.catalogModels,
           icon: <ArrowRight className="w-4 h-4" />,
         }}
       />

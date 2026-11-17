@@ -87,7 +87,7 @@ serve(async (req) => {
 
     const profileQuery = service
       .from("profiles")
-      .select("id, email, role")
+      .select("id, email")
       .limit(1);
 
     const { data: targetProfiles, error: targetErr } = userId
@@ -109,12 +109,11 @@ serve(async (req) => {
       );
     }
 
-    const { data: profile, error: roleErr } = await service.rpc(
-      "admin_set_profile_role",
+    const { data: profile, error: roleErr } = await adminUser.client.rpc(
+      "admin_set_tonecos_admin_access",
       {
         p_target_user_id: target.id,
-        p_role: role,
-        p_actor_user_id: adminUser.userId,
+        p_is_admin: role === "admin",
       },
     );
     if (roleErr) {

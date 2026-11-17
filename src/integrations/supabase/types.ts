@@ -3816,6 +3816,7 @@ export type Database = {
           id: string
           paid_at: string | null
           payment_method: string
+          payment_voucher_path: string | null
           payment_type: string
           quote_id: string
           recorded_by: string | null
@@ -3829,6 +3830,7 @@ export type Database = {
           id?: string
           paid_at?: string | null
           payment_method?: string
+          payment_voucher_path?: string | null
           payment_type: string
           quote_id: string
           recorded_by?: string | null
@@ -3842,6 +3844,7 @@ export type Database = {
           id?: string
           paid_at?: string | null
           payment_method?: string
+          payment_voucher_path?: string | null
           payment_type?: string
           quote_id?: string
           recorded_by?: string | null
@@ -4029,6 +4032,11 @@ export type Database = {
           payment_link: string | null
           payment_link_sent_at: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
+          payment_voucher_path: string | null
+          payment_voucher_rejection_reason: string | null
+          payment_voucher_reviewed_at: string | null
+          payment_voucher_reviewed_by: string | null
+          payment_voucher_type: string | null
           pix_key: string | null
           ready_for_final_payment: boolean
           remaining_amount: number | null
@@ -4049,6 +4057,11 @@ export type Database = {
           payment_link?: string | null
           payment_link_sent_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_voucher_path?: string | null
+          payment_voucher_rejection_reason?: string | null
+          payment_voucher_reviewed_at?: string | null
+          payment_voucher_reviewed_by?: string | null
+          payment_voucher_type?: string | null
           pix_key?: string | null
           ready_for_final_payment?: boolean
           remaining_amount?: number | null
@@ -4069,6 +4082,11 @@ export type Database = {
           payment_link?: string | null
           payment_link_sent_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_voucher_path?: string | null
+          payment_voucher_rejection_reason?: string | null
+          payment_voucher_reviewed_at?: string | null
+          payment_voucher_reviewed_by?: string | null
+          payment_voucher_type?: string | null
           pix_key?: string | null
           ready_for_final_payment?: boolean
           remaining_amount?: number | null
@@ -6805,6 +6823,10 @@ export type Database = {
         Args: { p_amount: number; p_payment_type: string; p_quote_id: string }
         Returns: string
       }
+      admin_reject_preorder_payment_voucher: {
+        Args: { p_quote_id: string; p_rejection_reason: string }
+        Returns: string
+      }
       admin_reject_character_choice: {
         Args: { p_choice_id: string; p_reason: string }
         Returns: string
@@ -7501,6 +7523,13 @@ export type Database = {
         }
         Returns: Json
       }
+      resubmit_subscription_payment_voucher_for_current_user: {
+        Args: {
+          p_payment_voucher_path: string
+          p_subscription_id: string
+        }
+        Returns: Json
+      }
       create_subscription_credit_individual_order: {
         Args: { p_character_id: string }
         Returns: Json
@@ -8026,6 +8055,21 @@ export type Database = {
           p_phone: string
         }
         Returns: string
+      }
+      submit_catalog_preorder_request: {
+        Args: {
+          p_finishing?: string
+          p_models: Json
+          p_notes?: string
+          p_postal_code?: string
+          p_scale?: string
+          p_whatsapp?: string
+        }
+        Returns: string
+      }
+      submit_catalog_preorder_voucher_for_current_user: {
+        Args: { p_payment_type: string; p_payment_voucher_path: string; p_quote_id: string }
+        Returns: Json
       }
       submit_standalone_balance_voucher: {
         Args: { p_balance_voucher_url: string; p_purchase_id: string }

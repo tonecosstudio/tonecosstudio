@@ -3,6 +3,7 @@ import {
   fetchAdminPreorders,
   fetchAdminPreordersStats,
   registerAdminPreorderManualPayment,
+  rejectAdminPreorderVoucher,
   releaseAdminPreorderFinalPayment,
 } from "@/services/admin/payments/admin-preorders-service";
 
@@ -40,6 +41,17 @@ export function useRegisterAdminPreorderManualPayment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: registerAdminPreorderManualPayment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-preorders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-preorders-stats"] });
+    },
+  });
+}
+
+export function useRejectAdminPreorderVoucher() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: rejectAdminPreorderVoucher,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-preorders"] });
       queryClient.invalidateQueries({ queryKey: ["admin-preorders-stats"] });

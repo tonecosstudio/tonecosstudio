@@ -2,10 +2,11 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { createPreviewReadOnlyFetch } from "./preview-readonly-transport";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
+import {
+  PREVIEW_READ_ONLY,
+  SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_URL,
+} from "@/config/supabase-environment";
 
 // Validate environment variables before client creation
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
@@ -23,9 +24,15 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
 // Validate URL format. Production must use HTTPS.
 const parsedSupabaseUrl = new URL(SUPABASE_URL);
 const isLocalSupabase =
-  parsedSupabaseUrl.hostname === "localhost" || parsedSupabaseUrl.hostname === "127.0.0.1";
+  ["localhost", "127.0.0.1", "[::1]"].includes(parsedSupabaseUrl.hostname.toLowerCase());
+const isLocalBrowser =
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname.toLowerCase());
 
-if (parsedSupabaseUrl.protocol !== "https:" && !(import.meta.env.DEV && isLocalSupabase)) {
+if (
+  parsedSupabaseUrl.protocol !== "https:" &&
+  !(isLocalSupabase && (import.meta.env.DEV || isLocalBrowser))
+) {
   throw new Error(
     `Invalid VITE_SUPABASE_URL format: "${SUPABASE_URL}". ` +
       `Must use HTTPS outside local development.`

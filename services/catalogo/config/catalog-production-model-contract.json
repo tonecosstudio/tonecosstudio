@@ -5,8 +5,11 @@
     "databaseId": "87006366-60f3-4937-af73-2ef5a5f901fb",
     "bookmark": "00000054-00000000-00005103-f0e718663efcd84d0aba8765e6e9abd0",
     "snapshotSha256": "9be7f2cfccf4e95967fe0f53b0dedcdfc8c3b9c07660a6d4cbc8553d105a619a",
-    "productionModels": 2596,
-    "publishedModels": 2564
+    "productionModels": 2609,
+    "publishedModels": 2575,
+    "importedProductionModels": 2596,
+    "importedPublishedModels": 2564,
+    "reconciledAt": "2026-11-17"
   },
   "policy": {
     "identity": "ID e code provam continuidade do produto; identidade pública existente é preservada pelo contrato.",
@@ -3042,7 +3045,7 @@
       "franchiseSlug": "dragon-ball",
       "collection": "Raça do Freeza / Freeza",
       "folderPathKey": "raca-do-freeza/freeza",
-      "published": 1,
+      "published": 0,
       "folderPath": [
         "Raça do Freeza",
         "Freeza"
@@ -25060,7 +25063,7 @@
       "franchiseSlug": "equipes-e-grupos",
       "collection": "Vingadores / Hulk",
       "folderPathKey": "vingadores/hulk",
-      "published": 1,
+      "published": 0,
       "folderPath": [
         "Vingadores",
         "Hulk"
@@ -44983,6 +44986,243 @@
       "folderPath": [
         "Yoda"
       ]
+    },
+    {
+      "id": "mdl_e2455177a94681455054",
+      "slug": "wuthering-waves-changli",
+      "code": "TS-E2455177A946",
+      "displayName": "Changli",
+      "variantName": "",
+      "categoryName": "Games",
+      "categorySlug": "games",
+      "franchiseName": "Wuthering Waves",
+      "franchiseSlug": "wuthering-waves",
+      "collection": "Changli",
+      "folderPathKey": "changli",
+      "published": 1,
+      "folderPath": [
+        "Changli"
+      ]
+    },
+    {
+      "id": "mdl_9813b8c1eb0a33cdf7f4",
+      "slug": "digimon-digidestined-diorama",
+      "code": "TS-9813B8C1EB0A",
+      "displayName": "DigiDestined Diorama",
+      "variantName": "",
+      "categoryName": "Animes & Desenhos",
+      "categorySlug": "animes-desenhos",
+      "franchiseName": "Digimon",
+      "franchiseSlug": "digimon",
+      "collection": "DigiDestined Diorama",
+      "folderPathKey": "digidestined-diorama",
+      "published": 1,
+      "folderPath": [
+        "DigiDestined Diorama"
+      ]
+    },
+    {
+      "id": "mdl_54f58525ac72af9187c3",
+      "slug": "doom-doomguy-2",
+      "code": "TS-54F58525AC72",
+      "displayName": "Doomguy 2",
+      "variantName": "",
+      "categoryName": "Games",
+      "categorySlug": "games",
+      "franchiseName": "Doom",
+      "franchiseSlug": "doom",
+      "collection": "Doomguy 2",
+      "folderPathKey": "doomguy-2",
+      "published": 1,
+      "folderPath": [
+        "Doomguy 2"
+      ]
+    },
+    {
+      "id": "mdl_03087f436ba0fb2ac272",
+      "slug": "monster-hunter-gemma-3",
+      "code": "TS-03087F436BA0",
+      "displayName": "Gemma 3",
+      "variantName": "",
+      "categoryName": "Games",
+      "categorySlug": "games",
+      "franchiseName": "Monster Hunter",
+      "franchiseSlug": "monster-hunter",
+      "collection": "Gemma 3",
+      "folderPathKey": "gemma-3",
+      "published": 1,
+      "folderPath": [
+        "Gemma 3"
+      ]
+    },
+    {
+      "id": "mdl_913b1d55a4eaa5c8b6a8",
+      "slug": "cyberpunk-johnny-silverhand",
+      "code": "TS-913B1D55A4EA",
+      "displayName": "Johnny Silverhand",
+      "variantName": "",
+      "categoryName": "Games",
+      "categorySlug": "games",
+      "franchiseName": "Cyberpunk",
+      "franchiseSlug": "cyberpunk",
+      "collection": "Johnny Silverhand",
+      "folderPathKey": "johnny-silverhand",
+      "published": 1,
+      "folderPath": [
+        "Johnny Silverhand"
+      ]
+    },
+    {
+      "id": "mdl_f9ddfbd1526b8898573f",
+      "slug": "god-of-war-kratos-6-diorama",
+      "code": "TS-F9DDFBD1526B",
+      "displayName": "Kratos 6 Diorama",
+      "variantName": "",
+      "categoryName": "Games",
+      "categorySlug": "games",
+      "franchiseName": "God of War",
+      "franchiseSlug": "god-of-war",
+      "collection": "Kratos 6 Diorama",
+      "folderPathKey": "kratos-6-diorama",
+      "published": 1,
+      "folderPath": [
+        "Kratos 6 Diorama"
+      ]
+    },
+    {
+      "id": "mdl_f49a9e4caa5e19646979",
+      "slug": "darkstalkers-lilith",
+      "code": "TS-F49A9E4CAA5E",
+      "displayName": "Lilith",
+      "variantName": "",
+      "categoryName": "Games",
+      "categorySlug": "games",
+      "franchiseName": "DarkStalkers",
+      "franchiseSlug": "darkstalkers",
+      "collection": "Lilith",
+      "folderPathKey": "lilith",
+      "published": 1,
+      "folderPath": [
+        "Lilith"
+      ]
+    },
+    {
+      "id": "mdl_20fd1bcacf1504630f1d",
+      "slug": "dispatch-malevola",
+      "code": "TS-20FD1BCACF15",
+      "displayName": "Malevola",
+      "variantName": "",
+      "categoryName": "Games",
+      "categorySlug": "games",
+      "franchiseName": "Dispatch",
+      "franchiseSlug": "dispatch",
+      "collection": "Malevola",
+      "folderPathKey": "malevola",
+      "published": 1,
+      "folderPath": [
+        "Malevola"
+      ]
+    },
+    {
+      "id": "mdl_93be42fe77b0641688f3",
+      "slug": "dragon-age-morrigan",
+      "code": "TS-93BE42FE77B0",
+      "displayName": "Morrigan",
+      "variantName": "",
+      "categoryName": "Games",
+      "categorySlug": "games",
+      "franchiseName": "Dragon Age",
+      "franchiseSlug": "dragon-age",
+      "collection": "Morrigan",
+      "folderPathKey": "morrigan",
+      "published": 1,
+      "folderPath": [
+        "Morrigan"
+      ]
+    },
+    {
+      "id": "mdl_2b753e4d94e3a72b5510",
+      "slug": "one-piece-roronoa-zoro-3-diorama",
+      "code": "TS-2B753E4D94E3",
+      "displayName": "Roronoa Zoro 3 Diorama",
+      "variantName": "",
+      "categoryName": "Animes & Desenhos",
+      "categorySlug": "animes-desenhos",
+      "franchiseName": "One Piece",
+      "franchiseSlug": "one-piece",
+      "collection": "Roronoa Zoro 3 Diorama",
+      "folderPathKey": "roronoa-zoro-3-diorama",
+      "published": 1,
+      "folderPath": [
+        "Roronoa Zoro 3 Diorama"
+      ]
+    },
+    {
+      "id": "mdl_11beeac150d4cfc7f7b3",
+      "slug": "bleach-rukia-kuchiki",
+      "code": "TS-11BEEAC150D4",
+      "displayName": "Rukia Kuchiki",
+      "variantName": "",
+      "categoryName": "Animes & Desenhos",
+      "categorySlug": "animes-desenhos",
+      "franchiseName": "Bleach",
+      "franchiseSlug": "bleach",
+      "collection": "Rukia Kuchiki",
+      "folderPathKey": "rukia-kuchiki",
+      "published": 1,
+      "folderPath": [
+        "Rukia Kuchiki"
+      ]
+    },
+    {
+      "id": "mdl_23dd3630f28aac37578f",
+      "slug": "star-wars-shae-vizla",
+      "code": "TS-23DD3630F28A",
+      "displayName": "Shae Vizla",
+      "variantName": "",
+      "categoryName": "Filmes & Séries",
+      "categorySlug": "filmes-series",
+      "franchiseName": "Star Wars",
+      "franchiseSlug": "star-wars",
+      "collection": "Shae Vizla",
+      "folderPathKey": "shae-vizla",
+      "published": 1,
+      "folderPath": [
+        "Shae Vizla"
+      ]
+    },
+    {
+      "id": "mdl_7caa86c9c8b81279cede",
+      "slug": "bleach-yoruichi-shihoin-2",
+      "code": "TS-7CAA86C9C8B8",
+      "displayName": "Yoruichi Shihōin 2",
+      "variantName": "Yoruichi shihoin 2",
+      "categoryName": "Animes & Desenhos",
+      "categorySlug": "animes-desenhos",
+      "franchiseName": "Bleach",
+      "franchiseSlug": "bleach",
+      "collection": "Yoruichi Shihōin 2",
+      "folderPathKey": "yoruichi-shihoin-2",
+      "published": 1,
+      "folderPath": [
+        "Yoruichi Shihōin 2"
+      ]
     }
-  ]
+  ],
+  "reconciliation": {
+    "evidenceInventoryCommit": "05f3b06886dc456342d98297fd5d9481665d35c5",
+    "d1Counts": {
+      "total": 2609,
+      "published": 2575,
+      "unpublished": 34
+    },
+    "setCounts": {
+      "importedCandidateIds": 2596,
+      "sharedCandidateAndPublicIds": 2562,
+      "candidateOnlyIds": 34,
+      "publicOnlyIds": 13
+    },
+    "editorialReview": "Catalog fields are provenance only; character identity and biography remain unverified and require editorial review.",
+    "evidenceInventoryPath": "docs/review/character-catalog-review-queue.csv"
+  }
 }

@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import {
+  SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_URL,
+} from "@/config/supabase-environment";
+import {
   checkRateLimit,
   RATE_LIMITS,
   resetRateLimit,
@@ -7,7 +11,11 @@ import {
 } from "@/lib/security/rate-limiter";
 import type { Session } from "@supabase/supabase-js";
 
-type AuthRateLimitedAction = "login" | "signup" | "password-reset";
+type AuthRateLimitedAction =
+  | "login"
+  | "signup"
+  | "password-reset"
+  | "confirmation-resend";
 
 function normalizeAuthSubject(email: string): string {
   return email.trim().toLowerCase();
@@ -42,6 +50,35 @@ function normalizeAuthError(error: { message?: string }): Error {
   }
 
   return error instanceof Error ? error : new Error(message);
+}
+
+/**
+ * Read the existing Supabase Auth signup policy; do not duplicate it in UI
+ * flags. If settings cannot be verified, keep visitor signup closed without
+ * affecting existing account sign-in or password recovery.
+ */
+export async function getTonecosPublicSignupEnabled(): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7_000);
+  try {
+    const response = await fetch(new URL("/auth/v1/settings", SUPABASE_URL), {
+      headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!response.ok) return false;
+    const settings: unknown = await response.json();
+    if (!settings || typeof settings !== "object") return false;
+    const auth = settings as {
+      disable_signup?: unknown;
+      external?: { email?: unknown };
+    };
+    return auth.disable_signup === false && auth.external?.email === true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function getCurrentAuthSession(): Promise<Session | null> {
@@ -87,7 +124,7 @@ export async function signUpWithPasswordCredentials(params: {
   phone?: string;
   emailRedirectTo: string;
 }) {
-  const rateLimitKey = assertAuthRateLimit("signup", params.email, RATE_LIMITS.register);
+  assertAuthRateLimit("signup", params.email, RATE_LIMITS.register);
   const { data, error } = await supabase.auth.signUp({
     email: normalizeAuthSubject(params.email),
     password: params.password,
@@ -104,8 +141,29 @@ export async function signUpWithPasswordCredentials(params: {
     throw normalizeAuthError(error);
   }
 
-  resetRateLimit(rateLimitKey);
+  // A successful registration must still count toward the per-email limit.
   return { userId: data.user?.id ?? null, emailConfirmationRequired: !data.session };
+}
+
+export async function resendSignupConfirmation(params: {
+  email: string;
+  emailRedirectTo: string;
+}): Promise<void> {
+  assertAuthRateLimit(
+    "confirmation-resend",
+    params.email,
+    RATE_LIMITS.passwordReset,
+  );
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: normalizeAuthSubject(params.email),
+    options: {
+      emailRedirectTo: params.emailRedirectTo,
+    },
+  });
+
+  if (error) throw normalizeAuthError(error);
+  // Sending a message successfully is not permission to bypass the next cooldown.
 }
 
 export async function signInWithGoogleOAuth(redirectTo: string) {
@@ -129,7 +187,7 @@ export async function sendPasswordResetEmail(params: {
   email: string;
   redirectTo: string;
 }): Promise<void> {
-  const rateLimitKey = assertAuthRateLimit(
+  assertAuthRateLimit(
     "password-reset",
     params.email,
     RATE_LIMITS.passwordReset,
@@ -141,6 +199,5 @@ export async function sendPasswordResetEmail(params: {
   if (error) {
     throw normalizeAuthError(error);
   }
-
-  resetRateLimit(rateLimitKey);
+  // Preserve successful reset requests in the cooldown; Supabase also limits sends.
 }

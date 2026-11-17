@@ -1,6 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { logAuthFailure, logPermissionDenied } from "./security-logger.ts";
-import { ADMIN_ACCESS_ROLES } from "./roles.ts";
 
 function getAnonClientWithAuth(req: Request) {
   const url = Deno.env.get("SUPABASE_URL");
@@ -22,6 +21,23 @@ function getAnonClientWithAuth(req: Request) {
       headers: {
         Authorization: authHeader,
       },
+    },
+  });
+}
+
+/** Public data reads use only the anon/publishable key and remain subject to RLS. */
+export function getPublicAnonClient() {
+  const url = getSupabaseUrl();
+  const anon =
+    Deno.env.get("SUPABASE_ANON_KEY") ??
+    Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+  if (!anon) throw new Error("SUPABASE_ANON_KEY is not configured");
+
+  return createClient(url, anon, {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false,
     },
   });
 }
@@ -98,21 +114,11 @@ export function callServiceRoleFunction(
 }
 
 export async function assertAdmin(req: Request) {
-  const { claims } = await getClaims(req);
+  const { client, claims } = await getClaims(req);
   const userId = String(claims.sub);
-
-  // Use service client to bypass RLS when checking the canonical role source.
-  const service = getServiceClient();
-
-  const { data: profile, error } = await service
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .in("role", ADMIN_ACCESS_ROLES)
-    .maybeSingle();
-
+  const { data: isAdmin, error } = await client.rpc("is_tonecos_admin");
   if (error) throw new Error(`Role check failed: ${error.message}`);
-  if (!profile) {
+  if (isAdmin !== true) {
     logPermissionDenied(
       req,
       new URL(req.url).pathname,
@@ -122,7 +128,7 @@ export async function assertAdmin(req: Request) {
     throw new Error("Forbidden: admin only");
   }
 
-  return { userId, role: profile.role };
+  return { userId, role: "admin" as const, client };
 }
 
 /**

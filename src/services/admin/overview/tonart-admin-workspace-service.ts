@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import { requireTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
+import { decimalToHundredths } from "@/services/commercial/tonart-commerce-rules";
 
 const tonecos = supabase as unknown as SupabaseClient;
 
@@ -16,14 +17,40 @@ export type TonartAdminCoinEntry = {
   id: string;
   userId: string;
   userEmail: string | null;
-  type: "admin_credit" | "purchase_spend" | "refund";
+  type:
+    | "admin_credit"
+    | "purchase_spend"
+    | "refund"
+    | "shipment_bonus"
+    | "purchase_reversal"
+    | "bonus_reversal"
+    | "legacy_import";
   delta: number;
   reason: string;
   createdAt: string;
+  reversesEntryId: string | null;
 };
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const entryTypes = new Set(["admin_credit", "purchase_spend", "refund"]);
+const entryTypes = new Set([
+  "admin_credit",
+  "purchase_spend",
+  "refund",
+  "shipment_bonus",
+  "purchase_reversal",
+  "bonus_reversal",
+  "legacy_import",
+]);
+
+function isExactCoinAmount(value: unknown): value is number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return false;
+  try {
+    decimalToHundredths(String(Math.abs(value)));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export type TonartAdminQuote = {
   id: string;
@@ -65,92 +92,176 @@ export async function getTonartAdminOverview(): Promise<TonartAdminOverview> {
   }
   const value = data as unknown as Record<string, unknown>;
   const countFields = [
-    "profileCount", "quoteCount", "pendingQuoteCount",
-    "reviewingQuoteCount", "coinEntryCount", "answeredQuoteCount",
-    "archivedQuoteCount", "pricedQuoteCount", "quotedTotalCents",
+    "profileCount",
+    "quoteCount",
+    "pendingQuoteCount",
+    "reviewingQuoteCount",
+    "coinEntryCount",
+    "answeredQuoteCount",
+    "archivedQuoteCount",
+    "pricedQuoteCount",
+    "quotedTotalCents",
   ] as const;
   for (const key of countFields) {
     if (!Number.isSafeInteger(value[key]) || (value[key] as number) < 0) {
       throw new Error("tonart_admin_overview_invalid");
     }
   }
-  if (!Array.isArray(value.recentProfiles) || value.recentProfiles.length > 25) {
+  if (
+    !Array.isArray(value.recentProfiles) ||
+    value.recentProfiles.length > 25
+  ) {
     throw new Error("tonart_admin_overview_invalid");
   }
-  const recentProfiles: TonartAdminProfile[] = value.recentProfiles.map((item: unknown) => {
-    if (!item || typeof item !== "object" || Array.isArray(item)) {
-      throw new Error("tonart_admin_profile_invalid");
-    }
-    const p = item as Record<string, unknown>;
-    if (typeof p.id !== "string" ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.id) ||
-      typeof p.email !== "string" || p.email.length < 3 || p.email.length > 320 ||
-      !(p.fullName === null || typeof p.fullName === "string") ||
-      typeof p.createdAt !== "string" || Number.isNaN(Date.parse(p.createdAt))) {
-      throw new Error("tonart_admin_profile_invalid");
-    }
-    return { id: p.id, email: p.email, fullName: p.fullName, createdAt: p.createdAt };
-  });
+  const recentProfiles: TonartAdminProfile[] = value.recentProfiles.map(
+    (item: unknown) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        throw new Error("tonart_admin_profile_invalid");
+      }
+      const p = item as Record<string, unknown>;
+      if (
+        typeof p.id !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          p.id,
+        ) ||
+        typeof p.email !== "string" ||
+        p.email.length < 3 ||
+        p.email.length > 320 ||
+        !(p.fullName === null || typeof p.fullName === "string") ||
+        typeof p.createdAt !== "string" ||
+        Number.isNaN(Date.parse(p.createdAt))
+      ) {
+        throw new Error("tonart_admin_profile_invalid");
+      }
+      return {
+        id: p.id,
+        email: p.email,
+        fullName: p.fullName,
+        createdAt: p.createdAt,
+      };
+    },
+  );
   if (!Array.isArray(value.recentQuotes) || value.recentQuotes.length > 25) {
     throw new Error("tonart_admin_overview_invalid");
   }
-  const recentQuotes: TonartAdminQuote[] = value.recentQuotes.map((item: unknown) => {
-    if (!item || typeof item !== "object" || Array.isArray(item)) {
-      throw new Error("tonart_admin_quote_history_invalid");
-    }
-    const q = item as Record<string, unknown>;
-    if (typeof q.id !== "string" || !uuid.test(q.id) ||
-        typeof q.status !== "string" || !quoteStatuses.has(q.status) ||
-        !(q.customerEmail === null || (typeof q.customerEmail === "string" &&
-          q.customerEmail.length > 2 && q.customerEmail.length <= 320)) ||
-        typeof q.createdAt !== "string" || Number.isNaN(Date.parse(q.createdAt)) ||
-        !Number.isSafeInteger(q.modelCount) || (q.modelCount as number) < 1 || (q.modelCount as number) > 50 ||
-        !(q.quotedAmountCents === null || (Number.isSafeInteger(q.quotedAmountCents) &&
-          (q.quotedAmountCents as number) > 0)) ||
-        (["pending", "reviewing"].includes(q.status) && q.quotedAmountCents !== null)) {
-      throw new Error("tonart_admin_quote_history_invalid");
-    }
-    return {
-      id: q.id, status: q.status as TonartAdminQuote["status"],
-      customerEmail: q.customerEmail, createdAt: q.createdAt,
-      quotedAmountCents: q.quotedAmountCents as number | null,
-      modelCount: q.modelCount as number,
-    };
-  });
-  if (!Array.isArray(value.recentCoinEntries) || value.recentCoinEntries.length > 25) {
+  const recentQuotes: TonartAdminQuote[] = value.recentQuotes.map(
+    (item: unknown) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        throw new Error("tonart_admin_quote_history_invalid");
+      }
+      const q = item as Record<string, unknown>;
+      if (
+        typeof q.id !== "string" ||
+        !uuid.test(q.id) ||
+        typeof q.status !== "string" ||
+        !quoteStatuses.has(q.status) ||
+        !(
+          q.customerEmail === null ||
+          (typeof q.customerEmail === "string" &&
+            q.customerEmail.length > 2 &&
+            q.customerEmail.length <= 320)
+        ) ||
+        typeof q.createdAt !== "string" ||
+        Number.isNaN(Date.parse(q.createdAt)) ||
+        !Number.isSafeInteger(q.modelCount) ||
+        (q.modelCount as number) < 1 ||
+        (q.modelCount as number) > 50 ||
+        !(
+          q.quotedAmountCents === null ||
+          (Number.isSafeInteger(q.quotedAmountCents) &&
+            (q.quotedAmountCents as number) > 0)
+        ) ||
+        (["pending", "reviewing"].includes(q.status) &&
+          q.quotedAmountCents !== null)
+      ) {
+        throw new Error("tonart_admin_quote_history_invalid");
+      }
+      return {
+        id: q.id,
+        status: q.status as TonartAdminQuote["status"],
+        customerEmail: q.customerEmail,
+        createdAt: q.createdAt,
+        quotedAmountCents: q.quotedAmountCents as number | null,
+        modelCount: q.modelCount as number,
+      };
+    },
+  );
+  if (
+    !Array.isArray(value.recentCoinEntries) ||
+    value.recentCoinEntries.length > 25
+  ) {
     throw new Error("tonart_admin_overview_invalid");
   }
-  const recentCoinEntries: TonartAdminCoinEntry[] = value.recentCoinEntries.map((item: unknown) => {
-    if (!item || typeof item !== "object" || Array.isArray(item)) {
-      throw new Error("tonart_admin_coin_history_invalid");
-    }
-    const entry = item as Record<string, unknown>;
-    if (typeof entry.id !== "string" || !uuid.test(entry.id) ||
-      typeof entry.userId !== "string" || !uuid.test(entry.userId) ||
-      !(entry.userEmail === null || (typeof entry.userEmail === "string" &&
-        entry.userEmail.length > 2 && entry.userEmail.length <= 320)) ||
-      typeof entry.type !== "string" || !entryTypes.has(entry.type) ||
-      typeof entry.delta !== "number" || !Number.isSafeInteger(entry.delta) || entry.delta === 0 ||
-      (entry.type === "purchase_spend" ? entry.delta > 0 : entry.delta < 0) ||
-      typeof entry.reason !== "string" || entry.reason.length < 4 || entry.reason.length > 500 ||
-      typeof entry.createdAt !== "string" || Number.isNaN(Date.parse(entry.createdAt))) {
-      throw new Error("tonart_admin_coin_history_invalid");
-    }
-    return {
-      id: entry.id, userId: entry.userId, userEmail: entry.userEmail,
-      type: entry.type as TonartAdminCoinEntry["type"], delta: entry.delta,
-      reason: entry.reason, createdAt: entry.createdAt,
-    };
-  });
-  if ((value.pendingQuoteCount as number) > (value.quoteCount as number) ||
-      (value.reviewingQuoteCount as number) > (value.quoteCount as number) ||
-      (value.pendingQuoteCount as number) + (value.reviewingQuoteCount as number) +
-        (value.answeredQuoteCount as number) + (value.archivedQuoteCount as number) !== (value.quoteCount as number) ||
-      (value.pricedQuoteCount as number) > (value.answeredQuoteCount as number) + (value.archivedQuoteCount as number) ||
-      ((value.pricedQuoteCount as number) === 0) !== ((value.quotedTotalCents as number) === 0) ||
-      recentQuotes.length > (value.quoteCount as number) ||
-      recentProfiles.length > (value.profileCount as number) ||
-      recentCoinEntries.length > (value.coinEntryCount as number)) {
+  const recentCoinEntries: TonartAdminCoinEntry[] = value.recentCoinEntries.map(
+    (item: unknown) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        throw new Error("tonart_admin_coin_history_invalid");
+      }
+      const entry = item as Record<string, unknown>;
+      if (
+        typeof entry.id !== "string" ||
+        !uuid.test(entry.id) ||
+        typeof entry.userId !== "string" ||
+        !uuid.test(entry.userId) ||
+        !(
+          entry.userEmail === null ||
+          (typeof entry.userEmail === "string" &&
+            entry.userEmail.length > 2 &&
+            entry.userEmail.length <= 320)
+        ) ||
+        typeof entry.type !== "string" ||
+        !entryTypes.has(entry.type) ||
+        !isExactCoinAmount(entry.delta) ||
+        entry.delta === 0 ||
+        (entry.type === "legacy_import"
+          ? false
+          : ["purchase_spend", "bonus_reversal"].includes(entry.type)
+          ? entry.delta > 0
+          : entry.delta < 0) ||
+        typeof entry.reason !== "string" ||
+        entry.reason.length < 4 ||
+        entry.reason.length > 500 ||
+        typeof entry.createdAt !== "string" ||
+        Number.isNaN(Date.parse(entry.createdAt)) ||
+        !(
+          entry.reversesEntryId === undefined ||
+          entry.reversesEntryId === null ||
+          (typeof entry.reversesEntryId === "string" && uuid.test(entry.reversesEntryId))
+        )
+      ) {
+        throw new Error("tonart_admin_coin_history_invalid");
+      }
+      return {
+        id: entry.id,
+        userId: entry.userId,
+        userEmail: entry.userEmail,
+        type: entry.type as TonartAdminCoinEntry["type"],
+        delta: entry.delta,
+        reason: entry.reason,
+        createdAt: entry.createdAt,
+        reversesEntryId: typeof entry.reversesEntryId === "string"
+          ? entry.reversesEntryId
+          : null,
+      };
+    },
+  );
+  if (
+    (value.pendingQuoteCount as number) > (value.quoteCount as number) ||
+    (value.reviewingQuoteCount as number) > (value.quoteCount as number) ||
+    (value.pendingQuoteCount as number) +
+      (value.reviewingQuoteCount as number) +
+      (value.answeredQuoteCount as number) +
+      (value.archivedQuoteCount as number) !==
+      (value.quoteCount as number) ||
+    (value.pricedQuoteCount as number) >
+      (value.answeredQuoteCount as number) +
+        (value.archivedQuoteCount as number) ||
+    ((value.pricedQuoteCount as number) === 0) !==
+      ((value.quotedTotalCents as number) === 0) ||
+    recentQuotes.length > (value.quoteCount as number) ||
+    recentProfiles.length > (value.profileCount as number) ||
+    recentCoinEntries.length > (value.coinEntryCount as number)
+  ) {
     throw new Error("tonart_admin_overview_invalid");
   }
   return {

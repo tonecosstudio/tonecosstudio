@@ -241,6 +241,50 @@ describe("canonical catalog read boundary", () => {
     ).rejects.toThrow("invalid_catalog_id");
   });
 
+  it("allows only the exact same-origin local catalog proxy during development", async () => {
+    const currentWindow = window;
+    vi.stubGlobal("window", {
+      location: { origin: "http://127.0.0.1:8080" },
+    });
+    try {
+      const io = vi.fn(async () =>
+        Response.json({ items: [], nextCursor: null }),
+      );
+      const gateway = createPublicCatalogGateway(
+        "http://127.0.0.1:8080/catalogo-api/",
+        io as typeof fetch,
+      );
+      await gateway.listPage();
+      expect(io).toHaveBeenCalledExactlyOnceWith(
+        "http://127.0.0.1:8080/catalogo-api/api/catalog?limit=24",
+        expect.objectContaining({ method: "GET", credentials: "same-origin" }),
+      );
+      expect(() =>
+        createPublicCatalogGateway("http://127.0.0.1:8080/api/", fetch),
+      ).toThrow("catalog_endpoint_not_configured");
+      expect(() =>
+        createPublicCatalogGateway("http://127.0.0.1:5173/catalogo-api/", fetch),
+      ).toThrow("catalog_endpoint_not_configured");
+
+      vi.stubGlobal("window", {
+        location: { origin: "http://127.0.0.1:8081" },
+      });
+      const alternateLocalPort = vi.fn(async () =>
+        Response.json({ items: [], nextCursor: null }),
+      );
+      await createPublicCatalogGateway(
+        "http://127.0.0.1:8081/catalogo-api/",
+        alternateLocalPort as typeof fetch,
+      ).listPage();
+      expect(alternateLocalPort).toHaveBeenCalledExactlyOnceWith(
+        "http://127.0.0.1:8081/catalogo-api/api/catalog?limit=24",
+        expect.objectContaining({ method: "GET", credentials: "same-origin" }),
+      );
+    } finally {
+      vi.stubGlobal("window", currentWindow);
+    }
+  });
+
   it("never accepts duplicate IDs as distinct sellable models", async () => {
     const io = vi.fn(
       async () =>

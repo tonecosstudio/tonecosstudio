@@ -2,10 +2,10 @@ import { ADMIN_ROUTES } from "./routes";
 
 /**
  * Configuração de Navegação Admin
- * 
+ *
  * Define a estrutura hierárquica da sidebar administrativa.
  * Atualizado para refletir as consolidações de páginas em hubs.
- * 
+ *
  * Consolidações realizadas:
  * - Preços: 5 páginas → 1 hub (/admin/creditos/planos)
  * - Pagamentos: 5 páginas → 1 hub (/admin/pagamentos)
@@ -30,136 +30,136 @@ export interface NavigationSection {
 
 export const adminNavigationConfig: NavigationSection[] = [
   {
-    id: 'dashboard',
-    title: 'Visão Geral',
+    id: "dashboard",
+    title: "Visão Geral",
     items: [
       {
-        id: 'dashboard',
-        label: 'Painel',
+        id: "dashboard",
+        label: "Painel",
         path: ADMIN_ROUTES.home,
-        icon: 'LayoutDashboard',
+        icon: "LayoutDashboard",
       },
       {
-        id: 'analytics',
-        label: 'Análises',
+        id: "analytics",
+        label: "Análises",
         path: ADMIN_ROUTES.analytics,
-        icon: 'BarChart3',
+        icon: "BarChart3",
       },
     ],
   },
   {
-    id: 'catalog',
-    title: 'Catálogo & Produtos',
+    id: "catalog",
+    title: "Catálogo & Produtos",
     items: [
       {
-        id: 'catalog-hub',
-        label: 'Catálogo e Produtos',
+        id: "catalog-hub",
+        label: "Catálogo e Produtos",
         path: ADMIN_ROUTES.catalog,
-        icon: 'Package',
-        badge: 'Central',
+        icon: "Package",
+        badge: "Central",
       },
       {
-        id: 'packaging',
-        label: 'Embalagem',
+        id: "packaging",
+        label: "Embalagem",
         path: ADMIN_ROUTES.packaging,
-        icon: 'Box',
+        icon: "Box",
       },
     ],
   },
   {
-    id: 'operations',
-    title: 'Operações',
+    id: "operations",
+    title: "Operações",
     items: [
       {
-        id: 'orders',
-        label: 'Pedidos',
+        id: "orders",
+        label: "Pedidos",
         path: ADMIN_ROUTES.orders,
-        icon: 'ShoppingCart',
-        badge: 'Novo',
+        icon: "ShoppingCart",
+        badge: "Novo",
       },
       {
-        id: 'audit',
-        label: 'Trilha de Auditoria',
+        id: "audit",
+        label: "Trilha de Auditoria",
         path: ADMIN_ROUTES.audit,
-        icon: 'FileSearch',
+        icon: "FileSearch",
       },
     ],
   },
   {
-    id: 'credits',
-    title: 'Sistema de Créditos',
+    id: "credits",
+    title: "Sistema de Créditos",
     items: [
       {
-        id: 'credits-hub',
-        label: 'Créditos',
+        id: "credits-hub",
+        label: "Créditos",
         path: ADMIN_ROUTES.credits,
-        icon: 'Coins',
-        badge: 'Central',
+        icon: "Coins",
+        badge: "Central",
       },
     ],
   },
   {
-    id: 'production',
-    title: 'Produção',
+    id: "production",
+    title: "Produção",
     items: [
       {
-        id: 'production-dashboard',
-        label: 'Produção',
+        id: "production-dashboard",
+        label: "Produção",
         path: ADMIN_ROUTES.production,
-        icon: 'Grid',
-        badge: 'Central',
+        icon: "Grid",
+        badge: "Central",
       },
     ],
   },
   {
-    id: 'financial',
-    title: 'Financeiro',
+    id: "financial",
+    title: "Financeiro",
     items: [
       {
-        id: 'financial-hub',
-        label: 'Relatórios Financeiros',
+        id: "financial-hub",
+        label: "Relatórios Financeiros",
         path: ADMIN_ROUTES.financialHub,
-        icon: 'DollarSign',
-        badge: 'Central',
+        icon: "DollarSign",
+        badge: "Central",
       },
       {
-        id: 'payments',
-        label: 'Pagamentos',
+        id: "payments",
+        label: "Pagamentos",
         path: ADMIN_ROUTES.payments,
-        icon: 'CreditCard',
-        badge: 'Central',
+        icon: "CreditCard",
+        badge: "Central",
       },
     ],
   },
   {
-    id: 'users',
-    title: 'Usuários & Comunicação',
+    id: "users",
+    title: "Usuários & Comunicação",
     items: [
       {
-        id: 'users',
-        label: 'Usuários',
+        id: "users",
+        label: "Usuários",
         path: ADMIN_ROUTES.users,
-        icon: 'Users',
+        icon: "Users",
       },
       {
-        id: 'communication',
-        label: 'Central de Comunicação',
+        id: "communication",
+        label: "Central de Comunicação",
         path: ADMIN_ROUTES.communication,
-        icon: 'MessageSquare',
-        badge: 'Central',
+        icon: "MessageSquare",
+        badge: "Central",
       },
     ],
   },
   {
-    id: 'settings',
-    title: 'Configurações',
+    id: "settings",
+    title: "Configurações",
     items: [
       {
-        id: 'system',
-        label: 'Configurações',
+        id: "system",
+        label: "Configurações",
         path: ADMIN_ROUTES.settings,
-        icon: 'Settings',
-        badge: 'Central',
+        icon: "Settings",
+        badge: "Central",
       },
     ],
   },
@@ -169,21 +169,23 @@ export const adminNavigationConfig: NavigationSection[] = [
  * Retorna todos os itens de navegação em uma lista plana
  */
 export function getAllNavigationItems(): NavigationItem[] {
-  return adminNavigationConfig.flatMap(section => section.items);
+  return adminNavigationConfig.flatMap((section) => section.items);
 }
 
 /**
  * Encontra um item de navegação pelo path
  */
-export function findNavigationItemByPath(path: string): NavigationItem | undefined {
-  return getAllNavigationItems().find(item => item.path === path);
+export function findNavigationItemByPath(
+  path: string,
+): NavigationItem | undefined {
+  return getAllNavigationItems().find((item) => item.path === path);
 }
 
 /**
  * Retorna a seção que contém um determinado path
  */
 export function findSectionByPath(path: string): NavigationSection | undefined {
-  return adminNavigationConfig.find(section =>
-    section.items.some(item => item.path === path)
+  return adminNavigationConfig.find((section) =>
+    section.items.some((item) => item.path === path),
   );
 }

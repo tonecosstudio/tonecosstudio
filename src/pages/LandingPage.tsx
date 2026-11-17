@@ -5,10 +5,7 @@ import {
   ArrowRight,
   Crosshair,
   Shield,
-  Zap,
   Eye,
-  Trophy,
-  Mail,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -16,8 +13,8 @@ import { Page } from "@/components/layouts/Page";
 import {
   ArcadeCard,
   ArcadeSectionTitle,
-  ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
+import { CollectorBenefits } from "@/components/arcade/CollectorBenefits";
 import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
@@ -75,38 +72,6 @@ function ParallaxGrid({ scrollY }: { scrollY: number }) {
   );
 }
 
-// ─── STAT COUNTER ────────────────────────────────────────────────────
-
-function StatCounter({
-  value,
-  label,
-  icon: Icon,
-}: {
-  value: string;
-  label: string;
-  icon: React.ElementType;
-}) {
-  return (
-    <div className="text-center group">
-      <div className="w-14 h-14 mx-auto mb-2.5 border border-[hsl(var(--gold-accent)/0.35)] bg-[hsl(var(--gold-accent)/0.03)] flex items-center justify-center group-hover:border-[hsl(var(--gold-accent))] group-hover:bg-[hsl(var(--gold-accent)/0.08)] group-hover:shadow-[0_0_20px_hsl(var(--gold-accent)/0.15)] transition-all duration-500">
-        <Icon className="h-6 w-6 text-[hsl(var(--gold-accent))]" />
-      </div>
-      <p
-        className="text-[clamp(1.125rem,5vw,1.5rem)] sm:text-2xl md:text-3xl tracking-[0.04em] sm:tracking-[0.08em] leading-tight text-[hsl(0,0%,95%)] font-black"
-        style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-      >
-        {value}
-      </p>
-      <p
-        className="text-[8px] min-[360px]:text-[9px] sm:text-[10px] text-[hsl(0,0%,40%)] mt-1 uppercase tracking-[0.08em] sm:tracking-[0.12em]"
-        style={{ fontFamily: "'Press Start 2P', monospace" }}
-      >
-        {label}
-      </p>
-    </div>
-  );
-}
-
 // Preserve the commercial copy outside the public read-only catalog.
 export function landingCopyForMode(publicReadOnly: boolean) {
   return publicReadOnly
@@ -127,6 +92,11 @@ export function landingCopyForMode(publicReadOnly: boolean) {
 export default function LandingPage() {
   const publicReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true" && isCatalogPublicMvpEnabled();
   const landingCopy = landingCopyForMode(publicReadOnly);
+  const commercialMvpAvailable =
+    import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
+    import.meta.env.VITE_PREVIEW_READ_ONLY === "false" &&
+    !isCatalogPublicMvpEnabled();
+  const coinsAvailable = commercialMvpAvailable;
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -164,18 +134,6 @@ export default function LandingPage() {
   const models = modelsQuery.data?.slice(0, 6) ?? [];
   const isCatalogLoading = gateway !== null && !catalogMediaOnHold && modelsQuery.isPending;
   const hasCatalogError = !catalogMediaOnHold && (gateway === null || modelsQuery.isError);
-  const hasCatalogData = models.length > 0;
-  const catalogStatus = hasApprovedRenders
-    ? "Destaques do acervo"
-    : isCatalogLoading
-    ? "Carregando referências"
-    : hasCatalogError
-      ? "Acervo temporariamente indisponível"
-      : hasCatalogData
-        ? "Referências publicadas"
-        : "Novidades em preparação";
-  // These six featured results are not an estimate of all published models.
-  const featuredCount = modelsQuery.isSuccess ? String(models.length) : "—";
 
   return (
     <Page
@@ -191,7 +149,7 @@ export default function LandingPage() {
       ]}
     >
       {/* ═══ HERO ═══ */}
-      <section className="relative min-h-[88svh] flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative flex min-h-[52svh] flex-col items-center justify-center overflow-hidden py-12 sm:min-h-[58svh] sm:py-16">
         <ParallaxGrid scrollY={scrollY} />
         <FloatingParticles />
 
@@ -204,29 +162,6 @@ export default function LandingPage() {
         />
 
         <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
-          {/* Badge */}
-          <div
-            className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)] px-4 py-2 mb-6 animate-fade-in"
-            role="status"
-            aria-live="polite"
-          >
-            <div
-              className={`w-2 h-2 rounded-full ${
-                isCatalogLoading
-                  ? "bg-[hsl(var(--gold-accent))] animate-pulse"
-                  : hasCatalogError
-                    ? "bg-amber-500"
-                    : "bg-[hsl(var(--gold-accent))]"
-              }`}
-            />
-            <span
-              className="text-[9px] text-[hsl(var(--gold-accent))] tracking-[0.3em] uppercase"
-              style={{ fontFamily: "'Press Start 2P', monospace" }}
-            >
-              {catalogStatus}
-            </span>
-          </div>
-
           {/* Title */}
           <h1 className="mb-5">
             <span
@@ -244,14 +179,12 @@ export default function LandingPage() {
             >
               Universo de Personagens
             </span>
-          </h1>          {publicReadOnly && (
-            <p className="mx-auto mb-6 max-w-2xl text-sm leading-7 text-[hsl(0,0%,70%)] sm:text-base">Descubra universos, personagens e detalhes que inspiram esculturas colecionáveis. As imagens do catálogo são referências digitais para explorar.</p>
-          )}
+          </h1>
 
           {/* Typewriter */}
-          <div className="min-h-8 mb-8">
+          <div className="mx-auto mb-7 min-h-10 max-w-xl">
             <p
-              className="text-[9px] sm:text-[10px] text-[hsl(0,0%,45%)] tracking-wider"
+              className="text-[9px] leading-6 tracking-wider text-[hsl(0,0%,65%)] sm:text-[10px]"
               style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
               <TypewriterText
@@ -262,60 +195,28 @@ export default function LandingPage() {
           </div>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
             <Link
               to={PUBLIC_ROUTES.catalogModels}
-              className="group inline-flex w-full max-w-[20rem] items-center justify-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.08em] text-xs h-14 px-3 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all sm:w-auto sm:max-w-none sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.15em]"
+              className="group inline-flex w-full max-w-[20rem] items-center justify-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.08em] text-xs h-14 px-3 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--gold-accent))] sm:w-auto sm:max-w-none sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.15em]"
             >
               <Crosshair
                 className="w-5 h-5 group-hover:animate-spin"
                 style={{ animationDuration: "3s" }}
               />
-              EXPLORAR MODELOS
+              VER CATÁLOGO
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
             </Link>
 
             <Link
-              to={publicReadOnly ? PUBLIC_ROUTES.about : PUBLIC_ROUTES.catalogModels}
-              className="inline-flex w-full max-w-[20rem] items-center justify-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent)/0.6)] font-mono uppercase tracking-[0.08em] text-xs h-14 px-3 transition-all sm:w-auto sm:max-w-none sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.15em]"
+              to={PUBLIC_ROUTES.about}
+              className="inline-flex min-h-11 items-center justify-center gap-2 px-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(0,0%,70%)] underline-offset-4 hover:text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
             >
               <Eye className="w-5 h-5" />
-              {publicReadOnly ? "CONHEÇA O ESTÚDIO" : "VER CATÁLOGO"}
+              CONHEÇA O ESTÚDIO
             </Link>
           </div>
 
-          {/* An editorial status instead of empty or invented metrics during curatorial review. */}
-          {catalogMediaOnHold ? (
-            <div aria-label="Estado do catálogo" className="mx-auto grid max-w-3xl grid-cols-1 gap-3 border-t border-[hsl(var(--gold-accent)/0.18)] pt-6 text-left sm:grid-cols-3 sm:gap-6">
-              <div className="flex items-center gap-3">
-                <Eye size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
-                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">Catálogo para consulta</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Shield size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
-                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">{hasApprovedRenders ? "Referências em destaque" : "Novidades do acervo"}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Mail size={18} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
-                <span className="text-xs leading-relaxed text-[hsl(0,0%,72%)]">Contato por e-mail</span>
-              </div>
-            </div>
-          ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 sm:gap-6 max-w-3xl mx-auto">
-            <StatCounter
-              value={hasCatalogData ? "ATIVO" : "—"}
-              label="Acervo"
-              icon={Trophy}
-            />
-            <StatCounter
-              value={featuredCount}
-              label="Destaques"
-              icon={Shield}
-            />
-            <StatCounter value="100%" label="Artesanal" icon={Zap} />
-            <StatCounter value={publicReadOnly ? "Consulta" : "Sob Encomenda"} label="Atendimento" icon={Eye} />
-          </div>
-          )}
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[hsl(var(--gold-accent)/0.3)] to-transparent" />
       </section>
@@ -351,9 +252,14 @@ export default function LandingPage() {
           </div>
         </section>
       )) : (
-      <section className="relative border-t border-[hsl(var(--gold-accent)/0.08)] px-6 py-12">
+      <section className="relative px-4 py-10 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-6xl">
-          <ArcadeSectionTitle>MODELOS RECENTES</ArcadeSectionTitle>
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+            <ArcadeSectionTitle>EM DESTAQUE</ArcadeSectionTitle>
+            <Link to={PUBLIC_ROUTES.catalogModels} className="inline-flex min-h-11 items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+              Catálogo completo <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            </Link>
+          </div>
            {isCatalogMediaUnderReview() ? (
              <p className="mt-4 text-sm text-[hsl(0,0%,70%)]">
                Fotos em revisão para publicação. Apenas referências autorizadas são exibidas no catálogo.
@@ -373,22 +279,22 @@ export default function LandingPage() {
           ) : models.length === 0 ? (
             <p className="mt-5 p-6 text-sm" role="status">Novas referências serão publicadas em breve.</p>
           ) : (
-            <div className="mt-5 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            <div className="mt-5 grid grid-cols-2 gap-3.5 sm:grid-cols-3">
               {models.map((model) => {
                 const imageUrl = gateway?.mediaUrl(model.coverStorageKey) ?? null;
                 return (
                   <Link key={model.id} to={catalogModelDetailsPath(model.slug)} className="group block" aria-label={"Ver detalhes de " + model.name}>
                     <ArcadeCard>
-                      <div className="aspect-[2/3] overflow-hidden bg-[hsl(0,0%,8%)]">
+                      <div className="aspect-[4/5] overflow-hidden bg-[hsl(0,0%,8%)]">
                         <CanonicalCatalogImage
                           src={imageUrl}
                           alt={"Referência visual de " + model.name}
                           imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
                         />
                       </div>
-                      <div className="p-2.5">
-                        <p className="line-clamp-2 font-mono text-[9px] uppercase tracking-wider text-[hsl(0,0%,80%)]">{model.name}</p>
-                        <p className="mt-1 line-clamp-1 font-mono text-[8px] uppercase text-[hsl(var(--gold-accent)/0.75)]">{model.variantName || model.franchise}</p>
+                      <div className="px-4 py-4">
+                        <p className="line-clamp-2 font-mono text-xs uppercase tracking-wider text-[hsl(0,0%,80%)]">{model.name}</p>
+                        <p className="mt-2 line-clamp-1 font-mono text-[10px] uppercase text-[hsl(var(--gold-accent)/0.75)]">{model.variantName || model.franchise}</p>
                       </div>
                     </ArcadeCard>
                   </Link>
@@ -396,27 +302,18 @@ export default function LandingPage() {
               })}
             </div>
           )}
-          <div className="mt-6 text-center">
-            <Link to={PUBLIC_ROUTES.catalogModels} className="inline-flex h-11 items-center gap-2 border border-[hsl(var(--gold-accent)/0.4)] px-8 font-mono text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)]">
-              EXPLORAR TODOS OS MODELOS <ArrowRight className="h-3 w-3" aria-hidden="true" />
-            </Link>
-          </div>
         </div>
       </section>
       )}
 
-      {/* ═══ CTA ═══ */}
-      {!catalogMediaOnHold ? <ArcadeCTA
-        badge="ACERVO TONART"
-        title={landingCopy.ctaTitle}
-        description={landingCopy.ctaDescription}
-        primaryAction={{
-          label: "VER MODELOS",
-          href: PUBLIC_ROUTES.catalogModels,
-          icon: <Zap className="w-5 h-5" />,
-        }}
-        secondaryAction={{ label: "FALE CONOSCO", href: PUBLIC_ROUTES.contact }}
-      /> : null}
+      {commercialMvpAvailable && <CollectorBenefits coinsAvailable={coinsAvailable} />}
+
+      <section className="px-5 pb-12 sm:px-8">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5">
+          <div><h2 className="text-lg font-medium text-[hsl(0,0%,90%)]">Uma peça com a sua personalidade.</h2><p className="mt-2 text-sm text-[hsl(0,0%,60%)]">Converse com o estúdio sobre tamanho, acabamento e detalhes.</p></div>
+          <Link to={PUBLIC_ROUTES.contact} className="inline-flex min-h-11 items-center gap-4 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">Fale com a TONART <ArrowRight size={16} aria-hidden="true" /></Link>
+        </div>
+      </section>
 
     </Page>
   );

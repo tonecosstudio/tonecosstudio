@@ -36,6 +36,12 @@ describe("Cloudflare Pages canonical public catalog", () => {
     expect(resolveCanonicalCatalogApiBase(
       undefined, "https://tonecosstudio.pages.dev", false,
     )).toBe("");
+    expect(resolveCanonicalCatalogApiBase(
+      undefined, "http://127.0.0.1:8080", false,
+    )).toBe("http://127.0.0.1:8080/catalogo-api/");
+    expect(resolveCanonicalCatalogApiBase(
+      "", "http://localhost:5173", false,
+    )).toBe("");
   });
 
   it("accepts only the exact first-party Pages endpoint in production", () => {
@@ -94,9 +100,19 @@ describe("Cloudflare Pages canonical public catalog", () => {
       destination: "/api/catalogo-proxy?path=:path*",
     });
     expect(vercelConfig.rewrites.at(-1)).toEqual({
-      source: "/(.*)",
+      source: "/((?!.*\\.).*)",
       destination: "/index.html",
     });
+    // Vercel may route extensionless SPA paths to index.html, but missing
+    // robots/sitemap/favicon/assets must not receive HTML with HTTP 200.
+    const spaRoute = new RegExp("^" + vercelConfig.rewrites.at(-1).source + "$");
+    for (const route of ["/", "/login", "/conta", "/admin", "/modelos/example-model"]) {
+      expect(spaRoute.test(route)).toBe(true);
+    }
+    for (const asset of ["/sitemap.xml", "/favicon.ico", "/robots.txt",
+      "/favicon.svg", "/assets/missing.js", "/images/example.webp"]) {
+      expect(spaRoute.test(asset)).toBe(false);
+    }
     expect(vercelConfig.headers.flatMap((rule) => rule.headers)).toContainEqual({
       key: "X-Robots-Tag",
       value: "noindex, nofollow, noarchive",

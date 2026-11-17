@@ -39,6 +39,10 @@
 - Não criar segunda API, banco, catálogo ou fallback para ordax.com.br. Na Vercel, `api/catalogo-proxy.js` é somente transporte GET restrito para o Worker existente; no Cloudflare Pages, o transporte de prévia usa a Pages Function. D1/R2 continuam com um único owner.
 - SEO falha fechada: previews e produção não liberada mantêm robots Disallow, noindex e nenhum sitemap; não ativar TONECOS_PUBLIC_INDEXING_RELEASE antes de GO explícito.
 
+## Evolução aprovada — personagens, universos e descoberta (16/11/2026)
+
+O requisito de produto para fichas públicas de personagens com biografia opcional verificada, tags por categoria/franquia/personagem e seções “Mais estatuetas de…” / “Explore…” está em **[docs/CATALOGO-PERSONAGENS-UNIVERSOS.md](docs/CATALOGO-PERSONAGENS-UNIVERSOS.md)**. **Implementação pendente**: antes de criar código, ler essa especificação e comparar com `CanonicalModelDetails`, `RelatedModels`, rotas de catálogo e curadoria privada da PR #28 já integrada. Reutilizar SSOT do catálogo Worker/D1/R2 e a curadoria editorial existente; não publicar dados inventados, não abrir índices/checkout/deploy nem criar catálogo, schema ou páginas paralelas. Executar fases e aceite do documento com validação proporcional.
+
 ## Regras de custo e execução
 
 Não rodar scans D1, imports, migrações, consultas integrais R2, testes de carga ou polling de catálogo para checar status. Validar sem custos por metadados Cloudflare/GitHub e testes locais. Não contratar Vercel Pro nem contratar outras soluções pagas sem autorização. Não burlar Cloudflare Access nem confundir HTTP 200 da tela de login com QA do site.

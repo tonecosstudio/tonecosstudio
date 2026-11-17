@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { decimalToHundredths } from "@/services/commercial/tonart-commerce-rules";
 
 export type PublicSubscriptionPlan = {
   id: string;
@@ -7,17 +8,15 @@ export type PublicSubscriptionPlan = {
   plan_type: string;
   price_full: number;
   deliveries_total: number;
-  total_credits: number | null;
   pricing_tiers?: unknown;
 };
 
 type PublicSubscriptionPlanRow = Omit<
   PublicSubscriptionPlan,
-  "price_full" | "deliveries_total" | "total_credits"
+  "price_full" | "deliveries_total"
 > & {
   price_full: unknown;
   deliveries_total: unknown;
-  total_credits: unknown;
 };
 
 function normalizePublicSubscriptionPlan(
@@ -25,18 +24,18 @@ function normalizePublicSubscriptionPlan(
 ): PublicSubscriptionPlan {
   const priceFull = Number(row.price_full);
   const deliveriesTotal = Number(row.deliveries_total);
-  const totalCredits = row.total_credits == null ? null : Number(row.total_credits);
-
   const invalidPrice = !Number.isFinite(priceFull) || priceFull <= 0;
+  try {
+    decimalToHundredths(String(priceFull));
+  } catch {
+    throw new Error(`Preço inválido no plano ${row.id}`);
+  }
   const invalidDeliveries =
     !Number.isFinite(deliveriesTotal) ||
     !Number.isInteger(deliveriesTotal) ||
     deliveriesTotal <= 0;
-  const invalidCredits =
-    totalCredits !== null &&
-    (!Number.isFinite(totalCredits) || !Number.isInteger(totalCredits) || totalCredits < 0);
 
-  if (invalidPrice || invalidDeliveries || invalidCredits) {
+  if (invalidPrice || invalidDeliveries) {
     throw new Error(`Configuração comercial inválida no plano ${row.id}`);
   }
 
@@ -44,15 +43,15 @@ function normalizePublicSubscriptionPlan(
     ...row,
     price_full: priceFull,
     deliveries_total: deliveriesTotal,
-    total_credits: totalCredits,
   };
 }
 
 export async function listActiveSubscriptionPlans(): Promise<PublicSubscriptionPlan[]> {
   const { data, error } = await supabase
     .from("subscription_plans")
-    .select("*, pricing_tiers(*)")
+    .select("id, name, description, plan_type, price_full, deliveries_total")
     .eq("is_active", true)
+    .in("plan_type", ["avulso", "trimestral", "semestral"])
     .order("display_order");
 
   if (error) throw error;

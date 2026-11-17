@@ -357,6 +357,11 @@
         "sourceBlob": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
         "localBlob": "b1e6ab6e35be74ca962c5fd7b79d84d99de76b98",
         "reason": "Add the official TONART production origin to existing exact-match Worker CORS allowlist while preserving all live legacy origins through M5."
+      },
+      "config/catalog-production-model-contract.json": {
+        "sourceBlob": "e9057d363e51e0f5701311db44429da18a3a7f04",
+        "localBlob": "0b4b700fa996bfaedfd94d3696dba9680166f703",
+        "reason": "Reconcile the pinned model contract against the canonical D1/public API inventory: retain 34 candidate-only unpublished IDs, add 13 public-only IDs, and correct two stale publication flags without verifying editorial identities."
       }
     },
     "excludedModules": [

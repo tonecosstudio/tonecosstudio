@@ -27,10 +27,11 @@ export function TermsArcadeView({ settings }: { settings?: SystemSettings }) {
   ] : commercialMvp ? [
     { num: "01", title: "Catálogo público", icon: <Shield className="w-4 h-4" />, content: "A consulta aos modelos e referências é livre. As imagens e descrições não garantem disponibilidade, valor ou prazo de produção." },
     { num: "02", title: "Conta", icon: <FileText className="w-4 h-4" />, content: "Enviar e acompanhar solicitações exige uma conta autenticada. O titular deve manter suas credenciais protegidas e fornecer dados de contato corretos." },
-    { num: "03", title: "Orçamento", icon: <FileText className="w-4 h-4" />, content: "A solicitação reúne modelos, quantidades e preferências. O estúdio analisa e pode registrar uma proposta de preço, sem gerar cobrança automática." },
-    { num: "04", title: "Sem checkout", icon: <AlertTriangle className="w-4 h-4" />, content: "A versão atual não conclui pedidos, reservas ou pagamentos no site. O orçamento respondido não representa contratação automática.", highlight: true },
-    { num: "05", title: "Direitos de terceiros", icon: <Scale className="w-4 h-4" />, content: "Marcas, personagens e obras de terceiros permanecem sob os direitos de seus titulares. O catálogo não transfere tais direitos." },
-    { num: "06", title: "Uso adequado", icon: <Shield className="w-4 h-4" />, content: "São vedados acesso não autorizado, fraude, abuso de sistemas e uso indevido de conteúdo ou dados." },
+    { num: "03", title: "Orçamento", icon: <FileText className="w-4 h-4" />, content: "A solicitação reúne modelos, quantidades e preferências. O estúdio analisa e registra a resposta com valor, desconto e prazo; o envio do orçamento não gera cobrança automática." },
+    { num: "04", title: "Pagamento e pré-venda", icon: <AlertTriangle className="w-4 h-4" />, content: "Após a resposta, a página pode apresentar instruções de PIX ou link e receber o comprovante, confirmado somente após revisão da equipe. Na pré-venda, a entrada é de R$ 50 e é abatida do total; o restante é pago na finalização.", highlight: true },
+    { num: "05", title: "TONART Coins", icon: <AlertTriangle className="w-4 h-4" />, content: "Coins são créditos virtuais registrados em uma carteira única da conta, sem saque ou transferência. Podem ser usados em ofertas extras que exibam expressamente essa elegibilidade; quando habilitada na oferta, a referência é de 1 Coin para R$ 1,00, limitada ao preço do produto. Frete, orçamentos, entrada de pré-venda e parcelas de planos ficam fora do uso de Coins." },
+    { num: "06", title: "Direitos de terceiros", icon: <Scale className="w-4 h-4" />, content: "Marcas, personagens e obras de terceiros permanecem sob os direitos de seus titulares. O catálogo não transfere tais direitos." },
+    { num: "07", title: "Uso adequado", icon: <Shield className="w-4 h-4" />, content: "São vedados acesso não autorizado, fraude, abuso de sistemas e uso indevido de conteúdo ou dados." },
   ] : [
     {
       num: "01",

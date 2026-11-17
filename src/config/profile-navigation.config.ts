@@ -1,4 +1,4 @@
-import { PUBLIC_COLLECTIONS_ENABLED, profileSectionPath } from "./routes";
+import { PUBLIC_SUBSCRIPTIONS_ENABLED, profileSectionPath } from "./routes";
 
 export interface ProfileSubSection {
   id: string;
@@ -58,7 +58,7 @@ const baseProfileNavigation: ProfileSection[] = [
   },
 ];
 
-export const profileNavigationConfig: ProfileSection[] = PUBLIC_COLLECTIONS_ENABLED
+export const profileNavigationConfig: ProfileSection[] = PUBLIC_SUBSCRIPTIONS_ENABLED
   ? [
       ...baseProfileNavigation,
       {

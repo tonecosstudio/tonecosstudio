@@ -36,8 +36,10 @@ export function SendPaymentLinkDialog({
   const [isOpen, setIsOpen] = useState(false);
   const [paymentLink, setPaymentLink] = useState("");
   const [pixKey, setPixKey] = useState("");
-  const [instructions, setInstructions] = useState(
-    `Olá ${customerName}!\n\nSeu link de pagamento está pronto.\n\nValor: R$ ${amount.toFixed(2)}\n\nApós realizar o pagamento, clique em "Já Paguei" para nos avisar.\n\nQualquer dúvida, estamos à disposição!`
+  const [instructions, setInstructions] = useState(() =>
+    paymentType === "final"
+      ? `Olá ${customerName}!\n\nSua peça está pronta para a finalização.\n\nSaldo restante: R$ ${amount.toFixed(2)}. A entrada de R$ 50 já foi abatida do total.\n\nApós o pagamento, acesse Minha conta > Meus orçamentos e envie o comprovante para conferência.`
+      : `Olá ${customerName}!\n\nSua pré-venda foi confirmada.\n\nEntrada: R$ ${amount.toFixed(2)}, abatida do valor total.\n\nApós o pagamento, acesse Minha conta > Meus orçamentos e envie o comprovante para conferência. O saldo será pago quando a peça estiver pronta.`
   );
   const [copiedPix, setCopiedPix] = useState(false);
 
@@ -62,7 +64,7 @@ export function SendPaymentLinkDialog({
       case "voucher":
         return "Voucher";
       case "deposit":
-        return "Sinal";
+        return "Entrada";
       case "final":
         return "Pagamento Final";
       case "full":
@@ -82,7 +84,7 @@ export function SendPaymentLinkDialog({
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Enviar Link de Pagamento</DialogTitle>
+          <DialogTitle>Disponibilizar instruções de pagamento</DialogTitle>
           <DialogDescription>
             {getPaymentTypeLabel()} - R$ {amount.toFixed(2)} para {customerName}
           </DialogDescription>
@@ -91,8 +93,7 @@ export function SendPaymentLinkDialog({
         <div className="space-y-4 py-4">
           <Alert>
             <AlertDescription>
-              O cliente receberá uma notificação no site e poderá ver o link na página de
-              acompanhamento do pedido.
+              As instruções ficarão disponíveis em Meus orçamentos. Avise o cliente pelos canais habituais; esta ação não envia e-mail ou WhatsApp.
             </AlertDescription>
           </Alert>
 
@@ -150,9 +151,9 @@ export function SendPaymentLinkDialog({
           </div>
 
           <div className="p-4 rounded-lg border bg-muted/50">
-            <p className="text-sm font-medium mb-2">Preview da Notificação:</p>
+            <p className="text-sm font-medium mb-2">Prévia das instruções:</p>
             <div className="space-y-2 text-sm">
-              <p className="font-medium">Link de Pagamento Disponível</p>
+              <p className="font-medium">Pagamento disponível</p>
               <p className="text-muted-foreground">Valor: R$ {amount.toFixed(2)}</p>
               {paymentLink && (
                 <p className="text-primary">Link: {paymentLink.substring(0, 50)}...</p>
@@ -180,8 +181,8 @@ export function SendPaymentLinkDialog({
                 {
                   onSuccess: () => {
                     toast({
-                      title: "Link enviado!",
-                      description: `${customerName} foi notificado.`,
+                      title: "Instruções disponibilizadas",
+                      description: "O cliente pode consultar os dados em Meus orçamentos. Avise-o pelo canal de atendimento.",
                     });
                     setIsOpen(false);
                     setPaymentLink("");
@@ -204,7 +205,7 @@ export function SendPaymentLinkDialog({
             ) : (
               <>
                 <Send className="h-4 w-4 mr-2" />
-                Enviar para Cliente
+                Salvar e disponibilizar
               </>
             )}
           </Button>

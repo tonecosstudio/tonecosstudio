@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchAdminPricingTierPlans,
-  fetchCoinExchangeRate,
   savePricingTierPlan,
   type PricingTierPlan,
   type SavePricingTierPlanInput,
@@ -15,13 +14,6 @@ export function useAdminPlansConfiguration() {
   return useQuery({
     queryKey: ADMIN_PLANS_CONFIGURATION_QUERY_KEY,
     queryFn: fetchAdminPricingTierPlans,
-  });
-}
-
-export function useCoinExchangeRate() {
-  return useQuery({
-    queryKey: ["coin-exchange-rate"],
-    queryFn: fetchCoinExchangeRate,
   });
 }
 

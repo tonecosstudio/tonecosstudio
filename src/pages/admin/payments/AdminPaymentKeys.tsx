@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,11 +32,26 @@ export default function AdminPaymentKeys() {
   const {
     formData,
     setValue,
+    setFormData,
     getSanitizedData
   } = useSanitizedForm(
     initialFormData,
     sanitizationMap
   );
+
+  useEffect(() => {
+    setFormData((current) => {
+      const next = { ...current };
+      let changed = false;
+      paymentKeys.forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(next, key.key)) {
+          next[key.key] = key.value;
+          changed = true;
+        }
+      });
+      return changed ? next : current;
+    });
+  }, [paymentKeys, setFormData]);
 
   // Mutation para atualizar chaves
   const updateKeyMutation = useUpdateAdminPaymentKey();
@@ -66,7 +81,9 @@ export default function AdminPaymentKeys() {
       const updates: Promise<void>[] = [];
 
       paymentKeys.forEach((key) => {
-        const newValue = sanitizedData[key.key];
+        const newValue = Object.prototype.hasOwnProperty.call(formData, key.key)
+          ? sanitizedData[key.key]
+          : key.value;
         if (newValue !== key.value) {
           updates.push(
             updateKeyMutation.mutateAsync({ key: key.key, value: newValue })
@@ -99,11 +116,13 @@ export default function AdminPaymentKeys() {
     const labels: Record<string, string> = {
       pix_key_onetime: "Compra Avulsa",
       pix_key_voucher: "Sistema de Voucher / Entrada",
+      pix_key_subscription_bimonthly: "Assinatura Bimestral",
       pix_key_subscription_quarterly: "Assinatura Trimestral",
       pix_key_subscription_semiannual: "Assinatura Semestral",
       pix_key_subscription_annual: "Assinatura Anual",
       payment_link_onetime: "Compra Avulsa",
       payment_link_voucher: "Sistema de Voucher / Entrada",
+      payment_link_subscription_bimonthly: "Assinatura Bimestral",
       payment_link_subscription_quarterly: "Assinatura Trimestral",
       payment_link_subscription_semiannual: "Assinatura Semestral",
       payment_link_subscription_annual: "Assinatura Anual",
@@ -159,7 +178,7 @@ export default function AdminPaymentKeys() {
                       <Input
                         id={key.key}
                         name={key.key}
-                        value={formData[key.key] || key.value}
+                        value={formData[key.key] ?? key.value}
                         onChange={(e) => setValue(key.key, e.target.value)}
                         placeholder="Digite a chave PIX (CPF, CNPJ, email, telefone ou chave aleatória)"
                         className="font-mono"
@@ -188,7 +207,7 @@ export default function AdminPaymentKeys() {
                       <Input
                         id={key.key}
                         name={key.key}
-                        value={formData[key.key] || key.value}
+                        value={formData[key.key] ?? key.value}
                         onChange={(e) => setValue(key.key, e.target.value)}
                         placeholder="https://..."
                         type="url"
@@ -233,7 +252,7 @@ export default function AdminPaymentKeys() {
               persistido no pedido ou orçamento.
             </div>
             <div>
-              <strong>Assinaturas:</strong> Cada período (trimestral, semestral, anual) pode ter sua
+              <strong>Assinaturas:</strong> Cada período (bimestral, trimestral, semestral, anual) pode ter sua
               própria chave PIX e link de pagamento.
             </div>
             <div className="pt-2 border-t">

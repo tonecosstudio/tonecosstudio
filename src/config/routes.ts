@@ -38,9 +38,72 @@ export const TONECOS_COMMERCIAL_ROUTES = {
   adminHome: "/admin",
   adminQuotes: "/admin/orcamentos",
   adminCoins: "/admin/moedas",
+  adminSubscriptions: "/admin/assinaturas",
+  adminCommercialOffers: "/admin/ofertas",
 } as const;
 
+const TONECOS_CUSTOMER_RETURN_ROUTES = new Set<string>([
+  TONECOS_COMMERCIAL_ROUTES.account,
+  TONECOS_COMMERCIAL_ROUTES.request,
+  TONECOS_COMMERCIAL_ROUTES.history,
+]);
+
+/** The original account sections are the only permitted deep links after
+ * authentication. Reject arbitrary paths, nested routes and external URLs.
+ */
+const TONECOS_CUSTOMER_SECTION_RETURN_PATH =
+  /^\/perfil\/(?:conta|dados-pessoais|endereco|pedidos|producao|colecao|preferencias|pagamentos|assinatura|assinaturas|notificacoes|suporte)$/;
+
+/** Customer quote links are only returnable with one strict UUID, never
+ * with arbitrary query strings or external/nested redirect destinations.
+ */
+const TONECOS_CUSTOMER_QUOTE_RETURN_PATH =
+  /^\/meus-orcamentos\?quote=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Allow only customer-owned commercial destinations after email auth flows. */
+export function resolveTonecosCustomerReturnPath(
+  value: string | null | undefined,
+): string {
+  return typeof value === "string" &&
+    (TONECOS_CUSTOMER_RETURN_ROUTES.has(value) ||
+      TONECOS_CUSTOMER_SECTION_RETURN_PATH.test(value) ||
+      TONECOS_CUSTOMER_QUOTE_RETURN_PATH.test(value))
+    ? value
+    : TONECOS_COMMERCIAL_ROUTES.account;
+}
+
+export function tonecosLoginReturnPath(
+  value: string | null | undefined,
+): string {
+  const returnTo = resolveTonecosCustomerReturnPath(value);
+  return returnTo === TONECOS_COMMERCIAL_ROUTES.account
+    ? TONECOS_COMMERCIAL_ROUTES.login
+    : TONECOS_COMMERCIAL_ROUTES.login +
+        "?next=" +
+        encodeURIComponent(returnTo);
+}
+
+export function tonecosRecoveryPath(
+  value: string | null | undefined,
+  update = false,
+): string {
+  const returnTo = resolveTonecosCustomerReturnPath(value);
+  const params = new URLSearchParams();
+  if (update) params.set("action", "update");
+  if (returnTo !== TONECOS_COMMERCIAL_ROUTES.account) {
+    params.set("next", returnTo);
+  }
+  const query = params.toString();
+  return query
+    ? TONECOS_COMMERCIAL_ROUTES.recovery + "?" + query
+    : TONECOS_COMMERCIAL_ROUTES.recovery;
+}
+
 export const PUBLIC_COLLECTIONS_ENABLED = false;
+// Subscription pages use their own migration gate; legacy collection routes
+// stay independently disabled until their full schema is installed.
+export const PUBLIC_SUBSCRIPTIONS_ENABLED =
+  import.meta.env.VITE_TONECOS_SUBSCRIPTIONS_ENABLED === "true";
 
 export const AUTH_ROUTES = {
   profile: "/perfil",
@@ -107,6 +170,7 @@ export const ADMIN_ROUTES = {
   paymentMethods: "/admin/pagamentos/metodos",
   paymentKeys: "/admin/pagamentos/chaves",
   paymentCalculator: "/admin/pagamentos/calculadora",
+  preorders: "/admin/pagamentos/pre-vendas",
   paymentDetails: "/admin/pagamentos/:paymentId",
   communication: "/admin/comunicacao",
   communicationGroups: "/admin/comunicacao/grupos",

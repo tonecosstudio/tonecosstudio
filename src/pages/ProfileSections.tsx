@@ -32,6 +32,7 @@ import {
   useProfilePaymentMethods,
   useProfileSupport,
 } from "@/hooks/customer/useProfileSectionsData";
+import { loadSubscriptionCatalogModels } from "@/services/subscriptions/subscription-catalog-service";
 import { listPaymentsByUser } from "@/lib/payment-service";
 import {
   PUBLIC_COLLECTIONS_ENABLED,
@@ -71,7 +72,11 @@ interface NotificationsSectionProps {
   saveMutation: SaveMutationLike;
 }
 
-export const PROFILE_COLLECTIONS_ENABLED = PUBLIC_COLLECTIONS_ENABLED;
+export const PROFILE_COLLECTIONS_ENABLED =
+  PUBLIC_COLLECTIONS_ENABLED ||
+  (import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
+    import.meta.env.VITE_PREVIEW_READ_ONLY === "false" &&
+    import.meta.env.VITE_PUBLIC_CATALOG_MVP !== "true");
 
 const profileCardClassName = "border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] text-white shadow-none";
 const profilePanelClassName = "rounded-lg border border-[hsl(0,0%,14%)] bg-white/[0.03]";
@@ -691,7 +696,7 @@ export function NotificationsSection({
     <div className="space-y-6">
       <div className="grid gap-3 md:grid-cols-3">
         <div className={`${profilePanelClassName} p-4`}>
-          <p className={profileTinyMutedTextClassName}>Canais ativos</p>
+          <p className={profileTinyMutedTextClassName}>Preferências ativas</p>
           <p className="mt-2 text-2xl font-semibold">{activeChannels}/3</p>
         </div>
         <div className={`${profilePanelClassName} p-4`}>
@@ -708,9 +713,10 @@ export function NotificationsSection({
         <div className="flex items-start gap-3">
           <Bell className="mt-0.5 h-4 w-4 text-[hsl(var(--gold-accent))]" />
           <div className="space-y-1">
-            <p className="text-sm font-medium">Politica de notificacao</p>
+            <p className="text-sm font-medium">Política de notificações</p>
             <p className={`text-sm ${profileMutedTextClassName}`}>
-              Mantenha ativos os avisos operacionais para nao perder etapas de pedido, cobranca, envio ou retorno da equipe.
+              Mantenha ativos os avisos operacionais para não perder etapas de
+              pedido, cobrança, envio ou retorno da equipe.
             </p>
           </div>
         </div>
@@ -719,37 +725,54 @@ export function NotificationsSection({
       <div className="space-y-3">
         <div className={`${profilePanelClassName} flex items-start justify-between gap-4 p-4`}>
           <div className="space-y-1">
-            <Label>Alertas por email</Label>
+            <Label>Avisos de envio e entrega</Label>
             <p className={`text-sm ${profileMutedTextClassName}`}>
-              Avisos gerais sobre a conta, retorno da equipe e interacoes relevantes.
+              E-mails quando o pedido for enviado ou a entrega for concluída.
             </p>
           </div>
-          <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
+          <Switch
+            aria-label="Avisos de envio e entrega"
+            checked={emailNotifications}
+            disabled={saveMutation.isPending}
+            onCheckedChange={setEmailNotifications}
+          />
         </div>
 
         <div className={`${profilePanelClassName} flex items-start justify-between gap-4 p-4`}>
           <div className="space-y-1">
-            <Label>Atualizacoes de pedidos</Label>
+            <Label>Atualizações de produção</Label>
             <p className={`text-sm ${profileMutedTextClassName}`}>
-              Mudancas de producao, expedicao, entrega e eventos que exigem acao da conta.
+              Etapas de design, produção, controle de qualidade e embalagem.
             </p>
           </div>
-          <Switch checked={orderUpdates} onCheckedChange={setOrderUpdates} />
+          <Switch
+            aria-label="Atualizações de produção"
+            checked={orderUpdates}
+            disabled={saveMutation.isPending}
+            onCheckedChange={setOrderUpdates}
+          />
         </div>
 
         <div className={`${profilePanelClassName} flex items-start justify-between gap-4 p-4`}>
           <div className="space-y-1">
-            <Label>Comunicados de lancamento</Label>
+            <Label>Comunicados de lançamento</Label>
             <p className={`text-sm ${profileMutedTextClassName}`}>
-              Novidades de universo, campanhas e comunicados comerciais nao operacionais.
+              Novidades de universos, campanhas e comunicados comerciais não operacionais.
             </p>
           </div>
-          <Switch checked={marketingEmails} onCheckedChange={setMarketingEmails} />
+          <Switch
+            aria-label="Comunicados de lançamento"
+            checked={marketingEmails}
+            disabled={saveMutation.isPending}
+            onCheckedChange={setMarketingEmails}
+          />
         </div>
       </div>
 
       <div className={`${profilePanelClassName} p-4 text-sm ${profileMutedTextClassName}`}>
-        Preferencias de notificacao impactam somente a distribuicao dos avisos. Comunicacoes obrigatorias de seguranca ou operacao critica continuam sendo priorizadas quando necessario.
+        Preferências de notificação impactam somente a distribuição dos avisos.
+        Comunicações obrigatórias de segurança ou operação crítica continuam
+        sendo priorizadas quando necessário.
       </div>
 
       <div className="border-t border-[hsl(0,0%,14%)] pt-4">
@@ -758,15 +781,68 @@ export function NotificationsSection({
           disabled={saveMutation.isPending}
           className={`w-full ${profilePrimaryButtonClassName}`}
         >
-          {saveMutation.isPending ? "Salvando..." : "Salvar preferencias"}
+          {saveMutation.isPending ? "Salvando..." : "Salvar preferências"}
         </Button>
       </div>
     </div>
   );
 }
 
-export function SubscriptionSection({ userId }: { userId: string }) {
+function SubscriptionSelectedModels({ slugs }: { slugs: string[] }) {
+  const selectedModelsQuery = useQuery({
+    queryKey: ["subscription-selected-models", slugs],
+    queryFn: ({ signal }) => loadSubscriptionCatalogModels(slugs, signal),
+  });
+
+  return (
+    <section className={`${profilePanelClassName} p-4`} aria-labelledby="subscription-selected-models-heading">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 id="subscription-selected-models-heading" className="text-sm font-semibold">Modelos da sua assinatura</h3>
+          <p className={`mt-1 text-xs ${profileMutedTextClassName}`}>
+            {slugs.length} modelos selecionados da coleção curada.
+          </p>
+        </div>
+        {selectedModelsQuery.isLoading && <span role="status" className={`text-xs ${profileMutedTextClassName}`}>Carregando catálogo...</span>}
+      </div>
+      {selectedModelsQuery.isError && (
+        <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-red-500/20 p-3">
+          <p className="text-sm text-red-300">Não foi possível carregar os nomes dos modelos.</p>
+          <Button type="button" variant="outline" size="sm" onClick={() => void selectedModelsQuery.refetch()}>
+            Tentar novamente
+          </Button>
+        </div>
+      )}
+      {selectedModelsQuery.data && (
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {selectedModelsQuery.data.map((model) => (
+            <li key={model.slug} className="flex min-w-0 items-center gap-3 rounded-md border border-white/10 p-2">
+              {model.imageUrl ? (
+                <img src={model.imageUrl} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded object-cover" />
+              ) : (
+                <span aria-hidden="true" className="h-12 w-12 shrink-0 rounded bg-white/5" />
+              )}
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium">{model.name}</span>
+                {model.variantName && <span className="block truncate text-xs text-zinc-400">{model.variantName}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+export function SubscriptionSection({
+  userId,
+  commercialMvp = false,
+}: {
+  userId: string;
+  commercialMvp?: boolean;
+}) {
   const subscriptionQuery = useActiveProfileSubscription(userId);
+  const selectedModelSlugs = subscriptionQuery.data?.selected_model_slugs ?? [];
 
   if (subscriptionQuery.isLoading) {
     return (
@@ -782,7 +858,27 @@ export function SubscriptionSection({ userId }: { userId: string }) {
     );
   }
 
-  if (!PROFILE_COLLECTIONS_ENABLED) {
+  if (subscriptionQuery.isError) {
+    return (
+      <section role="alert" className={`${profilePanelClassName} p-6`}>
+        <h2 className="text-lg font-semibold">Não foi possível carregar sua assinatura</h2>
+        <p className={`mt-2 text-sm ${profileMutedTextClassName}`}>
+          Tente novamente em instantes. Seus dados e pagamentos continuam protegidos.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className={`mt-4 ${profileOutlineButtonClassName}`}
+          onClick={() => void subscriptionQuery.refetch()}
+          disabled={subscriptionQuery.isFetching}
+        >
+          {subscriptionQuery.isFetching ? "Atualizando..." : "Tentar novamente"}
+        </Button>
+      </section>
+    );
+  }
+
+  if (!commercialMvp && !PROFILE_COLLECTIONS_ENABLED) {
     return (
       <div className="space-y-6">
         <div className="grid gap-3 md:grid-cols-3">
@@ -839,7 +935,7 @@ export function SubscriptionSection({ userId }: { userId: string }) {
             <p className="mt-2 text-2xl font-semibold">Inativo</p>
           </div>
           <div className={`${profilePanelClassName} p-4`}>
-            <p className={profileTinyMutedTextClassName}>Proximo passo</p>
+            <p className={profileTinyMutedTextClassName}>Próximo passo</p>
             <p className="mt-2 text-2xl font-semibold">Explorar</p>
           </div>
         </div>
@@ -858,12 +954,15 @@ export function SubscriptionSection({ userId }: { userId: string }) {
 
         <div className={`${profileDashedPanelClassName} px-6 py-10 text-center`}>
           <Package className="mx-auto mb-4 h-14 w-14 text-zinc-500" />
-          <p className="font-medium text-white">Nao ha plano ativo no momento</p>
+          <p className="font-medium text-white">Não há plano ativo no momento</p>
           <p className={`mx-auto mt-2 max-w-md text-sm ${profileMutedTextClassName}`}>
             Enquanto isso, use o catalogo publico e o restante da conta para acompanhar seus dados e operacoes atuais.
           </p>
           <Button asChild className={`mt-4 ${profilePrimaryButtonClassName}`}>
             <Link to={PUBLIC_ROUTES.catalog}>Explorar universo</Link>
+          </Button>
+          <Button asChild variant="outline" className="mt-4 sm:ml-2">
+            <Link to={PUBLIC_ROUTES.plans}>Conhecer planos de assinatura</Link>
           </Button>
         </div>
       </div>
@@ -907,6 +1006,8 @@ export function SubscriptionSection({ userId }: { userId: string }) {
           </Badge>
         </div>
       </div>
+
+      {selectedModelSlugs.length > 0 && <SubscriptionSelectedModels slugs={selectedModelSlugs} />}
 
       <div className={`${profilePanelClassName} p-4`}>
         <div className="flex items-center justify-between gap-4">

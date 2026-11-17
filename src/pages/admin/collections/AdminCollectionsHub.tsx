@@ -8,10 +8,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Coins, Layers3, Package } from "lucide-react";
-import { ADMIN_ROUTES } from "@/config/routes";
+import { ADMIN_ROUTES, PUBLIC_SUBSCRIPTIONS_ENABLED } from "@/config/routes";
 import AdminCollections from "./AdminCollections";
 import { CreditCharactersContent } from "@/components/admin/catalog/CreditCharactersContent";
 import { CatalogCurationContent } from "@/components/admin/catalog/CatalogCurationContent";
+import { SubscriptionCollectionCuration } from "@/components/admin/collections/SubscriptionCollectionCuration";
+import { InternalCollectionCuration } from "@/components/admin/collections/InternalCollectionCuration";
 
 type AdminCatalogTab = "models" | "collections" | "credit-characters";
 
@@ -94,6 +96,8 @@ export default function AdminCollectionsHub() {
                 preco.
               </p>
             </div>
+            <InternalCollectionCuration />
+            {PUBLIC_SUBSCRIPTIONS_ENABLED && <SubscriptionCollectionCuration />}
             <AdminCollections />
           </TabsContent>
 

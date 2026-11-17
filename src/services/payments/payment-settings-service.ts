@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type PaymentType = "onetime" | "voucher" | "subscription";
-export type SubscriptionPeriod = "quarterly" | "semiannual" | "annual";
+export type SubscriptionPeriod = "bimonthly" | "quarterly" | "semiannual" | "annual";
 
 export interface PaymentInfo {
   payment_type: PaymentType;

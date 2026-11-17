@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearAllRateLimits, RATE_LIMITS } from "@/lib/security/rate-limiter";
+vi.mock("@/config/supabase-environment", () => ({
+  SUPABASE_URL: "https://icmtmaakjucmuzxnofkd.supabase.co",
+  SUPABASE_PUBLISHABLE_KEY: "public-key-for-tests",
+}));
 
 const { authMock } = vi.hoisted(() => ({
   authMock: {
@@ -10,6 +14,7 @@ const { authMock } = vi.hoisted(() => ({
     signOut: vi.fn(),
     signUp: vi.fn(),
     resetPasswordForEmail: vi.fn(),
+    resend: vi.fn(),
   },
 }));
 
@@ -20,6 +25,8 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import {
+  getTonecosPublicSignupEnabled,
+  resendSignupConfirmation,
   sendPasswordResetEmail,
   signInWithPasswordCredentials,
   signUpWithPasswordCredentials,
@@ -147,6 +154,104 @@ describe("auth-session-service rate limits", () => {
     expect(authMock.signUp).toHaveBeenCalledTimes(RATE_LIMITS.register.maxRequests);
   });
 
+  it("resends signup confirmation through Supabase Auth with the canonical redirect", async () => {
+    authMock.resend.mockResolvedValue({ data: {}, error: null });
+
+    await expect(
+      resendSignupConfirmation({
+        email: " Pending@Example.com ",
+        emailRedirectTo: "https://tonartstudio.com.br/login",
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(authMock.resend).toHaveBeenCalledExactlyOnceWith({
+      type: "signup",
+      email: "pending@example.com",
+      options: {
+        emailRedirectTo: "https://tonartstudio.com.br/login",
+      },
+    });
+  });
+
+  it("limits repeated successful confirmation email sends", async () => {
+    authMock.resend.mockResolvedValue({ data: {}, error: null });
+
+    for (let attempt = 0; attempt < RATE_LIMITS.passwordReset.maxRequests; attempt++) {
+      await resendSignupConfirmation({
+        email: "pending@example.com",
+        emailRedirectTo: "https://tonartstudio.com.br/login",
+      });
+    }
+    await expect(
+      resendSignupConfirmation({
+        email: " PENDING@EXAMPLE.COM ",
+        emailRedirectTo: "https://tonartstudio.com.br/login",
+      }),
+    ).rejects.toThrow(RATE_LIMITS.passwordReset.message);
+    expect(authMock.resend).toHaveBeenCalledTimes(
+      RATE_LIMITS.passwordReset.maxRequests,
+    );
+  });
+
+  it("limits repeated successful recovery emails instead of resetting the counter", async () => {
+    authMock.resetPasswordForEmail.mockResolvedValue({ error: null });
+
+    for (let attempt = 0; attempt < RATE_LIMITS.passwordReset.maxRequests; attempt++) {
+      await sendPasswordResetEmail({
+        email: "recover@example.com",
+        redirectTo: "https://tonartstudio.com.br/recuperar-senha",
+      });
+    }
+    await expect(
+      sendPasswordResetEmail({
+        email: "RECOVER@example.com ",
+        redirectTo: "https://tonartstudio.com.br/recuperar-senha",
+      }),
+    ).rejects.toThrow(RATE_LIMITS.passwordReset.message);
+    expect(authMock.resetPasswordForEmail).toHaveBeenCalledTimes(
+      RATE_LIMITS.passwordReset.maxRequests,
+    );
+  });
+
+  it("limits repeated successful registrations without blocking authenticated login", async () => {
+    authMock.signUp.mockResolvedValue({
+      data: { user: { id: "pending-user" }, session: null },
+      error: null,
+    });
+    const registration = {
+      email: "newuser@example.com",
+      password: "Aaaaaaaa111!",
+      fullName: "Cliente TONART",
+      emailRedirectTo: "https://tonartstudio.com.br/login",
+    };
+    for (let attempt = 0; attempt < RATE_LIMITS.register.maxRequests; attempt++) {
+      await signUpWithPasswordCredentials(registration);
+    }
+    await expect(
+      signUpWithPasswordCredentials({
+        ...registration,
+        email: "NEWUSER@example.com",
+      }),
+    ).rejects.toThrow(RATE_LIMITS.register.message);
+    expect(authMock.signUp).toHaveBeenCalledTimes(
+      RATE_LIMITS.register.maxRequests,
+    );
+  });
+
+  it("normalizes resend rate-limit failures without creating another mail authority", async () => {
+    authMock.resend.mockResolvedValue({
+      data: null,
+      error: new Error("Email rate limit exceeded"),
+    });
+
+    await expect(
+      resendSignupConfirmation({
+        email: "pending@example.com",
+        emailRedirectTo: "https://tonartstudio.com.br/login",
+      }),
+    ).rejects.toThrow("Muitas tentativas. Aguarde alguns minutos.");
+  });
+
   it("rate limits password reset requests by normalized email", async () => {
     authMock.resetPasswordForEmail.mockResolvedValue({
       error: new Error("Email rate limit exceeded"),
@@ -176,5 +281,46 @@ describe("auth-session-service rate limits", () => {
       "reset@example.com",
       { redirectTo: "https://ordax.example/reset" },
     );
+  });
+});
+
+
+describe("Supabase Auth signup availability is canonical and fail-closed", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("allows signup only when Supabase Auth explicitly enables email signup", async () => {
+    const request = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ disable_signup: false, external: { email: true } }),
+    });
+    vi.stubGlobal("fetch", request);
+    await expect(getTonecosPublicSignupEnabled()).resolves.toBe(true);
+    expect(request).toHaveBeenCalledWith(
+      new URL("https://icmtmaakjucmuzxnofkd.supabase.co/auth/v1/settings"),
+      expect.objectContaining({
+        headers: { apikey: "public-key-for-tests" },
+        cache: "no-store",
+      }),
+    );
+  });
+
+  it.each([
+    { disable_signup: true, external: { email: true } },
+    { disable_signup: false, external: { email: false } },
+    { external: { email: true } },
+    null,
+  ])("hides signup on disabled or malformed settings: %j", async (settings) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => settings,
+    }));
+    await expect(getTonecosPublicSignupEnabled()).resolves.toBe(false);
+  });
+
+  it("fails closed when the settings API is unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+    await expect(getTonecosPublicSignupEnabled()).resolves.toBe(false);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+    await expect(getTonecosPublicSignupEnabled()).resolves.toBe(false);
   });
 });
