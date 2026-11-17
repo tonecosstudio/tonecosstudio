@@ -658,6 +658,8 @@ describe("internal catalog curation service", () => {
           evidenceOrigin: "manual_admin:collection",
           evidenceNote: null,
           characters,
+          inactiveCharacters: [],
+          inactiveCharacterCount: 0,
           tags: [],
         },
       ],
@@ -691,6 +693,8 @@ describe("internal catalog curation service", () => {
           evidenceOrigin: "manual_admin:collection",
           evidenceNote: null,
           characters,
+          inactiveCharacters: [],
+          inactiveCharacterCount: 0,
           tags: [],
         },
       ],
@@ -713,6 +717,92 @@ describe("internal catalog curation service", () => {
         getInternalCollectionCurationPage({
           collectionId: COLLECTION_ID,
         }),
+      ).rejects.toThrow(/catalog_curation_/);
+    }
+  });
+
+  it("returns private bounded inactive links for editorial review without treating them as verified", async () => {
+    const inactiveCharacter = {
+      id: "66666666-6666-4666-8666-666666666666",
+      name: "Nami",
+      franchise: "One Piece",
+      evidenceOrigin: "manual_admin:reviewed",
+      evidenceNote: null,
+      unlinkedAt: "2026-11-17T04:00:00+00:00",
+      unlinkReason: "Estatueta revisada; personagem não está presente",
+      reviewCount: 3,
+    };
+    mocks.callAdminRpc.mockResolvedValue({
+      items: [
+        {
+          modelId: MODEL_ID,
+          slug: "cena-entre-personagens",
+          state: "approved",
+          evidenceOrigin: "manual_admin:collection",
+          evidenceNote: null,
+          characters: [],
+          inactiveCharacters: [inactiveCharacter],
+          inactiveCharacterCount: 5,
+          tags: [],
+        },
+      ],
+      total: 1,
+      offset: 0,
+      limit: 20,
+    });
+    const page = await getInternalCollectionCurationPage({
+      collectionId: COLLECTION_ID,
+    });
+    expect(page.items[0].characters).toEqual([]);
+    expect(page.items[0].inactiveCharacters).toEqual([inactiveCharacter]);
+    expect(page.items[0].inactiveCharacterCount).toBe(5);
+  });
+
+  it("fails closed on duplicate active/archived identities and untrusted archive evidence", async () => {
+    const character = {
+      id: "44444444-4444-4444-8444-444444444444",
+      name: "Zoro",
+      franchise: "One Piece",
+      evidenceOrigin: "manual_admin:reviewed",
+      evidenceNote: null,
+    };
+    const inactive = {
+      ...character,
+      unlinkedAt: "2026-11-17T04:00:00+00:00",
+      unlinkReason: "Associação incorreta",
+      reviewCount: 1,
+    };
+    const response = (inactiveCharacters: unknown[], count: unknown, characters: unknown[] = []) => ({
+      items: [{
+        modelId: MODEL_ID,
+        slug: "cena-entre-personagens",
+        state: "approved",
+        evidenceOrigin: "manual_admin:collection",
+        evidenceNote: null,
+        characters,
+        inactiveCharacters,
+        inactiveCharacterCount: count,
+        tags: [],
+      }],
+      total: 1,
+      offset: 0,
+      limit: 20,
+    });
+    for (const payload of [
+      response([inactive], 1, [character]),
+      response([inactive, inactive], 2),
+      response([{ ...inactive, unlinkedAt: "not-a-date" }], 1),
+      response([{ ...inactive, unlinkReason: "<script>" }], 1),
+      response([{ ...inactive, reviewCount: 101 }], 1),
+      response([inactive], 0),
+      response(Array.from({ length: 13 }, (_, index) => ({
+        ...inactive,
+        id: "44444444-4444-4444-8444-" + (111111111111 + index),
+      })), 13),
+    ]) {
+      mocks.callAdminRpc.mockResolvedValueOnce(payload);
+      await expect(
+        getInternalCollectionCurationPage({ collectionId: COLLECTION_ID }),
       ).rejects.toThrow(/catalog_curation_/);
     }
   });
@@ -854,6 +944,12 @@ describe("internal catalog curation service", () => {
       "WHERE public.catalog_curation_model_characters.unlinked_at IS NOT NULL",
     );
     expect(migration).toContain("AND cmc.unlinked_at IS NULL");
+    expect(migration).toContain("'inactiveCharacters', COALESCE((");
+    expect(migration).toContain("'inactiveCharacterCount', (");
+    expect(migration).toContain("'unlinkReason', archived.unlink_reason");
+    expect(migration).toContain("'reviewCount', jsonb_array_length(archived.review_history)");
+    expect(migration).toContain("LIMIT 12");
+    expect(migration).toContain("AND cmc.unlinked_at IS NOT NULL");
     expect(migration).toContain("AND unlinked_at IS NULL");
     expect(migration).toContain(
       "AND character_identity_id = p_character_identity_id",
@@ -938,6 +1034,8 @@ describe("internal catalog curation service", () => {
           evidenceOrigin: "manual_admin:canonical_catalog_search",
           evidenceNote: "Revisar variante",
           characters: [],
+          inactiveCharacters: [],
+          inactiveCharacterCount: 0,
           tags: [],
         },
       ],
