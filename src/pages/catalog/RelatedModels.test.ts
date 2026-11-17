@@ -231,7 +231,7 @@ afterEach(() => {
 });
 
 describe("TONART catalog discovery visibility", () => {
-  function renderDiscovery() {
+  function renderDiscovery(model: PublicCatalogDetail = current) {
     const gateway = {
       listPage: vi.fn(async () => ({ items: [], nextCursor: null })),
       mediaUrl: vi.fn(() => null),
@@ -247,7 +247,7 @@ describe("TONART catalog discovery visibility", () => {
           QueryClientProvider,
           { client },
           createElement(RelatedModels, {
-            model: current,
+            model,
             gateway,
             returnPath: "/modelos",
           }),
@@ -278,6 +278,31 @@ describe("TONART catalog discovery visibility", () => {
       screen.queryByRole("heading", { name: "Explore mais modelos" }),
     ).toBeNull();
     expect(gateway.listPage).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["too short", "Go"],
+    ["too long", "A".repeat(81)],
+    ["control character", "Goku" + String.fromCharCode(10) + "Admin"],
+    ["unsafe markup", "<admin>"],
+  ])("avoids extra indexed searches for %s while keeping valid filters", async (_case, name) => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    const { gateway } = renderDiscovery({ ...current, name });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver sugestões relacionadas" }),
+    );
+    await waitFor(() => {
+      expect(gateway.listPage).toHaveBeenCalledTimes(1);
+      expect(
+        screen.queryByRole("heading", { name: "Explore mais modelos" }),
+      ).toBeNull();
+    });
+    expect(
+      screen.getByRole("link", { name: "Explorar universo Dragon Ball" }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("link", { name: /Buscar modelos pelo nome/ }),
+    ).toBeNull();
   });
 
   it("keeps category, universe and name search accessible with no eligible siblings", async () => {
