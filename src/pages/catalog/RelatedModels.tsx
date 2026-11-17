@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
-import { PUBLIC_ROUTES } from "@/config/routes";
+import { PUBLIC_ROUTES, catalogUniverseFranchisePath } from "@/config/routes";
 import {
   type PublicCatalogDetail,
   type PublicCatalogModel,
@@ -53,6 +53,70 @@ export function relatedCatalogReturnState(returnPath: string): {
 function exactKey(value: string | null | undefined): string {
   return (value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("pt-BR").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Public discovery chips use ONLY validated catalog category/franchise values.
+ * A model name is a search hint, not proof of a verified character identity.
+ * Once the Worker publishes reviewed character IDs, a dedicated character
+ * link can replace the name-search chip without changing the catalogue SSOT.
+ */
+export type CatalogDiscoveryTag = {
+  kind: "category" | "universe" | "name-search";
+  label: string;
+  accessibleLabel: string;
+  to: string;
+};
+
+export function catalogDiscoveryTags(
+  model: Pick<
+    PublicCatalogDetail,
+    "category" | "categorySlug" | "franchise" | "franchiseSlug" | "name"
+  >,
+): CatalogDiscoveryTag[] {
+  if (
+    !validCatalogSlug(model.categorySlug) ||
+    !validCatalogSlug(model.franchiseSlug)
+  ) return [];
+
+  const category = model.category.trim();
+  const franchise = model.franchise.trim();
+  if (!category || !franchise) return [];
+
+  const categorySearch = new URLSearchParams({ category: model.categorySlug });
+  const tags: CatalogDiscoveryTag[] = [
+    {
+      kind: "category",
+      label: category,
+      accessibleLabel: "Ver categoria " + category,
+      to: PUBLIC_ROUTES.catalogModels + "?" + categorySearch.toString(),
+    },
+    {
+      kind: "universe",
+      label: franchise,
+      accessibleLabel: "Explorar universo " + franchise,
+      to: catalogUniverseFranchisePath(model.categorySlug, model.franchiseSlug),
+    },
+  ];
+
+  const name = model.name.trim();
+  const length = Array.from(name).length;
+  // The Worker search contract allows 3–80 Unicode characters. Avoid
+  // control characters and never present title-based search as identity.
+  if (length >= 3 && length <= 80 && !/[\\u0000-\\u001f\\u007f<>]/.test(name)) {
+    const params = new URLSearchParams({
+      q: name,
+      category: model.categorySlug,
+      franchise: model.franchiseSlug,
+    });
+    tags.push({
+      kind: "name-search",
+      label: name,
+      accessibleLabel: "Buscar modelos pelo nome " + name,
+      to: PUBLIC_ROUTES.catalogModels + "?" + params.toString(),
+    });
+  }
+  return tags;
 }
 
 /**
@@ -245,6 +309,8 @@ export function RelatedModels({
   if (isRequested && !recoverableError && relatedQuery.isSuccess &&
       !waitingForCharacter && groups.length === 0) return null;
 
+  const discoveryTags = catalogDiscoveryTags(model);
+
   const franchisePath = PUBLIC_ROUTES.catalogModels + "?" +
     new URLSearchParams({
       category: model.categorySlug,
@@ -266,6 +332,21 @@ export function RelatedModels({
           </Link>
         ) : null}
       </div>
+      <nav aria-label="Explorar filtros do catálogo" className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-xs uppercase tracking-wider text-[hsl(0,0%,56%)]">
+          Explorar por
+        </span>
+        {discoveryTags.map((tag) => (
+          <Link
+            key={tag.kind}
+            to={tag.to}
+            aria-label={tag.accessibleLabel}
+            className="inline-flex min-h-11 items-center rounded-full border border-[hsl(0,0%,28%)] px-3 py-2 text-sm text-[hsl(0,0%,88%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.7)] hover:text-[hsl(var(--gold-accent))] focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            {tag.label}
+          </Link>
+        ))}
+      </nav>
       {!isRequested ? (
         <button
           type="button"
