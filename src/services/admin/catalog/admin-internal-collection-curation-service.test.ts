@@ -685,17 +685,19 @@ describe("internal catalog curation service", () => {
       evidenceNote: null,
     }));
     mocks.callAdminRpc.mockResolvedValue({
-      items: [{
-        modelId: MODEL_ID,
-        slug: "cena-entre-personagens",
-        state: "approved",
-        evidenceOrigin: "manual_admin:collection",
-        evidenceNote: null,
-        characters,
-        inactiveCharacters: [],
-        inactiveCharacterCount: 0,
-        tags: [],
-      }],
+      items: [
+        {
+          modelId: MODEL_ID,
+          slug: "cena-entre-personagens",
+          state: "approved",
+          evidenceOrigin: "manual_admin:collection",
+          evidenceNote: null,
+          characters,
+          inactiveCharacters: [],
+          inactiveCharacterCount: 0,
+          tags: [],
+        },
+      ],
       total: 1,
       offset: 0,
       limit: 20,
@@ -705,7 +707,35 @@ describe("internal catalog curation service", () => {
     });
     expect(page.items).toHaveLength(1);
     expect(page.items[0].characters).toEqual(characters);
-    expect(new Set(page.items[0].characters.map((person) => person.id)).size).toBe(21);
+    expect(
+      new Set(page.items[0].characters.map((person) => person.id)).size,
+    ).toBe(21);
+  });
+
+  it("does not impose a fixed per-statue cast size across the curation layers", () => {
+    const service = readFileSync(
+      "src/services/admin/catalog/admin-internal-collection-curation-service.ts",
+      "utf8",
+    );
+    const ui = readFileSync(
+      "src/components/admin/collections/InternalCollectionCuration.tsx",
+      "utf8",
+    );
+    const migration = readFileSync(
+      "supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
+      "utf8",
+    );
+    const acceptance = readFileSync(
+      "supabase/tests/tonart_curated_model_characters_acceptance.sql",
+      "utf8",
+    );
+    expect(service).not.toContain("row.characters.length > 12");
+    expect(ui).not.toContain("item.characters.length < 12");
+    expect(migration).not.toContain("Maximum 12 verified characters per model");
+    expect(acceptance).toContain("Expected 21 active character links");
+    expect(acceptance).toContain(
+      "jsonb_array_length(v_member->'characters') <> 21",
+    );
   });
 
   it("fails closed on duplicated or unreviewed character links", async () => {
