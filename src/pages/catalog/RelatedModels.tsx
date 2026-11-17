@@ -14,7 +14,7 @@ import {
 
 type CatalogGateway = ReturnType<typeof createPublicCatalogGateway>;
 type RelatedGroup = {
-  kind: "character" | "collection" | "franchise";
+  kind: "name-match" | "collection" | "franchise";
   title: string;
   items: PublicCatalogModel[];
 };
@@ -185,20 +185,21 @@ export function CatalogDiscoveryLinks({
 
 /**
  * Only catalog-authoritative fields may establish a relationship.
- * An identical name within the same franchise is a conservative character
- * match; collection is NOT presented as a verified work/series identity.
- * Never classify by partial title, keywords or image similarity.
+ * An identical displayed name is ONLY a name-based suggestion, never a
+ * verified character identity. A collection label is likewise not a work
+ * identity. Never infer editorial character links from a name, keyword,
+ * partial title or image similarity.
  */
 export function selectRelatedModelGroups(
   current: PublicCatalogDetail,
   candidates: PublicCatalogModel[],
 ): RelatedGroup[] {
-  const currentCharacter = exactKey(current.name);
+  const currentName = exactKey(current.name);
   const currentCollection = exactKey(current.collection);
   const seenModels = new Set([current.id]);
   const seenSlugs = new Set([current.slug]);
   const seenCodes = new Set([current.code]);
-  const byCharacter: PublicCatalogModel[] = [];
+  const byName: PublicCatalogModel[] = [];
   const byCollection: PublicCatalogModel[] = [];
   const byFranchise: PublicCatalogModel[] = [];
 
@@ -217,15 +218,15 @@ export function selectRelatedModelGroups(
     )
       continue;
 
-    const character = exactKey(candidate.name);
+    const candidateName = exactKey(candidate.name);
     // Only stable published identities are safe for deduplication. Distinct
     // sculptures may share the same character name and variant label.
     seenModels.add(candidate.id);
     seenSlugs.add(candidate.slug);
     seenCodes.add(candidate.code);
 
-    if (currentCharacter && character === currentCharacter) {
-      byCharacter.push(candidate);
+    if (currentName && candidateName === currentName) {
+      byName.push(candidate);
     } else if (
       currentCollection &&
       exactKey(candidate.collection) === currentCollection
@@ -237,11 +238,11 @@ export function selectRelatedModelGroups(
   }
 
   const groups: RelatedGroup[] = [];
-  if (byCharacter.length)
+  if (byName.length)
     groups.push({
-      kind: "character",
-      title: "Outras versões de " + current.name,
-      items: byCharacter.slice(0, GROUP_LIMIT),
+      kind: "name-match",
+      title: "Modelos com o nome " + current.name,
+      items: byName.slice(0, GROUP_LIMIT),
     });
   if (byCollection.length)
     groups.push({
@@ -346,8 +347,8 @@ export function RelatedModels({
     [model, gateway, relatedQuery.data],
   );
 
-  // A sorted franchise page may not contain the character at all. Only in
-  // that case, one additional indexed name search can recover exact matches.
+  // A sorted franchise page may lack an exact displayed-name match.
+  // Only then run one bounded search; this is NOT a character identity query.
   // Never walk cursors or fetch every model in a large franchise.
   // Use the same validated name-search rule as the visible discovery link.
   // Do not issue an indexed character query for unsafe/control-character
@@ -359,7 +360,7 @@ export function RelatedModels({
     isRequested &&
     canQuery &&
     relatedQuery.isSuccess &&
-    !initialGroups.some((group) => group.kind === "character") &&
+    !initialGroups.some((group) => group.kind === "name-match") &&
     canSearchByName;
   const characterQuery = useQuery({
     queryKey: [
@@ -386,12 +387,12 @@ export function RelatedModels({
   const groups = useMemo(() => {
     // Search results may contain partial-title matches; never mislabel them
     // as related characters or add them to an unrelated franchise group.
-    const exactCharacterMatches = (characterQuery.data?.items ?? []).filter(
+    const exactNameMatches = (characterQuery.data?.items ?? []).filter(
       (item) => exactKey(item.name) === exactKey(model.name),
     );
     return selectRelatedModelGroups(
       model,
-      [...exactCharacterMatches, ...(relatedQuery.data?.items ?? [])].filter(
+      [...exactNameMatches, ...(relatedQuery.data?.items ?? [])].filter(
         (item) => gateway.mediaUrl(item.coverStorageKey) !== null,
       ),
     );
