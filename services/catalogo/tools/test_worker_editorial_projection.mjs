@@ -186,6 +186,81 @@ test('approved Supabase export applies atomically to the canonical D1 tables and
   db.close()
 })
 
+test('partial character revocation keeps a reviewed sibling and rolls back failed deletion atomically', async () => {
+  const db = createDatabase()
+  try {
+    const initial = projection({ generatedAt: new Date(Date.now() - 20_000).toISOString() })
+    const sibling = structuredClone(initial.characters[0])
+    sibling.identityId = 'a516784b-4e1c-4a46-bb4e-23ebf8ee0ab2'
+    sibling.name = 'Personagem coadjuvante'
+    sibling.slug = 'personagem-coadjuvante'
+    sibling.profile.slug = sibling.slug
+    sibling.profile.aliases = [{
+      name: 'Alias coadjuvante',
+      sources: [source('Alias revisado', 'https://example.org/side-character-alias')],
+    }]
+    sibling.approvalRef = 'b23ba807-7a13-444b-ae9c-5124dd3697ae'
+    sibling.modelLinks = sibling.modelLinks.slice(0, 1)
+    initial.characters.push(sibling)
+
+    const installed = await callWorker(db, initial)
+    assert.equal(installed.response.status, 200, JSON.stringify(installed.body))
+    assert.deepEqual(installed.body.counts, { universes: 1, characters: 2, modelLinks: 3 })
+    const cursorBefore = db.prepare('SELECT snapshot_sha256 AS sha FROM editorial_publication_sync WHERE id=1').get().sha
+
+    const revoked = structuredClone(initial)
+    revoked.generatedAt = new Date(Date.parse(initial.generatedAt) + 1000).toISOString()
+    revoked.characters = revoked.characters.filter(item => item.identityId !== sibling.identityId)
+
+    // Simulate a failure AFTER a synchronization cursor/parent upsert has started:
+    // D1 must retain the entire previous public snapshot, not half a withdrawal.
+    db.exec(`CREATE TRIGGER reject_partial_revocation
+      BEFORE DELETE ON editorial_public_characters
+      WHEN OLD.id = '${sibling.identityId}'
+      BEGIN SELECT RAISE(ABORT, 'forced_partial_revocation_failure'); END;`)
+    const aborted = await callWorker(db, revoked)
+    assert.equal(aborted.response.status, 409, JSON.stringify(aborted.body))
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count, 2)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_character_models').get().count, 3)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters_fts').get().count, 2)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_publication_staged_model_links').get().count, 0)
+    assert.equal(db.prepare('SELECT snapshot_sha256 AS sha FROM editorial_publication_sync WHERE id=1').get().sha,
+      cursorBefore)
+    db.exec('DROP TRIGGER reject_partial_revocation')
+
+    const committed = await callWorker(db, revoked)
+    assert.equal(committed.response.status, 200, JSON.stringify(committed.body))
+    assert.deepEqual(committed.body.counts, { universes: 1, characters: 1, modelLinks: 2 })
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count, 1)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_character_models').get().count, 2)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_universes').get().count, 1)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters_fts').get().count, 1)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_publication_staged_model_links').get().count, 0)
+
+    const env = { DB: d1(db), MEDIA: { get: async () => null }, CORS_ORIGINS: '' }
+    const withdrawn = await worker.default.fetch(new Request(
+      'https://catalog.example.test/api/editorial/v1/characters/personagem-coadjuvante',
+    ), env)
+    assert.equal(withdrawn.status, 404)
+    const retained = await worker.default.fetch(new Request(
+      'https://catalog.example.test/api/editorial/v1/characters/personagem-de-teste',
+    ), env)
+    assert.equal(retained.status, 200)
+    const model = await worker.default.fetch(new Request(
+      `https://catalog.example.test/api/editorial/v1/models/${MODEL_ID}/characters`,
+    ), env)
+    assert.equal(model.status, 200)
+    assert.deepEqual((await model.json()).items.map(item => item.character.slug), ['personagem-de-teste'])
+
+    const staleReplay = await callWorker(db, initial)
+    assert.equal(staleReplay.response.status, 409)
+    assert.equal(staleReplay.body.error, 'editorial_projection_stale_source_revision')
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count, 1)
+  } finally {
+    db.close()
+  }
+})
+
 test('private route requires the sync secret and rejects browsers and invalid methods', async () => {
   const db = createDatabase()
   const missingSecret = await worker.default.fetch(new Request(
