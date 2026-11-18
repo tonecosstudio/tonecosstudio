@@ -2009,3 +2009,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** encaminhar os registros à curadoria da #31; aguardar ambiente isolado para testar exportação Supabase→Worker/D1.
 
 **DO_NOT_REPEAT:** não confundir fonte sobre um personagem com evidência do render; não tratar estado candidato como aprovado nem aplicar migration no projeto produtivo.
+
+
+## Rodada 100 — ambiguidade de identidades Marvel (18/11/2026)
+
+- Preparei candidatos de pesquisa para Colossus/Piotr Rasputin, Psylocke (Betsy/Kwannon sem resolução) e Ghost Rider (manto, portador sem resolução), com fontes oficiais Marvel e claims referenciados.
+- A fotografia chega a **61 candidatos, 71 URLs oficiais únicas, 61 rascunhos biográficos e 742 relações candidatas**. Foram vinculados 18 modelos por IDs exatos da fila. Continuam **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local desta rodada: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou. O job offline do commit anterior 08e7ebbf passou (run 44287759562); auditorias gerais, build e cobertura foram pulados pelos filtros.
+- Não houve escrita Supabase/D1, migration, publicação ou mudança da flag. Revisão humana e ambiente isolado Supabase/D1 seguem bloqueios reais para homologar os dados.
+
+**NEXT_ACTION:** encaminhar os candidatos à curadoria #31; adicionar fontes visuais por modelo e aprovações humanas antes de exportar para a projeção.
+
+**DO_NOT_REPEAT:** não tratar um manto ou alias ambíguo como uma identidade individual aprovada; não tentar homologar no projeto Supabase produtivo.

@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 58,
-    "preparedCandidateModelLinkCount": 724
+    "sourceResearchedIdentityCount": 61,
+    "preparedCandidateModelLinkCount": 742
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 58,
+    "preparedIdentityCount": 61,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 724,
+    "preparedCandidateModelLinkCount": 742,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -571,6 +571,30 @@
       "publisher": "Nickelodeon",
       "title": "Meet everyone from Teenage Mutant Ninja Turtles",
       "url": "https://d3ddkgxe55ca6c.cloudfront.net/assets/t1448029013/a/1c/b9/tmnt-donnie-meet-pg-1428217.pdf",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-colossus-reading-list",
+      "publisher": "Marvel",
+      "title": "Colossus | Reading Lists",
+      "url": "https://share.marvel.com/comics/discover/445/colossus",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-psylocke-betsy-profile",
+      "publisher": "Marvel",
+      "title": "Betsy Braddock (Captain Britain) Powers, Enemies, History",
+      "url": "https://www.marvel.com/characters/psylocke",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-spirits-of-vengeance-roster",
+      "publisher": "Marvel",
+      "title": "Spirits of Vengeance (Ghost Riders) Members, Enemies, Powers",
+      "url": "https://www.marvel.com/teams-and-groups/spirits-of-vengeance",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -17804,6 +17828,496 @@
             "sourceStatus": "candidate_and_published",
             "candidateContractPublished": true,
             "publicCatalogSlug": "as-tartarugas-ninja-michelangelo-03"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "Colossus (Piotr Rasputin candidate)",
+      "catalogDisplayNameCandidate": "Colossus",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Colossus (Piotr Rasputin)",
+          "sourceIds": [
+            "marvel-colossus-reading-list"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-colossus-reading-list"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.siberian_origin",
+          "value": "A leitura oficial da Marvel identifica Piotr Rasputin como Colossus e descreve sua origem na Sibéria soviética rural.",
+          "sourceIds": [
+            "marvel-colossus-reading-list"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A página oficial da Marvel identifica Piotr Rasputin como Colossus e situa sua origem em uma fazenda na Sibéria soviética. O texto é um resumo editorial da leitura consultada; ele não confirma a versão, a pose ou o vínculo de nenhum dos seis modelos.",
+      "biographySourceIds": [
+        "marvel-colossus-reading-list"
+      ],
+      "catalogFranchiseCandidates": [
+        "Heróis Individuais",
+        "Equipes e Grupos"
+      ],
+      "ambiguities": [
+        "A fonte resume a origem em quadrinhos de Piotr Rasputin, mas não determina uniforme ou fase do render.",
+        "Os seis vínculos foram localizados pelo rótulo e continuam sem evidência visual individual.",
+        "A categoria da fila não é prova independente de franquia."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_2af3651c51a2c84fc162",
+          "modelSlug": "herois-individuais-colossus-traje-vermelho-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-colossus-traje-vermelho-em-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_4b780eac35abc084f80d",
+          "modelSlug": "equipes-e-grupos-colossus-forca-fenix-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-colossus-forca-fenix-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_546b10121f0ec887862d",
+          "modelSlug": "equipes-e-grupos-colossus-traje-x-men-com-peca-metalica",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-colossus-traje-x-men-com-peca-metalica"
+          }
+        },
+        {
+          "modelId": "mdl_703492a64047b588b983",
+          "modelSlug": "equipes-e-grupos-colossus-estatua-cinza-com-bracos-cruzados",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-colossus-estatua-cinza-com-bracos-cruzados"
+          }
+        },
+        {
+          "modelId": "mdl_8eeff1f666133b75251c",
+          "modelSlug": "equipes-e-grupos-colossus-preto-e-branco-com-estatua",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-colossus-preto-e-branco-com-estatua"
+          }
+        },
+        {
+          "modelId": "mdl_9fa2f328b2ea33538d50",
+          "modelSlug": "equipes-e-grupos-colossus-modelo-3d-frente-e-costas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-colossus-modelo-3d-frente-e-costas"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "Psylocke (Betsy/Kwannon unresolved)",
+      "catalogDisplayNameCandidate": "Psylocke",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Psylocke (identidade/manto; portadora não resolvida entre Betsy Braddock e Kwannon)",
+          "sourceIds": [
+            "marvel-psylocke-betsy-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-psylocke-betsy-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.identity_and_body_swap_history",
+          "value": "A Marvel descreve Betsy Braddock usando o codinome Psylocke e também registra Kwannon como Psylocke em diferentes fases da história.",
+          "sourceIds": [
+            "marvel-psylocke-betsy-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A Marvel descreve Betsy Braddock atuando como Psylocke e registra a história em que Kwannon também usou o nome após trocas e mudanças de corpo. Por isso, o rótulo “Psylocke” não determina qual personagem ou fase aparece em qualquer escultura.",
+      "biographySourceIds": [
+        "marvel-psylocke-betsy-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos"
+      ],
+      "ambiguities": [
+        "A própria fonte documenta Betsy Braddock e Kwannon ligadas ao nome Psylocke em fases diferentes; não consolidar as identidades.",
+        "Os seis modelos precisam de revisão visual, com evidência independente por ID.",
+        "Nenhuma portadora foi atribuída a partir do título ou da categoria do catálogo."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_5bbefe3688d3803110dc",
+          "modelSlug": "equipes-e-grupos-psylocke-estatua-corpo-inteiro-com-katana",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-psylocke-estatua-corpo-inteiro-com-katana"
+          }
+        },
+        {
+          "modelId": "mdl_6a2c612e8754ed467c1f",
+          "modelSlug": "equipes-e-grupos-psylocke-traje-azul-katana-e-lamina-psiquica",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-psylocke-traje-azul-katana-e-lamina-psiquica"
+          }
+        },
+        {
+          "modelId": "mdl_70c137b069f30070d769",
+          "modelSlug": "equipes-e-grupos-psylocke-estatua-cinza-com-katana",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-psylocke-estatua-cinza-com-katana"
+          }
+        },
+        {
+          "modelId": "mdl_a7d5a286de5cdaa8ce8c",
+          "modelSlug": "equipes-e-grupos-psylocke-pose-de-combate-com-energia-psiquica",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-psylocke-pose-de-combate-com-energia-psiquica"
+          }
+        },
+        {
+          "modelId": "mdl_f3bb20ee8cf44703a804",
+          "modelSlug": "equipes-e-grupos-psylocke-katana-e-lamina-psiquica-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-psylocke-katana-e-lamina-psiquica-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_f514513600ca81a5b473",
+          "modelSlug": "equipes-e-grupos-psylocke-diorama-estilizado-com-lamina-psiquica",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-psylocke-diorama-estilizado-com-lamina-psiquica"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "Ghost Rider (mantle; bearer unresolved)",
+      "catalogDisplayNameCandidate": "Motoqueiro Fantasma",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Ghost Rider (manto/identidade; portador não resolvido)",
+          "sourceIds": [
+            "marvel-spirits-of-vengeance-roster"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-spirits-of-vengeance-roster"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.multiple_hosts",
+          "value": "A Marvel registra vários portadores do título Ghost Rider, incluindo Johnny Blaze, Daniel Ketch, Robbie Reyes e Kushala.",
+          "sourceIds": [
+            "marvel-spirits-of-vengeance-roster"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A Marvel apresenta os Ghost Riders como pessoas ligadas aos Espíritos da Vingança e lista portadores como Johnny Blaze, Daniel Ketch, Robbie Reyes e Kushala. O candidato preserva o manto sem escolher um portador; somente a revisão visual poderá orientar a identidade de cada modelo.",
+      "biographySourceIds": [
+        "marvel-spirits-of-vengeance-roster"
+      ],
+      "catalogFranchiseCandidates": [
+        "Heróis Individuais"
+      ],
+      "ambiguities": [
+        "A fonte oficial lista diversos portadores e a fila não determina qual deles aparece nos seis modelos.",
+        "Uniformes e veículos variam entre portadores, mídias e épocas; nenhuma versão foi atribuída.",
+        "As relações permanecem pendentes de evidência independente e revisão humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_081df23912f3cdd2cf9a",
+          "modelSlug": "herois-individuais-motoqueiro-fantasma-sobre-motocicleta-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-motoqueiro-fantasma-sobre-motocicleta-estatua-cinza"
+          }
+        },
+        {
+          "modelId": "mdl_2ff753109bc51750fc53",
+          "modelSlug": "herois-individuais-motoqueiro-fantasma-chibi-cabeca-em-chamas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-motoqueiro-fantasma-chibi-cabeca-em-chamas"
+          }
+        },
+        {
+          "modelId": "mdl_89ba72fd3932dc7d9ed2",
+          "modelSlug": "herois-individuais-motoqueiro-fantasma-cavaleiro-monstruoso-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-motoqueiro-fantasma-cavaleiro-monstruoso-estatua-cinza"
+          }
+        },
+        {
+          "modelId": "mdl_9f7e59a0ddd24903d549",
+          "modelSlug": "herois-individuais-motoqueiro-fantasma-modelo-cinza-com-chamas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-motoqueiro-fantasma-modelo-cinza-com-chamas"
+          }
+        },
+        {
+          "modelId": "mdl_dcf47303bc83648f8304",
+          "modelSlug": "herois-individuais-motoqueiro-fantasma-classico-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-motoqueiro-fantasma-classico-estatua-cinza"
+          }
+        },
+        {
+          "modelId": "mdl_e3b9fd0b9f9205650fc8",
+          "modelSlug": "herois-individuais-motoqueiro-fantasma-diorama-com-chamas-e-caveiras",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-motoqueiro-fantasma-diorama-com-chamas-e-caveiras"
           }
         }
       ],

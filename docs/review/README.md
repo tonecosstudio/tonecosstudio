@@ -14,7 +14,7 @@ Para regenerar, forneça o arquivo do contrato candidato desejado:
 node scripts/catalog/character-catalog-inventory.mjs --format csv --candidate-contract <arquivo-do-contrato> --output docs/review/character-catalog-review-queue.csv
 ```
 
-`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 58 candidatos, 58 rascunhos biográficos originais, 68 URLs oficiais únicas e 724 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
+`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 61 candidatos, 61 rascunhos biográficos originais, 71 URLs oficiais únicas e 742 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
 
 Wolverine permanece com franquia ambígua porque seus 30 modelos candidatos estão divididos entre duas franquias D1. Thor foi separado em duas identidades candidatas a partir da proveniência: 17 modelos no contexto de Vingadores/Marvel e um modelo no contexto de God of War Ragnarök. Nenhum vínculo foi confirmado por imagem; a distinção evita misturar personagens homônimos e segue pendente de revisão. Trunks está descrito apenas como adolescente do futuro, conforme uma fonte oficial específica; os oito rótulos genéricos não confirmam idade ou linha temporal. Daredevil usa uma fonte Marvel “On Screen” e Gambit tem múltiplas fases e formas; nenhuma continuidade ou versão visual foi atribuída aos modelos. Os candidatos adicionados por rótulo exato do inventário não passaram por validação visual; formas, dioramas, nomes localizados e cenas com vários personagens continuam ambíguos.
 
@@ -67,3 +67,15 @@ Deadpool preserva como categorias de navegação os rótulos Equipes e Grupos e 
 **NEXT_ACTION:** conduzir revisão humana em #31 e adicionar evidência de cada render antes de publicar qualquer vínculo.
 
 **DO_NOT_REPEAT:** não mapear automaticamente a forma transformada de Zarbon, um design específico de Akuma ou a máscara laranja de uma versão TMNT aos modelos.
+
+
+## Rodada 100 — identidades e mantos Marvel com ambiguidades preservadas (18/11/2026)
+
+- Preparei dossiês para **Colossus**, **Psylocke** e **Ghost Rider**, apoiados por páginas oficiais da Marvel. As fontes documentam Piotr Rasputin, a relação Betsy Braddock/Kwannon e múltiplos portadores dos Espíritos da Vingança.
+- Relacionei como candidatos **18 modelos** por ID da fila, seis para cada rótulo. Psylocke continua sem portadora definida e Ghost Rider permanece como manto; nenhum render foi analisado.
+- O pacote tem agora **61 candidatos, 71 URLs oficiais únicas, 61 rascunhos e 742 relações candidatas**. Tudo permanece pendente de revisão humana; não há relação com evidência independente.
+- Validação desta rodada: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou.
+
+**NEXT_ACTION:** encaminhar as ambiguidades à curadoria privada e revisar visualmente cada um dos 18 IDs antes de decidir relações.
+
+**DO_NOT_REPEAT:** não escolher Betsy, Kwannon, Johnny Blaze, Daniel Ketch, Robbie Reyes ou outro portador apenas pelo título localizado do modelo.

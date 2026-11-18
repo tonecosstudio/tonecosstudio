@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 58);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 724);
-  assert.equal(packet.candidates.length, 58);
-  assert.equal(packet.sources.length, 68);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 61);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 742);
+  assert.equal(packet.candidates.length, 61);
+  assert.equal(packet.sources.length, 71);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 58);
+  assert.equal(packet.policy.preparedIdentityCount, 61);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 724);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 742);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 724);
+  assert.equal(links.length, 742);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -178,6 +178,20 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["Michelangelo (Teenage Mutant Ninja Turtles candidate)", "Michelangelo", "Teenage Mutant Ninja Turtles", 6],
   ];
   for (const [candidateName, catalogLabel, franchise, expectedModels] of finalPublisherCandidates) {
+    const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
+    assert.ok(candidate);
+    assert.equal(candidate.catalogDisplayNameCandidate, catalogLabel);
+    assert.equal(candidate.franchiseCandidate, franchise);
+    assert.equal(candidate.candidateModelLinks.length, expectedModels);
+    assert.equal(candidate.identityStatus, "prepared_pending_human_review");
+    assert.ok(candidate.ambiguities.length > 0);
+  }
+  const identityAmbiguityCandidates = [
+    ["Colossus (Piotr Rasputin candidate)", "Colossus", "Marvel Universe", 6],
+    ["Psylocke (Betsy/Kwannon unresolved)", "Psylocke", "Marvel Universe", 6],
+    ["Ghost Rider (mantle; bearer unresolved)", "Motoqueiro Fantasma", "Marvel Universe", 6],
+  ];
+  for (const [candidateName, catalogLabel, franchise, expectedModels] of identityAmbiguityCandidates) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
     assert.ok(candidate);
     assert.equal(candidate.catalogDisplayNameCandidate, catalogLabel);
