@@ -1961,3 +1961,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** subir o lote validado na PR #33 e deixar a fila para revisão humana em #31.
 
 **DO_NOT_REPEAT:** não tratar a categoria de catálogo como franquia; não universalizar o perfil audiovisual de Daredevil nem atribuir uma forma específica de Gambit aos renders pelo nome.
+
+
+## Rodada 96 — preparação Marvel na issue #32 (18/11/2026)
+
+- Atualizei a preparação editorial existente com quatro candidatos de pesquisa — Apocalipse, Homem de Ferro, Dentes de Sabre e Fera — baseados em cinco páginas oficiais da Marvel. São candidatos pesquisados, não identidades verificadas.
+- O conjunto preparado agora tem **49 candidatos, 60 URLs oficiais únicas, 49 rascunhos biográficos e 666 relações candidatas**. Foram associados por ID da fila 27 modelos nesta rodada. Todas as identidades, franquias, claims e relações seguem pendentes; **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação executada: node --test scripts/catalog/character-catalog-inventory.test.mjs — 11/11 passaram; git diff --check — passou. O Quality Gate offline da PR #33 no commit anterior 7949810d passou (44283546941); auditorias gerais, build e cobertura foram ignorados por filtros do evento.
+- Nenhuma alteração em Supabase, D1, migration, Worker publicado ou flag. A migration 0023 segue sem aplicação; não há export aprovado e o único projeto Supabase disponível não tem branch isolada. Revisão humana da PR #31, ambiente isolado e autorização para homologar a publicação seguem necessários.
+
+**NEXT_ACTION:** enviar os dossiês na PR #33; encaminhar para a curadoria privada #31 e solicitar um ambiente Supabase/D1 isolado antes de validar a exportação real.
+
+**DO_NOT_REPEAT:** não contar relações candidatas como vínculos comprovados; não tratar o Quality Gate offline como homologação Supabase→D1; não aplicar 0023 ao projeto produtivo.

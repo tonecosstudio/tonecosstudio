@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 45);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 639);
-  assert.equal(packet.candidates.length, 45);
-  assert.equal(packet.sources.length, 55);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 49);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 666);
+  assert.equal(packet.candidates.length, 49);
+  assert.equal(packet.sources.length, 60);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 45);
+  assert.equal(packet.policy.preparedIdentityCount, 49);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 639);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 666);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 639);
+  assert.equal(links.length, 666);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -129,6 +129,21 @@ test("research preparation references only inventory IDs and remains unapproved"
     .candidateModelLinks.length, 7);
   assert.equal(packet.candidates.find((candidate) => candidate.candidateName === "Gambit")
     .candidateModelLinks.length, 7);
+  const marvelReviewCandidates = [
+    ["Apocalypse (En Sabah Nur)", "Apocalipse", 7],
+    ["Iron Man", "Homem de Ferro", 7],
+    ["Sabretooth (Victor Creed candidate)", "Dentes de Sabre", 7],
+    ["Beast (Henry McCoy candidate)", "Fera", 6],
+  ];
+  for (const [candidateName, catalogLabel, expectedModels] of marvelReviewCandidates) {
+    const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
+    assert.ok(candidate);
+    assert.equal(candidate.catalogDisplayNameCandidate, catalogLabel);
+    assert.equal(candidate.candidateModelLinks.length, expectedModels);
+    assert.equal(candidate.identityStatus, "prepared_pending_human_review");
+    assert.equal(candidate.franchiseCandidate, "Marvel Universe");
+    assert.ok(candidate.ambiguities.length > 0);
+  }
 
   for (const source of packet.sources) {
     assert.equal(new URL(source.url).protocol, "https:");

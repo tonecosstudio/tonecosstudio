@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 45,
-    "preparedCandidateModelLinkCount": 639
+    "sourceResearchedIdentityCount": 49,
+    "preparedCandidateModelLinkCount": 666
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 45,
+    "preparedIdentityCount": 49,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 639,
+    "preparedCandidateModelLinkCount": 666,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -467,6 +467,46 @@
       "publisher": "Marvel",
       "title": "Gambit Powers, Enemies, & History | Marvel",
       "url": "https://www.marvel.com/characters/gambit",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-beast-profile",
+      "publisher": "Marvel",
+      "title": "Beast (Henry McCoy) Powers, Villains, History",
+      "url": "https://www.marvel.com/characters/beast-henry-mccoy",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-iron-man-must-reads",
+      "publisher": "Marvel",
+      "title": "Iron Man Must-Reads",
+      "url": "https://share.marvel.com/comics/discover/97/iron-man-must-reads",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-sabretooth-adamantium",
+      "publisher": "Marvel",
+      "title": "Adamantium History, Owners, & Powers",
+      "url": "https://www.marvel.com/items/adamantium",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-apocalypse-cable-profile",
+      "publisher": "Marvel",
+      "title": "Cable (Nathan Summers) In Comics Powers, Enemies, History",
+      "url": "https://www.marvel.com/characters/cable-nathan-summers/in-comics",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-apocalypse-mister-sinister-profile",
+      "publisher": "Marvel",
+      "title": "Mister Sinister Powers, Enemies, History",
+      "url": "https://www.marvel.com/characters/mister-sinister",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -15374,6 +15414,728 @@
         }
       ],
       "catalogCandidateModelCount": 7
+    },
+    {
+      "candidateName": "Apocalypse (En Sabah Nur)",
+      "catalogDisplayNameCandidate": "Apocalipse",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Apocalypse (En Sabah Nur)",
+          "sourceIds": [
+            "marvel-apocalypse-cable-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-apocalypse-cable-profile",
+            "marvel-apocalypse-mister-sinister-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.former_master_of_cable",
+          "value": "A página da Marvel sobre Cable identifica Apocalypse (En Sabah Nur) como seu antigo mestre.",
+          "sourceIds": [
+            "marvel-apocalypse-cable-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.ancient_mutant",
+          "value": "A página da Marvel sobre Mister Sinister descreve En Sabah Nur como um mutante antigo.",
+          "sourceIds": [
+            "marvel-apocalypse-mister-sinister-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A Marvel identifica En Sabah Nur como Apocalypse e registra sua relação como antigo mestre de Cable. A publicação também o descreve como um mutante antigo; essas informações se referem às histórias consultadas e não determinam a versão retratada em qualquer modelo.",
+      "biographySourceIds": [
+        "marvel-apocalypse-cable-profile",
+        "marvel-apocalypse-mister-sinister-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Vilões",
+        "Equipes e Grupos"
+      ],
+      "ambiguities": [
+        "As fontes apresentam uma identidade de quadrinhos, mas não determinam continuidade, traje ou forma visual de cada modelo.",
+        "Os cinco rótulos exatos incluem um diorama e diferentes composições; revisar visualmente cada ID antes de qualquer vínculo.",
+        "A categoria de catálogo “Equipes e Grupos” ou “Vilões” é apenas navegação, não prova de identidade ou franquia."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0b658030e9217dbc047b",
+          "modelSlug": "viloes-apocalipse-no-trono",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-apocalipse-no-trono"
+          }
+        },
+        {
+          "modelId": "mdl_669befcb8b111d773237",
+          "modelSlug": "equipes-e-grupos-apocalipse-busto-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-apocalipse-busto-estatua-cinza"
+          }
+        },
+        {
+          "modelId": "mdl_82f3e259cdd182f80543",
+          "modelSlug": "equipes-e-grupos-apocalipse-busto-tres-vistas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-apocalipse-busto-tres-vistas"
+          }
+        },
+        {
+          "modelId": "mdl_a0c4298cff8887872872",
+          "modelSlug": "equipes-e-grupos-apocalipse-estatua-corpo-inteiro-com-chamas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-apocalipse-estatua-corpo-inteiro-com-chamas"
+          }
+        },
+        {
+          "modelId": "mdl_a4be7d5ed1abca87bd1c",
+          "modelSlug": "equipes-e-grupos-apocalipse-diorama-dupla-vista",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-apocalipse-diorama-dupla-vista"
+          }
+        },
+        {
+          "modelId": "mdl_b9429757268a5a37dd8e",
+          "modelSlug": "equipes-e-grupos-apocalipse-com-tubos-sobre-rocha",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-apocalipse-com-tubos-sobre-rocha"
+          }
+        },
+        {
+          "modelId": "mdl_dd0464e217596edec220",
+          "modelSlug": "equipes-e-grupos-apocalipse-traje-azul-com-tubos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-apocalipse-traje-azul-com-tubos"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 7
+    },
+    {
+      "candidateName": "Iron Man",
+      "catalogDisplayNameCandidate": "Homem de Ferro",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Iron Man (manto associado a Tony Stark; outros portadores existem)",
+          "sourceIds": [
+            "marvel-iron-man-must-reads"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-iron-man-must-reads"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.armor_bearers",
+          "value": "A página oficial destaca Tony Stark como Iron Man e cita James Rhodes vestindo a armadura em outra história.",
+          "sourceIds": [
+            "marvel-iron-man-must-reads"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A Marvel associa Tony Stark ao nome Iron Man e registra James Rhodes usando a armadura em outra história. O dossiê trata Iron Man como identidade de manto; nenhum modelo foi atribuído a Tony Stark, Rhodes, armadura ou continuidade específicos.",
+      "biographySourceIds": [
+        "marvel-iron-man-must-reads"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos",
+        "Heróis Individuais"
+      ],
+      "ambiguities": [
+        "Iron Man é um manto e as fontes consultadas documentam ao menos Tony Stark e James Rhodes; nenhum portador é atribuído aos modelos.",
+        "Os cinco nomes exatos incluem concept art e esculturas em cores ou vistas distintas; conferir cada render por ID.",
+        "“Equipes e Grupos” e “Heróis Individuais” são categorias do catálogo, não evidência de personagem ou franquia."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_2572f45c00e15015fd8b",
+          "modelSlug": "equipes-e-grupos-homem-de-ferro-concept-colorido-multiplas-vistas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-homem-de-ferro-concept-colorido-multiplas-vistas"
+          }
+        },
+        {
+          "modelId": "mdl_3a6961558bf191438f27",
+          "modelSlug": "equipes-e-grupos-homem-de-ferro-traje-classico-estatua",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-homem-de-ferro-traje-classico-estatua"
+          }
+        },
+        {
+          "modelId": "mdl_75a4725370116cb11c97",
+          "modelSlug": "equipes-e-grupos-homem-de-ferro-estatua-cinza-sobre-destrocos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-homem-de-ferro-estatua-cinza-sobre-destrocos"
+          }
+        },
+        {
+          "modelId": "mdl_83f992e12f00b93ed3e6",
+          "modelSlug": "equipes-e-grupos-homem-de-ferro-modelo-cinza-tres-poses",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-homem-de-ferro-modelo-cinza-tres-poses"
+          }
+        },
+        {
+          "modelId": "mdl_aef713d89e1ecfa0ec23",
+          "modelSlug": "equipes-e-grupos-homem-de-ferro-modelo-cinza-quatro-poses",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-homem-de-ferro-modelo-cinza-quatro-poses"
+          }
+        },
+        {
+          "modelId": "mdl_c335985e4f3daad584a0",
+          "modelSlug": "herois-individuais-homem-de-ferro-voando-sobre-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-homem-de-ferro-voando-sobre-base"
+          }
+        },
+        {
+          "modelId": "mdl_db2f8218c49183ef1bfd",
+          "modelSlug": "equipes-e-grupos-homem-de-ferro-concept-estatua-preto-e-branco",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-homem-de-ferro-concept-estatua-preto-e-branco"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 7
+    },
+    {
+      "candidateName": "Sabretooth (Victor Creed candidate)",
+      "catalogDisplayNameCandidate": "Dentes de Sabre",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Sabretooth (Victor Creed na história citada)",
+          "sourceIds": [
+            "marvel-sabretooth-adamantium"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-sabretooth-adamantium"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.adamantium_history",
+          "value": "A Marvel registra Victor Creed, também chamado Sabretooth, passando por um processo de ligação de adamantium.",
+          "sourceIds": [
+            "marvel-sabretooth-adamantium"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A Marvel identifica Victor Creed como Sabretooth e registra uma fase em que ele próprio passou pelo processo de ligação de adamantium. Esse fato é específico da história consultada; variantes multiversais, trajes e fases não foram atribuídos aos modelos.",
+      "biographySourceIds": [
+        "marvel-sabretooth-adamantium"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos",
+        "Vilões"
+      ],
+      "ambiguities": [
+        "A página oficial cobre uma história específica e registra variantes de Sabretooth; não comprova o portador ou a continuidade de cada escultura.",
+        "Os seis rótulos exatos abrangem bustos, poses e trajes distintos; a correspondência visual de cada ID segue pendente.",
+        "Categorias “Equipes e Grupos” e “Vilões” são metadados de navegação, não evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_272f18274731e142ad75",
+          "modelSlug": "equipes-e-grupos-dentes-de-sabre-musculoso-com-garras",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-dentes-de-sabre-musculoso-com-garras"
+          }
+        },
+        {
+          "modelId": "mdl_2fb4731f218c63e0b2c7",
+          "modelSlug": "equipes-e-grupos-dentes-de-sabre-x-men-estatua-colorida",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-dentes-de-sabre-x-men-estatua-colorida"
+          }
+        },
+        {
+          "modelId": "mdl_3758b64d6967aaa0ccf0",
+          "modelSlug": "equipes-e-grupos-dentes-de-sabre-estatua-cinza-sobre-neve",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-dentes-de-sabre-estatua-cinza-sobre-neve"
+          }
+        },
+        {
+          "modelId": "mdl_6121865bdef26b48d37f",
+          "modelSlug": "viloes-dentes-de-sabre-busto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-dentes-de-sabre-busto"
+          }
+        },
+        {
+          "modelId": "mdl_658ed6136d83cd507d82",
+          "modelSlug": "equipes-e-grupos-dentes-de-sabre-agachado-sobre-neve",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-dentes-de-sabre-agachado-sobre-neve"
+          }
+        },
+        {
+          "modelId": "mdl_69d20e94e29c85914553",
+          "modelSlug": "equipes-e-grupos-dentes-de-sabre-traje-amarelo-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-dentes-de-sabre-traje-amarelo-em-pe"
+          }
+        },
+        {
+          "modelId": "mdl_809e937a8bf00bcf074b",
+          "modelSlug": "equipes-e-grupos-dentes-de-sabre-estilizado-busto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-dentes-de-sabre-estilizado-busto"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 7
+    },
+    {
+      "candidateName": "Beast (Henry McCoy candidate)",
+      "catalogDisplayNameCandidate": "Fera",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Beast (Henry Philip McCoy)",
+          "sourceIds": [
+            "marvel-beast-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-beast-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.x_men_and_mutation",
+          "value": "A Marvel identifica Hank McCoy como um dos primeiros X-Men e descreve a evolução de sua mutação e aparência.",
+          "sourceIds": [
+            "marvel-beast-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A Marvel descreve Henry McCoy como um dos primeiros X-Men e registra que sua mutação evoluiu, alterando sua aparência. O nome localizado “Fera” é apenas uma pista de busca: sem conferência dos cinco renders, não confirma que os modelos representem Beast nem qual fase visual aparece.",
+      "biographySourceIds": [
+        "marvel-beast-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos"
+      ],
+      "ambiguities": [
+        "“Fera” é um nome genérico/localizado e não prova que o personagem seja Henry McCoy.",
+        "O perfil da Marvel descreve diferentes formas e fases de Hank McCoy; os cinco modelos precisam de evidência visual independente.",
+        "“Equipes e Grupos” é categoria de navegação do catálogo, não prova de identidade ou universo."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0086bb85f15d3adc1055",
+          "modelSlug": "equipes-e-grupos-fera-traje-x-men-close-e-estatua",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-fera-traje-x-men-close-e-estatua"
+          }
+        },
+        {
+          "modelId": "mdl_12b80caefdffa0765cb8",
+          "modelSlug": "equipes-e-grupos-fera-busto-azul",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-fera-busto-azul"
+          }
+        },
+        {
+          "modelId": "mdl_251679b5c2028b1433c0",
+          "modelSlug": "equipes-e-grupos-fera-diorama-de-laboratorio",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-fera-diorama-de-laboratorio"
+          }
+        },
+        {
+          "modelId": "mdl_345515a5239f0eab2448",
+          "modelSlug": "equipes-e-grupos-fera-azul-sentado-sobre-equipamento",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-fera-azul-sentado-sobre-equipamento"
+          }
+        },
+        {
+          "modelId": "mdl_d700c44eed94ecb54e18",
+          "modelSlug": "equipes-e-grupos-fera-azul-agachado-sobre-destrocos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-fera-azul-agachado-sobre-destrocos"
+          }
+        },
+        {
+          "modelId": "mdl_e221b01e90e467add646",
+          "modelSlug": "equipes-e-grupos-fera-close-e-concept-promocional",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-fera-close-e-concept-promocional"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
     }
   ]
 }
