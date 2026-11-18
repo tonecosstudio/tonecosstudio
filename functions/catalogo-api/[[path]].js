@@ -13,6 +13,10 @@ const PUBLIC_LIST_ROUTES = new Set([
   "api/folders",
   "api/recent",
 ]);
+const PUBLIC_EDITORIAL_CHARACTER = /^api\/editorial\/v1\/characters\/[a-z0-9][a-z0-9-]{0,239}$/;
+const PUBLIC_EDITORIAL_UNIVERSE = /^api\/editorial\/v1\/universes\/[a-z0-9][a-z0-9-]{0,239}\/[a-z0-9][a-z0-9-]{0,239}$/;
+const PUBLIC_EDITORIAL_CHARACTER_SEARCH = "api/editorial/v1/characters/search";
+const PUBLIC_EDITORIAL_MODEL_CHARACTERS = /^api\/editorial\/v1\/models\/[A-Za-z0-9_-]{1,120}\/characters$/;
 
 // The external publisher cannot set arbitrary headers on our first-party site.
 // Preserve only public API/media semantics. Never forward session, site-policy
@@ -86,6 +90,10 @@ function isCompleteMediaRange(contentRange) {
 function isPublicCatalogRoute(path) {
   return PUBLIC_LIST_ROUTES.has(path) ||
     /^api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?$/.test(path) ||
+    path === PUBLIC_EDITORIAL_CHARACTER_SEARCH ||
+    PUBLIC_EDITORIAL_CHARACTER.test(path) ||
+    PUBLIC_EDITORIAL_UNIVERSE.test(path) ||
+    PUBLIC_EDITORIAL_MODEL_CHARACTERS.test(path) ||
     isSafeMediaPath(path);
 }
 
@@ -97,6 +105,8 @@ function isBoundedPublicQuery(route, searchParams) {
   // Media keys are immutable; irrelevant query arguments merely fragment
   // CDN caches and can cause new R2 reads with no change in image content.
   if (route.startsWith("media/")) return searchParams.size === 0;
+  const editorialCharacterSearch = route === PUBLIC_EDITORIAL_CHARACTER_SEARCH;
+  if (editorialCharacterSearch && !searchParams.has("q")) return false;
   const routeKeys = route === "api/catalog"
     ? ["category", "franchise", "folder", "q", "material", "collection", "minHeight", "maxHeight", "limit", "cursor"]
     : route === "api/franchises"
@@ -105,7 +115,13 @@ function isBoundedPublicQuery(route, searchParams) {
         ? ["category", "franchise", "parent"]
         : route === "api/recent"
           ? ["limit"]
-          : route === "api/categories" || /^api\/models\/[a-z0-9][a-z0-9-]{0,239}$/.test(route)
+          : editorialCharacterSearch
+            ? ["q", "limit"]
+            : route === "api/categories" ||
+                /^api\/models\/[a-z0-9][a-z0-9-]{0,239}$/.test(route) ||
+                PUBLIC_EDITORIAL_CHARACTER.test(route) ||
+                PUBLIC_EDITORIAL_UNIVERSE.test(route) ||
+                PUBLIC_EDITORIAL_MODEL_CHARACTERS.test(route)
             ? []
             : /^api\/models\/[a-z0-9][a-z0-9-]{0,239}\/images$/.test(route)
               ? ["limit", "cursor", "v"]
@@ -118,7 +134,8 @@ function isBoundedPublicQuery(route, searchParams) {
         value.length > 2048 || /[\x00-\x1f\x7f]/.test(value)) return false;
     seen.add(key);
     if (key === "limit") {
-      const max = route === "api/recent" ? 24 : route === "api/franchises" ? 48 : 60;
+      const max = route === "api/recent" ? 24 : route === "api/franchises" ? 48
+        : editorialCharacterSearch ? 12 : 60;
       if (!/^[1-9][0-9]?$/.test(value) || Number(value) > max) return false;
     } else if (key === "minHeight" || key === "maxHeight") {
       if (!/^[1-9][0-9]{0,2}$/.test(value) || Number(value) > 300) return false;

@@ -367,6 +367,10 @@ test("canonical proxy preserves real catalog, folder and padded gallery cursors"
     "/api/recent?limit=12",
     "/api/models/modelo-test",
     "/api/models/modelo-test/images?limit=6&v=1&cursor=Ng%3D%3D",
+    "/api/editorial/v1/characters/raven",
+    "/api/editorial/v1/characters/search?q=raven&limit=12",
+    "/api/editorial/v1/universes/comics/titans",
+    "/api/editorial/v1/models/mdl_0033cf3a5cb64ab103fd/characters",
     "/api/catalog?limit=12&cursor=eyJuYW1lIjoiQm9uZWNvIiwiaWQiOiJtb2RlbG8ifQ",
   ];
   const upstreamPaths = [];
@@ -382,6 +386,43 @@ test("canonical proxy preserves real catalog, folder and padded gallery cursors"
     assert.equal(response.status, 200, path);
   }
   assert.deepEqual(upstreamPaths, paths);
+});
+
+test("Vercel forwards approved editorial reads without extending its catalog CDN cache", async () => {
+  const initialFetch = globalThis.fetch;
+  const requested = [];
+  globalThis.fetch = async (url) => {
+    requested.push(new URL(url).pathname + new URL(url).search);
+    return Response.json({ approved: true }, {
+      headers: { "Cache-Control": "public, max-age=60" },
+    });
+  };
+  const requests = [
+    { path: "api/editorial/v1/characters/raven", query: { path: "api/editorial/v1/characters/raven" } },
+    {
+      path: "api/editorial/v1/characters/search?q=raven&limit=12",
+      query: { path: "api/editorial/v1/characters/search", q: "raven", limit: "12" },
+    },
+  ];
+  try {
+    for (const item of requests) {
+      const res = responseSink();
+      await handler({
+        method: "GET",
+        url: "/api/catalogo-proxy?" + new URLSearchParams(item.query),
+        query: item.query,
+        headers: { accept: "application/json" },
+      }, res);
+      assert.equal(res.statusCode, 200, item.path);
+      assert.equal(res.headers.has("vercel-cdn-cache-control"), false, item.path);
+    }
+    assert.deepEqual(requested, [
+      "/api/editorial/v1/characters/raven",
+      "/api/editorial/v1/characters/search?q=raven&limit=12",
+    ]);
+  } finally {
+    globalThis.fetch = initialFetch;
+  }
 });
 
 test("Vercel CDN caches only successful public catalog JSON for five minutes", async () => {
