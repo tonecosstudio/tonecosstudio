@@ -1904,3 +1904,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** continuar a pesquisa dos próximos grupos de maior volume; revisar identidade, franquia, cada claim e cada vínculo na curadoria privada antes de qualquer exportação.
 
 **DO_NOT_REPEAT:** não tratar o manto Capitão América como identidade de uma pessoa específica; não usar categoria, uniforme ou nome do catálogo como prova visual de render.
+
+## Rodada 91 — expansão Marvel e Capcom (18/11/2026)
+
+- Preparei dossiês para **Juggernaut, Justiceiro, Juri e Ryu**, apoiados por 4 novas páginas oficiais — duas Marvel e duas Capcom — com rascunhos originais e claims por fonte.
+- Foram vinculados como candidatos **11 Juggernaut, 11 Justiceiro, 11 Juri e 10 Ryu**, sempre por IDs/nomes da fila. O dossiê preserva Juggernaut como manto com outros portadores; as fontes Capcom se restringem a histórias específicas de Street Fighter V.
+- O pacote chega a **34 identidades, 42 URLs oficiais únicas, 34 biografias e 545 relações candidatas**. Todos seguem pendentes; **0 identidades aprovadas, 0 vínculos aprovados e 0 relações com evidência independente**.
+- **Validação:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**; `git diff --check` passou. Integridade confirmou fontes existentes e únicas, claims sem fonte: 0, pares duplicados: 0 e relações fora de revisão pendente: 0.
+
+**NEXT_ACTION:** continuar a pesquisa revisável por volume; conferir visualmente os IDs e inserir evidências por relação na curadoria privada antes de exportar qualquer perfil.
+
+**DO_NOT_REPEAT:** não associar todas as esculturas Juggernaut a Cain Marko; não universalizar os arcos Street Fighter V para outras versões sem revisão.

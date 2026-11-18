@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 30,
-    "preparedCandidateModelLinkCount": 502
+    "sourceResearchedIdentityCount": 34,
+    "preparedCandidateModelLinkCount": 545
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 30,
+    "preparedIdentityCount": 34,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 502,
+    "preparedCandidateModelLinkCount": 545,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -331,6 +331,38 @@
       "publisher": "Marvel",
       "title": "Cyclops (Scott Summers) Powers, Summary, & Villains | Marvel",
       "url": "https://www.marvel.com/characters/cyclops-scott-summers",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-juggernaut-history",
+      "publisher": "Marvel",
+      "title": "A History of Cyttorak and Those Who Wield His Destructive Power",
+      "url": "https://www.marvel.com/articles/comics/cyttorak-history-hosts-juggernaut-cain-marko-colossus-doctor-strange",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-punisher-rpg",
+      "publisher": "Marvel",
+      "title": "Marvel Multiverse Role-Playing Game: The Punisher Character Profile",
+      "url": "https://cdn.marvel.com/u/prod/marvel/i/pdf/MMRPG_PUNISHER.pdf",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-juri-guide",
+      "publisher": "Capcom",
+      "title": "Character Guide 162: Juri",
+      "url": "https://game.capcom.com/cfn/sfv/column/131111?lang=en",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-ryu-guide",
+      "publisher": "Capcom",
+      "title": "Character Guide 100: Ryu",
+      "url": "https://game.capcom.com/cfn/sfv/column/130431?lang=en",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -11749,6 +11781,1074 @@
         }
       ],
       "catalogCandidateModelCount": 12
+    },
+    {
+      "candidateName": "Juggernaut",
+      "catalogDisplayNameCandidate": "Juggernaut",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Juggernaut",
+          "sourceIds": [
+            "marvel-juggernaut-history"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alternate_name_candidate",
+          "value": "Cain Marko",
+          "sourceIds": [
+            "marvel-juggernaut-history"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-juggernaut-history"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.cyttorak_power",
+          "value": "Cyttorak transformou Cain Marko no Juggernaut e sua energia sustenta seus poderes.",
+          "sourceIds": [
+            "marvel-juggernaut-history"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.mantle_has_other_wielders",
+          "value": "A Marvel registra outros portadores do poder do Juggernaut além de Cain Marko.",
+          "sourceIds": [
+            "marvel-juggernaut-history"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A Marvel descreve Cain Marko como o portador mais recorrente do poder de Cyttorak, que o transforma em Juggernaut. Essa força lhe concede grande vigor e proteção mística, mas o título já teve outros portadores em diferentes histórias.",
+      "biographySourceIds": [
+        "marvel-juggernaut-history"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos",
+        "Vilões"
+      ],
+      "ambiguities": [
+        "Juggernaut é um manto que já teve mais de um portador. Cain Marko é o avatar mais duradouro citado pela fonte, mas nenhum modelo pode ser atribuído a ele sem inspeção visual.",
+        "Os 11 modelos de rótulo exato Juggernaut não foram conferidos visualmente; armaduras, versões e outros portadores devem permanecer distintos.",
+        "“Equipes e Grupos” e “Vilões” são categorias do catálogo, não prova de franquia ou identidade do render."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0103db191730eff9600b",
+          "modelSlug": "equipes-e-grupos-juggernaut-estatua-cinza-tres-vistas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-juggernaut-estatua-cinza-tres-vistas"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_293b0dd0f653f220cf00",
+          "modelSlug": "equipes-e-grupos-juggernaut-modelo-cinza-corpo-inteiro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-juggernaut-modelo-cinza-corpo-inteiro"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3b6ddb5fe7e7b645d0a3",
+          "modelSlug": "equipes-e-grupos-juggernaut-busto-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-juggernaut-busto-estatua-cinza"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_606186469e9e63417669",
+          "modelSlug": "equipes-e-grupos-juggernaut-em-pe-com-bracos-cruzados",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-juggernaut-em-pe-com-bracos-cruzados"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_63fefad353aacafe2b1b",
+          "modelSlug": "equipes-e-grupos-juggernaut-estatua-colorida-com-objeto-pesado",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-juggernaut-estatua-colorida-com-objeto-pesado"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6b25d42324e7d62c2e0c",
+          "modelSlug": "equipes-e-grupos-juggernaut-miniaturas-cinza-em-sequencia",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-juggernaut-miniaturas-cinza-em-sequencia"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_84c84f9efee44e225693",
+          "modelSlug": "equipes-e-grupos-juggernaut-diorama-corpo-inteiro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-juggernaut-diorama-corpo-inteiro"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c1e6f6c9ea71292472c3",
+          "modelSlug": "equipes-e-grupos-juggernaut-modelo-3d-tres-vistas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-juggernaut-modelo-3d-tres-vistas"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_da206f0798844f83d459",
+          "modelSlug": "viloes-juggernaut-marvel-juggernaut-stl-2-bust-marvel-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-juggernaut-marvel-juggernaut-stl-2-bust-marvel-principal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e21e87cd80d42a9529d2",
+          "modelSlug": "equipes-e-grupos-juggernaut-modelo-vermelho-em-acao",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-juggernaut-modelo-vermelho-em-acao"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e479420615bcfd655fc3",
+          "modelSlug": "equipes-e-grupos-juggernaut-close-e-estatua-promocional",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-juggernaut-close-e-estatua-promocional"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 11
+    },
+    {
+      "candidateName": "The Punisher",
+      "catalogDisplayNameCandidate": "Justiceiro",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "The Punisher",
+          "sourceIds": [
+            "marvel-punisher-rpg"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alternate_name_candidate",
+          "value": "Frank Castle",
+          "sourceIds": [
+            "marvel-punisher-rpg"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-punisher-rpg"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.family_loss",
+          "value": "A fonte da Marvel relaciona a origem do Justiceiro ao assassinato de sua família.",
+          "sourceIds": [
+            "marvel-punisher-rpg"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.vigilante_identity",
+          "value": "Frank Castle cria a identidade do Punisher e volta sua guerra contra criminosos violentos.",
+          "sourceIds": [
+            "marvel-punisher-rpg"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "No perfil oficial da Marvel, Frank Castle é um ex-fuzileiro cuja família foi morta em um tiroteio. Ele então assume a identidade de Justiceiro e inicia uma guerra pessoal contra os criminosos violentos; a fonte consultada descreve uma interpretação específica do personagem.",
+      "biographySourceIds": [
+        "marvel-punisher-rpg"
+      ],
+      "catalogFranchiseCandidates": [
+        "Heróis Individuais"
+      ],
+      "ambiguities": [
+        "A fonte consultada é um perfil de jogo da Marvel; detalhes de história, uniforme e linha temporal não devem ser universalizados sem revisão editorial.",
+        "Os 11 registros com rótulo localizado Justiceiro foram selecionados sem checagem visual; cada vínculo exige evidência específica do modelo.",
+        "A categoria “Heróis Individuais” é proveniência do catálogo e não serve como evidência de franquia ou como prova de identidade."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_008473b051312162bf23",
+          "modelSlug": "herois-individuais-justiceiro-estatua-cinza-com-taco",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-justiceiro-estatua-cinza-com-taco"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3063ce18253a0138200a",
+          "modelSlug": "herois-individuais-justiceiro-com-armas-em-base-urbana",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-justiceiro-com-armas-em-base-urbana"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_546d7204d5f3f749ff23",
+          "modelSlug": "herois-individuais-justiceiro-sentado-em-trono-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-justiceiro-sentado-em-trono-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5ed2613c0f3fa6ea8189",
+          "modelSlug": "herois-individuais-justiceiro-estilizado-com-rifle-sobre-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-justiceiro-estilizado-com-rifle-sobre-base"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_78f3fbb9b7d482451f0e",
+          "modelSlug": "herois-individuais-justiceiro-traje-tatico-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-justiceiro-traje-tatico-em-pe"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7abc4820042a15e8d9ce",
+          "modelSlug": "herois-individuais-justiceiro-de-sobretudo-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-justiceiro-de-sobretudo-estatua-cinza"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7d4fb03af162faa65df6",
+          "modelSlug": "herois-individuais-justiceiro-estatua-cinza-com-rifle",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-justiceiro-estatua-cinza-com-rifle"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7eecf6196ae98ade4e50",
+          "modelSlug": "herois-individuais-justiceiro-traje-preto-estatua-sobre-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-justiceiro-traje-preto-estatua-sobre-base"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8cc80a868e73c9f39197",
+          "modelSlug": "herois-individuais-justiceiro-chibi-com-taco",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-justiceiro-chibi-com-taco"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_bdcfa794ee841c6b5caf",
+          "modelSlug": "herois-individuais-justiceiro-com-rifle-e-pistola-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-justiceiro-com-rifle-e-pistola-em-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_bfac8ab6cee61405f65b",
+          "modelSlug": "herois-individuais-justiceiro-estatua-cinza-com-sacolas-e-arma",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-justiceiro-estatua-cinza-com-sacolas-e-arma"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 11
+    },
+    {
+      "candidateName": "Juri",
+      "catalogDisplayNameCandidate": "Juri",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Street Fighter",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Juri",
+          "sourceIds": [
+            "capcom-juri-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Street Fighter",
+          "sourceIds": [
+            "capcom-juri-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.former_sin_agent",
+          "value": "A Capcom identifica Juri como ex-integrante da S.I.N., codinome Spider.",
+          "sourceIds": [
+            "capcom-juri-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.fighting_style",
+          "value": "O guia oficial lista taekwondo como seu estilo de luta.",
+          "sourceIds": [
+            "capcom-juri-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.feng_shui_engine",
+          "value": "A fonte descreve o Feng Shui Engine tipo Alpha oculto sob o tapa-olho.",
+          "sourceIds": [
+            "capcom-juri-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "No guia oficial da Capcom para Street Fighter V, Juri é uma ex-agente da organização S.I.N. e lutadora de taekwondo. A fonte também descreve o Feng Shui Engine sob seu tapa-olho e seu ressentimento contra Bison; outros arcos precisam ser revisados separadamente.",
+      "biographySourceIds": [
+        "capcom-juri-guide"
+      ],
+      "catalogFranchiseCandidates": [
+        "Street Fighter"
+      ],
+      "ambiguities": [
+        "A fonte descreve uma versão de Street Fighter V; traje, equipamento, arcos posteriores e aparência dos 11 modelos devem ser conferidos por ID.",
+        "Os 11 modelos de rótulo exato Juri continuam sendo candidatos, não correspondências visuais comprovadas."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0fd1235276e31d1549f2",
+          "modelSlug": "street-fighter-juri-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-juri-03"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_179d7c787357b4980b85",
+          "modelSlug": "street-fighter-juri-han-street-fighter-juri-han-stl-2-street-fighter-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-juri-han-street-fighter-juri-han-stl-2-street-fighter-principal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_190472a6e212eae4d631",
+          "modelSlug": "street-fighter-juri-09",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-juri-09"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_27d95e853612b8c5d434",
+          "modelSlug": "street-fighter-juri-han-stl-street-fighter-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-juri-han-stl-street-fighter-principal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_65a9058248df4ba971c9",
+          "modelSlug": "street-fighter-juri-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-juri-02"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6f4b8079266e5b4bf72f",
+          "modelSlug": "street-fighter-juri-07",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-juri-07"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8c891c71df367dd97465",
+          "modelSlug": "street-fighter-juri-08",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-juri-08"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9ce0f8c37c0b9dc2d935",
+          "modelSlug": "street-fighter-juri-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-juri-05"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ae704dd472875555e47a",
+          "modelSlug": "street-fighter-juri",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-juri"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b289e65c527ba4a199ba",
+          "modelSlug": "street-fighter-juri-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-juri-04"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f2484a1b3476d1dea9e4",
+          "modelSlug": "street-fighter-juri-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-juri-06"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 11
+    },
+    {
+      "candidateName": "Ryu",
+      "catalogDisplayNameCandidate": "Ryu",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Street Fighter",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Ryu",
+          "sourceIds": [
+            "capcom-ryu-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Street Fighter",
+          "sourceIds": [
+            "capcom-ryu-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.fighting_style",
+          "value": "O guia da Capcom descreve seu estilo como artes marciais baseadas em Ansatsuken.",
+          "sourceIds": [
+            "capcom-ryu-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.satsui_no_hado",
+          "value": "No material de Street Fighter V, Ryu busca compreender e enfrentar o Satsui no Hado.",
+          "sourceIds": [
+            "capcom-ryu-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A Capcom apresenta Ryu como um artista marcial que viaja em busca de aperfeiçoamento. No material de Street Fighter V, ele tenta compreender e enfrentar o Satsui no Hado que surge dentro de si; esse arco não deve ser aplicado a cada modelo sem revisão.",
+      "biographySourceIds": [
+        "capcom-ryu-guide"
+      ],
+      "catalogFranchiseCandidates": [
+        "Street Fighter"
+      ],
+      "ambiguities": [
+        "A fonte consultada é vinculada a Street Fighter V; não universalizar seu arco a todas as eras ou adaptações.",
+        "Os 10 modelos com nome exato Ryu não passaram por inspeção visual. Roupas, fases, poses e cenas devem ser revisadas por ID."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_15563edccec2ebf6589a",
+          "modelSlug": "street-fighter-ryu-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-ryu-05"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1bfd7316372ea527e89d",
+          "modelSlug": "street-fighter-ryu-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-ryu-02"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_367b07e514865250a36e",
+          "modelSlug": "street-fighter-ryu-367b07e514",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-ryu-367b07e514"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_38db70bcfa51ec867300",
+          "modelSlug": "street-fighter-ryu-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-ryu-03"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6309cc56ddccef21f26d",
+          "modelSlug": "street-fighter-ryu-08",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-ryu-08"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6f63f61d61c60b43f6f0",
+          "modelSlug": "street-fighter-ryu-chibi",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-ryu-chibi"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_76a24cb91d53097e7641",
+          "modelSlug": "street-fighter-ryu-76a24cb91d",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-ryu-76a24cb91d"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b80757cb4d9a20fc0107",
+          "modelSlug": "street-fighter-ryu-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-ryu-06"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e6d027cb8f6ae601ebe5",
+          "modelSlug": "street-fighter-ryu-07",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-ryu-07"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f69686f164f793a3e28c",
+          "modelSlug": "street-fighter-ryu-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-ryu-04"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 10
     }
   ]
 }
