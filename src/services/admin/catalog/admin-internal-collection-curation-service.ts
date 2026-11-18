@@ -429,11 +429,11 @@ function assertReviewedEditorialProfile(
 ): void {
   if (
     !profile.slug ||
-    !profile.biography ||
     !profile.originWork ||
     !profile.nameSources.length ||
     !profile.franchiseSources.length ||
-    !profile.biographySources.length ||
+    (profile.biography.trim().length > 0 && !profile.biographySources.length) ||
+    (profile.biography.trim().length === 0 && profile.biographySources.length > 0) ||
     !profile.originWorkSources.length ||
     (profile.ageContext !== null && !profile.ageSources.length) ||
     profile.aliases.some((claim) => claim.sources.length === 0) ||
