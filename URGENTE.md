@@ -9,6 +9,14 @@
 - **Próxima ação:** concluir a revisão privada no sistema existente e coletar evidência independente para cada modelo antes de aprovar; só então aplicar migrations em staging isolado autorizado, executar exportação aprovada em dry-run e homologar as páginas #33 com dados reais. Não habilitar a flag pública enquanto não houver projeção aprovada e validada.
 - **Não repetir:** não tratar fixture/SQLite como integração Supabase→D1; não reaplicar migration em produção; não reexecutar o release completo até corrigir as falhas de teste listadas ou mudar o HEAD/gate; não publicar Worker, cutover M5, indexação ou conteúdo sem revisão humana.
 
+## CHECKPOINT — 18/11/2026 — atendimento por e-mail para visitante sem cadastro
+
+- **Base:** main@b82a76a8; **branch:** `fix/commercial-guest-contact-20261118`, HEAD técnico `f2e0904a` antes deste checkpoint.
+- **Entrega:** `TonecosQuoteRequestPage` usa o endereço oficial `CONTACT.CONTACT_EMAIL` e `buildSafeMailtoHref` para oferecer ao visitante sem conta um contato por e-mail com nome/código dos modelos selecionados. O e-mail abre o aplicativo do visitante; o envio exige ação humana e **não** cria cotação no Supabase nem protocolo em `/meus-orcamentos`. Seleções extensas não são truncadas silenciosamente; o visitante recebe instruções de contato direto. Cadastro Auth, RPC `submit_catalog_quote_request`, `quotes`, RLS e painel administrativo permanecem inalterados. Teste de regressão adicionado à suíte comercial.
+- **Verificação:** revisão de fonte e seleção contra o cadastro fechado; tentativa de Vitest local no Windows esgotou inicialização do worker antes de coletar testes (0 executados), portanto **não aprovado**. Formatação histórica preexistente nas duas fontes impede Prettier integral sem diff amplo; não reformate arquivos por inteiro. Verificar CI e repetir teste dirigido somente em runner funcional.
+- **PRs protegidas:** #26, #31, #33 editoriais não tocadas; #29 mobile e #34 admin preservadas. Quality Gate da #34 (#44320097694) alocou runner e instalou dependências, mas falhou em 4 de 384 testes (3 suites: catálogo/modelos, detalhe/Coins e admin Coins), não no formulário de orçamento. #29 (#43995612028) falhou sem steps. Nenhuma PR integrada, nenhuma publicação, migração, cobrança ou indexação liberada nesta etapa.
+- **Próxima ação:** obter CI verde na revisão exata, validar navegação mobile e orçamento com sessão cliente/admin real, reconciliar #29/#34 após suas correções, publicar manualmente SHA aprovado no Vercel existente somente após gates aplicáveis; revisão humana de direitos, LGPD e GO de indexação continuam separadas. **DO_NOT_REPEAT:** não criar outro backend/catálogo/PR editorial, não replicar tabela/RPC, não repetir builds de produção já homologados.
+
 ---
 
 ## CHECKPOINT — 16/11/2026 — vitrine comercial sem promoção não autorizada
@@ -1777,3 +1785,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** encaminhar candidatos e rascunhos para revisão privada humana; só depois validar a exportação aprovada em ambiente Supabase/D1 isolado.
 
 **DO_NOT_REPEAT:** não exigir ID de modelo globalmente único entre personagens; não marcar relações da fila como verificadas; não aplicar migrations ou gravar conteúdo no projeto Supabase conectado.
+
+## Rodada 78 — correção do formulário de resposta de orçamento (18/11/2026)
+
+- **Base/HEAD:** `origin/main@b82a76a80cde54b8bef0afa73cfe48ff4a549d3b`; correção em `353ff843` na branch curta `fix/commercial-form-event-state`, enviada à [PR #34](https://github.com/tonecosstudio/tonecosstudio/pull/34), draft.
+- O formulário administrativo lia `event.currentTarget.value` dentro de atualizadores funcionais. Após a finalização do evento, `currentTarget` já é nulo, derrubando a página ao preencher o desconto Black Friday. O handler agora captura o valor sincronamente nos campos de cancelamento, frete, preço, desconto e mensagem.
+- **Validação:** a suíte direcionada inicial executou 17 arquivos: **233/234 testes passaram**, com o caso Black Friday reproduzindo a falha. Após a correção, `TonecosAdminQuotesPage.test.tsx` passou **13/13**; `typecheck:app`, ESLint do arquivo e `git diff --check` passaram. A checagem Prettier do arquivo inteiro já falhava na versão base por formatação histórica, sem ser alterada mecanicamente nesta correção.
+- Nenhuma chamada Supabase remota, migration, alteração de feature gate, cobrança ou deploy foi feita. PRs #27 e #28 já estão integradas à `main`; o comércio permanece fechado pelos flags existentes.
+- **Pendência real:** E2E com sessões Auth reais de admin e cliente e confirmação de build do SHA final ainda não foram executados. A verificação desta rodada ficou local, conforme a restrição vigente.
+
+**NEXT_ACTION:** revisar os checks da PR #34 e manter os gates comerciais fechados até E2E autorizado com sessões reais.
+
+**DO_NOT_REPEAT:** não ler `event.currentTarget` dentro de um updater assíncrono; não usar testes locais como prova de Supabase real; não alterar os flags comerciais ou escrever em produção.
