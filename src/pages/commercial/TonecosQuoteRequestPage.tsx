@@ -40,8 +40,8 @@ function guestQuoteEmailHref(models: readonly PublicCatalogModel[]): string | nu
   const recipient = buildSafeMailtoHref(CONTACT.CONTACT_EMAIL);
   if (!recipient) return null;
   const references = models.map((model, index) => {
-    const name = model.name.replace(/[\\r\\n]+/g, " ").slice(0, 100);
-    const code = model.code.replace(/[\\r\\n]+/g, " ").slice(0, 80);
+    const name = model.name.replace(/[\r\n]+/g, " ").slice(0, 100);
+    const code = model.code.replace(/[\r\n]+/g, " ").slice(0, 80);
     return `${index + 1}. ${name} — código ${code}`;
   });
   const body = [
@@ -56,7 +56,7 @@ function guestQuoteEmailHref(models: readonly PublicCatalogModel[]): string | nu
     "Observações:",
     "",
     "Podem informar disponibilidade, valor e prazo? Nenhum pagamento está autorizado por este contato.",
-  ].join("\\n");
+  ].join("\n");
   return recipient + "?subject=" + encodeURIComponent("Orçamento TONART — consulta por e-mail") +
     "&body=" + encodeURIComponent(body);
 }
