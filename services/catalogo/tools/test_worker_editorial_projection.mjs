@@ -197,6 +197,25 @@ test('private route requires the sync secret and rejects browsers and invalid me
   db.close()
 })
 
+test('approval cannot precede human editorial review', async () => {
+  const db = createDatabase()
+  try {
+    const payload = projection()
+    payload.characters[0].approvedAt = '2026-11-18T11:59:59.000Z'
+    const rejected = await callWorker(db, payload, {
+      headers: { 'x-tonart-dry-run': 'true' },
+    })
+    assert.equal(rejected.response.status, 422)
+    assert.equal(rejected.body.error, 'editorial_approval_precedes_review')
+    assert.equal(
+      db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count,
+      0,
+    )
+  } finally {
+    db.close()
+  }
+})
+
 test('dry-run verifies exact D1 model and franchise identities without writing rows', async () => {
   const db = createDatabase()
   const payload = projection()
