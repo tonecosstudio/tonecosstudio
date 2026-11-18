@@ -244,6 +244,34 @@ REVOKE ALL ON FUNCTION private_api.invalidate_tonart_character_publication_on_re
 REVOKE ALL ON FUNCTION private_api.invalidate_tonart_character_publication_on_model_slug_change()
   FROM PUBLIC, anon, authenticated, service_role;
 
+-- One canonical read projection for the private reviewer, writer receipts,
+-- and approved export. Showing the exact links prevents a reviewer approving a
+-- revision number without seeing the source-backed subject matter.
+CREATE OR REPLACE FUNCTION private_api.tonart_character_active_link_snapshot(
+  p_identity_id uuid
+)
+RETURNS jsonb
+LANGUAGE sql
+VOLATILE
+SECURITY DEFINER
+SET search_path = pg_temp
+AS $active_link_snapshot$
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'modelId', relation.catalog_model_id,
+    'modelSlug', model.catalog_model_slug,
+    'evidenceUrl', relation.evidence_origin,
+    'evidenceTitle', relation.evidence_note
+  ) ORDER BY relation.catalog_model_id), '[]'::jsonb)
+  FROM public.catalog_curation_model_characters relation
+  JOIN public.catalog_curation_model_profiles model
+    ON model.catalog_model_id = relation.catalog_model_id
+  WHERE relation.character_identity_id = p_identity_id
+    AND relation.unlinked_at IS NULL;
+$active_link_snapshot$;
+
+REVOKE ALL ON FUNCTION private_api.tonart_character_active_link_snapshot(uuid)
+  FROM PUBLIC, anon, authenticated, service_role;
+
 CREATE OR REPLACE FUNCTION public.admin_get_catalog_character_editorial_profile(
   p_identity_id uuid
 )
@@ -258,7 +286,8 @@ BEGIN
   PERFORM private_api.assert_tonart_curation_service_role();
   SELECT * INTO v_identity
   FROM public.catalog_character_identities
-  WHERE id = p_identity_id;
+  WHERE id = p_identity_id
+  FOR SHARE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Character identity not found' USING ERRCODE = 'P0002';
   END IF;
@@ -267,6 +296,7 @@ BEGIN
     'name', v_identity.character_name,
     'franchise', v_identity.franchise,
     'profile', v_identity.editorial_profile,
+    'activeModelLinks', private_api.tonart_character_active_link_snapshot(v_identity.id),
     'status', v_identity.editorial_profile_status,
     'revision', v_identity.editorial_profile_revision,
     'reviewedAt', v_identity.editorial_profile_reviewed_at,
@@ -366,6 +396,7 @@ BEGIN
     'name', v_identity.character_name,
     'franchise', v_identity.franchise,
     'profile', v_identity.editorial_profile,
+    'activeModelLinks', private_api.tonart_character_active_link_snapshot(v_identity.id),
     'status', v_identity.editorial_profile_status,
     'revision', v_identity.editorial_profile_revision,
     'reviewedAt', v_identity.editorial_profile_reviewed_at,
@@ -628,6 +659,7 @@ BEGIN
         'name', v_identity.character_name,
         'franchise', v_identity.franchise,
         'profile', v_identity.editorial_profile,
+    'activeModelLinks', private_api.tonart_character_active_link_snapshot(v_identity.id),
         'status', v_identity.editorial_profile_status,
         'revision', v_identity.editorial_profile_revision,
         'reviewedAt', v_identity.editorial_profile_reviewed_at,
@@ -683,6 +715,7 @@ BEGIN
         'name', v_identity.character_name,
         'franchise', v_identity.franchise,
         'profile', v_identity.editorial_profile,
+    'activeModelLinks', private_api.tonart_character_active_link_snapshot(v_identity.id),
         'status', v_identity.editorial_profile_status,
         'revision', v_identity.editorial_profile_revision,
         'reviewedAt', v_identity.editorial_profile_reviewed_at,
@@ -733,6 +766,7 @@ BEGIN
     'name', v_identity.character_name,
     'franchise', v_identity.franchise,
     'profile', v_identity.editorial_profile,
+    'activeModelLinks', private_api.tonart_character_active_link_snapshot(v_identity.id),
     'status', v_identity.editorial_profile_status,
     'revision', v_identity.editorial_profile_revision,
     'reviewedAt', v_identity.editorial_profile_reviewed_at,
@@ -824,18 +858,7 @@ BEGIN
         USING ERRCODE = '23514';
     END IF;
 
-    SELECT COALESCE(jsonb_agg(jsonb_build_object(
-      'modelId', relation.catalog_model_id,
-      'modelSlug', model.catalog_model_slug,
-      'evidenceUrl', relation.evidence_origin,
-      'evidenceTitle', relation.evidence_note
-    ) ORDER BY relation.catalog_model_id), '[]'::jsonb)
-    INTO v_links
-    FROM public.catalog_curation_model_characters relation
-    JOIN public.catalog_curation_model_profiles model
-      ON model.catalog_model_id = relation.catalog_model_id
-    WHERE relation.character_identity_id = v_identity.id
-      AND relation.unlinked_at IS NULL;
+    v_links := private_api.tonart_character_active_link_snapshot(v_identity.id);
 
     IF COALESCE(jsonb_array_length(v_links), 0) = 0 THEN
       RAISE EXCEPTION 'Approved character has no active model link'
