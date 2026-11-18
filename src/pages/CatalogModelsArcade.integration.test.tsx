@@ -190,6 +190,49 @@ afterEach(() => {
 });
 
 describe("Tonecos canonical model discovery UI", () => {
+  it("keeps the public model storefront operational while editorial publication remains disabled", async () => {
+    vi.stubEnv("VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION", "");
+    const { calls } = setupFetch();
+    await renderCatalog("/modelos?q=zoro");
+    expect(
+      await screen.findByRole("link", {
+        name: "Ver detalhes de Escultura original",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      calls.some(({ url }) =>
+        url.pathname.includes("/api/editorial/v1/"),
+      ),
+    ).toBe(false);
+    expect(
+      screen.queryByRole("link", { name: /Roronoa Zoro/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not block the normal model catalog if an enabled editorial endpoint returns 404", async () => {
+    vi.stubEnv("VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION", "v1");
+    const { fetcher } = setupFetch();
+    const editorFailures: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: string, init: RequestInit) => {
+      const url = new URL(input);
+      if (url.pathname.endsWith("/api/editorial/v1/characters/search")) {
+        editorFailures.push(url.pathname);
+        return Response.json({ error: "editorial_not_published" }, { status: 404 });
+      }
+      return fetcher(input, init);
+    }));
+    await renderCatalog("/modelos?q=zoro");
+    expect(
+      await screen.findByRole("link", {
+        name: "Ver detalhes de Escultura original",
+      }),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(editorFailures).toHaveLength(1));
+    expect(
+      screen.queryByRole("link", { name: /Roronoa Zoro/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("offers approved character pages when a query matches a canonical alias", async () => {
     vi.stubEnv("VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION", "v1");
     const { calls } = setupFetch();
