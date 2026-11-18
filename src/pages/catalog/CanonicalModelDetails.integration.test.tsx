@@ -18,8 +18,20 @@ vi.mock("@/config/canonical-catalog-endpoint", () => ({
 }));
 
 const offerServiceMocks = vi.hoisted(() => ({ list: vi.fn() }));
+const offerCoinPreviewMocks = vi.hoisted(() => ({
+  currentUser: vi.fn(),
+  profile: vi.fn(),
+  balance: vi.fn(),
+}));
 vi.mock("@/services/commercial/tonart-commercial-offers-service", () => ({
   listTonartCommercialOffersForModel: offerServiceMocks.list,
+}));
+vi.mock("@/services/customer/tonecos-account-service", () => ({
+  getTonecosCurrentUser: offerCoinPreviewMocks.currentUser,
+  getMyTonecosProfile: offerCoinPreviewMocks.profile,
+}));
+vi.mock("@/services/coins/tonecos-coins-service", () => ({
+  getMyTonecosCoinBalance: offerCoinPreviewMocks.balance,
 }));
 
 vi.mock("@/components/layouts/Page", () => ({
@@ -82,6 +94,9 @@ afterEach(() => {
 
 beforeEach(() => {
   offerServiceMocks.list.mockReset().mockResolvedValue([]);
+  offerCoinPreviewMocks.currentUser.mockReset().mockResolvedValue(null);
+  offerCoinPreviewMocks.profile.mockReset().mockResolvedValue(null);
+  offerCoinPreviewMocks.balance.mockReset();
 });
 
 function mountGallery(options: {
@@ -373,10 +388,15 @@ describe("published model/gallery identity on the public detail page", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Escala 1/10 · Pintado")).toBeInTheDocument();
     expect(screen.getByText(/R\$\s*237,50/)).toBeInTheDocument();
-    expect(screen.getByText(/até 237,50 Coins/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Elegível para Coins no valor da peça/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Entre para consultar seu saldo e simular o abatimento de Coins/),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Esta ficha não cria pedido, confirma disponibilidade nem realiza pagamento/,
+        /Nenhum pedido é enviado automaticamente/,
       ),
     ).toBeInTheDocument();
     expect(offerServiceMocks.list).toHaveBeenCalledWith("animal-original");
