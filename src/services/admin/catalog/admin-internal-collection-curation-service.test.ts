@@ -33,6 +33,7 @@ const MODEL_ID = "22222222-2222-4222-8222-222222222222";
 const TAG_ID = "33333333-3333-4333-8333-333333333301";
 const CHARACTER_ID = "44444444-4444-4444-8444-444444444444";
 const publicationPending = {
+  activeModelLinks: [],
   relationRevision: 0,
   approvedRelationRevision: null,
   publicationStatus: "not_approved",
@@ -456,6 +457,12 @@ describe("internal catalog curation service", () => {
       publicationRevision: 3,
       relationRevision: 7,
       approvedRelationRevision: 7,
+      activeModelLinks: [{
+        modelId: MODEL_ID,
+        modelSlug: "modelo-real",
+        evidenceUrl: "https://example.org/model-review",
+        evidenceTitle: "Publicação revisada",
+      }],
       publicationApprovalRef: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       publicationApprovedAt: "2026-11-18T10:00:00.000Z",
       publicationApprovedBy: "66666666-6666-4666-8666-666666666666",
@@ -1538,6 +1545,12 @@ describe("internal catalog curation service", () => {
     );
     expect(migration).toContain(
       "trg_catalog_character_publication_model_slug_revision",
+    );
+    expect(migration).toContain(
+      "private_api.tonart_character_active_link_snapshot",
+    );
+    expect(migration).toContain(
+      "'activeModelLinks', private_api.tonart_character_active_link_snapshot(v_identity.id)",
     );
     expect(migration).toContain("OLD.review_history IS NOT DISTINCT FROM NEW.review_history");
     expect(migration).toContain("'invalidated_by_model_relation_change'");
