@@ -145,7 +145,7 @@ jobs:
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci
+        run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Typecheck
         run: npm run typecheck
@@ -202,7 +202,7 @@ jobs:
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci
+        run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Test with coverage thresholds
         run: npm run test:coverage
@@ -226,7 +226,7 @@ jobs:
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci
+        run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Build production bundle
         run: npm run build
@@ -253,7 +253,7 @@ jobs:
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci
+        run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Audit Supabase boundaries
         if: always()
@@ -308,7 +308,7 @@ jobs:
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci
+        run: npm ci --onnxruntime-node-install-cuda=skip
 
       # Validate the read-only MVP before the independent backend ownership
       # gate; a stale backend pin must not suppress frontend test evidence.
