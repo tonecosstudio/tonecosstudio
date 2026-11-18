@@ -1,3 +1,14 @@
+## CHECKPOINT — 18/11/2026 — Supabase RLS de destinos financeiros corrigida na raiz
+
+- **SSOT:** PR #38 integrada na `main` (`66c5a1a745699e4b56a08356269c8e4b2ae71e9b`). Migração canônica única `supabase/migrations/20261118202157_tonart_public_system_settings_payment_key_rls.sql` corresponde à versão **aplicada** no ledger Supabase TONART (`20261118202157`); nome provisório anterior removido em `5d22fdd3` sem segundo apply.
+- **Causa confirmada:** `tonart_system_settings_public_allowlist` permitia `pix_key_*` e `payment_link_*` no Data API para `anon`/`authenticated`, apesar do frontend não consultá-las. Não havia nenhuma dessas linhas populadas no banco (0 na consulta de 18/11), portanto não afirmar vazamento de valores.
+- **Correção efetiva:** `ALTER POLICY` no Supabase removeu esses destinos da política pública, preservou identidade/contatos e a política separada `tonart_system_settings_admin_read` com `private_api.is_current_admin()`. Confirmação pós-apply em `pg_policies`: 0 permissões públicas para destinos de pagamento, dados de apresentação continuam autorizados e guard administrativo intacto. Nenhuma tabela, valor de pagamento, conta, autorização ou gate alterado; Vercel não promovido.
+- **Regressão:** auditoria existente `scripts/security/audit-public-settings-authority.mjs` agora falha ao voltar à migração antiga (12 destinos detectados, exit 1) e passa com a nova (exit 0). Quality Gate #1831 da PR #38: **SUCCESS** no job offline; os demais jobs que não executaram na PR não são evidência de release.
+- **E2E pendente:** tentativa de reexecutar o verificador anônimo do Supabase no Windows expirou por transporte antes de fornecer evidência, sem prova de falha de autorização. Não criar conta/JWT simulado nem pedido de cliente como atalho. Ainda requer sessões reais distintas cliente/admin, caixa postal controlada, revisão humana de direitos/Termos/LGPD e GO explícito antes de indexação, cadastro e cobrança.
+- **NEXT_ACTION:** fechar E2E cliente/admin e email em ambiente autenticado, validar os gates completos do SHA comercial e preparar promoção manual da release no Vercel oficial somente com GO do proprietário. **DO_NOT_REPEAT:** não recriar políticas, não reaplicar migração de pagamento, não usar backend alternativo, não refazer build Vercel por este checkpoint documental.
+
+---
+
 ## CHECKPOINT — 18/11/2026 — Termos/Privacidade consistentes e Legal Gate canônico
 
 - **SSOT / HEAD funcional:** `tonecosstudio/tonecosstudio/main` squash da [PR #37](https://github.com/tonecosstudio/tonecosstudio/pull/37) = `b9e6261a2f25b4243bd433fa26c4bd7b5063cde3`. Protegeu os owners editoriais #26/#31/#33; nenhum código de Coins, assinaturas, pagamento, pré-venda, Worker/D1/R2, Supabase ou gate restrito alterado.
