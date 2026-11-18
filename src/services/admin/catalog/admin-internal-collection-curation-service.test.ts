@@ -1557,6 +1557,36 @@ describe("internal catalog curation service", () => {
     );
   });
 
+  it("keeps biography optional through private review, publication approval and export", () => {
+    const profileMigration = readFileSync(
+      "supabase/migrations/20261117040000_tonart_character_editorial_profiles.sql",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
+    const publicationMigration = readFileSync(
+      "supabase/migrations/20261118010000_tonart_public_character_approval_and_export.sql",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
+    const acceptance = readFileSync(
+      "supabase/tests/tonart_curated_model_characters_acceptance.sql",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
+
+    expect(profileMigration).toContain(
+      "v_reviewed AND NULLIF(btrim(v_biography), '') IS NOT NULL",
+    );
+    expect(profileMigration).toContain("right(v_host, 10) = '.localhost'");
+    expect(publicationMigration.match(
+      /NULLIF\(btrim\(v_profile ->> 'biography'\), ''\) IS NOT NULL AND NOT EXISTS/g,
+    )).toHaveLength(2);
+    expect(publicationMigration.match(
+      /NULLIF\(btrim\(v_profile ->> 'biography'\), ''\) IS NULL\s+AND jsonb_array_length\(v_profile -> 'biographySources'\) > 0/g,
+    )).toHaveLength(2);
+    expect(publicationMigration.match(/right\(regexp_replace\(/g)).toHaveLength(2);
+    expect(acceptance).toContain(
+      "Optional biography was not exported without invented evidence",
+    );
+  });
+
   it("reads only one bounded curation page and preserves evidence", async () => {
     mocks.callAdminRpc.mockResolvedValue({
       items: [

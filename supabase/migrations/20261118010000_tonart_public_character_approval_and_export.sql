@@ -452,10 +452,12 @@ BEGIN
          SELECT 1 FROM jsonb_array_elements(v_profile -> 'franchiseSources') source(value)
          WHERE source.value ->> 'kind' <> 'catalog'
        )
-       OR NOT EXISTS (
+       OR (NULLIF(btrim(v_profile ->> 'biography'), '') IS NOT NULL AND NOT EXISTS (
          SELECT 1 FROM jsonb_array_elements(v_profile -> 'biographySources') source(value)
          WHERE source.value ->> 'kind' <> 'catalog'
-       )
+       ))
+       OR (NULLIF(btrim(v_profile ->> 'biography'), '') IS NULL
+         AND jsonb_array_length(v_profile -> 'biographySources') > 0)
        OR NOT EXISTS (
          SELECT 1 FROM jsonb_array_elements(v_profile -> 'originWorkSources') source(value)
          WHERE source.value ->> 'kind' <> 'catalog'
@@ -496,6 +498,14 @@ BEGIN
           relation.evidence_origin !~ '^https://[^[:space:]<>]+$'
           OR substring(relation.evidence_origin FROM '^https://([^/?#]+)') IS NULL
           OR lower(substring(relation.evidence_origin FROM '^https://([^/?#]+)')) LIKE '%@%'
+          OR regexp_replace(
+            lower(substring(relation.evidence_origin FROM '^https://([^/?#]+)')),
+            ':[0-9]+$', ''
+          ) IN ('localhost', '127.0.0.1', '0.0.0.0', '::1', '[::1]')
+          OR right(regexp_replace(
+            lower(substring(relation.evidence_origin FROM '^https://([^/?#]+)')),
+            ':[0-9]+$', ''
+          ), 10) = '.localhost'
           OR relation.evidence_note IS NULL
           OR btrim(relation.evidence_note) = ''
         )
@@ -673,10 +683,12 @@ BEGIN
          SELECT 1 FROM jsonb_array_elements(v_profile -> 'franchiseSources') source(value)
          WHERE source.value ->> 'kind' <> 'catalog'
        )
-       OR NOT EXISTS (
+       OR (NULLIF(btrim(v_profile ->> 'biography'), '') IS NOT NULL AND NOT EXISTS (
          SELECT 1 FROM jsonb_array_elements(v_profile -> 'biographySources') source(value)
          WHERE source.value ->> 'kind' <> 'catalog'
-       )
+       ))
+       OR (NULLIF(btrim(v_profile ->> 'biography'), '') IS NULL
+         AND jsonb_array_length(v_profile -> 'biographySources') > 0)
        OR NOT EXISTS (
          SELECT 1 FROM jsonb_array_elements(v_profile -> 'originWorkSources') source(value)
          WHERE source.value ->> 'kind' <> 'catalog'
@@ -732,6 +744,14 @@ BEGIN
           relation.evidence_origin !~ '^https://[^[:space:]<>]+$'
           OR substring(relation.evidence_origin FROM '^https://([^/?#]+)') IS NULL
           OR lower(substring(relation.evidence_origin FROM '^https://([^/?#]+)')) LIKE '%@%'
+          OR regexp_replace(
+            lower(substring(relation.evidence_origin FROM '^https://([^/?#]+)')),
+            ':[0-9]+$', ''
+          ) IN ('localhost', '127.0.0.1', '0.0.0.0', '::1', '[::1]')
+          OR right(regexp_replace(
+            lower(substring(relation.evidence_origin FROM '^https://([^/?#]+)')),
+            ':[0-9]+$', ''
+          ), 10) = '.localhost'
           OR relation.evidence_note IS NULL
           OR btrim(relation.evidence_note) = ''
         )

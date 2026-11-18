@@ -83,12 +83,15 @@ BEGIN
     v_kind := public.admin_validate_catalog_curation_text(
       v_source ->> 'kind', 'evidence kind', 32
     );
-    v_host := lower(substring(v_url FROM '^https://([^/?#]+)'));
+    v_host := regexp_replace(
+      lower(substring(v_url FROM '^https://([^/?#]+)')), ':[0-9]+$', ''
+    );
     IF v_url !~ '^https://[^[:space:]<>]+$'
        OR v_host IS NULL
        OR v_host = ''
        OR v_host LIKE '%@%'
-       OR v_host IN ('localhost', '127.0.0.1', '::1')
+       OR v_host IN ('localhost', '127.0.0.1', '0.0.0.0', '::1', '[::1]')
+       OR right(v_host, 10) = '.localhost'
        OR v_kind NOT IN (
          'official', 'publisher', 'licensor', 'institution', 'reputable_reference', 'other'
        ) THEN
@@ -182,8 +185,14 @@ BEGIN
     v_profile -> 'franchiseSources', 'character franchise', v_reviewed
   );
   v_biography_sources := public.admin_validate_catalog_character_editorial_sources(
-    v_profile -> 'biographySources', 'character biography', v_reviewed
+    v_profile -> 'biographySources', 'character biography',
+    v_reviewed AND NULLIF(btrim(v_biography), '') IS NOT NULL
   );
+  IF NULLIF(btrim(v_biography), '') IS NULL
+     AND jsonb_array_length(v_biography_sources) > 0 THEN
+    RAISE EXCEPTION 'Biography sources cannot be published without a biography'
+      USING ERRCODE = '22023';
+  END IF;
   v_age_sources := public.admin_validate_catalog_character_editorial_sources(
     v_profile -> 'ageSources', 'character age', v_reviewed AND v_age IS NOT NULL
   );

@@ -308,6 +308,8 @@ BEGIN
     v_editorial_profile, '{slug}',
     to_jsonb('tonart-qa-beta-' || substr(v_suffix, 1, 16))
   );
+  v_editorial_profile_b := jsonb_set(v_editorial_profile_b, '{biography}', '""'::jsonb)
+    - 'biographySources';
   v_editorial_result := public.admin_save_catalog_character_editorial_profile(
     v_id_b, v_editorial_profile_b, 'reviewed', 0, v_reviewer_id
   );
@@ -372,6 +374,24 @@ BEGIN
      OR v_public_projection->'characters'->0 ? 'history' THEN
     RAISE EXCEPTION 'Public export leaked private history or omitted approved evidence';
   END IF;
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_b, 1, true, v_reviewer_id
+  );
+  v_public_projection := public.admin_export_approved_catalog_character_projection();
+  IF (v_editorial_result->>'publicationStatus') IS DISTINCT FROM 'approved'
+     OR jsonb_array_length(v_public_projection->'characters') <> 2
+     OR NOT EXISTS (
+       SELECT 1
+       FROM jsonb_array_elements(v_public_projection->'characters') exported(value)
+       WHERE (exported.value->>'identityId')::uuid = v_id_b
+         AND exported.value->'profile'->>'biography' = ''
+         AND jsonb_array_length(exported.value->'profile'->'biographySources') = 0
+     ) THEN
+    RAISE EXCEPTION 'Optional biography was not exported without invented evidence';
+  END IF;
+  PERFORM public.admin_set_catalog_character_publication_approval(
+    v_id_b, 1, false, NULL
+  );
   v_editorial_result := public.admin_set_catalog_character_publication_approval(
     v_id_a, 2, true, v_reviewer_id
   );
