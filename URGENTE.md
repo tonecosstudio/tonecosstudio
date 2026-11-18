@@ -1757,3 +1757,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** iniciar Fase A da especificação, verificar o estado atual após outros agentes e só então avançar em vínculos de identidade/projeção pública e UI existente, com testes proporcionais.
 
 **DO_NOT_REPEAT:** não criar outro catálogo ou fonte de tags, não copiar biografias em cada modelo, não ativar Supabase legado público, não reexecutar migrations já aplicadas, não abrir Workflows/deploy por esta alteração documental.
+
+## Rodada 78 — busca pública editorial na PR #33 (17/11/2026)
+
+- Na branch existente `codex/issue-32-character-catalog`, acrescentei busca limitada de personagens por nome, alias e franquia ao catálogo. Ela usa o gateway tipado existente, valida publicação pública aprovada, evidências e slugs canônicos, e só consulta quando `VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION=v1`; links levam à ficha pelo slug estável. Fixtures ficam apenas nos testes.
+- Validação dirigida: 35 testes passaram na rodada principal; as duas expectativas antigas de texto da ficha de modelo foram atualizadas para a cópia vigente e os dois casos passaram em execuções dirigidas separadas. `tsc -p tsconfig.app.json --noEmit`, ESLint dos seis arquivos e `git diff --check` passaram. A suíte usa resposta fixture e não comprova Worker/D1 real.
+- Limite real: o candidato Worker da PR #26 ainda não expõe `api/editorial/v1/characters/search`; sem essa rota, projeção publicada e conteúdo editorial aprovado, a busca permanece fechada e sem resultados em produção. Nenhum candidato foi marcado verificado nem dado publicado. A migração/integração de produção, deploy e indexação continuam fora do escopo autorizado.
+
+**NEXT_ACTION:** na branch existente da PR #26, implementar a leitura da projeção editorial aprovada no Worker candidato e cobrir a rota offline; manter M5 staged-offline. Só habilitar a flag pública após contrato real, dados aprovados e homologação editorial.
+
+**DO_NOT_REPEAT:** não tratar fixtures como integração D1/Worker; não ligar a flag antes do endpoint aprovado; não exportar rascunhos privados da curadoria; não aplicar migrations, fazer cutover, deploy ou indexação.

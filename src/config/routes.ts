@@ -78,9 +78,7 @@ export function tonecosLoginReturnPath(
   const returnTo = resolveTonecosCustomerReturnPath(value);
   return returnTo === TONECOS_COMMERCIAL_ROUTES.account
     ? TONECOS_COMMERCIAL_ROUTES.login
-    : TONECOS_COMMERCIAL_ROUTES.login +
-        "?next=" +
-        encodeURIComponent(returnTo);
+    : TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(returnTo);
 }
 
 export function tonecosRecoveryPath(
@@ -198,7 +196,10 @@ export const NOTIFICATION_ROUTES = {
 } as const;
 
 export function adminPaymentDetailsPath(paymentId: string) {
-  return ADMIN_ROUTES.paymentDetails.replace(":paymentId", encodeURIComponent(paymentId));
+  return ADMIN_ROUTES.paymentDetails.replace(
+    ":paymentId",
+    encodeURIComponent(paymentId),
+  );
 }
 
 export function adminSupportConversationPath(conversationId: string) {
@@ -209,7 +210,11 @@ export function adminSupportConversationPath(conversationId: string) {
 }
 
 export function adminOrdersPath(params?: {
-  type?: "subscription_delivery" | "standalone_purchase" | "manual_payment" | "quote";
+  type?:
+    | "subscription_delivery"
+    | "standalone_purchase"
+    | "manual_payment"
+    | "quote";
   search?: string;
 }) {
   const searchParams = new URLSearchParams();
@@ -226,10 +231,7 @@ export function adminOrdersPath(params?: {
   return query ? `${ADMIN_ROUTES.orders}?${query}` : ADMIN_ROUTES.orders;
 }
 
-export function adminCyclesPath(params?: {
-  month?: number;
-  year?: number;
-}) {
+export function adminCyclesPath(params?: { month?: number; year?: number }) {
   const searchParams = new URLSearchParams();
 
   if (params?.month) {
@@ -241,29 +243,45 @@ export function adminCyclesPath(params?: {
   }
 
   const query = searchParams.toString();
-  return query ? `${ADMIN_ROUTES.creditsCycles}?${query}` : ADMIN_ROUTES.creditsCycles;
+  return query
+    ? `${ADMIN_ROUTES.creditsCycles}?${query}`
+    : ADMIN_ROUTES.creditsCycles;
 }
 
 export function paymentDetailsPath(paymentId: string) {
-  return AUTH_ROUTES.paymentDetails.replace(":paymentId", encodeURIComponent(paymentId));
+  return AUTH_ROUTES.paymentDetails.replace(
+    ":paymentId",
+    encodeURIComponent(paymentId),
+  );
 }
 
 export function collectionDetailsPath(slug: string) {
-  return PUBLIC_ROUTES.collectionDetails.replace(":slug", encodeURIComponent(slug));
+  return PUBLIC_ROUTES.collectionDetails.replace(
+    ":slug",
+    encodeURIComponent(slug),
+  );
 }
 
-export function collectionCharacterDetailsPath(slug: string, characterId: string) {
+export function collectionCharacterDetailsPath(
+  slug: string,
+  characterId: string,
+) {
   return PUBLIC_ROUTES.collectionCharacterDetails
     .replace(":slug", encodeURIComponent(slug))
     .replace(":characterId", encodeURIComponent(characterId));
 }
 
 export function characterDetailsPath(characterId: string) {
-  return PUBLIC_ROUTES.characterDetails.replace(":characterId", encodeURIComponent(characterId));
+  return PUBLIC_ROUTES.characterDetails.replace(
+    ":characterId",
+    encodeURIComponent(characterId),
+  );
 }
 
 function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
 function slugifyPathSegment(value: string) {
@@ -297,7 +315,10 @@ export function catalogModelDetailsPath(
 
   const slug = slugifyPathSegment(slugSource ?? "");
   const routeParam = slug ? `${slug}-${modelId}` : modelId;
-  return PUBLIC_ROUTES.catalogDetails.replace(":id", encodeURIComponent(routeParam));
+  return PUBLIC_ROUTES.catalogDetails.replace(
+    ":id",
+    encodeURIComponent(routeParam),
+  );
 }
 
 export function catalogCharacterPath(
@@ -309,15 +330,31 @@ export function catalogCharacterPath(
   );
   return PUBLIC_ROUTES.catalogCharacter.replace(
     ":slug",
-    encodeURIComponent(baseSlug || slugifyPathSegment(characterName) || "personagem"),
+    encodeURIComponent(
+      baseSlug || slugifyPathSegment(characterName) || "personagem",
+    ),
+  );
+}
+
+/** Use the stable slug from an approved editorial character projection. */
+export function catalogCharacterSlugPath(slug: string) {
+  return PUBLIC_ROUTES.catalogCharacter.replace(
+    ":slug",
+    encodeURIComponent(slug),
   );
 }
 
 export function catalogUniverseThemePath(themeKey: string) {
-  return PUBLIC_ROUTES.catalogUniverseTheme.replace(":themeKey", encodeURIComponent(themeKey));
+  return PUBLIC_ROUTES.catalogUniverseTheme.replace(
+    ":themeKey",
+    encodeURIComponent(themeKey),
+  );
 }
 
-export function catalogUniverseFranchisePath(themeKey: string, franchiseKey: string) {
+export function catalogUniverseFranchisePath(
+  themeKey: string,
+  franchiseKey: string,
+) {
   return PUBLIC_ROUTES.catalogUniverseFranchise
     .replace(":themeKey", encodeURIComponent(themeKey))
     .replace(":franchiseKey", encodeURIComponent(franchiseKey));
@@ -335,7 +372,10 @@ export function catalogUniverseCharacterPath(
 }
 
 export function subscribeCollectionPath(slug: string) {
-  return AUTH_ROUTES.subscribeCollection.replace(":slug", encodeURIComponent(slug));
+  return AUTH_ROUTES.subscribeCollection.replace(
+    ":slug",
+    encodeURIComponent(slug),
+  );
 }
 
 export function resolveProfileSectionId(
@@ -343,7 +383,8 @@ export function resolveProfileSectionId(
 ): ProfileSectionRouteId | null {
   if (!section) return null;
   const normalized = section.trim().toLocaleLowerCase();
-  if (normalized in PROFILE_SECTION_SEGMENTS) return normalized as ProfileSectionRouteId;
+  if (normalized in PROFILE_SECTION_SEGMENTS)
+    return normalized as ProfileSectionRouteId;
   return PROFILE_SECTION_ROUTE_SEGMENTS[normalized] ?? null;
 }
 
@@ -361,7 +402,9 @@ export function profileSectionPath(section: string) {
 }
 
 export function loginReturnToPath(returnTo: string) {
-  const safeReturnTo = isSafeInAppPath(returnTo) ? returnTo : PUBLIC_ROUTES.home;
+  const safeReturnTo = isSafeInAppPath(returnTo)
+    ? returnTo
+    : PUBLIC_ROUTES.home;
   return `${PUBLIC_ROUTES.login}?next=${encodeURIComponent(safeReturnTo)}`;
 }
 
@@ -382,7 +425,10 @@ export function isSafeInAppPath(path: string): boolean {
 }
 
 export function adminUserDetailsPath(userId: string) {
-  return ADMIN_ROUTES.userDetails.replace(":userId", encodeURIComponent(userId));
+  return ADMIN_ROUTES.userDetails.replace(
+    ":userId",
+    encodeURIComponent(userId),
+  );
 }
 
 export function adminUserDetailsSectionPath(userId: string, section: string) {
@@ -392,5 +438,8 @@ export function adminUserDetailsSectionPath(userId: string, section: string) {
 }
 
 export function adminGroupDetailsPath(groupId: string) {
-  return ADMIN_ROUTES.groupDetails.replace(":groupId", encodeURIComponent(groupId));
+  return ADMIN_ROUTES.groupDetails.replace(
+    ":groupId",
+    encodeURIComponent(groupId),
+  );
 }

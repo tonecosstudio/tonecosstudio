@@ -117,6 +117,83 @@ function gatewayFor(payload: unknown) {
 }
 
 describe("public catalog editorial projection contract", () => {
+  it("searches only approved characters and validates alias/franchise evidence", async () => {
+    const profile = characterProjection();
+    const result = {
+      publication: profile.publication,
+      character: {
+        id: profile.character.id,
+        slug: profile.character.slug,
+        name: profile.character.name,
+        aliases: profile.character.aliases,
+        summary: profile.character.summary,
+        summaryEvidenceIds: profile.character.summaryEvidenceIds,
+        identityEvidenceIds: profile.character.identityEvidenceIds,
+      },
+      universe: {
+        id: profile.universe.id,
+        slug: profile.universe.slug,
+        name: profile.universe.name,
+        categorySlug: profile.universe.categorySlug,
+        evidenceIds: profile.universe.evidenceIds,
+      },
+      evidence: profile.evidence,
+      matchedBy: "alias",
+    };
+    const { gateway, fetcher } = gatewayFor({
+      items: [result],
+      truncated: false,
+    });
+    const page = await gateway.searchCharacters("  Zoro  ");
+
+    expect(page.items[0].character.aliases[0].value).toBe("Zoro");
+    expect(page.items[0].matchedBy).toBe("alias");
+    const [url] = fetcher.mock.calls[0] as unknown as [string];
+    expect(new URL(url).pathname).toBe(
+      "/catalogo-api/api/editorial/v1/characters/search",
+    );
+    expect(new URL(url).searchParams.get("q")).toBe("Zoro");
+    expect(new URL(url).searchParams.get("limit")).toBe("8");
+  });
+
+  it("rejects invalid character search windows and unapproved or unsupported matches", async () => {
+    const { gateway, fetcher } = gatewayFor({ items: [], truncated: false });
+    await expect(gateway.searchCharacters("ab")).rejects.toThrow(
+      "catalog_character_search_length_invalid",
+    );
+    await expect(gateway.searchCharacters("valid", 13)).rejects.toThrow(
+      "catalog_character_search_limit_invalid",
+    );
+    expect(fetcher).not.toHaveBeenCalled();
+
+    const profile = characterProjection();
+    const match = {
+      publication: { ...profile.publication, editorialStatus: "draft" },
+      character: {
+        id: profile.character.id,
+        slug: profile.character.slug,
+        name: profile.character.name,
+        aliases: [],
+        summary: null,
+        identityEvidenceIds: profile.character.identityEvidenceIds,
+      },
+      universe: {
+        id: profile.universe.id,
+        slug: profile.universe.slug,
+        name: profile.universe.name,
+        categorySlug: profile.universe.categorySlug,
+        evidenceIds: profile.universe.evidenceIds,
+      },
+      evidence: profile.evidence,
+      matchedBy: "name",
+    };
+    await expect(
+      gatewayFor({ items: [match], truncated: false }).gateway.searchCharacters(
+        "Roronoa",
+      ),
+    ).rejects.toThrow("catalog_editorial_projection_not_approved");
+  });
+
   it("loads and validates an approved character profile through the existing catalog gateway", async () => {
     const { gateway, fetcher } = gatewayFor(characterProjection());
     const profile = await gateway.getCharacterProfile(

@@ -1,4 +1,7 @@
-import { isApprovedPublicCover, isApprovedPublicMediaKey } from "./approved-public-renders";
+import {
+  isApprovedPublicCover,
+  isApprovedPublicMediaKey,
+} from "./approved-public-renders";
 import specialstlQuarantine from "./specialstl-quarantine.json";
 
 /**
@@ -135,6 +138,33 @@ export type PublicCatalogCharacterProfile = {
   otherUniverseModels: PublicCatalogEditorialModelReference[];
 };
 
+export type PublicCatalogCharacterSearchItem = {
+  publication: PublicCatalogEditorialPublication;
+  character: {
+    id: string;
+    slug: string;
+    name: string;
+    aliases: Array<{ value: string; evidenceIds: string[] }>;
+    summary: string | null;
+    summaryEvidenceIds: string[];
+    identityEvidenceIds: string[];
+  };
+  universe: {
+    id: string;
+    slug: string;
+    name: string;
+    categorySlug: string;
+    evidenceIds: string[];
+  };
+  evidence: PublicCatalogEditorialEvidence[];
+  matchedBy: "name_exact" | "name" | "alias" | "franchise";
+};
+
+export type PublicCatalogCharacterSearchPage = {
+  items: PublicCatalogCharacterSearchItem[];
+  truncated: boolean;
+};
+
 export type PublicCatalogUniverseProfile = {
   publication: PublicCatalogEditorialPublication;
   universe: {
@@ -160,8 +190,6 @@ export type PublicCatalogUniverseProfile = {
   }>;
   models: PublicCatalogEditorialModelReference[];
 };
-
-
 
 export type PublicCatalogPage = {
   items: PublicCatalogModel[];
@@ -242,7 +270,10 @@ function optionalText(value: unknown, field: string): string | null {
 }
 
 function validateCatalogCursor(value: string | undefined, field: string): void {
-  if (value !== undefined && (typeof value !== "string" || !value || value.length > 2048)) {
+  if (
+    value !== undefined &&
+    (typeof value !== "string" || !value || value.length > 2048)
+  ) {
     throw new Error(field);
   }
 }
@@ -691,6 +722,145 @@ function decodePublicCharacterProfile(
   };
 }
 
+function decodePublicCharacterSearchPage(
+  value: unknown,
+  limit: number,
+): PublicCatalogCharacterSearchPage {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("invalid_catalog_character_search");
+  }
+  const row = value as { items?: unknown; truncated?: unknown };
+  if (
+    !Array.isArray(row.items) ||
+    row.items.length > limit ||
+    typeof row.truncated !== "boolean"
+  ) {
+    throw new Error("invalid_catalog_character_search");
+  }
+  const seenIds = new Set<string>();
+  const seenSlugs = new Set<string>();
+  const items = row.items.map(
+    (item: unknown): PublicCatalogCharacterSearchItem => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        throw new Error("invalid_catalog_character_search_item");
+      }
+      const result = item as {
+        publication?: unknown;
+        character?: unknown;
+        universe?: unknown;
+        evidence?: unknown;
+        matchedBy?: unknown;
+      };
+      const publication = decodeEditorialPublication(result.publication);
+      const evidence = decodeEditorialEvidence(result.evidence);
+      if (
+        !result.character ||
+        typeof result.character !== "object" ||
+        Array.isArray(result.character) ||
+        !result.universe ||
+        typeof result.universe !== "object" ||
+        Array.isArray(result.universe)
+      ) {
+        throw new Error("invalid_catalog_character_search_item");
+      }
+      const character = result.character as Record<string, unknown>;
+      const universe = result.universe as Record<string, unknown>;
+      const id = requiredText(character.id, "character_search_id");
+      const slug = requiredText(character.slug, "character_search_slug");
+      const universeSlug = requiredText(
+        universe.slug,
+        "character_search_universe_slug",
+      );
+      const categorySlug = requiredText(
+        universe.categorySlug,
+        "character_search_category_slug",
+      );
+      if (
+        !validCatalogSlug(slug) ||
+        !validCatalogSlug(universeSlug) ||
+        !validCatalogSlug(categorySlug) ||
+        seenIds.has(id) ||
+        seenSlugs.has(slug) ||
+        !["name_exact", "name", "alias", "franchise"].includes(
+          result.matchedBy as string,
+        )
+      ) {
+        throw new Error("invalid_catalog_character_search_item");
+      }
+      seenIds.add(id);
+      seenSlugs.add(slug);
+      const identityEvidenceIds = decodeEvidenceIds(
+        character.identityEvidenceIds,
+        evidence,
+        "character_search_identity_evidence",
+        true,
+      );
+      const summary = editorialOptionalText(
+        character.summary,
+        "character_search_summary",
+      );
+      const summaryEvidenceIds = summary
+        ? decodeEvidenceIds(
+            character.summaryEvidenceIds,
+            evidence,
+            "character_search_summary_evidence",
+            true,
+          )
+        : [];
+      if (!Array.isArray(character.aliases) || character.aliases.length > 40) {
+        throw new Error("invalid_catalog_character_search_aliases");
+      }
+      const aliases = character.aliases.map((rawAlias: unknown) => {
+        if (
+          !rawAlias ||
+          typeof rawAlias !== "object" ||
+          Array.isArray(rawAlias)
+        ) {
+          throw new Error("invalid_catalog_character_search_alias");
+        }
+        const alias = rawAlias as { value?: unknown; evidenceIds?: unknown };
+        return {
+          value: requiredText(alias.value, "character_search_alias"),
+          evidenceIds: decodeEvidenceIds(
+            alias.evidenceIds,
+            evidence,
+            "character_search_alias_evidence",
+            true,
+          ),
+        };
+      });
+      return {
+        publication,
+        character: {
+          id,
+          slug,
+          name: requiredText(character.name, "character_search_name"),
+          aliases,
+          summary,
+          summaryEvidenceIds,
+          identityEvidenceIds,
+        },
+        universe: {
+          id: requiredText(universe.id, "character_search_universe_id"),
+          slug: universeSlug,
+          name: requiredText(universe.name, "character_search_universe_name"),
+          categorySlug,
+          evidenceIds: decodeEvidenceIds(
+            universe.evidenceIds,
+            evidence,
+            "character_search_universe_evidence",
+            true,
+          ),
+        },
+        evidence,
+        matchedBy:
+          result.matchedBy as PublicCatalogCharacterSearchItem["matchedBy"],
+      };
+    },
+  );
+  return { items, truncated: row.truncated };
+}
+
 function decodePublicUniverseProfile(
   value: unknown,
   expectedCategorySlug: string,
@@ -827,7 +997,6 @@ function decodePublicUniverseProfile(
   };
 }
 
-
 /**
  * Quarantine externally branded catalog media when the public metadata
  * itself identifies the source. No pixel scanning, hidden Worker calls,
@@ -836,7 +1005,8 @@ function decodePublicUniverseProfile(
  * An image whose branding exists only inside its pixels must be reviewed
  * separately before it can be called clean.
  */
-const EXTERNAL_MEDIA_BRAND = /(?:^|[^a-z0-9])special[\s._-]*stl(?:\.com)?(?=$|[^a-z0-9])/i;
+const EXTERNAL_MEDIA_BRAND =
+  /(?:^|[^a-z0-9])special[\s._-]*stl(?:\.com)?(?=$|[^a-z0-9])/i;
 
 /**
  * One image was matched visually, pixel-for-pixel by subject/composition,
@@ -852,8 +1022,6 @@ const CONFIRMED_SPECIALSTL_MODEL_IDS = new Set(
   specialstlQuarantine.confirmed.map((entry) => entry.modelId),
 );
 
-
-
 /**
  * A creator's own logo, signature or Patreon credit is not evidence of
  * unauthorized redistribution. Only explicitly identified redistribution
@@ -865,11 +1033,23 @@ function hasRestrictedExternalBrand(value: string | null | undefined): boolean {
 }
 
 function isPubliclyEligibleCatalogModel(model: PublicCatalogModel): boolean {
-  return (!CONFIRMED_SPECIALSTL_MODEL_IDS.has(model.id) || isApprovedPublicCover(model)) && ![
-    model.slug, model.code, model.name, model.variantName,
-    model.category, model.categorySlug, model.franchise, model.franchiseSlug,
-    model.collection, model.folderPath, model.coverStorageKey,
-  ].some(hasRestrictedExternalBrand);
+  return (
+    (!CONFIRMED_SPECIALSTL_MODEL_IDS.has(model.id) ||
+      isApprovedPublicCover(model)) &&
+    ![
+      model.slug,
+      model.code,
+      model.name,
+      model.variantName,
+      model.category,
+      model.categorySlug,
+      model.franchise,
+      model.franchiseSlug,
+      model.collection,
+      model.folderPath,
+      model.coverStorageKey,
+    ].some(hasRestrictedExternalBrand)
+  );
 }
 
 /**
@@ -897,14 +1077,23 @@ export async function probeCanonicalCatalogMediaByte(
   if (!approvedMediaUrl) throw new Error("catalog_media_probe_url_missing");
   const base = new URL(baseUrl);
   const url = new URL(approvedMediaUrl);
-  if (base.protocol !== "https:" || url.origin !== base.origin ||
-      !url.href.startsWith(base.href + "media/") || url.search || url.hash ||
-      url.username || url.password) {
+  if (
+    base.protocol !== "https:" ||
+    url.origin !== base.origin ||
+    !url.href.startsWith(base.href + "media/") ||
+    url.search ||
+    url.hash ||
+    url.username ||
+    url.password
+  ) {
     throw new Error("catalog_media_probe_url_invalid");
   }
   const response = await fetcher(url.toString(), {
     method: "GET",
-    headers: { Range: "bytes=0-0", Accept: "image/webp,image/avif,image/png,image/jpeg" },
+    headers: {
+      Range: "bytes=0-0",
+      Accept: "image/webp,image/avif,image/png,image/jpeg",
+    },
     credentials: "omit",
     redirect: "error",
     signal,
@@ -913,10 +1102,14 @@ export async function probeCanonicalCatalogMediaByte(
   try {
     const range = response.headers.get("Content-Range");
     const mime = response.headers.get("Content-Type");
-    if (response.status !== 206 ||
-        !range || !/^bytes 0-0\/[1-9][0-9]*$/.test(range) ||
-        !mime || !/^image\/(?:webp|avif|png|jpeg)(?:;|$)/i.test(mime) ||
-        !reader) {
+    if (
+      response.status !== 206 ||
+      !range ||
+      !/^bytes 0-0\/[1-9][0-9]*$/.test(range) ||
+      !mime ||
+      !/^image\/(?:webp|avif|png|jpeg)(?:;|$)/i.test(mime) ||
+      !reader
+    ) {
       throw new Error("catalog_media_probe_invalid_response");
     }
     const chunk = await reader.read();
@@ -970,7 +1163,10 @@ export function createPublicCatalogGateway(
     typeof window === "undefined" ? undefined : window.location.origin,
   );
 
-  async function read(path: string | URL, signal?: AbortSignal): Promise<unknown> {
+  async function read(
+    path: string | URL,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
     const response = await fetcher(new URL(path, base).toString(), {
       method: "GET",
       credentials,
@@ -986,26 +1182,38 @@ export function createPublicCatalogGateway(
     mediaUrl(key: string | null): string | null {
       // The Worker and Pages proxy expose only /media/*, never arbitrary
       // catalog API routes. Validate before turning untrusted keys into URLs.
-      if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key)) return null;
+      if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key))
+        return null;
       const segments = key.split("/");
-      if (CONFIRMED_SPECIALSTL_MODEL_IDS.has(segments[1] ?? "") && !isApprovedPublicMediaKey(key)) return null;
+      if (
+        CONFIRMED_SPECIALSTL_MODEL_IDS.has(segments[1] ?? "") &&
+        !isApprovedPublicMediaKey(key)
+      )
+        return null;
       if (
         segments.length < 2 ||
         segments.length > 17 ||
-        segments.slice(1).some(
-          (part) =>
-            !part ||
-            part === "." ||
-            part === ".." ||
-            /[:?#%\\]/.test(part) || Array.from(part).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127),
-        )
-      ) return null;
+        segments
+          .slice(1)
+          .some(
+            (part) =>
+              !part ||
+              part === "." ||
+              part === ".." ||
+              /[:?#%\\]/.test(part) ||
+              Array.from(part).some(
+                (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
+              ),
+          )
+      )
+        return null;
       try {
         // encodeURIComponent leaves !'()* raw; Pages media paths permit only
         // unreserved characters and valid percent-escaped bytes.
         const encoded = segments.map((part) =>
-          encodeURIComponent(part).replace(/[!'()*]/g, (char) =>
-            "%" + char.charCodeAt(0).toString(16).toUpperCase(),
+          encodeURIComponent(part).replace(
+            /[!'()*]/g,
+            (char) => "%" + char.charCodeAt(0).toString(16).toUpperCase(),
           ),
         );
         if (encoded.some((part) => part.length > 256)) return null;
@@ -1052,7 +1260,12 @@ export function createPublicCatalogGateway(
           count: wholeNumber(category.count, "category_count"),
           ...(category.cover_storage_key === undefined
             ? {}
-            : { coverStorageKey: optionalText(category.cover_storage_key, "category_cover_key") }),
+            : {
+                coverStorageKey: optionalText(
+                  category.cover_storage_key,
+                  "category_cover_key",
+                ),
+              }),
         };
       });
     },
@@ -1068,10 +1281,7 @@ export function createPublicCatalogGateway(
       ) {
         throw new Error("catalog_franchise_search_length_invalid");
       }
-      if (
-        filters.category &&
-        !validCatalogSlug(filters.category)
-      ) {
+      if (filters.category && !validCatalogSlug(filters.category)) {
         throw new Error("catalog_franchise_category_invalid");
       }
       const limit = filters.limit ?? 24;
@@ -1118,7 +1328,12 @@ export function createPublicCatalogGateway(
             category: requiredText(row.category, "franchise_category"),
             ...(row.cover_storage_key === undefined
               ? {}
-              : { coverStorageKey: optionalText(row.cover_storage_key, "franchise_cover_key") }),
+              : {
+                  coverStorageKey: optionalText(
+                    row.cover_storage_key,
+                    "franchise_cover_key",
+                  ),
+                }),
           };
           if (!validCatalogSlug(franchise.id)) {
             throw new Error("invalid_catalog_franchise_id");
@@ -1144,7 +1359,10 @@ export function createPublicCatalogGateway(
       filters: PublicCatalogFolderFilters,
       signal?: AbortSignal,
     ): Promise<PublicCatalogFolderPage> {
-      if (!validCatalogSlug(filters.category) || !validCatalogSlug(filters.franchise)) {
+      if (
+        !validCatalogSlug(filters.category) ||
+        !validCatalogSlug(filters.franchise)
+      ) {
         throw new Error("catalog_folder_scope_invalid");
       }
       const parent = filters.parent ?? "";
@@ -1159,9 +1377,17 @@ export function createPublicCatalogGateway(
       if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
         throw new Error("invalid_catalog_folders");
       }
-      const data = payload as { current?: unknown; trail?: unknown; items?: unknown };
-      if (!Array.isArray(data.trail) || data.trail.length > 24 ||
-          !Array.isArray(data.items) || data.items.length > 256) {
+      const data = payload as {
+        current?: unknown;
+        trail?: unknown;
+        items?: unknown;
+      };
+      if (
+        !Array.isArray(data.trail) ||
+        data.trail.length > 24 ||
+        !Array.isArray(data.items) ||
+        data.items.length > 256
+      ) {
         throw new Error("invalid_catalog_folder_page");
       }
       const decodePath = (input: unknown, field: string): string => {
@@ -1186,7 +1412,11 @@ export function createPublicCatalogGateway(
         if (typeof data.current !== "object" || Array.isArray(data.current)) {
           throw new Error("invalid_catalog_folder_current");
         }
-        const row = data.current as { id?: unknown; label?: unknown; count?: unknown };
+        const row = data.current as {
+          id?: unknown;
+          label?: unknown;
+          count?: unknown;
+        };
         current = {
           id: decodePath(row.id, "folder_current_id"),
           label: requiredText(row.label, "folder_current_label"),
@@ -1197,8 +1427,11 @@ export function createPublicCatalogGateway(
         throw new Error("catalog_folder_parent_mismatch");
       }
       const trail = data.trail.map(decodeTrail);
-      if ((parent && (trail.length === 0 || trail[trail.length - 1].id !== parent)) ||
-          (!parent && trail.length > 0)) {
+      if (
+        (parent &&
+          (trail.length === 0 || trail[trail.length - 1].id !== parent)) ||
+        (!parent && trail.length > 0)
+      ) {
         throw new Error("catalog_folder_trail_mismatch");
       }
       const seen = new Set<string>();
@@ -1206,7 +1439,13 @@ export function createPublicCatalogGateway(
         if (!value || typeof value !== "object" || Array.isArray(value)) {
           throw new Error("invalid_catalog_folder");
         }
-        const row = value as { id?: unknown; label?: unknown; count?: unknown; hasChildren?: unknown; cover_storage_key?: unknown };
+        const row = value as {
+          id?: unknown;
+          label?: unknown;
+          count?: unknown;
+          hasChildren?: unknown;
+          cover_storage_key?: unknown;
+        };
         const id = decodePath(row.id, "folder_id");
         if (seen.has(id)) throw new Error("duplicate_catalog_folder");
         seen.add(id);
@@ -1221,9 +1460,14 @@ export function createPublicCatalogGateway(
           label: requiredText(row.label, "folder_label"),
           count: wholeNumber(row.count, "folder_count"),
           hasChildren: row.hasChildren,
-          ...(row.cover_storage_key === undefined ? {} : {
-            coverStorageKey: optionalText(row.cover_storage_key, "folder_cover_key"),
-          }),
+          ...(row.cover_storage_key === undefined
+            ? {}
+            : {
+                coverStorageKey: optionalText(
+                  row.cover_storage_key,
+                  "folder_cover_key",
+                ),
+              }),
         };
       });
       return { current, trail, items };
@@ -1233,8 +1477,7 @@ export function createPublicCatalogGateway(
       slug: string,
       signal?: AbortSignal,
     ): Promise<PublicCatalogDetail> {
-      if (!validCatalogSlug(slug))
-        throw new Error("invalid_catalog_slug");
+      if (!validCatalogSlug(slug)) throw new Error("invalid_catalog_slug");
       const result = await read(
         `api/models/${encodeURIComponent(slug)}`,
         signal,
@@ -1276,6 +1519,30 @@ export function createPublicCatalogGateway(
       return decodePublicCharacterProfile(result, slug, expectedUniverse);
     },
 
+    async searchCharacters(
+      query: string,
+      limit = 8,
+      signal?: AbortSignal,
+    ): Promise<PublicCatalogCharacterSearchPage> {
+      const normalized = query.trim();
+      const length = Array.from(normalized).length;
+      if (length < 3 || length > 80) {
+        throw new Error("catalog_character_search_length_invalid");
+      }
+      if (!Number.isInteger(limit) || limit < 1 || limit > 12) {
+        throw new Error("catalog_character_search_limit_invalid");
+      }
+      const params = new URLSearchParams({
+        q: normalized,
+        limit: String(limit),
+      });
+      const result = await read(
+        `api/editorial/v1/characters/search?${params.toString()}`,
+        signal,
+      );
+      return decodePublicCharacterSearchPage(result, limit);
+    },
+
     async getUniverseProfile(
       categorySlug: string,
       franchiseSlug: string,
@@ -1291,15 +1558,12 @@ export function createPublicCatalogGateway(
       return decodePublicUniverseProfile(result, categorySlug, franchiseSlug);
     },
 
-
-
     async listGallery(
       slug: string,
       filters: PublicCatalogGalleryFilters,
       signal?: AbortSignal,
     ): Promise<PublicCatalogGalleryPage> {
-      if (!validCatalogSlug(slug))
-        throw new Error("invalid_catalog_slug");
+      if (!validCatalogSlug(slug)) throw new Error("invalid_catalog_slug");
       if (!Number.isInteger(filters.version) || filters.version < 1)
         throw new Error("catalog_gallery_version_invalid");
       const limit = filters.limit ?? 24;
@@ -1449,17 +1713,19 @@ export function createPublicCatalogGateway(
         throw new Error("invalid_catalog_recent_items");
       }
       const seen = new Set<string>();
-      return items.map((value: unknown) => {
-        const model = decodeModel(value);
-        if (!validCatalogSlug(model.slug)) {
-          throw new Error("invalid_catalog_recent_slug");
-        }
-        if (seen.has(model.id)) {
-          throw new Error("duplicate_catalog_recent_model");
-        }
-        seen.add(model.id);
-        return model;
-      }).filter(isPubliclyEligibleCatalogModel);
+      return items
+        .map((value: unknown) => {
+          const model = decodeModel(value);
+          if (!validCatalogSlug(model.slug)) {
+            throw new Error("invalid_catalog_recent_slug");
+          }
+          if (seen.has(model.id)) {
+            throw new Error("duplicate_catalog_recent_model");
+          }
+          seen.add(model.id);
+          return model;
+        })
+        .filter(isPubliclyEligibleCatalogModel);
     },
     async listPage(
       filters: PublicCatalogFilters = {},
@@ -1517,7 +1783,9 @@ export function createPublicCatalogGateway(
       if (
         nextCursor !== null &&
         nextCursor !== undefined &&
-        (typeof nextCursor !== "string" || !nextCursor || nextCursor.length > 2048)
+        (typeof nextCursor !== "string" ||
+          !nextCursor ||
+          nextCursor.length > 2048)
       ) {
         throw new Error("invalid_catalog_page_cursor");
       }

@@ -15,8 +15,16 @@ import {
   ArcadeHero,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
-import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
-import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
+import {
+  PUBLIC_ROUTES,
+  catalogCharacterSlugPath,
+  catalogModelDetailsPath,
+} from "@/config/routes";
+import {
+  isCatalogMediaUnderReview,
+  isCatalogPublicMvpEnabled,
+} from "@/config/catalog-public-mvp";
+import { isPublicEditorialProjectionEnabled } from "@/config/catalog-editorial-projection";
 import {
   Sheet,
   SheetClose,
@@ -70,10 +78,17 @@ export default function CatalogModelsArcade() {
   // build, avoid extra category/franchise reads just to populate closed selects.
   // Opening either filter remains the explicit trigger for its indexed lookup.
   const mediaUnderReview = isCatalogMediaUnderReview();
-  const publicReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true" && isCatalogPublicMvpEnabled();
+  const editorialProjectionEnabled = isPublicEditorialProjectionEnabled();
+  const publicReadOnly =
+    import.meta.env.VITE_PREVIEW_READ_ONLY === "true" &&
+    isCatalogPublicMvpEnabled();
   const publicationBlocked = publicReadOnly && mediaUnderReview;
-  const [loadCategories, setLoadCategories] = useState(Boolean(category) && !mediaUnderReview);
-  const [loadFranchises, setLoadFranchises] = useState(Boolean(franchise) && !mediaUnderReview);
+  const [loadCategories, setLoadCategories] = useState(
+    Boolean(category) && !mediaUnderReview,
+  );
+  const [loadFranchises, setLoadFranchises] = useState(
+    Boolean(franchise) && !mediaUnderReview,
+  );
   const [franchiseDraft, setFranchiseDraft] = useState("");
   const [franchiseNeedle, setFranchiseNeedle] = useState("");
   const { selectedModels, setSelectedModels, paging, setPaging } =
@@ -97,7 +112,8 @@ export default function CatalogModelsArcade() {
     paging.scope === scope ? paging : { scope, cursors: [undefined], index: 0 };
   const cursor = activePage.cursors[activePage.index];
   const searchLength = Array.from(search).length;
-  const invalidSearch = searchLength > 0 && (searchLength < 3 || searchLength > 80);
+  const invalidSearch =
+    searchLength > 0 && (searchLength < 3 || searchLength > 80);
   const invalidCatalogScope =
     Boolean(category && category !== "all" && !validCatalogSlug(category)) ||
     Boolean(franchise && !validCatalogSlug(franchise)) ||
@@ -107,7 +123,12 @@ export default function CatalogModelsArcade() {
   const categories = useQuery({
     queryKey: ["tonecos-catalog-categories"],
     queryFn: ({ signal }) => gateway!.listCategories(signal),
-    enabled: gateway !== null && !publicationBlocked && loadCategories && !invalidCatalogScope && !invalidSearch,
+    enabled:
+      gateway !== null &&
+      !publicationBlocked &&
+      loadCategories &&
+      !invalidCatalogScope &&
+      !invalidSearch,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -123,7 +144,12 @@ export default function CatalogModelsArcade() {
         },
         signal,
       ),
-    enabled: gateway !== null && !publicationBlocked && loadFranchises && !invalidCatalogScope && !invalidSearch,
+    enabled:
+      gateway !== null &&
+      !publicationBlocked &&
+      loadFranchises &&
+      !invalidCatalogScope &&
+      !invalidSearch,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -142,9 +168,27 @@ export default function CatalogModelsArcade() {
         },
         signal,
       ),
-    enabled: gateway !== null && !publicationBlocked && !invalidSearch && !invalidFolderScope && !invalidCatalogScope,
+    enabled:
+      gateway !== null &&
+      !publicationBlocked &&
+      !invalidSearch &&
+      !invalidFolderScope &&
+      !invalidCatalogScope,
     retry: false,
     staleTime: 60 * 1000,
+  });
+
+  const editorialCharacters = useQuery({
+    queryKey: ["tonecos-editorial-character-search", search],
+    queryFn: ({ signal }) => gateway!.searchCharacters(search, 8, signal),
+    enabled:
+      gateway !== null &&
+      editorialProjectionEnabled &&
+      !publicationBlocked &&
+      !invalidSearch &&
+      searchLength >= 3,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const rows = models.data?.items ?? [];
@@ -165,18 +209,29 @@ export default function CatalogModelsArcade() {
         ? { ...current, returnFocusSlug: undefined }
         : current,
     );
-  }, [models.isSuccess, paging.scope, paging.returnFocusSlug, scope, setPaging]);
+  }, [
+    models.isSuccess,
+    paging.scope,
+    paging.returnFocusSlug,
+    scope,
+    setPaging,
+  ]);
   // One already fetched, bounded page. Do not request adjacent model pages
   // to build detail navigation; the current list is the only authority here.
-  const pageSlugs = rows.length > 1 && rows.length <= 36 &&
+  const pageSlugs =
+    rows.length > 1 &&
+    rows.length <= 36 &&
     rows.every((item) => validCatalogSlug(item.slug))
-    ? rows.map((item) => item.slug)
-    : [];
+      ? rows.map((item) => item.slug)
+      : [];
   const categoryLabel =
     categories.data?.find((item) => item.id === category)?.label || category;
   const franchiseLabel =
-    franchises.data?.items.find((item) => item.id === franchise)?.label || franchise;
-  const hasActiveFilters = Boolean(search || (category && category !== "all") || franchise || folder);
+    franchises.data?.items.find((item) => item.id === franchise)?.label ||
+    franchise;
+  const hasActiveFilters = Boolean(
+    search || (category && category !== "all") || franchise || folder,
+  );
 
   function clearFilters() {
     setDraft("");
@@ -200,7 +255,12 @@ export default function CatalogModelsArcade() {
     if (nextCategory && nextCategory !== "all")
       next.set("category", nextCategory);
     if (nextFranchise) next.set("franchise", nextFranchise);
-    if (keepFolder && folder && nextCategory === category && nextFranchise === franchise) {
+    if (
+      keepFolder &&
+      folder &&
+      nextCategory === category &&
+      nextFranchise === franchise
+    ) {
       next.set("folder", folder);
     }
     setSearchParams(next);
@@ -219,12 +279,13 @@ export default function CatalogModelsArcade() {
   // remains usable after returning to a previous page.
   const repeatedCursor = Boolean(
     models.data?.nextCursor &&
-      activePage.cursors
-        .slice(0, activePage.index + 1)
-        .includes(models.data.nextCursor),
+    activePage.cursors
+      .slice(0, activePage.index + 1)
+      .includes(models.data.nextCursor),
   );
 
-  const canGoNext = models.isSuccess && Boolean(models.data?.nextCursor) && !repeatedCursor;
+  const canGoNext =
+    models.isSuccess && Boolean(models.data?.nextCursor) && !repeatedCursor;
 
   function goNext() {
     if (!canGoNext || !models.data?.nextCursor) return;
@@ -236,13 +297,19 @@ export default function CatalogModelsArcade() {
       ],
       index: activePage.index + 1,
     });
-    resultsRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    resultsRef.current?.scrollIntoView?.({
+      behavior: "smooth",
+      block: "start",
+    });
   }
 
   function goBack() {
     if (activePage.index === 0) return;
     setPaging({ ...activePage, index: activePage.index - 1 });
-    resultsRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    resultsRef.current?.scrollIntoView?.({
+      behavior: "smooth",
+      block: "start",
+    });
   }
 
   // The public read-only gallery reads exclusively from reviewed cover IDs,
@@ -266,11 +333,12 @@ export default function CatalogModelsArcade() {
           />
 
           <div className="relative z-10 mx-auto -mt-4 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
-             {mediaUnderReview ? (
-               <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(0,0%,7%)] px-4 py-3 text-sm text-[hsl(0,0%,72%)]">
-                 Explore as referências disponíveis. Algumas opções podem não estar visíveis neste momento.
-               </p>
-             ) : null}
+            {mediaUnderReview ? (
+              <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(0,0%,7%)] px-4 py-3 text-sm text-[hsl(0,0%,72%)]">
+                Explore as referências disponíveis. Algumas opções podem não
+                estar visíveis neste momento.
+              </p>
+            ) : null}
             <div className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] p-3 sm:p-4">
               <form
                 role="search"
@@ -326,10 +394,11 @@ export default function CatalogModelsArcade() {
                     className="h-12 w-full rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)] disabled:opacity-60"
                   >
                     <option value="">Todas as categorias</option>
-                    {category && category !== "all" &&
-                      !categories.data?.some((item) => item.id === category) && (
-                        <option value={category}>{categoryLabel}</option>
-                      )}
+                    {category &&
+                      category !== "all" &&
+                      !categories.data?.some(
+                        (item) => item.id === category,
+                      ) && <option value={category}>{categoryLabel}</option>}
                     {categories.data
                       ?.filter((item) => item.id !== "all")
                       .map((item) => (
@@ -360,7 +429,10 @@ export default function CatalogModelsArcade() {
                         (item) => item.id === franchise,
                       ) && <option value={franchise}>{franchise}</option>}
                     {franchises.data?.items.map((item) => (
-                      <option key={item.category + "/" + item.id} value={item.id}>
+                      <option
+                        key={item.category + "/" + item.id}
+                        value={item.id}
+                      >
                         {item.label} ({item.count})
                       </option>
                     ))}
@@ -375,7 +447,10 @@ export default function CatalogModelsArcade() {
               </form>
 
               {categories.isError && !invalidSearch && !invalidCatalogScope && (
-                <div role="alert" className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[hsl(0,0%,56%)]">
+                <div
+                  role="alert"
+                  className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[hsl(0,0%,56%)]"
+                >
                   <span>Não foi possível carregar as categorias.</span>
                   <button
                     type="button"
@@ -428,12 +503,17 @@ export default function CatalogModelsArcade() {
                     className="max-w-xs text-xs text-[hsl(0,0%,56%)]"
                     role="status"
                   >
-                    A lista mostra apenas parte das franquias. Pesquise pelo nome
-                    para refinar.
+                    A lista mostra apenas parte das franquias. Pesquise pelo
+                    nome para refinar.
                   </p>
                 ) : null}
-                {franchises.isError && !invalidSearch && !invalidCatalogScope ? (
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-[hsl(0,0%,56%)]" role="alert">
+                {franchises.isError &&
+                !invalidSearch &&
+                !invalidCatalogScope ? (
+                  <div
+                    className="flex flex-wrap items-center gap-2 text-xs text-[hsl(0,0%,56%)]"
+                    role="alert"
+                  >
                     <span>Não foi possível consultar as franquias.</span>
                     <button
                       type="button"
@@ -448,9 +528,18 @@ export default function CatalogModelsArcade() {
               </div>
 
               {folder && !invalidFolderScope && !invalidCatalogScope && (
-                <div role="status" className="mt-3 flex flex-wrap items-center gap-2 break-all text-xs text-[hsl(var(--gold-accent))]">
+                <div
+                  role="status"
+                  className="mt-3 flex flex-wrap items-center gap-2 break-all text-xs text-[hsl(var(--gold-accent))]"
+                >
                   Pasta selecionada: {folder}
-                  <button type="button" onClick={() => changeParams(search, category, franchise, false)} className="border border-[hsl(var(--gold-accent)/0.5)] px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      changeParams(search, category, franchise, false)
+                    }
+                    className="border border-[hsl(var(--gold-accent)/0.5)] px-3 py-2"
+                  >
                     Limpar pasta
                   </button>
                 </div>
@@ -458,12 +547,20 @@ export default function CatalogModelsArcade() {
 
               {hasActiveFilters && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                  {search && <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">Busca: {search}</span>}
+                  {search && (
+                    <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">
+                      Busca: {search}
+                    </span>
+                  )}
                   {category && category !== "all" && (
-                    <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">Categoria: {categoryLabel}</span>
+                    <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">
+                      Categoria: {categoryLabel}
+                    </span>
                   )}
                   {franchise && (
-                    <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">Franquia: {franchiseLabel}</span>
+                    <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">
+                      Franquia: {franchiseLabel}
+                    </span>
                   )}
                   <button
                     type="button"
@@ -476,17 +573,27 @@ export default function CatalogModelsArcade() {
               )}
             </div>
 
-            <div ref={resultsRef} className="mb-4 mt-6 flex scroll-mt-24 flex-wrap items-end justify-between gap-3">
+            <div
+              ref={resultsRef}
+              className="mb-4 mt-6 flex scroll-mt-24 flex-wrap items-end justify-between gap-3"
+            >
               <ArcadeSectionTitle>MODELOS DO ACERVO</ArcadeSectionTitle>
               <div className="flex flex-wrap items-center gap-3">
                 {models.isSuccess && (
-                  <p className="text-sm text-[hsl(0,0%,62%)]" aria-live="polite">
-                    Página {activePage.index + 1} · {rows.length} {rows.length === 1 ? "modelo" : "modelos"} nesta
-                    página{canGoNext ? " · Há mais modelos" : ""}
+                  <p
+                    className="text-sm text-[hsl(0,0%,62%)]"
+                    aria-live="polite"
+                  >
+                    Página {activePage.index + 1} · {rows.length}{" "}
+                    {rows.length === 1 ? "modelo" : "modelos"} nesta página
+                    {canGoNext ? " · Há mais modelos" : ""}
                   </p>
                 )}
                 {models.isSuccess && (activePage.index > 0 || canGoNext) && (
-                  <nav aria-label="Navegação rápida do catálogo" className="flex flex-wrap items-center gap-2">
+                  <nav
+                    aria-label="Navegação rápida do catálogo"
+                    className="flex flex-wrap items-center gap-2"
+                  >
                     {activePage.index > 0 && (
                       <button
                         type="button"
@@ -513,7 +620,9 @@ export default function CatalogModelsArcade() {
                   <button
                     type="button"
                     aria-label={
-                      (publicReadOnly ? "Abrir referências salvas com " : "Abrir seleção para orçamento com ") +
+                      (publicReadOnly
+                        ? "Abrir referências salvas com "
+                        : "Abrir seleção para orçamento com ") +
                       selectedModels.length +
                       (selectedModels.length === 1 ? " modelo" : " modelos")
                     }
@@ -521,7 +630,10 @@ export default function CatalogModelsArcade() {
                   >
                     <Bookmark size={16} aria-hidden="true" />
                     Minha seleção
-                    <span aria-hidden="true" className="bg-[hsl(var(--gold-accent)/0.12)] px-1.5 py-0.5 font-mono text-xs">
+                    <span
+                      aria-hidden="true"
+                      className="bg-[hsl(var(--gold-accent)/0.12)] px-1.5 py-0.5 font-mono text-xs"
+                    >
                       {selectedModels.length}/{MAX_CANONICAL_SELECTION}
                     </span>
                   </button>
@@ -529,22 +641,130 @@ export default function CatalogModelsArcade() {
               </div>
             </div>
 
+            {editorialProjectionEnabled &&
+            searchLength >= 3 &&
+            !invalidSearch &&
+            !publicationBlocked ? (
+              <section
+                aria-labelledby="catalog-character-search-title"
+                className="mt-6 border border-[hsl(var(--gold-accent)/0.25)] bg-[hsl(0,0%,6%)] p-4 sm:p-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2
+                    id="catalog-character-search-title"
+                    className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[hsl(var(--gold-accent))]"
+                  >
+                    Personagens e universos
+                  </h2>
+                  {editorialCharacters.isFetching ? (
+                    <span
+                      className="text-xs text-[hsl(0,0%,56%)]"
+                      role="status"
+                    >
+                      Buscando fichas aprovadas…
+                    </span>
+                  ) : null}
+                </div>
+                {editorialCharacters.isError ? (
+                  <div
+                    className="mt-3 flex flex-wrap items-center gap-3 text-sm text-[hsl(0,0%,64%)]"
+                    role="alert"
+                  >
+                    <span>
+                      Não foi possível buscar fichas editoriais agora.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void editorialCharacters.refetch()}
+                      disabled={editorialCharacters.isFetching}
+                      className="inline-flex min-h-11 items-center border border-[hsl(var(--gold-accent)/0.5)] px-3 text-xs text-[hsl(var(--gold-accent))] disabled:opacity-40"
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                ) : editorialCharacters.isSuccess &&
+                  editorialCharacters.data.items.length === 0 ? (
+                  <p
+                    className="mt-3 text-sm text-[hsl(0,0%,56%)]"
+                    role="status"
+                  >
+                    Nenhum personagem publicado corresponde ao nome, alias ou
+                    franquia buscados.
+                  </p>
+                ) : editorialCharacters.isSuccess ? (
+                  <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {editorialCharacters.data.items.map((result) => {
+                      const matchLabels = {
+                        name_exact: "Nome exato",
+                        name: "Nome",
+                        alias: "Alias",
+                        franchise: "Franquia",
+                      } as const;
+                      return (
+                        <li key={result.character.id}>
+                          <Link
+                            to={catalogCharacterSlugPath(result.character.slug)}
+                            className="flex min-h-16 flex-col justify-center border border-[hsl(0,0%,16%)] px-3 py-2 transition-colors hover:border-[hsl(var(--gold-accent)/0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
+                          >
+                            <span className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold text-[hsl(0,0%,92%)]">
+                              {result.character.name}
+                              <span className="font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--gold-accent))]">
+                                {matchLabels[result.matchedBy]}
+                              </span>
+                            </span>
+                            <span className="mt-1 truncate text-xs text-[hsl(0,0%,56%)]">
+                              {result.universe.name}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p
+                    className="mt-3 text-sm text-[hsl(0,0%,56%)]"
+                    role="status"
+                  >
+                    Consultando apenas personagens aprovados…
+                  </p>
+                )}
+                {editorialCharacters.data?.truncated ? (
+                  <p
+                    className="mt-3 text-xs text-[hsl(0,0%,56%)]"
+                    role="status"
+                  >
+                    Há mais correspondências. Refine a busca para localizar a
+                    ficha desejada.
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
+
             {gateway === null ? (
               <div
                 role="status"
                 className="rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-8"
               >
-                <h3 className="text-xl">Catálogo temporariamente indisponível</h3>
+                <h3 className="text-xl">
+                  Catálogo temporariamente indisponível
+                </h3>
                 <p className="mt-2 max-w-xl text-sm text-[hsl(0,0%,56%)]">
-                  Não foi possível acessar os modelos agora. Tente novamente mais tarde.
+                  Não foi possível acessar os modelos agora. Tente novamente
+                  mais tarde.
                 </p>
               </div>
             ) : invalidCatalogScope ? (
-              <p role="status" className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm">
+              <p
+                role="status"
+                className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm"
+              >
                 Categoria, franquia ou pasta inválida. Revise os filtros da URL.
               </p>
             ) : invalidFolderScope ? (
-              <p role="status" className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm">
+              <p
+                role="status"
+                className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm"
+              >
                 A pasta requer uma categoria e uma franquia válidas.
               </p>
             ) : invalidSearch ? (
@@ -568,7 +788,9 @@ export default function CatalogModelsArcade() {
                 role="alert"
                 className="rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-7"
               >
-                <h3 className="text-lg">Não foi possível consultar o acervo.</h3>
+                <h3 className="text-lg">
+                  Não foi possível consultar o acervo.
+                </h3>
                 <p className="mt-2 text-sm text-[hsl(0,0%,56%)]">
                   Verifique sua conexão e tente novamente em instantes.
                 </p>
@@ -600,8 +822,12 @@ export default function CatalogModelsArcade() {
                       <div className="flex h-full flex-col">
                         <Link
                           to={catalogModelDetailsPath(model.slug)}
-                          ref={paging.scope === scope && paging.returnFocusSlug === model.slug
-                            ? returnCardRef : undefined}
+                          ref={
+                            paging.scope === scope &&
+                            paging.returnFocusSlug === model.slug
+                              ? returnCardRef
+                              : undefined
+                          }
                           state={{
                             catalogReturnSearch: searchParams.toString(),
                             catalogSiblingSlugs: pageSlugs,
@@ -650,7 +876,10 @@ export default function CatalogModelsArcade() {
             )}
 
             {models.isSuccess && repeatedCursor && (
-              <p role="status" className="mt-5 text-center text-sm text-[hsl(0,0%,56%)]">
+              <p
+                role="status"
+                className="mt-5 text-center text-sm text-[hsl(0,0%,56%)]"
+              >
                 Esta sequência de páginas retornaria a uma página já visitada.
                 Volte ou refine a busca para continuar.
               </p>
@@ -694,19 +923,28 @@ export default function CatalogModelsArcade() {
             <span className="font-mono text-xs uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))]">
               Acervo TONART
             </span>
-            <SheetTitle className="text-2xl text-[hsl(0,0%,94%)]">Minha seleção</SheetTitle>
+            <SheetTitle className="text-2xl text-[hsl(0,0%,94%)]">
+              Minha seleção
+            </SheetTitle>
             <SheetDescription className="text-[hsl(0,0%,66%)]">
-              {publicReadOnly ? "Reúna referências para comparar durante esta visita. O catálogo público não recebe solicitações." : "Revise os modelos que você reuniu para um futuro orçamento."}
+              {publicReadOnly
+                ? "Reúna referências para comparar durante esta visita. O catálogo público não recebe solicitações."
+                : "Revise os modelos que você reuniu para um futuro orçamento."}
             </SheetDescription>
             <p role="status" className="text-sm text-[hsl(var(--gold-accent))]">
-              {selectedModels.length} de {MAX_CANONICAL_SELECTION} modelos selecionados.
+              {selectedModels.length} de {MAX_CANONICAL_SELECTION} modelos
+              selecionados.
             </p>
           </SheetHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6">
             {selectedModels.length === 0 ? (
               <div className="border border-dashed border-[hsl(0,0%,24%)] bg-[hsl(0,0%,9%)] p-5">
-                <Bookmark size={20} aria-hidden="true" className="mb-3 text-[hsl(var(--gold-accent))]" />
+                <Bookmark
+                  size={20}
+                  aria-hidden="true"
+                  className="mb-3 text-[hsl(var(--gold-accent))]"
+                />
                 <p className="text-sm font-semibold">Sua seleção está vazia.</p>
                 <p className="mt-1 text-sm text-[hsl(0,0%,66%)]">
                   Adicione modelos do catálogo para vê-los aqui.
@@ -725,16 +963,25 @@ export default function CatalogModelsArcade() {
                         state={{ catalogReturnSearch: searchParams.toString() }}
                         className="flex min-w-0 flex-1 basis-36 items-center gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                       >
-                        <div aria-hidden="true" className="flex h-14 w-12 shrink-0 items-center justify-center overflow-hidden bg-[hsl(0,0%,5%)]">
+                        <div
+                          aria-hidden="true"
+                          className="flex h-14 w-12 shrink-0 items-center justify-center overflow-hidden bg-[hsl(0,0%,5%)]"
+                        >
                           <CanonicalCatalogImage
-                            src={gateway?.mediaUrl(item.coverStorageKey) ?? null}
+                            src={
+                              gateway?.mediaUrl(item.coverStorageKey) ?? null
+                            }
                             alt=""
                             imageClassName="h-full w-full object-contain"
                           />
                         </div>
                         <div className="min-w-0">
-                          <p className="break-words text-sm font-semibold">{item.name}</p>
-                          <p className="break-words text-xs text-[hsl(0,0%,66%)]">{item.code}</p>
+                          <p className="break-words text-sm font-semibold">
+                            {item.name}
+                          </p>
+                          <p className="break-words text-xs text-[hsl(0,0%,66%)]">
+                            {item.code}
+                          </p>
                         </div>
                       </Link>
                     </SheetClose>
@@ -754,12 +1001,17 @@ export default function CatalogModelsArcade() {
 
           <footer className="shrink-0 border-t border-[hsl(0,0%,18%)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 sm:px-6">
             <p className="mb-3 text-xs leading-relaxed text-[hsl(0,0%,66%)]">
-              {publicReadOnly ? "A seleção fica apenas nesta visita e não é enviada ao estúdio." : "A seleção fica disponível durante esta visita. Nenhum orçamento foi enviado."}
+              {publicReadOnly
+                ? "A seleção fica apenas nesta visita e não é enviada ao estúdio."
+                : "A seleção fica disponível durante esta visita. Nenhum orçamento foi enviado."}
             </p>
-            {selectedModels.length > 0 && import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" ? (
+            {selectedModels.length > 0 &&
+            import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" ? (
               <SheetClose asChild>
-                <Link to={quoteRequestPath}
-                  className="mb-3 inline-flex min-h-11 w-full items-center justify-center bg-[hsl(var(--gold-accent))] px-4 text-sm font-semibold text-black hover:brightness-110">
+                <Link
+                  to={quoteRequestPath}
+                  className="mb-3 inline-flex min-h-11 w-full items-center justify-center bg-[hsl(var(--gold-accent))] px-4 text-sm font-semibold text-black hover:brightness-110"
+                >
                   Solicitar orçamento dos modelos
                 </Link>
               </SheetClose>
