@@ -24,6 +24,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { CharacterEditorialProfileEditor } from "@/components/admin/collections/CharacterEditorialProfileEditor";
 import {
+  findEditorialResearchMatches,
+  getEditorialResearchClaimValue,
+  MAX_EDITORIAL_RESEARCH_IMPORT_BYTES,
+  parseEditorialResearchPreparation,
+  type EditorialResearchMatch,
+  type EditorialResearchPreparation,
+} from "@/components/admin/collections/character-editorial-research-import";
+import {
   addCatalogCurationTagAlias,
   assertCurrentCanonicalCurationModels,
   createCatalogCurationTag,
@@ -104,6 +112,9 @@ export function InternalCollectionCuration() {
   const [newTagLabel, setNewTagLabel] = useState("");
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionDescription, setNewCollectionDescription] = useState("");
+  const [editorialResearch, setEditorialResearch] =
+    useState<EditorialResearchPreparation | null>(null);
+  const [editorialResearchError, setEditorialResearchError] = useState("");
   const [identityReview, setIdentityReview] = useState<{
     model: SubscriptionCatalogModel;
     characterName: string;
@@ -185,6 +196,18 @@ export function InternalCollectionCuration() {
     enabled: Boolean(collection),
   });
   const page = pageQuery.data;
+  const editorialResearchByModel = useMemo(() => {
+    const result = new Map<string, EditorialResearchMatch[]>();
+    if (!editorialResearch) return result;
+    for (const item of page?.items ?? []) {
+      const matches = findEditorialResearchMatches(editorialResearch, {
+        modelId: item.modelId,
+        slug: item.slug,
+      });
+      if (matches.length) result.set(item.modelId, matches);
+    }
+    return result;
+  }, [editorialResearch, page?.items]);
   const characterProfileAnchors = useMemo(() => {
     const anchors = new Map<string, string>();
     for (const item of page?.items ?? []) {
@@ -585,6 +608,99 @@ export function InternalCollectionCuration() {
         </div>
       </CardHeader>
       <CardContent className="space-y-7">
+        <section
+          className="space-y-3 rounded-lg border p-4"
+          aria-labelledby="editorial-research-import-heading"
+        >
+          <div>
+            <h3
+              id="editorial-research-import-heading"
+              className="font-semibold"
+            >
+              Dossiês de pesquisa para revisão
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Carregue manualmente um pacote editorial review-only. O arquivo
+              fica apenas nesta sessão do navegador e não é enviado ao banco.
+              Sugestões aparecem somente para o mesmo ID e slug do catálogo.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="editorial-research-import-file">
+              Arquivo JSON de preparação editorial
+            </Label>
+            <Input
+              id="editorial-research-import-file"
+              type="file"
+              accept="application/json,.json"
+              aria-describedby="editorial-research-import-help"
+              onChange={async (event) => {
+                const input = event.currentTarget;
+                const file = input.files?.[0];
+                input.value = "";
+                if (!file) return;
+                try {
+                  if (file.size > MAX_EDITORIAL_RESEARCH_IMPORT_BYTES) {
+                    throw new Error("O arquivo excede o limite de 5 MB.");
+                  }
+                  const preparation = parseEditorialResearchPreparation(
+                    await file.text(),
+                  );
+                  setEditorialResearch(preparation);
+                  setEditorialResearchError("");
+                } catch (error) {
+                  setEditorialResearch(null);
+                  setEditorialResearchError(
+                    error instanceof Error
+                      ? error.message
+                      : "Não foi possível validar o pacote editorial.",
+                  );
+                }
+              }}
+            />
+            <p
+              id="editorial-research-import-help"
+              className="text-xs text-muted-foreground"
+            >
+              Somente dossiês e vínculos pendentes são aceitos. O pacote não
+              fornece evidência visual do render e não pode aprovar ou publicar.
+            </p>
+          </div>
+          {editorialResearchError && (
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>{editorialResearchError}</AlertDescription>
+            </Alert>
+          )}
+          {editorialResearch && (
+            <Alert role="status">
+              <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+                <span>
+                  {editorialResearch.candidates.length} dossiês carregados nesta
+                  sessão,{" "}
+                  {editorialResearch.candidates.reduce(
+                    (count, candidate) =>
+                      count + candidate.candidateModelLinks.length,
+                    0,
+                  )}{" "}
+                  relações candidatas; nenhum foi revisado, salvo ou aprovado.
+                  As sugestões dependem de vínculo visual e decisão humana por
+                  modelo.
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEditorialResearch(null);
+                    setEditorialResearchError("");
+                  }}
+                >
+                  Limpar arquivo desta sessão
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+        </section>
         <section className="space-y-3" aria-labelledby="curation-seeds-heading">
           <div>
             <h3 id="curation-seeds-heading" className="font-semibold">
@@ -986,6 +1102,8 @@ export function InternalCollectionCuration() {
                       canonicalModel?.slug === item.slug
                         ? canonicalModel
                         : undefined;
+                    const researchMatches =
+                      editorialResearchByModel.get(item.modelId) ?? [];
                     const selected = memberIds.includes(item.modelId);
                     return (
                       <article
@@ -1044,6 +1162,175 @@ export function InternalCollectionCuration() {
                                 ? `${model.franchise} · ${model.category} · ${model.slug}`
                                 : `Referência canônica: ${item.slug}`}
                             </p>
+                            {researchMatches.map((match) => {
+                              const sourceById = new Map(
+                                match.sources.map((source) => [
+                                  source.id,
+                                  source,
+                                ]),
+                              );
+                              const linkedCharacter = item.characters.find(
+                                (character) =>
+                                  [
+                                    match.candidate.candidateName,
+                                    match.candidate.catalogDisplayNameCandidate,
+                                    getEditorialResearchClaimValue(
+                                      match.candidate,
+                                      "identity.canonical_name_candidate",
+                                    ) ?? "",
+                                  ].some(
+                                    (candidateName) =>
+                                      candidateName
+                                        .trim()
+                                        .toLocaleLowerCase() ===
+                                      character.name.trim().toLocaleLowerCase(),
+                                  ),
+                              );
+                              return (
+                                <section
+                                  key={`${match.candidate.candidateName}-${match.modelLink.modelId}`}
+                                  className="mt-3 space-y-3 rounded-md border border-dashed p-3"
+                                  aria-label={`Dossiê pendente para ${match.candidate.candidateName}`}
+                                >
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Badge variant="outline">
+                                      Pesquisa pendente
+                                    </Badge>
+                                    <span className="text-sm font-medium">
+                                      {match.candidate.candidateName}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      · {match.candidate.franchiseCandidate}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Rótulo do catálogo:{" "}
+                                    {
+                                      match.candidate
+                                        .catalogDisplayNameCandidate
+                                    }
+                                    . Coincidência por ID e slug; isso não
+                                    verifica a escultura nem o vínculo.
+                                  </p>
+                                  <p className="break-all text-xs text-muted-foreground">
+                                    Modelo candidato: {match.modelLink.modelId}{" "}
+                                    · {match.modelLink.modelSlug} · sem
+                                    evidência visual independente
+                                  </p>
+                                  <details className="space-y-2 text-sm">
+                                    <summary className="cursor-pointer font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                                      Conferir biografia, claims, fontes e
+                                      ambiguidades
+                                    </summary>
+                                    <p className="whitespace-pre-wrap text-sm">
+                                      {match.candidate.biographyDraft}
+                                    </p>
+                                    <ul className="space-y-2">
+                                      {match.candidate.claims.map(
+                                        (claim, index) => (
+                                          <li
+                                            key={`${claim.attribute}-${index}`}
+                                            className="rounded border p-2"
+                                          >
+                                            <p className="text-xs font-medium text-muted-foreground">
+                                              {claim.attribute} · pendente
+                                            </p>
+                                            <p>{claim.value}</p>
+                                            <ul className="mt-1 space-y-1">
+                                              {claim.sourceIds.map(
+                                                (sourceId) => {
+                                                  const source =
+                                                    sourceById.get(sourceId);
+                                                  if (!source) return null;
+                                                  return (
+                                                    <li key={sourceId}>
+                                                      <a
+                                                        className="break-all text-xs underline underline-offset-2"
+                                                        href={source.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                      >
+                                                        {source.publisher}:{" "}
+                                                        {source.title}
+                                                      </a>
+                                                      <span className="ml-1 text-xs text-muted-foreground">
+                                                        · consultada em{" "}
+                                                        {source.consultedOn}
+                                                      </span>
+                                                    </li>
+                                                  );
+                                                },
+                                              )}
+                                            </ul>
+                                          </li>
+                                        ),
+                                      )}
+                                    </ul>
+                                    <div>
+                                      <p className="text-xs font-semibold">
+                                        Ambiguidades a preservar
+                                      </p>
+                                      <ul className="list-disc space-y-1 pl-5 text-xs">
+                                        {match.candidate.ambiguities.map(
+                                          (ambiguity) => (
+                                            <li key={ambiguity}>{ambiguity}</li>
+                                          ),
+                                        )}
+                                      </ul>
+                                    </div>
+                                  </details>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={
+                                        !model ||
+                                        Boolean(linkedCharacter) ||
+                                        identityMutation.isPending
+                                      }
+                                      onClick={() => {
+                                        if (!model) return;
+                                        setUnlinkReview(null);
+                                        setIdentityReview({
+                                          model,
+                                          characterName:
+                                            getEditorialResearchClaimValue(
+                                              match.candidate,
+                                              "identity.canonical_name_candidate",
+                                            ) ??
+                                            match.candidate
+                                              .catalogDisplayNameCandidate,
+                                          franchise:
+                                            getEditorialResearchClaimValue(
+                                              match.candidate,
+                                              "franchise.candidate",
+                                            ) ??
+                                            match.candidate.franchiseCandidate,
+                                          evidenceUrl: "",
+                                          evidenceNote: "",
+                                        });
+                                      }}
+                                    >
+                                      {linkedCharacter
+                                        ? "Identidade já vinculada"
+                                        : "Revisar vínculo deste modelo"}
+                                    </Button>
+                                    {linkedCharacter && (
+                                      <span className="text-xs text-muted-foreground">
+                                        A ficha já está associada a{" "}
+                                        {linkedCharacter.name}.
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    A fonte biográfica não comprova este render.
+                                    O formulário exige evidência visual
+                                    independente antes de criar o vínculo.
+                                  </p>
+                                </section>
+                              );
+                            })}
                             {item.characters.length > 0 && (
                               <div
                                 className="mt-3 flex flex-wrap gap-2"
@@ -1119,6 +1406,7 @@ export function InternalCollectionCuration() {
                                       <CharacterEditorialProfileEditor
                                         identityId={character.id}
                                         characterName={character.name}
+                                        editorialResearch={editorialResearch}
                                       />
                                     )}
                                   </div>
@@ -1307,7 +1595,7 @@ export function InternalCollectionCuration() {
                                 ? "Confirme a restauração deste personagem previamente desvinculado. Atualize a fonte HTTPS e a nota do vínculo; o evento anterior será preservado no histórico."
                                 : identityReview.updateProof
                                   ? "Atualize a prova desta associação. A evidência anterior será preservada no histórico editorial."
-                                  : "Confirme cada personagem e sua franquia. Uma cena pode conter vários personagens; cada vínculo exige revisão manual e uma fonte HTTPS com nota. O nome do modelo é apenas uma sugestão, não uma identidade verificada."}
+                                  : "Confirme personagem e franquia com fontes confiáveis. Cada vínculo exige inspeção visual independente do render; a fonte biográfica não comprova esta estatueta. Registre a prova visual em URL HTTPS e explique os detalhes conferidos. O nome do modelo é apenas uma sugestão."}
                             </p>
                             <div className="space-y-1">
                               <Label htmlFor="curation-character-name">
@@ -1359,7 +1647,7 @@ export function InternalCollectionCuration() {
                             </div>
                             <div className="space-y-1">
                               <Label htmlFor="curation-character-evidence-url">
-                                Fonte do vínculo (HTTPS)
+                                Evidência independente do vínculo (HTTPS)
                               </Label>
                               <Input
                                 id="curation-character-evidence-url"
@@ -1369,7 +1657,7 @@ export function InternalCollectionCuration() {
                                 maxLength={240}
                                 required
                                 value={identityReview.evidenceUrl}
-                                placeholder="https://fonte-oficial.example/..."
+                                placeholder="https://..."
                                 onChange={(event) =>
                                   setIdentityReview((current) =>
                                     current
@@ -1391,7 +1679,7 @@ export function InternalCollectionCuration() {
                                 maxLength={1000}
                                 required
                                 value={identityReview.evidenceNote}
-                                placeholder="Trecho ou referência que confirma este vínculo"
+                                placeholder="Descreva o detalhe visual e a versão que confirmam este modelo"
                                 onChange={(event) =>
                                   setIdentityReview((current) =>
                                     current

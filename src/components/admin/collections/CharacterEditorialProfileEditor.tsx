@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Loader2, Plus, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -16,6 +16,13 @@ import {
   type CatalogEditorialEvidenceKind,
   type CatalogEditorialEvidenceSource,
 } from "@/services/admin/catalog/admin-internal-collection-curation-service";
+import {
+  buildEditorialResearchDraft,
+  fillEmptyEditorialProfileFields,
+  findEditorialResearchMatchesForModels,
+  getEditorialResearchClaimValue,
+  type EditorialResearchPreparation,
+} from "@/components/admin/collections/character-editorial-research-import";
 
 const evidenceKinds: { value: CatalogEditorialEvidenceKind; label: string }[] =
   [
@@ -230,9 +237,11 @@ function ClaimListEditor({
 export function CharacterEditorialProfileEditor({
   identityId,
   characterName,
+  editorialResearch = null,
 }: {
   identityId: string;
   characterName: string;
+  editorialResearch?: EditorialResearchPreparation | null;
 }) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
@@ -241,12 +250,36 @@ export function CharacterEditorialProfileEditor({
   );
   const [formError, setFormError] = useState("");
   const [staleVersion, setStaleVersion] = useState(false);
+  const [researchCandidateName, setResearchCandidateName] = useState("");
   const queryKey = ["admin-character-editorial-profile", identityId] as const;
   const profileQuery = useQuery({
     queryKey,
     queryFn: () => getCatalogCharacterEditorialProfile(identityId),
     enabled: expanded,
   });
+  const researchMatches = useMemo(() => {
+    if (!editorialResearch || !profileQuery.data) return [];
+    return findEditorialResearchMatchesForModels(
+      editorialResearch,
+      profileQuery.data.activeModelLinks.map((link) => ({
+        modelId: link.modelId,
+        slug: link.modelSlug,
+      })),
+    ).filter((match) =>
+      [
+        match.candidate.candidateName,
+        match.candidate.catalogDisplayNameCandidate,
+        getEditorialResearchClaimValue(
+          match.candidate,
+          "identity.canonical_name_candidate",
+        ) ?? "",
+      ].some(
+        (name) =>
+          name.trim().toLocaleLowerCase() ===
+          characterName.trim().toLocaleLowerCase(),
+      ),
+    );
+  }, [characterName, editorialResearch, profileQuery.data]);
 
   useEffect(() => {
     if (profileQuery.data) setProfile(profileQuery.data.profile);
@@ -315,6 +348,12 @@ export function CharacterEditorialProfileEditor({
   const hasUnsavedChanges = profileQuery.data
     ? JSON.stringify(profile) !== JSON.stringify(profileQuery.data.profile)
     : true;
+  const selectedResearchMatch =
+    researchMatches.length === 1
+      ? researchMatches[0]
+      : researchMatches.find(
+          (match) => match.candidate.candidateName === researchCandidateName,
+        );
 
   return (
     <details
@@ -353,6 +392,71 @@ export function CharacterEditorialProfileEditor({
         )}
         {profileQuery.data && (
           <>
+            {researchMatches.length > 0 && (
+              <Alert>
+                <AlertDescription className="space-y-3">
+                  <span>
+                    Dossiê pesquisado pendente. A importação só preenche campos
+                    vazios nesta ficha em memória; não salva, não revisa e não
+                    aprova. Confirme cada claim e cada relação no processo
+                    humano.
+                  </span>
+                  {researchMatches.length > 1 && (
+                    <div className="space-y-1">
+                      <Label
+                        htmlFor={`character-${identityId}-research-candidate`}
+                      >
+                        Escolher dossiê candidato
+                      </Label>
+                      <select
+                        id={`character-${identityId}-research-candidate`}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={researchCandidateName}
+                        onChange={(event) =>
+                          setResearchCandidateName(event.target.value)
+                        }
+                      >
+                        <option value="">Selecione um candidato</option>
+                        {researchMatches.map((match) => (
+                          <option
+                            key={match.candidate.candidateName}
+                            value={match.candidate.candidateName}
+                          >
+                            {match.candidate.candidateName} ·{" "}
+                            {match.candidate.franchiseCandidate}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {researchMatches.length === 1 && (
+                    <span className="block">
+                      Candidato: {researchMatches[0].candidate.candidateName} ·{" "}
+                      {researchMatches[0].candidate.franchiseCandidate}
+                    </span>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={profileQuery.isLoading || !selectedResearchMatch}
+                    onClick={() => {
+                      if (!selectedResearchMatch) return;
+                      const draft = buildEditorialResearchDraft(
+                        selectedResearchMatch.candidate,
+                        selectedResearchMatch.sources,
+                      );
+                      setProfile((current) =>
+                        fillEmptyEditorialProfileFields(current, draft),
+                      );
+                      setFormError("");
+                    }}
+                  >
+                    Preencher campos vazios como rascunho
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
             <p className="text-xs text-muted-foreground">
               Estado:{" "}
               {profileQuery.data.status === "reviewed"
@@ -378,25 +482,35 @@ export function CharacterEditorialProfileEditor({
                 ? ` · aprovada em ${new Date(profileQuery.data.publicationApprovedAt).toLocaleString("pt-BR")}`
                 : ""}
             </p>
-            <section className="space-y-2 rounded-md border p-3" aria-label="Vínculos incluídos na aprovação">
+            <section
+              className="space-y-2 rounded-md border p-3"
+              aria-label="Vínculos incluídos na aprovação"
+            >
               <p className="text-sm font-medium">
-                Estatuetas e evidências desta personagem · {profileQuery.data.activeModelLinks.length}
+                Estatuetas e evidências desta personagem ·{" "}
+                {profileQuery.data.activeModelLinks.length}
               </p>
               <p className="text-xs text-muted-foreground">
-                Revisão dos vínculos: {profileQuery.data.relationRevision}.
-                A aprovação cobre todos os registros abaixo, inclusive de outras
+                Revisão dos vínculos: {profileQuery.data.relationRevision}. A
+                aprovação cobre todos os registros abaixo, inclusive de outras
                 coleções. Mudanças posteriores exigem nova aprovação.
               </p>
               {profileQuery.data.activeModelLinks.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Nenhuma estatueta vinculada. A aprovação pública será recusada.
+                  Nenhuma estatueta vinculada. A aprovação pública será
+                  recusada.
                 </p>
               ) : (
                 <ul className="max-h-64 space-y-2 overflow-auto text-xs">
                   {profileQuery.data.activeModelLinks.map((link) => (
-                    <li key={link.modelId} className="space-y-1 border-t pt-2 first:border-0 first:pt-0">
+                    <li
+                      key={link.modelId}
+                      className="space-y-1 border-t pt-2 first:border-0 first:pt-0"
+                    >
                       <p className="font-medium">{link.modelSlug}</p>
-                      <p className="break-all text-muted-foreground">ID: {link.modelId}</p>
+                      <p className="break-all text-muted-foreground">
+                        ID: {link.modelId}
+                      </p>
                       <p>{link.evidenceTitle || "Sem nota de evidência"}</p>
                       <p className="break-all text-muted-foreground">
                         Fonte: {link.evidenceUrl}
