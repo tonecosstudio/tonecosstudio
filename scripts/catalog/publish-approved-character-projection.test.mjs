@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   fetchApprovedExport,
+  runApprovedEditorialSync,
   sendEditorialProjection,
   validateApprovedExport,
   validateEditorialSyncTargets,
@@ -86,4 +87,54 @@ test('rollback mode requires the explicit empty-projection header', async () => 
   });
   assert.equal(sent.options.headers['x-tonart-allow-empty'], 'confirm');
   assert.deepEqual(sent.body.characters, []);
+});
+
+test('emergency rollback clears only local D1 without contacting an unavailable Supabase', async () => {
+  const env = {
+    TONART_EDITORIAL_SOURCE_URL: 'http://127.0.0.1:54321',
+    TONART_EDITORIAL_LOCAL_WORKER_URL: 'http://127.0.0.1:8787',
+    TONART_EDITORIAL_SYNC_TOKEN: token,
+    // Intentionally no Supabase service-role key: rollback cannot depend on it.
+  };
+  const calls = [];
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    await runApprovedEditorialSync(['--rollback-clear'], env, async (url, options) => {
+      const target = new URL(url);
+      assert.equal(target.origin, 'http://127.0.0.1:8787');
+      assert.equal(target.pathname, '/api/admin/editorial-projection');
+      const body = JSON.parse(options.body);
+      assert.deepEqual(body.characters, []);
+      assert.equal(body.source, 'public.admin_export_approved_catalog_character_projection');
+      assert.equal(options.headers['x-tonart-allow-empty'], 'confirm');
+      calls.push({ dryRun: options.headers['x-tonart-dry-run'] === 'true', body });
+      return Response.json({
+        ok: true,
+        dryRun: options.headers['x-tonart-dry-run'] === 'true',
+        applied: options.headers['x-tonart-dry-run'] !== 'true',
+        counts: { characters: 0, modelLinks: 0, universes: 0 },
+        snapshotSha256: 'b'.repeat(64),
+      });
+    });
+  } finally {
+    console.log = originalLog;
+  }
+  assert.equal(calls.length, 2, 'rollback must dry-run first and then explicitly clear');
+  assert.deepEqual(calls.map(call => call.dryRun), [true, false]);
+  assert.equal(calls[0].body.generatedAt, calls[1].body.generatedAt);
+});
+
+test('emergency rollback refuses a missing dry-run receipt before any D1 mutation', async () => {
+  const env = {
+    TONART_EDITORIAL_SOURCE_URL: 'http://localhost:54321',
+    TONART_EDITORIAL_LOCAL_WORKER_URL: 'http://localhost:8787',
+    TONART_EDITORIAL_SYNC_TOKEN: token,
+  };
+  let requests = 0;
+  await assert.rejects(runApprovedEditorialSync(['--rollback-clear'], env, async () => {
+    requests++;
+    return Response.json({ ok: true, dryRun: false });
+  }), /editorial_worker_dry_run_not_confirmed/);
+  assert.equal(requests, 1);
 });
