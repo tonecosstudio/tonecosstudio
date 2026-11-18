@@ -1493,6 +1493,66 @@ describe("internal catalog curation service", () => {
     }
   });
 
+  it("retains one canonical relation revision for every editorial publication", () => {
+    const migration = readFileSync(
+      "supabase/migrations/20261118010000_tonart_public_character_approval_and_export.sql",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
+    const acceptance = readFileSync(
+      "supabase/tests/tonart_curated_model_characters_acceptance.sql",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
+
+    expect(migration).toContain(
+      "editorial_relation_revision integer NOT NULL DEFAULT 0",
+    );
+    expect(migration).toContain(
+      "editorial_publication_relation_revision = editorial_relation_revision",
+    );
+    expect(migration).toContain(
+      "CREATE OR REPLACE FUNCTION private_api.bump_tonart_character_relation_revision(",
+    );
+    expect(migration).toContain(
+      "trg_catalog_character_publication_relation_revision",
+    );
+    expect(migration).toContain(
+      "AFTER INSERT OR UPDATE OR DELETE ON public.catalog_curation_model_characters",
+    );
+    expect(migration).toContain(
+      "trg_catalog_character_publication_model_slug_revision",
+    );
+    expect(migration).toContain("OLD.review_history IS NOT DISTINCT FROM NEW.review_history");
+    expect(migration).toContain("'invalidated_by_model_relation_change'");
+    expect(migration).toContain(
+      "editorial_publication_relation_revision = v_identity.editorial_relation_revision",
+    );
+    expect(migration).toContain(
+      "ci.editorial_publication_relation_revision = ci.editorial_relation_revision",
+    );
+    expect(migration).toContain("'approvedRelationRevision'");
+    expect(migration).toContain("FOR SHARE OF ci");
+    expect(migration).not.toContain(
+      "trg_catalog_character_publication_invalidated_by_last_model_unlink",
+    );
+    expect(migration).not.toContain("CREATE TABLE public.catalog_character_publications");
+
+    expect(acceptance).toContain(
+      "Partial model unlink failed to revoke the entire approved relation set",
+    );
+    expect(acceptance).toContain(
+      "Model evidence replacement did not invalidate old approval",
+    );
+    expect(acceptance).toContain(
+      "New model link remained covered by previous approval",
+    );
+    expect(acceptance).toContain(
+      "Canonical model slug change failed to invalidate publication",
+    );
+    expect(acceptance).toContain(
+      "Idempotent relation write invalidated an unchanged approval",
+    );
+  });
+
   it("keeps the PostgreSQL acceptance run staging-gated, transaction-scoped and reversible", () => {
     const acceptance = readFileSync(
       "supabase/tests/tonart_curated_model_characters_acceptance.sql",
