@@ -15,6 +15,14 @@ O código de runtime do Worker e o contrato editorial versionado pertencem a `to
 
 `config/catalog-production-model-contract.json` é a fonte versionada de nomes e variantes; o painel TONART envia revisões ao mesmo repositório, autenticadas pela autoridade Supabase existente. O contrato foi transferido byte a byte, sem recriação de dados. O publicador deriva as alterações desse contrato apenas após os gates de publicação. A submissão administrativa necessita de GitHub App de escopo restrito no repositório TONART e credenciais privadas na Vercel, ainda não comprovadas.
 
+### Projeção pública de personagens e universos (candidata, sem publicação)
+
+A migration aditiva `0023_public_editorial_projection.sql` prepara tabelas no mesmo D1 para fichas editoriais explicitamente aprovadas e vínculos a modelos já existentes. Categorias, franquias, IDs e modelos continuam vindo das tabelas canônicas `categories`, `franchises` e `models`; nenhuma ficha ou modelo é copiado para outro catálogo. As tabelas não contêm rascunhos: cada linha exige revisão, referência de aprovação e evidências. Vínculos de personagem são muitos-para-muitos e só retornam modelos publicados.
+
+O Worker candidato oferece leitura limitada em `GET /api/editorial/v1/characters/search?q=…`, `GET /api/editorial/v1/characters/:slug` e `GET /api/editorial/v1/universes/:category/:franchise`. A busca usa FTS indexado, limita consulta e resultados, prioriza nome exato, nome, alias e franquia e valida as evidências antes de responder. As fichas retornam biografia, idade contextual e características somente quando cada campo tem evidência independente; os agrupamentos usam o D1 canônico.
+
+**A projeção está vazia por padrão e ainda não recebe dados da curadoria Supabase.** `reviewed` na curadoria privada não significa `approved/public`; não há exportador/aprovador público ligado a este D1. A migration e a rota estão no candidato offline, e o `postImportAdditions` registra a extensão sem reescrever os 22 blobs de origem. `M5` continua `staged-offline`, `targetD1MigrationEnabled=false` e nenhum registro/migration foi enviado ao D1. Não ligar a flag frontend até existir publicação explicitamente aprovada, fonte/exportação auditável e homologação no ambiente autorizado.
+
 ## Limites
 
 - Não copiar dados D1, objetos R2, imagens ou frontend antigo para este diretório.

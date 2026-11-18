@@ -9,6 +9,9 @@
 const MODEL_SLUG = "[a-z0-9][a-z0-9-]{0,239}"
 const MODEL_DETAIL = new RegExp("^/api/models/" + MODEL_SLUG + "$")
 const MODEL_GALLERY = new RegExp("^/api/models/" + MODEL_SLUG + "/images$")
+const EDITORIAL_CHARACTER = new RegExp("^/api/editorial/v1/characters/" + MODEL_SLUG + "$")
+const EDITORIAL_UNIVERSE = new RegExp("^/api/editorial/v1/universes/" + MODEL_SLUG + "/" + MODEL_SLUG + "$")
+const EDITORIAL_CHARACTER_SEARCH = "/api/editorial/v1/characters/search"
 
 /**
  * Returns null when outside the public read budget, true for an accepted
@@ -24,12 +27,17 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
   const path = url.pathname
   const media = path.startsWith("/media/")
   if (media) return !url.search
+  const editorialCharacter = EDITORIAL_CHARACTER.test(path)
+  const editorialUniverse = EDITORIAL_UNIVERSE.test(path)
+  const editorialCharacterSearch = path === EDITORIAL_CHARACTER_SEARCH
+  if (editorialCharacterSearch && !url.searchParams.has("q")) return false
 
   const readRoute = path === "/api/catalog" || path === "/api/recent" ||
     path === "/api/categories" || path === "/api/franchises" ||
     path === "/api/folders" || path === "/api/health" ||
-    path.startsWith("/api/models/")
-  if (!readRoute) return null
+    path.startsWith("/api/models/") || editorialCharacter || editorialUniverse ||
+    editorialCharacterSearch
+  if (!readRoute) return path.startsWith("/api/editorial/") ? false : null
 
   if (url.search.length > 2048) return false
 
@@ -39,6 +47,8 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
       "collection", "minHeight", "maxHeight", "limit", "cursor"]
   } else if (path === "/api/franchises") {
     allowed = ["category", "q", "limit"]
+  } else if (editorialCharacterSearch) {
+    allowed = ["q", "limit"]
   } else if (path === "/api/folders") {
     allowed = ["category", "franchise", "parent"]
   } else if (path === "/api/recent") {
@@ -46,7 +56,7 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
   } else if (MODEL_GALLERY.test(path)) {
     allowed = ["limit", "cursor", "v"]
   } else if (path === "/api/categories" || path === "/api/health" ||
-             MODEL_DETAIL.test(path)) {
+             MODEL_DETAIL.test(path) || editorialCharacter || editorialUniverse) {
     allowed = []
   } else {
     // Unknown model subroutes must not invoke the schema check.
@@ -62,7 +72,8 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
         value.length > 2048 || Array.from(value).some(char => char.charCodeAt(0) <= 31 || char.charCodeAt(0) === 127)) return false
     seen.add(key)
     if (key === "limit") {
-      const max = path === "/api/recent" ? 24 : path === "/api/franchises" ? 48 : 60
+      const max = path === "/api/recent" ? 24 : path === "/api/franchises" ? 48 :
+        editorialCharacterSearch ? 12 : 60
       if (!/^[1-9][0-9]?$/.test(value) || Number(value) > max) return false
     } else if (key === "minHeight" || key === "maxHeight") {
       if (!/^[1-9][0-9]{0,2}$/.test(value) || Number(value) > 300) {
@@ -84,7 +95,8 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
     } else if (key === "q") {
       const length = Array.from(value.trim()).length
       if (length < 3) return { error: 'search_too_short', minLength: 3 }
-      if (length > 120) return { error: 'search_too_long', maxLength: 120 }
+      const max = editorialCharacterSearch ? 80 : 120
+      if (length > max) return { error: 'search_too_long', maxLength: max }
     } else if (key === "material" || key === "collection") {
       if (Array.from(value).length > 120) return false
     }

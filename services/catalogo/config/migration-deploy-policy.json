@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 5,
   "deploymentStrategy": "migrate-before-worker",
   "baselineThrough": "0010_recent_models_index.sql",
   "migrations": {
@@ -24,7 +24,8 @@
     "0019_model_variant_name.sql": "expand",
     "0020_gallery_member_explicit_approvals.sql": "expand",
     "0021_quote_admin_audit_events.sql": "expand",
-    "0022_catalog_height_filter_index.sql": "expand"
+    "0022_catalog_height_filter_index.sql": "expand",
+    "0023_public_editorial_projection.sql": "expand"
   },
   "approvedTriggerReplacements": {
     "0020_gallery_member_explicit_approvals.sql": {
@@ -33,6 +34,13 @@
         "trg_gallery_members_validate_update"
       ],
       "reason": "Recria somente os guards de escopo para aceitar pares canônico-fonte explicitamente auditados, preservando todos os demais bloqueios."
+    }
+  },
+  "approvedFtsIndexMaintenance": {
+    "0023_public_editorial_projection.sql": {
+      "table": "editorial_public_characters_fts",
+      "statements": 2,
+      "reason": "Remove apenas a linha antiga do índice FTS5 derivado pelo ID estável do personagem antes da atualização, sem autorizar exclusões de dados de domínio."
     }
   }
 }

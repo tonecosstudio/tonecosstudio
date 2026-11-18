@@ -21,7 +21,7 @@ const worker = await import(`data:text/javascript;base64,${Buffer.from(bundled.o
 const CATALOG_MODEL_COUNT = 20_320
 const PAGE_SIZE = 48
 
-function createCatalogDatabase() {
+function createCatalogDatabase(modelCount = CATALOG_MODEL_COUNT, franchiseName = 'Saga Alfa') {
   const db = new DatabaseSync(':memory:')
   db.exec('PRAGMA foreign_keys = ON; CREATE TABLE d1_migrations(name TEXT PRIMARY KEY);')
   const migrationInsert = db.prepare('INSERT INTO d1_migrations(name) VALUES(?)')
@@ -31,7 +31,7 @@ function createCatalogDatabase() {
   }
 
   db.prepare("INSERT INTO categories(id,slug,name) VALUES(1,'games','Games')").run()
-  db.prepare("INSERT INTO franchises(id,category_id,slug,name) VALUES(1,1,'saga-alfa','Saga Alfa')").run()
+  db.prepare("INSERT INTO franchises(id,category_id,slug,name) VALUES(1,1,'saga-alfa',?)").run(franchiseName)
 
   const insert = db.prepare(`INSERT INTO models(
     id,franchise_id,slug,code,name,variant_name,collection,material,height_cm,
@@ -39,7 +39,7 @@ function createCatalogDatabase() {
     public_gallery_version,published,search_text
   ) VALUES(?,1,?,?,?,?,?,?,?,'Fixture local de paginação em escala.',1,?, ?,1,1,1,?)`)
   db.exec('BEGIN')
-  for (let index = 1; index <= CATALOG_MODEL_COUNT; index += 1) {
+  for (let index = 1; index <= modelCount; index += 1) {
     const suffix = String(index).padStart(5, '0')
     const collection = index % 3 === 0 ? 'Coleção B' : 'Coleção A'
     const material = index % 2 === 0 ? 'PVC' : 'Resina'
@@ -94,6 +94,74 @@ async function requestCatalog(database, params) {
     CORS_ORIGINS: '',
   })
   return { response, body: await response.json() }
+}
+
+async function requestWorker(database, path, method = 'GET') {
+  const response = await worker.default.fetch(
+    new Request(new URL(path, 'https://catalog.example.test'), { method }),
+    { DB: database, MEDIA: { get: async () => null }, CORS_ORIGINS: '' },
+  )
+  return { response, body: await response.json() }
+}
+
+function seedEditorialProjection(db) {
+  const evidence = {
+    zoro: { id: 'official-zoro', title: 'Página oficial de personagem', url: 'https://example.org/zoro', kind: 'official' },
+    luffy: { id: 'official-luffy', title: 'Página oficial de personagem', url: 'https://example.org/luffy', kind: 'official' },
+    universe: { id: 'publisher-one-piece', title: 'Guia da editora', url: 'https://example.org/one-piece', kind: 'publisher' },
+  }
+  db.prepare(`INSERT INTO editorial_public_universes(
+    franchise_id,revision,reviewed_at,approval_ref,media_types_json,summary,
+    summary_evidence_ids_json,overview,overview_evidence_ids_json,
+    identity_evidence_ids_json,evidence_json
+  ) VALUES(1,?,?,?,?,NULL,'[]',NULL,'[]',?,?)`).run(
+    'universe-rev-1', '2026-11-17T12:00:00.000Z', 'editorial-pr-1',
+    JSON.stringify(['anime']), JSON.stringify([evidence.universe.id]),
+    JSON.stringify([evidence.universe]),
+  )
+
+  const insertCharacter = db.prepare(`INSERT INTO editorial_public_characters(
+    id,slug,franchise_id,name,aliases_json,summary,summary_evidence_ids_json,
+    biography,biography_evidence_ids_json,age_value,age_context,age_evidence_ids_json,
+    origin_work,origin_work_evidence_ids_json,media_types_json,
+    media_type_evidence_ids_json,identity_evidence_ids_json,evidence_json,
+    revision,reviewed_at,approval_ref
+  ) VALUES(?,?,?,?,?,?,?,?,?,NULL,NULL,'[]',NULL,'[]',?,?,?,?,?,?,?)`)
+  const insert = (profile) => insertCharacter.run(
+    profile.id, profile.slug, 1, profile.name,
+    JSON.stringify([{ value: profile.alias, evidenceIds: [profile.source.id] }]),
+    profile.summary, JSON.stringify(profile.summary ? [profile.source.id] : []),
+    profile.biography, JSON.stringify(profile.biography ? [profile.source.id] : []),
+    JSON.stringify(['anime']), JSON.stringify([profile.source.id]),
+    JSON.stringify([profile.source.id]), JSON.stringify([profile.source, evidence.universe]),
+    profile.revision, '2026-11-17T12:00:00.000Z', 'editorial-pr-1',
+  )
+  insert({
+    id: 'character-zoro', slug: 'roronoa-zoro', name: 'Roronoa Zoro', alias: 'Marimo',
+    summary: 'Resumo aprovado com fonte.', biography: 'Biografia aprovada com fonte.',
+    source: evidence.zoro, revision: 'character-rev-1',
+  })
+  insert({
+    id: 'character-luffy', slug: 'monkey-d-luffy', name: 'Monkey D. Luffy', alias: 'Luffy',
+    summary: null, biography: null,
+    source: evidence.luffy, revision: 'character-rev-2',
+  })
+  db.prepare('UPDATE editorial_public_characters SET characteristics_json=? WHERE id=?').run(
+    JSON.stringify([{ value: 'Espadachim', evidenceIds: [evidence.zoro.id] }]),
+    'character-zoro',
+  )
+
+  db.prepare(`INSERT INTO editorial_public_character_models(character_id,model_id,evidence_ids_json,approval_ref)
+    VALUES(?,?,?,?)`).run(
+    'character-zoro', 'model-00001', JSON.stringify([evidence.zoro.id]), 'editorial-pr-1',
+  )
+  db.prepare(`INSERT INTO editorial_public_character_models(character_id,model_id,evidence_ids_json,approval_ref)
+    VALUES(?,?,?,?)`).run(
+    'character-luffy', 'model-00002', JSON.stringify([evidence.luffy.id]), 'editorial-pr-1',
+  )
+  db.prepare('UPDATE models SET published=0 WHERE id=?').run('model-00002')
+  db.prepare("UPDATE models SET name='Roronoa Zoro',variant_name='Collector Edition' WHERE id='model-00001'").run()
+  db.prepare("UPDATE models SET name='Monkey D. Luffy' WHERE id='model-00002'").run()
 }
 
 test('D1 Worker SQL keyset pages and filters a 20k live catalog over a full migrated SQLite schema', async (context) => {
@@ -160,4 +228,66 @@ test('D1 Worker SQL keyset pages and filters a 20k live catalog over a full migr
   assert.equal(searched.body.items.length, PAGE_SIZE)
   assert.equal(searched.body.items[0].code, 'R29-00001')
   assert.ok(searched.body.nextCursor)
+})
+
+test('public editorial search prioritizes exact name, aliases and canonical franchise', async (context) => {
+  const db = createCatalogDatabase(3, 'One Piece')
+  context.after(() => db.close())
+  seedEditorialProjection(db)
+  const { database } = createD1Adapter(db)
+
+  const alias = await requestWorker(database, '/api/editorial/v1/characters/search?q=marimo&limit=8')
+  assert.equal(alias.response.status, 200)
+  assert.equal(alias.body.items.length, 1)
+  assert.equal(alias.body.items[0].character.slug, 'roronoa-zoro')
+  assert.equal(alias.body.items[0].matchedBy, 'alias')
+  assert.equal(alias.body.items[0].publication.editorialStatus, 'approved')
+  assert.equal(alias.body.items[0].publication.visibility, 'public')
+
+  const exact = await requestWorker(database, '/api/editorial/v1/characters/search?q=Roronoa%20Zoro')
+  assert.equal(exact.response.status, 200)
+  assert.equal(exact.body.items[0].matchedBy, 'name_exact')
+
+  const franchise = await requestWorker(database, '/api/editorial/v1/characters/search?q=One%20Piece')
+  assert.equal(franchise.response.status, 200)
+  assert.deepEqual(franchise.body.items.map(item => item.character.slug), ['monkey-d-luffy', 'roronoa-zoro'])
+  assert.ok(franchise.body.items.every(item => item.matchedBy === 'franchise'))
+
+  db.prepare('UPDATE editorial_public_characters SET aliases_json=? WHERE id=?').run(
+    JSON.stringify([{ value: 'Wandering Swordsman', evidenceIds: ['official-zoro'] }]),
+    'character-zoro',
+  )
+  const retiredAlias = await requestWorker(database, '/api/editorial/v1/characters/search?q=marimo')
+  assert.equal(retiredAlias.body.items.length, 0)
+  const currentAlias = await requestWorker(database, '/api/editorial/v1/characters/search?q=Wandering%20Swordsman')
+  assert.equal(currentAlias.body.items[0].matchedBy, 'alias')
+})
+
+test('public character and universe profiles resolve only approved relations to published D1 models', async (context) => {
+  const db = createCatalogDatabase(3, 'One Piece')
+  context.after(() => db.close())
+  seedEditorialProjection(db)
+  const { database } = createD1Adapter(db)
+
+  const character = await requestWorker(database, '/api/editorial/v1/characters/roronoa-zoro')
+  assert.equal(character.response.status, 200)
+  assert.equal(character.body.character.biography, 'Biografia aprovada com fonte.')
+  assert.deepEqual(character.body.character.characteristics, [
+    { value: 'Espadachim', evidenceIds: ['official-zoro'] },
+  ])
+  assert.equal(character.body.sameCharacterModels.length, 1)
+  assert.equal(character.body.sameCharacterModels[0].modelId, 'model-00001')
+  assert.equal(character.body.sameCharacterModels[0].variantName, 'Collector Edition')
+  assert.ok(character.body.sameCharacterModels[0].evidenceIds.length > 0)
+
+  const universe = await requestWorker(database, '/api/editorial/v1/universes/games/saga-alfa')
+  assert.equal(universe.response.status, 200)
+  assert.equal(universe.body.universe.name, 'One Piece')
+  assert.deepEqual(universe.body.characters.map(item => item.slug), ['monkey-d-luffy', 'roronoa-zoro'])
+  assert.deepEqual(universe.body.models.map(item => item.modelId), ['model-00003', 'model-00001'])
+
+  const absent = await requestWorker(database, '/api/editorial/v1/characters/not-published')
+  assert.equal(absent.response.status, 404)
+  const write = await requestWorker(database, '/api/editorial/v1/characters/roronoa-zoro', 'POST')
+  assert.equal(write.response.status, 404)
 })

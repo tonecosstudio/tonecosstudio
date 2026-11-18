@@ -63,6 +63,32 @@ test('all canonical public catalog request variants remain accepted', () => {
   for (const path of allowed) assert.equal(query(path), true, path)
 })
 
+test('public editorial reads are bounded and reject unknown or cache-busting parameters', () => {
+  for (const path of [
+    '/api/editorial/v1/characters/search?q=zoro',
+    '/api/editorial/v1/characters/search?q=zoro&limit=8',
+    '/api/editorial/v1/characters/roronoa-zoro',
+    '/api/editorial/v1/universes/anime/one-piece',
+  ]) assert.equal(query(path), true, path)
+
+  for (const path of [
+    '/api/editorial/v1/characters/search',
+    '/api/editorial/v1/characters/search?q=zoro&limit=13',
+    '/api/editorial/v1/characters/search?q=zoro&cache=2',
+    '/api/editorial/v1/characters/roronoa-zoro?revision=1',
+    '/api/editorial/v1/universes/anime/one-piece?offset=0',
+    '/api/editorial/v1/characters/invalid%2Fslug',
+    '/api/editorial/v1/characters/search/extra?q=zoro',
+  ]) assert.equal(query(path), false, path)
+
+  assert.deepEqual(query('/api/editorial/v1/characters/search?q=ab'), {
+    error: 'search_too_short', minLength: 3,
+  })
+  assert.deepEqual(query('/api/editorial/v1/characters/search?q=' + 'x'.repeat(81)), {
+    error: 'search_too_long', maxLength: 80,
+  })
+})
+
 test('non-catalog routes remain under the existing quote and shared-collection authority', () => {
   for (const path of [
     '/api/quotes',

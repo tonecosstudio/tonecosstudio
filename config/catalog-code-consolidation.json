@@ -338,30 +338,55 @@
       "tools/discover_external_staging_candidates.py": "6acfe0940c022ef4bee2163092e2f67925a09f5d"
     },
     "localOverlays": {
+      "config/catalog-schema-contract.json": {
+        "sourceBlob": "084ca978a3d2352221a4c9cd606c6376697a8c9d",
+        "localBlob": "d3c8eb1c4d84b2eb74cffda1a642e8044aa67128",
+        "reason": "Add the approved/public editorial projection migration to the staged Worker schema contract; M5 stays offline."
+      },
+      "config/catalog-production-model-contract.json": {
+        "sourceBlob": "e9057d363e51e0f5701311db44429da18a3a7f04",
+        "localBlob": "0b4b700fa996bfaedfd94d3696dba9680166f703",
+        "reason": "Reconcile the pinned model contract against the canonical D1/public API inventory: retain 34 candidate-only unpublished IDs, add 13 public-only IDs, and correct two stale publication flags without verifying editorial identities."
+      },
+      "config/migration-deploy-policy.json": {
+        "sourceBlob": "e8f0cc455058e38c9accd98cf7ed67b3e5d79a14",
+        "localBlob": "dedf1d2599fefda3f19e00f4815e5d52d133033a",
+        "reason": "Classify the additive public editorial projection migration as expand while keeping production migration disabled."
+      },
+      "tools/test_worker_catalog_scale_sqlite.mjs": {
+        "sourceBlob": "b4dca481759d53448f31aaaff879b01546c3c74f",
+        "localBlob": "c3548740b0a95988174ba91aff2f910f932b905e",
+        "reason": "Cover bounded editorial search, published model relationships and profile projections on the migrated offline SQLite schema."
+      },
       "tools/test_worker_folder_counts.mjs": {
         "sourceBlob": "dc3e68ebc5f0cd73132fb55e4173c129c06ecb47",
         "localBlob": "45303c880cb701457faeb9ac220783f9798f6fa9",
         "reason": "Extended offline SQLite folder regression test in Tonecos; source pin remains immutable"
       },
+      "tools/test_worker_public_query_budget.mjs": {
+        "sourceBlob": "4354b2b5eaf696d8af440baa1eabb8915de0a9cd",
+        "localBlob": "1d4cda033c40c957bc9777f9ffa5657e1c4885c3",
+        "reason": "Cover bounded editorial search and detail paths before any D1 schema query."
+      },
       "worker/index.ts": {
         "sourceBlob": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
-        "localBlob": "7f1ad04b181e6affba1fb118d5a06dbb25caf146",
-        "reason": "Preserve TONART indexed folder cover lookup and avoid unused gallery import while integrating the original Worker query-budget security fix"
+        "localBlob": "56fb15c0824f2dd26cff721aac6f6dda14ffe9f9",
+        "reason": "Add read-only, evidence-checked character and universe projections to the existing staged Worker."
       },
       "worker/publicQueryBudget.ts": {
         "sourceBlob": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
-        "localBlob": "0230ed12b0fd054da6cc6ae53ecd9efb10f26d69",
-        "reason": "Preserve canonical Worker query-budget behavior while validating ASCII controls with char codes; satisfy target lint policy without disabling security checks."
+        "localBlob": "4baf15d2d0105b4caa881dfe68efb01ba1a11801",
+        "reason": "Bound editorial search and profile URLs before the existing Worker reads D1."
       },
       "wrangler.jsonc": {
         "sourceBlob": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
         "localBlob": "b1e6ab6e35be74ca962c5fd7b79d84d99de76b98",
         "reason": "Add the official TONART production origin to existing exact-match Worker CORS allowlist while preserving all live legacy origins through M5."
       },
-      "config/catalog-production-model-contract.json": {
-        "sourceBlob": "e9057d363e51e0f5701311db44429da18a3a7f04",
-        "localBlob": "0b4b700fa996bfaedfd94d3696dba9680166f703",
-        "reason": "Reconcile the pinned model contract against the canonical D1/public API inventory: retain 34 candidate-only unpublished IDs, add 13 public-only IDs, and correct two stale publication flags without verifying editorial identities."
+      "tools/check_migration_deploy_policy.py": {
+        "sourceBlob": "a1f9de00ea22bd82ff38ed80fb9d0275db670bd5",
+        "localBlob": "8923134f13feab4be41533ae9099c965ad316441",
+        "reason": "Restringe uma exceção de manutenção FTS5 à tabela editorial pública e às duas exclusões exatas da linha substituída; mantém os demais bloqueios destrutivos ativos."
       }
     },
     "excludedModules": [
@@ -493,7 +518,14 @@
       ],
       "releaseJobPrepared": true,
       "cutoverPrerequisite": "cutover-complete"
-    }
+    },
+    "postImportAdditions": [
+      {
+        "path": "migrations/0023_public_editorial_projection.sql",
+        "localBlob": "e69d6c74a58c02abb5121f5b1905dc6a1c0edd5b",
+        "reason": "Add only the approved public editorial projection schema; no content is seeded and M5 migration remains disabled."
+      }
+    ]
   },
   "productionObservation": {
     "observedDate": "2026-11-12",

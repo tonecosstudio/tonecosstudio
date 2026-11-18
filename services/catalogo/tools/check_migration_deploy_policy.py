@@ -84,6 +84,40 @@ def trigger_replacement_approval_errors(
     return errors
 
 
+def approved_fts_index_maintenance_sql(
+    sql: str, approval: dict[str, object]
+) -> tuple[list[str], str]:
+    """Allow only the exact row deletion needed to maintain this FTS index.
+
+    SQLite FTS5's external-content delete command is not suitable for this
+    standalone index. The public projection therefore deletes by its stable
+    character key before reinserting on update. Keep the exception bound to
+    this one virtual table and exact trigger statement.
+    """
+    table = str(approval.get("table") or "").strip()
+    statement_count = approval.get("statements")
+    reason = str(approval.get("reason") or "").strip()
+    if table != "editorial_public_characters_fts":
+        return ["FTS index maintenance may authorize only editorial_public_characters_fts"], sql
+    if statement_count != 2 or isinstance(statement_count, bool):
+        return ["FTS index maintenance must approve exactly two statements"], sql
+    if not reason:
+        return ["FTS index maintenance approval requires a reason"], sql
+
+    scrubbed = _scrub_sql(sql)
+    exact_delete = re.compile(
+        r"(?im)^[ \t]*DELETE\s+FROM\s+editorial_public_characters_fts"
+        r"\s+WHERE\s+character_id\s*=\s*OLD\.id\s*;[ \t]*$"
+    )
+    scrubbed, actual_count = exact_delete.subn(" ", scrubbed)
+    if actual_count != statement_count:
+        return [
+            "FTS index maintenance statement count mismatch: "
+            f"expected {statement_count}, found {actual_count}"
+        ], sql
+    return [], scrubbed
+
+
 def validate_repository(root: Path = ROOT) -> list[str]:
     contract_path = root / "config" / "catalog-schema-contract.json"
     policy_path = root / "config" / "migration-deploy-policy.json"
@@ -99,6 +133,7 @@ def validate_repository(root: Path = ROOT) -> list[str]:
     baseline = policy.get("baselineThrough")
     classifications = policy.get("migrations")
     approved_trigger_replacements = policy.get("approvedTriggerReplacements", {})
+    approved_fts_index_maintenance = policy.get("approvedFtsIndexMaintenance", {})
 
     if not isinstance(required, list) or not required:
         return ["catalog schema contract must declare non-empty requiredMigrations"]
@@ -110,6 +145,8 @@ def validate_repository(root: Path = ROOT) -> list[str]:
         return errors + ["migration policy must declare a migrations object"]
     if not isinstance(approved_trigger_replacements, dict):
         return errors + ["approvedTriggerReplacements must be an object"]
+    if not isinstance(approved_fts_index_maintenance, dict):
+        return errors + ["approvedFtsIndexMaintenance must be an object"]
     if baseline not in required:
         errors.append("baselineThrough must be one of requiredMigrations")
         baseline_index = -1
@@ -132,6 +169,13 @@ def validate_repository(root: Path = ROOT) -> list[str]:
             + ", ".join(approval_extra)
         )
 
+    fts_approval_extra = sorted(set(approved_fts_index_maintenance).difference(required_set))
+    if fts_approval_extra:
+        errors.append(
+            "FTS index maintenance approval references non-required migrations: "
+            + ", ".join(fts_approval_extra)
+        )
+
     for index, name in enumerate(required):
         migration_path = migrations_dir / name
         if not migration_path.is_file():
@@ -148,7 +192,17 @@ def validate_repository(root: Path = ROOT) -> list[str]:
 
         if classification == "expand":
             sql = migration_path.read_text(encoding="utf-8")
-            hazards = unsafe_operations(sql)
+            fts_approval = approved_fts_index_maintenance.get(name)
+            sql_for_scan = sql
+            if fts_approval is not None:
+                if not isinstance(fts_approval, dict):
+                    errors.append(f"{name}: FTS index maintenance approval must be an object")
+                else:
+                    approval_errors, sql_for_scan = approved_fts_index_maintenance_sql(
+                        sql, fts_approval
+                    )
+                    errors.extend(f"{name}: {error}" for error in approval_errors)
+            hazards = unsafe_operations(sql_for_scan)
             approval = approved_trigger_replacements.get(name)
             if approval is not None:
                 if not isinstance(approval, dict):

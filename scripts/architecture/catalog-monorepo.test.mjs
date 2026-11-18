@@ -168,8 +168,7 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   assert.equal(Object.keys(stage).length, 111);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 10);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('migrations/')).length, 22);
-  // Verify all 111 exact source Git blobs, including query budget and editorial
-  // contract. Keep only the reviewed folder-cover overlay and SQLite regression test.
+  // Verify the immutable source import and its reviewed local overlays.
   assert.equal(Object.keys(contract.origin.dataWriterToolchainBlobs ?? {}).length, 46,
     'Import one complete, source-pinned data-writer toolchain (no second pipeline)');
   assert.equal(contract.staging.dataWriterToolchain?.phase, 'staged-offline');
@@ -183,7 +182,15 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   const overlays = contract.staging.localOverlays ?? {};
   assert.deepEqual(Object.keys(overlays).sort(), [
     'config/catalog-production-model-contract.json',
-    'tools/test_worker_folder_counts.mjs', 'worker/index.ts', 'worker/publicQueryBudget.ts', 'wrangler.jsonc',
+    'config/catalog-schema-contract.json',
+    'config/migration-deploy-policy.json',
+    'tools/check_migration_deploy_policy.py',
+    'tools/test_worker_catalog_scale_sqlite.mjs',
+    'tools/test_worker_folder_counts.mjs',
+    'tools/test_worker_public_query_budget.mjs',
+    'worker/index.ts',
+    'worker/publicQueryBudget.ts',
+    'wrangler.jsonc',
   ]);
   // The immutable import snapshot gates the INITIAL M5 release, not later
   // improvements published exclusively from TONART after M5 completes.
@@ -215,6 +222,37 @@ test('staged files preserve immutable import pins and explicit local overlays, w
         'Unexpected candidate import drift in ' + path);
     }
   }
+  const additions = contract.staging.postImportAdditions ?? [];
+  assert.deepEqual(additions.map(item => item.path), [
+    'migrations/0023_public_editorial_projection.sql',
+  ], 'Only the reviewed additive editorial projection migration may extend the imported snapshot');
+  assert.equal(contract.migration.phase, 'staged-offline');
+  assert.equal(contract.migration.targetD1MigrationEnabled, false);
+  for (const addition of additions) {
+    assert.equal(stage[addition.path], undefined, 'A local addition must not rewrite an imported pin');
+    assert.match(addition.localBlob, sha, 'Invalid local addition Git blob: ' + addition.path);
+    assert.ok(typeof addition.reason === 'string' && addition.reason.trim().length >= 20,
+      'Missing reviewed rationale for local addition: ' + addition.path);
+    const actualPath = join(root, contract.target.serviceRoot, addition.path);
+    assert.equal(existsSync(actualPath), true, 'Local Worker addition missing: ' + addition.path);
+    const bytes = readFileSync(actualPath);
+    const canonical = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'));
+    const blobHash = value => createHash('sha1').update('blob ' + value.byteLength)
+      .update(Buffer.from([0])).update(value).digest('hex');
+    assert.ok([blobHash(bytes), blobHash(canonical)].includes(addition.localBlob),
+      'Unexpected local Worker addition content: ' + addition.path);
+  }
+  const deployPolicy = JSON.parse(source('services/catalogo/config/migration-deploy-policy.json'));
+  assert.deepEqual(Object.keys(deployPolicy.approvedFtsIndexMaintenance ?? {}), [
+    '0023_public_editorial_projection.sql',
+  ], 'FTS delete exception must stay limited to the editorial projection migration');
+  assert.deepEqual(deployPolicy.approvedFtsIndexMaintenance[
+    '0023_public_editorial_projection.sql'
+  ], {
+    table: 'editorial_public_characters_fts',
+    statements: 2,
+    reason: 'Remove apenas a linha antiga do índice FTS5 derivado pelo ID estável do personagem antes da atualização, sem autorizar exclusões de dados de domínio.',
+  }, 'Only the two exact FTS maintenance deletes may be excluded from destructive SQL scanning');
   for (const excluded of contract.staging.excludedModules) {
     assert.equal(existsSync(join(root, contract.target.serviceRoot, excluded)), false, excluded);
   }
