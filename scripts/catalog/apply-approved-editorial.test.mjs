@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
+import { readFileSync } from 'node:fs';
 import {
   planReviewedEditorial, makeAtomicEditorialStatement,
   classifyLiveRows, assertMergedReview,
@@ -197,4 +198,47 @@ test('approval requires a distinct reviewer on the current PR head',()=>{
   const dismissed=[...reviewers, {state:'DISMISSED',commit_id:head,
     id:14,user:{login:'reviewer'},submitted_at:'2026-11-12T12:04:00Z'}];
   assert.throws(()=>assertMergedReview(pr,dismissed,7,merge));
+});
+
+test('editorial FTS backfill remains unique across replay and synchronized on edits', () => {
+  const db = new DatabaseSync(':memory:');
+  try {
+    db.exec("CREATE TABLE franchises (id INTEGER PRIMARY KEY); CREATE TABLE models (id TEXT PRIMARY KEY); INSERT INTO franchises VALUES (1); INSERT INTO models VALUES ('m1')");
+    const migration = readFileSync(
+      new URL('../../services/catalogo/migrations/0023_public_editorial_projection.sql', import.meta.url),
+      'utf8',
+    );
+    db.exec(migration);
+    db.prepare(`INSERT INTO editorial_public_universes(
+      franchise_id, revision, reviewed_at, approval_ref,
+      identity_evidence_ids_json, evidence_json
+    ) VALUES (1, 'r1', '2026-11-18', 'approval1', '["e1"]', '[{}]')`).run();
+    db.prepare(`INSERT INTO editorial_public_characters(
+      id, slug, franchise_id, name, aliases_json,
+      identity_evidence_ids_json, evidence_json,
+      revision, reviewed_at, approval_ref
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      'character-1', 'character-one', 1, 'Name One',
+      JSON.stringify([{ value: 'Alias One' }]),
+      '["e1"]', '[{}]', 'r1', '2026-11-18', 'approval1',
+    );
+    const count = () => db.prepare(
+      'SELECT count(*) AS total FROM editorial_public_characters_fts',
+    ).get().total;
+    assert.equal(count(), 1);
+    db.exec(migration);
+    assert.equal(count(), 1, 'migration replay must not duplicate FTS rows');
+    db.prepare('UPDATE editorial_public_characters SET name = ? WHERE id = ?')
+      .run('Changed Name', 'character-1');
+    assert.equal(
+      db.prepare('SELECT count(*) AS total FROM editorial_public_characters_fts WHERE name LIKE ?')
+        .get('%Changed%').total,
+      1,
+    );
+    db.prepare('DELETE FROM editorial_public_characters WHERE id = ?')
+      .run('character-1');
+    assert.equal(count(), 0);
+  } finally {
+    db.close();
+  }
 });
