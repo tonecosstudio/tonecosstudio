@@ -299,6 +299,26 @@ describe("TONART commercial screens: account → request → history → respons
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
+  it("offers a selected-model email quote while public signup stays closed", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    mocks.signupAvailability.mockReturnValue("disabled");
+    renderApp("/solicitar-orcamento", true);
+
+    const contact = await screen.findByRole("link", {
+      name: "Pedir orçamento por e-mail",
+    });
+    const href = contact.getAttribute("href") ?? "";
+    expect(href).toMatch(/^mailto:/);
+    const message = decodeURIComponent(href);
+    expect(message).toContain("Naruto");
+    expect(message).toContain("TC-NARUTO");
+    expect(message).toContain("CEP para estimativa de entrega:");
+    expect(screen.getByText(/sem protocolo em Meus Orçamentos/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Criar conta" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Enviar solicitação" })).not.toBeInTheDocument();
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
   it("shows only the catalog chooser when a visitor has selected no models", async () => {
     mocks.getUser.mockResolvedValue(null);
     renderApp("/solicitar-orcamento");
