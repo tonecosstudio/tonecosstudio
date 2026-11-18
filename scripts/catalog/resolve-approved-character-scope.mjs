@@ -200,3 +200,140 @@ export function resolveApprovedCharacterScopes(exportPayload, d1Snapshot) {
     };
   });
 }
+
+// This is an offline, immutable proposal. It never fetches credentials, opens
+// a database or issues a write. Any future apply must re-check the live D1
+// snapshot under the already existing non-cancellable M5 writer lock.
+import { createHash } from 'node:crypto';
+
+function evidenceRowsForCharacter() {
+  const rows = new Map();
+  function add(source) {
+    requireValid(isHttpsSource(source), 'approved_character_public_evidence_invalid');
+    const signature = JSON.stringify([source.title, source.url, source.kind]);
+    const id = 'ev-' + createHash('sha256').update(signature).digest('hex').slice(0, 28);
+    const previous = rows.get(id);
+    requireValid(!previous || previous.signature === signature,
+      'approved_character_evidence_id_collision');
+    rows.set(id, { signature, value: {
+      id, title: source.title, url: new URL(source.url).toString(), kind: source.kind,
+    } });
+    requireValid(rows.size <= 80, 'approved_character_evidence_limit_exceeded');
+    return id;
+  }
+  function ids(sources) {
+    return [...new Set(sources.map(add))];
+  }
+  function values() {
+    return [...rows.values()].map(x => x.value).sort((a, b) => a.id.localeCompare(b.id));
+  }
+  return { ids, values };
+}
+
+/**
+ * Compile a human-approved export into the exact *existing* D1 projection row
+ * shapes. This is a pure plan, not a deployment or an additional writer.
+ * Nothing is published before M5, live D1 reconciliation and review gates.
+ *
+ * The universe identity is derived only from a personally approved franchise
+ * claim on its anchor character; no independent summary or invented universe
+ * editorial content is synthesized. An explicit universe-only product requires
+ * its own reviewed authority before adding those fields.
+ */
+export function planApprovedCharacterProjection(exportPayload, d1Snapshot) {
+  const scopes = resolveApprovedCharacterScopes(exportPayload, d1Snapshot);
+  requireValid(scopes.length > 0, 'approved_character_projection_empty');
+  const scopeById = new Map(scopes.map(x => [x.identityId, x]));
+  const universes = new Map();
+  const characters = [];
+  const relations = [];
+  const sorted = [...exportPayload.characters].sort((a, b) =>
+    a.identityId.localeCompare(b.identityId));
+
+  for (const character of sorted) {
+    const scope = scopeById.get(character.identityId);
+    const profile = character.profile;
+    const proof = evidenceRowsForCharacter();
+    const identitySources = proof.ids([...profile.nameSources, ...profile.franchiseSources]);
+    const biographySources = proof.ids(profile.biographySources);
+    const originSources = proof.ids(profile.originWorkSources);
+    const aliases = profile.aliases.map(claim => ({
+      value: claim.name, evidenceIds: proof.ids(claim.sources),
+    }));
+    const characteristics = profile.characteristics.map(claim => ({
+      value: claim.name, evidenceIds: proof.ids(claim.sources),
+    }));
+    const universeProof = evidenceRowsForCharacter();
+    const franchiseEvidenceIds = universeProof.ids(profile.franchiseSources);
+    const universe = {
+      franchise_id: scope.franchiseId,
+      revision: 'character-' + character.identityId + '-v' + character.profileRevision,
+      reviewed_at: character.reviewedAt,
+      approval_ref: character.approvalRef,
+      media_types_json: '[]',
+      summary: null,
+      summary_evidence_ids_json: '[]',
+      overview: null,
+      overview_evidence_ids_json: '[]',
+      identity_evidence_ids_json: JSON.stringify(franchiseEvidenceIds),
+      evidence_json: JSON.stringify(universeProof.values()),
+    };
+    // One D1 universe per canonical franchise; choose the same anchor for any
+    // export iteration order, without manufacturing a new approval reference.
+    if (!universes.has(scope.franchiseId)) universes.set(scope.franchiseId, universe);
+
+    for (const link of [...character.modelLinks].sort((a,b) =>
+      a.modelId.localeCompare(b.modelId))) {
+      // A model link is explicitly evidenced and human-approved in Supabase.
+      // "other" describes an unclassified source faithfully; it is not
+      // fabricated as an official or primary publication.
+      const relationProofId = proof.ids([{
+        title: link.evidenceTitle, url: link.evidenceUrl, kind: 'other',
+      }]);
+      relations.push({
+        character_id: character.identityId,
+        model_id: link.modelId,
+        evidence_ids_json: JSON.stringify(relationProofId),
+        approval_ref: character.approvalRef,
+      });
+    }
+
+    const evidence = proof.values();
+    requireValid(identitySources.length >= 1 && identitySources.length <= 40 &&
+      biographySources.length >= 1 && biographySources.length <= 40 &&
+      originSources.length >= 1 && originSources.length <= 40,
+    'approved_character_evidence_budget_invalid');
+    characters.push({
+      id: character.identityId,
+      slug: character.slug,
+      franchise_id: scope.franchiseId,
+      name: character.name,
+      aliases_json: JSON.stringify(aliases),
+      summary: null,
+      summary_evidence_ids_json: '[]',
+      biography: profile.biography,
+      biography_evidence_ids_json: JSON.stringify(biographySources),
+      age_value: null,
+      age_context: null,
+      age_evidence_ids_json: '[]',
+      origin_work: profile.originWork,
+      origin_work_evidence_ids_json: JSON.stringify(originSources),
+      media_types_json: '[]',
+      characteristics_json: JSON.stringify(characteristics),
+      media_type_evidence_ids_json: '[]',
+      identity_evidence_ids_json: JSON.stringify(identitySources),
+      evidence_json: JSON.stringify(evidence),
+      revision: 'v' + character.profileRevision,
+      reviewed_at: character.reviewedAt,
+      approval_ref: character.approvalRef,
+    });
+  }
+  return {
+    schemaVersion: 1,
+    source: 'approved-character-projection-offline-plan',
+    generatedAt: exportPayload.generatedAt,
+    universes: [...universes.values()].sort((a, b) => a.franchise_id - b.franchise_id),
+    characters,
+    relations,
+  };
+}
