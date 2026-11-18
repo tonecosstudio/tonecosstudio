@@ -327,7 +327,7 @@ function editorialOptionalText(value: unknown, field: string, max = 4000): strin
   return editorialText(value, field, max)
 }
 
-function editorialEvidence(value: unknown): EditorialEvidence[] {
+export function editorialEvidence(value: unknown): EditorialEvidence[] {
   const rows = editorialArray(value, 'editorial_evidence_invalid', 80)
   const seen = new Set<string>()
   return rows.map((item): EditorialEvidence => {
