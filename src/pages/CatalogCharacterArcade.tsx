@@ -4,7 +4,11 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
 import { ArcadeCard, ArcadeHero } from "@/components/arcade/ArcadeLayout";
-import { PUBLIC_ROUTES, catalogUniverseFranchisePath } from "@/config/routes";
+import {
+  PUBLIC_ROUTES,
+  catalogModelsPath,
+  catalogUniverseFranchisePath,
+} from "@/config/routes";
 import { isPublicEditorialProjectionEnabled } from "@/config/catalog-editorial-projection";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import {
@@ -71,9 +75,18 @@ function CharacterProfileState({
 }
 
 export default function CatalogCharacterArcade() {
+  const { themeKey, franchiseKey } = useParams<{
+    themeKey?: string;
+    franchiseKey?: string;
+  }>();
   if (!isPublicEditorialProjectionEnabled()) {
     // Preserve legacy links until the approved Worker projection is released.
-    return <Navigate to={PUBLIC_ROUTES.catalogModels} replace />;
+    return (
+      <Navigate
+        to={catalogModelsPath(themeKey, franchiseKey)}
+        replace
+      />
+    );
   }
   return <EnabledCharacterProfileRoute />;
 }

@@ -1767,3 +1767,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** na branch existente da PR #26, implementar a leitura da projeção editorial aprovada no Worker candidato e cobrir a rota offline; manter M5 staged-offline. Só habilitar a flag pública após contrato real, dados aprovados e homologação editorial.
 
 **DO_NOT_REPEAT:** não tratar fixtures como integração D1/Worker; não ligar a flag antes do endpoint aprovado; não exportar rascunhos privados da curadoria; não aplicar migrations, fazer cutover, deploy ou indexação.
+
+## Rodada 79 — projeção editorial pública e navegação de personagens (17/11/2026)
+
+- A branch existente da PR #26 recebeu `ec685aa7`: migration aditiva `0023_public_editorial_projection.sql`, tabelas de projeção pública vazias, relações muitos-para-muitos com os modelos canônicos e rotas Worker de busca/fichas que só leem publicações explicitamente aprovadas. M5 continua `staged-offline`; migration não aplicada, sem deploy ou escrita em produção.
+- A exceção de segurança do Quality Gate fica limitada às duas exclusões exatas da linha antiga do índice FTS5 editorial. O checker continua bloqueando qualquer outra exclusão de linhas; `config/catalog-code-consolidation.json` registra os overlays e o hash da nova migration sem alterar os pins de origem.
+- Na branch existente da PR #33, o gateway agora valida características com evidências independentes e até 200 fontes por resposta de universo; a ficha mostra características verificadas no estilo atual. Corrigi também a rota contextual de personagem para abrir a ficha editorial e, com a projeção desligada, preservar os filtros de franquia ao voltar ao catálogo.
+- **Validações:** PR #26: Worker **70/70**, busca/fichas em SQLite **6/6**, contrato do monorepo **14/14**, TypeScript do Worker e policy checker passaram; uma verificação negativa confirmou que a exceção FTS não libera exclusão de modelos. PR #33: gateway/fichas **11/11**, rota/navegação **13/13**, TypeScript da aplicação e ESLint direcionado passaram. Fixtures foram usadas exclusivamente em testes.
+- **Bloqueios reais:** ainda não existe processo de exportação/aprovação que leve a curadoria privada do Supabase para a projeção D1; estado privado `reviewed` não equivale a `approved/public`. A projection não contém perfis reais, então a flag pública permanece desligada e os testes não provam integração real. Não executei migration, escrita, cutover, deploy ou indexação. A GitHub Actions sem runner continua sem aprovação de CI.
+
+**NEXT_ACTION:** concluir a autoridade editorial/publicação real somente após definir revisão dos registros e o caminho autorizado para o D1 canônico; manter perfis e busca fechados até essa projeção existir e ser homologada.
+
+**DO_NOT_REPEAT:** não marcar candidatos como verificados, não converter fixtures em conteúdo, não tratar `reviewed` como publicação, não aplicar a migration `0023`, não ativar M5 nem a flag pública sem os gates correspondentes.

@@ -26,6 +26,9 @@ const characterProjection = () => ({
     originWork: "One Piece",
     originWorkEvidenceIds: ["official-one-piece"],
     mediaTypes: ["Anime", "Mangá"],
+    characteristics: [
+      { value: "Espadachim", evidenceIds: ["official-one-piece"] },
+    ],
     mediaTypeEvidenceIds: ["official-one-piece"],
     identityEvidenceIds: ["official-one-piece"],
   },
@@ -206,6 +209,9 @@ describe("public catalog editorial projection contract", () => {
     );
 
     expect(profile.character.name).toBe("Roronoa Zoro");
+    expect(profile.character.characteristics).toEqual([
+      { value: "Espadachim", evidenceIds: ["official-one-piece"] },
+    ]);
     expect(profile.sameCharacterModels).toHaveLength(1);
     expect(fetcher).toHaveBeenCalledWith(
       "https://catalog.example.test/catalogo-api/api/editorial/v1/characters/zoro-one-piece",
@@ -270,6 +276,18 @@ describe("public catalog editorial projection contract", () => {
     ).rejects.toThrow(
       "catalog_editorial_character_age_evidence_needs_independent_evidence",
     );
+
+    const unsupportedCharacteristic = characterProjection();
+    unsupportedCharacteristic.character.characteristics[0].evidenceIds = [
+      "catalog-model",
+    ];
+    await expect(
+      gatewayFor(unsupportedCharacteristic).gateway.getCharacterProfile(
+        "zoro-one-piece",
+      ),
+    ).rejects.toThrow(
+      "catalog_editorial_character_characteristics_evidence_needs_independent_evidence",
+    );
   });
 
   it("loads a universe profile from the category-scoped canonical projection route", async () => {
@@ -281,6 +299,23 @@ describe("public catalog editorial projection contract", () => {
       "https://catalog.example.test/catalogo-api/api/editorial/v1/universes/anime/one-piece",
       expect.objectContaining({ method: "GET" }),
     );
+  });
+
+  it("accepts the bounded 200-source maximum used by universe profile projections", async () => {
+    const projection = universeProjection();
+    projection.evidence.push(
+      ...Array.from({ length: 100 }, (_, index) => ({
+        id: `official-reference-${index}`,
+        title: `Fonte editorial ${index}`,
+        url: `https://publisher.example/characters/${index}`,
+        kind: "official" as const,
+      })),
+    );
+    const { gateway } = gatewayFor(projection);
+
+    await expect(
+      gateway.getUniverseProfile("anime", "one-piece"),
+    ).resolves.toMatchObject({ evidence: { length: 101 } });
   });
 
   it("rejects universe context drift and character rows without approved evidence", async () => {

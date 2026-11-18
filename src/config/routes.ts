@@ -321,6 +321,17 @@ export function catalogModelDetailsPath(
   );
 }
 
+export function catalogModelsPath(
+  category?: string,
+  franchise?: string,
+): string {
+  const params = new URLSearchParams();
+  if (category) params.set("category", category);
+  if (franchise) params.set("franchise", franchise);
+  const search = params.toString();
+  return PUBLIC_ROUTES.catalogModels + (search ? `?${search}` : "");
+}
+
 export function catalogCharacterPath(
   characterName: string,
   sourceTitle?: string | null,

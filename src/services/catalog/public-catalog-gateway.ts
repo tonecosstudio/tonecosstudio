@@ -123,6 +123,7 @@ export type PublicCatalogCharacterProfile = {
     originWork: string | null;
     originWorkEvidenceIds: string[];
     mediaTypes: string[];
+    characteristics: Array<{ value: string; evidenceIds: string[] }>;
     mediaTypeEvidenceIds: string[];
     identityEvidenceIds: string[];
   };
@@ -338,7 +339,7 @@ function editorialTimestamp(value: unknown, field: string): string {
 function decodeEditorialEvidence(
   value: unknown,
 ): PublicCatalogEditorialEvidence[] {
-  if (!Array.isArray(value) || value.length > 80) {
+  if (!Array.isArray(value) || value.length > 200) {
     throw new Error("invalid_catalog_editorial_evidence");
   }
   const seen = new Set<string>();
@@ -449,6 +450,45 @@ function editorialStringList(value: unknown, field: string): string[] {
     if (seen.has(text)) throw new Error(`duplicate_catalog_editorial_${field}`);
     seen.add(text);
     return text;
+  });
+}
+
+function decodeEditorialClaims(
+  value: unknown,
+  evidence: PublicCatalogEditorialEvidence[],
+  field: string,
+): Array<{ value: string; evidenceIds: string[] }> {
+  if (!Array.isArray(value) || value.length > 30) {
+    throw new Error(`invalid_catalog_editorial_${field}`);
+  }
+  const seen = new Set<string>();
+  return value.map((item: unknown) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`invalid_catalog_editorial_${field}_item`);
+    }
+    const claim = item as { value?: unknown; evidenceIds?: unknown };
+    if (
+      typeof claim.value !== "string" ||
+      !claim.value.trim() ||
+      claim.value.trim().length > 240
+    ) {
+      throw new Error(`invalid_catalog_editorial_${field}_value`);
+    }
+    const text = claim.value.trim();
+    const key = text.toLocaleLowerCase("pt-BR");
+    if (seen.has(key)) {
+      throw new Error(`duplicate_catalog_editorial_${field}`);
+    }
+    seen.add(key);
+    return {
+      value: text,
+      evidenceIds: decodeEvidenceIds(
+        claim.evidenceIds,
+        evidence,
+        `${field}_evidence`,
+        true,
+      ),
+    };
   });
 }
 
@@ -613,6 +653,11 @@ function decodePublicCharacterProfile(
     character.mediaTypes,
     "character_media_types",
   );
+  const characteristics = decodeEditorialClaims(
+    character.characteristics,
+    evidence,
+    "character_characteristics",
+  );
   const mediaTypeEvidenceIds = mediaTypes.length
     ? decodeEvidenceIds(
         character.mediaTypeEvidenceIds,
@@ -706,6 +751,7 @@ function decodePublicCharacterProfile(
       originWork,
       originWorkEvidenceIds,
       mediaTypes,
+      characteristics,
       mediaTypeEvidenceIds,
       identityEvidenceIds,
     },

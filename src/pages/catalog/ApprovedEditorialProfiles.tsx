@@ -220,6 +220,23 @@ export function ApprovedCharacterProfile({
                     </dd>
                   </div>
                 ) : null}
+                {character.characteristics.length > 0 ? (
+                  <div className="sm:col-span-2">
+                    <dt className="text-xs font-mono uppercase text-[hsl(0,0%,54%)]">
+                      Características verificadas
+                    </dt>
+                    <dd className="mt-2 flex flex-wrap gap-2">
+                      {character.characteristics.map((claim) => (
+                        <span
+                          key={claim.value}
+                          className="border border-[hsl(var(--gold-accent)/0.35)] px-2.5 py-1.5 text-xs text-[hsl(0,0%,82%)]"
+                        >
+                          {claim.value}
+                        </span>
+                      ))}
+                    </dd>
+                  </div>
+                ) : null}
                 {character.ageContext ? (
                   <div>
                     <dt className="text-xs font-mono uppercase text-[hsl(0,0%,54%)]">

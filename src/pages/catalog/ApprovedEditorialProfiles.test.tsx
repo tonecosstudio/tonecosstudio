@@ -44,6 +44,10 @@ const characterProfile: PublicCatalogCharacterProfile = {
     originWork: "One Piece",
     originWorkEvidenceIds: [source.id],
     mediaTypes: ["Anime", "Mangá"],
+    characteristics: [
+      { value: "Espadachim", evidenceIds: [source.id] },
+      { value: "Determinado", evidenceIds: [source.id] },
+    ],
     mediaTypeEvidenceIds: [source.id],
     identityEvidenceIds: [source.id],
   },
@@ -131,6 +135,9 @@ describe("approved editorial profile views", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("21")).toBeInTheDocument();
     expect(screen.getByText(/Fase pós-timeskip/)).toBeInTheDocument();
+    expect(screen.getByText("Características verificadas")).toBeInTheDocument();
+    expect(screen.getByText("Espadachim")).toBeInTheDocument();
+    expect(screen.getByText("Determinado")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Fonte editorial oficial" }),
     ).toHaveAttribute("href", source.url);
