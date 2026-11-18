@@ -4,7 +4,7 @@
  * Requisitos: 8.1, 8.2, 8.4, 8.5
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { 
   generateBulkLabels,
   canGenerateLabel, 
@@ -234,12 +234,19 @@ describe('Label Service', () => {
   });
 
   describe('openLabelsInTabs', () => {
-    let windowOpenSpy: any;
+    let windowOpenSpy: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-      // Mock window.open
+      // Keep the real jsdom window and its localStorage for global test cleanup.
       windowOpenSpy = vi.fn();
-      global.window = { open: windowOpenSpy } as any;
+      vi.spyOn(window, 'open').mockImplementation((...args) => {
+        windowOpenSpy(...args);
+        return null;
+      });
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
     });
 
     it('deve abrir todas as etiquetas quando há menos que o limite', () => {

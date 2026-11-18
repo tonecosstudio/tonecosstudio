@@ -290,6 +290,16 @@ function parseMembership(value: unknown): CatalogCurationMembership {
   };
 }
 
+function hasUnsafeCurationCharacter(value: string): boolean {
+  return Array.from(value).some(
+    (char) =>
+      char === "<" ||
+      char === ">" ||
+      char.charCodeAt(0) < 32 ||
+      char.charCodeAt(0) === 127,
+  );
+}
+
 export function validateCanonicalCurationModelRef(
   model: CanonicalCurationModelRef,
 ): void {
@@ -298,7 +308,8 @@ export function validateCanonicalCurationModelRef(
     typeof model.modelId !== "string" ||
     !model.modelId ||
     model.modelId.length > 160 ||
-    /[\s<>\u0000-\u001f\u007f]/.test(model.modelId) ||
+    /\s/.test(model.modelId) ||
+    hasUnsafeCurationCharacter(model.modelId) ||
     !CATALOG_SLUG.test(model.slug)
   ) {
     throw new Error("catalog_curation_model_reference_invalid");
