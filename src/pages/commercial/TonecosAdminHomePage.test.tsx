@@ -352,7 +352,7 @@ describe("TONART admin workspace", () => {
       await screen.findByText("Crédito administrativo confirmado"),
     ).toBeInTheDocument();
     expect(screen.getByText("cliente@example.com")).toBeInTheDocument();
-    expect(screen.getByText("+12")).toBeInTheDocument();
+    expect(screen.getByText("+12,00")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Histórico de movimentações" }),
     ).toBeInTheDocument();
