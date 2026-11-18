@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 34,
-    "preparedCandidateModelLinkCount": 545
+    "sourceResearchedIdentityCount": 38,
+    "preparedCandidateModelLinkCount": 582
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 34,
+    "preparedIdentityCount": 38,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 545,
+    "preparedCandidateModelLinkCount": 582,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -363,6 +363,38 @@
       "publisher": "Capcom",
       "title": "Character Guide 100: Ryu",
       "url": "https://game.capcom.com/cfn/sfv/column/130431?lang=en",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-jean-grey-profile",
+      "publisher": "Marvel",
+      "title": "Phoenix (Jean Grey) Powers, Villains, History | Marvel",
+      "url": "https://www.marvel.com/characters/phoenix-jean-grey",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-storm-profile",
+      "publisher": "Marvel",
+      "title": "Storm In Comics Powers, Enemies, History | Marvel",
+      "url": "https://www.marvel.com/characters/storm/in-comics",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-rogue-profile",
+      "publisher": "Marvel",
+      "title": "Rogue In Comics Powers, Enemies, History | Marvel",
+      "url": "https://www.marvel.com/characters/rogue/in-comics",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-venom-eddie-brock",
+      "publisher": "Marvel",
+      "title": "Venom: Eddie Brock | Marvel Comics Reading List",
+      "url": "https://share.marvel.com/comics/discover/713/venom-eddie-brock",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -12849,6 +12881,972 @@
         }
       ],
       "catalogCandidateModelCount": 10
+    },
+    {
+      "candidateName": "Jean Grey",
+      "catalogDisplayNameCandidate": "Jean Grey",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Jean Grey",
+          "sourceIds": [
+            "marvel-jean-grey-profile",
+            "marvel-xmen"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-jean-grey-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.founding_xmen_member",
+          "value": "A Marvel apresenta Jean Grey entre as primeiras alunas de Xavier e membro fundadora dos X-Men.",
+          "sourceIds": [
+            "marvel-jean-grey-profile",
+            "marvel-xmen"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.telepathy_and_telekinesis",
+          "value": "A fonte atribui a Jean habilidades telepáticas e telecinéticas.",
+          "sourceIds": [
+            "marvel-jean-grey-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.phoenix_force",
+          "value": "A história da Marvel relaciona Jean a diferentes etapas de contato e poder da Força Fênix.",
+          "sourceIds": [
+            "marvel-jean-grey-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Jean Grey é uma telepata e telecinética e uma das integrantes fundadoras dos X-Men. Em diferentes histórias, ela se conecta à Força Fênix; cada etapa, traje e representação dessa relação precisa ser distinguida ao catalogar modelos.",
+      "biographySourceIds": [
+        "marvel-jean-grey-profile",
+        "marvel-xmen"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos"
+      ],
+      "ambiguities": [
+        "O perfil cobre diferentes fases e identidades editoriais (Jean Grey, Marvel Girl e Phoenix); elas não devem ser fundidas como equivalências do render sem revisão.",
+        "Os 10 modelos do nome exato Jean Grey foram selecionados sem inspeção visual; versões, uniformes e cenas devem ser conferidos por ID.",
+        "A fonte oficial sustenta identidade e fatos biográficos, mas não confirma individualmente nenhum dos vínculos."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_2b4865a1234f4fcf4d13",
+          "modelSlug": "equipes-e-grupos-jean-grey-traje-amarelo-sobre-energia-roxa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-jean-grey-traje-amarelo-sobre-energia-roxa"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2b6e0aa443c728752e5d",
+          "modelSlug": "equipes-e-grupos-jean-grey-fenix-estatua-com-asas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-jean-grey-fenix-estatua-com-asas"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2e9168139d49f8bf2304",
+          "modelSlug": "equipes-e-grupos-jean-grey-traje-amarelo-dupla-vista",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-jean-grey-traje-amarelo-dupla-vista"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3dc3334d332145a0d69c",
+          "modelSlug": "equipes-e-grupos-jean-grey-estatua-cinza-com-chamas-na-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-jean-grey-estatua-cinza-com-chamas-na-base"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_832710fc3258de8a355f",
+          "modelSlug": "equipes-e-grupos-jean-grey-traje-amarelo-com-energia-psiquica",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-jean-grey-traje-amarelo-com-energia-psiquica"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8c5f0f18662de3c15090",
+          "modelSlug": "equipes-e-grupos-jean-grey-fenix-diorama-azul",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-jean-grey-fenix-diorama-azul"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a1b19a09f174f3b4d1b0",
+          "modelSlug": "equipes-e-grupos-jean-grey-close-com-energia-psiquica",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-jean-grey-close-com-energia-psiquica"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b07e6f139bf40d77bdf5",
+          "modelSlug": "equipes-e-grupos-jean-grey-estatua-cinza-sobre-destrocos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-jean-grey-estatua-cinza-sobre-destrocos"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c39bb637ee5c32c0225a",
+          "modelSlug": "equipes-e-grupos-jean-grey-fenix-com-energia-rosa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-jean-grey-fenix-com-energia-rosa"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_fd3c43c28a00e6c9461c",
+          "modelSlug": "equipes-e-grupos-jean-grey-fenix-em-chamas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-jean-grey-fenix-em-chamas"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 10
+    },
+    {
+      "candidateName": "Storm",
+      "catalogDisplayNameCandidate": "Tempestade",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Storm",
+          "sourceIds": [
+            "marvel-storm-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alternate_name_candidate",
+          "value": "Ororo Munroe",
+          "sourceIds": [
+            "marvel-storm-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-storm-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.weather_control",
+          "value": "A Marvel descreve Ororo Munroe como mutante capaz de controlar o clima.",
+          "sourceIds": [
+            "marvel-storm-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.xmen_membership",
+          "value": "A personagem se une aos X-Men após convite de Professor X.",
+          "sourceIds": [
+            "marvel-storm-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Ororo Munroe, conhecida como Tempestade (Storm), é uma mutante que controla o clima e se torna integrante e líder dos X-Men. Sua trajetória reúne diferentes equipes e fases pessoais, que não devem ser atribuídas automaticamente às estátuas da fila.",
+      "biographySourceIds": [
+        "marvel-storm-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos"
+      ],
+      "ambiguities": [
+        "O nome localizado do catálogo é Tempestade; a equivalência com Storm está documentada oficialmente, mas o vínculo a cada um dos 9 modelos continua sujeito a inspeção.",
+        "A fonte reúne múltiplas épocas, uniformes, grupos e relacionamentos; nenhuma versão visual está confirmada para os modelos.",
+        "A categoria “Equipes e Grupos” registrada pelo catálogo é metadado de navegação, não prova de franquia ou vínculo."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_113605b916d1a2bf12a8",
+          "modelSlug": "equipes-e-grupos-tempestade-estatua-cinza-em-pose-dinamica",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-tempestade-estatua-cinza-em-pose-dinamica"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_374442131921dd983741",
+          "modelSlug": "equipes-e-grupos-tempestade-estatua-cinza-sobre-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-tempestade-estatua-cinza-sobre-base"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6021eb20ddff05f8232f",
+          "modelSlug": "equipes-e-grupos-tempestade-estatua-cinza-com-raios",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-tempestade-estatua-cinza-com-raios"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8e1922092d90882cfdb0",
+          "modelSlug": "equipes-e-grupos-tempestade-traje-branco-com-raios-dourados",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-tempestade-traje-branco-com-raios-dourados"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_96a207c1f9ecb88d59f8",
+          "modelSlug": "equipes-e-grupos-tempestade-traje-escuro-com-raios",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-tempestade-traje-escuro-com-raios"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a27d68e07e0ad146b481",
+          "modelSlug": "equipes-e-grupos-tempestade-concept-estatua-preto-e-branco",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-tempestade-concept-estatua-preto-e-branco"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a8a64ab3a228a6141761",
+          "modelSlug": "equipes-e-grupos-tempestade-diorama-com-raio-vertical",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-tempestade-diorama-com-raio-vertical"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d2d8a6142d5637c4e459",
+          "modelSlug": "equipes-e-grupos-tempestade-traje-branco-flutuando",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-tempestade-traje-branco-flutuando"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_dcaa58e55c4cf1c511d4",
+          "modelSlug": "equipes-e-grupos-tempestade-traje-classico-com-raios",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-tempestade-traje-classico-com-raios"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 9
+    },
+    {
+      "candidateName": "Rogue",
+      "catalogDisplayNameCandidate": "Vampira",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Rogue",
+          "sourceIds": [
+            "marvel-rogue-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alternate_name_candidate",
+          "value": "Anna Marie",
+          "sourceIds": [
+            "marvel-rogue-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-rogue-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.absorption_power",
+          "value": "A habilidade mutante de Vampira absorve poderes e memórias pelo contato físico.",
+          "sourceIds": [
+            "marvel-rogue-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.xmen_history",
+          "value": "A fonte descreve Rogue como alguém que começa no lado vilanesco e depois integra os X-Men.",
+          "sourceIds": [
+            "marvel-rogue-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Anna Marie, conhecida como Vampira (Rogue), pode absorver temporariamente poderes e memórias pelo toque. A Marvel descreve sua passagem de uma origem ligada à Irmandade de Mutantes para sua atuação como heroína e integrante dos X-Men.",
+      "biographySourceIds": [
+        "marvel-rogue-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos"
+      ],
+      "ambiguities": [
+        "Os 9 modelos com o rótulo localizado Vampira não passaram por inspeção visual; cabelos, trajes, versões e relação com outros personagens exigem revisão por ID.",
+        "A habilidade pode representar diferentes poderes absorvidos em cada arco; não registrar poderes temporários como atributos permanentes sem fonte específica.",
+        "As fontes não demonstram que qualquer render individual represente Rogue."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_192f5a49152b7c2e8c07",
+          "modelSlug": "equipes-e-grupos-vampira-estilizada-sobre-base-x-men",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-vampira-estilizada-sobre-base-x-men"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5ea2fc775ba4ca8097ff",
+          "modelSlug": "equipes-e-grupos-vampira-close-e-estatua-promocional",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-vampira-close-e-estatua-promocional"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_697585bf0bb93634a702",
+          "modelSlug": "equipes-e-grupos-vampira-estatua-corpo-inteiro-verde-e-amarelo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-vampira-estatua-corpo-inteiro-verde-e-amarelo"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9541e0e9c6a51f8cf778",
+          "modelSlug": "equipes-e-grupos-vampira-traje-verde-e-amarelo-em-acao",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-vampira-traje-verde-e-amarelo-em-acao"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a35dc03796e409f3d2e0",
+          "modelSlug": "equipes-e-grupos-vampira-savage-land-com-lanca",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-vampira-savage-land-com-lanca"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a5d75a7087fda69fd3ac",
+          "modelSlug": "equipes-e-grupos-vampira-diorama-verde-e-amarelo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-vampira-diorama-verde-e-amarelo"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e3d39c635f7c167a926b",
+          "modelSlug": "equipes-e-grupos-vampira-traje-verde-e-amarelo-dupla-vista",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-vampira-traje-verde-e-amarelo-dupla-vista"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f331c2c64b5ff322429b",
+          "modelSlug": "equipes-e-grupos-vampira-busto-traje-verde",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-vampira-busto-traje-verde"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_fea4e94b387f05e45fd5",
+          "modelSlug": "equipes-e-grupos-vampira-estatua-cinza-sobre-destrocos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-vampira-estatua-cinza-sobre-destrocos"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 9
+    },
+    {
+      "candidateName": "Venom",
+      "catalogDisplayNameCandidate": "Venom",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Venom",
+          "sourceIds": [
+            "marvel-venom-eddie-brock"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.host_candidate",
+          "value": "Eddie Brock",
+          "sourceIds": [
+            "marvel-venom-eddie-brock"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-venom-eddie-brock"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.symbiote_and_host",
+          "value": "A Marvel descreve a ligação do simbionte com Eddie Brock após a rejeição de Peter Parker.",
+          "sourceIds": [
+            "marvel-venom-eddie-brock"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.multiple_host_identity",
+          "value": "Eddie Brock é apresentado como o primeiro e mais conhecido homem a assumir o nome Venom.",
+          "sourceIds": [
+            "marvel-venom-eddie-brock"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Venom é o nome associado a um simbionte alienígena que se liga a diferentes hospedeiros. Eddie Brock foi o primeiro e um dos mais conhecidos a usar essa identidade; o rótulo do catálogo não define qual hospedeiro ou fase aparece em cada modelo.",
+      "biographySourceIds": [
+        "marvel-venom-eddie-brock"
+      ],
+      "catalogFranchiseCandidates": [
+        "Heróis Individuais"
+      ],
+      "ambiguities": [
+        "Venom pode designar o simbionte, sua forma combinada ou diferentes hospedeiros; a fonte de Eddie Brock não justifica atribuir esse hospedeiro aos 9 modelos.",
+        "Os 9 vínculos foram selecionados pelo nome exato Venom, não por inspeção visual independente. Cada escultura precisa de evidência por ID para definir hospedeiro, forma e fase.",
+        "O catálogo pode incluir representações de simbionte, trajes e cenas conjuntas; não fundir objetos ou personagens sem revisão."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0aec059bebe1cb16cec1",
+          "modelSlug": "herois-individuais-venom-busto-prototipo-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-venom-busto-prototipo-cinza"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_0af32e2791190efcd1ed",
+          "modelSlug": "herois-individuais-venom-chibi-em-pose-de-ataque",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-venom-chibi-em-pose-de-ataque"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1401e2621a1e4600dc21",
+          "modelSlug": "herois-individuais-venom-busto-colorido-com-lingua-estendida",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-venom-busto-colorido-com-lingua-estendida"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_46ba1e5c8f5ce1a4549b",
+          "modelSlug": "herois-individuais-venom-busto-colorido-com-lingua",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-venom-busto-colorido-com-lingua"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_59147fd682f738a296cc",
+          "modelSlug": "herois-individuais-venom-busto-versao-monstro-e-anatomica",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-venom-busto-versao-monstro-e-anatomica"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7161c55b8d9929f2f4d0",
+          "modelSlug": "herois-individuais-venom-diorama-eddie-brock-simbionte",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-venom-diorama-eddie-brock-simbionte"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_975f8daa22e7031fa8c8",
+          "modelSlug": "herois-individuais-venom-estatua-colorida-sobre-destrocos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-venom-estatua-colorida-sobre-destrocos"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a05908753574387671ca",
+          "modelSlug": "herois-individuais-venom-busto-cinza-dupla-vista",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-venom-busto-cinza-dupla-vista"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f197fe45a2b353cf58e1",
+          "modelSlug": "herois-individuais-venom-diorama-cinza-sobre-esgoto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-venom-diorama-cinza-sobre-esgoto"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 9
     }
   ]
 }

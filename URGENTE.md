@@ -1915,3 +1915,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** continuar a pesquisa revisável por volume; conferir visualmente os IDs e inserir evidências por relação na curadoria privada antes de exportar qualquer perfil.
 
 **DO_NOT_REPEAT:** não associar todas as esculturas Juggernaut a Cain Marko; não universalizar os arcos Street Fighter V para outras versões sem revisão.
+
+## Rodada 92 — X-Men e hospedeiros do simbionte (18/11/2026)
+
+- Preparei dossiês para **Jean Grey, Tempestade, Vampira e Venom**, com quatro páginas oficiais da Marvel, biografias originais e claims ligados às fontes.
+- Foram selecionados por ID e rótulo localizado **10 Jean Grey, 9 Tempestade, 9 Vampira e 9 Venom**. O dossiê distingue fases da Força Fênix e registra que Venom pode referir-se ao simbionte ou a diferentes hospedeiros; nenhum modelo foi atribuído automaticamente a Eddie Brock.
+- O pacote passa a **38 identidades, 46 URLs oficiais únicas, 38 rascunhos biográficos e 582 vínculos candidatos**. Todos os vínculos e claims permanecem pendentes; **0 identidades ou relações aprovadas e 0 relações com evidência independente por modelo**.
+- **Validação:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**; `git diff --check` passou. Integridade confirmou 46 fontes únicas, claims sem fonte: 0, pares duplicados: 0 e vínculos fora de revisão pendente: 0.
+
+**NEXT_ACTION:** continuar com os grupos restantes de maior frequência e encaminhar as 582 relações para revisão visual/editorial na curadoria privada antes de qualquer publicação.
+
+**DO_NOT_REPEAT:** não inferir a fase de Jean Grey, traje de X-Men ou hospedeiro de Venom apenas pelo nome do catálogo.
