@@ -295,6 +295,23 @@ describe("Tonecos canonical model discovery UI", () => {
       screen.queryByRole("button", { name: /Abrir seleção para orçamento/ }),
     ).not.toBeInTheDocument();
   });
+  it("keeps the model search input and submit button full-width on narrow viewports", async () => {
+    setupFetch();
+    await renderCatalog();
+    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+
+    const form = screen.getByRole("search", { name: "Buscar modelos no catálogo" });
+    const input = within(form).getByRole("textbox", { name: "Pesquisar modelos" });
+    const submit = within(form).getByRole("button", { name: "Buscar modelos" });
+
+    expect(form).toHaveClass("grid-cols-1");
+    expect(form).toHaveClass("sm:grid-cols-[minmax(0,1fr)_auto]");
+    expect(input).toHaveClass("w-full");
+    expect(submit).toHaveClass("col-start-1", "row-start-2", "w-full");
+    expect(submit).toHaveClass("sm:col-start-2", "sm:row-start-1", "sm:w-auto");
+    expect(submit).toHaveAttribute("type", "submit");
+  });
+
   it("loads filtered public models without blocking categories behind the retired flag", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     const { calls } = setupFetch();

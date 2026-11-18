@@ -388,7 +388,7 @@ export default function CatalogModelsArcade() {
               <form
                 role="search"
                 aria-label="Buscar modelos no catálogo"
-                className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:gap-3"
+                className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-3"
                 onSubmit={(event) => {
                   event.preventDefault();
                   changeParams(draft.trim(), category);
@@ -425,7 +425,7 @@ export default function CatalogModelsArcade() {
                 </label>
                 <button
                   type="submit"
-                  className="col-start-2 row-start-1 inline-flex min-h-12 items-center justify-center border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-4 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(0,0%,5%)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] sm:px-6"
+                  className="col-start-1 row-start-2 inline-flex min-h-12 w-full items-center justify-center border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-4 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(0,0%,5%)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] sm:col-start-2 sm:row-start-1 sm:w-auto sm:px-6"
                 >
                   Buscar modelos
                 </button>

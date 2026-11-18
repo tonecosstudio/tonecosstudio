@@ -47,13 +47,25 @@ describe("legal content for read-only public catalog", () => {
     expect(mock.useSystemSettings).toHaveBeenCalledWith({ enabled: false });
   });
 
-  it("states the current commercial payment and Coins rules", () => {
+  it("describes gated payments and Coins without promising a checkout or fixed conversion", () => {
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
     vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
     render(<TermsArcade />);
-    expect(screen.getByText(/entrada é de R\$ 50 e é abatida do total/)).toBeInTheDocument();
-    expect(screen.getByText(/cada Coin abate R\$ 1/)).toBeInTheDocument();
-    expect(screen.queryByText(/servem apenas para seleção na plataforma/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Visitantes também podem pedir informações por e-mail sem cadastro/)).toBeInTheDocument();
+    expect(screen.getByText(/somente podem ser usados quando a operação correspondente estiver habilitada/)).toBeInTheDocument();
+    expect(screen.getByText(/eventual equivalência dependem de habilitação/)).toBeInTheDocument();
+    expect(screen.queryByText(/entrada é de R\$ 50/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/1 Coin para R\$ 1,00/)).not.toBeInTheDocument();
+  });
+
+  it("separates emailed inquiries from quotes stored under authenticated accounts", () => {
+    vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
+    vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
+    render(<PrivacyArcade />);
+    expect(screen.getByText(/um contato por e-mail não cria protocolo no histórico da conta/)).toBeInTheDocument();
+    expect(screen.getByText(/não se tornam automaticamente registros de orçamento no Supabase/)).toBeInTheDocument();
+    expect(screen.getByText(/seleção temporária de modelos/)).toBeInTheDocument();
   });
 });
