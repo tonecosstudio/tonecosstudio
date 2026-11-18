@@ -370,7 +370,7 @@
       },
       "worker/index.ts": {
         "sourceBlob": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
-        "localBlob": "",
+        "localBlob": "2161d9a98945a314b97eb328df79b0238555b8d6",
         "reason": "Preserve exact private curation evidence kinds in read-only, evidence-checked character and universe projections, and keep approved-projection synchronization inside the same staged Worker."
       },
       "worker/publicQueryBudget.ts": {
