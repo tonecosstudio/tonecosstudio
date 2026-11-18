@@ -1944,8 +1944,8 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 
 - Adicionei dossiês para **Dante**, **Recoome** e **Trunks (adolescente do futuro)** a partir de manual da Capcom e páginas oficiais de Dragon Ball. Claims de identidade, franquia e biografia apontam às fontes; os rascunhos são originais e pendentes de revisão humana.
 - Preparei **9 relações candidatas Dante, 8 Recoome e 8 Trunks** por IDs/slug exatos da fila. A fonte de Trunks cobre uma versão específica; os modelos com rótulo genérico não foram atribuídos a idade ou linha temporal. A fonte de Dante é Devil May Cry 4; não foi generalizada a todas as versões da franquia.
-- O lote passa a **43 identidades candidatas, 52 URLs oficiais únicas, 43 rascunhos e 625 vínculos candidatos**. Continuam em zero os estados revisados/aprovados e os vínculos com evidência independente por modelo.
-- **Validação:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11** com os 43 dossiês, 52 fontes e 625 vínculos; `git diff --check` passou. Integridade confirmou claims com fonte: 0 faltantes, pares duplicados: 0, links fora do estado pendente: 0, aprovações: 0 e vínculos com evidência independente: 0.
+- O lote passa a **43 identidades candidatas, 53 URLs oficiais únicas, 43 rascunhos e 625 vínculos candidatos**. Incluí uma fonte oficial para sustentar a ambiguidade de outras portadoras do título Thor; continuam em zero os estados revisados/aprovados e os vínculos com evidência independente por modelo.
+- **Validação:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11** com os 43 dossiês, 53 fontes e 625 vínculos; `git diff --check` passou. Integridade confirmou claims com fonte: 0 faltantes, pares duplicados: 0, links fora do estado pendente: 0, aprovações: 0 e vínculos com evidência independente: 0.
 
 **NEXT_ACTION:** subir a atualização validada na PR #33; encaminhar candidatos e vínculos ao fluxo de revisão humana privado da PR #31.
 

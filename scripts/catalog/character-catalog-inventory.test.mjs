@@ -86,7 +86,7 @@ test("research preparation references only inventory IDs and remains unapproved"
   assert.equal(packet.snapshot.sourceResearchedIdentityCount, 43);
   assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 625);
   assert.equal(packet.candidates.length, 43);
-  assert.equal(packet.sources.length, 52);
+  assert.equal(packet.sources.length, 53);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
@@ -112,6 +112,9 @@ test("research preparation references only inventory IDs and remains unapproved"
   assert.deepEqual(godOfWarThor.catalogFranchiseCandidates, ["God of War"]);
   assert.equal(marvelThor.identityStatus, "prepared_pending_human_review");
   assert.equal(godOfWarThor.identityStatus, "prepared_pending_human_review");
+  assert.ok(marvelThor.claims.some((claim) =>
+    claim.attribute === "identity.ambiguity.alternate_mantle_holder" &&
+    claim.sourceIds.includes("marvel-jane-foster-thor")));
 
   const trunks = packet.candidates.find((candidate) =>
     candidate.candidateName === "Trunks (future teen)");

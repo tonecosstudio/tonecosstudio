@@ -445,6 +445,14 @@
       "url": "https://en.dragon-ball-official.com/news/01_2350.html",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-jane-foster-thor",
+      "publisher": "Marvel",
+      "title": "Essential Reading | Reading Lists | Marvel Comics",
+      "url": "https://share.marvel.com/comics/discover/692/essential-reading",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
     }
   ],
   "candidates": [
@@ -13926,6 +13934,14 @@
           "sourceIds": [
             "marvel-avengers-roster",
             "marvel-thor-film-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.ambiguity.alternate_mantle_holder",
+          "value": "Uma leitura oficial da Marvel registra Jane Foster como a nova Goddess of Thunder e outra pessoa a empunhar Mjolnir como Thor.",
+          "sourceIds": [
+            "marvel-jane-foster-thor"
           ],
           "reviewStatus": "pending_human_review"
         }
