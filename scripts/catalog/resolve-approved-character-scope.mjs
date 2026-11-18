@@ -36,14 +36,36 @@ const SOURCE_KINDS = new Set([
 ]);
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-function isHttpsSource(source) {
-  if (!record(source) || !validText(source.title, 200) ||
-      !validText(source.url, 2048) ||
-      !SOURCE_KINDS.has(source.kind)) return false;
+function isPublicEvidenceUrl(raw) {
+  if (!validText(raw, 2048)) return false;
   let url;
-  try { url = new URL(source.url); } catch { return false; }
-  return url.protocol === 'https:' && !url.username && !url.password &&
-    !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname.toLowerCase());
+  try { url = new URL(raw); } catch { return false; }
+  if (url.protocol !== 'https:' || url.username || url.password) return false;
+  const host = url.hostname.toLowerCase().replace(/^\\[|\\]$/g, '');
+  // Verifiable references must be reachable on the public Internet, not
+  // local/loopback, test or private endpoints. Do not fetch these URLs.
+  if (!host || host === 'localhost' || host.endsWith('.localhost') ||
+      host.endsWith('.local') || host.endsWith('.internal') ||
+      host.endsWith('.invalid') || host.endsWith('.test') ||
+      host.includes(':')) return false;
+  const octets = host.split('.');
+  if (octets.length === 4 && octets.every(part => /^\\d+$/.test(part))) {
+    const [a, b, c, d] = octets.map(Number);
+    if ([a,b,c,d].some(n => n > 255)) return false;
+    if (a === 0 || a === 10 || a === 127 || a >= 224 ||
+        a === 169 && b === 254 || a === 172 && b >= 16 && b <= 31 ||
+        a === 192 && b === 168 || a === 100 && b >= 64 && b <= 127 ||
+        a === 192 && b === 0 && c === 0 ||
+        a === 198 && (b === 18 || b === 19) ||
+        a === 198 && b === 51 && c === 100 ||
+        a === 203 && b === 0 && c === 113) return false;
+  }
+  return true;
+}
+
+function isHttpsSource(source) {
+  return record(source) && validText(source.title, 200) &&
+    isPublicEvidenceUrl(source.url) && SOURCE_KINDS.has(source.kind);
 }
 
 function requireSources(sources, field, required = true) {
@@ -186,9 +208,7 @@ export function resolveApprovedCharacterScopes(exportPayload, d1Snapshot) {
         validText(link.evidenceUrl, 2000) &&
         !seenModels.has(link.modelId),
       'approved_character_model_link_invalid');
-      let url;
-      try { url = new URL(link.evidenceUrl); } catch { /* handled below */ }
-      requireValid(url?.protocol === 'https:' && !url.username && !url.password,
+      requireValid(isPublicEvidenceUrl(link.evidenceUrl),
         'approved_character_model_evidence_invalid');
       seenModels.add(link.modelId);
       const model = models.get(link.modelId);
