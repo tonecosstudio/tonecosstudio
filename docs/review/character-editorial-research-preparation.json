@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 74,
-    "preparedCandidateModelLinkCount": 809
+    "sourceResearchedIdentityCount": 76,
+    "preparedCandidateModelLinkCount": 819
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 74,
+    "preparedIdentityCount": 76,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 809,
+    "preparedCandidateModelLinkCount": 819,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -691,6 +691,30 @@
       "publisher": "SQUARE ENIX",
       "title": "Tifa Lockhart — FINAL FANTASY VII REBIRTH character profile",
       "url": "https://www.square-enix.com/ffvii/en-us/games/rebirth/characters/tifa-lockhart/",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dragon-ball-burter-namek-showcase",
+      "publisher": "BIRD STUDIO / SHUEISHA — DRAGON BALL OFFICIAL SITE",
+      "title": "Weekly ☆ Character Showcase #178: Burter",
+      "url": "https://en.dragon-ball-official.com/news/01_2928.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dragon-ball-shenron-character-overview",
+      "publisher": "BIRD STUDIO / SHUEISHA — DRAGON BALL OFFICIAL SITE",
+      "title": "Learn Cool Kanji with Dragon Ball! Lesson #9 — Shenron",
+      "url": "https://en.dragon-ball-official.com/news/01_626.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dragon-ball-shenron-official-figure-profile",
+      "publisher": "DRAGON BALL OFFICIAL SITE / BANDAI SPIRITS",
+      "title": "S.H.Figuarts Shenron — Dragon Ball Z official figure page",
+      "url": "https://en.dragon-ball-official.com/special/sdcc2022/items/shenron.php",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -20368,6 +20392,297 @@
             "sourceStatus": "candidate_and_published",
             "candidateContractPublished": true,
             "publicCatalogSlug": "final-fantasy-tifa-04"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Burter (Namek saga candidate)",
+      "catalogDisplayNameCandidate": "Burter",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Burter",
+          "sourceIds": [
+            "dragon-ball-burter-namek-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "dragon-ball-burter-namek-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.ginyu_force_namek",
+          "value": "O perfil oficial identifica Burter como membro da Força Ginyu, enviada a Namekusei por Freeza para perseguir Vegeta e recuperar as Esferas do Dragão.",
+          "sourceIds": [
+            "dragon-ball-burter-namek-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "O perfil oficial da fase de Namekusei apresenta Burter como integrante da Força Ginyu, enviada por Freeza para perseguir Vegeta e as Esferas do Dragão. A fonte descreve sua velocidade durante os confrontos com Vegeta e Goku. O texto se limita ao recorte consultado e não confirma visualmente os cinco modelos candidatos.",
+      "biographySourceIds": [
+        "dragon-ball-burter-namek-showcase"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A biografia consultada cobre a participação de Burter na saga de Namekusei; conferir visualmente cada busto/figura e sua versão antes de confirmar os vínculos. A página oficial informa que o texto inglês pode ser traduzido automaticamente.",
+        "Os cinco IDs foram selecionados por nome exato da fila; título, coleção e publicação são proveniência do modelo, não evidência independente de identidade.",
+        "Todos os vínculos seguem pendentes de inspeção visual e aprovação editorial humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_07b40a5eed9995cb5488",
+          "modelSlug": "dragon-ball-burter-busto-costas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          }
+        },
+        {
+          "modelId": "mdl_0fc6ce2d773904dfb698",
+          "modelSlug": "dragon-ball-burter-busto-frontal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-burter-busto-frontal"
+          }
+        },
+        {
+          "modelId": "mdl_166ec0e72d1d07346c56",
+          "modelSlug": "dragon-ball-burter-busto-lateral-direito",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-burter-busto-lateral-direito"
+          }
+        },
+        {
+          "modelId": "mdl_31a76edd2a6b8788f5f7",
+          "modelSlug": "dragon-ball-burter-corpo-inteiro-com-pod",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-burter-corpo-inteiro-com-pod"
+          }
+        },
+        {
+          "modelId": "mdl_caeeb8d37fef778f4ffe",
+          "modelSlug": "dragon-ball-burter-busto-lateral-esquerdo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-burter-busto-lateral-esquerdo"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Shenron (Earth Dragon Balls; Shenlong label candidate)",
+      "catalogDisplayNameCandidate": "Shenlong",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Shenron (nome localizado candidato: Shenlong)",
+          "sourceIds": [
+            "dragon-ball-shenron-character-overview",
+            "dragon-ball-shenron-official-figure-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "dragon-ball-shenron-character-overview",
+            "dragon-ball-shenron-official-figure-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.earth_dragon_balls_and_wishes",
+          "value": "O site oficial descreve Shenron como o dragão invocado após reunir as sete Esferas do Dragão e diz que foi criado por Kami antes do nascimento de Goku; a realização de desejos é limitada pelo poder de Kami.",
+          "sourceIds": [
+            "dragon-ball-shenron-character-overview"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "O site oficial descreve Shenron como o dragão invocado quando as sete Esferas do Dragão são reunidas e uma frase secreta é pronunciada. A fonte afirma que ele foi criado por Kami antes do nascimento de Goku e que seus desejos não podem ultrapassar o poder de Kami. Este rascunho trata do Shenron associado às Esferas da Terra na fonte consultada; não determina a forma ou a continuidade representada nos modelos.",
+      "biographySourceIds": [
+        "dragon-ball-shenron-character-overview",
+        "dragon-ball-shenron-official-figure-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A página oficial em inglês usa “Shenron” e registra “Shen Ron” como leitura especial, enquanto a fila usa “Shenlong”; revisar a forma localizada. A página de figura oficial é uma referência de nome/franquia, não evidência do render da TONART. Confirmar se cada imagem representa este dragão e não outra entidade/continuidade antes de aprovar os cinco vínculos.",
+        "Os cinco IDs foram selecionados por nome exato da fila; título, coleção e publicação são proveniência do modelo, não evidência independente de identidade.",
+        "Todos os vínculos seguem pendentes de inspeção visual e aprovação editorial humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0150fbc866710cfc3dab",
+          "modelSlug": "dragon-ball-shenlong-estatua-vista-frontal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-shenlong-estatua-vista-frontal"
+          }
+        },
+        {
+          "modelId": "mdl_6fe7c4ac5583f89023df",
+          "modelSlug": "dragon-ball-shenlong-painel-de-parede",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-shenlong-painel-de-parede"
+          }
+        },
+        {
+          "modelId": "mdl_a7b3e2bcfe901702e0a5",
+          "modelSlug": "dragon-ball-shenlong-estatua-vista-lateral-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-shenlong-estatua-vista-lateral-01"
+          }
+        },
+        {
+          "modelId": "mdl_aeac1fd5f54fc0f8533e",
+          "modelSlug": "dragon-ball-shenlong-estatua-vista-traseira",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          }
+        },
+        {
+          "modelId": "mdl_c890a3a8f933259a806a",
+          "modelSlug": "dragon-ball-shenlong-estatua-vista-lateral-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-shenlong-estatua-vista-lateral-02"
           }
         }
       ],

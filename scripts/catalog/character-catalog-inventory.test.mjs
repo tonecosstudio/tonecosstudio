@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 74);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 809);
-  assert.equal(packet.candidates.length, 74);
-  assert.equal(packet.sources.length, 83);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 76);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 819);
+  assert.equal(packet.candidates.length, 76);
+  assert.equal(packet.sources.length, 86);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 74);
+  assert.equal(packet.policy.preparedIdentityCount, 76);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 809);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 819);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 809);
+  assert.equal(links.length, 819);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -243,6 +243,8 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["Krillin (Goku Training Arc; Kuririn label candidate)", "Kuririn", "Dragon Ball", 5],
     ["Cloud Strife (Final Fantasy VII Rebirth candidate)", "Cloud", "Final Fantasy VII", 5],
     ["Tifa Lockhart (Final Fantasy VII Rebirth candidate)", "Tifa", "Final Fantasy VII", 5],
+    ["Burter (Namek saga candidate)", "Burter", "Dragon Ball", 5],
+    ["Shenron (Earth Dragon Balls; Shenlong label candidate)", "Shenlong", "Dragon Ball", 5],
   ];
   for (const [candidateName, catalogLabel, franchise, expectedModels] of newestResearchCandidates) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
@@ -277,12 +279,22 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["Krillin (Goku Training Arc; Kuririn label candidate)", "dragon-ball-krillin-goku-training-arc", "biography.fact.goku_training_arc"],
     ["Cloud Strife (Final Fantasy VII Rebirth candidate)", "square-enix-ffvii-rebirth-cloud", "biography.fact.rebirth_mercenary_and_avalanche"],
     ["Tifa Lockhart (Final Fantasy VII Rebirth candidate)", "square-enix-ffvii-rebirth-tifa", "biography.fact.rebirth_avalanche_and_search_for_path"],
+    ["Burter (Namek saga candidate)", "dragon-ball-burter-namek-showcase", "biography.fact.ginyu_force_namek"],
+    ["Shenron (Earth Dragon Balls; Shenlong label candidate)", "dragon-ball-shenron-character-overview", "biography.fact.earth_dragon_balls_and_wishes"],
   ];
   for (const [candidateName, sourceId, attribute] of newestSourceClaims) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
     assert.ok(candidate.claims.some((claim) =>
       claim.attribute === attribute && claim.sourceIds.includes(sourceId)));
   }
+  const burter = packet.candidates.find((item) => item.candidateName === "Burter (Namek saga candidate)");
+  const shenron = packet.candidates.find((item) =>
+    item.candidateName === "Shenron (Earth Dragon Balls; Shenlong label candidate)");
+  assert.equal(burter.candidateModelLinks.filter((link) =>
+    !link.catalogEvidenceSnapshot.candidateContractPublished).length, 1);
+  assert.equal(shenron.candidateModelLinks.filter((link) =>
+    !link.catalogEvidenceSnapshot.candidateContractPublished).length, 1);
+  assert.ok(shenron.ambiguities.some((item) => /Shenron.*Shenlong/.test(item)));
 
   for (const source of packet.sources) {
     assert.equal(new URL(source.url).protocol, "https:");

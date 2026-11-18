@@ -2094,3 +2094,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** encaminhar os candidatos à revisão humana e homologar a projeção somente em ambiente Supabase/D1 isolado.
 
 **DO_NOT_REPEAT:** não confundir títulos, nomes de fila ou biografias de uma continuidade com evidência visual dos renders; não publicar relações pendentes.
+
+## Rodada 107 — Burter e Shenlong na fila editorial (18/11/2026)
+
+- Preparei dossiês para Burter e Shenron a partir do DRAGON BALL OFFICIAL SITE. A fila usa “Shenlong”, enquanto as fontes oficiais em inglês usam “Shenron”; a localização permanece explicitamente pendente. Não presumi que os renders correspondam a essas identidades.
+- Cada candidato tem cinco relações por nome exato da fila. **Dois modelos são apenas candidatos não publicados** (um em cada identidade); seus estados e ausência de slug público foram preservados. Todos os dez vínculos requerem revisão visual e humana.
+- O pacote da PR #33 agora tem **76 identidades preparadas, 86 fontes oficiais únicas e 819 relações candidatas**. Identidades/relações revisadas ou aprovadas e relações com evidência visual independente permanecem em zero.
+- Validação: teste da fila **11/11**; teste temporário da importação atual pela revisão privada da #31 **1/1**; `git diff --check` passou. O teste temporário foi removido e nenhuma persistência foi chamada.
+- As migrations #31/0023 continuam sem aplicação; não há exportação aprovada ou projeção D1 preenchida. Sem ambiente isolado e sem autorização de Worker/M5, não foi feita publicação nem escrita produtiva.
+
+**NEXT_ACTION:** enviar o lote à revisão privada e aprovar nomes, claims, variantes e cada vínculo com evidência visual antes de qualquer exportação.
+
+**DO_NOT_REPEAT:** não usar publicação ou nome de catálogo como prova visual; não confundir Shenron/Shenlong nem incluir relações pendentes no público.
