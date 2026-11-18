@@ -604,9 +604,13 @@ BEGIN
   SELECT review_history INTO STRICT v_history
   FROM public.catalog_curation_model_characters
   WHERE catalog_model_id = v_model_a AND character_identity_id = v_id_a;
-  IF jsonb_array_length(v_history) <> 1
-     OR (v_history->0->>'action') IS DISTINCT FROM 'unlinked' THEN
-    RAISE EXCEPTION 'Unlink reason was not recorded';
+  IF jsonb_array_length(v_history) <> 2
+     OR (v_history->0->>'action') IS DISTINCT FROM 'evidence_updated'
+     OR (v_history->0->>'previousOrigin') IS DISTINCT FROM 'manual_admin:acceptance_original'
+     OR (v_history->1->>'action') IS DISTINCT FROM 'unlinked'
+     OR (v_history->1->>'reason') IS DISTINCT FROM
+       'Manual revision: attribution belongs to another character.' THEN
+    RAISE EXCEPTION 'Unlink did not retain the HTTPS upgrade and recorded reason';
   END IF;
 
   v_page := public.admin_get_collection_curation_page(
@@ -620,7 +624,7 @@ BEGIN
      OR jsonb_array_length(v_member->'inactiveCharacters') <> 1
      OR (v_member->>'inactiveCharacterCount')::integer <> 1
      OR (v_member->'inactiveCharacters'->0->>'id')::uuid IS DISTINCT FROM v_id_a
-     OR (v_member->'inactiveCharacters'->0->>'reviewCount')::integer <> 1
+     OR (v_member->'inactiveCharacters'->0->>'reviewCount')::integer <> 2
      OR (v_summary->>'distinctVerifiedCharacterCount')::integer <> 2
      OR (v_summary->>'unverifiedModelCount')::integer <> 0 THEN
     RAISE EXCEPTION 'Private page/summary failed to keep inactive links separate';
@@ -649,10 +653,10 @@ BEGIN
   WHERE catalog_model_id = v_model_a AND character_identity_id = v_id_a
     AND unlinked_at IS NULL AND unlink_reason IS NULL
     AND evidence_origin = 'https://example.org/model-a/character-a-restored';
-  IF jsonb_array_length(v_history) <> 2
-     OR (v_history->1->>'action') IS DISTINCT FROM 'restored'
-     OR (v_history->1->>'note') IS DISTINCT FROM 'Restored after manual reassessment'
-     OR (v_history->1->>'previousOrigin') IS DISTINCT FROM 'https://example.org/model-a/character-a' THEN
+  IF jsonb_array_length(v_history) <> 3
+     OR (v_history->2->>'action') IS DISTINCT FROM 'restored'
+     OR (v_history->2->>'note') IS DISTINCT FROM 'Restored after manual reassessment'
+     OR (v_history->2->>'previousOrigin') IS DISTINCT FROM 'https://example.org/model-a/character-a' THEN
     RAISE EXCEPTION 'Restoration lost previous approval, link, or review history';
   END IF;
 
@@ -688,7 +692,7 @@ BEGIN
   SELECT review_history INTO STRICT v_history
   FROM public.catalog_curation_model_characters
   WHERE catalog_model_id = v_model_a AND character_identity_id = v_id_a;
-  IF jsonb_array_length(v_history) <> 2 THEN
+  IF jsonb_array_length(v_history) <> 3 THEN
     RAISE EXCEPTION 'History overflow attempt corrupted existing decisions';
   END IF;
 
