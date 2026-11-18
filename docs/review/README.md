@@ -13,3 +13,5 @@ Para regenerar, forneça o arquivo do contrato candidato desejado:
 ```powershell
 node scripts/catalog/character-catalog-inventory.mjs --format csv --candidate-contract <arquivo-do-contrato> --output docs/review/character-catalog-review-queue.csv
 ```
+
+`character-editorial-research-preparation.json` é um lote separado de pesquisa inicial, ligado aos modelos apenas por seus IDs do inventário. Na fotografia de 18/11/2026, prepara quatro candidatos com biografias originais e fontes oficiais consultadas, mais quinze possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos têm apenas proveniência de catálogo, evidência independente vazia e revisão visual/editorial obrigatória; portanto, nenhum conta como relação comprovada. O pacote não cria identidades no banco, não alimenta a projeção pública e não altera a fila regenerável. A curadoria privada existente continua sendo a autoridade para revisar e aprovar qualquer dado.

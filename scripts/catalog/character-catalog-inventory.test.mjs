@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   buildCharacterReviewInventory,
@@ -60,6 +61,57 @@ test("paginates the public catalog and creates review slots without inventing id
   assert.equal(inventory.models[0].characterReview.characterId, null);
   assert.deepEqual(inventory.models[0].characterReview.evidence, []);
   assert.equal(inventory.models[0].biographyReview.status, "not_started_identity_unverified");
+});
+
+test("research preparation references only inventory IDs and remains unapproved", () => {
+  const packet = JSON.parse(readFileSync(
+    new URL("../../docs/review/character-editorial-research-preparation.json", import.meta.url),
+    "utf8",
+  ));
+  const queueLines = readFileSync(
+    new URL("../../docs/review/character-catalog-review-queue.csv", import.meta.url),
+    "utf8",
+  ).trimEnd().split(/\r?\n/);
+  const inventoryModels = new Map(queueLines.slice(1).map((line) => {
+    const [modelId, modelSlug] = line.split(",", 3);
+    return [modelId, modelSlug];
+  }));
+  const sourceIds = new Set(packet.sources.map((source) => source.id));
+  const links = packet.candidates.flatMap((candidate) => candidate.candidateModelLinks);
+
+  assert.equal(packet.authority, "review-only; not a character catalog or publication source");
+  assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
+  assert.equal(packet.candidates.length, 4);
+  assert.equal(packet.policy.publicProjectionEligible, false);
+  assert.equal(packet.policy.databaseWritePerformed, false);
+  assert.equal(packet.policy.approvedIdentityCount, 0);
+  assert.equal(packet.policy.approvedModelLinkCount, 0);
+  assert.equal(links.length, 15);
+  assert.equal(new Set(links.map((link) => link.modelId)).size, links.length);
+
+  for (const source of packet.sources) {
+    assert.equal(new URL(source.url).protocol, "https:");
+    assert.equal(source.sourceKind, "official");
+  }
+  for (const candidate of packet.candidates) {
+    assert.equal(candidate.identityStatus, "prepared_pending_human_review");
+    assert.equal(candidate.franchiseStatus, "prepared_pending_human_review");
+    assert.equal(candidate.biographyStatus, "prepared_pending_human_review");
+    assert.ok(candidate.biographyDraft.length > 40);
+    assert.ok(candidate.biographySourceIds.length > 0);
+    for (const claim of candidate.claims) {
+      assert.equal(claim.reviewStatus, "pending_human_review");
+      assert.ok(claim.sourceIds.length > 0);
+      assert.ok(claim.sourceIds.every((sourceId) => sourceIds.has(sourceId)));
+    }
+    for (const sourceId of candidate.biographySourceIds) assert.ok(sourceIds.has(sourceId));
+    for (const link of candidate.candidateModelLinks) {
+      assert.equal(inventoryModels.get(link.modelId), link.modelSlug);
+      assert.equal(link.relationshipStatus, "candidate_pending_visual_and_editorial_review");
+      assert.deepEqual(link.independentModelEvidence, []);
+      assert.equal(link.reviewRequired, true);
+    }
+  }
 });
 
 test("rejects an insecure catalog base before making requests", async () => {
