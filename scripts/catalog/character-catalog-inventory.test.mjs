@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 70);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 789);
-  assert.equal(packet.candidates.length, 70);
-  assert.equal(packet.sources.length, 79);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 71);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 794);
+  assert.equal(packet.candidates.length, 71);
+  assert.equal(packet.sources.length, 80);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 70);
+  assert.equal(packet.policy.preparedIdentityCount, 71);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 789);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 794);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 789);
+  assert.equal(links.length, 794);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -239,6 +239,7 @@ test("research preparation references only inventory IDs and remains unapproved"
   const newestResearchCandidates = [
     ["All Might (My Hero Academia anime profile candidate)", "All Might", "My Hero Academia", 5],
     ["Leon S. Kennedy (Resident Evil candidate)", "Leon S. Kennedy", "Resident Evil", 5],
+    ["Naruto Uzumaki (official profile candidate)", "Naruto Uzumaki", "Naruto", 5],
   ];
   for (const [candidateName, catalogLabel, franchise, expectedModels] of newestResearchCandidates) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
@@ -262,6 +263,13 @@ test("research preparation references only inventory IDs and remains unapproved"
   assert.ok(leon.claims.some((claim) =>
     claim.attribute === "biography.fact.raccoon_city_and_government_agent" &&
     claim.sourceIds.includes("capcom-leon-resident-evil-portal")));
+  const naruto = packet.candidates.find((item) =>
+    item.candidateName === "Naruto Uzumaki (official profile candidate)");
+  assert.ok(naruto.claims.some((claim) =>
+    claim.attribute === "biography.fact.seventh_hokage_in_boruto" &&
+    claim.sourceIds.includes("naruto-official-character-overview")));
+  assert.ok(naruto.candidateModelLinks.every((link) =>
+    !["mdl_4b49b9f65ccc3b7d874c", "mdl_d822c2582bcc102e6ef5"].includes(link.modelId)));
 
   for (const source of packet.sources) {
     assert.equal(new URL(source.url).protocol, "https:");

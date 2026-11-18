@@ -2070,3 +2070,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** encaminhar os novos candidatos à revisão privada da #31. Depois de aprovações humanas, obter ambiente isolado para aplicar migrations e homologar exportação, projeção Worker/D1 e páginas da #33 de ponta a ponta.
 
 **DO_NOT_REPEAT:** não tratar os 789 links candidatos como relações comprovadas; não afirmar integração das três PRs na `main`; não aplicar migrations no Supabase produtivo nem ativar a flag enquanto a projeção estiver vazia.
+
+## Rodada 105 — Naruto Uzumaki na fila editorial (18/11/2026)
+
+- Preparei um dossiê de Naruto Uzumaki usando o site oficial da franquia. Vinculei apenas os cinco registros com nome exato “Naruto Uzumaki”; dois itens de confrontos/grupos ficaram fora. Continuidade e aparência dos cinco renders seguem sem confirmação visual.
+- O pacote da PR #33 agora soma **71 identidades preparadas, 80 URLs oficiais únicas e 794 relações candidatas**. Permanecem **0 identidades revisadas/aprovadas, 0 relações revisadas/aprovadas e 0 vínculos com evidência independente por render**.
+- Validação executada: teste da fila **11/11**; teste de integração temporário no checkout #31 **1/1**, aceitando o pacote atual da #33 e preparando em memória a biografia e as fontes para revisão. O teste temporário foi removido; nenhuma chamada de persistência ocorreu. `git diff --check` passou.
+- O Quality Gate **44305091773** do commit anterior `34dce8e9` passou no job offline sem deploy; cobertura, build, auditorias gerais e release foram ignorados pelos filtros. A nova rodada ainda aguarda seu gate após o push.
+- Permanecem os bloqueios da rodada 104: migrations #31/0023 sem aplicação, sem Supabase/D1 isolado, sem exportação aprovada, projeção pública vazia e sem autorização de publicação Worker/M5. Nenhuma alteração de produção foi feita.
+
+**NEXT_ACTION:** submeter os candidatos para revisão editorial privada; obter ambiente isolado para homologar o caminho aprovado Supabase→D1→Worker→páginas públicas.
+
+**DO_NOT_REPEAT:** não contar vínculos candidatos como identidades verificadas nem afirmar homologação pública a partir de testes em memória ou offline.

@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 70,
-    "preparedCandidateModelLinkCount": 789
+    "sourceResearchedIdentityCount": 71,
+    "preparedCandidateModelLinkCount": 794
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 70,
+    "preparedIdentityCount": 71,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 789,
+    "preparedCandidateModelLinkCount": 794,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -659,6 +659,14 @@
       "publisher": "CAPCOM",
       "title": "Leon S. Kennedy: Ass-kicking Agent Extraordinaire",
       "url": "https://game.capcom.com/residentevil/en/umbrella-20230324110000.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "naruto-official-character-overview",
+      "publisher": "NARUTO OFFICIAL SITE / Shueisha",
+      "title": "NARUTO ABOUT — official franchise and character overview",
+      "url": "https://naruto-official.com/en/about",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -19752,6 +19760,158 @@
             "sourceStatus": "candidate_and_published",
             "candidateContractPublished": true,
             "publicCatalogSlug": "resident-evil-leon-s-kennedy-resident-evil-leon-s-kennedy-stl-5-resident-evil-principal"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Naruto Uzumaki (official profile candidate)",
+      "catalogDisplayNameCandidate": "Naruto Uzumaki",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Naruto",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Naruto Uzumaki",
+          "sourceIds": [
+            "naruto-official-character-overview"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Naruto",
+          "sourceIds": [
+            "naruto-official-character-overview"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.hokage_dream_and_early_origin",
+          "value": "O site oficial descreve Naruto como um garoto da Vila da Folha que sonha em tornar-se Hokage e que, após graduar-se com ajuda de Iruka, inicia sua jornada ninja.",
+          "sourceIds": [
+            "naruto-official-character-overview"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.seventh_hokage_in_boruto",
+          "value": "Na seção oficial de BORUTO, Naruto é descrito como Sétimo Hokage da Vila da Folha.",
+          "sourceIds": [
+            "naruto-official-character-overview"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "O site oficial descreve Naruto Uzumaki como um garoto da Vila da Folha que sonha em se tornar Hokage; após a graduação na academia, com apoio de Iruka, começa sua jornada como ninja. Na seção de BORUTO, a mesma fonte apresenta Naruto adulto como o Sétimo Hokage. As versões e épocas dos cinco modelos candidatos ainda precisam de revisão visual; este rascunho não identifica o design dos renders.",
+      "biographySourceIds": [
+        "naruto-official-character-overview"
+      ],
+      "catalogFranchiseCandidates": [
+        "Naruto"
+      ],
+      "ambiguities": [
+        "A fonte cobre a história inicial de NARUTO e também uma etapa adulta em BORUTO; a versão e a época representadas pelos modelos precisam ser verificadas individualmente.",
+        "Foram considerados apenas os cinco registros cujo nome da fila é exatamente Naruto Uzumaki; itens em grupo como Naruto e Neji ou Kakashi e Naruto foram excluídos.",
+        "Nenhum vínculo tem evidência visual independente; os cinco IDs seguem pendentes de revisão editorial."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_608ea24401ab9fc8346f",
+          "modelSlug": "naruto-naruto-uzumaki-naruto-acervo-anterior-imagem-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "naruto-naruto-uzumaki-naruto-acervo-anterior-imagem-04"
+          }
+        },
+        {
+          "modelId": "mdl_649eb25d3445e5725bd2",
+          "modelSlug": "naruto-naruto-uzumaki-naruto-acervo-anterior-imagem-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "naruto-naruto-uzumaki-naruto-acervo-anterior-imagem-02"
+          }
+        },
+        {
+          "modelId": "mdl_b7fac17f87ba17fd4630",
+          "modelSlug": "naruto-naruto-uzumaki-naruto-acervo-anterior-imagem-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "naruto-naruto-uzumaki-naruto-acervo-anterior-imagem-03"
+          }
+        },
+        {
+          "modelId": "mdl_bebfd6e3b2c6067902a6",
+          "modelSlug": "naruto-naruto-uzumaki-naruto-naruto-uzumaki-stl-4-naruto-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "naruto-naruto-uzumaki-naruto-naruto-uzumaki-stl-4-naruto-principal"
+          }
+        },
+        {
+          "modelId": "mdl_cf3a21c55fb812e0d9b6",
+          "modelSlug": "naruto-naruto-uzumaki-naruto-acervo-anterior-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "naruto-naruto-uzumaki-naruto-acervo-anterior-diorama"
           }
         }
       ],
