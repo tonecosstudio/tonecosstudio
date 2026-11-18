@@ -145,6 +145,38 @@ BEGIN
     RAISE EXCEPTION 'Approval lost the observed model relation revision';
   END IF;
   v_export := public.admin_export_approved_catalog_character_projection();
+  IF v_export ->> 'schemaVersion' <> '1'
+     OR v_export ->> 'source' <> 'public.admin_export_approved_catalog_character_projection'
+     OR NULLIF(v_export ->> 'generatedAt', '') IS NULL THEN
+    RAISE EXCEPTION 'Approved export header does not match the versioned Worker contract';
+  END IF;
+  IF (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(v_export) AS item(key))
+     IS DISTINCT FROM ARRAY['characters', 'generatedAt', 'schemaVersion', 'source']::text[] THEN
+    RAISE EXCEPTION 'Approved export leaked or omitted a top-level Worker contract field';
+  END IF;
+  IF (SELECT array_agg(key ORDER BY key)
+      FROM jsonb_object_keys(v_export -> 'characters' -> 0) AS item(key))
+     IS DISTINCT FROM ARRAY[
+       'approvedAt', 'approvedBy', 'approvedRelationRevision', 'approvalRef',
+       'franchiseName', 'identityId', 'modelLinks', 'name', 'profile',
+       'profileRevision', 'relationRevision', 'reviewedAt', 'reviewedBy', 'slug'
+     ]::text[] THEN
+    RAISE EXCEPTION 'Approved character does not match the versioned Worker contract';
+  END IF;
+  IF (SELECT array_agg(key ORDER BY key)
+      FROM jsonb_object_keys(v_export -> 'characters' -> 0 -> 'profile') AS item(key))
+     IS DISTINCT FROM ARRAY[
+       'ageContext', 'ageSources', 'aliases', 'biography', 'biographySources',
+       'characteristics', 'franchiseSources', 'nameSources', 'originWork',
+       'originWorkSources', 'slug'
+     ]::text[] THEN
+    RAISE EXCEPTION 'Approved profile does not match the versioned Worker contract';
+  END IF;
+  IF (SELECT array_agg(key ORDER BY key)
+      FROM jsonb_object_keys(v_export -> 'characters' -> 0 -> 'modelLinks' -> 0) AS item(key))
+     IS DISTINCT FROM ARRAY['evidenceTitle', 'evidenceUrl', 'modelId', 'modelSlug']::text[] THEN
+    RAISE EXCEPTION 'Approved model link does not match the versioned Worker contract';
+  END IF;
   IF jsonb_array_length(v_export -> 'characters') <> 1
      OR (v_export -> 'characters' -> 0 ->> 'approvedRelationRevision')::integer <> 1
      OR jsonb_array_length(v_export -> 'characters' -> 0 -> 'modelLinks') <> 1 THEN
