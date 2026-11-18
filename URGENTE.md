@@ -1967,7 +1967,7 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 
 - Atualizei a preparação editorial existente com quatro candidatos de pesquisa — Apocalipse, Homem de Ferro, Dentes de Sabre e Fera — baseados em cinco páginas oficiais da Marvel. São candidatos pesquisados, não identidades verificadas.
 - O conjunto preparado agora tem **49 candidatos, 60 URLs oficiais únicas, 49 rascunhos biográficos e 666 relações candidatas**. Foram associados por ID da fila 27 modelos nesta rodada. Todas as identidades, franquias, claims e relações seguem pendentes; **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
-- Validação executada: node --test scripts/catalog/character-catalog-inventory.test.mjs — 11/11 passaram; git diff --check — passou. O Quality Gate offline da PR #33 no commit anterior 7949810d passou (44283546941); auditorias gerais, build e cobertura foram ignorados por filtros do evento.
+- Validação executada: node --test scripts/catalog/character-catalog-inventory.test.mjs — 11/11 passaram; git diff --check — passou. O Quality Gate da PR #33 no commit f0bead29 passou no job Catalog Worker offline / no deploy (44285423901); auditorias gerais, build e cobertura foram ignorados por filtros do evento.
 - Nenhuma alteração em Supabase, D1, migration, Worker publicado ou flag. A migration 0023 segue sem aplicação; não há export aprovado e o único projeto Supabase disponível não tem branch isolada. Revisão humana da PR #31, ambiente isolado e autorização para homologar a publicação seguem necessários.
 
 **NEXT_ACTION:** enviar os dossiês na PR #33; encaminhar para a curadoria privada #31 e solicitar um ambiente Supabase/D1 isolado antes de validar a exportação real.
