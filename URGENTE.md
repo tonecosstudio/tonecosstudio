@@ -2171,7 +2171,8 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - Corrigi na branch existente da PR #31 a incompatibilidade que impedia importar modelos compostos para dois personagens: agora o mesmo par catálogo ID/slug pode aparecer em candidatos distintos, com unicidade por ficha e rejeição de colisões ID↔slug. Não houve duplicação de identidades.
 - Validações locais: fila **11/11**; testes do importador #31 **7/7**; teste temporário contra o pacote real #33 **1/1** (87 candidatos, 97 fontes; “Goku e Vegeta” gerou dois rascunhos pendentes); TypeScript app e `git diff --check` passaram. O teste temporário foi removido e nenhuma persistência foi chamada.
 - Totais revisados/aprovados e vínculos com evidência visual independente continuam em **zero**. Nenhuma migration, exportação editorial aprovada, escrita de produção, publicação ou ativação da flag ocorreu.
+- Integração: commits `8f5ffc50` (#31) e `0b812516` (#33) foram enviados às PRs existentes; ambas seguem abertas em draft. Nenhuma mudança desta rodada foi integrada à `main`; PR #26 permanece `staged-offline`.
 
-**NEXT_ACTION:** enviar a correção pelo branch existente #31 e encaminhar os candidatos para revisão privada; homologar Supabase→D1→Worker somente após staging isolado, migrations autorizadas e aprovações humanas.
+**NEXT_ACTION:** revisar a correção já enviada na PR #31 e encaminhar os candidatos à curadoria privada; homologar Supabase→D1→Worker somente após staging isolado, migrations autorizadas e aprovações humanas.
 
 **DO_NOT_REPEAT:** não converter um título que nomeia dois personagens em prova de que ambos aparecem no render.
