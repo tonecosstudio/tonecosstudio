@@ -581,16 +581,18 @@ BEGIN
         updated_at = now()
     WHERE public.catalog_curation_model_characters.unlinked_at IS NOT NULL
        OR (
-         public.catalog_curation_model_characters.evidence_origin !~ '^https://[^[:space:]<>]+$'
-         AND EXCLUDED.evidence_origin ~ '^https://[^[:space:]<>]+$'
+         -- A reviewed HTTPS citation can replace stale or incomplete active
+         -- proof. Preserve prior evidence in review_history; the canonical
+         -- relation trigger revokes any publication bound to the old revision.
+         private_api.tonart_public_https_evidence_url(EXCLUDED.evidence_origin)
          AND EXCLUDED.evidence_note IS NOT NULL
          AND btrim(EXCLUDED.evidence_note) <> ''
-       )
-       OR (
-         public.catalog_curation_model_characters.evidence_note IS NULL
-         AND EXCLUDED.evidence_origin ~ '^https://[^[:space:]<>]+$'
-         AND EXCLUDED.evidence_note IS NOT NULL
-         AND btrim(EXCLUDED.evidence_note) <> ''
+         AND (
+           public.catalog_curation_model_characters.evidence_origin
+             IS DISTINCT FROM EXCLUDED.evidence_origin
+           OR public.catalog_curation_model_characters.evidence_note
+             IS DISTINCT FROM EXCLUDED.evidence_note
+         )
        );
 
   RETURN jsonb_build_object('modelId', v_id, 'identityId', v_identity_id, 'verified', true);
