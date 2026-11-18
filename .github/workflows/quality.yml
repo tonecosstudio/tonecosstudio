@@ -48,6 +48,7 @@ on:
       - 'src/pages/admin/production/**'
       - 'src/pages/admin/users/**'
       - 'src/pages/catalog/CanonicalModelDetails*'
+      - 'src/pages/catalog/RelatedModels*'
       - 'src/pages/commercial/**'
       - 'src/pages/LandingPage*'
       - 'src/components/catalog/**'
