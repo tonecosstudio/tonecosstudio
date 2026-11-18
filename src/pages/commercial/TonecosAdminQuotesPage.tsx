@@ -579,10 +579,13 @@ export default function TonecosAdminQuotesPage() {
                         className={fieldClass}
                         value={cancelReason[quote.id] ?? ""}
                         maxLength={500}
-                        onChange={(event) => setCancelReason((current) => ({
-                          ...current,
-                          [quote.id]: event.currentTarget.value,
-                        }))}
+                        onChange={(event) => {
+                          const value = event.currentTarget.value;
+                          setCancelReason((current) => ({
+                            ...current,
+                            [quote.id]: value,
+                          }));
+                        }}
                         placeholder="Informe o motivo do cancelamento"
                       />
                     </label>
@@ -701,7 +704,10 @@ export default function TonecosAdminQuotesPage() {
                             maxLength={12}
                             placeholder="Ex.: 24,90"
                             value={price[quote.id] ?? ""}
-                            onChange={(event) => setPrice((current) => ({ ...current, [quote.id]: event.currentTarget.value }))}
+                            onChange={(event) => {
+                              const value = event.currentTarget.value;
+                              setPrice((current) => ({ ...current, [quote.id]: value }));
+                            }}
                           />
                         </label>
                       )
@@ -718,7 +724,10 @@ export default function TonecosAdminQuotesPage() {
                             maxLength={12}
                             placeholder={quote.isPreorder ? "Ex.: 300,00" : "Ex.: 1.249,90"}
                             value={price[quote.id] ?? ""}
-                            onChange={(event) => setPrice((current) => ({ ...current, [quote.id]: event.target.value }))}
+                            onChange={(event) => {
+                              const value = event.currentTarget.value;
+                              setPrice((current) => ({ ...current, [quote.id]: value }));
+                            }}
                           />
                         </label>
                         <label className="block space-y-2 text-sm">
@@ -733,7 +742,10 @@ export default function TonecosAdminQuotesPage() {
                             step={1}
                             required
                             value={discountPercent[quote.id] ?? "0"}
-                            onChange={(event) => setDiscountPercent((current) => ({ ...current, [quote.id]: event.currentTarget.value }))}
+                            onChange={(event) => {
+                              const value = event.currentTarget.value;
+                              setDiscountPercent((current) => ({ ...current, [quote.id]: value }));
+                            }}
                           />
                           {previewTotal ? (
                             <p className="text-xs text-[hsl(var(--gold-accent))]" aria-live="polite">Total após desconto: {previewTotal}</p>
@@ -755,12 +767,13 @@ export default function TonecosAdminQuotesPage() {
                         rows={3}
                         placeholder="Informe validade, prazo estimado ou observações relevantes."
                         value={responseMessage[quote.id] ?? ""}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          const value = event.currentTarget.value;
                           setResponseMessage((current) => ({
                             ...current,
-                            [quote.id]: event.target.value,
-                          }))
-                        }
+                            [quote.id]: value,
+                          }));
+                        }}
                       />
                     </label>
                     <div className="sm:col-span-2">
