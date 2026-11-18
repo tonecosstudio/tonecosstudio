@@ -257,7 +257,35 @@ function approvedCharacterFixture() {
       profileRevision: 4,
       reviewedAt: '2026-11-18T02:00:00Z',
       approvedAt: '2026-11-18T03:00:00Z',
-      profile: { slug: 'character-example' },
+      profile: {
+        slug: 'character-example',
+        biography: 'Original source-backed editorial biography.',
+        biographySources: [{
+          title: 'Licensed publication',
+          url: 'https://example.org/licensed-biography',
+          kind: 'licensor',
+        }],
+        originWork: 'Original production',
+        originWorkSources: [{
+          title: 'Institutional work record',
+          url: 'https://example.org/work-record',
+          kind: 'institution',
+        }],
+        nameSources: [{
+          title: 'Official character record',
+          url: 'https://example.org/character-record',
+          kind: 'official',
+        }],
+        franchiseSources: [{
+          title: 'Reputable franchise reference',
+          url: 'https://example.org/franchise-record',
+          kind: 'reputable_reference',
+        }],
+        ageContext: null,
+        ageSources: [],
+        aliases: [],
+        characteristics: [],
+      },
       modelLinks: [{
         modelId: 'game-model',
         modelSlug: 'game-model-slug',
@@ -352,4 +380,52 @@ test('approved character scope requires canonical slugs, explicit approval and i
   assert.throws(() => resolveApprovedCharacterScopes({
     ...payload, characters: [payload.characters[0], payload.characters[0]],
   }, d1), /approved_character_scope_invalid/);
+});
+
+test('character scope requires reviewed, fully sourced claims; rejects unsupported evidence', () => {
+  const payload = approvedCharacterFixture();
+  const d1 = approvedCharacterD1Fixture();
+  assert.deepEqual(resolveApprovedCharacterScopes(payload, d1)[0].modelIds, ['game-model']);
+  const profile = payload.characters[0].profile;
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{ ...payload.characters[0], profile: {
+      ...profile, biographySources: [],
+    } }],
+  }, d1), /approved_character_biography_sources_invalid/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{ ...payload.characters[0], profile: {
+      ...profile, franchiseSources: [{ title: 'Bad', url: 'https://localhost/fake', kind: 'official' }],
+    } }],
+  }, d1), /approved_character_franchise_sources_invalid/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{ ...payload.characters[0], profile: {
+      ...profile, nameSources: [{ title: 'Invalid', url: 'https://example.org', kind: 'mystery' }],
+    } }],
+  }, d1), /approved_character_name_sources_invalid/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{ ...payload.characters[0], profile: {
+      ...profile, aliases: [{ name: 'Alias', sources: [] }],
+    } }],
+  }, d1), /approved_character_aliases_invalid/);
+});
+
+test('character scope blocks ambiguous freeform ages until the canonical public age shape is approved', () => {
+  const payload = approvedCharacterFixture();
+  const d1 = approvedCharacterD1Fixture();
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{ ...payload.characters[0], profile: {
+      ...payload.characters[0].profile,
+      ageContext: '21 anos na fase posterior',
+      ageSources: [{
+        title: 'Official chronology',
+        url: 'https://example.org/chronology',
+        kind: 'publisher',
+      }],
+    } }],
+  }, d1), /approved_character_age_projection_requires_canonical_split/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{ ...payload.characters[0],
+      approvedAt: '2026-11-18T01:00:00Z',
+    }],
+  }, d1), /approved_character_approval_order_invalid/);
 });
