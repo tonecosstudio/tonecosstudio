@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 90);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 910);
-  assert.equal(packet.candidates.length, 90);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 94);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 926);
+  assert.equal(packet.candidates.length, 94);
   assert.equal(packet.sources.length, 101);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 90);
+  assert.equal(packet.policy.preparedIdentityCount, 94);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 910);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 926);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 910);
+  assert.equal(links.length, 926);
   assert.equal(new Set(relationshipKeys).size, links.length);
   for (const link of links) {
     assert.equal(inventoryModels.get(link.modelId), link.modelSlug);
@@ -293,6 +293,39 @@ test("research preparation references only inventory IDs and remains unapproved"
     assert.ok(candidate.candidateModelLinks.every((link) =>
       link.independentModelEvidence.length === 0 && link.reviewRequired));
   }
+  const fourthResearchWave = [
+    ["Broly (Dragon Ball Super manga candidate)", "Broly", "Dragon Ball",
+      "dragonball-official-super-broly-217"],
+    ["Kakashi Hatake (Naruto manga profile candidate)", "Kakashi", "Naruto",
+      "naruto-official-kakashi-team-seven"],
+    ["Jill Valentine (Resident Evil games candidate)", "Jill Valentine", "Resident Evil",
+      "capcom-re-jill-stories-2024"],
+    ["Miles Morales (Marvel Comics Spider-Man candidate)", "Miles Morales", "Marvel Universe",
+      "marvel-miles-morales-in-comics"],
+  ];
+  for (const [candidateName, modelLabel, franchise, sourceId] of fourthResearchWave) {
+    const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
+    assert.ok(candidate, `Missing researched candidate: ${candidateName}`);
+    assert.equal(candidate.catalogDisplayNameCandidate, modelLabel);
+    assert.equal(candidate.franchiseCandidate, franchise);
+    assert.equal(candidate.candidateModelLinks.length, 4);
+    assert.equal(candidate.identityStatus, "prepared_pending_human_review");
+    assert.equal(candidate.biographyStatus, "prepared_pending_human_review");
+    assert.ok(candidate.biographyDraft.length > 40);
+    assert.deepEqual(candidate.biographySourceIds, [sourceId]);
+    assert.ok(packet.sources.some((source) =>
+      source.id === sourceId && source.sourceKind === "official"));
+    assert.ok(candidate.claims.every((claim) =>
+      claim.reviewStatus === "pending_human_review" &&
+      claim.sourceIds.includes(sourceId)));
+    assert.ok(candidate.candidateModelLinks.every((link) =>
+      link.reviewRequired && link.relationshipStatus ===
+        "candidate_pending_visual_and_editorial_review" &&
+      link.catalogEvidenceSnapshot.sourceStatus === "candidate_and_published" &&
+      link.independentModelEvidence.length === 0));
+    assert.ok(candidate.ambiguities.length >= 2);
+  }
+
   const allMight = packet.candidates.find((item) =>
     item.candidateName === "All Might (My Hero Academia anime profile candidate)");
   assert.ok(allMight.claims.some((claim) =>
