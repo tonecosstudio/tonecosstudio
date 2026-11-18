@@ -2106,3 +2106,26 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** enviar o lote à revisão privada e aprovar nomes, claims, variantes e cada vínculo com evidência visual antes de qualquer exportação.
 
 **DO_NOT_REPEAT:** não usar publicação ou nome de catálogo como prova visual; não confundir Shenron/Shenlong nem incluir relações pendentes no público.
+
+## Rodada 108 — Mumm-Ra e Cheetara (18/11/2026)
+
+- Preparei dois dossiês originais e pendentes de revisão para as versões cobertas pelas sinopses oficiais de *ThunderCats* (1985), da HBO Max. Os claims de Mumm-Ra e Cheetara apontam para a [página oficial da série e episódios](https://www.hbomax.com/br/pt/show/0d50eaec-1b11-4bab-ac9b-49ac21fbf7ed).
+- Relacionei seis registros exatos de Mumm-Ra e cinco de Cheetara pelos IDs já existentes na fila. Os 11 vínculos seguem sem evidência visual independente, não aprovados e sujeitos à revisão humana; versões, transformações e continuidade permanecem ambíguas.
+- A preparação soma **78 candidatos, 87 fontes oficiais únicas e 830 vínculos candidatos**. Continuam **0 identidades revisadas/aprovadas, 0 vínculos revisados/aprovados e 0 relações com evidência visual independente**; o pacote não está autorizado para projeção pública.
+- Validação executada: `node --test scripts/catalog/character-catalog-inventory.test.mjs` (**11/11 passou**) e `git diff --check` passou. Nenhuma persistência, migration, exportação aprovada, publicação ou ativação de flag ocorreu.
+- Permanecem bloqueios externos: não há staging isolado Supabase/D1; migrations #31 e 0023/#26 não foram aplicadas; falta revisão editorial humana e exportação aprovada; projeção D1 vazia; Worker/M5 sem autorização. Nenhuma escrita produtiva foi feita.
+
+**NEXT_ACTION:** encaminhar os novos dossiês para revisão privada na #31; após aprovações, homologar o fluxo Supabase→D1→Worker em ambiente isolado autorizado.
+
+**DO_NOT_REPEAT:** não promover nomes exatos de catálogo a evidência visual, não aprovar continuidade por sinopse da série e não usar a fonte como evidência do render TONART.
+
+## Rodada 109 — Lunch/Launch na fila editorial (18/11/2026)
+
+- Preparei candidato pendente para Lunch, nome usado nas fontes oficiais em inglês, preservando “Launch” como rótulo da fila e sem assumir equivalência/localização aprovada. O rascunho usa o [perfil oficial de personagem](https://en.dragon-ball-official.com/news/01_2174.html) e o artigo oficial sobre a Kame House.
+- Vinculei seis IDs exatos da fila, todos sujeitos a inspeção dos renders. A biografia cobre somente fatos narrados nas fontes; continuidade, nome localizado e correspondência visual seguem pendentes.
+- Totais atuais: **79 candidatos, 89 fontes oficiais únicas e 836 vínculos candidatos**. Permanecem **0 identidades ou relações revisadas/aprovadas e 0 vínculos com evidência independente de render**.
+- Esta rodada atualiza o pacote de revisão; não houve escrita ou exportação em Supabase/D1. A homologação ainda depende das migrations #31/0023, de staging isolado, de revisão humana aprovada e de autorização para publicar/cortar o Worker.
+
+**NEXT_ACTION:** encaminhar Lunch/Launch, Mumm-Ra e Cheetara à curadoria privada para resolver nomes, versões e relações por inspeção visual.
+
+**DO_NOT_REPEAT:** não usar os títulos dos seis modelos como confirmação de Lunch/Launch ou como evidência do render.

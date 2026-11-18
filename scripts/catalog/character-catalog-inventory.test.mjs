@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 76);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 819);
-  assert.equal(packet.candidates.length, 76);
-  assert.equal(packet.sources.length, 86);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 79);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 836);
+  assert.equal(packet.candidates.length, 79);
+  assert.equal(packet.sources.length, 89);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 76);
+  assert.equal(packet.policy.preparedIdentityCount, 79);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 819);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 836);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 819);
+  assert.equal(links.length, 836);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -245,6 +245,9 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["Tifa Lockhart (Final Fantasy VII Rebirth candidate)", "Tifa", "Final Fantasy VII", 5],
     ["Burter (Namek saga candidate)", "Burter", "Dragon Ball", 5],
     ["Shenron (Earth Dragon Balls; Shenlong label candidate)", "Shenlong", "Dragon Ball", 5],
+    ["Mumm-Ra (1985 ThunderCats profile candidate)", "Mumm-Ra", "ThunderCats", 6],
+    ["Cheetara (1985 ThunderCats profile candidate)", "Cheetara", "ThunderCats", 5],
+    ["Lunch (Launch catalog localization candidate)", "Launch", "Dragon Ball", 6],
   ];
   for (const [candidateName, catalogLabel, franchise, expectedModels] of newestResearchCandidates) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
@@ -281,12 +284,34 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["Tifa Lockhart (Final Fantasy VII Rebirth candidate)", "square-enix-ffvii-rebirth-tifa", "biography.fact.rebirth_avalanche_and_search_for_path"],
     ["Burter (Namek saga candidate)", "dragon-ball-burter-namek-showcase", "biography.fact.ginyu_force_namek"],
     ["Shenron (Earth Dragon Balls; Shenlong label candidate)", "dragon-ball-shenron-character-overview", "biography.fact.earth_dragon_balls_and_wishes"],
+    ["Mumm-Ra (1985 ThunderCats profile candidate)", "hbomax-thundercats-1985-series-and-episodes", "biography.fact.mutants_alliance"],
+    ["Cheetara (1985 ThunderCats profile candidate)", "hbomax-thundercats-1985-series-and-episodes", "biography.fact.sixth_sense_episode"],
+    ["Lunch (Launch catalog localization candidate)", "dragon-ball-lunch-official-character-showcase", "biography.fact.sneeze_personality_change"],
   ];
   for (const [candidateName, sourceId, attribute] of newestSourceClaims) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
     assert.ok(candidate.claims.some((claim) =>
       claim.attribute === attribute && claim.sourceIds.includes(sourceId)));
   }
+  const thundercatsSource = packet.sources.find((source) =>
+    source.id === "hbomax-thundercats-1985-series-and-episodes");
+  assert.equal(thundercatsSource.publisher, "HBO Max / Warner Bros. Discovery");
+  assert.equal(thundercatsSource.sourceKind, "official");
+  for (const candidateName of [
+    "Mumm-Ra (1985 ThunderCats profile candidate)",
+    "Cheetara (1985 ThunderCats profile candidate)",
+  ]) {
+    const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
+    assert.ok(candidate.ambiguities.some((item) => /inspeção visual/i.test(item)));
+    assert.ok(candidate.candidateModelLinks.every((link) =>
+      link.independentModelEvidence.length === 0 && link.reviewRequired));
+  }
+  const launchCandidate = packet.candidates.find((item) =>
+    item.candidateName === "Lunch (Launch catalog localization candidate)");
+  assert.ok(launchCandidate.ambiguities.some((item) => /Lunch.*Launch/.test(item)));
+  assert.ok(launchCandidate.biographySourceIds.includes("dragon-ball-lunch-kame-house"));
+  assert.ok(launchCandidate.candidateModelLinks.every((link) =>
+    link.independentModelEvidence.length === 0 && link.reviewRequired));
   const burter = packet.candidates.find((item) => item.candidateName === "Burter (Namek saga candidate)");
   const shenron = packet.candidates.find((item) =>
     item.candidateName === "Shenron (Earth Dragon Balls; Shenlong label candidate)");

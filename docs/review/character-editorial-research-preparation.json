@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 76,
-    "preparedCandidateModelLinkCount": 819
+    "sourceResearchedIdentityCount": 79,
+    "preparedCandidateModelLinkCount": 836
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 76,
+    "preparedIdentityCount": 79,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 819,
+    "preparedCandidateModelLinkCount": 836,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -715,6 +715,30 @@
       "publisher": "DRAGON BALL OFFICIAL SITE / BANDAI SPIRITS",
       "title": "S.H.Figuarts Shenron — Dragon Ball Z official figure page",
       "url": "https://en.dragon-ball-official.com/special/sdcc2022/items/shenron.php",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "hbomax-thundercats-1985-series-and-episodes",
+      "publisher": "HBO Max / Warner Bros. Discovery",
+      "title": "ThunderCats (1985) — série e sinopses dos episódios",
+      "url": "https://www.hbomax.com/br/pt/show/0d50eaec-1b11-4bab-ac9b-49ac21fbf7ed",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dragon-ball-lunch-official-character-showcase",
+      "publisher": "BIRD STUDIO / SHUEISHA — DRAGON BALL OFFICIAL SITE",
+      "title": "Weekly ☆ Character Showcase #126: Lunch!",
+      "url": "https://en.dragon-ball-official.com/news/01_2174.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dragon-ball-lunch-kame-house",
+      "publisher": "BIRD STUDIO / SHUEISHA — DRAGON BALL OFFICIAL SITE",
+      "title": "World Travelogue: Kame House Area",
+      "url": "https://en.dragon-ball-official.com/news/01_799.html",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -20687,6 +20711,495 @@
         }
       ],
       "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Mumm-Ra (1985 ThunderCats profile candidate)",
+      "catalogDisplayNameCandidate": "Mumm-Ra",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "ThunderCats",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Mumm-Ra",
+          "sourceIds": [
+            "hbomax-thundercats-1985-series-and-episodes"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "ThunderCats",
+          "sourceIds": [
+            "hbomax-thundercats-1985-series-and-episodes"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.mutants_alliance",
+          "value": "A sinopse do episódio 2 informa que os Mutantes se aliam a Mumm-Ra para destruir os ThunderCats.",
+          "sourceIds": [
+            "hbomax-thundercats-1985-series-and-episodes"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.pumm_ra_disguise",
+          "value": "A sinopse de “Pumm-Ra” informa que Mumm-Ra se transforma em um puma e simula um ato heroico para enganar os ThunderCats.",
+          "sourceIds": [
+            "hbomax-thundercats-1985-series-and-episodes"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Na série animada ThunderCats de 1985, a HBO Max descreve a aliança dos Mutantes com Mumm-Ra contra os ThunderCats. Na sinopse de “Pumm-Ra”, Mumm-Ra assume a forma de um puma e encena um feito heroico para convencer os ThunderCats de que vem de Thundera. Este rascunho limita-se às sinopses oficiais consultadas e não identifica a versão retratada nos modelos.",
+      "biographySourceIds": [
+        "hbomax-thundercats-1985-series-and-episodes"
+      ],
+      "catalogFranchiseCandidates": [
+        "ThunderCats"
+      ],
+      "ambiguities": [
+        "A fonte descreve a série animada de 1985; conferir visualmente se cada modelo representa essa versão ou outra transformação/continuidade antes de aprovar.",
+        "Os seis registros foram selecionados pelo nome exato da fila. Nome, coleção e publicação são proveniência do modelo, não evidência independente de identidade.",
+        "Todos os vínculos seguem pendentes de inspeção visual e aprovação editorial humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_167da580f074adc4a9eb",
+          "modelSlug": "thundercats-mumm-ra-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-mumm-ra-02"
+          }
+        },
+        {
+          "modelId": "mdl_2e57da224070e2143ee6",
+          "modelSlug": "thundercats-mumm-ra-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-mumm-ra-03"
+          }
+        },
+        {
+          "modelId": "mdl_8a06fda50befae7d9d4b",
+          "modelSlug": "thundercats-mumm-ra-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-mumm-ra-01"
+          }
+        },
+        {
+          "modelId": "mdl_ba320337e5d31813fcd8",
+          "modelSlug": "thundercats-mumm-ra-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-mumm-ra-04"
+          }
+        },
+        {
+          "modelId": "mdl_d7d52c3c9f9c4e13dfc3",
+          "modelSlug": "thundercats-mumm-ra-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-mumm-ra-06"
+          }
+        },
+        {
+          "modelId": "mdl_ddf45e5d945400b90d84",
+          "modelSlug": "thundercats-mumm-ra-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-mumm-ra-05"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "Cheetara (1985 ThunderCats profile candidate)",
+      "catalogDisplayNameCandidate": "Cheetara",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "ThunderCats",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Cheetara",
+          "sourceIds": [
+            "hbomax-thundercats-1985-series-and-episodes"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "ThunderCats",
+          "sourceIds": [
+            "hbomax-thundercats-1985-series-and-episodes"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.sixth_sense_episode",
+          "value": "A sinopse de “The Sixth Sense” atribui a Cheetara um sexto sentido e relata que a comunicação telepática com uma nave danificada drena suas forças e a envelhece.",
+          "sourceIds": [
+            "hbomax-thundercats-1985-series-and-episodes"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Na página de ThunderCats (1985), a HBO Max identifica Cheetara entre as personagens da série. A sinopse de “The Sixth Sense” informa que uma nave danificada entra em contato com o sexto sentido de Cheetara por comunicação telepática, o que drena suas forças e a envelhece. Este texto limita-se à adaptação animada e à sinopse consultadas.",
+      "biographySourceIds": [
+        "hbomax-thundercats-1985-series-and-episodes"
+      ],
+      "catalogFranchiseCandidates": [
+        "ThunderCats"
+      ],
+      "ambiguities": [
+        "A fonte cobre a série animada de 1985; a identidade e a continuidade visual de cada modelo ainda precisam de verificação.",
+        "Os cinco registros foram selecionados pelo nome exato da fila. Nome, coleção e publicação não provam que as imagens retratam Cheetara.",
+        "Todos os vínculos seguem pendentes de inspeção visual e aprovação editorial humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_28aa0603464ba6e56938",
+          "modelSlug": "thundercats-cheetara-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-cheetara-03"
+          }
+        },
+        {
+          "modelId": "mdl_3d63f7d37c90cafa0788",
+          "modelSlug": "thundercats-cheetara-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-cheetara-02"
+          }
+        },
+        {
+          "modelId": "mdl_d0a12da4a71487d83c2a",
+          "modelSlug": "thundercats-cheetara-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-cheetara-04"
+          }
+        },
+        {
+          "modelId": "mdl_e1d23c23d094d04b3996",
+          "modelSlug": "thundercats-cheetara-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-cheetara-01"
+          }
+        },
+        {
+          "modelId": "mdl_f1ca4cbefa1cac173be2",
+          "modelSlug": "thundercats-cheetara-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-cheetara-05"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Lunch (Launch catalog localization candidate)",
+      "catalogDisplayNameCandidate": "Launch",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Lunch (a fila usa “Launch”; equivalência/localização pendente)",
+          "sourceIds": [
+            "dragon-ball-lunch-official-character-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "dragon-ball-lunch-official-character-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.sneeze_personality_change",
+          "value": "O perfil oficial descreve Lunch como normalmente gentil e educada, com mudança de personalidade e cabelo loiro quando espirra.",
+          "sourceIds": [
+            "dragon-ball-lunch-official-character-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.kame_house_residence",
+          "value": "O perfil oficial informa que Lunch passa a morar na Kame House após conhecer Kamesennin; o artigo do local relata que ela vive lá até partir para seguir Tenshinhan.",
+          "sourceIds": [
+            "dragon-ball-lunch-official-character-showcase",
+            "dragon-ball-lunch-kame-house"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "O perfil oficial da DRAGON BALL apresenta Lunch como uma personagem gentil e educada cuja personalidade muda quando espirra, junto com a cor do cabelo. A fonte também relata que ela passa a morar na Kame House e, anos depois, parte para seguir Tenshinhan. A fila da TONART usa “Launch”; a equivalência entre as localizações permanece pendente de revisão editorial. O texto não confirma a identidade visual ou a versão dos seis modelos.",
+      "biographySourceIds": [
+        "dragon-ball-lunch-official-character-showcase",
+        "dragon-ball-lunch-kame-house"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A página oficial em inglês usa “Lunch”, enquanto os seis títulos da fila usam “Launch”; a equivalência de localização precisa de revisão humana.",
+        "O perfil oficial cobre a personagem de Dragon Ball, mas não comprova que cada render candidato corresponde a ela ou a uma fase específica.",
+        "Os seis registros foram selecionados pelo nome exato da fila; nome, coleção e publicação não são evidência independente de identidade.",
+        "Todos os vínculos seguem pendentes de inspeção visual e aprovação editorial humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_155da66235606c0f8d15",
+          "modelSlug": "dragon-ball-launch-chibi-na-motocicleta-tres-quartos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-launch-chibi-na-motocicleta-tres-quartos"
+          }
+        },
+        {
+          "modelId": "mdl_45cd0ae8d9ba359faf66",
+          "modelSlug": "dragon-ball-launch-chibi-na-motocicleta-lateral",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          }
+        },
+        {
+          "modelId": "mdl_5a3d3250ca5ef3db0439",
+          "modelSlug": "dragon-ball-launch-em-veiculo-amarelo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-launch-em-veiculo-amarelo"
+          }
+        },
+        {
+          "modelId": "mdl_989080bc47d1362b7bbf",
+          "modelSlug": "dragon-ball-launch-na-motocicleta",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-launch-na-motocicleta"
+          }
+        },
+        {
+          "modelId": "mdl_cd5a70d59812a3d9807d",
+          "modelSlug": "dragon-ball-launch-chibi-na-motocicleta-frente",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-launch-chibi-na-motocicleta-frente"
+          }
+        },
+        {
+          "modelId": "mdl_d5b1604b42bb5987515e",
+          "modelSlug": "dragon-ball-launch-chibi-na-motocicleta-costas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
     }
   ]
 }
