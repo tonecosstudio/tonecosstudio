@@ -17,7 +17,11 @@ import {
   ArcadeCard,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
-import { PUBLIC_ROUTES } from "@/config/routes";
+import {
+  PUBLIC_ROUTES,
+  catalogUniverseCharacterPath,
+  catalogUniverseFranchisePath,
+} from "@/config/routes";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import {
   MAX_CANONICAL_SELECTION,
@@ -28,6 +32,7 @@ import {
   isCatalogMediaUnderReview,
   isCatalogPublicMvpEnabled,
 } from "@/config/catalog-public-mvp";
+import { isPublicEditorialProjectionEnabled } from "@/config/catalog-editorial-projection";
 import {
   findApprovedPublicRender,
   isApprovedPublicCover,
@@ -199,6 +204,7 @@ export default function CanonicalModelDetails() {
     import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
     import.meta.env.VITE_PREVIEW_READ_ONLY !== "true" &&
     !isCatalogPublicMvpEnabled();
+  const editorialProjectionEnabled = isPublicEditorialProjectionEnabled();
   const {
     selectedModels,
     setSelectedModels,
@@ -281,6 +287,14 @@ export default function CanonicalModelDetails() {
     staleTime: 5 * 60 * 1000,
   });
   const model = modelQuery.data;
+  const modelCharactersQuery = useQuery({
+    queryKey: ["tonecos-editorial-model-characters", model?.id],
+    queryFn: ({ signal }) => gateway!.getModelCharacters(model!.id, signal),
+    enabled:
+      editorialProjectionEnabled && gateway !== null && Boolean(model?.id),
+    retry: false,
+    staleTime: 15 * 60 * 1000,
+  });
   const coverReleased = Boolean(model && isApprovedPublicCover(model));
   // Navigation from a related card is a new detail view. Announce its
   // heading to keyboard/screen-reader users after the detail has loaded.
@@ -822,6 +836,76 @@ export default function CanonicalModelDetails() {
                         </dd>
                       </div>
                     </dl>
+
+                    {editorialProjectionEnabled ? (
+                      <section
+                        aria-labelledby="model-editorial-characters-heading"
+                        className="space-y-3 border border-[hsl(var(--gold-accent)/0.2)] bg-[hsl(0,0%,7%)] p-4"
+                      >
+                        <h2
+                          id="model-editorial-characters-heading"
+                          className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[hsl(var(--gold-accent))]"
+                        >
+                          Personagens desta peça
+                        </h2>
+                        {modelCharactersQuery.isPending ? (
+                          <p role="status" className="text-sm text-[hsl(0,0%,60%)]">
+                            Carregando personagens aprovados…
+                          </p>
+                        ) : modelCharactersQuery.isError ||
+                          !modelCharactersQuery.data ? (
+                          <div className="flex flex-wrap items-center gap-3">
+                            <p role="alert" className="text-sm text-[hsl(0,0%,60%)]">
+                              Não foi possível carregar os vínculos editoriais aprovados.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => void modelCharactersQuery.refetch()}
+                              className="inline-flex min-h-11 items-center border border-[hsl(0,0%,20%)] px-3 text-sm hover:bg-[hsl(0,0%,10%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                            >
+                              Tentar novamente
+                            </button>
+                          </div>
+                        ) : modelCharactersQuery.data.items.length === 0 ? (
+                          <p role="status" className="text-sm text-[hsl(0,0%,60%)]">
+                            Nenhum personagem aprovado foi associado a este modelo.
+                          </p>
+                        ) : (
+                          <>
+                            <nav aria-label={`Personagens de ${model.name}`}>
+                              <ul className="flex flex-wrap gap-2">
+                                {modelCharactersQuery.data.items.map((item) => (
+                                  <li key={item.character.id}>
+                                    <Link
+                                      to={catalogUniverseCharacterPath(
+                                        item.universe.categorySlug,
+                                        item.universe.slug,
+                                        item.character.slug,
+                                      )}
+                                      className="inline-flex min-h-11 items-center border border-[hsl(var(--gold-accent)/0.35)] px-3 text-sm text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                                    >
+                                      {item.character.name}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            </nav>
+                            {modelCharactersQuery.data.truncated &&
+                            modelCharactersQuery.data.items[0] ? (
+                              <Link
+                                to={catalogUniverseFranchisePath(
+                                  modelCharactersQuery.data.items[0].universe.categorySlug,
+                                  modelCharactersQuery.data.items[0].universe.slug,
+                                )}
+                                className="inline-flex min-h-11 items-center text-xs text-[hsl(0,0%,65%)] underline underline-offset-4 hover:text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                              >
+                                Ver o universo completo
+                              </Link>
+                            ) : null}
+                          </>
+                        )}
+                      </section>
+                    ) : null}
 
                     <p className="text-sm leading-relaxed text-[hsl(0,0%,56%)]">
                       {publicMediaHold

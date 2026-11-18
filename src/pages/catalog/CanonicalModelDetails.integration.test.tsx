@@ -22,6 +22,17 @@ vi.mock("@/services/commercial/tonart-commercial-offers-service", () => ({
   listTonartCommercialOffersForModel: offerServiceMocks.list,
 }));
 
+const accountServiceMocks = vi.hoisted(() => ({ currentUser: vi.fn() }));
+vi.mock("@/services/customer/tonecos-account-service", async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import("@/services/customer/tonecos-account-service")
+  >();
+  return {
+    ...actual,
+    getTonecosCurrentUser: accountServiceMocks.currentUser,
+  };
+});
+
 vi.mock("@/components/layouts/Page", () => ({
   Page: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
@@ -82,6 +93,7 @@ afterEach(() => {
 
 beforeEach(() => {
   offerServiceMocks.list.mockReset().mockResolvedValue([]);
+  accountServiceMocks.currentUser.mockReset().mockResolvedValue(null);
 });
 
 function mountGallery(options: {
@@ -96,6 +108,7 @@ function mountGallery(options: {
   relatedItems?: Array<typeof model>;
   cachedFranchiseItems?: Array<typeof model>;
   characterItems?: Array<typeof model>;
+  editorialModelCharacters?: unknown;
   relatedSearchError?: boolean;
   relatedPageFailsFirst?: boolean;
 }) {
@@ -123,6 +136,11 @@ function mountGallery(options: {
         items: options.relatedItems ?? [],
         nextCursor: null,
       });
+    }
+    if (url.pathname.endsWith("/api/editorial/v1/models/mdl-123/characters")) {
+      return Response.json(
+        options.editorialModelCharacters ?? { items: [], truncated: false },
+      );
     }
     if (url.pathname.endsWith("/api/models/animal-nova-pose")) {
       return Response.json({
@@ -319,6 +337,81 @@ describe("published model/gallery identity on the public detail page", () => {
     expect(
       screen.queryByText("Como usar Coins no orçamento"),
     ).not.toBeInTheDocument();
+    expect(
+      io.mock.calls.some(([input]) =>
+        String(input).includes("/api/editorial/v1/models/"),
+      ),
+    ).toBe(false);
+  });
+
+  it("shows multiple independently approved characters linked to one canonical model", async () => {
+    vi.stubEnv("VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION", "v1");
+    const source = (id: string, title: string) => ({
+      id,
+      title,
+      url: `https://publisher.example/${id}`,
+      kind: "official",
+    });
+    const editorialModelCharacters = {
+      items: [
+        {
+          publication: {
+            contractVersion: 1,
+            editorialStatus: "approved",
+            visibility: "public",
+            revision: "character-1",
+            reviewedAt: "2026-11-17T12:00:00.000Z",
+          },
+          character: {
+            id: "character-zoro",
+            slug: "roronoa-zoro",
+            name: "Roronoa Zoro",
+            evidenceIds: ["official-zoro"],
+          },
+          universe: { slug: "one-piece", categorySlug: "anime" },
+          relationEvidenceIds: ["official-zoro"],
+          evidence: [source("official-zoro", "Fonte oficial de Roronoa Zoro")],
+        },
+        {
+          publication: {
+            contractVersion: 1,
+            editorialStatus: "approved",
+            visibility: "public",
+            revision: "character-2",
+            reviewedAt: "2026-11-17T12:00:00.000Z",
+          },
+          character: {
+            id: "character-luffy",
+            slug: "monkey-d-luffy",
+            name: "Monkey D. Luffy",
+            evidenceIds: ["official-luffy"],
+          },
+          universe: { slug: "one-piece", categorySlug: "anime" },
+          relationEvidenceIds: ["official-luffy"],
+          evidence: [source("official-luffy", "Fonte oficial de Monkey D. Luffy")],
+        },
+      ],
+      truncated: false,
+    };
+    const { io } = mountGallery({ total: 1, editorialModelCharacters });
+
+    expect(
+      await screen.findByRole("heading", { name: "Personagens desta peça" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: "Roronoa Zoro" }),
+    ).toHaveAttribute(
+      "href",
+      "/universo/anime/one-piece/roronoa-zoro",
+    );
+    expect(
+      await screen.findByRole("link", { name: "Monkey D. Luffy" }),
+    ).toHaveAttribute("href", "/universo/anime/one-piece/monkey-d-luffy");
+    expect(
+      io.mock.calls.some(([input]) =>
+        String(input).endsWith("/api/editorial/v1/models/mdl-123/characters"),
+      ),
+    ).toBe(true);
   });
 
   it("explains that Coins apply only to eligible extras, not quotes or plan payments", async () => {
@@ -345,7 +438,7 @@ describe("published model/gallery identity on the public detail page", () => {
     expect(io).toHaveBeenCalled();
   });
 
-  it("shows the configured price, variant and Coin reference without creating a purchase", async () => {
+  it("shows the configured offer and requires an account before Coins or checkout", async () => {
     vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
@@ -373,12 +466,15 @@ describe("published model/gallery identity on the public detail page", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Escala 1/10 · Pintado")).toBeInTheDocument();
     expect(screen.getByText(/R\$\s*237,50/)).toBeInTheDocument();
-    expect(screen.getByText(/até 237,50 Coins/)).toBeInTheDocument();
     expect(
-      screen.getByText(
-        /Esta ficha não cria pedido, confirma disponibilidade nem realiza pagamento/,
+      await screen.findByText(
+        /Entre para consultar seu saldo e simular o abatimento de Coins/,
       ),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Entre para pedir esta peça" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /confirmar pedido/i })).not.toBeInTheDocument();
     expect(offerServiceMocks.list).toHaveBeenCalledWith("animal-original");
     expect(io).toHaveBeenCalled();
   });

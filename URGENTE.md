@@ -1779,3 +1779,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** concluir a autoridade editorial/publicação real somente após definir revisão dos registros e o caminho autorizado para o D1 canônico; manter perfis e busca fechados até essa projeção existir e ser homologada.
 
 **DO_NOT_REPEAT:** não marcar candidatos como verificados, não converter fixtures em conteúdo, não tratar `reviewed` como publicação, não aplicar a migration `0023`, não ativar M5 nem a flag pública sem os gates correspondentes.
+
+## Rodada 80 — vínculos editoriais de modelos na PR #33 (17/11/2026)
+
+- Na ficha canônica do modelo, a flag `VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION=v1` habilita consulta ao gateway existente para vínculos públicos aprovados. A interface apresenta personagens com evidência de identidade e da relação, navega pelas rotas canônicas de personagem e oferece o universo completo quando a resposta é truncada. Com a flag desligada, não faz chamada editorial. O endpoint de leitura correspondente está no Worker candidato da PR #26 (`9f2ec142`); `RelatedModels` e suas sugestões permanecem reutilizados e inalterados.
+- O decoder limita a resposta a 30 itens, valida IDs/slugs únicos, publicação aprovada e evidências independentes para identidade e vínculo; rejeita ID inválido. Fixtures foram adicionadas somente aos testes. A cobrança comercial não presume saldo nem exibe Coins simuladas para visitante sem autenticação; o teste confirma a exigência de conta antes de consultar saldo ou checkout.
+- **Validações locais:** `public-catalog-editorial-projection.test.ts` 10/10; teste de duas identidades ligadas a um modelo passou; teste da oferta/visitante passou após substituir expectativas comerciais obsoletas; ESLint direcionado e `tsc -p tsconfig.app.json --noEmit` passaram; `git diff --check` passou. Os ajustes posteriores ao typecheck foram somente no arquivo de testes. Essas respostas fixture não comprovam Worker/D1/Supabase real.
+- **Bloqueios reais:** a migration `0023` ainda está sem aplicação autorizada e a projeção D1 está vazia; não existe exportação aprovada da curadoria privada. Nenhum personagem ou vínculo foi publicado, migration aplicada, deploy, cutover ou indexação executados. A flag pública deve continuar desligada até aprovação editorial e homologação do Worker/D1. O estado do GitHub Actions não foi reconsultado nesta rodada.
+
+**NEXT_ACTION:** validar no ambiente isolado autorizado o caminho de aprovação e publicação Supabase→D1 e, depois da homologação, ativar os vínculos via configuração aprovada; manter o código local integrado à PR #33 enquanto estes gates não existem.
+
+**DO_NOT_REPEAT:** não usar fixtures como prova de integração, não inferir associação de modelo por nome, não publicar registros `reviewed` sem estado editorial público `approved`, não aplicar migration nem fazer deploy/cutover/indexação.

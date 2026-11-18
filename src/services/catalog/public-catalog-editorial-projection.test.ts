@@ -222,6 +222,81 @@ describe("public catalog editorial projection contract", () => {
     );
   });
 
+  it("loads multiple evidenced character identities linked to one model", async () => {
+    const profile = characterProjection();
+    const first = {
+      publication: profile.publication,
+      character: {
+        id: profile.character.id,
+        slug: profile.character.slug,
+        name: profile.character.name,
+        evidenceIds: ["official-one-piece"],
+      },
+      universe: { slug: profile.universe.slug, categorySlug: "anime" },
+      relationEvidenceIds: ["official-one-piece"],
+      evidence: [profile.evidence[0]],
+    };
+    const second = {
+      ...first,
+      character: {
+        ...first.character,
+        id: "character-luffy",
+        slug: "monkey-d-luffy",
+        name: "Monkey D. Luffy",
+      },
+    };
+    const { gateway, fetcher } = gatewayFor({
+      items: [first, second],
+      truncated: false,
+    });
+
+    const page = await gateway.getModelCharacters("mdl-123");
+
+    expect(page.items.map((item) => item.character.name)).toEqual([
+      "Roronoa Zoro",
+      "Monkey D. Luffy",
+    ]);
+    expect(page.items[1].universe).toEqual({
+      slug: "one-piece",
+      categorySlug: "anime",
+    });
+    const [url] = fetcher.mock.calls[0] as unknown as [string];
+    expect(new URL(url).pathname).toBe(
+      "/catalogo-api/api/editorial/v1/models/mdl-123/characters",
+    );
+  });
+
+  it("fails closed for invalid model IDs and model-character evidence", async () => {
+    const { gateway, fetcher } = gatewayFor({ items: [], truncated: false });
+    await expect(gateway.getModelCharacters("../admin")).rejects.toThrow(
+      "catalog_model_id_invalid",
+    );
+    expect(fetcher).not.toHaveBeenCalled();
+
+    const profile = characterProjection();
+    await expect(
+      gatewayFor({
+        items: [
+          {
+            publication: profile.publication,
+            character: {
+              id: profile.character.id,
+              slug: profile.character.slug,
+              name: profile.character.name,
+              evidenceIds: ["official-one-piece"],
+            },
+            universe: { slug: profile.universe.slug, categorySlug: "anime" },
+            relationEvidenceIds: ["catalog-model"],
+            evidence: profile.evidence,
+          },
+        ],
+        truncated: false,
+      }).gateway.getModelCharacters("mdl-123"),
+    ).rejects.toThrow(
+      "catalog_editorial_model_character_relation_evidence_needs_independent_evidence",
+    );
+  });
+
   it("fails closed for unapproved, unsupported, mismatched or weakly sourced character data", async () => {
     const unapproved = characterProjection();
     unapproved.publication.editorialStatus = "draft";

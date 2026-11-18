@@ -166,6 +166,27 @@ export type PublicCatalogCharacterSearchPage = {
   truncated: boolean;
 };
 
+export type PublicCatalogModelEditorialCharacter = {
+  publication: PublicCatalogEditorialPublication;
+  character: {
+    id: string;
+    slug: string;
+    name: string;
+    identityEvidenceIds: string[];
+  };
+  universe: {
+    slug: string;
+    categorySlug: string;
+  };
+  relationEvidenceIds: string[];
+  evidence: PublicCatalogEditorialEvidence[];
+};
+
+export type PublicCatalogModelEditorialCharacterPage = {
+  items: PublicCatalogModelEditorialCharacter[];
+  truncated: boolean;
+};
+
 export type PublicCatalogUniverseProfile = {
   publication: PublicCatalogEditorialPublication;
   universe: {
@@ -1043,6 +1064,97 @@ function decodePublicUniverseProfile(
   };
 }
 
+function decodePublicModelEditorialCharacters(
+  value: unknown,
+): PublicCatalogModelEditorialCharacterPage {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("invalid_catalog_model_characters");
+  }
+  const row = value as { items?: unknown; truncated?: unknown };
+  if (
+    !Array.isArray(row.items) ||
+    row.items.length > 30 ||
+    typeof row.truncated !== "boolean"
+  ) {
+    throw new Error("invalid_catalog_model_characters");
+  }
+
+  const seenIds = new Set<string>();
+  const seenSlugs = new Set<string>();
+  const items = row.items.map(
+    (item: unknown): PublicCatalogModelEditorialCharacter => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        throw new Error("invalid_catalog_model_character");
+      }
+      const result = item as {
+        publication?: unknown;
+        character?: unknown;
+        universe?: unknown;
+        relationEvidenceIds?: unknown;
+        evidence?: unknown;
+      };
+      const publication = decodeEditorialPublication(result.publication);
+      const evidence = decodeEditorialEvidence(result.evidence);
+      if (
+        !result.character ||
+        typeof result.character !== "object" ||
+        Array.isArray(result.character) ||
+        !result.universe ||
+        typeof result.universe !== "object" ||
+        Array.isArray(result.universe)
+      ) {
+        throw new Error("invalid_catalog_model_character");
+      }
+      const character = result.character as Record<string, unknown>;
+      const universe = result.universe as Record<string, unknown>;
+      const id = requiredText(character.id, "model_character_id");
+      const slug = requiredText(character.slug, "model_character_slug");
+      const universeSlug = requiredText(
+        universe.slug,
+        "model_character_universe_slug",
+      );
+      const categorySlug = requiredText(
+        universe.categorySlug,
+        "model_character_category_slug",
+      );
+      if (
+        !validCatalogSlug(slug) ||
+        !validCatalogSlug(universeSlug) ||
+        !validCatalogSlug(categorySlug) ||
+        seenIds.has(id) ||
+        seenSlugs.has(slug)
+      ) {
+        throw new Error("duplicate_or_invalid_catalog_model_character");
+      }
+      seenIds.add(id);
+      seenSlugs.add(slug);
+      return {
+        publication,
+        character: {
+          id,
+          slug,
+          name: requiredText(character.name, "model_character_name"),
+          identityEvidenceIds: decodeEvidenceIds(
+            character.evidenceIds,
+            evidence,
+            "model_character_identity_evidence",
+            true,
+          ),
+        },
+        universe: { slug: universeSlug, categorySlug },
+        relationEvidenceIds: decodeEvidenceIds(
+          result.relationEvidenceIds,
+          evidence,
+          "model_character_relation_evidence",
+          true,
+        ),
+        evidence,
+      };
+    },
+  );
+  return { items, truncated: row.truncated };
+}
+
 /**
  * Quarantine externally branded catalog media when the public metadata
  * itself identifies the source. No pixel scanning, hidden Worker calls,
@@ -1563,6 +1675,20 @@ export function createPublicCatalogGateway(
         signal,
       );
       return decodePublicCharacterProfile(result, slug, expectedUniverse);
+    },
+
+    async getModelCharacters(
+      modelId: string,
+      signal?: AbortSignal,
+    ): Promise<PublicCatalogModelEditorialCharacterPage> {
+      if (!/^[A-Za-z0-9_-]{1,120}$/.test(modelId)) {
+        throw new Error("catalog_model_id_invalid");
+      }
+      const result = await read(
+        `api/editorial/v1/models/${encodeURIComponent(modelId)}/characters`,
+        signal,
+      );
+      return decodePublicModelEditorialCharacters(result);
     },
 
     async searchCharacters(
