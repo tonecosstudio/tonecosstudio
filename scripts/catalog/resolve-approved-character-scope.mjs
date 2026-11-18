@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 /**
  * Resolve approved private character exports to EXISTING D1 model/franchise IDs.
  * Pure, offline preflight: no SQL writes, network requests, approval, or publication.
@@ -136,6 +137,7 @@ export function resolveApprovedCharacterScopes(exportPayload, d1Snapshot) {
   }
 
   const seenCharacters = new Set();
+  const seenSlugs = new Set();
   return exportPayload.characters.map(character => {
     requireValid(record(character) &&
       validText(character.identityId, 120) &&
@@ -151,9 +153,11 @@ export function resolveApprovedCharacterScopes(exportPayload, d1Snapshot) {
       Array.isArray(character.modelLinks) &&
       character.modelLinks.length > 0 &&
       character.modelLinks.length <= 2609 &&
-      !seenCharacters.has(character.identityId),
+      !seenCharacters.has(character.identityId) &&
+      !seenSlugs.has(character.slug),
     'approved_character_scope_invalid');
     seenCharacters.add(character.identityId);
+    seenSlugs.add(character.slug);
     validateApprovedProfile(character.profile);
     requireValid(Date.parse(character.reviewedAt) <= Date.parse(character.approvedAt) &&
       Date.parse(character.approvedAt) <= Date.parse(exportPayload.generatedAt),
@@ -204,7 +208,7 @@ export function resolveApprovedCharacterScopes(exportPayload, d1Snapshot) {
 // This is an offline, immutable proposal. It never fetches credentials, opens
 // a database or issues a write. Any future apply must re-check the live D1
 // snapshot under the already existing non-cancellable M5 writer lock.
-import { createHash } from 'node:crypto';
+
 
 function evidenceRowsForCharacter() {
   const rows = new Map();
