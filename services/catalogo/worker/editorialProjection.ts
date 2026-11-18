@@ -216,7 +216,8 @@ async function normalizeCharacter(value: unknown) {
   const row = record(value, 'editorial_character_invalid')
   exactKeys(row, [
     'identityId', 'name', 'franchiseName', 'slug', 'profile', 'profileRevision',
-    'reviewedAt', 'reviewedBy', 'approvalRef', 'approvedAt', 'approvedBy', 'modelLinks',
+    'reviewedAt', 'reviewedBy', 'approvalRef', 'approvedAt', 'approvedBy',
+    'relationRevision', 'approvedRelationRevision', 'modelLinks',
   ], 'editorial_character_keys_invalid')
   const id = text(row.identityId, 'editorial_character_id_invalid', 120)
   if (!UUID.test(id)) throw new ProjectionInputError('editorial_character_id_invalid')
@@ -236,6 +237,18 @@ async function normalizeCharacter(value: unknown) {
     throw new ProjectionInputError('editorial_approval_ref_invalid')
   }
   const approvedAt = date(row.approvedAt, 'editorial_approved_at_invalid')
+  if (Date.parse(approvedAt) < Date.parse(reviewedAt)) {
+    throw new ProjectionInputError('editorial_approval_precedes_review')
+  }
+  if (!Number.isSafeInteger(row.relationRevision) ||
+      !Number.isSafeInteger(row.approvedRelationRevision) ||
+      (row.relationRevision as number) < 0 ||
+      (row.approvedRelationRevision as number) < 0) {
+    throw new ProjectionInputError('editorial_relation_revision_missing')
+  }
+  if (row.relationRevision !== row.approvedRelationRevision) {
+    throw new ProjectionInputError('editorial_relation_approval_stale')
+  }
   const profile = record(row.profile, 'editorial_profile_invalid')
   exactKeys(profile, [
     'slug', 'aliases', 'biography', 'biographySources', 'ageContext',
