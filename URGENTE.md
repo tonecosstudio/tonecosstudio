@@ -2021,3 +2021,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** encaminhar os candidatos à curadoria #31; adicionar fontes visuais por modelo e aprovações humanas antes de exportar para a projeção.
 
 **DO_NOT_REPEAT:** não tratar um manto ou alias ambíguo como uma identidade individual aprovada; não tentar homologar no projeto Supabase produtivo.
+
+
+## Rodada 101 — Raphael na fila editorial (18/11/2026)
+
+- Acrescentei um candidato Raphael a partir da fila e reutilizei o documento Nickelodeon já cadastrado na rodada de Michelangelo; não criei fonte duplicada.
+- A preparação atual soma **62 candidatos, 71 fontes oficiais únicas, 62 rascunhos e 748 relações candidatas**. Foram selecionados seis IDs para revisão visual. Mantêm-se **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local nesta rodada: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou. Nenhuma escrita em Supabase/D1, migration, publicação ou mudança da flag.
+
+**NEXT_ACTION:** encaminhar a #31 para revisão editorial humana. O caminho de dados só poderá ser homologado em ambiente Supabase/D1 isolado.
+
+**DO_NOT_REPEAT:** não inferir uma identidade visual de Raphael pela máscara vermelha ou pelo nome do catálogo.

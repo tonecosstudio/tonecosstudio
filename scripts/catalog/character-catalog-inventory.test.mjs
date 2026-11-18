@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 61);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 742);
-  assert.equal(packet.candidates.length, 61);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 62);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 748);
+  assert.equal(packet.candidates.length, 62);
   assert.equal(packet.sources.length, 71);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 61);
+  assert.equal(packet.policy.preparedIdentityCount, 62);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 742);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 748);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 742);
+  assert.equal(links.length, 748);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -200,6 +200,14 @@ test("research preparation references only inventory IDs and remains unapproved"
     assert.equal(candidate.identityStatus, "prepared_pending_human_review");
     assert.ok(candidate.ambiguities.length > 0);
   }
+  const raphael = packet.candidates.find((candidate) =>
+    candidate.candidateName === "Raphael (Nickelodeon candidate)");
+  assert.ok(raphael);
+  assert.equal(raphael.catalogDisplayNameCandidate, "Raphael");
+  assert.equal(raphael.franchiseCandidate, "Teenage Mutant Ninja Turtles");
+  assert.equal(raphael.candidateModelLinks.length, 6);
+  assert.equal(raphael.identityStatus, "prepared_pending_human_review");
+  assert.ok(raphael.ambiguities.length > 0);
 
   for (const source of packet.sources) {
     assert.equal(new URL(source.url).protocol, "https:");

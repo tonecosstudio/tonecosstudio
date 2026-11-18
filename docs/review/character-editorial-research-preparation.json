@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 61,
-    "preparedCandidateModelLinkCount": 742
+    "sourceResearchedIdentityCount": 62,
+    "preparedCandidateModelLinkCount": 748
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 61,
+    "preparedIdentityCount": 62,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 742,
+    "preparedCandidateModelLinkCount": 748,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -18318,6 +18318,178 @@
             "sourceStatus": "candidate_and_published",
             "candidateContractPublished": true,
             "publicCatalogSlug": "herois-individuais-motoqueiro-fantasma-diorama-com-chamas-e-caveiras"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "Raphael (Nickelodeon candidate)",
+      "catalogDisplayNameCandidate": "Raphael",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Teenage Mutant Ninja Turtles",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Raphael (Raph)",
+          "sourceIds": [
+            "nickelodeon-michelangelo-tmnt-intro"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Teenage Mutant Ninja Turtles",
+          "sourceIds": [
+            "nickelodeon-michelangelo-tmnt-intro"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.turtle_team_and_strength",
+          "value": "O material Nickelodeon apresenta Raphael como um dos irmãos tartaruga e o caracteriza como forte.",
+          "sourceIds": [
+            "nickelodeon-michelangelo-tmnt-intro"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.red_mask",
+          "value": "A página ilustrada do material Nickelodeon consultado mostra Raphael com máscara vermelha.",
+          "sourceIds": [
+            "nickelodeon-michelangelo-tmnt-intro"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "O material consultado da Nickelodeon apresenta Raphael, ou Raph, como um dos irmãos tartaruga e o caracteriza como forte; a mesma peça promocional mostra sua máscara vermelha. Essa fonte corresponde a uma representação específica e não confirma continuidade, traje ou render dos seis modelos candidatos.",
+      "biographySourceIds": [
+        "nickelodeon-michelangelo-tmnt-intro"
+      ],
+      "catalogFranchiseCandidates": [
+        "Baldur's Gate",
+        "As Tartarugas Ninja"
+      ],
+      "ambiguities": [
+        "A fonte Nickelodeon mostra uma versão específica; o design e a personalidade de Raphael variam entre mídias.",
+        "O rótulo exato e a máscara vermelha da fonte não comprovam que qualquer dos seis modelos represente esta versão.",
+        "Cada relação continua dependente de evidência visual independente e aprovação humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_118575d5388d7b493ac6",
+          "modelSlug": "baldur-s-gate-raphael",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "baldur-s-gate-raphael"
+          }
+        },
+        {
+          "modelId": "mdl_6131058ccffd4487b3c7",
+          "modelSlug": "as-tartarugas-ninja-raphael-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "as-tartarugas-ninja-raphael-02"
+          }
+        },
+        {
+          "modelId": "mdl_76dcc5ad57a7cdd8a7fa",
+          "modelSlug": "as-tartarugas-ninja-raphael-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "as-tartarugas-ninja-raphael-03"
+          }
+        },
+        {
+          "modelId": "mdl_86ebb49907faa963be1e",
+          "modelSlug": "as-tartarugas-ninja-raphael-stl-teenage-mutant-ninja-turtles-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "as-tartarugas-ninja-raphael-stl-teenage-mutant-ninja-turtles-principal"
+          }
+        },
+        {
+          "modelId": "mdl_b48a52c4e3755b5a0bb2",
+          "modelSlug": "as-tartarugas-ninja-raphael-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "as-tartarugas-ninja-raphael-04"
+          }
+        },
+        {
+          "modelId": "mdl_f0dadbac148d464ba1e7",
+          "modelSlug": "as-tartarugas-ninja-raphael-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "as-tartarugas-ninja-raphael-01"
           }
         }
       ],
