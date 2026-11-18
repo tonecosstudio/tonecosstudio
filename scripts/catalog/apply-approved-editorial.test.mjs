@@ -746,3 +746,49 @@ test('reconciliation rejects partial or unverifiable D1 snapshots before plannin
     ...payload, source: 'untrusted-export', characters: [],
   }, d1, current), /character_export_contract_invalid/);
 });
+
+test('public evidence verification refuses local, private and non-public HTTPS links', () => {
+  const payload = approvedCharacterFixture();
+  const d1 = approvedCharacterD1Fixture();
+  const blocked = [
+    'https://localhost/approval', 'https://localhost./approval',
+    'https://127.0.0.2/evidence', 'https://127.0.0.1./evidence',
+    'https://10.4.2.1/local', 'https://192.168.1.2/internal',
+    'https://172.20.4.1/internal', 'https://169.254.2.1/internal',
+    'https://[::1]/link', 'https://review.example.local/link',
+    'https://forged.example.internal/link', 'https://my.example.test/link',
+    'http://example.org/not-https',
+    'https://attacker:password@example.org/evidence',
+  ];
+  const base = payload.characters[0];
+  for (const url of blocked) {
+    assert.throws(
+      () => resolveApprovedCharacterScopes({
+        ...payload,
+        characters: [{
+          ...base,
+          modelLinks: [{ ...base.modelLinks[0], evidenceUrl: url }],
+        }],
+      }, d1),
+      /approved_character_model_evidence_invalid/,
+      url,
+    );
+    assert.throws(
+      () => resolveApprovedCharacterScopes({
+        ...payload,
+        characters: [{
+          ...base,
+          profile: {
+            ...base.profile,
+            biographySources: [{
+              ...base.profile.biographySources[0], url,
+            }],
+          },
+        }],
+      }, d1),
+      /approved_character_biography_sources_invalid/,
+      url,
+    );
+  }
+  assert.equal(resolveApprovedCharacterScopes(payload, d1).length, 1);
+});
