@@ -29,7 +29,14 @@ BEGIN
   ) OR to_regprocedure('public.admin_get_catalog_character_editorial_profile(uuid)') IS NULL
     OR to_regprocedure('public.admin_save_catalog_character_editorial_profile(uuid,jsonb,text,integer,uuid)') IS NULL
     OR to_regprocedure('public.admin_set_catalog_character_publication_approval(uuid,integer,boolean,uuid)') IS NULL
-    OR to_regprocedure('public.admin_export_approved_catalog_character_projection()') IS NULL THEN
+    OR to_regprocedure('public.admin_export_approved_catalog_character_projection()') IS NULL
+    OR to_regprocedure('private_api.invalidate_tonart_character_publication_after_last_model_unlink()') IS NULL
+    OR NOT EXISTS (
+      SELECT 1 FROM pg_trigger
+      WHERE tgrelid = 'public.catalog_curation_model_characters'::regclass
+        AND tgname = 'trg_catalog_character_publication_invalidated_by_last_model_unlink'
+        AND NOT tgisinternal
+    ) THEN
     RAISE EXCEPTION 'TONART character editorial profile migration not installed'
       USING ERRCODE = '42P01';
   END IF;
@@ -70,6 +77,7 @@ DECLARE
   v_member jsonb;
   v_history jsonb;
   v_editorial_profile jsonb;
+  v_editorial_profile_b jsonb;
   v_editorial_result jsonb;
   v_public_projection jsonb;
   v_approval_ref text;
@@ -293,6 +301,38 @@ BEGIN
   IF NOT v_expected_failure THEN
     RAISE EXCEPTION 'Duplicate reviewed character route slug was accepted';
   END IF;
+
+  -- A reviewed identity still needs one active, evidenced model relation
+  -- before it can be approved for the public projection.
+  v_editorial_profile_b := jsonb_set(
+    v_editorial_profile, '{slug}',
+    to_jsonb('tonart-qa-beta-' || substr(v_suffix, 1, 16))
+  );
+  v_editorial_result := public.admin_save_catalog_character_editorial_profile(
+    v_id_b, v_editorial_profile_b, 'reviewed', 0, v_reviewer_id
+  );
+  IF v_editorial_result->>'status' IS DISTINCT FROM 'reviewed' THEN
+    RAISE EXCEPTION 'Evidence-backed second profile did not reach reviewed state';
+  END IF;
+  PERFORM public.admin_unlink_catalog_model_character(
+    v_model_a, v_slug_a, v_id_b, 'Acceptance check: no active public model link'
+  );
+  v_expected_failure := false;
+  BEGIN
+    PERFORM public.admin_set_catalog_character_publication_approval(
+      v_id_b, 1, true, v_reviewer_id
+    );
+  EXCEPTION WHEN SQLSTATE '22023' THEN
+    v_expected_failure := SQLERRM =
+      'Every approved character needs at least one active model link';
+  END;
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Public approval accepted a reviewed identity without model links';
+  END IF;
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_a, v_slug_a, v_name_b, v_franchise,
+    'https://example.org/model-a/character-b-restored', 'Restored after link-gate acceptance'
+  );
 
   -- Private profile review is not publication. Incomplete legacy link evidence
   -- blocks approval until each exact model link receives a source and note.
@@ -585,6 +625,47 @@ BEGIN
   IF jsonb_array_length(v_member->'characters') <> 21
      OR (v_summary->>'distinctVerifiedCharacterCount')::integer <> 21 THEN
     RAISE EXCEPTION 'Twenty-first verified character was rejected';
+  END IF;
+
+  -- Removing one of two relations preserves approval; removing the last one
+  -- invalidates it atomically and records the reason. Restoration stays private.
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  v_editorial_result := public.admin_save_catalog_character_editorial_profile(
+    v_id_a,
+    v_editorial_result->'profile',
+    'reviewed',
+    (v_editorial_result->>'revision')::integer,
+    v_reviewer_id
+  );
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a,
+    (v_editorial_result->>'revision')::integer,
+    true,
+    v_reviewer_id
+  );
+  PERFORM public.admin_unlink_catalog_model_character(
+    v_model_a, v_slug_a, v_id_a, 'Acceptance: retain second active model relation'
+  );
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved' THEN
+    RAISE EXCEPTION 'One remaining model relation incorrectly revoked publication';
+  END IF;
+  PERFORM public.admin_unlink_catalog_model_character(
+    v_model_b, v_slug_b, v_id_a, 'Acceptance: remove final active model relation'
+  );
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR v_editorial_result->'publicationHistory'->-1->>'action'
+       IS DISTINCT FROM 'invalidated_by_last_model_link_unlink' THEN
+    RAISE EXCEPTION 'Removing the last model relation did not revoke publication';
+  END IF;
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_b, v_slug_b, v_name_a, v_franchise,
+    'https://example.org/model-b/character-a-restored', 'Private restore after publication invalidation'
+  );
+  v_public_projection := public.admin_export_approved_catalog_character_projection();
+  IF jsonb_array_length(v_public_projection->'characters') <> 0 THEN
+    RAISE EXCEPTION 'Projection retained character after its last public model link was removed';
   END IF;
 
   RAISE NOTICE 'TONART character staging acceptance PASS (transaction rolled back)';

@@ -299,6 +299,15 @@ describe("internal catalog curation service", () => {
       "Every active model link needs its own HTTPS source",
     );
     expect(migrations[3]).toContain(
+      "Every approved character needs at least one active model link",
+    );
+    expect(migrations[3]).toContain(
+      "invalidated_by_last_model_link_unlink",
+    );
+    expect(migrations[3]).toContain(
+      "Approved character has no active model link",
+    );
+    expect(migrations[3]).toContain(
       "editorial_publication_revision = ci.editorial_profile_revision",
     );
     expect(migrations[3]).toContain("FROM PUBLIC, anon, authenticated;");
@@ -315,6 +324,12 @@ describe("internal catalog curation service", () => {
     );
     expect(acceptance).toContain(
       "Duplicate reviewed character route slug was accepted",
+    );
+    expect(acceptance).toContain(
+      "Public approval accepted a reviewed identity without model links",
+    );
+    expect(acceptance).toContain(
+      "Removing the last model relation did not revoke publication",
     );
     expect(acceptance.trimEnd().endsWith("ROLLBACK;")).toBe(true);
   });

@@ -78,6 +78,80 @@ CREATE TRIGGER trg_catalog_character_publication_invalidated_by_profile_change
 REVOKE ALL ON FUNCTION private_api.invalidate_tonart_character_publication_on_profile_change()
   FROM PUBLIC, anon, authenticated;
 
+-- Removing the last verified model relation invalidates public approval. The
+-- identity row lock serializes concurrent unlink operations for one character;
+-- restoring a relation never restores publication approval automatically.
+CREATE OR REPLACE FUNCTION private_api.invalidate_tonart_character_publication_after_last_model_unlink()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_temp
+AS $last_link_invalidation$
+DECLARE
+  v_identity public.catalog_character_identities%ROWTYPE;
+  v_history jsonb;
+BEGIN
+  IF OLD.unlinked_at IS NOT NULL OR NEW.unlinked_at IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT * INTO v_identity
+  FROM public.catalog_character_identities
+  WHERE id = NEW.character_identity_id
+  FOR UPDATE;
+  IF NOT FOUND OR v_identity.editorial_publication_status <> 'approved'
+     OR EXISTS (
+       SELECT 1
+       FROM public.catalog_curation_model_characters relation
+       WHERE relation.character_identity_id = NEW.character_identity_id
+         AND relation.unlinked_at IS NULL
+     ) THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(recent.value ORDER BY recent.ordinality), '[]'::jsonb)
+  INTO v_history
+  FROM (
+    SELECT history.value, history.ordinality
+    FROM jsonb_array_elements(v_identity.editorial_publication_history || jsonb_build_array(
+      jsonb_build_object(
+        'action', 'invalidated_by_last_model_link_unlink',
+        'approvalRef', v_identity.editorial_publication_approval_ref,
+        'approvedRevision', v_identity.editorial_publication_revision,
+        'approvedAt', v_identity.editorial_publication_approved_at,
+        'approvedBy', v_identity.editorial_publication_approved_by,
+        'modelId', NEW.catalog_model_id,
+        'reason', NEW.unlink_reason,
+        'at', now()
+      )
+    )) WITH ORDINALITY AS history(value, ordinality)
+    ORDER BY history.ordinality DESC
+    LIMIT 25
+  ) recent;
+
+  UPDATE public.catalog_character_identities
+  SET editorial_publication_history = v_history,
+      editorial_publication_status = 'not_approved',
+      editorial_publication_revision = NULL,
+      editorial_publication_approval_ref = NULL,
+      editorial_publication_approved_at = NULL,
+      editorial_publication_approved_by = NULL,
+      updated_at = now()
+  WHERE id = NEW.character_identity_id
+    AND editorial_publication_status = 'approved';
+  RETURN NEW;
+END;
+$last_link_invalidation$;
+
+CREATE TRIGGER trg_catalog_character_publication_invalidated_by_last_model_unlink
+  AFTER UPDATE OF unlinked_at ON public.catalog_curation_model_characters
+  FOR EACH ROW
+  WHEN (OLD.unlinked_at IS NULL AND NEW.unlinked_at IS NOT NULL)
+  EXECUTE FUNCTION private_api.invalidate_tonart_character_publication_after_last_model_unlink();
+
+REVOKE ALL ON FUNCTION private_api.invalidate_tonart_character_publication_after_last_model_unlink()
+  FROM PUBLIC, anon, authenticated, service_role;
+
 CREATE OR REPLACE FUNCTION public.admin_get_catalog_character_editorial_profile(
   p_identity_id uuid
 )
@@ -430,6 +504,15 @@ BEGIN
       RAISE EXCEPTION 'Every active model link needs its own HTTPS source and evidence note'
         USING ERRCODE = '22023';
     END IF;
+    IF NOT EXISTS (
+      SELECT 1
+      FROM public.catalog_curation_model_characters relation
+      WHERE relation.character_identity_id = p_identity_id
+        AND relation.unlinked_at IS NULL
+    ) THEN
+      RAISE EXCEPTION 'Every approved character needs at least one active model link'
+        USING ERRCODE = '22023';
+    END IF;
 
     IF v_identity.editorial_publication_status = 'approved'
        AND v_identity.editorial_publication_revision = p_expected_revision THEN
@@ -634,6 +717,11 @@ BEGIN
       ON model.catalog_model_id = relation.catalog_model_id
     WHERE relation.character_identity_id = v_identity.id
       AND relation.unlinked_at IS NULL;
+
+    IF COALESCE(jsonb_array_length(v_links), 0) = 0 THEN
+      RAISE EXCEPTION 'Approved character has no active model link'
+        USING ERRCODE = '23514';
+    END IF;
 
     IF EXISTS (
       SELECT 1
