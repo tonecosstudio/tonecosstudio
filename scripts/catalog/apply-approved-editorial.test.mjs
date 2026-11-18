@@ -429,3 +429,37 @@ test('character scope blocks ambiguous freeform ages until the canonical public 
     }],
   }, d1), /approved_character_approval_order_invalid/);
 });
+
+test('public Worker evidence decoder preserves canonical source kinds without coercion', async () => {
+  const { build } = await import('esbuild');
+  const bundle = await build({
+    entryPoints: [new URL('../../services/catalogo/worker/index.ts', import.meta.url).pathname],
+    bundle: true, platform: 'browser', format: 'esm', target: 'es2022',
+    write: false, logLevel: 'silent',
+  });
+  const parser = await import(
+    'data:text/javascript;base64,' +
+    Buffer.from(bundle.outputFiles[0].text).toString('base64')
+  );
+  const kinds = [
+    'official', 'primary', 'publisher', 'licensor', 'institution',
+    'reputable_reference', 'other', 'catalog',
+  ];
+  const rows = kinds.map((kind, i) => ({
+    id: 'source-' + i, title: 'Reviewed source ' + i,
+    url: 'https://example.org/source-' + i, kind,
+  }));
+  assert.deepEqual(parser.editorialEvidence(JSON.stringify(rows)), rows);
+  assert.throws(
+    () => parser.editorialEvidence(JSON.stringify([
+      { ...rows[0], kind: 'unreviewed' },
+    ])),
+    /editorial_evidence_kind_invalid/,
+  );
+  assert.throws(
+    () => parser.editorialEvidence(JSON.stringify([
+      { ...rows[0], url: 'http://example.org/source' },
+    ])),
+    /editorial_evidence_url_invalid/,
+  );
+});
