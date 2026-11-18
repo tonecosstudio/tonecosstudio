@@ -1,5 +1,5 @@
 -- Isolated PostgreSQL 17 contract test, never a production migration.
--- Provides the pre-editorial minimum only, then runs the ORIGINAL migrations
+-- Applies the canonical private curation and editorial migration chain
 -- unchanged. No Supabase keys, real data, external services or D1 writes.
 \set ON_ERROR_STOP on
 CREATE ROLE anon NOLOGIN;
@@ -7,68 +7,11 @@ CREATE ROLE authenticated NOLOGIN;
 CREATE ROLE service_role NOLOGIN;
 CREATE SCHEMA private_api;
 
-CREATE TABLE public.catalog_character_identities (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  identity_key text NOT NULL UNIQUE,
-  character_name text NOT NULL,
-  franchise text NOT NULL,
-  evidence_origin text NOT NULL,
-  evidence_note text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE TABLE public.catalog_curation_model_profiles (
-  catalog_model_id text PRIMARY KEY,
-  catalog_model_slug text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE TABLE public.catalog_curation_model_characters (
-  catalog_model_id text NOT NULL REFERENCES public.catalog_curation_model_profiles(catalog_model_id),
-  character_identity_id uuid NOT NULL REFERENCES public.catalog_character_identities(id),
-  evidence_origin text NOT NULL,
-  evidence_note text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  unlinked_at timestamptz,
-  unlink_reason text,
-  review_history jsonb NOT NULL DEFAULT '[]'::jsonb,
-  PRIMARY KEY(catalog_model_id, character_identity_id)
-);
-
--- These two supporting primitives exist in the pre-existing canonical
--- Supabase schema. The test uses their current semantics, but not its data.
-CREATE FUNCTION private_api.assert_tonart_curation_service_role()
-RETURNS void LANGUAGE plpgsql AS $guard$
-BEGIN
-  IF current_setting('request.jwt.claims', true)::jsonb ->> 'role'
-    IS DISTINCT FROM 'service_role' THEN
-    RAISE EXCEPTION 'Service-only editorial RPC' USING ERRCODE = '42501';
-  END IF;
-END;
-$guard$;
-CREATE FUNCTION public.admin_validate_catalog_curation_text(
-  p_value text, p_label text, p_max_length integer, p_required boolean DEFAULT true
-)
-RETURNS text LANGUAGE plpgsql IMMUTABLE
-SET search_path = public, pg_temp AS $text_validator$
-DECLARE
-  v_value text := NULLIF(btrim(COALESCE(p_value, '')), '');
-BEGIN
-  IF v_value IS NULL THEN
-    IF p_required THEN
-      RAISE EXCEPTION '% is required', p_label USING ERRCODE = '22023';
-    END IF;
-    RETURN NULL;
-  END IF;
-  IF length(v_value) > p_max_length OR v_value ~ '[[:cntrl:]<>]' THEN
-    RAISE EXCEPTION 'Invalid %', p_label USING ERRCODE = '22023';
-  END IF;
-  RETURN v_value;
-END;
-$text_validator$;
-
--- The two canonical migration files are included, not copied into a fixture.
+-- Apply the original curation chain in canonical order rather than reproducing
+-- its tables or helper functions in this test fixture.
+\ir ../migrations/20261115154500_tonart_internal_collection_curation.sql
+\ir ../migrations/20261115154600_tonart_curation_controlled_tag_creation.sql
+\ir ../migrations/20261117030000_tonart_curated_model_characters.sql
 \ir ../migrations/20261117040000_tonart_character_editorial_profiles.sql
 \ir ../migrations/20261118010000_tonart_public_character_approval_and_export.sql
 
