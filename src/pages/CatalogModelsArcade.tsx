@@ -2,7 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Bookmark, Search, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bookmark,
+  ChevronDown,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { ApprovedModelShowcase } from "./catalog/ApprovedModelShowcase";
 import {
@@ -16,7 +24,10 @@ import {
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
-import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
+import {
+  isCatalogMediaUnderReview,
+  isCatalogPublicMvpEnabled,
+} from "@/config/catalog-public-mvp";
 import {
   Sheet,
   SheetClose,
@@ -36,6 +47,32 @@ import {
 
 const PAGE_SIZE = 36;
 const API_BASE = CANONICAL_CATALOG_API_BASE;
+const CATALOG_GRID_CLASS =
+  "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-5 2xl:grid-cols-6 2xl:gap-5";
+
+function CatalogGridSkeleton() {
+  return (
+    <>
+      <p role="status" className="sr-only">
+        Carregando os modelos publicados…
+      </p>
+      <div aria-hidden="true" className={CATALOG_GRID_CLASS}>
+        {Array.from({ length: 6 }, (_, index) => (
+          <div
+            key={index}
+            className="overflow-hidden border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)]"
+          >
+            <div className="aspect-[2/3] animate-pulse bg-gradient-to-br from-[hsl(0,0%,10%)] via-[hsl(0,0%,8%)] to-[hsl(var(--gold-accent)/0.06)] motion-reduce:animate-none" />
+            <div className="space-y-3 p-3 md:p-4">
+              <div className="h-4 w-4/5 animate-pulse bg-[hsl(0,0%,14%)] motion-reduce:animate-none" />
+              <div className="h-3 w-2/3 animate-pulse bg-[hsl(0,0%,11%)] motion-reduce:animate-none" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
 
 function ModelCover({
   model,
@@ -46,11 +83,11 @@ function ModelCover({
 }) {
   const url = mediaUrl(model.coverStorageKey);
   return (
-    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden bg-[hsl(0,0%,9%)]">
+    <div className="relative flex aspect-[2/3] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,hsl(0_0%_13%),hsl(0_0%_7%)_72%)]">
       <CanonicalCatalogImage
         src={url}
         alt={"Imagem de referência: " + model.name}
-        imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+        imageClassName="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none sm:p-3"
       />
     </div>
   );
@@ -66,14 +103,23 @@ export default function CatalogModelsArcade() {
     PUBLIC_ROUTES.quoteRequest +
     (searchParams.get("tipo") === "pre-venda" ? "?tipo=pre-venda" : "");
   const [draft, setDraft] = useState(search);
+  const [filtersExpanded, setFiltersExpanded] = useState(() =>
+    Boolean(category || franchise || folder),
+  );
   // Deep links already contain the selected IDs. In a public image-review
   // build, avoid extra category/franchise reads just to populate closed selects.
   // Opening either filter remains the explicit trigger for its indexed lookup.
   const mediaUnderReview = isCatalogMediaUnderReview();
-  const publicReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true" && isCatalogPublicMvpEnabled();
+  const publicReadOnly =
+    import.meta.env.VITE_PREVIEW_READ_ONLY === "true" &&
+    isCatalogPublicMvpEnabled();
   const publicationBlocked = publicReadOnly && mediaUnderReview;
-  const [loadCategories, setLoadCategories] = useState(Boolean(category) && !mediaUnderReview);
-  const [loadFranchises, setLoadFranchises] = useState(Boolean(franchise) && !mediaUnderReview);
+  const [loadCategories, setLoadCategories] = useState(
+    Boolean(category) && !mediaUnderReview,
+  );
+  const [loadFranchises, setLoadFranchises] = useState(
+    Boolean(franchise) && !mediaUnderReview,
+  );
   const [franchiseDraft, setFranchiseDraft] = useState("");
   const [franchiseNeedle, setFranchiseNeedle] = useState("");
   const { selectedModels, setSelectedModels, paging, setPaging } =
@@ -82,6 +128,9 @@ export default function CatalogModelsArcade() {
   const returnCardRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => setDraft(search), [search]);
+  useEffect(() => {
+    if (category || franchise || folder) setFiltersExpanded(true);
+  }, [category, franchise, folder]);
 
   const gateway = useMemo(() => {
     if (!API_BASE) return null;
@@ -97,7 +146,8 @@ export default function CatalogModelsArcade() {
     paging.scope === scope ? paging : { scope, cursors: [undefined], index: 0 };
   const cursor = activePage.cursors[activePage.index];
   const searchLength = Array.from(search).length;
-  const invalidSearch = searchLength > 0 && (searchLength < 3 || searchLength > 80);
+  const invalidSearch =
+    searchLength > 0 && (searchLength < 3 || searchLength > 80);
   const invalidCatalogScope =
     Boolean(category && category !== "all" && !validCatalogSlug(category)) ||
     Boolean(franchise && !validCatalogSlug(franchise)) ||
@@ -107,7 +157,12 @@ export default function CatalogModelsArcade() {
   const categories = useQuery({
     queryKey: ["tonecos-catalog-categories"],
     queryFn: ({ signal }) => gateway!.listCategories(signal),
-    enabled: gateway !== null && !publicationBlocked && loadCategories && !invalidCatalogScope && !invalidSearch,
+    enabled:
+      gateway !== null &&
+      !publicationBlocked &&
+      loadCategories &&
+      !invalidCatalogScope &&
+      !invalidSearch,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -123,7 +178,12 @@ export default function CatalogModelsArcade() {
         },
         signal,
       ),
-    enabled: gateway !== null && !publicationBlocked && loadFranchises && !invalidCatalogScope && !invalidSearch,
+    enabled:
+      gateway !== null &&
+      !publicationBlocked &&
+      loadFranchises &&
+      !invalidCatalogScope &&
+      !invalidSearch,
     retry: false,
     staleTime: 15 * 60 * 1000,
   });
@@ -142,7 +202,12 @@ export default function CatalogModelsArcade() {
         },
         signal,
       ),
-    enabled: gateway !== null && !publicationBlocked && !invalidSearch && !invalidFolderScope && !invalidCatalogScope,
+    enabled:
+      gateway !== null &&
+      !publicationBlocked &&
+      !invalidSearch &&
+      !invalidFolderScope &&
+      !invalidCatalogScope,
     retry: false,
     staleTime: 60 * 1000,
   });
@@ -165,18 +230,34 @@ export default function CatalogModelsArcade() {
         ? { ...current, returnFocusSlug: undefined }
         : current,
     );
-  }, [models.isSuccess, paging.scope, paging.returnFocusSlug, scope, setPaging]);
+  }, [
+    models.isSuccess,
+    paging.scope,
+    paging.returnFocusSlug,
+    scope,
+    setPaging,
+  ]);
   // One already fetched, bounded page. Do not request adjacent model pages
   // to build detail navigation; the current list is the only authority here.
-  const pageSlugs = rows.length > 1 && rows.length <= 36 &&
+  const pageSlugs =
+    rows.length > 1 &&
+    rows.length <= 36 &&
     rows.every((item) => validCatalogSlug(item.slug))
-    ? rows.map((item) => item.slug)
-    : [];
+      ? rows.map((item) => item.slug)
+      : [];
   const categoryLabel =
     categories.data?.find((item) => item.id === category)?.label || category;
   const franchiseLabel =
-    franchises.data?.items.find((item) => item.id === franchise)?.label || franchise;
-  const hasActiveFilters = Boolean(search || (category && category !== "all") || franchise || folder);
+    franchises.data?.items.find((item) => item.id === franchise)?.label ||
+    franchise;
+  const hasActiveFilters = Boolean(
+    search || (category && category !== "all") || franchise || folder,
+  );
+  const activeFacetCount = [
+    category && category !== "all",
+    franchise,
+    folder,
+  ].filter(Boolean).length;
 
   function clearFilters() {
     setDraft("");
@@ -200,7 +281,12 @@ export default function CatalogModelsArcade() {
     if (nextCategory && nextCategory !== "all")
       next.set("category", nextCategory);
     if (nextFranchise) next.set("franchise", nextFranchise);
-    if (keepFolder && folder && nextCategory === category && nextFranchise === franchise) {
+    if (
+      keepFolder &&
+      folder &&
+      nextCategory === category &&
+      nextFranchise === franchise
+    ) {
       next.set("folder", folder);
     }
     setSearchParams(next);
@@ -219,12 +305,13 @@ export default function CatalogModelsArcade() {
   // remains usable after returning to a previous page.
   const repeatedCursor = Boolean(
     models.data?.nextCursor &&
-      activePage.cursors
-        .slice(0, activePage.index + 1)
-        .includes(models.data.nextCursor),
+    activePage.cursors
+      .slice(0, activePage.index + 1)
+      .includes(models.data.nextCursor),
   );
 
-  const canGoNext = models.isSuccess && Boolean(models.data?.nextCursor) && !repeatedCursor;
+  const canGoNext =
+    models.isSuccess && Boolean(models.data?.nextCursor) && !repeatedCursor;
 
   function goNext() {
     if (!canGoNext || !models.data?.nextCursor) return;
@@ -236,13 +323,19 @@ export default function CatalogModelsArcade() {
       ],
       index: activePage.index + 1,
     });
-    resultsRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    resultsRef.current?.scrollIntoView?.({
+      behavior: "smooth",
+      block: "start",
+    });
   }
 
   function goBack() {
     if (activePage.index === 0) return;
     setPaging({ ...activePage, index: activePage.index - 1 });
-    resultsRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    resultsRef.current?.scrollIntoView?.({
+      behavior: "smooth",
+      block: "start",
+    });
   }
 
   // The public read-only gallery reads exclusively from reviewed cover IDs,
@@ -266,21 +359,23 @@ export default function CatalogModelsArcade() {
           />
 
           <div className="relative z-10 mx-auto -mt-4 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
-             {mediaUnderReview ? (
-               <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(0,0%,7%)] px-4 py-3 text-sm text-[hsl(0,0%,72%)]">
-                 Explore as referências disponíveis. Algumas opções podem não estar visíveis neste momento.
-               </p>
-             ) : null}
+            {mediaUnderReview ? (
+              <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(0,0%,7%)] px-4 py-3 text-sm text-[hsl(0,0%,72%)]">
+                Explore as referências disponíveis. Algumas opções podem não
+                estar visíveis neste momento.
+              </p>
+            ) : null}
             <div className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] p-3 sm:p-4">
               <form
                 role="search"
-                className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(9rem,0.38fr)_minmax(9rem,0.38fr)_auto]"
+                aria-label="Buscar modelos no catálogo"
+                className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:gap-3"
                 onSubmit={(event) => {
                   event.preventDefault();
                   changeParams(draft.trim(), category);
                 }}
               >
-                <label className="relative col-start-1 row-start-1 min-w-0 sm:col-span-2 lg:col-span-1">
+                <label className="relative col-start-1 row-start-1 min-w-0">
                   <span className="sr-only">Pesquisar modelos</span>
                   <Search
                     aria-hidden="true"
@@ -288,10 +383,11 @@ export default function CatalogModelsArcade() {
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-[hsl(0,0%,56%)]"
                   />
                   <input
+                    type="text"
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                     maxLength={80}
-                    placeholder="Buscar..."
+                    placeholder="Buscar personagem, modelo ou código"
                     className={`h-12 w-full rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] pl-12 ${draft ? "pr-12" : "pr-3"} text-sm outline-none transition-colors focus-visible:border-[hsl(var(--gold-accent))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)]`}
                   />
                   {draft && (
@@ -308,14 +404,50 @@ export default function CatalogModelsArcade() {
                     </button>
                   )}
                 </label>
-                <label className="col-span-2 col-start-1 row-start-2 min-w-0 sm:col-span-1 lg:col-start-2 lg:row-start-1">
+                <button
+                  type="submit"
+                  className="col-start-2 row-start-1 inline-flex min-h-12 items-center justify-center border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-4 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(0,0%,5%)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] sm:px-6"
+                >
+                  Buscar modelos
+                </button>
+              </form>
+
+              <button
+                type="button"
+                aria-expanded={filtersExpanded}
+                aria-controls="catalog-advanced-filters"
+                onClick={() => setFiltersExpanded((expanded) => !expanded)}
+                className="mt-3 inline-flex min-h-12 w-full items-center justify-between border border-[hsl(0,0%,18%)] px-4 text-left text-sm text-[hsl(0,0%,88%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] md:hidden"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <SlidersHorizontal size={16} aria-hidden="true" />
+                  Filtros
+                  {activeFacetCount > 0 ? (
+                    <span className="inline-flex h-6 min-w-6 items-center justify-center border border-[hsl(var(--gold-accent)/0.5)] px-1 font-mono text-xs text-[hsl(var(--gold-accent))]">
+                      {activeFacetCount}
+                      <span className="sr-only"> filtros ativos</span>
+                    </span>
+                  ) : null}
+                </span>
+                <ChevronDown
+                  size={17}
+                  aria-hidden="true"
+                  className={`transition-transform motion-reduce:transition-none ${filtersExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              <div
+                id="catalog-advanced-filters"
+                className={`${filtersExpanded ? "grid" : "hidden"} mt-3 grid-cols-1 gap-3 border-t border-[hsl(0,0%,15%)] pt-3 sm:grid-cols-2 md:grid lg:grid-cols-4`}
+              >
+                <label className="min-w-0">
                   <span className="sr-only">Filtrar por categoria</span>
                   <select
                     value={category === "all" ? "" : category}
                     onChange={(event) => {
                       setFranchiseDraft("");
                       setFranchiseNeedle("");
-                      changeParams(search, event.target.value, "");
+                      changeParams(draft.trim(), event.target.value, "");
                     }}
                     onFocus={() => setLoadCategories(true)}
                     onPointerDown={() => setLoadCategories(true)}
@@ -323,13 +455,18 @@ export default function CatalogModelsArcade() {
                     disabled={
                       gateway === null || (loadCategories && categories.isError)
                     }
-                    className="h-12 w-full rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)] disabled:opacity-60"
+                    className="h-12 w-full rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 text-sm outline-none focus-visible:border-[hsl(var(--gold-accent))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)] disabled:opacity-60"
                   >
-                    <option value="">Todas as categorias</option>
-                    {category && category !== "all" &&
-                      !categories.data?.some((item) => item.id === category) && (
-                        <option value={category}>{categoryLabel}</option>
-                      )}
+                    <option value="">
+                      {categories.isFetching
+                        ? "Carregando categorias…"
+                        : "Todas as categorias"}
+                    </option>
+                    {category &&
+                      category !== "all" &&
+                      !categories.data?.some(
+                        (item) => item.id === category,
+                      ) && <option value={category}>{categoryLabel}</option>}
                     {categories.data
                       ?.filter((item) => item.id !== "all")
                       .map((item) => (
@@ -339,12 +476,12 @@ export default function CatalogModelsArcade() {
                       ))}
                   </select>
                 </label>
-                <label className="col-span-2 min-w-0 sm:col-span-2 sm:col-start-2 sm:row-start-2 lg:col-span-1 lg:col-start-3 lg:row-start-1">
+                <label className="min-w-0">
                   <span className="sr-only">Filtrar por franquia</span>
                   <select
                     value={franchise}
                     onChange={(event) =>
-                      changeParams(search, category, event.target.value)
+                      changeParams(draft.trim(), category, event.target.value)
                     }
                     onFocus={() => setLoadFranchises(true)}
                     onPointerDown={() => setLoadFranchises(true)}
@@ -352,88 +489,105 @@ export default function CatalogModelsArcade() {
                     disabled={
                       gateway === null || (loadFranchises && franchises.isError)
                     }
-                    className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 text-sm text-[hsl(0,0%,94%)] outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)] disabled:opacity-60"
+                    className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 text-sm text-[hsl(0,0%,94%)] outline-none focus-visible:border-[hsl(var(--gold-accent))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)] disabled:opacity-60"
                   >
-                    <option value="">Todas as franquias</option>
+                    <option value="">
+                      {franchises.isFetching
+                        ? "Carregando franquias…"
+                        : "Todas as franquias"}
+                    </option>
                     {franchise &&
                       !franchises.data?.items.some(
                         (item) => item.id === franchise,
                       ) && <option value={franchise}>{franchise}</option>}
                     {franchises.data?.items.map((item) => (
-                      <option key={item.category + "/" + item.id} value={item.id}>
+                      <option
+                        key={item.category + "/" + item.id}
+                        value={item.id}
+                      >
                         {item.label} ({item.count})
                       </option>
                     ))}
                   </select>
                 </label>
-                <button
-                  type="submit"
-                  className="col-start-2 row-start-1 h-12 border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-3 font-mono sm:col-start-3 sm:px-6 lg:col-start-4 text-xs font-semibold uppercase tracking-[0.15em] text-[hsl(0,0%,5%)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  Buscar
-                </button>
-              </form>
 
-              {categories.isError && !invalidSearch && !invalidCatalogScope && (
-                <div role="alert" className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[hsl(0,0%,56%)]">
-                  <span>Não foi possível carregar as categorias.</span>
+                <div className="flex min-w-0 flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-4">
+                  <label className="min-w-0 flex-1 basis-44 sm:max-w-sm">
+                    <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(0,0%,56%)]">
+                      Encontrar franquia
+                    </span>
+                    <input
+                      value={franchiseDraft}
+                      onChange={(event) =>
+                        setFranchiseDraft(event.target.value)
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          findFranchises();
+                        }
+                      }}
+                      maxLength={80}
+                      placeholder="Digite 3 letras ou mais"
+                      aria-label="Pesquisar franquias"
+                      aria-describedby="franchise-search-hint"
+                      disabled={gateway === null}
+                      className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 font-mono text-xs text-[hsl(0,0%,94%)] placeholder:text-[hsl(0,0%,42%)] focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))] disabled:opacity-60"
+                    />
+                    <span id="franchise-search-hint" className="sr-only">
+                      Pesquise franquias pelo nome, usando até 80 caracteres.
+                    </span>
+                  </label>
                   <button
                     type="button"
-                    onClick={() => void categories.refetch()}
-                    disabled={categories.isFetching}
-                    className="min-h-11 border border-[hsl(var(--gold-accent)/0.5)] px-3 text-[hsl(var(--gold-accent))] disabled:opacity-40"
+                    onClick={findFranchises}
+                    disabled={
+                      gateway === null ||
+                      (franchiseDraft.trim().length > 0 &&
+                        Array.from(franchiseDraft.trim()).length < 3)
+                    }
+                    aria-label="Buscar franquias"
+                    className="inline-flex min-h-12 items-center justify-center border border-[hsl(var(--gold-accent)/0.5)] px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] disabled:opacity-40"
                   >
-                    Tentar novamente categorias
+                    Buscar franquias
                   </button>
+                  {franchises.data?.truncated ? (
+                    <p
+                      className="max-w-xs text-xs text-[hsl(0,0%,56%)]"
+                      role="status"
+                    >
+                      A lista mostra apenas parte das franquias. Pesquise pelo
+                      nome para refinar.
+                    </p>
+                  ) : null}
                 </div>
-              )}
 
-              <div className="mt-3 flex flex-wrap items-end gap-2 border-t border-[hsl(0,0%,15%)] pt-3">
-                <label className="min-w-0 flex-1 basis-44 sm:max-w-sm">
-                  <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(0,0%,56%)]">
-                    Encontrar franquia
-                  </span>
-                  <input
-                    value={franchiseDraft}
-                    onChange={(event) => setFranchiseDraft(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        findFranchises();
-                      }
-                    }}
-                    maxLength={80}
-                    placeholder="Digite ao menos 3 caracteres"
-                    aria-label="Pesquisar franquias"
-                    disabled={gateway === null}
-                    className="h-11 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 font-mono text-xs text-[hsl(0,0%,94%)] placeholder:text-[hsl(0,0%,42%)] focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))] disabled:opacity-60"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={findFranchises}
-                  disabled={
-                    gateway === null ||
-                    (franchiseDraft.trim().length > 0 &&
-                      Array.from(franchiseDraft.trim()).length < 3)
-                  }
-                  aria-label="Buscar franquias"
-                  className="h-11 border border-[hsl(var(--gold-accent)/0.5)] px-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] disabled:opacity-40 sm:px-4"
-                >
-                  <span className="sm:hidden">Buscar</span>
-                  <span className="hidden sm:inline">Buscar franquias</span>
-                </button>
-                {franchises.data?.truncated ? (
-                  <p
-                    className="max-w-xs text-xs text-[hsl(0,0%,56%)]"
-                    role="status"
+                {categories.isError &&
+                !invalidSearch &&
+                !invalidCatalogScope ? (
+                  <div
+                    role="alert"
+                    className="flex flex-wrap items-center gap-3 text-xs text-[hsl(0,0%,56%)] sm:col-span-2 lg:col-span-4"
                   >
-                    A lista mostra apenas parte das franquias. Pesquise pelo nome
-                    para refinar.
-                  </p>
+                    <span>Não foi possível carregar as categorias.</span>
+                    <button
+                      type="button"
+                      onClick={() => void categories.refetch()}
+                      disabled={categories.isFetching}
+                      className="min-h-11 border border-[hsl(var(--gold-accent)/0.5)] px-3 text-[hsl(var(--gold-accent))] disabled:opacity-40"
+                    >
+                      Tentar novamente categorias
+                    </button>
+                  </div>
                 ) : null}
-                {franchises.isError && !invalidSearch && !invalidCatalogScope ? (
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-[hsl(0,0%,56%)]" role="alert">
+
+                {franchises.isError &&
+                !invalidSearch &&
+                !invalidCatalogScope ? (
+                  <div
+                    className="flex flex-wrap items-center gap-2 text-xs text-[hsl(0,0%,56%)] sm:col-span-2 lg:col-span-4"
+                    role="alert"
+                  >
                     <span>Não foi possível consultar as franquias.</span>
                     <button
                       type="button"
@@ -448,9 +602,18 @@ export default function CatalogModelsArcade() {
               </div>
 
               {folder && !invalidFolderScope && !invalidCatalogScope && (
-                <div role="status" className="mt-3 flex flex-wrap items-center gap-2 break-all text-xs text-[hsl(var(--gold-accent))]">
+                <div
+                  role="status"
+                  className="mt-3 flex flex-wrap items-center gap-2 break-all text-xs text-[hsl(var(--gold-accent))]"
+                >
                   Pasta selecionada: {folder}
-                  <button type="button" onClick={() => changeParams(search, category, franchise, false)} className="border border-[hsl(var(--gold-accent)/0.5)] px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      changeParams(search, category, franchise, false)
+                    }
+                    className="border border-[hsl(var(--gold-accent)/0.5)] px-3 py-2"
+                  >
                     Limpar pasta
                   </button>
                 </div>
@@ -458,12 +621,20 @@ export default function CatalogModelsArcade() {
 
               {hasActiveFilters && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                  {search && <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">Busca: {search}</span>}
+                  {search && (
+                    <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">
+                      Busca: {search}
+                    </span>
+                  )}
                   {category && category !== "all" && (
-                    <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">Categoria: {categoryLabel}</span>
+                    <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">
+                      Categoria: {categoryLabel}
+                    </span>
                   )}
                   {franchise && (
-                    <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">Franquia: {franchiseLabel}</span>
+                    <span className="max-w-full break-words border border-[hsl(0,0%,24%)] px-2 py-1">
+                      Franquia: {franchiseLabel}
+                    </span>
                   )}
                   <button
                     type="button"
@@ -476,17 +647,27 @@ export default function CatalogModelsArcade() {
               )}
             </div>
 
-            <div ref={resultsRef} className="mb-4 mt-6 flex scroll-mt-24 flex-wrap items-end justify-between gap-3">
+            <div
+              ref={resultsRef}
+              className="mb-4 mt-6 flex scroll-mt-24 flex-wrap items-end justify-between gap-3"
+            >
               <ArcadeSectionTitle>MODELOS DO ACERVO</ArcadeSectionTitle>
               <div className="flex flex-wrap items-center gap-3">
                 {models.isSuccess && (
-                  <p className="text-sm text-[hsl(0,0%,62%)]" aria-live="polite">
-                    Página {activePage.index + 1} · {rows.length} {rows.length === 1 ? "modelo" : "modelos"} nesta
-                    página{canGoNext ? " · Há mais modelos" : ""}
+                  <p
+                    className="text-sm text-[hsl(0,0%,62%)]"
+                    aria-live="polite"
+                  >
+                    Página {activePage.index + 1} · {rows.length}{" "}
+                    {rows.length === 1 ? "modelo" : "modelos"} nesta página
+                    {canGoNext ? " · Há mais modelos" : ""}
                   </p>
                 )}
                 {models.isSuccess && (activePage.index > 0 || canGoNext) && (
-                  <nav aria-label="Navegação rápida do catálogo" className="flex flex-wrap items-center gap-2">
+                  <nav
+                    aria-label="Navegação rápida do catálogo"
+                    className="flex flex-wrap items-center gap-2"
+                  >
                     {activePage.index > 0 && (
                       <button
                         type="button"
@@ -513,7 +694,9 @@ export default function CatalogModelsArcade() {
                   <button
                     type="button"
                     aria-label={
-                      (publicReadOnly ? "Abrir referências salvas com " : "Abrir seleção para orçamento com ") +
+                      (publicReadOnly
+                        ? "Abrir referências salvas com "
+                        : "Abrir seleção para orçamento com ") +
                       selectedModels.length +
                       (selectedModels.length === 1 ? " modelo" : " modelos")
                     }
@@ -521,7 +704,10 @@ export default function CatalogModelsArcade() {
                   >
                     <Bookmark size={16} aria-hidden="true" />
                     Minha seleção
-                    <span aria-hidden="true" className="bg-[hsl(var(--gold-accent)/0.12)] px-1.5 py-0.5 font-mono text-xs">
+                    <span
+                      aria-hidden="true"
+                      className="bg-[hsl(var(--gold-accent)/0.12)] px-1.5 py-0.5 font-mono text-xs"
+                    >
                       {selectedModels.length}/{MAX_CANONICAL_SELECTION}
                     </span>
                   </button>
@@ -534,17 +720,26 @@ export default function CatalogModelsArcade() {
                 role="status"
                 className="rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-8"
               >
-                <h3 className="text-xl">Catálogo temporariamente indisponível</h3>
+                <h3 className="text-xl">
+                  Catálogo temporariamente indisponível
+                </h3>
                 <p className="mt-2 max-w-xl text-sm text-[hsl(0,0%,56%)]">
-                  Não foi possível acessar os modelos agora. Tente novamente mais tarde.
+                  Não foi possível acessar os modelos agora. Tente novamente
+                  mais tarde.
                 </p>
               </div>
             ) : invalidCatalogScope ? (
-              <p role="status" className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm">
+              <p
+                role="status"
+                className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm"
+              >
                 Categoria, franquia ou pasta inválida. Revise os filtros da URL.
               </p>
             ) : invalidFolderScope ? (
-              <p role="status" className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm">
+              <p
+                role="status"
+                className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm"
+              >
                 A pasta requer uma categoria e uma franquia válidas.
               </p>
             ) : invalidSearch ? (
@@ -557,51 +752,66 @@ export default function CatalogModelsArcade() {
                   : "Utilize ao menos três caracteres na pesquisa."}
               </p>
             ) : models.isPending ? (
-              <p
-                role="status"
-                className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm"
-              >
-                Carregando os modelos publicados…
-              </p>
+              <CatalogGridSkeleton />
             ) : models.isError ? (
               <div
                 role="alert"
                 className="rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-7"
               >
-                <h3 className="text-lg">Não foi possível consultar o acervo.</h3>
+                <h3 className="text-lg">
+                  Não foi possível consultar o acervo.
+                </h3>
                 <p className="mt-2 text-sm text-[hsl(0,0%,56%)]">
                   Verifique sua conexão e tente novamente em instantes.
                 </p>
                 <button
                   type="button"
                   onClick={() => void models.refetch()}
-                  className="mt-4 rounded-none border border-[hsl(var(--gold-accent))] px-4 py-2 text-sm"
+                  className="mt-4 inline-flex min-h-11 items-center justify-center rounded-none border border-[hsl(var(--gold-accent))] px-4 text-sm hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                 >
                   Tentar novamente
                 </button>
               </div>
             ) : rows.length === 0 ? (
-              <p
+              <div
                 role="status"
-                className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm"
+                className="border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-6 sm:p-8"
               >
-                {canGoNext
-                  ? "Não há modelos disponíveis nesta página. Continue para ver mais resultados."
-                  : "Nenhum modelo disponível corresponde aos filtros utilizados. Tente outra busca."}
-              </p>
+                <p className="text-sm leading-relaxed text-[hsl(0,0%,75%)]">
+                  {canGoNext
+                    ? "Não há modelos disponíveis nesta página. Continue para ver mais resultados."
+                    : "Nenhum modelo disponível corresponde aos filtros utilizados. Tente outra busca."}
+                </p>
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="mt-4 inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent)/0.6)] px-4 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
+                  >
+                    Limpar filtros e ver o acervo
+                  </button>
+                ) : null}
+              </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-5 2xl:grid-cols-6 2xl:gap-5">
+              <div className={CATALOG_GRID_CLASS}>
                 {rows.map((model) => {
                   const isSelected = selectedModels.some(
                     (item) => item.id === model.id,
                   );
                   return (
-                    <ArcadeCard key={model.id} className="flex h-full flex-col">
+                    <ArcadeCard
+                      key={model.id}
+                      className={`flex h-full flex-col ${isSelected ? "ring-1 ring-[hsl(var(--gold-accent)/0.28)]" : ""}`}
+                    >
                       <div className="flex h-full flex-col">
                         <Link
                           to={catalogModelDetailsPath(model.slug)}
-                          ref={paging.scope === scope && paging.returnFocusSlug === model.slug
-                            ? returnCardRef : undefined}
+                          ref={
+                            paging.scope === scope &&
+                            paging.returnFocusSlug === model.slug
+                              ? returnCardRef
+                              : undefined
+                          }
                           state={{
                             catalogReturnSearch: searchParams.toString(),
                             catalogSiblingSlugs: pageSlugs,
@@ -614,17 +824,23 @@ export default function CatalogModelsArcade() {
                             mediaUrl={(key) => gateway.mediaUrl(key)}
                           />
                           <div className="space-y-1.5 p-3 md:p-4">
-                            <p className="line-clamp-2 min-h-[2.5em] font-mono text-xs font-semibold uppercase tracking-[0.08em] leading-snug text-[hsl(0,0%,92%)] md:text-sm">
+                            <p className="line-clamp-2 min-h-[2.6em] text-sm font-semibold uppercase leading-snug tracking-wide text-[hsl(0,0%,94%)]">
                               {model.name}
                             </p>
-                            <p className="truncate text-xs text-[hsl(0,0%,56%)]">
-                              {model.variantName || model.franchise}
+                            <p className="truncate text-xs font-medium text-[hsl(0,0%,72%)]">
+                              {model.franchise}
                             </p>
-                            <p className="text-xs text-[hsl(0,0%,56%)]">
+                            {model.variantName ? (
+                              <p className="truncate text-xs text-[hsl(0,0%,56%)]">
+                                {model.variantName}
+                              </p>
+                            ) : null}
+                            <p className="font-mono text-[10px] tracking-[0.08em] text-[hsl(0,0%,48%)]">
                               {model.code}
                             </p>
-                            <p className="pt-1 text-xs font-semibold text-[hsl(var(--gold-accent))]">
+                            <p className="flex items-center justify-between gap-2 pt-1 text-xs font-semibold text-[hsl(var(--gold-accent))]">
                               Ver detalhes
+                              <ArrowRight size={14} aria-hidden="true" />
                             </p>
                           </div>
                         </Link>
@@ -650,7 +866,10 @@ export default function CatalogModelsArcade() {
             )}
 
             {models.isSuccess && repeatedCursor && (
-              <p role="status" className="mt-5 text-center text-sm text-[hsl(0,0%,56%)]">
+              <p
+                role="status"
+                className="mt-5 text-center text-sm text-[hsl(0,0%,56%)]"
+              >
                 Esta sequência de páginas retornaria a uma página já visitada.
                 Volte ou refine a busca para continuar.
               </p>
@@ -694,19 +913,28 @@ export default function CatalogModelsArcade() {
             <span className="font-mono text-xs uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))]">
               Acervo TONART
             </span>
-            <SheetTitle className="text-2xl text-[hsl(0,0%,94%)]">Minha seleção</SheetTitle>
+            <SheetTitle className="text-2xl text-[hsl(0,0%,94%)]">
+              Minha seleção
+            </SheetTitle>
             <SheetDescription className="text-[hsl(0,0%,66%)]">
-              {publicReadOnly ? "Reúna referências para comparar durante esta visita. O catálogo público não recebe solicitações." : "Revise os modelos que você reuniu para um futuro orçamento."}
+              {publicReadOnly
+                ? "Reúna referências para comparar durante esta visita. O catálogo público não recebe solicitações."
+                : "Revise os modelos que você reuniu para um futuro orçamento."}
             </SheetDescription>
             <p role="status" className="text-sm text-[hsl(var(--gold-accent))]">
-              {selectedModels.length} de {MAX_CANONICAL_SELECTION} modelos selecionados.
+              {selectedModels.length} de {MAX_CANONICAL_SELECTION} modelos
+              selecionados.
             </p>
           </SheetHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6">
             {selectedModels.length === 0 ? (
               <div className="border border-dashed border-[hsl(0,0%,24%)] bg-[hsl(0,0%,9%)] p-5">
-                <Bookmark size={20} aria-hidden="true" className="mb-3 text-[hsl(var(--gold-accent))]" />
+                <Bookmark
+                  size={20}
+                  aria-hidden="true"
+                  className="mb-3 text-[hsl(var(--gold-accent))]"
+                />
                 <p className="text-sm font-semibold">Sua seleção está vazia.</p>
                 <p className="mt-1 text-sm text-[hsl(0,0%,66%)]">
                   Adicione modelos do catálogo para vê-los aqui.
@@ -725,16 +953,25 @@ export default function CatalogModelsArcade() {
                         state={{ catalogReturnSearch: searchParams.toString() }}
                         className="flex min-w-0 flex-1 basis-36 items-center gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                       >
-                        <div aria-hidden="true" className="flex h-14 w-12 shrink-0 items-center justify-center overflow-hidden bg-[hsl(0,0%,5%)]">
+                        <div
+                          aria-hidden="true"
+                          className="flex h-14 w-12 shrink-0 items-center justify-center overflow-hidden bg-[hsl(0,0%,5%)]"
+                        >
                           <CanonicalCatalogImage
-                            src={gateway?.mediaUrl(item.coverStorageKey) ?? null}
+                            src={
+                              gateway?.mediaUrl(item.coverStorageKey) ?? null
+                            }
                             alt=""
                             imageClassName="h-full w-full object-contain"
                           />
                         </div>
                         <div className="min-w-0">
-                          <p className="break-words text-sm font-semibold">{item.name}</p>
-                          <p className="break-words text-xs text-[hsl(0,0%,66%)]">{item.code}</p>
+                          <p className="break-words text-sm font-semibold">
+                            {item.name}
+                          </p>
+                          <p className="break-words text-xs text-[hsl(0,0%,66%)]">
+                            {item.code}
+                          </p>
                         </div>
                       </Link>
                     </SheetClose>
@@ -754,12 +991,17 @@ export default function CatalogModelsArcade() {
 
           <footer className="shrink-0 border-t border-[hsl(0,0%,18%)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 sm:px-6">
             <p className="mb-3 text-xs leading-relaxed text-[hsl(0,0%,66%)]">
-              {publicReadOnly ? "A seleção fica apenas nesta visita e não é enviada ao estúdio." : "A seleção fica disponível durante esta visita. Nenhum orçamento foi enviado."}
+              {publicReadOnly
+                ? "A seleção fica apenas nesta visita e não é enviada ao estúdio."
+                : "A seleção fica disponível durante esta visita. Nenhum orçamento foi enviado."}
             </p>
-            {selectedModels.length > 0 && import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" ? (
+            {selectedModels.length > 0 &&
+            import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" ? (
               <SheetClose asChild>
-                <Link to={quoteRequestPath}
-                  className="mb-3 inline-flex min-h-11 w-full items-center justify-center bg-[hsl(var(--gold-accent))] px-4 text-sm font-semibold text-black hover:brightness-110">
+                <Link
+                  to={quoteRequestPath}
+                  className="mb-3 inline-flex min-h-11 w-full items-center justify-center bg-[hsl(var(--gold-accent))] px-4 text-sm font-semibold text-black hover:brightness-110"
+                >
                   Solicitar orçamento dos modelos
                 </Link>
               </SheetClose>

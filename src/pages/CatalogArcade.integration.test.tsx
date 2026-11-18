@@ -184,6 +184,7 @@ describe("Tonecos canonical Universe discovery", () => {
 
     const franchiseCard = screen.getByText("Franquia 1").closest("a");
     expect(franchiseCard).toHaveAttribute("href", "/universo/originais/franquia-1");
+    expect(franchiseCard?.closest(".grid")).toHaveClass("grid-cols-1", "min-[360px]:grid-cols-2");
     expect(screen.getByText("1 modelo", { exact: true })).toBeInTheDocument();
     expect(screen.queryByText("1 modelos", { exact: true })).not.toBeInTheDocument();
   });
