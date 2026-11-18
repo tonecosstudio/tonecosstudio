@@ -1754,3 +1754,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** iniciar Fase A da especificação, verificar o estado atual após outros agentes e só então avançar em vínculos de identidade/projeção pública e UI existente, com testes proporcionais.
 
 **DO_NOT_REPEAT:** não criar outro catálogo ou fonte de tags, não copiar biografias em cada modelo, não ativar Supabase legado público, não reexecutar migrations já aplicadas, não abrir Workflows/deploy por esta alteração documental.
+
+## Rodada 78 — correção do formulário de resposta de orçamento (18/11/2026)
+
+- **Base/HEAD:** `origin/main@b82a76a80cde54b8bef0afa73cfe48ff4a549d3b`; correção em `353ff843` na branch curta `fix/commercial-form-event-state`, enviada à [PR #34](https://github.com/tonecosstudio/tonecosstudio/pull/34), draft.
+- O formulário administrativo lia `event.currentTarget.value` dentro de atualizadores funcionais. Após a finalização do evento, `currentTarget` já é nulo, derrubando a página ao preencher o desconto Black Friday. O handler agora captura o valor sincronamente nos campos de cancelamento, frete, preço, desconto e mensagem.
+- **Validação:** a suíte direcionada inicial executou 17 arquivos: **233/234 testes passaram**, com o caso Black Friday reproduzindo a falha. Após a correção, `TonecosAdminQuotesPage.test.tsx` passou **13/13**; `typecheck:app`, ESLint do arquivo e `git diff --check` passaram. A checagem Prettier do arquivo inteiro já falhava na versão base por formatação histórica, sem ser alterada mecanicamente nesta correção.
+- Nenhuma chamada Supabase remota, migration, alteração de feature gate, cobrança ou deploy foi feita. PRs #27 e #28 já estão integradas à `main`; o comércio permanece fechado pelos flags existentes.
+- **Pendência real:** E2E com sessões Auth reais de admin e cliente e confirmação de build do SHA final ainda não foram executados. A verificação desta rodada ficou local, conforme a restrição vigente.
+
+**NEXT_ACTION:** revisar os checks da PR #34 e manter os gates comerciais fechados até E2E autorizado com sessões reais.
+
+**DO_NOT_REPEAT:** não ler `event.currentTarget` dentro de um updater assíncrono; não usar testes locais como prova de Supabase real; não alterar os flags comerciais ou escrever em produção.
