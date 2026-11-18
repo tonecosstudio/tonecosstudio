@@ -1,3 +1,13 @@
+## CHECKPOINT — 18/11/2026 — atendimento por e-mail para visitante sem cadastro
+
+- **Base:** main@b82a76a8; **branch:** `fix/commercial-guest-contact-20261118`, HEAD técnico `f2e0904a` antes deste checkpoint.
+- **Entrega:** `TonecosQuoteRequestPage` usa o endereço oficial `CONTACT.CONTACT_EMAIL` e `buildSafeMailtoHref` para oferecer ao visitante sem conta um contato por e-mail com nome/código dos modelos selecionados. O e-mail abre o aplicativo do visitante; o envio exige ação humana e **não** cria cotação no Supabase nem protocolo em `/meus-orcamentos`. Seleções extensas não são truncadas silenciosamente; o visitante recebe instruções de contato direto. Cadastro Auth, RPC `submit_catalog_quote_request`, `quotes`, RLS e painel administrativo permanecem inalterados. Teste de regressão adicionado à suíte comercial.
+- **Verificação:** revisão de fonte e seleção contra o cadastro fechado; tentativa de Vitest local no Windows esgotou inicialização do worker antes de coletar testes (0 executados), portanto **não aprovado**. Formatação histórica preexistente nas duas fontes impede Prettier integral sem diff amplo; não reformate arquivos por inteiro. Verificar CI e repetir teste dirigido somente em runner funcional.
+- **PRs protegidas:** #26, #31, #33 editoriais não tocadas; #29 mobile e #34 admin preservadas. Quality Gate da #34 (#44320097694) alocou runner e instalou dependências, mas falhou em 4 de 384 testes (3 suites: catálogo/modelos, detalhe/Coins e admin Coins), não no formulário de orçamento. #29 (#43995612028) falhou sem steps. Nenhuma PR integrada, nenhuma publicação, migração, cobrança ou indexação liberada nesta etapa.
+- **Próxima ação:** obter CI verde na revisão exata, validar navegação mobile e orçamento com sessão cliente/admin real, reconciliar #29/#34 após suas correções, publicar manualmente SHA aprovado no Vercel existente somente após gates aplicáveis; revisão humana de direitos, LGPD e GO de indexação continuam separadas. **DO_NOT_REPEAT:** não criar outro backend/catálogo/PR editorial, não replicar tabela/RPC, não repetir builds de produção já homologados.
+
+---
+
 ## CHECKPOINT — 16/11/2026 — vitrine comercial sem promoção não autorizada
 
 - **Produção publicada:** `tonart-studio-public` deployment `dpl_8TSit4xbse6JZmET16dRB23H47aL`, `READY`, commit `8c1e59f063480bcfbb8335eeaf115681b4b4ad35`, alias `https://tonartstudio.com.br`. Uma única compilação de produção, com **52 testes Node aprovados**. Não repetir o deploy.
