@@ -1849,3 +1849,25 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar os 11 dossiês na curadoria privada canônica e fornecer Supabase/D1 isolados para homologar a exportação; manter a flag desligada e os candidatos sem aprovação até esses gates.
 
 **DO_NOT_REPEAT:** não converter fonte oficial da franquia em prova de que um render específico representa personagem; não tratar correspondência exata do rótulo como evidência; não fazer merge/deploy ou escrita em banco para contornar a ausência de staging.
+
+## Rodada 86 — segunda expansão de candidatos Dragon Ball (18/11/2026)
+
+- Acrescentei candidatos para **Gohan, Piccolo, Android 18 (rótulo do catálogo: Androide 18) e Cell**, com quatro páginas oficiais e biografias originais sujeitas à revisão humana. A ficha de Piccolo preserva a distinção entre Piccolo e Grande Rei Demônio Piccolo; os demais registram ambiguidades de saga, forma, idioma e render.
+- Vínculos selecionados por ID/slug e rótulo exato da fila: **19 Gohan, 17 Piccolo, 17 Android 18 e 14 Cell**. O pacote agora tem **15 identidades pesquisadas**, **19 fontes oficiais**, **15 rascunhos** e **297 vínculos candidatos**. A fotografia preserva `source_status`, publicação do contrato candidato e slug público quando existe.
+- Todas as alegações continuam pendentes: **0 identidades revisadas/aprovadas**, **0 vínculos revisados/aprovados**, **0 relações com evidência independente**. Os textos e fontes não validam os renders individuais nem liberam a projeção pública. Nenhum banco, migration, Worker, flag ou ambiente produtivo foi alterado.
+- **Validação após esta expansão:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11** com os 15 dossiês e 297 vínculos; `git diff --check` passou. O teste valida estrutura, IDs e estados pendentes, não aprovação editorial nem integração D1/Supabase.
+
+**NEXT_ACTION:** revisar candidatos e vínculos na curadoria privada canônica e seguir a expansão por outros grupos de identidade de alta frequência.
+
+**DO_NOT_REPEAT:** não tratar o selo oficial da franquia como prova do render; não fundir Piccolo Jr. com seu antecessor; não promover grafia localizada, transformação ou forma como identidade confirmada.
+
+## Rodada 87 — terceira expansão de candidatos Dragon Ball (18/11/2026)
+
+- Acrescentei dossiês candidatos para **Nappa (11 IDs), Bulma (9), Kamesennin / Mestre Kame (10) e Gogeta (10)** com fontes oficiais e biografias originais pendentes de revisão. A fonte de Kamesennin registra Mutenroshi como outro nome e Jackie Chun como disfarce; a fonte de Gogeta trata especificamente da fusão Super Saiyajin 4 de Dragon Ball GT.
+- O pacote agora contém **19 identidades candidatas pesquisadas**, **23 URLs oficiais**, **19 rascunhos biográficos** e **337 vínculos candidatos**. A seleção de vínculos usa rótulos exatos e IDs/slugs da fila; ela não confirma os renders, variantes ou personagens que aparecem em cada cena.
+- **Estado editorial:** 0 identidades revisadas/aprovadas, 0 vínculos revisados/aprovados e 0 vínculos com evidência independente. Nenhum registro foi escrito na curadoria ou na projeção pública.
+- **Validação desta rodada:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11** com o lote expandido; `git diff --check` passou. O fluxo Supabase→D1, a migration `0023`, a flag pública e M5 permanecem sem alteração.
+
+**NEXT_ACTION:** continuar a triagem dos grupos restantes com fontes primárias e, em separado, revisar visualmente os 337 possíveis vínculos na curadoria privada canônica.
+
+**DO_NOT_REPEAT:** não inferir que todos os rótulos “Gogeta” representam a versão GT/Super Saiyajin 4; não converter “Mestre Kame” ou “Jackie Chun” em aliases verificados sem decisão editorial.

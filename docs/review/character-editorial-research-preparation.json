@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 11,
-    "preparedCandidateModelLinkCount": 230
+    "sourceResearchedIdentityCount": 19,
+    "preparedCandidateModelLinkCount": 337
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 11,
+    "preparedIdentityCount": 19,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 230,
+    "preparedCandidateModelLinkCount": 337,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -147,6 +147,70 @@
       "publisher": "Dragon Ball Official Site",
       "title": "Only Saiyans Could Exterminate Them! Why One Cellular Biologist Theorizes Majin Buu Could Be a Slime Mold!",
       "url": "https://en.dragon-ball-official.com/news/01_3001.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-gohan-saiyan-arc",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly ☆ Character Showcase #20: The Saiyan Arc's Son Gohan!",
+      "url": "https://en.dragon-ball-official.com/news/01_503.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-piccolo-saiyan-arc",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly ☆ Character Showcase #59: Piccolo from the Saiyan Arc!",
+      "url": "https://en.dragon-ball-official.com/news/01_1178.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-android-18-buu-arc",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly ☆ Character Showcase #213: Android 18 from the Majin Buu Arc!",
+      "url": "https://en.dragon-ball-official.com/news/01_3483.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-cell-first-form",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly ☆ Character Showcase #5: First Form Cell!",
+      "url": "https://en.dragon-ball-official.com/news/01_158.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-nappa",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly ☆ Character Showcase #33: Nappa!",
+      "url": "https://en.dragon-ball-official.com/news/01_759.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-bulma-goku-training-arc",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly ☆ Character Showcase #238: Bulma from the Goku Training Arc!",
+      "url": "https://en.dragon-ball-official.com/news/01_3933.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-kamesennin-goku-training-arc",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly ☆ Character Showcase #3: Goku Training Arc's Kamesennin!",
+      "url": "https://en.dragon-ball-official.com/news/01_141.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-gogeta-super-saiyan-4",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly ☆ Character Showcase #200: Gogeta (Super Saiyan 4) from Dragon Ball GT!",
+      "url": "https://en.dragon-ball-official.com/news/01_3311.html",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -5239,6 +5303,2509 @@
         }
       ],
       "catalogCandidateModelCount": 28
+    },
+    {
+      "candidateName": "Gohan",
+      "catalogDisplayNameCandidate": "Gohan",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Gohan",
+          "sourceIds": [
+            "db-gohan-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-gohan-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.family_and_aspiration",
+          "value": "A fonte oficial o identifica como filho mais velho de Goku e descreve seu desejo inicial de se tornar um grande estudioso.",
+          "sourceIds": [
+            "db-gohan-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.training_with_piccolo",
+          "value": "Depois do confronto com Raditz, Piccolo leva Gohan para treiná-lo para a chegada dos Saiyajins.",
+          "sourceIds": [
+            "db-gohan-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Gohan é apresentado como o filho mais velho de Goku e, no início da história, deseja se tornar estudioso. Após a chegada de Raditz, Piccolo o leva para treinar; a experiência de combate e o treinamento passam a moldar sua trajetória.",
+      "biographySourceIds": [
+        "db-gohan-saiyan-arc"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A fonte consultada descreve Gohan no arco Saiyajin; idade, roupas e transformações variam entre sagas e exigem validação por modelo.",
+        "A fonte oficial sustenta identidade e franquia, mas não confirma individualmente nenhum render do catálogo.",
+        "Os 19 vínculos abaixo foram selecionados pelo rótulo exato da fila e permanecem sem evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_00edabca6db0cb95b0b7",
+          "modelSlug": "dragon-ball-gohan-kid-1-3-172595",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-kid-1-3-172595"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_0f9a5c8a8952f5822c46",
+          "modelSlug": "dragon-ball-gohan-1-137769",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-1-137769"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_121884a4fcd2312a12f2",
+          "modelSlug": "dragon-ball-gohan-fases",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-fases"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_175edc1babb60bfcc10e",
+          "modelSlug": "dragon-ball-gohan-figure-105658",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-figure-105658"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2106e0fc645c168cc2a5",
+          "modelSlug": "dragon-ball-gohan-kid-1-2-172594",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-kid-1-2-172594"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3ad81b5fe099006b0900",
+          "modelSlug": "dragon-ball-gohan-super-saiyan-1-126879",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-super-saiyan-1-126879"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5805fa9616615d4f7a7f",
+          "modelSlug": "dragon-ball-gohan-adolescente-5-busto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-adolescente-5-busto"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_65b5a3131e0fee0ad895",
+          "modelSlug": "dragon-ball-gohan-kid-1-1-172593",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-kid-1-1-172593"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_77057bd57334d184e898",
+          "modelSlug": "dragon-ball-gohan-grande-saiyaman",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-grande-saiyaman"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_83dee7152e0f87bbfe2b",
+          "modelSlug": "dragon-ball-gohan-treino-academia-105553",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-treino-academia-105553"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a20f8161f4edd7633e59",
+          "modelSlug": "dragon-ball-gohan-fiery-base-1-166219",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-fiery-base-1-166219"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a7517bb82019f4726b4c",
+          "modelSlug": "dragon-ball-gohan-kid-1-4-172596",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-kid-1-4-172596"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a9a11f734b7cb1f0f24a",
+          "modelSlug": "dragon-ball-gohan-super-saiyan-busto-108612",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-super-saiyan-busto-108612"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_addeedf531dac2285469",
+          "modelSlug": "dragon-ball-gohan-grande-saiyaman-super-saiyajin",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-grande-saiyaman-super-saiyajin"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b577c9f4b13fd66d3319",
+          "modelSlug": "dragon-ball-gohan-super-saiyan-2-1-176312",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-super-saiyan-2-1-176312"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c9cf8e13923a3d85aba1",
+          "modelSlug": "dragon-ball-gohan-ssj2-busto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-ssj2-busto"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d482ab2d2df77cffd4e1",
+          "modelSlug": "dragon-ball-gohan-dragon-ball-base-110793",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-dragon-ball-base-110793"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e6cb5a9d427141cd32d1",
+          "modelSlug": "dragon-ball-gohan-super-saiyan-power-1-187725",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-super-saiyan-power-1-187725"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f2dadcc395fac7d60a22",
+          "modelSlug": "dragon-ball-gohan-super-saiyan-base-raio-108611",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gohan-super-saiyan-base-raio-108611"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 19
+    },
+    {
+      "candidateName": "Piccolo",
+      "catalogDisplayNameCandidate": "Piccolo",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Piccolo",
+          "sourceIds": [
+            "db-piccolo-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alternate_name_candidate",
+          "value": "Piccolo Jr.",
+          "sourceIds": [
+            "db-piccolo-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-piccolo-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.origin_and_revenge",
+          "value": "A fonte oficial relata que Piccolo nasceu do ovo deixado pelo Grande Rei Demônio Piccolo e inicialmente buscou vingança contra Goku.",
+          "sourceIds": [
+            "db-piccolo-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.alliance_and_student",
+          "value": "A fonte oficial descreve a aliança temporária de Piccolo com Goku e o treinamento de Gohan.",
+          "sourceIds": [
+            "db-piccolo-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Na fonte oficial consultada, Piccolo é apresentado como o descendente que nasceu do ovo deixado pelo Grande Rei Demônio Piccolo. Depois de buscar vingança contra Goku, ele passa por uma aliança temporária com seu antigo rival e treina Gohan.",
+      "biographySourceIds": [
+        "db-piccolo-saiyan-arc"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A fonte distingue Piccolo do Grande Rei Demônio Piccolo e registra o nome Piccolo Jr.; os 17 modelos com rótulo Piccolo podem representar identidades, eras ou formas diferentes e precisam de triagem visual por ID.",
+        "A fonte oficial sustenta identidade e franquia, mas não confirma individualmente nenhum render do catálogo.",
+        "Os vínculos abaixo usam apenas rótulos exatos da fila; evidência independente por modelo permanece vazia."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0542f0f5c68658d29980",
+          "modelSlug": "dragon-ball-piccolo-energia-frente",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-energia-frente"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_159f2b15a0f3d7d53dcf",
+          "modelSlug": "dragon-ball-piccolo-energia-costas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_305f2818623b85c74c90",
+          "modelSlug": "dragon-ball-piccolo-jr-busto-partes-roxas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-jr-busto-partes-roxas"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_37ecb93422a34abacc87",
+          "modelSlug": "dragon-ball-piccolo-armadura-saiyajin-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-armadura-saiyajin-em-pe"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_39f744b8ddac8d91c98f",
+          "modelSlug": "dragon-ball-piccolo-close-e-estatua-promocional",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-close-e-estatua-promocional"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_48c2d6e83fb81cb0a7e8",
+          "modelSlug": "dragon-ball-piccolo-busto-sobre-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-busto-sobre-base"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_51df1d5443a8273b5d18",
+          "modelSlug": "dragon-ball-piccolo-com-espada-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-com-espada-em-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5207803e85cd8db35920",
+          "modelSlug": "dragon-ball-piccolo-flutuando-sobre-base-vermelha",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-flutuando-sobre-base-vermelha"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5f0f0ce49c18ea61bd1b",
+          "modelSlug": "dragon-ball-piccolo-jr-busto-com-turbante",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-jr-busto-com-turbante"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_61cf62843a360a4b2ac9",
+          "modelSlug": "dragon-ball-piccolo-chibi-com-aura-dourada",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-chibi-com-aura-dourada"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_73b0238fae641ceda6b6",
+          "modelSlug": "dragon-ball-piccolo-em-pe-com-bracos-cruzados-e-nuvem",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-em-pe-com-bracos-cruzados-e-nuvem"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_86d90f940015f47b3d41",
+          "modelSlug": "dragon-ball-piccolo-jr-busto-partes-coloridas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-jr-busto-partes-coloridas"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8822fa7b551fdcf32066",
+          "modelSlug": "dragon-ball-piccolo-jr-busto-modelo-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-jr-busto-modelo-cinza"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a42beacf273510a8dfa5",
+          "modelSlug": "dragon-ball-piccolo-bracos-cruzados-com-cauda",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-bracos-cruzados-com-cauda"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b323d6a1c656dc0fe492",
+          "modelSlug": "dragon-ball-piccolo-diorama-com-energia-verde",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-diorama-com-energia-verde"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ec0269ec6e5f3914ce08",
+          "modelSlug": "dragon-ball-piccolo-diorama-com-energia-verde-escura",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-diorama-com-energia-verde-escura"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f4e6ed99f07b4cedd00f",
+          "modelSlug": "dragon-ball-piccolo-busto-close",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-piccolo-busto-close"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 17
+    },
+    {
+      "candidateName": "Android 18",
+      "catalogDisplayNameCandidate": "Androide 18",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Android 18",
+          "sourceIds": [
+            "db-android-18-buu-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-android-18-buu-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.family",
+          "value": "A fonte oficial relata que Android 18 se casa com Krillin e que os dois têm uma filha.",
+          "sourceIds": [
+            "db-android-18-buu-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.tournament",
+          "value": "No arco Majin Buu, Android 18 participa do 25º Tenkaichi Budokai e chega à batalha real final.",
+          "sourceIds": [
+            "db-android-18-buu-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Android 18 é apresentada anos depois da batalha contra Cell, já casada com Krillin e vivendo com a filha. Na saga Majin Buu, ela entra no 25º Tenkaichi Budokai em busca do prêmio e enfrenta outros competidores.",
+      "biographySourceIds": [
+        "db-android-18-buu-arc"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "O inventário usa a forma localizada Androide 18 e a fonte oficial em inglês usa Android 18; a forma de exibição e eventual alias requerem revisão.",
+        "A fonte consultada representa o arco Majin Buu; roupas, datas e composições dos modelos precisam de validação individual.",
+        "A fonte oficial sustenta identidade e franquia, mas não confirma individualmente nenhum render do catálogo."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_01e538ec0f887877604b",
+          "modelSlug": "dragon-ball-androide-18-traje-azul-corpo-inteiro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-androide-18-traje-azul-corpo-inteiro"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_166d430fc29aa3af910c",
+          "modelSlug": "dragon-ball-androide-18-braco-estendido",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-androide-18-braco-estendido"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2955c06a966ed597ffda",
+          "modelSlug": "dragon-ball-androide-18-traje-casual-frente-alternativo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3a04ace8dad892d6ccf6",
+          "modelSlug": "dragon-ball-androide-18-traje-casual-lateral",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3b5713a0dbaf2803c6fd",
+          "modelSlug": "dragon-ball-androide-18-traje-casual-costas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3dbf908c4f84b483de3d",
+          "modelSlug": "dragon-ball-androide-18-traje-casual-partes-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-androide-18-traje-casual-partes-cinza"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_4b8f495b85991b200b0c",
+          "modelSlug": "dragon-ball-androide-18-modelo-cinza-lateral",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-androide-18-modelo-cinza-lateral"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7d82c53b2d957bc64820",
+          "modelSlug": "dragon-ball-androide-18-chibi",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-androide-18-chibi"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9d089f640be9d8f54d85",
+          "modelSlug": "dragon-ball-androide-18-traje-preto-em-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-androide-18-traje-preto-em-base"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a5180defcc7a205257cb",
+          "modelSlug": "dragon-ball-androide-18-busto-realista",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-androide-18-busto-realista"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a6609342b669fa3843b0",
+          "modelSlug": "dragon-ball-androide-18-modelo-cinza-costas-corpo-inteiro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a85fa0632a1165f39712",
+          "modelSlug": "dragon-ball-androide-18-busto-display",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-androide-18-busto-display"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ce3833e18c8583020771",
+          "modelSlug": "dragon-ball-androide-18-modelo-cinza-costas-close",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d238cb57de3c0de239e2",
+          "modelSlug": "dragon-ball-androide-18-traje-casual-frente",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-androide-18-traje-casual-frente"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d5cbb9908908d960ac2f",
+          "modelSlug": "dragon-ball-androide-18-moldura-com-rosto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-androide-18-moldura-com-rosto"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d820adcb8d3d33181338",
+          "modelSlug": "dragon-ball-androide-18-com-energia-roxa-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-androide-18-com-energia-roxa-em-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f41fbf5bef2b37da9bba",
+          "modelSlug": "dragon-ball-androide-18-traje-azul-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 17
+    },
+    {
+      "candidateName": "Cell",
+      "catalogDisplayNameCandidate": "Cell",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Cell",
+          "sourceIds": [
+            "db-cell-first-form"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-cell-first-form"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.creation",
+          "value": "A fonte oficial descreve Cell como resultado da pesquisa do Dr. Gero, reunindo dados celulares de vários guerreiros.",
+          "sourceIds": [
+            "db-cell-first-form"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.forms_and_androids",
+          "value": "A fonte oficial relata que Cell procura absorver Androides 17 e 18 para alcançar sua forma perfeita.",
+          "sourceIds": [
+            "db-cell-first-form"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Cell é apresentado como resultado das pesquisas do Dr. Gero, criado a partir de células de guerreiros poderosos. A fonte oficial descreve sua busca por Androides 17 e 18 para alcançar a forma perfeita.",
+      "biographySourceIds": [
+        "db-cell-first-form"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A fonte consultada trata da primeira forma; os 14 modelos podem mostrar primeira, segunda ou forma perfeita, e precisam de validação visual por ID.",
+        "A fonte oficial sustenta identidade e franquia, mas não confirma individualmente nenhum render do catálogo.",
+        "Os vínculos abaixo usam apenas rótulos exatos da fila e não são evidência de que o render corresponda ao personagem."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0d293f8819c039b1e01e",
+          "modelSlug": "dragon-ball-cell-primeira-forma-corpo-inteiro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-primeira-forma-corpo-inteiro"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_17b9b235dec1d306dcb5",
+          "modelSlug": "dragon-ball-cell-primeira-forma-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-primeira-forma-em-pe"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8b7db2c96ca0e53df4d3",
+          "modelSlug": "dragon-ball-cell-forma-intermediaria-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-forma-intermediaria-em-pe"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9917d9014753a4fba332",
+          "modelSlug": "dragon-ball-cell-perfeito-com-cell-juniors",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-perfeito-com-cell-juniors"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9ae8b38104e6fecda992",
+          "modelSlug": "dragon-ball-cell-perfeito-em-diorama-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-perfeito-em-diorama-02"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ad823c7a1b61a3618925",
+          "modelSlug": "dragon-ball-cell-perfeito-busto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-perfeito-busto"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b8f8cf894e11b6642f97",
+          "modelSlug": "dragon-ball-cell-perfeito-em-diorama-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-perfeito-em-diorama-01"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c169ddc0d1080d751cdf",
+          "modelSlug": "dragon-ball-cell-chibi",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-chibi"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ca4e193d0b48c32f6e50",
+          "modelSlug": "dragon-ball-cell-realista-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-realista-em-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_cf9ef1a9801d26cea78e",
+          "modelSlug": "dragon-ball-cell-primeira-forma-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-primeira-forma-em-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d943dcc5b9267a2ad16e",
+          "modelSlug": "dragon-ball-cell-perfeito-em-diorama-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-perfeito-em-diorama-04"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e33b6bfc7e673e674742",
+          "modelSlug": "dragon-ball-cell-perfeito-em-diorama-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-perfeito-em-diorama-03"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_fa3e29bfe4622d97bc58",
+          "modelSlug": "dragon-ball-cell-junior",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-junior"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_fd39720ba810bce113be",
+          "modelSlug": "dragon-ball-cell-max-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-cell-max-em-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 14
+    },
+    {
+      "candidateName": "Nappa",
+      "catalogDisplayNameCandidate": "Nappa",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Nappa",
+          "sourceIds": [
+            "db-nappa"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-nappa"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.saiyan_and_vegeta",
+          "value": "A fonte oficial identifica Nappa como guerreiro Saiyajin de elite e descreve seu trabalho conjunto com Vegeta.",
+          "sourceIds": [
+            "db-nappa"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.earth_invasion",
+          "value": "A fonte oficial relata a invasão da Terra por Nappa e Vegeta durante a busca pelas Esferas do Dragão.",
+          "sourceIds": [
+            "db-nappa"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Nappa é apresentado como um guerreiro Saiyajin de elite que atua ao lado de Vegeta em missões pela galáxia. Os dois invadem a Terra no contexto da busca pelas Esferas do Dragão; após enfrentar os defensores do planeta, Nappa é derrotado por Goku.",
+      "biographySourceIds": [
+        "db-nappa"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A fonte cobre o arco Saiyajin; armadura, idade visual e composição dos modelos precisam ser conferidas por ID.",
+        "A fonte oficial sustenta identidade e franquia, mas não confirma individualmente nenhum render; os vínculos seguem sem evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0d8f8e9aef7525f1f508",
+          "modelSlug": "dragon-ball-nappa-3-2-176315",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-nappa-3-2-176315"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1a9760fff9475449d8a1",
+          "modelSlug": "dragon-ball-nappa-dragon-ball-z",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-nappa-dragon-ball-z"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1b56956c174e2a54fff4",
+          "modelSlug": "dragon-ball-nappa-2-2-176062",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-nappa-2-2-176062"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_25a20027de1c2a51ede1",
+          "modelSlug": "dragon-ball-nappa-2-4-176064",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-nappa-2-4-176064"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_45bf7a5916d8e3234d5c",
+          "modelSlug": "dragon-ball-nappa-bust-1-1-176090",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-nappa-bust-1-1-176090"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6bcd7a703aaf721ca640",
+          "modelSlug": "dragon-ball-nappa-bust-1-180610",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-nappa-bust-1-180610"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_784c194451ec1f8d9262",
+          "modelSlug": "dragon-ball-nappa-2-180578",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-nappa-2-180578"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9dcfed5a752a34540437",
+          "modelSlug": "dragon-ball-nappa-3-3-176316",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-nappa-3-3-176316"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a3448b2b42c9da074f5c",
+          "modelSlug": "dragon-ball-nappa-3-4-176317",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-nappa-3-4-176317"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c9dc0e1c5ddaf6e432d6",
+          "modelSlug": "dragon-ball-nappa-2-3-176063",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-nappa-2-3-176063"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f6085a02c8e59b756dee",
+          "modelSlug": "dragon-ball-nappa-2-1-176061",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-nappa-2-1-176061"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 11
+    },
+    {
+      "candidateName": "Bulma",
+      "catalogDisplayNameCandidate": "Bulma",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Bulma",
+          "sourceIds": [
+            "db-bulma-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-bulma-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.dragon_ball_quest",
+          "value": "A fonte oficial relata que Bulma encontra uma Esfera do Dragão, descobre a possibilidade de realizar um desejo e inicia a busca pelas sete.",
+          "sourceIds": [
+            "db-bulma-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.dragon_radar",
+          "value": "A fonte oficial atribui a Bulma a invenção do Radar do Dragão, criado para localizar as esferas.",
+          "sourceIds": [
+            "db-bulma-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Bulma encontra uma Esfera do Dragão na adega da família e parte para reunir as sete. Ao conhecer Goku, convence-o a acompanhá-la como guarda-costas; a fonte oficial também registra sua invenção do Radar do Dragão.",
+      "biographySourceIds": [
+        "db-bulma-goku-training-arc"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A fonte consultada descreve Bulma no arco de treinamento de Goku; roupas, idade contextual e período precisam ser associados ao modelo somente após revisão visual.",
+        "A fonte oficial sustenta identidade e franquia, mas não confirma individualmente nenhum render; os vínculos seguem sem evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_19bbf2c56db2b764b387",
+          "modelSlug": "dragon-ball-bulma-traje-tenis-sentada",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-bulma-traje-tenis-sentada"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2e5396757eb8aceb42ba",
+          "modelSlug": "dragon-ball-bulma-camiseta-rosa-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-bulma-camiseta-rosa-em-pe"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_37867e9dc38f4d2410ef",
+          "modelSlug": "dragon-ball-bulma-bone-vermelho-e-jaqueta",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-bulma-bone-vermelho-e-jaqueta"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_62ac93d53987bf047702",
+          "modelSlug": "dragon-ball-bulma-chibi-com-caixa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-bulma-chibi-com-caixa"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6c72a9f7b059b2168f05",
+          "modelSlug": "dragon-ball-bulma-traje-aventura-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-bulma-traje-aventura-em-pe"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_855310bf9f9863091c4a",
+          "modelSlug": "dragon-ball-bulma-chibi-com-mala",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-bulma-chibi-com-mala"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c76de8c15e1944d4ebc8",
+          "modelSlug": "dragon-ball-bulma-com-rifle-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-bulma-com-rifle-em-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e406290138dba431f5ad",
+          "modelSlug": "dragon-ball-bulma-coelhinha-sentada",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-bulma-coelhinha-sentada"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f1f3ad51f3d4365fea00",
+          "modelSlug": "dragon-ball-bulma-em-veiculo-capsule-corp",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-bulma-em-veiculo-capsule-corp"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 9
+    },
+    {
+      "candidateName": "Kamesennin",
+      "catalogDisplayNameCandidate": "Mestre Kame",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Kamesennin",
+          "sourceIds": [
+            "db-kamesennin-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alternate_name_candidate",
+          "value": "Mutenroshi",
+          "sourceIds": [
+            "db-kamesennin-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-kamesennin-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.kame_school",
+          "value": "A fonte oficial identifica Kamesennin como fundador da Escola Kame e mestre de Goku e Kuririn.",
+          "sourceIds": [
+            "db-kamesennin-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.jackie_chun_disguise",
+          "value": "A fonte oficial relata que Kamesennin competiu no torneio disfarçado como Jackie Chun.",
+          "sourceIds": [
+            "db-kamesennin-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Kamesennin é apresentado como um mestre de artes marciais que fundou a Escola Kame e treinou Goku e Kuririn. A fonte oficial registra Mutenroshi como outro nome pelo qual ele é conhecido e descreve sua participação disfarçada como Jackie Chun.",
+      "biographySourceIds": [
+        "db-kamesennin-goku-training-arc"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "O inventário usa o nome localizado Mestre Kame; a escolha do nome canônico e o tratamento de Mutenroshi/Jackie Chun como alias ou persona dependem de revisão editorial.",
+        "A fonte consultada descreve o arco inicial; roupas, idades visuais e poses dos modelos requerem validação individual.",
+        "A fonte oficial sustenta identidade e franquia, mas não confirma individualmente nenhum render; os vínculos seguem sem evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_101d1fb16c5812862fd8",
+          "modelSlug": "dragon-ball-mestre-kame-estatua-colorida",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-mestre-kame-estatua-colorida"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1c81e0ba6aa982b9fc72",
+          "modelSlug": "dragon-ball-mestre-kame-musculoso",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-mestre-kame-musculoso"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_22b6c12be00d3c4b7164",
+          "modelSlug": "dragon-ball-mestre-kame-chibi-com-barba",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-mestre-kame-chibi-com-barba"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_52e48e7f6558a01a127d",
+          "modelSlug": "dragon-ball-mestre-kame-chibi-com-cajado-costas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5951182ac82f182b2cf3",
+          "modelSlug": "dragon-ball-mestre-kame-chibi-com-cajado-lateral",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6a2c76e288f6566a6ac0",
+          "modelSlug": "dragon-ball-mestre-kame-chibi-com-cajado-frente",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-mestre-kame-chibi-com-cajado-frente"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_74c2f728e1d228318dc3",
+          "modelSlug": "dragon-ball-mestre-kame-chibi-com-barba-alternativo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-mestre-kame-chibi-com-barba-alternativo"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_890d08f935f3c8241278",
+          "modelSlug": "dragon-ball-mestre-kame-chef-chibi",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-mestre-kame-chef-chibi"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9d7e645ee2bcdb1e9c95",
+          "modelSlug": "dragon-ball-mestre-kame-chibi-com-cajado-tres-quartos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-mestre-kame-chibi-com-cajado-tres-quartos"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_aed0a3c95efb4f1d5892",
+          "modelSlug": "dragon-ball-mestre-kame-chibi-sentado",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-mestre-kame-chibi-sentado"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 10
+    },
+    {
+      "candidateName": "Gogeta",
+      "catalogDisplayNameCandidate": "Gogeta",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Gogeta",
+          "sourceIds": [
+            "db-gogeta-super-saiyan-4"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-gogeta-super-saiyan-4"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.fusion_identity",
+          "value": "A fonte oficial identifica Gogeta nesta aparição como fusão de Goku e Vegeta em Super Saiyajin 4.",
+          "sourceIds": [
+            "db-gogeta-super-saiyan-4"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.dragon_ball_gt",
+          "value": "A fonte oficial situa esta versão de Gogeta em Dragon Ball GT durante a luta contra Yi-Shinron.",
+          "sourceIds": [
+            "db-gogeta-super-saiyan-4"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Gogeta é apresentado nesta fonte como a fusão de Goku e Vegeta em Super Saiyajin 4, realizada para enfrentar Yi-Shinron em Dragon Ball GT. A fusão se desfaz antes de ambos conseguirem repetir o ataque final.",
+      "biographySourceIds": [
+        "db-gogeta-super-saiyan-4"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A fonte descreve especificamente Gogeta Super Saiyajin 4 em Dragon Ball GT; Gogeta de outros filmes, linhas e transformações não deve ser mesclado sem revisão.",
+        "Os 10 vínculos foram selecionados pelo rótulo exato Gogeta, não por evidência visual; cada ID precisa ser classificado por versão e personagem.",
+        "A fonte oficial sustenta identidade e franquia, mas não confirma individualmente nenhum render; os vínculos seguem sem evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_045b2342d511a97e3fde",
+          "modelSlug": "dragon-ball-gogeta-forms-trio-1-122037",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gogeta-forms-trio-1-122037"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5791bec904c64bb2deaf",
+          "modelSlug": "dragon-ball-gogeta-ssj4-1-2-178490",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gogeta-ssj4-1-2-178490"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_72305314238b9a2c5d1a",
+          "modelSlug": "dragon-ball-gogeta-ssj4-chibi-gray-front-113584",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gogeta-ssj4-chibi-gray-front-113584"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_919d8d9e677967a25cfa",
+          "modelSlug": "dragon-ball-gogeta-ssj4",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gogeta-ssj4"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9c9af0cec8d189b94c69",
+          "modelSlug": "dragon-ball-gogeta-ssj4-1-1-178489",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gogeta-ssj4-1-1-178489"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b936fbf75d8ce90cfc54",
+          "modelSlug": "dragon-ball-gogeta-ssj4-chibi-painted-front-113581",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gogeta-ssj4-chibi-painted-front-113581"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ba55e75a8c2f4103dce5",
+          "modelSlug": "dragon-ball-gogeta-ssj4-1-3-178491",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gogeta-ssj4-1-3-178491"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_bf33af8f2580b3c2a997",
+          "modelSlug": "dragon-ball-gogeta-ssj4-chibi-rear-113582",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gogeta-ssj4-chibi-rear-113582"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ede542081e7f24e736ca",
+          "modelSlug": "dragon-ball-gogeta-ssj4-chibi-parts-113583",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gogeta-ssj4-chibi-parts-113583"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_fa68fba74d1fd565bdfa",
+          "modelSlug": "dragon-ball-gogeta-super-saiyajin-esfera-184953",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-gogeta-super-saiyajin-esfera-184953"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 10
     }
   ]
 }
