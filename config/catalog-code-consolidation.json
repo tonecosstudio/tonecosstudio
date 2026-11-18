@@ -370,8 +370,8 @@
       },
       "worker/index.ts": {
         "sourceBlob": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
-        "localBlob": "7e55ade3a0e2ce8d7508b8596496e84c3998c488",
-        "reason": "Add read-only, evidence-checked character and universe projections to the existing staged Worker."
+        "localBlob": "c9a01a8136b1a6a3c7fef0c564f87a6ca2b41b04",
+        "reason": "Preserve exact private curation evidence kinds in read-only, evidence-checked character and universe projections on the existing staged Worker."
       },
       "worker/publicQueryBudget.ts": {
         "sourceBlob": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
