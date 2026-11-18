@@ -97,6 +97,48 @@ DECLARE
   v_expected_failure boolean;
   v_n integer;
 BEGIN
+  -- Public approval must never accept a local, reserved, or disguised
+  -- origin. The source validator is used by both human approval and export.
+  IF NOT private_api.tonart_public_https_evidence_url(
+       'https://www.marvel.com/characters/doctor-octopus/in-comics')
+     OR NOT private_api.tonart_public_https_evidence_url(
+       'https://example.org/editorial/source') THEN
+    RAISE EXCEPTION 'Public HTTPS editorial source was rejected';
+  END IF;
+  IF EXISTS (
+    SELECT 1
+    FROM unnest(ARRAY[
+      'http://example.org/not-https',
+      'https://localhost/character',
+      'https://localhost./character',
+      'https://127.0.0.1/source',
+      'https://10.2.3.4/internal',
+      'https://192.168.1.1/internal',
+      'https://[::1]/internal',
+      'https://private.example.local/bio',
+      'https://example.test/draft',
+      'https://example.org:443/bio',
+      'https://user:password@example.org/bio',
+      'https://%31%32%37.0.0.1/source'
+    ] AS bad(url)
+    WHERE private_api.tonart_public_https_evidence_url(bad.url)
+  ) THEN
+    RAISE EXCEPTION 'Private or malformed editorial evidence URL was accepted';
+  END IF;
+  IF private_api.tonart_editorial_sources_public_https(
+       jsonb_build_object('biographySources', jsonb_build_array(
+         jsonb_build_object('url', 'https://127.0.0.1/claim')
+       ))
+     ) OR private_api.tonart_editorial_sources_public_https(
+       jsonb_build_object('aliases', jsonb_build_array(jsonb_build_object(
+         'name', 'Draft alias', 'sources', jsonb_build_array(
+           jsonb_build_object('url', 'https://hidden.example.internal/claim')
+         )
+       )))
+     ) THEN
+    RAISE EXCEPTION 'Profile or nested claim bypassed the public source validator';
+  END IF;
+
   v_model_a := 'tonart-qa-a-' || substr(v_suffix, 1, 16);
   v_model_b := 'tonart-qa-b-' || substr(v_suffix, 1, 16);
   v_slug_a := v_model_a;
