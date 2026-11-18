@@ -162,7 +162,7 @@ BEGIN
     RAISE EXCEPTION 'Invalid character biography' USING ERRCODE = '22023';
   END IF;
   v_biography := public.admin_validate_catalog_curation_text(
-    v_profile ->> 'biography', 'character biography', 6000, NOT v_reviewed
+    v_profile ->> 'biography', 'character biography', 6000, false
   );
   IF v_profile ? 'ageContext'
      AND jsonb_typeof(v_profile -> 'ageContext') NOT IN ('string', 'null') THEN
