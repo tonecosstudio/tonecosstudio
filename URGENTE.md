@@ -1811,3 +1811,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** enviar o ajuste pontual à branch existente da PR #33 e acompanhar o novo Quality Gate, sem rerun manual.
 
 **DO_NOT_REPEAT:** não remover a precisão de duas casas da carteira para atender teste obsoleto, não alterar código comercial nessa correção, não tratar a suíte parcial do run anterior como aprovação total.
+
+## Rodada 83 — Quality Gate offline aprovado na PR #33 (18/11/2026)
+
+- Run `44218874862`, SHA `39925cc04fdc4f48bb4a34e7bd22742ea33a4f4e`: job `Catalog Worker offline / no deploy` **SUCCESS**. `npm ci` passou com CUDA desativado; suíte pública/comercial/SpecialSTL e inventário passou; verificações de ownership/blobs, TypeScript do Worker, runtime do Worker, busca/SQLite, proxy Pages e gate de cutover sem rede passaram. A verificação do release candidate ficou skipped. Os jobs gerais de cobertura, build/dependências de produção e auditoria ficaram skipped pela condição atual para eventos PR; eles não são declarados aprovados.
+- Commits enviados à branch existente da PR #33 nesta sequência: `fbb9d4a4` vínculos aprovados na ficha do modelo; `e21f3db9` corrige instalação CUDA indisponível do CI; `39925cc0` corrige a expectativa de Coins formatadas em centésimos. Nenhuma PR adicional foi aberta.
+- **Validações locais deste ciclo:** gateway editorial **10/10**; UI de vínculo múltiplo passou; teste do visitante/oferta passou; teste da célula de ledger `+12,00` passou; ESLint direcionado, TypeScript da aplicação e `git diff --check` passaram. Fixture valida contrato e navegação, não conectividade real com D1/Supabase.
+- **Bloqueios remanescentes da missão:** não há exportação aprovada entre a curadoria privada da PR #31 e a projeção D1 da PR #26; a migration pública `0023` não foi aplicada e não há conteúdo editorial publicado. Portanto páginas/listagens seguem condicionadas à flag pública desligada. O run verde não comprova dados reais, Auth/RLS, migration ou deploy.
+
+**NEXT_ACTION:** para concluir a publicação editorial, a autoridade de dados deve aprovar e homologar o fluxo Supabase→D1, aplicar a migration autorizada e abastecer a projeção com registros revisados; então homologar e liberar a flag. Até lá, manter staged-offline.
+
+**DO_NOT_REPEAT:** não inferir os 2.609 vínculos como verificados, não ativar a flag usando fixture, não aplicar migration/deploy/cutover sem autorização, não declarar os jobs `skipped` como aprovados.
