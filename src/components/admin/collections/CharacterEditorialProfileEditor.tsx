@@ -370,14 +370,42 @@ export function CharacterEditorialProfileEditor({
               {profileQuery.data.publicationStatus === "approved" &&
               profileQuery.data.publicationRevision ===
                 profileQuery.data.revision &&
-              profileQuery.data.publicationRelationRevision ===
+              profileQuery.data.approvedRelationRevision ===
                 profileQuery.data.relationRevision
-                ? `aprovada para exportação · perfil ${profileQuery.data.publicationRevision} · vínculos ${profileQuery.data.publicationRelationRevision}`
+                ? `aprovada para exportação · revisão ${profileQuery.data.publicationRevision}, vínculos ${profileQuery.data.relationRevision}`
                 : "sem aprovação para a revisão atual"}
               {profileQuery.data.publicationApprovedAt
                 ? ` · aprovada em ${new Date(profileQuery.data.publicationApprovedAt).toLocaleString("pt-BR")}`
                 : ""}
             </p>
+            <section className="space-y-2 rounded-md border p-3" aria-label="Vínculos incluídos na aprovação">
+              <p className="text-sm font-medium">
+                Estatuetas e evidências desta personagem · {profileQuery.data.activeModelLinks.length}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Revisão dos vínculos: {profileQuery.data.relationRevision}.
+                A aprovação cobre todos os registros abaixo, inclusive de outras
+                coleções. Mudanças posteriores exigem nova aprovação.
+              </p>
+              {profileQuery.data.activeModelLinks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma estatueta vinculada. A aprovação pública será recusada.
+                </p>
+              ) : (
+                <ul className="max-h-64 space-y-2 overflow-auto text-xs">
+                  {profileQuery.data.activeModelLinks.map((link) => (
+                    <li key={link.modelId} className="space-y-1 border-t pt-2 first:border-0 first:pt-0">
+                      <p className="font-medium">{link.modelSlug}</p>
+                      <p className="break-all text-muted-foreground">ID: {link.modelId}</p>
+                      <p>{link.evidenceTitle || "Sem nota de evidência"}</p>
+                      <p className="break-all text-muted-foreground">
+                        Fonte: {link.evidenceUrl}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
             <p className="text-xs text-muted-foreground">
               Para revisar, cite nome, franquia, biografia e obra de origem.
               Cada alias e característica também precisa de fonte; idade é
@@ -543,7 +571,7 @@ export function CharacterEditorialProfileEditor({
               (profileQuery.data.publicationStatus === "approved" &&
               profileQuery.data.publicationRevision ===
                 profileQuery.data.revision &&
-              profileQuery.data.publicationRelationRevision ===
+              profileQuery.data.approvedRelationRevision ===
                 profileQuery.data.relationRevision ? (
                 <Button
                   type="button"
@@ -575,7 +603,9 @@ export function CharacterEditorialProfileEditor({
                   onClick={() => {
                     if (
                       window.confirm(
-                        "Aprovar esta revisão com as fontes exibidas para futura exportação pública? A aprovação não publica nem sincroniza o catálogo automaticamente.",
+                        "Aprovar a revisão da ficha e dos vínculos ativos (revisão " +
+                          profileQuery.data.relationRevision +
+                          ")? Confirme antes as estatuetas e fontes vinculadas à personagem. A aprovação não publica nem sincroniza o catálogo automaticamente.",
                       )
                     )
                       publicationMutation.mutate(true);

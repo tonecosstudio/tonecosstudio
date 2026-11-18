@@ -715,7 +715,7 @@ describe("Tonecos shareable model detail UI", () => {
       }),
     ).toHaveAttribute("src", BASE + "/media/detail/img-two.webp");
     expect(
-      screen.getByText(/Disponibilidade e preço são confirmados pela equipe/),
+      screen.getByText(/A equipe confirma disponibilidade, frete e prazo/),
     ).toBeInTheDocument();
     expect(requests.every((request) => request.method === "GET")).toBe(true);
     expect(requests).toHaveLength(3);
@@ -768,7 +768,7 @@ describe("Tonecos shareable model detail UI", () => {
     ).toBeInTheDocument();
     expect(calls).toBe(2);
     expect(
-      screen.getByText(/Disponibilidade e preço são confirmados pela equipe/),
+      screen.getByText(/A equipe confirma disponibilidade, frete e prazo/),
     ).toBeInTheDocument();
   });
 

@@ -33,10 +33,11 @@ const MODEL_ID = "22222222-2222-4222-8222-222222222222";
 const TAG_ID = "33333333-3333-4333-8333-333333333301";
 const CHARACTER_ID = "44444444-4444-4444-8444-444444444444";
 const publicationPending = {
+  activeModelLinks: [],
   relationRevision: 0,
+  approvedRelationRevision: null,
   publicationStatus: "not_approved",
   publicationRevision: null,
-  publicationRelationRevision: null,
   publicationApprovalRef: null,
   publicationApprovedAt: null,
   publicationApprovedBy: null,
@@ -307,12 +308,6 @@ describe("internal catalog curation service", () => {
       "invalidated_by_model_relation_change",
     );
     expect(migrations[3]).toContain(
-      "CREATE TRIGGER trg_catalog_character_relation_revision",
-    );
-    expect(migrations[3]).toContain(
-      "editorial_publication_relation_revision = editorial_relation_revision",
-    );
-    expect(migrations[3]).toContain(
       "Approved character has no active model link",
     );
     expect(migrations[3]).toContain(
@@ -331,19 +326,13 @@ describe("internal catalog curation service", () => {
       "Stale editorial profile revision was accepted",
     );
     expect(acceptance).toContain(
-      "Stale model-link revision was approved for publication",
-    );
-    expect(acceptance).toContain(
-      "invalidated_by_model_relation_change",
-    );
-    expect(acceptance).toContain(
       "Duplicate reviewed character route slug was accepted",
     );
     expect(acceptance).toContain(
       "Public approval accepted a reviewed identity without model links",
     );
     expect(acceptance).toContain(
-      "Removing the last model relation did not revoke publication",
+      "Final model unlink failed to revoke publication",
     );
     expect(acceptance.trimEnd().endsWith("ROLLBACK;")).toBe(true);
   });
@@ -464,10 +453,16 @@ describe("internal catalog curation service", () => {
       revision: 3,
       reviewedAt: "2026-11-17T10:00:00.000Z",
       reviewedBy: "55555555-5555-4555-8555-555555555555",
-      relationRevision: 7,
       publicationStatus: "approved",
       publicationRevision: 3,
-      publicationRelationRevision: 7,
+      relationRevision: 7,
+      approvedRelationRevision: 7,
+      activeModelLinks: [{
+        modelId: MODEL_ID,
+        modelSlug: "modelo-real",
+        evidenceUrl: "https://example.org/model-review",
+        evidenceTitle: "Publicação revisada",
+      }],
       publicationApprovalRef: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       publicationApprovedAt: "2026-11-18T10:00:00.000Z",
       publicationApprovedBy: "66666666-6666-4666-8666-666666666666",
@@ -483,7 +478,8 @@ describe("internal catalog curation service", () => {
     ).resolves.toMatchObject({
       publicationStatus: "approved",
       publicationRevision: 3,
-      publicationRelationRevision: 7,
+      relationRevision: 7,
+      approvedRelationRevision: 7,
     });
     expect(mocks.callAdminRpc).toHaveBeenCalledWith(
       "admin_set_catalog_character_publication_approval",
@@ -505,6 +501,14 @@ describe("internal catalog curation service", () => {
         approved: true,
       }),
     ).rejects.toThrow("catalog_character_publication_approval_invalid");
+    await expect(
+      setCatalogCharacterPublicationApproval({
+        identityId: CHARACTER_ID,
+        expectedRevision: 3,
+        expectedRelationRevision: -1,
+        approved: true,
+      }),
+    ).rejects.toThrow("catalog_character_publication_approval_invalid");
     mocks.callAdminRpc.mockResolvedValue({
       identityId: CHARACTER_ID,
       name: "Sample Character",
@@ -514,7 +518,6 @@ describe("internal catalog curation service", () => {
       revision: 3,
       reviewedAt: "2026-11-17T10:00:00.000Z",
       reviewedBy: "55555555-5555-4555-8555-555555555555",
-      relationRevision: 7,
       ...publicationPending,
     });
     await expect(
@@ -1515,6 +1518,91 @@ describe("internal catalog curation service", () => {
     }
   });
 
+  it("retains one canonical relation revision for every editorial publication", () => {
+    const migration = readFileSync(
+      "supabase/migrations/20261118010000_tonart_public_character_approval_and_export.sql",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
+    const acceptance = readFileSync(
+      "supabase/tests/tonart_curated_model_characters_acceptance.sql",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
+
+    expect(migration).toContain(
+      "editorial_relation_revision integer NOT NULL DEFAULT 0",
+    );
+    expect(migration).toContain(
+      "editorial_publication_relation_revision = editorial_relation_revision",
+    );
+    expect(migration).toContain(
+      "CREATE OR REPLACE FUNCTION private_api.bump_tonart_character_relation_revision(",
+    );
+    expect(migration).toContain(
+      "trg_catalog_character_publication_relation_revision",
+    );
+    expect(migration).toContain(
+      "AFTER INSERT OR UPDATE OR DELETE ON public.catalog_curation_model_characters",
+    );
+    expect(migration).toContain(
+      "trg_catalog_character_publication_model_slug_revision",
+    );
+    expect(migration).toContain(
+      "private_api.tonart_character_active_link_snapshot",
+    );
+    expect(migration).toContain(
+      "CREATE OR REPLACE FUNCTION private_api.tonart_public_https_evidence_url(",
+    );
+    expect(migration).toContain(
+      "CREATE OR REPLACE FUNCTION private_api.tonart_editorial_sources_public_https(",
+    );
+    expect(migration.match(
+      /NOT private_api\.tonart_public_https_evidence_url\(relation\.evidence_origin\)/g,
+    )).toHaveLength(2);
+    expect(migration.match(
+      /IF NOT private_api\.tonart_editorial_sources_public_https\(v_profile\) THEN/g,
+    )).toHaveLength(2);
+    expect(acceptance).toContain(
+      "Private or malformed editorial evidence URL was accepted",
+    );
+    expect(acceptance).toContain(
+      "Profile or nested claim bypassed the public source validator",
+    );
+
+    expect(migration).toContain(
+      "'activeModelLinks', private_api.tonart_character_active_link_snapshot(v_identity.id)",
+    );
+    expect(migration).toContain("OLD.review_history IS NOT DISTINCT FROM NEW.review_history");
+    expect(migration).toContain("'invalidated_by_model_relation_change'");
+    expect(migration).toContain(
+      "editorial_publication_relation_revision = v_identity.editorial_relation_revision",
+    );
+    expect(migration).toContain(
+      "ci.editorial_publication_relation_revision = ci.editorial_relation_revision",
+    );
+    expect(migration).toContain("'approvedRelationRevision'");
+    expect(migration).toContain("FOR SHARE OF ci");
+    expect(migration).not.toContain(
+      "trg_catalog_character_publication_invalidated_by_last_model_unlink",
+    );
+    expect(migration).not.toContain("CREATE TABLE public.catalog_character_publications");
+
+    expect(acceptance).toContain(
+      "Partial model unlink failed to revoke the entire approved relation set",
+    );
+    expect(acceptance).toContain(
+      "Model evidence replacement did not invalidate old approval",
+    );
+    expect(acceptance).toContain(
+      "New model link remained covered by previous approval",
+    );
+    expect(acceptance).toContain(
+      "Canonical model slug change failed to invalidate publication",
+    );
+    expect(acceptance).toContain(
+      "Idempotent relation write invalidated an unchanged approval",
+    );
+  });
+
   it("keeps the PostgreSQL acceptance run staging-gated, transaction-scoped and reversible", () => {
     const acceptance = readFileSync(
       "supabase/tests/tonart_curated_model_characters_acceptance.sql",
@@ -1579,11 +1667,7 @@ describe("internal catalog curation service", () => {
     );
   });
 
-  it("keeps biography optional through private review, publication approval and export", () => {
-    const profileMigration = readFileSync(
-      "supabase/migrations/20261117040000_tonart_character_editorial_profiles.sql",
-      "utf8",
-    ).replace(/\r\n/g, "\n");
+  it("keeps biography optional from human review through the public export", () => {
     const publicationMigration = readFileSync(
       "supabase/migrations/20261118010000_tonart_public_character_approval_and_export.sql",
       "utf8",
@@ -1592,20 +1676,22 @@ describe("internal catalog curation service", () => {
       "supabase/tests/tonart_curated_model_characters_acceptance.sql",
       "utf8",
     ).replace(/\r\n/g, "\n");
+    const isolatedAcceptance = readFileSync(
+      "supabase/tests/tonart_character_approval_ephemeral_postgres.sql",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
 
-    expect(profileMigration).toContain(
-      "v_reviewed AND NULLIF(btrim(v_biography), '') IS NOT NULL",
-    );
-    expect(profileMigration).toContain("right(v_host, 10) = '.localhost'");
     expect(publicationMigration.match(
       /NULLIF\(btrim\(v_profile ->> 'biography'\), ''\) IS NOT NULL AND NOT EXISTS/g,
     )).toHaveLength(2);
     expect(publicationMigration.match(
       /NULLIF\(btrim\(v_profile ->> 'biography'\), ''\) IS NULL\s+AND jsonb_array_length\(v_profile -> 'biographySources'\) > 0/g,
     )).toHaveLength(2);
-    expect(publicationMigration.match(/right\(regexp_replace\(/g)).toHaveLength(2);
     expect(acceptance).toContain(
       "Optional biography was not exported without invented evidence",
+    );
+    expect(isolatedAcceptance).toContain(
+      "Approved export fabricated evidence for an optional biography",
     );
   });
 

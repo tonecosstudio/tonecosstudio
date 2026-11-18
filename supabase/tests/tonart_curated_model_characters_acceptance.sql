@@ -30,11 +30,23 @@ BEGIN
     OR to_regprocedure('public.admin_save_catalog_character_editorial_profile(uuid,jsonb,text,integer,uuid)') IS NULL
     OR to_regprocedure('public.admin_set_catalog_character_publication_approval(uuid,integer,integer,boolean,uuid)') IS NULL
     OR to_regprocedure('public.admin_export_approved_catalog_character_projection()') IS NULL
-    OR to_regprocedure('private_api.bump_tonart_character_relation_revision()') IS NULL
+    OR to_regprocedure('private_api.bump_tonart_character_relation_revision(uuid,text,text)') IS NULL
+    OR to_regprocedure('private_api.invalidate_tonart_character_publication_on_relation_change()') IS NULL
+    OR NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'catalog_character_identities'
+        AND column_name = 'editorial_relation_revision'
+    )
     OR NOT EXISTS (
       SELECT 1 FROM pg_trigger
       WHERE tgrelid = 'public.catalog_curation_model_characters'::regclass
-        AND tgname = 'trg_catalog_character_relation_revision'
+        AND tgname = 'trg_catalog_character_publication_relation_revision'
+        AND NOT tgisinternal
+    )
+    OR NOT EXISTS (
+      SELECT 1 FROM pg_trigger
+      WHERE tgrelid = 'public.catalog_curation_model_profiles'::regclass
+        AND tgname = 'trg_catalog_character_publication_model_slug_revision'
         AND NOT tgisinternal
     ) THEN
     RAISE EXCEPTION 'TONART character editorial profile migration not installed'
@@ -81,11 +93,52 @@ DECLARE
   v_editorial_result jsonb;
   v_public_projection jsonb;
   v_approval_ref text;
-  v_relation_revision integer;
   v_reviewer_id uuid := gen_random_uuid();
   v_expected_failure boolean;
   v_n integer;
 BEGIN
+  -- Public approval must never accept a local, reserved, or disguised
+  -- origin. The source validator is used by both human approval and export.
+  IF NOT private_api.tonart_public_https_evidence_url(
+       'https://www.marvel.com/characters/doctor-octopus/in-comics')
+     OR NOT private_api.tonart_public_https_evidence_url(
+       'https://example.org/editorial/source') THEN
+    RAISE EXCEPTION 'Public HTTPS editorial source was rejected';
+  END IF;
+  IF EXISTS (
+    SELECT 1
+    FROM unnest(ARRAY[
+      'http://example.org/not-https',
+      'https://localhost/character',
+      'https://localhost./character',
+      'https://127.0.0.1/source',
+      'https://10.2.3.4/internal',
+      'https://192.168.1.1/internal',
+      'https://[::1]/internal',
+      'https://private.example.local/bio',
+      'https://example.test/draft',
+      'https://example.org:443/bio',
+      'https://user:password@example.org/bio',
+      'https://%31%32%37.0.0.1/source'
+    ] AS bad(url)
+    WHERE private_api.tonart_public_https_evidence_url(bad.url)
+  ) THEN
+    RAISE EXCEPTION 'Private or malformed editorial evidence URL was accepted';
+  END IF;
+  IF private_api.tonart_editorial_sources_public_https(
+       jsonb_build_object('biographySources', jsonb_build_array(
+         jsonb_build_object('url', 'https://127.0.0.1/claim')
+       ))
+     ) OR private_api.tonart_editorial_sources_public_https(
+       jsonb_build_object('aliases', jsonb_build_array(jsonb_build_object(
+         'name', 'Draft alias', 'sources', jsonb_build_array(
+           jsonb_build_object('url', 'https://hidden.example.internal/claim')
+         )
+       )))
+     ) THEN
+    RAISE EXCEPTION 'Profile or nested claim bypassed the public source validator';
+  END IF;
+
   v_model_a := 'tonart-qa-a-' || substr(v_suffix, 1, 16);
   v_model_b := 'tonart-qa-b-' || substr(v_suffix, 1, 16);
   v_slug_a := v_model_a;
@@ -324,7 +377,7 @@ BEGIN
   BEGIN
     PERFORM public.admin_set_catalog_character_publication_approval(
       v_id_b, 1,
-      (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_b),
+      (public.admin_get_catalog_character_editorial_profile(v_id_b)->>'relationRevision')::integer,
       true, v_reviewer_id
     );
   EXCEPTION WHEN SQLSTATE '22023' THEN
@@ -338,6 +391,27 @@ BEGIN
     v_model_a, v_slug_a, v_name_b, v_franchise,
     'https://example.org/model-a/character-b-restored', 'Restored after link-gate acceptance'
   );
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_b, 1,
+    (public.admin_get_catalog_character_editorial_profile(v_id_b)->>'relationRevision')::integer,
+    true, v_reviewer_id
+  );
+  v_public_projection := public.admin_export_approved_catalog_character_projection();
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved'
+     OR NOT EXISTS (
+       SELECT 1
+       FROM jsonb_array_elements(v_public_projection->'characters') exported(value)
+       WHERE (exported.value->>'identityId')::uuid = v_id_b
+         AND exported.value->'profile'->>'biography' = ''
+         AND jsonb_array_length(exported.value->'profile'->'biographySources') = 0
+     ) THEN
+    RAISE EXCEPTION 'Optional biography was not exported without invented evidence';
+  END IF;
+  PERFORM public.admin_set_catalog_character_publication_approval(
+    v_id_b, 1,
+    (public.admin_get_catalog_character_editorial_profile(v_id_b)->>'relationRevision')::integer,
+    false, NULL
+  );
 
   -- Private profile review is not publication. Incomplete legacy link evidence
   -- blocks approval until each exact model link receives a source and note.
@@ -345,7 +419,7 @@ BEGIN
   BEGIN
     PERFORM public.admin_set_catalog_character_publication_approval(
       v_id_a, 2,
-      (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
+      (public.admin_get_catalog_character_editorial_profile(v_id_a)->>'relationRevision')::integer,
       true, v_reviewer_id
     );
   EXCEPTION WHEN SQLSTATE '22023' THEN
@@ -364,11 +438,14 @@ BEGIN
   );
   v_editorial_result := public.admin_set_catalog_character_publication_approval(
     v_id_a, 2,
-    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
+    (public.admin_get_catalog_character_editorial_profile(v_id_a)->>'relationRevision')::integer,
     true, v_reviewer_id
   );
   IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved'
      OR (v_editorial_result->>'publicationRevision')::integer <> 2
+     OR (v_editorial_result->>'relationRevision')::integer < 2
+     OR (v_editorial_result->>'relationRevision')::integer
+        IS DISTINCT FROM (v_editorial_result->>'approvedRelationRevision')::integer
      OR (v_editorial_result->>'publicationApprovedBy')::uuid IS DISTINCT FROM v_reviewer_id THEN
     RAISE EXCEPTION 'Human approval did not bind to the current reviewed revision';
   END IF;
@@ -378,68 +455,14 @@ BEGIN
      OR jsonb_array_length(v_public_projection->'characters') <> 1
      OR (v_public_projection->'characters'->0->>'identityId')::uuid IS DISTINCT FROM v_id_a
      OR jsonb_array_length(v_public_projection->'characters'->0->'modelLinks') <> 2
+     OR (v_public_projection->'characters'->0->>'relationRevision')::integer
+        IS DISTINCT FROM (v_public_projection->'characters'->0->>'approvedRelationRevision')::integer
      OR v_public_projection->'characters'->0 ? 'history' THEN
     RAISE EXCEPTION 'Public export leaked private history or omitted approved evidence';
   END IF;
   v_editorial_result := public.admin_set_catalog_character_publication_approval(
-    v_id_b, 1,
-    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_b),
-    true, v_reviewer_id
-  );
-  v_public_projection := public.admin_export_approved_catalog_character_projection();
-  IF (v_editorial_result->>'publicationStatus') IS DISTINCT FROM 'approved'
-     OR jsonb_array_length(v_public_projection->'characters') <> 2
-     OR NOT EXISTS (
-       SELECT 1
-       FROM jsonb_array_elements(v_public_projection->'characters') exported(value)
-       WHERE (exported.value->>'identityId')::uuid = v_id_b
-         AND exported.value->'profile'->>'biography' = ''
-         AND jsonb_array_length(exported.value->'profile'->'biographySources') = 0
-     ) THEN
-    RAISE EXCEPTION 'Optional biography was not exported without invented evidence';
-  END IF;
-  SELECT editorial_relation_revision INTO v_relation_revision
-  FROM public.catalog_character_identities WHERE id = v_id_b;
-  PERFORM public.admin_verify_catalog_model_identity(
-    v_model_a, v_slug_a, v_name_b, v_franchise,
-    'https://example.org/model-a/character-b-reviewed',
-    'Acceptance proof updated after publication approval'
-  );
-  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_b);
-  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
-     OR v_editorial_result->'publicationHistory'->-1->>'action'
-       IS DISTINCT FROM 'invalidated_by_model_relation_change'
-     OR (v_editorial_result->>'relationRevision')::integer <= v_relation_revision THEN
-    RAISE EXCEPTION 'Model evidence change did not invalidate the matching publication revision';
-  END IF;
-  v_expected_failure := false;
-  BEGIN
-    PERFORM public.admin_set_catalog_character_publication_approval(
-      v_id_b, 1, v_relation_revision, true, v_reviewer_id
-    );
-  EXCEPTION WHEN SQLSTATE '40001' THEN
-    v_expected_failure := true;
-  END;
-  IF NOT v_expected_failure THEN
-    RAISE EXCEPTION 'Stale model-link revision was approved for publication';
-  END IF;
-  SELECT editorial_relation_revision INTO v_relation_revision
-  FROM public.catalog_character_identities WHERE id = v_id_b;
-  v_editorial_result := public.admin_set_catalog_character_publication_approval(
-    v_id_b, 1, v_relation_revision, true, v_reviewer_id
-  );
-  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved'
-     OR (v_editorial_result->>'publicationRelationRevision')::integer <> v_relation_revision THEN
-    RAISE EXCEPTION 'Reviewed model-link revision could not be approved';
-  END IF;
-  PERFORM public.admin_set_catalog_character_publication_approval(
-    v_id_b, 1,
-    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_b),
-    false, NULL
-  );
-  v_editorial_result := public.admin_set_catalog_character_publication_approval(
     v_id_a, 2,
-    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
+    (public.admin_get_catalog_character_editorial_profile(v_id_a)->>'relationRevision')::integer,
     true, v_reviewer_id
   );
   IF v_editorial_result->>'publicationApprovalRef' IS DISTINCT FROM v_approval_ref
@@ -448,7 +471,7 @@ BEGIN
   END IF;
   v_editorial_result := public.admin_set_catalog_character_publication_approval(
     v_id_a, 2,
-    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
+    (public.admin_get_catalog_character_editorial_profile(v_id_a)->>'relationRevision')::integer,
     false, NULL
   );
   IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
@@ -457,7 +480,7 @@ BEGIN
   END IF;
   PERFORM public.admin_set_catalog_character_publication_approval(
     v_id_a, 2,
-    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
+    (public.admin_get_catalog_character_editorial_profile(v_id_a)->>'relationRevision')::integer,
     true, v_reviewer_id
   );
   v_editorial_result := public.admin_save_catalog_character_editorial_profile(
@@ -698,46 +721,158 @@ BEGIN
     RAISE EXCEPTION 'Twenty-first verified character was rejected';
   END IF;
 
-  -- Removing one of two relations preserves approval; removing the last one
-  -- invalidates it atomically and records the reason. Restoration stays private.
+  -- The first unlink of two active links MUST invalidate publication,
+  -- not only the final unlink. A stale approval may never authorize a subset.
   v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
   v_editorial_result := public.admin_save_catalog_character_editorial_profile(
-    v_id_a,
-    v_editorial_result->'profile',
-    'reviewed',
-    (v_editorial_result->>'revision')::integer,
-    v_reviewer_id
+    v_id_a, v_editorial_result->'profile', 'reviewed',
+    (v_editorial_result->>'revision')::integer, v_reviewer_id
   );
   v_editorial_result := public.admin_set_catalog_character_publication_approval(
-    v_id_a,
-    (v_editorial_result->>'revision')::integer,
-    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
-    true,
-    v_reviewer_id
+    v_id_a, (v_editorial_result->>'revision')::integer,
+    (public.admin_get_catalog_character_editorial_profile(v_id_a)->>'relationRevision')::integer,
+    true, v_reviewer_id
   );
+  v_count := (v_editorial_result->>'approvedRelationRevision')::integer;
   PERFORM public.admin_unlink_catalog_model_character(
-    v_model_a, v_slug_a, v_id_a, 'Acceptance: retain second active model relation'
+    v_model_a, v_slug_a, v_id_a, 'Acceptance: partial unlink must revoke approval'
   );
   v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
-  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved' THEN
-    RAISE EXCEPTION 'One remaining model relation incorrectly revoked publication';
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR (v_editorial_result->>'relationRevision')::integer <> v_count + 1
+     OR v_editorial_result->'approvedRelationRevision' <> 'null'::jsonb
+     OR v_editorial_result->'publicationHistory'->-1->>'action'
+        IS DISTINCT FROM 'invalidated_by_model_relation_change' THEN
+    RAISE EXCEPTION 'Partial model unlink failed to revoke the entire approved relation set';
   END IF;
+  -- The reviewer still holding the prior relation cursor cannot authorize
+  -- newly changed links, even if the editorial profile revision is unchanged.
+  v_expected_failure := false;
+  BEGIN
+    PERFORM public.admin_set_catalog_character_publication_approval(
+      v_id_a, (v_editorial_result->>'revision')::integer, v_count, true, v_reviewer_id
+    );
+  EXCEPTION WHEN SQLSTATE '40001' THEN
+    v_expected_failure := true;
+  END;
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Stale editor approved relations changed after the review';
+  END IF;
+
+  v_public_projection := public.admin_export_approved_catalog_character_projection();
+  IF jsonb_array_length(v_public_projection->'characters') <> 0 THEN
+    RAISE EXCEPTION 'Partial unlink exported a stale human approval';
+  END IF;
+
+  -- Reapprove only the exact remaining link; then remove it.
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, (v_editorial_result->>'revision')::integer,
+    (public.admin_get_catalog_character_editorial_profile(v_id_a)->>'relationRevision')::integer,
+    true, v_reviewer_id
+  );
   PERFORM public.admin_unlink_catalog_model_character(
-    v_model_b, v_slug_b, v_id_a, 'Acceptance: remove final active model relation'
+    v_model_b, v_slug_b, v_id_a, 'Acceptance: final active model link also revokes'
   );
   v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
   IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
      OR v_editorial_result->'publicationHistory'->-1->>'action'
        IS DISTINCT FROM 'invalidated_by_model_relation_change' THEN
-    RAISE EXCEPTION 'Removing the last model relation did not revoke publication';
+    RAISE EXCEPTION 'Final model unlink failed to revoke publication';
   END IF;
+
+  -- Restoration stays private; reapproval is a separate explicit decision.
   PERFORM public.admin_verify_catalog_model_identity(
     v_model_b, v_slug_b, v_name_a, v_franchise,
-    'https://example.org/model-b/character-a-restored', 'Private restore after publication invalidation'
+    'https://example.org/model-b/character-a-restored', 'Private restore after invalidation'
   );
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, (v_editorial_result->>'revision')::integer,
+    (public.admin_get_catalog_character_editorial_profile(v_id_a)->>'relationRevision')::integer,
+    true, v_reviewer_id
+  );
+  v_count := (v_editorial_result->>'approvedRelationRevision')::integer;
+
+  -- An idempotent writer request changes no approved content or revision.
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_b, v_slug_b, v_name_a, v_franchise,
+    'https://example.org/model-b/character-a-restored', 'Private restore after invalidation'
+  );
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved'
+     OR (v_editorial_result->>'relationRevision')::integer <> v_count THEN
+    RAISE EXCEPTION 'Idempotent relation write invalidated an unchanged approval';
+  END IF;
+
+  -- Replacing citation text is a semantic edit, even with the same model ID.
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_b, v_slug_b, v_name_a, v_franchise,
+    'https://example.org/model-b/new-reviewed-evidence', 'New evidence after approval'
+  );
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR (v_editorial_result->>'relationRevision')::integer <> v_count + 1 THEN
+    RAISE EXCEPTION 'Model evidence replacement did not invalidate old approval';
+  END IF;
+
+  -- Adding a second link after reapproval also invalidates it immediately.
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, (v_editorial_result->>'revision')::integer,
+    (public.admin_get_catalog_character_editorial_profile(v_id_a)->>'relationRevision')::integer,
+    true, v_reviewer_id
+  );
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_a, v_slug_a, v_name_a, v_franchise,
+    'https://example.org/model-a/new-link', 'Added model after public approval'
+  );
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved' THEN
+    RAISE EXCEPTION 'New model link remained covered by previous approval';
+  END IF;
+
+  -- A changed canonical model slug alters the published modelLink payload;
+  -- this is not a harmless metadata-only edit.
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, (v_editorial_result->>'revision')::integer,
+    (public.admin_get_catalog_character_editorial_profile(v_id_a)->>'relationRevision')::integer,
+    true, v_reviewer_id
+  );
+  UPDATE public.catalog_curation_model_profiles
+    SET catalog_model_slug = catalog_model_slug || '-rev', updated_at = now()
+  WHERE catalog_model_id = v_model_a;
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR v_editorial_result->'approvedRelationRevision' <> 'null'::jsonb THEN
+    RAISE EXCEPTION 'Canonical model slug change failed to invalidate publication';
+  END IF;
   v_public_projection := public.admin_export_approved_catalog_character_projection();
   IF jsonb_array_length(v_public_projection->'characters') <> 0 THEN
-    RAISE EXCEPTION 'Projection retained character after its last public model link was removed';
+    RAISE EXCEPTION 'Unapproved character was exported after model identity mutation';
+  END IF;
+
+  -- The original character identity and its primary evidence belong to the
+  -- public claim too. A direct authorized SQL correction must invalidate it;
+  -- it is not safe to rely solely on the editable profile revision.
+  UPDATE public.catalog_curation_model_profiles
+  SET catalog_model_slug = v_slug_a, updated_at = now()
+  WHERE catalog_model_id = v_model_a;
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, (v_editorial_result->>'revision')::integer,
+    (v_editorial_result->>'relationRevision')::integer, true, v_reviewer_id
+  );
+  UPDATE public.catalog_character_identities
+  SET evidence_note = 'Reviewed identity proof changed after approval',
+      updated_at = now()
+  WHERE id = v_id_a;
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR v_editorial_result->'publicationHistory'->-1->>'action'
+        IS DISTINCT FROM 'invalidated_by_identity_change' THEN
+    RAISE EXCEPTION 'Canonical identity edit retained a stale public approval';
+  END IF;
+  v_public_projection := public.admin_export_approved_catalog_character_projection();
+  IF jsonb_array_length(v_public_projection->'characters') <> 0 THEN
+    RAISE EXCEPTION 'Identity drift leaked into the public projection';
   END IF;
 
   RAISE NOTICE 'TONART character staging acceptance PASS (transaction rolled back)';
