@@ -1550,6 +1550,25 @@ describe("internal catalog curation service", () => {
       "private_api.tonart_character_active_link_snapshot",
     );
     expect(migration).toContain(
+      "CREATE OR REPLACE FUNCTION private_api.tonart_public_https_evidence_url(",
+    );
+    expect(migration).toContain(
+      "CREATE OR REPLACE FUNCTION private_api.tonart_editorial_sources_public_https(",
+    );
+    expect(migration.match(
+      /NOT private_api\.tonart_public_https_evidence_url\(relation\.evidence_origin\)/g,
+    )).toHaveLength(2);
+    expect(migration.match(
+      /IF NOT private_api\.tonart_editorial_sources_public_https\(v_profile\) THEN/g,
+    )).toHaveLength(2);
+    expect(acceptance).toContain(
+      "Private or malformed editorial evidence URL was accepted",
+    );
+    expect(acceptance).toContain(
+      "Profile or nested claim bypassed the public source validator",
+    );
+
+    expect(migration).toContain(
       "'activeModelLinks', private_api.tonart_character_active_link_snapshot(v_identity.id)",
     );
     expect(migration).toContain("OLD.review_history IS NOT DISTINCT FROM NEW.review_history");
