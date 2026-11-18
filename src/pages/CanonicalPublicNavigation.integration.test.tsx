@@ -226,7 +226,7 @@ describe("canonical public navigation without Supabase catalog", () => {
     expect(link).toHaveAttribute("href", "/modelos/escultura-original");
     const image = screen.getByRole("img", { name: "Referência visual de Escultura original" });
     expect(image).toHaveAttribute("src", BASE + "/media/model-one/img_one/card.webp");
-    expect(screen.getByRole("link", { name: /EXPLORAR MODELOS/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /VER CATÁLOGO/ })).toHaveAttribute(
       "href",
       "/modelos",
     );
