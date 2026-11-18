@@ -308,7 +308,7 @@ export function validateCanonicalCurationModelRef(
     typeof model.modelId !== "string" ||
     !model.modelId ||
     model.modelId.length > 160 ||
-    /\\s/.test(model.modelId) ||
+    /\s/.test(model.modelId) ||
     hasUnsafeCurationCharacter(model.modelId) ||
     !CATALOG_SLUG.test(model.slug)
   ) {
