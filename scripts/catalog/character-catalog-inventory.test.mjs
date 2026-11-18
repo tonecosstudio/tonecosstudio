@@ -86,7 +86,7 @@ test("research preparation references only inventory IDs and remains unapproved"
   assert.equal(packet.snapshot.sourceResearchedIdentityCount, 94);
   assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 926);
   assert.equal(packet.candidates.length, 94);
-  assert.equal(packet.sources.length, 101);
+  assert.equal(packet.sources.length, 105);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
