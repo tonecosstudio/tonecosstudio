@@ -83,22 +83,46 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 87);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 903);
-  assert.equal(packet.candidates.length, 87);
-  assert.equal(packet.sources.length, 97);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 90);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 910);
+  assert.equal(packet.candidates.length, 90);
+  assert.equal(packet.sources.length, 101);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 87);
+  assert.equal(packet.policy.preparedIdentityCount, 90);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 903);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 910);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 903);
+  assert.equal(links.length, 910);
   assert.equal(new Set(relationshipKeys).size, links.length);
+  for (const link of links) {
+    assert.equal(inventoryModels.get(link.modelId), link.modelSlug);
+    assert.equal(link.reviewRequired, true);
+    assert.deepEqual(link.independentModelEvidence, []);
+  }
+
+  const onePieceCandidates = [
+    ["Roronoa Zoro", "Zoro / Roronoa Zoro 3 Diorama", 2],
+    ["Monkey D. Luffy", "Luffy", 4],
+    ["Sanji", "Sanji", 1],
+  ];
+  for (const [candidateName, catalogLabel, expectedModels] of onePieceCandidates) {
+    const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
+    assert.ok(candidate);
+    assert.equal(candidate.catalogDisplayNameCandidate, catalogLabel);
+    assert.equal(candidate.franchiseCandidate, "One Piece");
+    assert.equal(candidate.candidateModelLinks.length, expectedModels);
+    assert.equal(candidate.identityStatus, "prepared_pending_human_review");
+    assert.equal(candidate.franchiseStatus, "prepared_pending_human_review");
+    assert.equal(candidate.biographyStatus, "prepared_pending_human_review");
+    assert.ok(candidate.ambiguities.length > 0);
+    assert.ok(candidate.claims.every((claim) =>
+      claim.reviewStatus === "pending_human_review" && claim.sourceIds.length > 0));
+  }
 
   const thorCandidates = packet.candidates.filter((candidate) =>
     candidate.catalogDisplayNameCandidate === "Thor");
@@ -380,8 +404,15 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   for (const source of packet.sources) {
     assert.equal(new URL(source.url).protocol, "https:");
-    assert.equal(source.sourceKind, "official");
+    assert.ok(["official", "publisher"].includes(source.sourceKind));
   }
+  assert.deepEqual(
+    packet.sources.reduce((counts, source) => {
+      counts[source.sourceKind] = (counts[source.sourceKind] ?? 0) + 1;
+      return counts;
+    }, {}),
+    { official: 100, publisher: 1 },
+  );
   for (const candidate of packet.candidates) {
     assert.equal(candidate.identityStatus, "prepared_pending_human_review");
     assert.ok([
