@@ -1926,3 +1926,27 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** continuar com os grupos restantes de maior frequência e encaminhar as 582 relações para revisão visual/editorial na curadoria privada antes de qualquer publicação.
 
 **DO_NOT_REPEAT:** não inferir a fase de Jean Grey, traje de X-Men ou hospedeiro de Venom apenas pelo nome do catálogo.
+
+## Rodada 93 — separar identidades homônimas de Thor (18/11/2026)
+
+- A fila tem 18 modelos com rótulo Thor: 17 no contexto catalogado de Vingadores/Marvel e 1 no contexto catalogado de God of War. Registrei dois candidatos independentes, Thor Odinson e Thor (God of War Ragnarök), apoiados por páginas oficiais Marvel e entrevistas/artigos da Santa Monica Studio publicados no PlayStation Blog.
+- Todos os 18 vínculos usam IDs e slugs da fila e preservam a proveniência de catálogo; ficam pendentes de conferência visual e revisão humana. Para a variante Marvel, a relação com Odinson não é presumida: a Marvel reconhece outros titulares do manto, incluindo Jane Foster. Nenhum nome do catálogo foi tratado como prova do render.
+- O pacote passa a **40 identidades candidatas, 49 fontes oficiais únicas, 40 rascunhos e 600 vínculos candidatos**. Estado: 0 identidades aprovadas, 0 vínculos aprovados e 0 vínculos com evidência independente por modelo.
+- Confirmei por leitura de metadados Supabase que a organização `tonecosstudio` possui apenas `tonecosstudio-site` e apenas a branch `main`; não há staging isolado. Não fiz consultas SQL, escritas, migrations, publicação ou deploy. PRs #26 e #31 estão abertas em branches separadas; #26 contém a migration `0023` e o Worker/protocolo de publicação, enquanto #31 contém a RPC `admin_export_approved_catalog_character_projection`. PR #33 não incorpora essas branches.
+- O Quality Gate `44279440374` da PR #33 passou no commit `d3c12136` para `Catalog Worker offline / no deploy`; build, auditorias gerais e cobertura foram ignorados pelos filtros do evento. As PRs #26 e #31 também têm jobs `Catalog Worker offline / no deploy` aprovados (`44268482071` e `44268612620`), com os demais gates gerais ignorados. Isso não comprova exportação real, aplicação de `0023` ou homologação Supabase→D1.
+- **Validação desta rodada:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11** após atualizar a verificação de separação Marvel/God of War. Integridade do lote confirmou 40 candidatos, 49 URLs únicas, 600 vínculos, claims com fontes existentes: 0 faltantes, pares duplicados: 0, aprovações: 0 e evidências independentes por modelo: 0. `git diff --check` passou. A verificação read-only confirma ausência de ambiente isolado. Projeção D1 vazia e flag pública desligada permanecem inalteradas.
+
+**NEXT_ACTION:** enviar a atualização na PR #33; manter a sincronização real bloqueada até haver ambiente Supabase e Worker/D1 isolados e revisão editorial humana na curadoria privada da PR #31.
+
+**DO_NOT_REPEAT:** não tratar o export mockado/teste offline como sincronização real; não aplicar `0023` ao projeto ativo; não fundir Thor Marvel e God of War ou aprovar vínculos por rótulo, franquia, coleção ou slug.
+
+## Rodada 94 — preparar Dante, Recoome e Trunks (18/11/2026)
+
+- Adicionei dossiês para **Dante**, **Recoome** e **Trunks (adolescente do futuro)** a partir de manual da Capcom e páginas oficiais de Dragon Ball. Claims de identidade, franquia e biografia apontam às fontes; os rascunhos são originais e pendentes de revisão humana.
+- Preparei **9 relações candidatas Dante, 8 Recoome e 8 Trunks** por IDs/slug exatos da fila. A fonte de Trunks cobre uma versão específica; os modelos com rótulo genérico não foram atribuídos a idade ou linha temporal. A fonte de Dante é Devil May Cry 4; não foi generalizada a todas as versões da franquia.
+- O lote passa a **43 identidades candidatas, 52 URLs oficiais únicas, 43 rascunhos e 625 vínculos candidatos**. Continuam em zero os estados revisados/aprovados e os vínculos com evidência independente por modelo.
+- **Validação:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11** com os 43 dossiês, 52 fontes e 625 vínculos; `git diff --check` passou. Integridade confirmou claims com fonte: 0 faltantes, pares duplicados: 0, links fora do estado pendente: 0, aprovações: 0 e vínculos com evidência independente: 0.
+
+**NEXT_ACTION:** subir a atualização validada na PR #33; encaminhar candidatos e vínculos ao fluxo de revisão humana privado da PR #31.
+
+**DO_NOT_REPEAT:** não inferir época/forma de Trunks nem continuidade de Dante a partir de título; não promover fontes biográficas como evidência de que um render específico representa o personagem.

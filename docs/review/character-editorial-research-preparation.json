@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 38,
-    "preparedCandidateModelLinkCount": 582
+    "sourceResearchedIdentityCount": 43,
+    "preparedCandidateModelLinkCount": 625
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 38,
+    "preparedIdentityCount": 43,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 582,
+    "preparedCandidateModelLinkCount": 625,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -395,6 +395,54 @@
       "publisher": "Marvel",
       "title": "Venom: Eddie Brock | Marvel Comics Reading List",
       "url": "https://share.marvel.com/comics/discover/713/venom-eddie-brock",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-thor-film-profile",
+      "publisher": "Marvel",
+      "title": "Thor (2011) | Cast, Characters, & Release Date",
+      "url": "https://www.marvel.com/movies/thor",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "playstation-gowr-thor-design",
+      "publisher": "Santa Monica Studio / PlayStation",
+      "title": "From Concept Art to Cosplay: Creating iconic characters for God of War Ragnarök",
+      "url": "https://blog.playstation.com/2023/01/26/from-concept-art-to-cosplay-creating-iconic-characters-for-god-of-war-ragnarok/",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "playstation-gowr-thor-story",
+      "publisher": "Santa Monica Studio / PlayStation",
+      "title": "First look at God of War Ragnarök",
+      "url": "https://blog.playstation.com/2021/09/09/first-look-at-god-of-war-ragnarok/",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-dmc4-manual",
+      "publisher": "Capcom",
+      "title": "Devil May Cry 4 Official Manual",
+      "url": "https://static.capcom.com/devilmaycry/manuals/PS3_DMC4Manual.pdf",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dragon-ball-recoome-showcase",
+      "publisher": "Bird Studio / Shueisha / Bandai Namco",
+      "title": "Weekly Character Showcase #79: Recoome | DRAGON BALL OFFICIAL SITE",
+      "url": "https://en.dragon-ball-official.com/news/01_1458.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dragon-ball-trunks-teen-showcase",
+      "publisher": "Bird Studio / Shueisha / Bandai Namco",
+      "title": "Weekly Character Showcase #140: Trunks (Teen) | DRAGON BALL OFFICIAL SITE",
+      "url": "https://en.dragon-ball-official.com/news/01_2350.html",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -13847,6 +13895,1089 @@
         }
       ],
       "catalogCandidateModelCount": 9
+    },
+    {
+      "candidateName": "Thor Odinson",
+      "catalogDisplayNameCandidate": "Thor",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Thor Odinson",
+          "sourceIds": [
+            "marvel-avengers-roster"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-avengers-roster"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.asgard_and_odinson",
+          "value": "A Marvel identifica Thor como Thor Odinson entre os membros dos Vingadores; seu perfil do filme de 2011 descreve Thor como filho de Odin e herdeiro de Asgard.",
+          "sourceIds": [
+            "marvel-avengers-roster",
+            "marvel-thor-film-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A Marvel identifica Thor Odinson entre os membros dos Vingadores. Em uma versão cinematográfica específica, o perfil oficial do filme de 2011 o descreve como filho de Odin e herdeiro de Asgard; esse arco não deve ser generalizado para todas as versões.",
+      "biographySourceIds": [
+        "marvel-avengers-roster",
+        "marvel-thor-film-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos"
+      ],
+      "ambiguities": [
+        "Os 17 IDs deste grupo foram separados por metadados de navegação (categoria Marvel & DC e coleção Vingadores / Thor), não por confirmação independente de identidade ou franquia.",
+        "Marvel tem outras pessoas que assumem o título Thor, incluindo Jane Foster. O nome genérico do modelo não identifica automaticamente Odinson; revisar cada escultura, traje e arco por ID.",
+        "Nenhum dos 17 renders foi inspecionado nesta preparação. Dioramas e cenas coletivas podem exigir vínculo a mais de um personagem."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_01afcbc3930b77262b5a",
+          "modelSlug": "equipes-e-grupos-thor-guerreiro-celta-com-capa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-guerreiro-celta-com-capa"
+          }
+        },
+        {
+          "modelId": "mdl_336deef62c9b3c842cf3",
+          "modelSlug": "equipes-e-grupos-thor-estatua-cinza-dinamica-com-martelo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-estatua-cinza-dinamica-com-martelo"
+          }
+        },
+        {
+          "modelId": "mdl_4192f8e7cf69d8a57b4f",
+          "modelSlug": "equipes-e-grupos-thor-classico-cabelos-longos-e-capa-vermelha",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-classico-cabelos-longos-e-capa-vermelha"
+          }
+        },
+        {
+          "modelId": "mdl_4cd23369fd7eeb43a014",
+          "modelSlug": "equipes-e-grupos-thor-versao-cinema-close-e-estatua",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-versao-cinema-close-e-estatua"
+          }
+        },
+        {
+          "modelId": "mdl_50772c32facae6b73c2c",
+          "modelSlug": "equipes-e-grupos-thor-armadura-classica-com-martelo-em-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-armadura-classica-com-martelo-em-base"
+          }
+        },
+        {
+          "modelId": "mdl_79770ecd35b052603117",
+          "modelSlug": "equipes-e-grupos-thor-armadura-classica-com-capacete-e-martelo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-armadura-classica-com-capacete-e-martelo"
+          }
+        },
+        {
+          "modelId": "mdl_8df0009720051d6ed490",
+          "modelSlug": "equipes-e-grupos-thor-guerreiro-nordico-estatua-promocional",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-guerreiro-nordico-estatua-promocional"
+          }
+        },
+        {
+          "modelId": "mdl_957e7cda48da02d28c6f",
+          "modelSlug": "equipes-e-grupos-thor-sentado-em-trono-rustico",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-sentado-em-trono-rustico"
+          }
+        },
+        {
+          "modelId": "mdl_a63899a9010b5c839f72",
+          "modelSlug": "equipes-e-grupos-thor-estatua-cinza-em-pose-de-combate",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-estatua-cinza-em-pose-de-combate"
+          }
+        },
+        {
+          "modelId": "mdl_a74b2cff2fd4c56e305b",
+          "modelSlug": "equipes-e-grupos-thor-armadura-com-capacete-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-armadura-com-capacete-em-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_a9afa21a18f131d45a36",
+          "modelSlug": "equipes-e-grupos-thor-gordo-em-acao-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-gordo-em-acao-estatua-cinza"
+          }
+        },
+        {
+          "modelId": "mdl_aa941eed3ba1a8196c6e",
+          "modelSlug": "equipes-e-grupos-thor-close-armadura-com-capacete-e-capa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-close-armadura-com-capacete-e-capa"
+          }
+        },
+        {
+          "modelId": "mdl_b6e0680da954bb5ef07f",
+          "modelSlug": "equipes-e-grupos-thor-versao-cinema-com-arma-eletrificada",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-versao-cinema-com-arma-eletrificada"
+          }
+        },
+        {
+          "modelId": "mdl_baa5a95a50ac45dea8f8",
+          "modelSlug": "equipes-e-grupos-thor-em-salto-com-martelo-e-raios",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-em-salto-com-martelo-e-raios"
+          }
+        },
+        {
+          "modelId": "mdl_c7332b16b09f481e7481",
+          "modelSlug": "equipes-e-grupos-thor-guerreiro-nordico-com-martelo-erguido",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-guerreiro-nordico-com-martelo-erguido"
+          }
+        },
+        {
+          "modelId": "mdl_ddb55c4397ac05307d06",
+          "modelSlug": "equipes-e-grupos-thor-armadura-cinza-em-pose-dinamica",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-armadura-cinza-em-pose-dinamica"
+          }
+        },
+        {
+          "modelId": "mdl_ebf4a8425c77b98203cc",
+          "modelSlug": "equipes-e-grupos-thor-wakanda-com-stormbreaker-erguida",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-thor-wakanda-com-stormbreaker-erguida"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 17
+    },
+    {
+      "candidateName": "Thor (God of War Ragnarök)",
+      "catalogDisplayNameCandidate": "Thor",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "God of War Ragnarök",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Thor (God of War Ragnarök)",
+          "sourceIds": [
+            "playstation-gowr-thor-design",
+            "playstation-gowr-thor-story"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "God of War Ragnarök",
+          "sourceIds": [
+            "playstation-gowr-thor-design",
+            "playstation-gowr-thor-story"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.aesir_and_design",
+          "value": "A Santa Monica Studio descreve sua interpretação de Thor como um deus Aesir de grande força, ligado a uma tempestade e à imprevisibilidade; no enredo, ele é um dos antagonistas que confrontam Kratos e Atreus.",
+          "sourceIds": [
+            "playstation-gowr-thor-design",
+            "playstation-gowr-thor-story"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Em God of War Ragnarök, Thor é um deus Aesir e antagonista de Kratos e Atreus. A Santa Monica Studio descreve a versão do jogo como uma força associada à tempestade, ao poder e à imprevisibilidade; essa caracterização vale para esta interpretação específica.",
+      "biographySourceIds": [
+        "playstation-gowr-thor-design",
+        "playstation-gowr-thor-story"
+      ],
+      "catalogFranchiseCandidates": [
+        "God of War"
+      ],
+      "ambiguities": [
+        "Existe um único modelo com rótulo Thor neste grupo, mas título e franquia do catálogo são apenas proveniência; o render não foi conferido visualmente.",
+        "A fonte de design trata especificamente da interpretação de God of War Ragnarök; não fundir com Thor da Marvel ou da mitologia nórdica."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_7852c371409d9eace6f4",
+          "modelSlug": "god-of-war-thor-god-of-war-thor-stl-god-of-war-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-thor-god-of-war-thor-stl-god-of-war-principal"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 1
+    },
+    {
+      "candidateName": "Dante",
+      "catalogDisplayNameCandidate": "Dante",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Devil May Cry",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Dante",
+          "sourceIds": [
+            "capcom-dmc4-manual"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Devil May Cry",
+          "sourceIds": [
+            "capcom-dmc4-manual"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.demon_hunter",
+          "value": "No manual oficial de Devil May Cry 4, Dante é filho de Sparda e atua como caçador de demônios.",
+          "sourceIds": [
+            "capcom-dmc4-manual"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "O manual oficial de Devil May Cry 4 descreve Dante como filho de Sparda e caçador de demônios. Esse resumo reflete a versão apresentada naquele jogo e não elimina diferenças entre eras ou adaptações.",
+      "biographySourceIds": [
+        "capcom-dmc4-manual"
+      ],
+      "catalogFranchiseCandidates": [
+        "Devil May Cry"
+      ],
+      "ambiguities": [
+        "A fonte é o manual oficial de Devil May Cry 4; a franquia inclui histórias e versões com diferenças de origem, traje e formas demoníacas. Revisar cada modelo por ID.",
+        "Os nove modelos com rótulo Dante não foram inspecionados visualmente; Devil Trigger, espadas, armas, dioramas e versões alternativas permanecem ambíguos.",
+        "A fonte sustenta fatos de personagem e franquia, mas não comprova qualquer render ou variante específica."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0eb633ef99a8cc04e2a3",
+          "modelSlug": "devil-may-cry-dante-casaco-vermelho-estatua-em-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "devil-may-cry-dante-casaco-vermelho-estatua-em-base"
+          }
+        },
+        {
+          "modelId": "mdl_197d1a6c2f3e02985e6e",
+          "modelSlug": "devil-may-cry-dante-estatua-com-espada-e-pistola",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "devil-may-cry-dante-estatua-com-espada-e-pistola"
+          }
+        },
+        {
+          "modelId": "mdl_335e60a72d0ededd0654",
+          "modelSlug": "devil-may-cry-dante-duas-pistolas-em-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "devil-may-cry-dante-duas-pistolas-em-base"
+          }
+        },
+        {
+          "modelId": "mdl_8d791db1669f14a0b1ea",
+          "modelSlug": "devil-may-cry-dante-sentado-com-pistola-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "devil-may-cry-dante-sentado-com-pistola-em-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_9368034cdaa8c4f4f18c",
+          "modelSlug": "devil-may-cry-dante-sin-devil-trigger-com-asas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "devil-may-cry-dante-sin-devil-trigger-com-asas"
+          }
+        },
+        {
+          "modelId": "mdl_9c9809639882556ce28c",
+          "modelSlug": "devil-may-cry-dante-estatua-cinza-multiplas-vistas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "devil-may-cry-dante-estatua-cinza-multiplas-vistas"
+          }
+        },
+        {
+          "modelId": "mdl_ea6b352e4d7f9c554b1e",
+          "modelSlug": "devil-may-cry-dante-classico-casaco-vermelho-com-pistola",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "devil-may-cry-dante-classico-casaco-vermelho-com-pistola"
+          }
+        },
+        {
+          "modelId": "mdl_f03ac63bf9250ea67ac0",
+          "modelSlug": "devil-may-cry-dante-estatua-cinza-com-espada-grande",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "devil-may-cry-dante-estatua-cinza-com-espada-grande"
+          }
+        },
+        {
+          "modelId": "mdl_fec929d6dc737ea5ae8f",
+          "modelSlug": "devil-may-cry-dante-estatua-multiplas-vistas-com-espada-e-pistola",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "devil-may-cry-dante-estatua-multiplas-vistas-com-espada-e-pistola"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 9
+    },
+    {
+      "candidateName": "Recoome",
+      "catalogDisplayNameCandidate": "Recoome",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Recoome",
+          "sourceIds": [
+            "dragon-ball-recoome-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "dragon-ball-recoome-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.ginyu_force",
+          "value": "A publicação oficial o identifica como membro da Força Ginyu, unidade de elite das Forças de Freeza enviada a Namek.",
+          "sourceIds": [
+            "dragon-ball-recoome-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.namek_battle",
+          "value": "Na narrativa consultada, Recoome enfrenta Vegeta e depois é derrotado por Goku.",
+          "sourceIds": [
+            "dragon-ball-recoome-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Recoome é apresentado pelo site oficial de Dragon Ball como integrante da Força Ginyu, enviada a Namek por Freeza. Na história consultada, ele enfrenta Vegeta e outros guerreiros e acaba derrotado por Goku.",
+      "biographySourceIds": [
+        "dragon-ball-recoome-showcase"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A fonte trata de um arco específico da saga de Namek; não generalizar a biografia a adaptações, jogos ou cenas posteriores.",
+        "Os oito modelos estão identificados apenas pelo rótulo e pela proveniência da fila; bustos e poses de diferentes ângulos exigem conferência visual por ID.",
+        "A fonte oficial descreve o personagem, mas não valida individualmente qualquer escultura."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_12851d28192fa25d6135",
+          "modelSlug": "dragon-ball-recoome-corpo-inteiro-costas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          }
+        },
+        {
+          "modelId": "mdl_279973710a3b455bc835",
+          "modelSlug": "dragon-ball-recoome-corpo-inteiro-lateral",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          }
+        },
+        {
+          "modelId": "mdl_2b38cc658f68f700a4e4",
+          "modelSlug": "dragon-ball-recoome-busto-tres-quartos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-recoome-busto-tres-quartos"
+          }
+        },
+        {
+          "modelId": "mdl_3b5de45f7de59b3a2761",
+          "modelSlug": "dragon-ball-recoome-busto-costas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          }
+        },
+        {
+          "modelId": "mdl_4bb26fd3c1ace96a599b",
+          "modelSlug": "dragon-ball-recoome-corpo-inteiro-com-pod",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-recoome-corpo-inteiro-com-pod"
+          }
+        },
+        {
+          "modelId": "mdl_7fdee8679e66205f28a1",
+          "modelSlug": "dragon-ball-recoome-corpo-inteiro-frente",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-recoome-corpo-inteiro-frente"
+          }
+        },
+        {
+          "modelId": "mdl_a228e39287615e2c1cf6",
+          "modelSlug": "dragon-ball-recoome-busto-frente",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-recoome-busto-frente"
+          }
+        },
+        {
+          "modelId": "mdl_badd700bd21d0330afdb",
+          "modelSlug": "dragon-ball-recoome-busto-lateral",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 8
+    },
+    {
+      "candidateName": "Trunks (future teen)",
+      "catalogDisplayNameCandidate": "Trunks",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Trunks adolescente do futuro",
+          "sourceIds": [
+            "dragon-ball-trunks-teen-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "dragon-ball-trunks-teen-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.future_timeline",
+          "value": "A fonte oficial apresenta esta versão adolescente de Trunks como filho de Vegeta e Bulma, vinda de vinte anos no futuro em uma máquina do tempo.",
+          "sourceIds": [
+            "dragon-ball-trunks-teen-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.sword_and_super_saiyan",
+          "value": "A retrospectiva oficial diz que esta versão pode se transformar em Super Saiyajin e é habilidosa com espada.",
+          "sourceIds": [
+            "dragon-ball-trunks-teen-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A ficha oficial consultada trata do Trunks adolescente que vem do futuro numa máquina do tempo; ele é filho de Vegeta e Bulma e luta com espada, alcançando a forma Super Saiyajin. Este rascunho descreve essa versão, não todas as representações de Trunks.",
+      "biographySourceIds": [
+        "dragon-ball-trunks-teen-showcase"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A fonte trata especificamente do Trunks adolescente vindo do futuro; os oito títulos do catálogo não estabelecem idade, linha temporal, traje ou forma de cada escultura.",
+        "“Trunks” pode designar versões infantil, adolescente, adulta e de outras continuidades. Não publicar estes fatos como biografia universal sem revisão editorial.",
+        "Nenhum dos oito renders foi verificado visualmente; todos os relacionamentos são pendentes e não possuem evidência independente por modelo."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_39b8cfd30c0261a6a8e7",
+          "modelSlug": "dragon-ball-trunks-figure-13-118941",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-trunks-figure-13-118941"
+          }
+        },
+        {
+          "modelId": "mdl_3ea632970a19ca6294d9",
+          "modelSlug": "dragon-ball-trunks-busto-dragon-ball-107616",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-trunks-busto-dragon-ball-107616"
+          }
+        },
+        {
+          "modelId": "mdl_6cb76c0d14cb4b4898b2",
+          "modelSlug": "dragon-ball-trunks-energy-base-102915",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-trunks-energy-base-102915"
+          }
+        },
+        {
+          "modelId": "mdl_839c12f1a5f0692e382b",
+          "modelSlug": "dragon-ball-trunks-statue-115915",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-trunks-statue-115915"
+          }
+        },
+        {
+          "modelId": "mdl_a3a348211e9a5456a7fc",
+          "modelSlug": "dragon-ball-trunks-figure-12-118940",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-trunks-figure-12-118940"
+          }
+        },
+        {
+          "modelId": "mdl_b38b97c155a2c983508b",
+          "modelSlug": "dragon-ball-trunks-absolute",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-trunks-absolute"
+          }
+        },
+        {
+          "modelId": "mdl_f1ff3210b1f47b27379b",
+          "modelSlug": "dragon-ball-trunks-figure-11-118939",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-trunks-figure-11-118939"
+          }
+        },
+        {
+          "modelId": "mdl_f738022dd41a4f4491e0",
+          "modelSlug": "dragon-ball-trunks-figure-14-118942",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-trunks-figure-14-118942"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 8
     }
   ]
 }

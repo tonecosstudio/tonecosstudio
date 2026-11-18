@@ -83,22 +83,45 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 38);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 582);
-  assert.equal(packet.candidates.length, 38);
-  assert.equal(packet.sources.length, 46);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 43);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 625);
+  assert.equal(packet.candidates.length, 43);
+  assert.equal(packet.sources.length, 52);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 38);
+  assert.equal(packet.policy.preparedIdentityCount, 43);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 582);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 625);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 582);
+  assert.equal(links.length, 625);
   assert.equal(new Set(relationshipKeys).size, links.length);
+
+  const thorCandidates = packet.candidates.filter((candidate) =>
+    candidate.catalogDisplayNameCandidate === "Thor");
+  assert.equal(thorCandidates.length, 2);
+  const marvelThor = thorCandidates.find((candidate) => candidate.candidateName === "Thor Odinson");
+  const godOfWarThor = thorCandidates.find((candidate) =>
+    candidate.candidateName === "Thor (God of War Ragnarök)");
+  assert.equal(marvelThor.candidateModelLinks.length, 17);
+  assert.equal(godOfWarThor.candidateModelLinks.length, 1);
+  assert.deepEqual(marvelThor.catalogFranchiseCandidates, ["Equipes e Grupos"]);
+  assert.deepEqual(godOfWarThor.catalogFranchiseCandidates, ["God of War"]);
+  assert.equal(marvelThor.identityStatus, "prepared_pending_human_review");
+  assert.equal(godOfWarThor.identityStatus, "prepared_pending_human_review");
+
+  const trunks = packet.candidates.find((candidate) =>
+    candidate.candidateName === "Trunks (future teen)");
+  assert.equal(trunks.candidateModelLinks.length, 8);
+  assert.match(trunks.biographyDraft, /adolescente.*futuro/i);
+  assert.equal(trunks.identityStatus, "prepared_pending_human_review");
+  assert.equal(packet.candidates.find((candidate) => candidate.candidateName === "Dante")
+    .candidateModelLinks.length, 9);
+  assert.equal(packet.candidates.find((candidate) => candidate.candidateName === "Recoome")
+    .candidateModelLinks.length, 8);
 
   for (const source of packet.sources) {
     assert.equal(new URL(source.url).protocol, "https:");
