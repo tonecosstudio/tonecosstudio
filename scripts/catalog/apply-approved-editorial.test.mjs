@@ -252,6 +252,7 @@ function approvedCharacterFixture() {
     characters: [{
       identityId: '3a63c732-fcf2-4328-ac2e-6b6c04884235',
       slug: 'character-example',
+      name: 'Character Example',
       franchiseName: 'Resident Evil',
       approvalRef: 'approval-1',
       profileRevision: 4,
