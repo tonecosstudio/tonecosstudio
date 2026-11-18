@@ -8,6 +8,8 @@ const migrations = readdirSync(MIGRATIONS_DIR)
   .sort((a, b) => a.localeCompare(b));
 
 let publicSelectPolicyPresent = false;
+let latestPublicAllowlistExpression = null;
+let latestPublicAllowlistEvidence = null;
 let policyEvidence = null;
 let latestGenericUpsertBody = null;
 let latestGenericUpsertEvidence = null;
@@ -16,6 +18,15 @@ let latestSensitiveValidatorEvidence = null;
 
 for (const file of migrations) {
   const source = readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
+
+  // Track the latest effective public key-scoped policy across versioned
+  // migrations. A frontend-only allowlist cannot protect the Data API.
+  for (const match of source.matchAll(
+    /(?:CREATE|ALTER)\s+POLICY\s+["']?tonart_system_settings_public_allowlist["']?\s+ON\s+(?:public\.)?system_settings[\s\S]*?\bUSING\s*\(([\s\S]*?)\)\s*;/gi,
+  )) {
+    latestPublicAllowlistExpression = match[1];
+    latestPublicAllowlistEvidence = file;
+  }
 
   const policyEvents = [];
   for (const match of source.matchAll(
@@ -63,6 +74,28 @@ function bodyRejectsSensitiveSettingNames(body) {
 }
 
 const failures = [];
+
+if (!latestPublicAllowlistExpression) {
+  failures.push("No versioned key-scoped public.system_settings SELECT policy was found");
+} else {
+  const expression = latestPublicAllowlistExpression.trim();
+  const keyScoped = /^key\s*=\s*ANY\s*\(\s*ARRAY\s*\[[\s\S]*\]\s*::text\[\]\s*\)$/i.test(expression);
+  const allowedKeys = [...expression.matchAll(/'([^']+)'/g)].map((match) => match[1]);
+  const requiredPublicKeys = ["company_name", "contact_email", "privacy_email"];
+  const disallowedPaymentKeys = allowedKeys.filter((key) =>
+    key.startsWith("pix_key_") || key.startsWith("payment_link_"),
+  );
+  if (!keyScoped || requiredPublicKeys.some((key) => !allowedKeys.includes(key))) {
+    failures.push(
+      `Public settings policy must remain an explicit presentation-only allowlist (latest: ${latestPublicAllowlistEvidence})`,
+    );
+  }
+  if (disallowedPaymentKeys.length) {
+    failures.push(
+      `Public settings policy exposes payment destinations (${disallowedPaymentKeys.join(", ")}; latest: ${latestPublicAllowlistEvidence})`,
+    );
+  }
+}
 
 if (publicSelectPolicyPresent) {
   if (!latestGenericUpsertBody) {
