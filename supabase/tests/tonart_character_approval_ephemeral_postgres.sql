@@ -118,14 +118,18 @@ BEGIN
 
   v_profile := jsonb_build_object(
     'slug', 'doctor-octopus',
-    'aliases', '[]'::jsonb,
+    'aliases', jsonb_build_array(jsonb_build_object(
+      'name', 'Doc Ock', 'sources', jsonb_build_array(v_source)
+    )),
     'biography', 'Original evidence-backed editorial biography.',
     'biographySources', jsonb_build_array(v_source),
     'ageContext', NULL,
     'ageSources', '[]'::jsonb,
     'originWork', 'Marvel Comics',
     'originWorkSources', jsonb_build_array(v_source),
-    'characteristics', '[]'::jsonb,
+    'characteristics', jsonb_build_array(jsonb_build_object(
+      'name', 'Mechanical arms', 'sources', jsonb_build_array(v_source)
+    )),
     'nameSources', jsonb_build_array(v_source),
     'franchiseSources', jsonb_build_array(v_source)
   );
@@ -150,20 +154,21 @@ BEGIN
      OR NULLIF(v_export ->> 'generatedAt', '') IS NULL THEN
     RAISE EXCEPTION 'Approved export header does not match the versioned Worker contract';
   END IF;
-  IF (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(v_export) AS item(key))
+  IF (SELECT array_agg(key ORDER BY key COLLATE "C")
+      FROM jsonb_object_keys(v_export) AS item(key))
      IS DISTINCT FROM ARRAY['characters', 'generatedAt', 'schemaVersion', 'source']::text[] THEN
     RAISE EXCEPTION 'Approved export leaked or omitted a top-level Worker contract field';
   END IF;
-  IF (SELECT array_agg(key ORDER BY key)
+  IF (SELECT array_agg(key ORDER BY key COLLATE "C")
       FROM jsonb_object_keys(v_export -> 'characters' -> 0) AS item(key))
      IS DISTINCT FROM ARRAY[
-       'approvedAt', 'approvedBy', 'approvedRelationRevision', 'approvalRef',
+       'approvalRef', 'approvedAt', 'approvedBy', 'approvedRelationRevision',
        'franchiseName', 'identityId', 'modelLinks', 'name', 'profile',
        'profileRevision', 'relationRevision', 'reviewedAt', 'reviewedBy', 'slug'
      ]::text[] THEN
     RAISE EXCEPTION 'Approved character does not match the versioned Worker contract';
   END IF;
-  IF (SELECT array_agg(key ORDER BY key)
+  IF (SELECT array_agg(key ORDER BY key COLLATE "C")
       FROM jsonb_object_keys(v_export -> 'characters' -> 0 -> 'profile') AS item(key))
      IS DISTINCT FROM ARRAY[
        'ageContext', 'ageSources', 'aliases', 'biography', 'biographySources',
@@ -172,10 +177,21 @@ BEGIN
      ]::text[] THEN
     RAISE EXCEPTION 'Approved profile does not match the versioned Worker contract';
   END IF;
-  IF (SELECT array_agg(key ORDER BY key)
+  IF (SELECT array_agg(key ORDER BY key COLLATE "C")
       FROM jsonb_object_keys(v_export -> 'characters' -> 0 -> 'modelLinks' -> 0) AS item(key))
      IS DISTINCT FROM ARRAY['evidenceTitle', 'evidenceUrl', 'modelId', 'modelSlug']::text[] THEN
     RAISE EXCEPTION 'Approved model link does not match the versioned Worker contract';
+  END IF;
+  IF v_export -> 'characters' -> 0 -> 'profile' -> 'aliases' -> 0 ->> 'name' <> 'Doc Ock'
+     OR jsonb_array_length(
+       v_export -> 'characters' -> 0 -> 'profile' -> 'aliases' -> 0 -> 'sources'
+     ) <> 1
+     OR v_export -> 'characters' -> 0 -> 'profile' -> 'characteristics' -> 0 ->> 'name'
+       <> 'Mechanical arms'
+     OR jsonb_array_length(
+       v_export -> 'characters' -> 0 -> 'profile' -> 'characteristics' -> 0 -> 'sources'
+     ) <> 1 THEN
+    RAISE EXCEPTION 'Approved aliases and attributes lost their claim-level evidence';
   END IF;
   IF jsonb_array_length(v_export -> 'characters') <> 1
      OR (v_export -> 'characters' -> 0 ->> 'approvedRelationRevision')::integer <> 1
