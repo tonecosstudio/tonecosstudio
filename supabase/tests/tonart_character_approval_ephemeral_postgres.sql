@@ -69,6 +69,46 @@ $legacy_link_backfill$;
 \ir ../migrations/20261117040000_tonart_character_editorial_profiles.sql
 \ir ../migrations/20261118010000_tonart_public_character_approval_and_export.sql
 
+DO $private_editorial_access_contract$
+DECLARE
+  v_rls_table_count integer;
+BEGIN
+  SELECT count(*) INTO v_rls_table_count
+  FROM pg_class c
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+  WHERE n.nspname = 'public'
+    AND c.relname IN (
+      'catalog_character_identities',
+      'catalog_curation_model_profiles',
+      'catalog_curation_model_characters'
+    )
+    AND c.relrowsecurity;
+  IF v_rls_table_count <> 3 THEN
+    RAISE EXCEPTION 'Canonical editorial tables must all retain row-level security';
+  END IF;
+  IF has_table_privilege('anon', 'public.catalog_character_identities', 'SELECT')
+     OR has_table_privilege('authenticated', 'public.catalog_character_identities', 'SELECT')
+     OR has_table_privilege('anon', 'public.catalog_curation_model_profiles', 'SELECT')
+     OR has_table_privilege('authenticated', 'public.catalog_curation_model_profiles', 'SELECT')
+     OR has_table_privilege('anon', 'public.catalog_curation_model_characters', 'SELECT')
+     OR has_table_privilege('authenticated', 'public.catalog_curation_model_characters', 'SELECT')
+     OR NOT has_table_privilege('service_role', 'public.catalog_character_identities', 'SELECT')
+     OR NOT has_table_privilege('service_role', 'public.catalog_curation_model_profiles', 'SELECT')
+     OR NOT has_table_privilege('service_role', 'public.catalog_curation_model_characters', 'SELECT') THEN
+    RAISE EXCEPTION 'Editorial table grants do not preserve the private service-role boundary';
+  END IF;
+  IF has_function_privilege(
+       'anon', 'public.admin_export_approved_catalog_character_projection()', 'EXECUTE'
+     ) OR has_function_privilege(
+       'authenticated', 'public.admin_export_approved_catalog_character_projection()', 'EXECUTE'
+     ) OR NOT has_function_privilege(
+       'service_role', 'public.admin_export_approved_catalog_character_projection()', 'EXECUTE'
+     ) THEN
+    RAISE EXCEPTION 'Approved export RPC must remain service-role only';
+  END IF;
+END;
+$private_editorial_access_contract$;
+
 -- A transaction-scoped execution proof. Every fixture row is rolled back.
 BEGIN;
 SET LOCAL request.jwt.claims = '{"role":"service_role"}';
