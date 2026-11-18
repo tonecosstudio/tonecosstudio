@@ -257,6 +257,13 @@ test('evidence is mandatory for every public fact and relation; empty export is 
   const optionalBiography = await callWorker(optionalBiographyDb, noBiography)
   assert.equal(optionalBiography.response.status, 200, JSON.stringify(optionalBiography.body))
   assert.equal(optionalBiographyDb.prepare('SELECT biography FROM editorial_public_characters').get().biography, null)
+  const optionalBiographyResponse = await worker.default.fetch(new Request(
+    'https://catalog.example.test/api/editorial/v1/characters/personagem-de-teste',
+  ), { DB: d1(optionalBiographyDb), MEDIA: { get: async () => null }, CORS_ORIGINS: '' })
+  assert.equal(optionalBiographyResponse.status, 200)
+  const optionalBiographyBody = await optionalBiographyResponse.json()
+  assert.equal(optionalBiographyBody.character.biography, null)
+  assert.deepEqual(optionalBiographyBody.character.biographyEvidenceIds, [])
 
   const orphanedBiographySource = projection({ biography: '' })
   const rejectedOrphanedSource = await callWorker(optionalBiographyDb, orphanedBiographySource, {
