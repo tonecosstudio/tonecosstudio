@@ -2162,3 +2162,16 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** validar pacote e importação da curadoria #31, depois sincronizar a mesma PR #33.
 
 **DO_NOT_REPEAT:** não promover os quatro nomes de cada grupo a vínculos confirmados sem inspeção e aprovação humana.
+
+## Rodada 113 — Candidatos multicaracteres Dragon Ball (18/11/2026)
+
+- Ampliei as fichas existentes de Son Goku, Vegeta e Gohan com candidatos de relação para os IDs dos rótulos compostos “Goku e Vegeta” e “Goku e Gohan”. Os mesmos modelos aparecem em cada rascunho de personagem pertinente, para que a curadoria #31 possa revisar uma relação por personagem.
+- Foram acrescentados **26 vínculos candidatos** para 13 modelos existentes. Títulos compostos são apenas proveniência de busca; cada relação continua sem evidência independente, confirmação visual ou aprovação humana.
+- Totais atuais: **87 identidades preparadas, 97 fontes oficiais únicas e 903 vínculos candidatos**. Nenhuma relação foi marcada como verificada.
+- Corrigi na branch existente da PR #31 a incompatibilidade que impedia importar modelos compostos para dois personagens: agora o mesmo par catálogo ID/slug pode aparecer em candidatos distintos, com unicidade por ficha e rejeição de colisões ID↔slug. Não houve duplicação de identidades.
+- Validações locais: fila **11/11**; testes do importador #31 **7/7**; teste temporário contra o pacote real #33 **1/1** (87 candidatos, 97 fontes; “Goku e Vegeta” gerou dois rascunhos pendentes); TypeScript app e `git diff --check` passaram. O teste temporário foi removido e nenhuma persistência foi chamada.
+- Totais revisados/aprovados e vínculos com evidência visual independente continuam em **zero**. Nenhuma migration, exportação editorial aprovada, escrita de produção, publicação ou ativação da flag ocorreu.
+
+**NEXT_ACTION:** enviar a correção pelo branch existente #31 e encaminhar os candidatos para revisão privada; homologar Supabase→D1→Worker somente após staging isolado, migrations autorizadas e aprovações humanas.
+
+**DO_NOT_REPEAT:** não converter um título que nomeia dois personagens em prova de que ambos aparecem no render.

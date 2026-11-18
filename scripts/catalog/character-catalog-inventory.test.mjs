@@ -84,7 +84,7 @@ test("research preparation references only inventory IDs and remains unapproved"
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
   assert.equal(packet.snapshot.sourceResearchedIdentityCount, 87);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 877);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 903);
   assert.equal(packet.candidates.length, 87);
   assert.equal(packet.sources.length, 97);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
@@ -94,10 +94,10 @@ test("research preparation references only inventory IDs and remains unapproved"
   assert.equal(packet.policy.approvedModelLinkCount, 0);
   assert.equal(packet.policy.preparedIdentityCount, 87);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 877);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 903);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 877);
+  assert.equal(links.length, 903);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -344,6 +344,31 @@ test("research preparation references only inventory IDs and remains unapproved"
   assert.deepEqual(silverSurfer.catalogFranchiseCandidates, ["Equipes e Grupos"]);
   assert.ok(blackWidow.ambiguities.some((item) => /portadoras|uniformes/.test(item)));
   assert.ok(silverSurfer.ambiguities.some((item) => /fase, uniforme ou continuidade/.test(item)));
+  const queueRows = queueLines.slice(1).map((line) => {
+    const [modelId, modelSlug, , modelName] = line.split(",", 5);
+    return { modelId, modelSlug, modelName };
+  });
+  const compoundGroups = [
+    ["Goku e Vegeta", ["Son Goku", "Vegeta"], 7],
+    ["Goku e Gohan", ["Son Goku", "Gohan"], 6],
+  ];
+  for (const [modelName, candidateNames, expectedLinks] of compoundGroups) {
+    const modelIds = new Set(queueRows
+      .filter((row) => row.modelName === modelName)
+      .map((row) => row.modelId));
+    assert.equal(modelIds.size, expectedLinks);
+    for (const candidateName of candidateNames) {
+      const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
+      const linksForCompound = candidate.candidateModelLinks.filter((link) =>
+        modelIds.has(link.modelId));
+      assert.equal(linksForCompound.length, expectedLinks);
+      assert.ok(linksForCompound.every((link) =>
+        link.relationshipStatus === "candidate_pending_visual_and_editorial_review" &&
+        link.independentModelEvidence.length === 0 && link.reviewRequired));
+      assert.ok(candidate.ambiguities.some((item) =>
+        item.includes(`“${modelName}”`) && /não comprova a presença visual/.test(item)));
+    }
+  }
   const burter = packet.candidates.find((item) => item.candidateName === "Burter (Namek saga candidate)");
   const shenron = packet.candidates.find((item) =>
     item.candidateName === "Shenron (Earth Dragon Balls; Shenlong label candidate)");

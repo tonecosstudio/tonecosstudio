@@ -8,7 +8,7 @@
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
     "sourceResearchedIdentityCount": 87,
-    "preparedCandidateModelLinkCount": 877
+    "preparedCandidateModelLinkCount": 903
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -24,7 +24,7 @@
     "preparedIdentityCount": 87,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 877,
+    "preparedCandidateModelLinkCount": 903,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -2945,7 +2945,9 @@
       "ambiguities": [
         "O inventário usa o rótulo curto Goku, enquanto a fonte oficial apresenta Son Goku; a forma de exibição/alias deve ser decidida na revisão editorial.",
         "A fonte oficial sustenta identidade e contexto da franquia, mas não confirma individualmente nenhum render do catálogo.",
-        "Formas, idades, sagas e composições de cada modelo precisam de revisão visual por ID; os vínculos abaixo continuam sem evidência independente."
+        "Formas, idades, sagas e composições de cada modelo precisam de revisão visual por ID; os vínculos abaixo continuam sem evidência independente.",
+        "Os registros compostos “Goku e Vegeta” foram adicionados como relações candidatas para ambos; o texto do catálogo não comprova a presença visual nem a versão de cada personagem. Revisar cada ID individualmente.",
+        "Os registros compostos “Goku e Gohan” foram adicionados como relações candidatas para ambos; o texto do catálogo não comprova a presença visual nem a idade/versão de cada personagem. Revisar cada ID individualmente."
       ],
       "candidateModelLinks": [
         {
@@ -3859,9 +3861,256 @@
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2144b1cdb900cc99db1a",
+          "modelSlug": "dragon-ball-goku-e-vegeta-1",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-1"
+          }
+        },
+        {
+          "modelId": "mdl_8fba52296abee88517ec",
+          "modelSlug": "dragon-ball-goku-e-vegeta-chibi",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-chibi"
+          }
+        },
+        {
+          "modelId": "mdl_9242e1817c99fb0b297d",
+          "modelSlug": "dragon-ball-goku-e-vegeta-3",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-3"
+          }
+        },
+        {
+          "modelId": "mdl_abcc06b17aa780d751d2",
+          "modelSlug": "dragon-ball-goku-e-vegeta-painel-3",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-painel-3"
+          }
+        },
+        {
+          "modelId": "mdl_b4f1c9a75c112152359b",
+          "modelSlug": "dragon-ball-goku-e-vegeta-painel-1",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-painel-1"
+          }
+        },
+        {
+          "modelId": "mdl_fdb583a104a1b62bad48",
+          "modelSlug": "dragon-ball-goku-e-vegeta-painel-2",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-painel-2"
+          }
+        },
+        {
+          "modelId": "mdl_ff6f57022cbc33fa0faa",
+          "modelSlug": "dragon-ball-goku-e-vegeta-2",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-2"
+          }
+        },
+        {
+          "modelId": "mdl_29e3cd96eb5984a48d00",
+          "modelSlug": "dragon-ball-goku-e-gohan-1",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-1"
+          }
+        },
+        {
+          "modelId": "mdl_45a627faf6145f680291",
+          "modelSlug": "dragon-ball-goku-e-gohan-4",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-4"
+          }
+        },
+        {
+          "modelId": "mdl_67954f8d6f5eeabb1d99",
+          "modelSlug": "dragon-ball-goku-e-gohan-super-saiyajin-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-super-saiyajin-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_78c7b3e38dd82629bcf3",
+          "modelSlug": "dragon-ball-goku-e-gohan-3",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-3"
+          }
+        },
+        {
+          "modelId": "mdl_7dfdad345ca687aef93e",
+          "modelSlug": "dragon-ball-goku-e-gohan-2",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-2"
+          }
+        },
+        {
+          "modelId": "mdl_d14408a4b66e690ab86f",
+          "modelSlug": "dragon-ball-goku-e-gohan-5",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-5"
+          }
         }
       ],
-      "catalogCandidateModelCount": 48
+      "catalogCandidateModelCount": 61
     },
     {
       "candidateName": "Vegeta",
@@ -3914,7 +4163,8 @@
       "ambiguities": [
         "A fonte cobre uma versão específica de Vegeta no arco Saiyajin; armaduras, períodos, formas e linhas temporais dos modelos precisam de revisão visual individual.",
         "A fonte oficial sustenta identidade e contexto da franquia, mas não confirma individualmente nenhum render do catálogo.",
-        "Os vínculos abaixo usam rótulos de inventário apenas como pistas e permanecem sem evidência independente."
+        "Os vínculos abaixo usam rótulos de inventário apenas como pistas e permanecem sem evidência independente.",
+        "Os registros compostos “Goku e Vegeta” foram adicionados como relações candidatas para ambos; o texto do catálogo não comprova a presença visual nem a versão de cada personagem. Revisar cada ID individualmente."
       ],
       "candidateModelLinks": [
         {
@@ -4714,9 +4964,142 @@
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2144b1cdb900cc99db1a",
+          "modelSlug": "dragon-ball-goku-e-vegeta-1",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-1"
+          }
+        },
+        {
+          "modelId": "mdl_8fba52296abee88517ec",
+          "modelSlug": "dragon-ball-goku-e-vegeta-chibi",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-chibi"
+          }
+        },
+        {
+          "modelId": "mdl_9242e1817c99fb0b297d",
+          "modelSlug": "dragon-ball-goku-e-vegeta-3",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-3"
+          }
+        },
+        {
+          "modelId": "mdl_abcc06b17aa780d751d2",
+          "modelSlug": "dragon-ball-goku-e-vegeta-painel-3",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-painel-3"
+          }
+        },
+        {
+          "modelId": "mdl_b4f1c9a75c112152359b",
+          "modelSlug": "dragon-ball-goku-e-vegeta-painel-1",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-painel-1"
+          }
+        },
+        {
+          "modelId": "mdl_fdb583a104a1b62bad48",
+          "modelSlug": "dragon-ball-goku-e-vegeta-painel-2",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-painel-2"
+          }
+        },
+        {
+          "modelId": "mdl_ff6f57022cbc33fa0faa",
+          "modelSlug": "dragon-ball-goku-e-vegeta-2",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-vegeta-2"
+          }
         }
       ],
-      "catalogCandidateModelCount": 42
+      "catalogCandidateModelCount": 49
     },
     {
       "candidateName": "Frieza",
@@ -5947,7 +6330,8 @@
       "ambiguities": [
         "A fonte consultada descreve Gohan no arco Saiyajin; idade, roupas e transformações variam entre sagas e exigem validação por modelo.",
         "A fonte oficial sustenta identidade e franquia, mas não confirma individualmente nenhum render do catálogo.",
-        "Os 19 vínculos abaixo foram selecionados pelo rótulo exato da fila e permanecem sem evidência independente."
+        "Os 19 vínculos abaixo foram selecionados pelo rótulo exato da fila e permanecem sem evidência independente.",
+        "Os registros compostos “Goku e Gohan” foram adicionados como relações candidatas para ambos; o texto do catálogo não comprova a presença visual nem a idade/versão de cada personagem. Revisar cada ID individualmente."
       ],
       "candidateModelLinks": [
         {
@@ -6310,9 +6694,123 @@
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_29e3cd96eb5984a48d00",
+          "modelSlug": "dragon-ball-goku-e-gohan-1",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-1"
+          }
+        },
+        {
+          "modelId": "mdl_45a627faf6145f680291",
+          "modelSlug": "dragon-ball-goku-e-gohan-4",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-4"
+          }
+        },
+        {
+          "modelId": "mdl_67954f8d6f5eeabb1d99",
+          "modelSlug": "dragon-ball-goku-e-gohan-super-saiyajin-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-super-saiyajin-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_78c7b3e38dd82629bcf3",
+          "modelSlug": "dragon-ball-goku-e-gohan-3",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-3"
+          }
+        },
+        {
+          "modelId": "mdl_7dfdad345ca687aef93e",
+          "modelSlug": "dragon-ball-goku-e-gohan-2",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-2"
+          }
+        },
+        {
+          "modelId": "mdl_d14408a4b66e690ab86f",
+          "modelSlug": "dragon-ball-goku-e-gohan-5",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-e-gohan-5"
+          }
         }
       ],
-      "catalogCandidateModelCount": 19
+      "catalogCandidateModelCount": 25
     },
     {
       "candidateName": "Piccolo",
