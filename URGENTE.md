@@ -1801,3 +1801,13 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** enviar a correção à PR #33 e acompanhar o run novo; manter flag editorial desligada até publicação aprovada e homologação real do Worker/D1.
 
 **DO_NOT_REPEAT:** não baixar nem instalar CUDA na suíte offline, não declarar o run `44217722614` aprovado, não rerun manualmente antes do commit corretivo e não usar fixtures como evidência de dados públicos reais.
+
+## Rodada 82 — expectativa de Coins alinhada aos centésimos (18/11/2026)
+
+- No run `44218243363`, a instalação corrigida passou e a suíte iniciou: **400/401** testes passaram. O único caso falhou porque a apresentação canônica já formata Coins com duas casas (`+12,00`), enquanto o teste legado procurava `+12` como nó de texto isolado. A célula acessível contém o valor correto; nenhuma alteração de tela ou regra de saldo foi necessária.
+- Atualizei somente a expectativa em `TonecosAdminHomePage.test.tsx` para consultar a célula acessível com `+12,00`. Validação local focada passou (**1/1**); ESLint do teste e `git diff --check` passaram. O run `44218243363` segue reprovado por essa expectativa anterior e não é marcado como aprovado; o próximo commit acionará a confirmação na suíte completa.
+- Os testes locais desta rodada não alteram o status da projeção editorial: migration `0023` sem aplicação autorizada, publicação D1 vazia, sem exportador aprovado da curadoria privada; nenhum dado real foi disponibilizado.
+
+**NEXT_ACTION:** enviar o ajuste pontual à branch existente da PR #33 e acompanhar o novo Quality Gate, sem rerun manual.
+
+**DO_NOT_REPEAT:** não remover a precisão de duas casas da carteira para atender teste obsoleto, não alterar código comercial nessa correção, não tratar a suíte parcial do run anterior como aprovação total.
