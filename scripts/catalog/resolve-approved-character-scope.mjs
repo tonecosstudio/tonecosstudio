@@ -160,6 +160,17 @@ export function resolveApprovedCharacterScopes(exportPayload, d1Snapshot) {
     seenCharacters.add(character.identityId);
     seenSlugs.add(character.slug);
     validateApprovedProfile(character.profile);
+    // The private authority must increment the current relation revision
+    // transactionally on every linked-model/evidence change, and capture
+    // the same revision under the human's publication approval. A profile
+    // approval alone does not authorize relations modified afterwards.
+    requireValid(Number.isSafeInteger(character.relationRevision) &&
+      Number.isSafeInteger(character.approvedRelationRevision) &&
+      character.relationRevision >= 0 &&
+      character.approvedRelationRevision >= 0,
+    'approved_character_relation_revision_missing');
+    requireValid(character.relationRevision === character.approvedRelationRevision,
+    'approved_character_relation_approval_stale');
     requireValid(Date.parse(character.reviewedAt) <= Date.parse(character.approvedAt) &&
       Date.parse(character.approvedAt) <= Date.parse(exportPayload.generatedAt),
     'approved_character_approval_order_invalid');
