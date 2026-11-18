@@ -52,7 +52,7 @@ type CharacterProjection = {
   aliasesJson: string
   summary: null
   summaryEvidenceIdsJson: string
-  biography: string
+  biography: string | null
   biographyEvidenceIdsJson: string
   ageValue: string | null
   ageContext: string | null
@@ -243,12 +243,18 @@ async function normalizeCharacter(value: unknown) {
     'franchiseSources',
   ], 'editorial_profile_keys_invalid')
   if (profile.slug !== slug) throw new ProjectionInputError('editorial_character_slug_mismatch')
-  const biography = text(profile.biography, 'editorial_biography_invalid', 6000)
+  const biography = optionalText(profile.biography, 'editorial_biography_invalid', 6000)
   const originWork = text(profile.originWork, 'editorial_origin_work_invalid', 240)
   const evidence = new Map<string, Evidence>()
   const nameEvidenceIds = await addEvidenceSources(profile.nameSources, 'editorial_name', evidence, true)
   const franchiseEvidenceIds = await addEvidenceSources(profile.franchiseSources, 'editorial_franchise', evidence, true)
-  const biographyEvidenceIds = await addEvidenceSources(profile.biographySources, 'editorial_biography', evidence, true)
+  const biographySources = array(profile.biographySources, 'editorial_biography_sources_invalid', MAX_EVIDENCE_PER_DOCUMENT)
+  const biographyEvidenceIds = biography
+    ? await addEvidenceSources(biographySources, 'editorial_biography', evidence, true)
+    : []
+  if (!biography && biographySources.length) {
+    throw new ProjectionInputError('editorial_biography_sources_without_value')
+  }
   const originWorkEvidenceIds = await addEvidenceSources(profile.originWorkSources, 'editorial_origin_work', evidence, true)
   const ageContext = optionalText(profile.ageContext, 'editorial_age_context_invalid', 500)
   // The private curation contract stores contextual age information but no

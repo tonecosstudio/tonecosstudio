@@ -251,6 +251,21 @@ test('dry-run verifies exact D1 model and franchise identities without writing r
 })
 
 test('evidence is mandatory for every public fact and relation; empty export is fail-closed', async () => {
+  const optionalBiographyDb = createDatabase()
+  const noBiography = projection({ biography: '' })
+  noBiography.characters[0].profile.biographySources = []
+  const optionalBiography = await callWorker(optionalBiographyDb, noBiography)
+  assert.equal(optionalBiography.response.status, 200, JSON.stringify(optionalBiography.body))
+  assert.equal(optionalBiographyDb.prepare('SELECT biography FROM editorial_public_characters').get().biography, null)
+
+  const orphanedBiographySource = projection({ biography: '' })
+  const rejectedOrphanedSource = await callWorker(optionalBiographyDb, orphanedBiographySource, {
+    headers: { 'x-tonart-dry-run': 'true' },
+  })
+  assert.equal(rejectedOrphanedSource.response.status, 422)
+  assert.equal(rejectedOrphanedSource.body.error, 'editorial_biography_sources_without_value')
+  optionalBiographyDb.close()
+
   const db = createDatabase()
   const missingBiographySource = projection()
   missingBiographySource.characters[0].profile.biographySources = []
