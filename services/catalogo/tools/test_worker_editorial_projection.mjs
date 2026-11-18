@@ -63,6 +63,11 @@ function projection({ generatedAt = new Date().toISOString(), biography = 'Descr
         modelSlug: 'estatueta-de-teste',
         evidenceUrl: 'https://example.org/model-link',
         evidenceTitle: 'Vínculo validado manualmente',
+      }, {
+        modelId: 'mdl_cccccccccccccccccccc',
+        modelSlug: 'segunda-estatueta-de-teste',
+        evidenceUrl: 'https://example.org/model-link-2',
+        evidenceTitle: 'Segundo vínculo validado manualmente',
       }],
     }],
   }
@@ -84,6 +89,11 @@ function createDatabase() {
     public_gallery_version,published,search_text
   ) VALUES(?,1,?,'TEST01','Estatueta de teste','',NULL,NULL,NULL,'Fixture somente de teste.',1,
     NULL,NULL,1,1,1,'estatueta de teste')`).run(MODEL_ID, 'estatueta-de-teste')
+  db.prepare(`INSERT INTO models(
+    id,franchise_id,slug,code,name,variant_name,description,image_count,
+    gallery_version,public_gallery_version,published,search_text
+  ) VALUES('mdl_cccccccccccccccccccc',1,'segunda-estatueta-de-teste','TEST02','Segunda estatueta','',
+    'Fixture somente de teste.',1,1,1,1,'segunda estatueta')`).run()
   return db
 }
 
@@ -137,9 +147,9 @@ async function callWorker(db, payload, { token = TOKEN, origin, headers = {}, me
 test('approved Supabase export applies atomically to the canonical D1 tables and public routes', async () => {
   const db = createDatabase()
   const applied = await callWorker(db, projection())
-  assert.equal(applied.response.status, 200)
+  assert.equal(applied.response.status, 200, JSON.stringify(applied.body))
   assert.equal(applied.body.applied, true)
-  assert.deepEqual(applied.body.counts, { universes: 1, characters: 1, modelLinks: 1 })
+  assert.deepEqual(applied.body.counts, { universes: 1, characters: 1, modelLinks: 2 })
   assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_publication_staged_model_links').get().count, 0)
 
   const characterResponse = await worker.default.fetch(new Request(
@@ -153,7 +163,7 @@ test('approved Supabase export applies atomically to the canonical D1 tables and
     context: 'A idade varia entre adaptações.',
     evidenceIds: characterBody.character.ageContext.evidenceIds,
   })
-  assert.equal(characterBody.sameCharacterModels[0].modelId, MODEL_ID)
+  assert.ok(characterBody.sameCharacterModels.some(row => row.modelId === MODEL_ID))
   assert.equal(characterBody.universe.name, 'Saga Alfa')
 
   const modelResponse = await worker.default.fetch(new Request(
@@ -163,11 +173,13 @@ test('approved Supabase export applies atomically to the canonical D1 tables and
   assert.equal((await modelResponse.json()).items[0].character.slug, 'personagem-de-teste')
 
   const linkRevoked = projection({ generatedAt: new Date(Date.now() + 1000).toISOString() })
-  linkRevoked.characters[0].modelLinks = []
+  linkRevoked.characters[0].modelLinks = linkRevoked.characters[0].modelLinks.slice(1)
   linkRevoked.characters[0].approvalRef = '3da58bec-2daf-48b2-96af-97e2b9164338'
   const revised = await callWorker(db, linkRevoked)
   assert.equal(revised.response.status, 200)
-  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_character_models').get().count, 0)
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_character_models').get().count, 1)
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_character_models WHERE model_id=?')
+    .get(MODEL_ID).count, 0)
   assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_publication_staged_model_links').get().count, 0)
   db.close()
 })
@@ -204,7 +216,37 @@ test('dry-run verifies exact D1 model and franchise identities without writing r
   badFranchise.characters[0].profile.franchiseSources[0] = source('Fonte', 'https://example.org/missing')
   const rejectedFranchise = await callWorker(db, badFranchise, { headers: { 'x-tonart-dry-run': 'true' } })
   assert.equal(rejectedFranchise.response.status, 422)
-  assert.equal(rejectedFranchise.body.error, 'editorial_franchise_not_found')
+  assert.equal(rejectedFranchise.body.error, 'editorial_model_franchise_mismatch')
+
+  const noLinks = structuredClone(payload)
+  noLinks.characters[0].modelLinks = []
+  const rejectedNoLinks = await callWorker(db, noLinks, { headers: { 'x-tonart-dry-run': 'true' } })
+  assert.equal(rejectedNoLinks.response.status, 422)
+  assert.equal(rejectedNoLinks.body.error, 'editorial_model_link_required')
+
+  db.prepare('UPDATE models SET published=0 WHERE id=?').run(MODEL_ID)
+  const unpublished = await callWorker(db, payload, { headers: { 'x-tonart-dry-run': 'true' } })
+  assert.equal(unpublished.response.status, 422)
+  assert.equal(unpublished.body.error, 'editorial_model_reference_invalid')
+  db.prepare('UPDATE models SET published=1 WHERE id=?').run(MODEL_ID)
+
+  db.prepare("INSERT INTO categories(id,slug,name) VALUES(2,'universos-b','Universos B')").run()
+  db.prepare("INSERT INTO franchises(id,category_id,slug,name) VALUES(2,2,'saga-alfa','Saga Alfa')").run()
+  db.prepare(`INSERT INTO models(
+    id,franchise_id,slug,code,name,variant_name,description,image_count,
+    gallery_version,public_gallery_version,published,search_text
+  ) VALUES('mdl_bbbbbbbbbbbbbbbbbbbb',2,'estatueta-duplicada','TEST03','Estatueta duplicada','',
+    'Fixture somente de teste.',1,1,1,1,'estatueta duplicada')`).run()
+  const ambiguous = structuredClone(payload)
+  ambiguous.characters[0].modelLinks.push({
+    modelId: 'mdl_bbbbbbbbbbbbbbbbbbbb',
+    modelSlug: 'estatueta-duplicada',
+    evidenceUrl: 'https://example.org/model-link-2',
+    evidenceTitle: 'Segundo vínculo de teste',
+  })
+  const rejectedAmbiguous = await callWorker(db, ambiguous, { headers: { 'x-tonart-dry-run': 'true' } })
+  assert.equal(rejectedAmbiguous.response.status, 422)
+  assert.equal(rejectedAmbiguous.body.error, 'editorial_character_franchise_ambiguous')
   db.close()
 })
 

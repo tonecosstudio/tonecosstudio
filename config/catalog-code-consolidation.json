@@ -522,12 +522,12 @@
     "postImportAdditions": [
       {
         "path": "migrations/0023_public_editorial_projection.sql",
-        "localBlob": "9e320f833ddd0c3ac9a55df11b0ac8df71553b09",
+        "localBlob": "bd1d76a0e3db50820490a80d974827feaf179588",
         "reason": "Add only the approved public editorial projection schema with replay-safe FTS backfill; no content is seeded and M5 migration remains disabled."
       },
       {
         "path": "worker/editorialProjection.ts",
-        "localBlob": "78bc12be275e20ed140bd2dbccf9d6a579117e0d",
+        "localBlob": "6c404cb1eff1c5f5206b22be15d698bed24a05b9",
         "reason": "Publish only the private approved export through the existing staged Worker with bounded, atomic D1 synchronization."
       }
     ]

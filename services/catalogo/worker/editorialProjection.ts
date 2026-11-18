@@ -281,6 +281,7 @@ async function normalizeCharacter(value: unknown) {
 
   const relationRows = array(row.modelLinks, 'editorial_model_links_invalid', 5000)
   if (relationRows.length > MAX_RELATIONS) throw new ProjectionInputError('editorial_model_link_limit')
+  if (!relationRows.length) throw new ProjectionInputError('editorial_model_link_required')
   const seenModels = new Set<string>()
   const modelLinks = []
   for (const value of relationRows) {
@@ -646,63 +647,71 @@ function sameSecret(actual: string, expected: string): boolean {
   return mismatch === 0
 }
 
-async function readFranchiseMap(db: D1Database, universes: UniverseProjection[]): Promise<Map<string, number>> {
-  const uniqueNames = unique(universes.map(item => item.franchiseName))
-  if (!uniqueNames.length) return new Map()
-  const result = await db.prepare('SELECT id AS franchise_id, name AS franchise_name FROM franchises')
-    .all<{ franchise_id: number; franchise_name: string }>()
-  const requestedByKey = new Map(uniqueNames.map(name => [stableFranchiseKey(name), name]))
-  const map = new Map<string, number>()
-  for (const row of result.results) {
-    const key = stableFranchiseKey(row.franchise_name)
-    if (!requestedByKey.has(key)) continue
-    if (map.has(key)) throw new ProjectionInputError('editorial_franchise_ambiguous')
-    map.set(key, row.franchise_id)
-  }
-  if (map.size !== uniqueNames.length) throw new ProjectionInputError('editorial_franchise_not_found')
-  return map
-}
-
-async function validateCanonicalModels(db: D1Database, snapshot: NormalizedEditorialProjection, franchises: Map<string, number>) {
-  if (!snapshot.relations.length) return
+async function validateCanonicalModels(
+  db: D1Database,
+  snapshot: NormalizedEditorialProjection,
+): Promise<Map<string, number>> {
+  if (!snapshot.relations.length) return new Map()
   const requested = snapshot.relations.map(row => ({
     characterId: row.characterId,
     modelId: row.modelId,
     modelSlug: row.modelSlug,
-    franchiseName: row.franchiseName,
   }))
   const sql = `SELECT json_extract(request.value, '$.characterId') AS character_id,
       json_extract(request.value, '$.modelId') AS requested_model_id,
       json_extract(request.value, '$.modelSlug') AS requested_model_slug,
-      json_extract(request.value, '$.franchiseName') AS franchise_name,
-      m.id AS model_id, m.slug AS model_slug, m.franchise_id
+      m.id AS model_id, m.slug AS model_slug, m.franchise_id, m.published,
+      f.name AS canonical_franchise_name
     FROM json_each(?) AS request
-    LEFT JOIN models m ON m.id=json_extract(request.value, '$.modelId')`
+    LEFT JOIN models m ON m.id=json_extract(request.value, '$.modelId')
+    LEFT JOIN franchises f ON f.id=m.franchise_id`
   const characterById = new Map(snapshot.characters.map(item => [item.id, item]))
+  const franchiseIdsByCharacter = new Map<string, Set<number>>()
   for (const chunk of jsonChunks(requested)) {
     const rowsInChunk = JSON.parse(chunk) as typeof requested
     const result = await db.prepare(sql).bind(chunk).all<{
       character_id: string
       requested_model_id: string
       requested_model_slug: string
-      franchise_name: string
       model_id: string | null
       model_slug: string | null
       franchise_id: number | null
+      published: number | null
+      canonical_franchise_name: string | null
     }>()
     if (result.results.length !== rowsInChunk.length) {
       throw new ProjectionInputError('editorial_model_reference_invalid')
     }
     for (const row of result.results) {
-      if (!row.model_id || row.model_slug !== row.requested_model_slug) {
+      if (!row.model_id || row.model_slug !== row.requested_model_slug ||
+          row.published !== 1 || row.franchise_id === null || !row.canonical_franchise_name) {
         throw new ProjectionInputError('editorial_model_reference_invalid')
       }
       const character = characterById.get(row.character_id)
-      if (!character || franchises.get(stableFranchiseKey(character.franchiseName)) !== row.franchise_id) {
+      if (!character ||
+          stableFranchiseKey(character.franchiseName) !== stableFranchiseKey(row.canonical_franchise_name)) {
         throw new ProjectionInputError('editorial_model_franchise_mismatch')
       }
+      const ids = franchiseIdsByCharacter.get(row.character_id) ?? new Set<number>()
+      ids.add(row.franchise_id)
+      franchiseIdsByCharacter.set(row.character_id, ids)
     }
   }
+  const franchiseByLabel = new Map<string, number>()
+  for (const character of snapshot.characters) {
+    const franchiseIds = franchiseIdsByCharacter.get(character.id)
+    if (!franchiseIds || franchiseIds.size !== 1) {
+      throw new ProjectionInputError('editorial_character_franchise_ambiguous')
+    }
+    const franchiseId = [...franchiseIds][0]
+    const key = stableFranchiseKey(character.franchiseName)
+    const existing = franchiseByLabel.get(key)
+    if (existing !== undefined && existing !== franchiseId) {
+      throw new ProjectionInputError('editorial_franchise_ambiguous')
+    }
+    franchiseByLabel.set(key, franchiseId)
+  }
+  return franchiseByLabel
 }
 
 async function syncState(db: D1Database): Promise<{ snapshotSha256: string; sourceRevision: string }> {
@@ -781,8 +790,7 @@ export async function applyEditorialProjection(request: Request, env: EditorialP
     if (Date.parse(snapshot.sourceRevision) > Date.now() + 5 * 60 * 1000) {
       return response({ error: 'editorial_projection_source_revision_in_future' }, 422)
     }
-    const franchises = await readFranchiseMap(env.DB, snapshot.universes)
-    await validateCanonicalModels(env.DB, snapshot, franchises)
+    const franchises = await validateCanonicalModels(env.DB, snapshot)
     if (dryRun) {
       return response({ ...projectionSuccess(snapshot, false, false), dryRun: true })
     }
