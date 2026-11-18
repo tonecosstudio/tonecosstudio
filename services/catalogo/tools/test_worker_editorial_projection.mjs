@@ -40,6 +40,8 @@ function projection({ generatedAt = new Date().toISOString(), biography = 'Descr
       franchiseName: 'Saga Alfa',
       slug: 'personagem-de-teste',
       profileRevision: 3,
+      relationRevision: 7,
+      approvedRelationRevision: 7,
       reviewedAt: '2026-11-18T12:00:00.000Z',
       reviewedBy: REVIEWER_ID,
       approvalRef: 'c9f22ef7-c078-4f5a-b215-758721755d61',
@@ -211,6 +213,39 @@ test('approval cannot precede human editorial review', async () => {
       db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count,
       0,
     )
+  } finally {
+    db.close()
+  }
+})
+
+test('updated model links require new transactional human approval before public projection', async () => {
+  const db = createDatabase()
+  try {
+    const approved = projection()
+    const first = await callWorker(db, approved, { headers: { 'x-tonart-dry-run': 'true' } })
+    assert.equal(first.response.status, 200, JSON.stringify(first.body))
+    const changedRelations = structuredClone(approved)
+    changedRelations.characters[0].relationRevision += 1
+    changedRelations.characters[0].modelLinks[0].evidenceTitle = 'Evidência alterada após aprovação'
+    const rejected = await callWorker(db, changedRelations)
+    assert.equal(rejected.response.status, 422)
+    assert.equal(rejected.body.error, 'editorial_relation_approval_stale')
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count, 0)
+    for (const field of ['relationRevision', 'approvedRelationRevision']) {
+      const invalid = structuredClone(approved)
+      invalid.characters[0][field] = '7'
+      const response = await callWorker(db, invalid, {
+        headers: { 'x-tonart-dry-run': 'true' },
+      })
+      assert.equal(response.response.status, 422)
+      assert.equal(response.body.error, 'editorial_relation_revision_missing')
+    }
+    const unversioned = structuredClone(approved)
+    delete unversioned.characters[0].approvedRelationRevision
+    const missing = await callWorker(db, unversioned, {
+      headers: { 'x-tonart-dry-run': 'true' },
+    })
+    assert.equal(missing.response.status, 422)
   } finally {
     db.close()
   }
