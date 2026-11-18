@@ -131,6 +131,63 @@ describe("editorial research handoff", () => {
     ).toHaveLength(1);
   });
 
+  it("allows one model to be a pending candidate for multiple characters", () => {
+    const packet = packetFixture();
+    const secondCharacter = structuredClone(packet.candidates[0]);
+    secondCharacter.candidateName = "Sidekick";
+    secondCharacter.catalogDisplayNameCandidate = "Parceiro";
+    secondCharacter.claims[0].value = "Sidekick";
+    packet.candidates.push(secondCharacter);
+
+    const preparation = parseEditorialResearchPreparation(
+      JSON.stringify(packet),
+    );
+    const matches = findEditorialResearchMatches(preparation, {
+      modelId: "mdl_0123456789",
+      slug: "hero-statue",
+    });
+
+    expect(matches.map(({ candidate }) => candidate.candidateName)).toEqual([
+      "Hero",
+      "Sidekick",
+    ]);
+    expect(
+      matches.every(
+        ({ modelLink }) =>
+          modelLink.relationshipStatus ===
+          "candidate_pending_visual_and_editorial_review",
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects duplicate links within a character and conflicting catalog identities", () => {
+    const duplicateWithinCharacter = packetFixture();
+    duplicateWithinCharacter.candidates[0].candidateModelLinks.push(
+      structuredClone(
+        duplicateWithinCharacter.candidates[0].candidateModelLinks[0],
+      ),
+    );
+    duplicateWithinCharacter.candidates[0].catalogCandidateModelCount = 2;
+    expect(() =>
+      parseEditorialResearchPreparation(
+        JSON.stringify(duplicateWithinCharacter),
+      ),
+    ).toThrow();
+
+    const conflictingSlug = packetFixture();
+    const secondCharacter = structuredClone(conflictingSlug.candidates[0]);
+    secondCharacter.candidateName = "Sidekick";
+    secondCharacter.catalogDisplayNameCandidate = "Parceiro";
+    secondCharacter.claims[0].value = "Sidekick";
+    secondCharacter.candidateModelLinks[0].modelSlug = "another-model-slug";
+    secondCharacter.candidateModelLinks[0].catalogEvidenceSnapshot.publicCatalogSlug =
+      "another-model-slug";
+    conflictingSlug.candidates.push(secondCharacter);
+    expect(() =>
+      parseEditorialResearchPreparation(JSON.stringify(conflictingSlug)),
+    ).toThrow();
+  });
+
   it("maps sourced biography, name and franchise into a private draft only", () => {
     const preparation = parseEditorialResearchPreparation(
       JSON.stringify(packetFixture()),

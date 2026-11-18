@@ -310,10 +310,27 @@ export function parseEditorialResearchPreparation(
   const modelLinks = candidates.flatMap(
     (candidate) => candidate.candidateModelLinks,
   );
+  if (modelLinks.length > MAX_MODEL_LINKS) return invalid();
+
+  // One catalog model may represent more than one character (for example, a
+  // sculpt with two people in the same scene). Keep the pair globally
+  // consistent while allowing that relationship across distinct candidates.
+  const slugByModelId = new Map<string, string>();
+  const modelIdBySlug = new Map<string, string>();
+  for (const link of modelLinks) {
+    const knownSlug = slugByModelId.get(link.modelId);
+    const knownModelId = modelIdBySlug.get(link.modelSlug);
+    if (
+      (knownSlug !== undefined && knownSlug !== link.modelSlug) ||
+      (knownModelId !== undefined && knownModelId !== link.modelId)
+    ) {
+      return invalid();
+    }
+    slugByModelId.set(link.modelId, link.modelSlug);
+    modelIdBySlug.set(link.modelSlug, link.modelId);
+  }
+
   if (
-    modelLinks.length > MAX_MODEL_LINKS ||
-    new Set(modelLinks.map((link) => `${link.modelId}\u0000${link.modelSlug}`))
-      .size !== modelLinks.length ||
     candidates.some((candidate) =>
       [
         ...candidate.biographySourceIds,

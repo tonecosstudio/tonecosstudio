@@ -1764,3 +1764,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 - **Validação local:** **38/38 Vitest direcionados, TypeScript app, ESLint nos quatro arquivos TS/TSX alterados, Prettier e `git diff --check` aprovados**. Nenhum teste PostgreSQL foi feito nesta rodada; o script de staging existente cobre draft/review, fontes obrigatórias, unicidade do slug, concorrência de versão, privacidade e `ROLLBACK` com fixtures claramente fictícias.
 - **Bloqueios reais:** o ambiente local continua sem PostgreSQL, Docker, Supabase CLI ou PGlite; não há staging isolado autorizado. A migration não foi aplicada. A projeção/endpoints públicos do Worker ainda não estão disponíveis, e o inventário de 2.609 modelos continua sendo fila de candidatos sem pesquisa editorial concluída; nenhum candidato foi promovido.
 - **Segurança/publicação:** nenhuma escrita no Supabase conectado, deploy, publicação de conteúdo, SEO ou abertura de cobrança foi executada. Manter as fichas públicas atrás do contrato de projeção aprovado no Worker e exigir revisão humana das fontes antes de popular o catálogo.
+
+## CHECKPOINT — 18/11/2026 — importação multicaractere da fila editorial #33
+
+- **Base/HEAD antes da alteração:** `main`/merge-base `b82a76a80cde54b8bef0afa73cfe48ff4a549d3b`; branch existente da PR #31 em `77ecba78397a04f75cd73b0d7a2414ccae352f00`.
+- Corrigi o parser da preparação editorial: o mesmo par de ID/slug do catálogo pode aparecer em candidatos de personagens diferentes (escultura composta), mantendo unicidade dentro de cada ficha e rejeitando ID↔slug conflitante. A UI já selecionava candidatos separadamente e preenche apenas rascunhos em memória.
+- **Validações locais:** 7/7 testes Vitest direcionados; teste temporário contra o pacote real da PR #33 passou (87 candidatos, 97 fontes; modelo composto mapeado para Son Goku e Vegeta, ambos pendentes); TypeScript app e `git diff --check` passaram. O arquivo temporário foi removido.
+- **Estado editorial e segurança:** 0 identidades ou relações aprovadas nesta fila; nenhuma aprovação, gravação no Supabase, migration, projeção D1 ou publicação foi feita. O teste não prova persistência nem integração real.
+- **Bloqueios externos:** staging isolado e aplicação autorizada das migrations #31/0023 continuam ausentes; conteúdo depende de revisão humana e evidência visual individual antes de exportação. Worker/M5 permanecem sem autorização.
+
+**NEXT_ACTION:** encaminhar candidatos e rascunhos para revisão privada humana; só depois validar a exportação aprovada em ambiente Supabase/D1 isolado.
+
+**DO_NOT_REPEAT:** não exigir ID de modelo globalmente único entre personagens; não marcar relações da fila como verificadas; não aplicar migrations ou gravar conteúdo no projeto Supabase conectado.
