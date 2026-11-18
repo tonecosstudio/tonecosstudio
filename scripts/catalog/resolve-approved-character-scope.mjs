@@ -109,10 +109,9 @@ function validateApprovedProfile(profile) {
   requireSources(profile.ageSources, 'age_sources', profile.ageContext !== null);
   requireValid(profile.ageContext !== null || profile.ageSources.length === 0,
     'approved_character_age_sources_without_value');
-  // Private "ageContext" is freeform; public D1 needs both age_value and
-  // age_context. Never fabricate one by splitting a source-backed assertion.
-  requireValid(profile.ageContext === null,
-    'approved_character_age_projection_requires_canonical_split');
+  // The reviewed private field contains context, not an independently
+  // asserted numeric age. Keep the context and its citations intact;
+  // never infer an age value from a freeform statement.
 }
 
 function distinctRows(rows, key, error) {
@@ -292,6 +291,7 @@ export function planApprovedCharacterProjection(exportPayload, d1Snapshot) {
     const proof = evidenceRowsForCharacter();
     const identitySources = proof.ids([...profile.nameSources, ...profile.franchiseSources]);
     const biographySources = proof.ids(profile.biographySources);
+    const ageSources = profile.ageContext === null ? [] : proof.ids(profile.ageSources);
     const originSources = proof.ids(profile.originWorkSources);
     const aliases = profile.aliases.map(claim => ({
       value: claim.name, evidenceIds: proof.ids(claim.sources),
@@ -350,8 +350,8 @@ export function planApprovedCharacterProjection(exportPayload, d1Snapshot) {
       biography: profile.biography,
       biography_evidence_ids_json: JSON.stringify(biographySources),
       age_value: null,
-      age_context: null,
-      age_evidence_ids_json: '[]',
+      age_context: profile.ageContext,
+      age_evidence_ids_json: JSON.stringify(ageSources),
       origin_work: profile.originWork,
       origin_work_evidence_ids_json: JSON.stringify(originSources),
       media_types_json: '[]',
