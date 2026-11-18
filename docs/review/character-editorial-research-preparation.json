@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 62,
-    "preparedCandidateModelLinkCount": 748
+    "sourceResearchedIdentityCount": 64,
+    "preparedCandidateModelLinkCount": 758
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 62,
+    "preparedIdentityCount": 64,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 748,
+    "preparedCandidateModelLinkCount": 758,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -595,6 +595,22 @@
       "publisher": "Marvel",
       "title": "Spirits of Vengeance (Ghost Riders) Members, Enemies, Powers",
       "url": "https://www.marvel.com/teams-and-groups/spirits-of-vengeance",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "wb-sub-zero-mantle-history",
+      "publisher": "Warner Bros. Games / NetherRealm Studios",
+      "title": "Sub-Zero | Mortal Kombat 30th Anniversary Characters",
+      "url": "https://mk30.mortalkombat.com/en-au/roster/sub-zero",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "tombraider-lara-croft-official-profile",
+      "publisher": "Tomb Raider",
+      "title": "Meet Lara Croft",
+      "url": "https://www.tombraider.com/lara-croft",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -18494,6 +18510,302 @@
         }
       ],
       "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "Sub-Zero (Bi-Han/Kuai Liang mantle unresolved)",
+      "catalogDisplayNameCandidate": "Sub-Zero",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Mortal Kombat",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Sub-Zero (manto; portador depende da fase)",
+          "sourceIds": [
+            "wb-sub-zero-mantle-history"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Mortal Kombat",
+          "sourceIds": [
+            "wb-sub-zero-mantle-history"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.two_mantle_holders",
+          "value": "A página oficial registra que Bi-Han e Kuai Liang já vestiram o manto de Sub-Zero e que Kuai Liang ocupa a posição de Grão-Mestre na fase apresentada.",
+          "sourceIds": [
+            "wb-sub-zero-mantle-history"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A página oficial de Mortal Kombat registra Bi-Han e Kuai Liang como portadores do manto Sub-Zero e apresenta Kuai Liang como Grão-Mestre dos Lin Kuei na história consultada. Os cinco modelos candidatos não foram identificados por portador, traje ou fase.",
+      "biographySourceIds": [
+        "wb-sub-zero-mantle-history"
+      ],
+      "catalogFranchiseCandidates": [
+        "Mortal Kombat"
+      ],
+      "ambiguities": [
+        "A fonte descreve uma fase específica de Mortal Kombat e reconhece dois portadores do nome; não atribuir um deles aos modelos.",
+        "Os cinco vínculos aguardam conferência visual e evidência independente por ID.",
+        "Uniforme, máscara e armas não provam qual irmão está representado."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_20a931d766b07600388b",
+          "modelSlug": "mortal-kombat-sub-zero-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-sub-zero-04"
+          }
+        },
+        {
+          "modelId": "mdl_5eee46493b56c16ada78",
+          "modelSlug": "mortal-kombat-sub-zero-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-sub-zero-02"
+          }
+        },
+        {
+          "modelId": "mdl_6769805dd0e66e8d9177",
+          "modelSlug": "mortal-kombat-sub-zero-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-sub-zero-05"
+          }
+        },
+        {
+          "modelId": "mdl_8b3cf6e3b93e42ef5c57",
+          "modelSlug": "mortal-kombat-sub-zero-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-sub-zero-06"
+          }
+        },
+        {
+          "modelId": "mdl_bcef224cd78cc46af700",
+          "modelSlug": "mortal-kombat-sub-zero-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-sub-zero-03"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Lara Croft (Tomb Raider candidate)",
+      "catalogDisplayNameCandidate": "Lara Croft",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Tomb Raider",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Lara Croft",
+          "sourceIds": [
+            "tombraider-lara-croft-official-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Tomb Raider",
+          "sourceIds": [
+            "tombraider-lara-croft-official-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.archaeologist_adventurer",
+          "value": "A página oficial descreve Lara como arqueóloga e aventureira dedicada a buscar segredos e artefatos antigos.",
+          "sourceIds": [
+            "tombraider-lara-croft-official-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.dual_pistols",
+          "value": "A página apresenta as pistolas duplas como equipamento característico de Lara.",
+          "sourceIds": [
+            "tombraider-lara-croft-official-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A página oficial de Tomb Raider apresenta Lara Croft como arqueóloga e aventureira cuja busca por artefatos a leva a tumbas e perigos, e destaca suas pistolas duplas. O site reúne entradas e adaptações de várias épocas; o perfil não fixa a versão visual de nenhum dos cinco modelos.",
+      "biographySourceIds": [
+        "tombraider-lara-croft-official-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Tomb Raider"
+      ],
+      "ambiguities": [
+        "A franquia reúne diferentes períodos, jogos e adaptações; a biografia não deve ser aplicada a uma escultura sem revisão.",
+        "Os cinco modelos estão ligados apenas por rótulo e IDs da fila, sem evidência visual independente.",
+        "Não associar roupa, equipamento ou cronologia do site a cada modelo pelo título."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0a7fe08f82f928d4c3b3",
+          "modelSlug": "tomb-raider-lara-croft-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "tomb-raider-lara-croft-01"
+          }
+        },
+        {
+          "modelId": "mdl_11371240300d85a3a083",
+          "modelSlug": "tomb-raider-lara-croft-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "tomb-raider-lara-croft-02"
+          }
+        },
+        {
+          "modelId": "mdl_941e8737a3933eb859b1",
+          "modelSlug": "tomb-raider-lara-croft-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "tomb-raider-lara-croft-03"
+          }
+        },
+        {
+          "modelId": "mdl_dc691a3e1883546e7b23",
+          "modelSlug": "tomb-raider-lara-croft-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "tomb-raider-lara-croft-04"
+          }
+        },
+        {
+          "modelId": "mdl_f9f02303ef487fcd486a",
+          "modelSlug": "tomb-raider-lara-croft-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "tomb-raider-lara-croft-05"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
     }
   ]
 }

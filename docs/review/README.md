@@ -14,7 +14,7 @@ Para regenerar, forneça o arquivo do contrato candidato desejado:
 node scripts/catalog/character-catalog-inventory.mjs --format csv --candidate-contract <arquivo-do-contrato> --output docs/review/character-catalog-review-queue.csv
 ```
 
-`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 62 candidatos, 62 rascunhos biográficos originais, 71 URLs oficiais únicas e 748 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
+`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 64 candidatos, 64 rascunhos biográficos originais, 73 URLs oficiais únicas e 758 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
 
 Wolverine permanece com franquia ambígua porque seus 30 modelos candidatos estão divididos entre duas franquias D1. Thor foi separado em duas identidades candidatas a partir da proveniência: 17 modelos no contexto de Vingadores/Marvel e um modelo no contexto de God of War Ragnarök. Nenhum vínculo foi confirmado por imagem; a distinção evita misturar personagens homônimos e segue pendente de revisão. Trunks está descrito apenas como adolescente do futuro, conforme uma fonte oficial específica; os oito rótulos genéricos não confirmam idade ou linha temporal. Daredevil usa uma fonte Marvel “On Screen” e Gambit tem múltiplas fases e formas; nenhuma continuidade ou versão visual foi atribuída aos modelos. Os candidatos adicionados por rótulo exato do inventário não passaram por validação visual; formas, dioramas, nomes localizados e cenas com vários personagens continuam ambíguos.
 
@@ -91,3 +91,15 @@ Deadpool preserva como categorias de navegação os rótulos Equipes e Grupos e 
 **NEXT_ACTION:** revisar visualmente os seis IDs na curadoria privada antes de decidir identidade e versão.
 
 **DO_NOT_REPEAT:** não atribuir a máscara ou os detalhes da fonte Nickelodeon a nenhum modelo sem evidência do próprio render.
+
+
+## Rodada 102 — Sub-Zero e Lara Croft (18/11/2026)
+
+- Preparei fontes e rascunhos para **Sub-Zero** e **Lara Croft** com material oficial da Warner Bros. Games/NetherRealm e do site Tomb Raider.
+- Associei **10 modelos candidatos** por IDs da fila. A página de Sub-Zero confirma dois portadores do manto; Lara Croft reúne fases e adaptações. Não atribuí um portador ou versão a cada render.
+- O conjunto passa a **64 candidatos, 73 URLs oficiais únicas, 64 rascunhos e 758 relações candidatas**. Nenhum item está aprovado ou tem evidência visual por modelo.
+- Validação local: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou.
+
+**NEXT_ACTION:** encaminhar as relações para revisão privada e anexar evidência específica por modelo.
+
+**DO_NOT_REPEAT:** não presumir Bi-Han ou Kuai Liang pelo nome Sub-Zero nem escolher uma fase de Lara Croft pelo rótulo do catálogo.

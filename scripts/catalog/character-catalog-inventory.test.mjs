@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 62);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 748);
-  assert.equal(packet.candidates.length, 62);
-  assert.equal(packet.sources.length, 71);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 64);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 758);
+  assert.equal(packet.candidates.length, 64);
+  assert.equal(packet.sources.length, 73);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 62);
+  assert.equal(packet.policy.preparedIdentityCount, 64);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 748);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 758);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 748);
+  assert.equal(links.length, 758);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -208,6 +208,19 @@ test("research preparation references only inventory IDs and remains unapproved"
   assert.equal(raphael.candidateModelLinks.length, 6);
   assert.equal(raphael.identityStatus, "prepared_pending_human_review");
   assert.ok(raphael.ambiguities.length > 0);
+  const latestCandidates = [
+    ["Sub-Zero (Bi-Han/Kuai Liang mantle unresolved)", "Sub-Zero", "Mortal Kombat", 5],
+    ["Lara Croft (Tomb Raider candidate)", "Lara Croft", "Tomb Raider", 5],
+  ];
+  for (const [candidateName, catalogLabel, franchise, expectedModels] of latestCandidates) {
+    const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
+    assert.ok(candidate);
+    assert.equal(candidate.catalogDisplayNameCandidate, catalogLabel);
+    assert.equal(candidate.franchiseCandidate, franchise);
+    assert.equal(candidate.candidateModelLinks.length, expectedModels);
+    assert.equal(candidate.identityStatus, "prepared_pending_human_review");
+    assert.ok(candidate.ambiguities.length > 0);
+  }
 
   for (const source of packet.sources) {
     assert.equal(new URL(source.url).protocol, "https:");

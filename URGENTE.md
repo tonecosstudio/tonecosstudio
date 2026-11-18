@@ -2032,3 +2032,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** encaminhar a #31 para revisão editorial humana. O caminho de dados só poderá ser homologado em ambiente Supabase/D1 isolado.
 
 **DO_NOT_REPEAT:** não inferir uma identidade visual de Raphael pela máscara vermelha ou pelo nome do catálogo.
+
+
+## Rodada 102 — Sub-Zero e Lara Croft (18/11/2026)
+
+- Preparei dois dossiês com fontes oficiais da Warner Bros. Games/NetherRealm e Tomb Raider, preservando a ambiguidade do manto Sub-Zero e das fases da franquia Lara Croft.
+- A fotografia agora tem **64 candidatos, 73 fontes oficiais únicas, 64 rascunhos e 758 relações candidatas**. Foram selecionados dez modelos por IDs da fila. Continuam **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local nesta rodada: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou. Nenhuma escrita Supabase/D1, migration, publicação ou ativação de flag.
+- Bloqueio de homologação permanece: não há branch Supabase isolada nem aprovação editorial; a migration 0023 não foi aplicada e a projeção D1 segue vazia.
+
+**NEXT_ACTION:** enviar esta rodada pela PR #33 e encaminhar à curadoria privada da #31; homologar somente com ambiente isolado e conteúdo aprovado.
+
+**DO_NOT_REPEAT:** não presumir portador ou versão pelo nome; não projetar candidatos pendentes nem tocar no projeto Supabase produtivo.
