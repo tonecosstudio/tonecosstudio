@@ -110,7 +110,11 @@ INSERT INTO editorial_public_characters_fts(character_id, name, aliases)
 SELECT c.id, c.name,
   COALESCE((SELECT group_concat(json_extract(alias.value, '$.value'), ' ')
     FROM json_each(c.aliases_json) AS alias), '')
-FROM editorial_public_characters AS c;
+FROM editorial_public_characters AS c
+WHERE NOT EXISTS (
+  SELECT 1 FROM editorial_public_characters_fts existing
+  WHERE existing.character_id = c.id
+);
 
 CREATE TRIGGER IF NOT EXISTS trg_editorial_public_characters_fts_after_insert
 AFTER INSERT ON editorial_public_characters
