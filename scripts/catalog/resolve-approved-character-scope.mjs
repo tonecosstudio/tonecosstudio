@@ -41,7 +41,7 @@ function isPublicEvidenceUrl(raw) {
   let url;
   try { url = new URL(raw); } catch { return false; }
   if (url.protocol !== 'https:' || url.username || url.password) return false;
-  const host = url.hostname.toLowerCase().replace(/^\\[|\\]$/g, '');
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.+$/, '');
   // Verifiable references must be reachable on the public Internet, not
   // local/loopback, test or private endpoints. Do not fetch these URLs.
   if (!host || host === 'localhost' || host.endsWith('.localhost') ||
@@ -49,7 +49,7 @@ function isPublicEvidenceUrl(raw) {
       host.endsWith('.invalid') || host.endsWith('.test') ||
       host.includes(':')) return false;
   const octets = host.split('.');
-  if (octets.length === 4 && octets.every(part => /^\\d+$/.test(part))) {
+  if (octets.length === 4 && octets.every(part => /^\d+$/.test(part))) {
     const [a, b, c, d] = octets.map(Number);
     if ([a,b,c,d].some(n => n > 255)) return false;
     if (a === 0 || a === 10 || a === 127 || a >= 224 ||
