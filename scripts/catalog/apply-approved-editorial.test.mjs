@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
+import { resolveApprovedCharacterScopes } from './resolve-approved-character-scope.mjs';
 import { readFileSync } from 'node:fs';
 import {
   planReviewedEditorial, makeAtomicEditorialStatement,
@@ -241,4 +242,114 @@ test('editorial FTS backfill remains unique across replay and synchronized on ed
   } finally {
     db.close();
   }
+});
+
+function approvedCharacterFixture() {
+  return {
+    schemaVersion: 1,
+    source: 'public.admin_export_approved_catalog_character_projection',
+    generatedAt: '2026-11-18T04:00:00Z',
+    characters: [{
+      identityId: '3a63c732-fcf2-4328-ac2e-6b6c04884235',
+      slug: 'character-example',
+      franchiseName: 'Resident Evil',
+      approvalRef: 'approval-1',
+      profileRevision: 4,
+      reviewedAt: '2026-11-18T02:00:00Z',
+      approvedAt: '2026-11-18T03:00:00Z',
+      profile: { slug: 'character-example' },
+      modelLinks: [{
+        modelId: 'game-model',
+        modelSlug: 'game-model-slug',
+        evidenceUrl: 'https://example.org/official-character',
+        evidenceTitle: 'Official verified character',
+      }],
+    }],
+  };
+}
+
+function approvedCharacterD1Fixture() {
+  return {
+    franchises: [
+      { id: 121, name: 'Resident Evil' },
+      { id: 190, name: 'Resident Evil' },
+    ],
+    models: [
+      { id: 'game-model', slug: 'game-model-slug', franchise_id: 121, published: 1 },
+      { id: 'film-model', slug: 'film-model-slug', franchise_id: 190, published: 1 },
+      { id: 'private-model', slug: 'private-model-slug', franchise_id: 121, published: 0 },
+    ],
+  };
+}
+
+test('approved character scope derives D1 franchise from linked model IDs, never duplicated labels', () => {
+  const resolved = resolveApprovedCharacterScopes(
+    approvedCharacterFixture(), approvedCharacterD1Fixture(),
+  );
+  assert.deepEqual(resolved, [{
+    identityId: '3a63c732-fcf2-4328-ac2e-6b6c04884235',
+    slug: 'character-example',
+    franchiseId: 121,
+    approvalRef: 'approval-1',
+    modelIds: ['game-model'],
+  }]);
+});
+
+test('approved character scope fails closed on ambiguous, missing or unpublished model associations', () => {
+  const payload = approvedCharacterFixture();
+  const d1 = approvedCharacterD1Fixture();
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{ ...payload.characters[0], modelLinks: [] }],
+  }, d1), /approved_character_scope_invalid/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{
+      ...payload.characters[0],
+      modelLinks: [...payload.characters[0].modelLinks, {
+        modelId: 'film-model',
+        modelSlug: 'film-model-slug',
+        evidenceUrl: 'https://example.org/evidence',
+        evidenceTitle: 'Source',
+      }],
+    }],
+  }, d1), /approved_character_franchise_ambiguous/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{
+      ...payload.characters[0], modelLinks: [{
+        modelId: 'private-model', modelSlug: 'private-model-slug',
+        evidenceUrl: 'https://example.org/evidence', evidenceTitle: 'Source',
+      }],
+    }],
+  }, d1), /approved_character_model_not_public/);
+});
+
+test('approved character scope requires canonical slugs, explicit approval and independent HTTPS evidence', () => {
+  const payload = approvedCharacterFixture();
+  const d1 = approvedCharacterD1Fixture();
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, source: 'other-source',
+  }, d1), /character_export_contract_invalid/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{
+      ...payload.characters[0], approvalRef: '',
+    }],
+  }, d1), /approved_character_scope_invalid/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{
+      ...payload.characters[0], modelLinks: [{
+        ...payload.characters[0].modelLinks[0],
+        evidenceUrl: 'http://example.org/evidence',
+      }],
+    }],
+  }, d1), /approved_character_model_evidence_invalid/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [{
+      ...payload.characters[0], modelLinks: [{
+        ...payload.characters[0].modelLinks[0],
+        modelSlug: 'incorrect-model',
+      }],
+    }],
+  }, d1), /approved_character_model_identity_mismatch/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload, characters: [payload.characters[0], payload.characters[0]],
+  }, d1), /approved_character_scope_invalid/);
 });
