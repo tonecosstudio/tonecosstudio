@@ -14,16 +14,22 @@ function parseUrl(value, code) {
   catch { throw new Error(code); }
 }
 
-export function validateEditorialSyncTargets(sourceUrl, workerUrl, token) {
+export function validateEditorialSyncTargets(sourceUrl, workerUrl, token, isolatedProjectRef) {
   const source = parseUrl(sourceUrl, 'editorial_source_url_invalid');
   const worker = parseUrl(workerUrl, 'editorial_local_worker_url_invalid');
   const localSource = LOOPBACK_HOSTS.has(source.hostname.toLowerCase());
+  const sourceProjectRef = source.hostname.toLowerCase().endsWith('.supabase.co')
+    ? source.hostname.slice(0, -'.supabase.co'.length)
+    : '';
+  const explicitlyIsolatedSource = source.protocol === 'https:' &&
+    /^[a-z0-9]{20}$/.test(sourceProjectRef) &&
+    sourceProjectRef !== PRODUCTION_SUPABASE_REF &&
+    typeof isolatedProjectRef === 'string' &&
+    isolatedProjectRef === sourceProjectRef;
   requireCondition(
     (localSource && ['http:', 'https:'].includes(source.protocol)) ||
-      (!localSource && source.protocol === 'https:' &&
-        source.hostname.toLowerCase().endsWith('.supabase.co') &&
-        source.hostname.split('.')[0].toLowerCase() !== PRODUCTION_SUPABASE_REF),
-    'editorial_source_must_be_local_or_isolated_supabase',
+      (!localSource && explicitlyIsolatedSource),
+    'editorial_source_must_be_local_or_explicitly_isolated_supabase',
   );
   requireCondition(worker.protocol === 'http:' && LOOPBACK_HOSTS.has(worker.hostname.toLowerCase()) &&
     !worker.username && !worker.password && !worker.search && !worker.hash &&
@@ -119,6 +125,7 @@ async function main(args, env = process.env, fetchImpl = fetch) {
     env.TONART_EDITORIAL_SOURCE_URL,
     env.TONART_EDITORIAL_LOCAL_WORKER_URL,
     env.TONART_EDITORIAL_SYNC_TOKEN,
+    env.TONART_EDITORIAL_ISOLATED_SUPABASE_REF,
   );
   const payload = await fetchApprovedExport(
     source,

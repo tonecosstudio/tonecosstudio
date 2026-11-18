@@ -8,6 +8,7 @@ import {
 } from './publish-approved-character-projection.mjs';
 
 const token = 'local-sync-token-with-at-least-thirty-two-characters';
+const isolatedProjectRef = 'abcdefghijabcdefghij';
 const payload = {
   schemaVersion: 1,
   source: 'public.admin_export_approved_catalog_character_projection',
@@ -15,18 +16,28 @@ const payload = {
   characters: [],
 };
 
-test('only local Worker targets and non-production Supabase sources are accepted', () => {
+test('only a local source or the explicitly named isolated Supabase ref and local Worker are accepted', () => {
   assert.doesNotThrow(() => validateEditorialSyncTargets(
-    'https://staging-project.supabase.co', 'http://127.0.0.1:8787', token,
+    `https://${isolatedProjectRef}.supabase.co`, 'http://127.0.0.1:8787', token,
+    isolatedProjectRef,
   ));
   assert.doesNotThrow(() => validateEditorialSyncTargets(
     'http://127.0.0.1:54321', 'http://localhost:8787', token,
   ));
   assert.throws(() => validateEditorialSyncTargets(
-    'https://icmtmaakjucmuzxnofkd.supabase.co', 'http://127.0.0.1:8787', token,
-  ), /local_or_isolated_supabase/);
+    `https://${isolatedProjectRef}.supabase.co`, 'http://127.0.0.1:8787', token,
+  ), /explicitly_isolated_supabase/);
   assert.throws(() => validateEditorialSyncTargets(
-    'https://staging-project.supabase.co', 'https://tonecos-catalogo-api.workers.dev', token,
+    `https://${isolatedProjectRef}.supabase.co`, 'http://127.0.0.1:8787', token,
+    'zyxwvutsrqponmlkjihg',
+  ), /explicitly_isolated_supabase/);
+  assert.throws(() => validateEditorialSyncTargets(
+    'https://icmtmaakjucmuzxnofkd.supabase.co', 'http://127.0.0.1:8787', token,
+    'icmtmaakjucmuzxnofkd',
+  ), /explicitly_isolated_supabase/);
+  assert.throws(() => validateEditorialSyncTargets(
+    `https://${isolatedProjectRef}.supabase.co`, 'https://tonecos-catalogo-api.workers.dev', token,
+    isolatedProjectRef,
   ), /target_must_be_local_worker/);
 });
 
