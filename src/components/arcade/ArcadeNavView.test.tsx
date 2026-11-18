@@ -1,10 +1,19 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Link, MemoryRouter } from "react-router-dom";
 
 vi.mock("@/components/arcade/CoinCounter", () => ({
   CoinCounter: () => null,
 }));
+const signup = vi.hoisted(() => ({
+  status: "disabled" as "checking" | "enabled" | "disabled",
+}));
+vi.mock("@/hooks/auth/useTonecosSignupAvailability", () => ({
+  useTonecosSignupAvailability: vi.fn(() => signup.status),
+}));
+beforeEach(() => {
+  signup.status = "disabled";
+});
 
 import { ArcadeNavView } from "./ArcadeNavView";
 
@@ -18,29 +27,82 @@ function renderNavigation(startPath: string, destination: string) {
 }
 
 describe("TONART shared public/mobile navigation", () => {
+  it.each(["checking", "disabled"] as const)(
+    "hides registration while Auth status is %s",
+    (status) => {
+      signup.status = status;
+      renderNavigation("/", "/universo");
+      expect(
+        screen.queryByRole("link", { name: "CRIAR CONTA" }),
+      ).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Abrir menu" }));
+      expect(
+        screen.queryByRole("link", { name: "CRIAR CONTA" }),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it("shows registration only after the canonical Auth check enables it", () => {
+    signup.status = "enabled";
+    renderNavigation("/", "/universo");
+    expect(screen.getByRole("link", { name: "CRIAR CONTA" })).toHaveAttribute(
+      "href",
+      "/login?mode=signup",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu" }));
+    expect(screen.getAllByRole("link", { name: "CRIAR CONTA" })).toHaveLength(
+      2,
+    );
+  });
   it("closes the expanded menu after a route change outside the menu", async () => {
     renderNavigation("/", "/universo");
     fireEvent.click(screen.getByRole("button", { name: "Abrir menu" }));
-    expect(screen.getByRole("button", { name: "Fechar menu" }))
-      .toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "Fechar menu" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
 
     fireEvent.click(screen.getByRole("link", { name: "Navegar fora do menu" }));
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Abrir menu" }))
-        .toHaveAttribute("aria-expanded", "false");
+      expect(
+        screen.getByRole("button", { name: "Abrir menu" }),
+      ).toHaveAttribute("aria-expanded", "false");
     });
   });
 
   it("closes the expanded menu when filters change on the same route", async () => {
     renderNavigation("/modelos", "/modelos?q=escultura");
     fireEvent.click(screen.getByRole("button", { name: "Abrir menu" }));
-    expect(screen.getByRole("button", { name: "Fechar menu" }))
-      .toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "Fechar menu" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
 
     fireEvent.click(screen.getByRole("link", { name: "Navegar fora do menu" }));
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Abrir menu" }))
-        .toHaveAttribute("aria-expanded", "false");
+      expect(
+        screen.getByRole("button", { name: "Abrir menu" }),
+      ).toHaveAttribute("aria-expanded", "false");
     });
+  });
+
+  it("connects the menu trigger to the mobile links and restores focus on Escape", async () => {
+    renderNavigation("/modelos", "/universo");
+    const trigger = screen.getByRole("button", { name: "Abrir menu" });
+    expect(trigger).toHaveAttribute(
+      "aria-controls",
+      "tonart-mobile-navigation",
+    );
+
+    fireEvent.click(trigger);
+    expect(screen.getByRole("button", { name: "Fechar menu" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute("aria-expanded", "false"),
+    );
+    expect(trigger).toHaveFocus();
   });
 });
