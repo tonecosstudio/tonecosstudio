@@ -10,6 +10,7 @@ import {
   EMPTY_CATALOG_CHARACTER_EDITORIAL_PROFILE,
   getCatalogCharacterEditorialProfile,
   saveCatalogCharacterEditorialProfile,
+  setCatalogCharacterPublicationApproval,
   type CatalogCharacterEditorialClaim,
   type CatalogCharacterEditorialProfile,
   type CatalogEditorialEvidenceKind,
@@ -279,10 +280,40 @@ export function CharacterEditorialProfileEditor({
     },
   });
 
+  const publicationMutation = useMutation({
+    mutationFn: (approved: boolean) => {
+      const current = profileQuery.data;
+      if (!current) throw new Error("Carregue a ficha antes de aprovar.");
+      return setCatalogCharacterPublicationApproval({
+        identityId,
+        expectedRevision: current.revision,
+        approved,
+      });
+    },
+    onSuccess: async (saved) => {
+      setProfile(saved.profile);
+      setFormError("");
+      setStaleVersion(false);
+      await queryClient.setQueryData(queryKey, saved);
+      await queryClient.invalidateQueries({ queryKey });
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar a aprovação pública.";
+      setStaleVersion(message.includes("atualizada por outra pessoa"));
+      setFormError(message);
+    },
+  });
+
   const update = <K extends keyof CatalogCharacterEditorialProfile>(
     key: K,
     value: CatalogCharacterEditorialProfile[K],
   ) => setProfile((current) => ({ ...current, [key]: value }));
+  const hasUnsavedChanges = profileQuery.data
+    ? JSON.stringify(profile) !== JSON.stringify(profileQuery.data.profile)
+    : true;
 
   return (
     <details
@@ -297,8 +328,9 @@ export function CharacterEditorialProfileEditor({
         <Alert>
           <AlertDescription>
             Esta ficha e suas fontes permanecem privadas. Marcar como revisada
-            não publica a página; a publicação depende da projeção editorial
-            aprovada no catálogo.
+            não publica a página. Para entrar na exportação ao catálogo, a
+            revisão atual precisa de aprovação pública humana; cada vínculo de
+            modelo também precisa de URL HTTPS e uma nota de evidência.
           </AlertDescription>
         </Alert>
         {profileQuery.isLoading && (
@@ -330,6 +362,17 @@ export function CharacterEditorialProfileEditor({
                 : ""}
               {profileQuery.data.reviewedAt
                 ? ` · revisada em ${new Date(profileQuery.data.reviewedAt).toLocaleString("pt-BR")}`
+                : ""}
+            </p>
+            <p className="text-xs text-muted-foreground" role="status">
+              Publicação:{" "}
+              {profileQuery.data.publicationStatus === "approved" &&
+              profileQuery.data.publicationRevision ===
+                profileQuery.data.revision
+                ? `aprovada para exportação · revisão ${profileQuery.data.publicationRevision}`
+                : "sem aprovação para a revisão atual"}
+              {profileQuery.data.publicationApprovedAt
+                ? ` · aprovada em ${new Date(profileQuery.data.publicationApprovedAt).toLocaleString("pt-BR")}`
                 : ""}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -467,7 +510,11 @@ export function CharacterEditorialProfileEditor({
             <Button
               type="button"
               variant="outline"
-              disabled={saveMutation.isPending || profileQuery.isLoading}
+              disabled={
+                saveMutation.isPending ||
+                publicationMutation.isPending ||
+                profileQuery.isLoading
+              }
               onClick={() => saveMutation.mutate("draft")}
             >
               {saveMutation.isPending && (
@@ -477,7 +524,11 @@ export function CharacterEditorialProfileEditor({
             </Button>
             <Button
               type="button"
-              disabled={saveMutation.isPending || profileQuery.isLoading}
+              disabled={
+                saveMutation.isPending ||
+                publicationMutation.isPending ||
+                profileQuery.isLoading
+              }
               onClick={() => saveMutation.mutate("reviewed")}
             >
               {saveMutation.isPending && (
@@ -485,6 +536,52 @@ export function CharacterEditorialProfileEditor({
               )}
               Revisar ficha (mantém privada)
             </Button>
+            {profileQuery.data.status === "reviewed" &&
+              (profileQuery.data.publicationStatus === "approved" &&
+              profileQuery.data.publicationRevision ===
+                profileQuery.data.revision ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={publicationMutation.isPending || hasUnsavedChanges}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Revogar a aprovação desta revisão? A próxima exportação editorial retirará esta ficha da projeção pública.",
+                      )
+                    )
+                      publicationMutation.mutate(false);
+                  }}
+                >
+                  {publicationMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Revogar aprovação pública
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={
+                    publicationMutation.isPending ||
+                    saveMutation.isPending ||
+                    hasUnsavedChanges
+                  }
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Aprovar esta revisão com as fontes exibidas para futura exportação pública? A aprovação não publica nem sincroniza o catálogo automaticamente.",
+                      )
+                    )
+                      publicationMutation.mutate(true);
+                  }}
+                >
+                  {publicationMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Aprovar para publicação
+                </Button>
+              ))}
           </div>
         )}
       </div>

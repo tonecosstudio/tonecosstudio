@@ -18,6 +18,7 @@ import {
   getInternalCollectionCurationPage,
   getCatalogCharacterEditorialProfile,
   saveCatalogCharacterEditorialProfile,
+  setCatalogCharacterPublicationApproval,
   type CatalogCharacterEditorialProfile,
   INTERNAL_COLLECTION_TEMPLATES,
   removeCatalogCurationTagAlias,
@@ -31,6 +32,14 @@ const COLLECTION_ID = "11111111-1111-4111-8111-111111111111";
 const MODEL_ID = "22222222-2222-4222-8222-222222222222";
 const TAG_ID = "33333333-3333-4333-8333-333333333301";
 const CHARACTER_ID = "44444444-4444-4444-8444-444444444444";
+const publicationPending = {
+  publicationStatus: "not_approved",
+  publicationRevision: null,
+  publicationApprovalRef: null,
+  publicationApprovedAt: null,
+  publicationApprovedBy: null,
+  publicationHistory: [],
+};
 
 const verifiedEditorialProfile = {
   slug: "sample-character",
@@ -115,6 +124,7 @@ describe("internal catalog curation service", () => {
     const allowed = entries("ADMIN_RPC_ALLOWLIST");
     const userContext = entries("ADMIN_USER_CONTEXT_RPCS");
     expect(gateway).toContain("p_reviewer_id: admin.userId");
+    expect(gateway).toContain("p_approver_id: admin.userId");
     expect(gateway).toContain("status: 409");
     expect(new Set(allowed).size).toBe(allowed.length);
     expect(new Set(userContext).size).toBe(userContext.length);
@@ -156,6 +166,7 @@ describe("internal catalog curation service", () => {
       "admin_unlink_catalog_model_character",
       "admin_get_catalog_character_editorial_profile",
       "admin_save_catalog_character_editorial_profile",
+      "admin_set_catalog_character_publication_approval",
     ]) {
       expect(allowed).toContain(name);
       expect(userContext).not.toContain(name);
@@ -167,6 +178,7 @@ describe("internal catalog curation service", () => {
       "../../../../supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
       "../../../../supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
       "../../../../supabase/migrations/20261117040000_tonart_character_editorial_profiles.sql",
+      "../../../../supabase/migrations/20261118010000_tonart_public_character_approval_and_export.sql",
     ];
     const migrations = paths.map((path) =>
       readFileSync(new URL(path, import.meta.url), "utf8").replace(
@@ -275,6 +287,21 @@ describe("internal catalog curation service", () => {
       "catalog_character_editorial_profiles (",
     );
     expect(migrations[2]).not.toContain("api/editorial/v1");
+    expect(migrations[3]).toContain("editorial_publication_status");
+    expect(migrations[3]).toContain("invalidated_by_profile_change");
+    expect(migrations[3]).toContain(
+      "admin_set_catalog_character_publication_approval(uuid, integer, boolean, uuid)",
+    );
+    expect(migrations[3]).toContain(
+      "admin_export_approved_catalog_character_projection()",
+    );
+    expect(migrations[3]).toContain(
+      "Every active model link needs its own HTTPS source",
+    );
+    expect(migrations[3]).toContain(
+      "editorial_publication_revision = ci.editorial_profile_revision",
+    );
+    expect(migrations[3]).toContain("FROM PUBLIC, anon, authenticated;");
     const acceptance = readFileSync(
       "supabase/tests/tonart_curated_model_characters_acceptance.sql",
       "utf8",
@@ -283,8 +310,12 @@ describe("internal catalog curation service", () => {
       "TONART acceptance requires explicit isolated staging session",
     );
     expect(acceptance).toContain("Fictitious staging-only biography.");
-    expect(acceptance).toContain("Stale editorial profile revision was accepted");
-    expect(acceptance).toContain("Duplicate reviewed character route slug was accepted");
+    expect(acceptance).toContain(
+      "Stale editorial profile revision was accepted",
+    );
+    expect(acceptance).toContain(
+      "Duplicate reviewed character route slug was accepted",
+    );
     expect(acceptance.trimEnd().endsWith("ROLLBACK;")).toBe(true);
   });
 
@@ -299,6 +330,7 @@ describe("internal catalog curation service", () => {
       reviewedAt: "2026-11-17T10:00:00.000Z",
       reviewedBy: "55555555-5555-4555-8555-555555555555",
       history: [],
+      ...publicationPending,
     });
 
     await expect(
@@ -366,6 +398,7 @@ describe("internal catalog curation service", () => {
       revision: 1,
       reviewedAt: "2026-11-17T10:00:00.000Z",
       reviewedBy: "55555555-5555-4555-8555-555555555555",
+      ...publicationPending,
     });
 
     await expect(
@@ -379,6 +412,7 @@ describe("internal catalog curation service", () => {
       identityId: CHARACTER_ID,
       status: "reviewed",
       revision: 1,
+      ...publicationPending,
     });
     expect(mocks.callAdminRpc).toHaveBeenCalledWith(
       "admin_save_catalog_character_editorial_profile",
@@ -389,6 +423,71 @@ describe("internal catalog curation service", () => {
         p_expected_revision: 0,
       },
     );
+  });
+
+  it("approves and revokes only the exact reviewed profile revision", async () => {
+    mocks.callAdminRpc.mockResolvedValue({
+      identityId: CHARACTER_ID,
+      name: "Sample Character",
+      franchise: "Sample Universe",
+      profile: verifiedEditorialProfile,
+      status: "reviewed",
+      revision: 3,
+      reviewedAt: "2026-11-17T10:00:00.000Z",
+      reviewedBy: "55555555-5555-4555-8555-555555555555",
+      publicationStatus: "approved",
+      publicationRevision: 3,
+      publicationApprovalRef: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      publicationApprovedAt: "2026-11-18T10:00:00.000Z",
+      publicationApprovedBy: "66666666-6666-4666-8666-666666666666",
+      publicationHistory: [{ action: "approved" }],
+    });
+    await expect(
+      setCatalogCharacterPublicationApproval({
+        identityId: CHARACTER_ID,
+        expectedRevision: 3,
+        approved: true,
+      }),
+    ).resolves.toMatchObject({
+      publicationStatus: "approved",
+      publicationRevision: 3,
+    });
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_set_catalog_character_publication_approval",
+      {
+        p_identity_id: CHARACTER_ID,
+        p_expected_revision: 3,
+        p_approved: true,
+      },
+    );
+  });
+
+  it("rejects malformed publication approvals before calling the gateway", async () => {
+    await expect(
+      setCatalogCharacterPublicationApproval({
+        identityId: CHARACTER_ID,
+        expectedRevision: -1,
+        approved: true,
+      }),
+    ).rejects.toThrow("catalog_character_publication_approval_invalid");
+    mocks.callAdminRpc.mockResolvedValue({
+      identityId: CHARACTER_ID,
+      name: "Sample Character",
+      franchise: "Sample Universe",
+      profile: verifiedEditorialProfile,
+      status: "reviewed",
+      revision: 3,
+      reviewedAt: "2026-11-17T10:00:00.000Z",
+      reviewedBy: "55555555-5555-4555-8555-555555555555",
+      ...publicationPending,
+    });
+    await expect(
+      setCatalogCharacterPublicationApproval({
+        identityId: CHARACTER_ID,
+        expectedRevision: 3,
+        approved: true,
+      }),
+    ).rejects.toThrow("catalog_character_publication_approval_result_invalid");
   });
 
   it("builds valid custom editorial collections without inventing models", () => {
@@ -672,6 +771,53 @@ describe("internal catalog curation service", () => {
       }),
     ).rejects.toThrow("catalog_character_identity_verification_invalid");
     expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
+  it("requires and preserves a real HTTPS citation for each model-character link", async () => {
+    const model = { modelId: MODEL_ID, slug: "modelo-real" };
+    for (const evidence of [
+      {
+        evidenceOrigin: "http://publisher.example/figure",
+        evidenceNote: "Publisher page",
+      },
+      { evidenceOrigin: "https://publisher.example/figure", evidenceNote: " " },
+    ]) {
+      await expect(
+        verifyCatalogModelCharacterIdentity({
+          model,
+          characterName: "Personagem confirmado",
+          franchise: "Universo confirmado",
+          ...evidence,
+        }),
+      ).rejects.toThrow("catalog_character_identity_verification_invalid");
+    }
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+
+    mocks.callAdminRpc.mockResolvedValue({
+      modelId: MODEL_ID,
+      identityId: CHARACTER_ID,
+      verified: true,
+    });
+    await expect(
+      verifyCatalogModelCharacterIdentity({
+        model,
+        characterName: "Personagem confirmado",
+        franchise: "Universo confirmado",
+        evidenceOrigin: "https://publisher.example/figure",
+        evidenceNote: "Página oficial associa a peça ao personagem.",
+      }),
+    ).resolves.toBe(CHARACTER_ID);
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_verify_catalog_model_identity",
+      {
+        p_model_id: MODEL_ID,
+        p_model_slug: "modelo-real",
+        p_character_name: "Personagem confirmado",
+        p_franchise: "Universo confirmado",
+        p_evidence_origin: "https://publisher.example/figure",
+        p_evidence_note: "Página oficial associa a peça ao personagem.",
+      },
+    );
   });
 
   it("preserves source evidence when an automatic suggestion is admissible", async () => {
@@ -1348,6 +1494,18 @@ describe("internal catalog curation service", () => {
     expect(acceptance).toContain("public.admin_verify_catalog_model_identity(");
     expect(acceptance).toContain(
       "public.admin_unlink_catalog_model_character(",
+    );
+    expect(acceptance).toContain(
+      "public.admin_set_catalog_character_publication_approval(",
+    );
+    expect(acceptance).toContain(
+      "public.admin_export_approved_catalog_character_projection()",
+    );
+    expect(acceptance).toContain(
+      "Publication approved without source-backed model links",
+    );
+    expect(acceptance).toContain(
+      "Profile change failed to invalidate the prior public approval",
     );
     expect(acceptance).toContain("public.admin_ensure_internal_collection(");
     expect(acceptance).toContain(

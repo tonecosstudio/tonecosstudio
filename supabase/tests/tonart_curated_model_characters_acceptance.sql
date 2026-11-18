@@ -27,7 +27,9 @@ BEGIN
       AND table_name = 'catalog_character_identities'
       AND column_name = 'editorial_profile_history'
   ) OR to_regprocedure('public.admin_get_catalog_character_editorial_profile(uuid)') IS NULL
-    OR to_regprocedure('public.admin_save_catalog_character_editorial_profile(uuid,jsonb,text,integer,uuid)') IS NULL THEN
+    OR to_regprocedure('public.admin_save_catalog_character_editorial_profile(uuid,jsonb,text,integer,uuid)') IS NULL
+    OR to_regprocedure('public.admin_set_catalog_character_publication_approval(uuid,integer,boolean,uuid)') IS NULL
+    OR to_regprocedure('public.admin_export_approved_catalog_character_projection()') IS NULL THEN
     RAISE EXCEPTION 'TONART character editorial profile migration not installed'
       USING ERRCODE = '42P01';
   END IF;
@@ -69,6 +71,8 @@ DECLARE
   v_history jsonb;
   v_editorial_profile jsonb;
   v_editorial_result jsonb;
+  v_public_projection jsonb;
+  v_approval_ref text;
   v_reviewer_id uuid := gen_random_uuid();
   v_expected_failure boolean;
   v_n integer;
@@ -111,6 +115,17 @@ BEGIN
      OR NOT has_function_privilege('service_role',
        'public.admin_save_catalog_character_editorial_profile(uuid,jsonb,text,integer,uuid)', 'EXECUTE') THEN
     RAISE EXCEPTION 'Editorial profile gateway lost required execute grants'
+      USING ERRCODE = '42501';
+  END IF;
+  IF NOT has_function_privilege('service_role',
+       'public.admin_set_catalog_character_publication_approval(uuid,integer,boolean,uuid)', 'EXECUTE')
+     OR NOT has_function_privilege('service_role',
+       'public.admin_export_approved_catalog_character_projection()', 'EXECUTE')
+     OR has_function_privilege('anon',
+       'public.admin_export_approved_catalog_character_projection()', 'EXECUTE')
+     OR has_function_privilege('authenticated',
+       'public.admin_export_approved_catalog_character_projection()', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Public approval/export RPC grants are not service-role scoped'
       USING ERRCODE = '42501';
   END IF;
 
@@ -279,10 +294,75 @@ BEGIN
     RAISE EXCEPTION 'Duplicate reviewed character route slug was accepted';
   END IF;
 
+  -- Private profile review is not publication. Incomplete legacy link evidence
+  -- blocks approval until each exact model link receives a source and note.
+  v_expected_failure := false;
+  BEGIN
+    PERFORM public.admin_set_catalog_character_publication_approval(
+      v_id_a, 2, true, v_reviewer_id
+    );
+  EXCEPTION WHEN SQLSTATE '22023' THEN
+    v_expected_failure := true;
+  END;
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Publication approved without source-backed model links';
+  END IF;
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_a, v_slug_a, v_name_a, v_franchise,
+    'https://example.org/model-a/character-a', 'Acceptance model A character citation'
+  );
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_b, v_slug_b, v_name_a, v_franchise,
+    'https://example.org/model-b/character-a', 'Acceptance model B character citation'
+  );
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, 2, true, v_reviewer_id
+  );
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved'
+     OR (v_editorial_result->>'publicationRevision')::integer <> 2
+     OR (v_editorial_result->>'publicationApprovedBy')::uuid IS DISTINCT FROM v_reviewer_id THEN
+    RAISE EXCEPTION 'Human approval did not bind to the current reviewed revision';
+  END IF;
+  v_approval_ref := v_editorial_result->>'publicationApprovalRef';
+  v_public_projection := public.admin_export_approved_catalog_character_projection();
+  IF (v_public_projection->>'schemaVersion')::integer <> 1
+     OR jsonb_array_length(v_public_projection->'characters') <> 1
+     OR (v_public_projection->'characters'->0->>'identityId')::uuid IS DISTINCT FROM v_id_a
+     OR jsonb_array_length(v_public_projection->'characters'->0->'modelLinks') <> 2
+     OR v_public_projection->'characters'->0 ? 'history' THEN
+    RAISE EXCEPTION 'Public export leaked private history or omitted approved evidence';
+  END IF;
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, 2, true, v_reviewer_id
+  );
+  IF v_editorial_result->>'publicationApprovalRef' IS DISTINCT FROM v_approval_ref
+     OR jsonb_array_length(v_editorial_result->'publicationHistory') <> 1 THEN
+    RAISE EXCEPTION 'Repeated approval was not idempotent';
+  END IF;
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, 2, false, NULL
+  );
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR v_editorial_result->'publicationHistory'->1->>'action' IS DISTINCT FROM 'revoked' THEN
+    RAISE EXCEPTION 'Publication revocation did not retain its audit event';
+  END IF;
+  PERFORM public.admin_set_catalog_character_publication_approval(
+    v_id_a, 2, true, v_reviewer_id
+  );
+  v_editorial_result := public.admin_save_catalog_character_editorial_profile(
+    v_id_a, v_editorial_profile, 'draft', 2, NULL
+  );
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR v_editorial_result->'publicationHistory'->-1->>'action'
+       IS DISTINCT FROM 'invalidated_by_profile_change'
+     OR v_editorial_result->>'status' IS DISTINCT FROM 'draft' THEN
+    RAISE EXCEPTION 'Profile change failed to invalidate the prior public approval';
+  END IF;
+
   v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
   IF (v_editorial_result->'profile'->>'biography') IS DISTINCT FROM
        'Fictitious staging-only biography.'
-     OR jsonb_array_length(v_editorial_result->'history') <> 1 THEN
+     OR jsonb_array_length(v_editorial_result->'history') <> 2 THEN
     RAISE EXCEPTION 'Private character profile or revision history was not retained';
   END IF;
 
@@ -422,20 +502,21 @@ BEGIN
     RAISE EXCEPTION 'Repeated unlink incorrectly reported success';
   END IF;
 
-  -- Restoration must reuse the link and retain BOTH the earlier decision
-  -- and original proof. New reviewed proof belongs to the history event.
+  -- Restoration must reuse the link and retain both the earlier decision and
+  -- the new source. Its event keeps the old proof in bounded relation history.
   PERFORM public.admin_verify_catalog_model_identity(
     v_model_a, v_slug_a, v_name_a, v_franchise,
-    'manual_admin:acceptance_restored', 'Restored after manual reassessment'
+    'https://example.org/model-a/character-a-restored', 'Restored after manual reassessment'
   );
   SELECT review_history INTO STRICT v_history
   FROM public.catalog_curation_model_characters
   WHERE catalog_model_id = v_model_a AND character_identity_id = v_id_a
     AND unlinked_at IS NULL AND unlink_reason IS NULL
-    AND evidence_origin = 'manual_admin:acceptance_original';
+    AND evidence_origin = 'https://example.org/model-a/character-a-restored';
   IF jsonb_array_length(v_history) <> 2
      OR (v_history->1->>'action') IS DISTINCT FROM 'restored'
-     OR (v_history->1->>'note') IS DISTINCT FROM 'Restored after manual reassessment' THEN
+     OR (v_history->1->>'note') IS DISTINCT FROM 'Restored after manual reassessment'
+     OR (v_history->1->>'previousOrigin') IS DISTINCT FROM 'https://example.org/model-a/character-a' THEN
     RAISE EXCEPTION 'Restoration lost previous approval, link, or review history';
   END IF;
 

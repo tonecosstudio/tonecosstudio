@@ -127,6 +127,12 @@ export type AdminCatalogCharacterEditorialProfile = {
   revision: number;
   reviewedAt: string | null;
   reviewedBy: string | null;
+  publicationStatus: "not_approved" | "approved";
+  publicationRevision: number | null;
+  publicationApprovalRef: string | null;
+  publicationApprovedAt: string | null;
+  publicationApprovedBy: string | null;
+  publicationHistory: unknown[];
 };
 
 export const EMPTY_CATALOG_CHARACTER_EDITORIAL_PROFILE: CatalogCharacterEditorialProfile =
@@ -458,6 +464,29 @@ function parseAdminCharacterEditorialProfile(
     row.reviewedBy,
     "catalog_character_editorial_profile_invalid",
   );
+  const publicationStatus = row.publicationStatus;
+  const publicationRevision =
+    row.publicationRevision === null
+      ? null
+      : asNonNegativeInteger(
+          row.publicationRevision,
+          "catalog_character_editorial_profile_invalid",
+        );
+  const publicationApprovalRef = asOptionalString(
+    row.publicationApprovalRef,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const publicationApprovedAt = asOptionalString(
+    row.publicationApprovedAt,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const publicationApprovedBy = asOptionalString(
+    row.publicationApprovedBy,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const publicationHistory = Array.isArray(row.publicationHistory)
+    ? row.publicationHistory
+    : null;
   if (
     !UUID_PATTERN.test(identityId) ||
     name.length > 160 ||
@@ -468,7 +497,28 @@ function parseAdminCharacterEditorialProfile(
       (!Number.isFinite(Date.parse(reviewedAt)) || reviewedAt.length > 64)) ||
     (reviewedBy !== null && !UUID_PATTERN.test(reviewedBy)) ||
     (status === "reviewed" && (!reviewedAt || !reviewedBy)) ||
-    (status === "draft" && (reviewedAt || reviewedBy))
+    (status === "draft" && (reviewedAt || reviewedBy)) ||
+    (publicationStatus !== "not_approved" &&
+      publicationStatus !== "approved") ||
+    (publicationApprovedAt !== null &&
+      (!Number.isFinite(Date.parse(publicationApprovedAt)) ||
+        publicationApprovedAt.length > 64)) ||
+    (publicationApprovedBy !== null &&
+      !UUID_PATTERN.test(publicationApprovedBy)) ||
+    (publicationApprovalRef !== null && publicationApprovalRef.length > 120) ||
+    publicationHistory === null ||
+    publicationHistory.length > 25 ||
+    (publicationStatus === "approved" &&
+      (publicationRevision !== revision ||
+        !publicationApprovalRef ||
+        !publicationApprovedAt ||
+        !publicationApprovedBy ||
+        status !== "reviewed")) ||
+    (publicationStatus === "not_approved" &&
+      (publicationRevision !== null ||
+        publicationApprovalRef !== null ||
+        publicationApprovedAt !== null ||
+        publicationApprovedBy !== null))
   ) {
     throw new Error("catalog_character_editorial_profile_invalid");
   }
@@ -483,6 +533,12 @@ function parseAdminCharacterEditorialProfile(
     revision,
     reviewedAt,
     reviewedBy,
+    publicationStatus,
+    publicationRevision,
+    publicationApprovalRef,
+    publicationApprovedAt,
+    publicationApprovedBy,
+    publicationHistory,
   };
 }
 
@@ -1107,11 +1163,26 @@ export async function verifyCatalogModelCharacterIdentity(input: {
   evidenceNote?: string;
 }): Promise<string> {
   validateCanonicalCurationModelRef(input.model);
+  let evidenceUrl: URL | null = null;
+  try {
+    evidenceUrl = new URL(input.evidenceOrigin.trim());
+  } catch {
+    evidenceUrl = null;
+  }
+  const evidenceNote = input.evidenceNote?.trim() ?? "";
   if (
     !input.characterName.trim() ||
     !input.franchise.trim() ||
-    !input.evidenceOrigin.trim() ||
-    input.evidenceOrigin.trim().toLowerCase().startsWith("automatic:")
+    !evidenceUrl ||
+    evidenceUrl.protocol !== "https:" ||
+    evidenceUrl.username.length > 0 ||
+    evidenceUrl.password.length > 0 ||
+    evidenceUrl.hostname === "localhost" ||
+    evidenceUrl.hostname === "127.0.0.1" ||
+    input.evidenceOrigin.trim().length > 240 ||
+    !evidenceNote ||
+    evidenceNote.length > 1000 ||
+    hasUnsafeCurationCharacter(evidenceNote)
   ) {
     throw new Error("catalog_character_identity_verification_invalid");
   }
@@ -1121,8 +1192,8 @@ export async function verifyCatalogModelCharacterIdentity(input: {
       p_model_slug: input.model.slug,
       p_character_name: input.characterName.trim(),
       p_franchise: input.franchise.trim(),
-      p_evidence_origin: input.evidenceOrigin,
-      p_evidence_note: input.evidenceNote?.trim() || null,
+      p_evidence_origin: evidenceUrl.toString(),
+      p_evidence_note: evidenceNote,
     }),
     "catalog_character_identity_verification_result_invalid",
   );
@@ -1187,6 +1258,38 @@ export async function saveCatalogCharacterEditorialProfile(input: {
     parsed.status !== input.status
   ) {
     throw new Error("catalog_character_editorial_profile_save_result_invalid");
+  }
+  return parsed;
+}
+
+export async function setCatalogCharacterPublicationApproval(input: {
+  identityId: string;
+  expectedRevision: number;
+  approved: boolean;
+}): Promise<AdminCatalogCharacterEditorialProfile> {
+  if (
+    !UUID_PATTERN.test(input.identityId) ||
+    typeof input.approved !== "boolean" ||
+    !Number.isSafeInteger(input.expectedRevision) ||
+    input.expectedRevision < 0
+  ) {
+    throw new Error("catalog_character_publication_approval_invalid");
+  }
+  const response = await callAdminRpc<unknown>(
+    "admin_set_catalog_character_publication_approval",
+    {
+      p_identity_id: input.identityId,
+      p_expected_revision: input.expectedRevision,
+      p_approved: input.approved,
+    },
+  );
+  const parsed = parseAdminCharacterEditorialProfile(response);
+  if (
+    parsed.identityId !== input.identityId ||
+    (input.approved && parsed.publicationStatus !== "approved") ||
+    (!input.approved && parsed.publicationStatus !== "not_approved")
+  ) {
+    throw new Error("catalog_character_publication_approval_result_invalid");
   }
   return parsed;
 }

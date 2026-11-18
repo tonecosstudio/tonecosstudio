@@ -109,6 +109,9 @@ export function InternalCollectionCuration() {
     characterName: string;
     franchise: string;
     restoreId?: string;
+    updateProof?: boolean;
+    evidenceUrl: string;
+    evidenceNote: string;
   } | null>(null);
   const [unlinkReview, setUnlinkReview] = useState<{
     model: { modelId: string; slug: string };
@@ -494,24 +497,24 @@ export function InternalCollectionCuration() {
         model: modelRef(review.model),
         characterName: review.characterName.trim(),
         franchise: review.franchise.trim(),
-        evidenceOrigin: review.restoreId
-          ? "manual_admin:reviewed_character_restoration"
-          : "manual_admin:reviewed_character_identity",
-        evidenceNote: review.restoreId
-          ? "Identidade anteriormente desvinculada, restaurada após revisão editorial explícita."
-          : "Nome do personagem e franquia revisados explicitamente pelo administrador; variante preservada no modelo canônico.",
+        evidenceOrigin: review.evidenceUrl.trim(),
+        evidenceNote: review.evidenceNote.trim(),
       });
     },
     onSuccess: async (_identityId, review) => {
       setIdentityReview(null);
       await refreshCollection();
       toast({
-        title: review.restoreId
-          ? "Vínculo restaurado"
-          : "Identidade verificada",
-        description: review.restoreId
-          ? "A associação foi reavaliada e restaurada na curadoria privada; o histórico foi preservado."
-          : "Vínculo revisado e adicionado sem substituir os demais personagens desta estatueta. Não foi publicado no catálogo.",
+        title: review.updateProof
+          ? "Evidência atualizada"
+          : review.restoreId
+            ? "Vínculo restaurado"
+            : "Identidade verificada",
+        description: review.updateProof
+          ? "A nova fonte foi vinculada ao modelo e a evidência anterior ficou registrada no histórico editorial."
+          : review.restoreId
+            ? "A associação foi reavaliada e restaurada na curadoria privada; o histórico foi preservado."
+            : "Vínculo revisado e adicionado sem substituir os demais personagens desta estatueta. Não foi publicado no catálogo.",
       });
     },
     onError: (error) =>
@@ -1079,6 +1082,36 @@ export function InternalCollectionCuration() {
                                       >
                                         Desvincular
                                       </Button>
+                                      {model && (
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="ghost"
+                                          disabled={
+                                            unlinkMutation.isPending ||
+                                            identityMutation.isPending
+                                          }
+                                          onClick={() => {
+                                            setUnlinkReview(null);
+                                            setIdentityReview({
+                                              model,
+                                              characterName: character.name,
+                                              franchise: character.franchise,
+                                              updateProof: true,
+                                              evidenceUrl:
+                                                character.evidenceOrigin.startsWith(
+                                                  "https://",
+                                                )
+                                                  ? character.evidenceOrigin
+                                                  : "",
+                                              evidenceNote:
+                                                character.evidenceNote ?? "",
+                                            });
+                                          }}
+                                        >
+                                          Atualizar evidência
+                                        </Button>
+                                      )}
                                     </div>
                                     {characterProfileAnchors.get(
                                       character.id,
@@ -1125,6 +1158,14 @@ export function InternalCollectionCuration() {
                                               characterName: character.name,
                                               franchise: character.franchise,
                                               restoreId: character.id,
+                                              evidenceUrl:
+                                                character.evidenceOrigin.startsWith(
+                                                  "https://",
+                                                )
+                                                  ? character.evidenceOrigin
+                                                  : "",
+                                              evidenceNote:
+                                                character.evidenceNote ?? "",
                                             });
                                           }}
                                         >
@@ -1184,6 +1225,8 @@ export function InternalCollectionCuration() {
                                     ? ""
                                     : model.name,
                                   franchise: model.franchise,
+                                  evidenceUrl: "",
+                                  evidenceNote: "",
                                 })
                               }
                             >
@@ -1261,8 +1304,10 @@ export function InternalCollectionCuration() {
                           <div className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2">
                             <p className="text-sm text-muted-foreground sm:col-span-2">
                               {identityReview.restoreId
-                                ? "Confirme a restauração deste personagem previamente desvinculado. O nome e a franquia ficam preservados; a reaprovação será registrada no histórico editorial."
-                                : "Confirme cada personagem e sua franquia. Uma cena pode conter vários personagens; cada vínculo exige revisão manual e não substitui os anteriores. O nome do modelo é apenas uma sugestão, não uma identidade verificada."}
+                                ? "Confirme a restauração deste personagem previamente desvinculado. Atualize a fonte HTTPS e a nota do vínculo; o evento anterior será preservado no histórico."
+                                : identityReview.updateProof
+                                  ? "Atualize a prova desta associação. A evidência anterior será preservada no histórico editorial."
+                                  : "Confirme cada personagem e sua franquia. Uma cena pode conter vários personagens; cada vínculo exige revisão manual e uma fonte HTTPS com nota. O nome do modelo é apenas uma sugestão, não uma identidade verificada."}
                             </p>
                             <div className="space-y-1">
                               <Label htmlFor="curation-character-name">
@@ -1271,7 +1316,10 @@ export function InternalCollectionCuration() {
                               <Input
                                 id="curation-character-name"
                                 maxLength={160}
-                                disabled={Boolean(identityReview.restoreId)}
+                                disabled={Boolean(
+                                  identityReview.restoreId ||
+                                  identityReview.updateProof,
+                                )}
                                 value={identityReview.characterName}
                                 onChange={(event) =>
                                   setIdentityReview((current) =>
@@ -1292,7 +1340,10 @@ export function InternalCollectionCuration() {
                               <Input
                                 id="curation-character-franchise"
                                 maxLength={160}
-                                disabled={Boolean(identityReview.restoreId)}
+                                disabled={Boolean(
+                                  identityReview.restoreId ||
+                                  identityReview.updateProof,
+                                )}
                                 value={identityReview.franchise}
                                 onChange={(event) =>
                                   setIdentityReview((current) =>
@@ -1306,13 +1357,64 @@ export function InternalCollectionCuration() {
                                 }
                               />
                             </div>
+                            <div className="space-y-1">
+                              <Label htmlFor="curation-character-evidence-url">
+                                Fonte do vínculo (HTTPS)
+                              </Label>
+                              <Input
+                                id="curation-character-evidence-url"
+                                type="url"
+                                inputMode="url"
+                                autoComplete="url"
+                                maxLength={240}
+                                required
+                                value={identityReview.evidenceUrl}
+                                placeholder="https://fonte-oficial.example/..."
+                                onChange={(event) =>
+                                  setIdentityReview((current) =>
+                                    current
+                                      ? {
+                                          ...current,
+                                          evidenceUrl: event.target.value,
+                                        }
+                                      : null,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor="curation-character-evidence-note">
+                                Título ou trecho da fonte
+                              </Label>
+                              <Input
+                                id="curation-character-evidence-note"
+                                maxLength={1000}
+                                required
+                                value={identityReview.evidenceNote}
+                                placeholder="Trecho ou referência que confirma este vínculo"
+                                onChange={(event) =>
+                                  setIdentityReview((current) =>
+                                    current
+                                      ? {
+                                          ...current,
+                                          evidenceNote: event.target.value,
+                                        }
+                                      : null,
+                                  )
+                                }
+                              />
+                            </div>
                             <div className="flex flex-wrap gap-2 sm:col-span-2">
                               <Button
                                 type="button"
                                 disabled={
                                   identityMutation.isPending ||
                                   !identityReview.characterName.trim() ||
-                                  !identityReview.franchise.trim()
+                                  !identityReview.franchise.trim() ||
+                                  !identityReview.evidenceUrl
+                                    .trim()
+                                    .startsWith("https://") ||
+                                  !identityReview.evidenceNote.trim()
                                 }
                                 onClick={() =>
                                   identityMutation.mutate(identityReview)
@@ -1321,9 +1423,11 @@ export function InternalCollectionCuration() {
                                 {identityMutation.isPending && (
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 )}
-                                {identityReview.restoreId
-                                  ? "Confirmar restauração revisada"
-                                  : "Confirmar identidade revisada"}
+                                {identityReview.updateProof
+                                  ? "Salvar nova evidência"
+                                  : identityReview.restoreId
+                                    ? "Confirmar restauração revisada"
+                                    : "Confirmar identidade revisada"}
                               </Button>
                               <Button
                                 type="button"

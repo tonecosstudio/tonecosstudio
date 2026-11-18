@@ -110,6 +110,7 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_unlink_catalog_model_character",
   "admin_get_catalog_character_editorial_profile",
   "admin_save_catalog_character_editorial_profile",
+  "admin_set_catalog_character_publication_approval",
   "admin_schedule_group_message",
   "admin_schedule_subscription_deliveries",
   "admin_send_chat_group_message",
@@ -365,7 +366,9 @@ Deno.serve(async (req) => {
     const rpcArgs =
       functionName === "admin_save_catalog_character_editorial_profile"
         ? { ...args, p_reviewer_id: admin.userId }
-        : args;
+        : functionName === "admin_set_catalog_character_publication_approval"
+          ? { ...args, p_approver_id: admin.userId }
+          : args;
     const { data, error } = await rpcClient.rpc(functionName, rpcArgs);
 
     if (error) {
