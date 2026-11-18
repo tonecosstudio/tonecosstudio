@@ -517,7 +517,7 @@ export default function CanonicalModelDetails() {
           : ["TONART Studio", "modelo"]
       }
     >
-      <main className="min-h-[80vh] bg-[hsl(0,0%,4%)] px-4 py-8 text-[hsl(0,0%,94%)] md:px-8 md:py-12">
+      <div className="min-h-[80vh] bg-[hsl(0,0%,4%)] px-4 py-8 text-[hsl(0,0%,94%)] md:px-8 md:py-12">
         <div className="mx-auto max-w-7xl">
           <Link
             to={catalogReturnTo}
@@ -581,9 +581,24 @@ export default function CanonicalModelDetails() {
               </p>
             </section>
           ) : modelQuery.isPending ? (
-            <p role="status" className="mt-8 text-sm text-[hsl(0,0%,56%)]">
-              Carregando ficha do modelo…
-            </p>
+            <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] lg:gap-8">
+              <p role="status" className="sr-only">
+                Carregando ficha do modelo…
+              </p>
+              <div
+                aria-hidden="true"
+                className="min-h-[clamp(18rem,58svh,30rem)] animate-pulse border border-[hsl(0,0%,15%)] bg-[radial-gradient(ellipse_at_center,hsl(0_0%_13%),hsl(0_0%_7%)_72%)] motion-reduce:animate-none"
+              />
+              <div
+                aria-hidden="true"
+                className="space-y-5 border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-5 md:p-7"
+              >
+                <div className="h-3 w-2/5 animate-pulse bg-[hsl(0,0%,14%)] motion-reduce:animate-none" />
+                <div className="h-10 w-4/5 animate-pulse bg-[hsl(0,0%,12%)] motion-reduce:animate-none" />
+                <div className="h-20 animate-pulse bg-[hsl(0,0%,10%)] motion-reduce:animate-none" />
+                <div className="h-24 animate-pulse bg-[hsl(0,0%,10%)] motion-reduce:animate-none" />
+              </div>
+            </div>
           ) : modelQuery.isError || !model ? (
             <section className="mt-8 rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-6">
               <h1 className="text-2xl font-medium">
@@ -610,13 +625,16 @@ export default function CanonicalModelDetails() {
             <>
               <article className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
                 <section aria-label="Imagens do modelo">
+                  <h2 className="mb-3 font-mono text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--gold-accent))]">
+                    Galeria do modelo
+                  </h2>
                   {mediaUnderReview && !coverReleased ? (
                     <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] pl-4 text-sm text-[hsl(0,0%,72%)]">
                       Algumas imagens deste modelo não estão disponíveis no
                       momento.
                     </p>
                   ) : null}
-                  <ArcadeCard className="flex min-h-[280px] items-center justify-center sm:min-h-[360px] md:min-h-[560px]">
+                  <ArcadeCard className="flex min-h-[clamp(18rem,58svh,30rem)] items-center justify-center sm:min-h-[22.5rem] md:min-h-[35rem]">
                     <CanonicalCatalogImage
                       src={activeImageUrl}
                       fallbackSrc={activeImageFallbackUrl}
@@ -785,7 +803,7 @@ export default function CanonicalModelDetails() {
                         "Explore os detalhes desta referência digital e adicione o modelo à sua seleção para consultá-lo enquanto navega pelo acervo."}
                     </p>
 
-                    <dl className="grid grid-cols-2 gap-3 border-y border-[hsl(0,0%,15%)] py-5 text-sm">
+                    <dl className="grid grid-cols-1 gap-4 border-y border-[hsl(0,0%,15%)] py-5 text-sm min-[420px]:grid-cols-2">
                       <div>
                         <dt className="text-[hsl(0,0%,56%)]">Código</dt>
                         <dd className="mt-1 min-w-0 break-all font-medium">
@@ -809,7 +827,7 @@ export default function CanonicalModelDetails() {
                         </dd>
                       </div>
                       {model.collection ? (
-                        <div className="col-span-2">
+                        <div className="min-[420px]:col-span-2">
                           <dt className="text-[hsl(0,0%,56%)]">Coleção</dt>
                           <dd className="mt-1 break-words font-medium">
                             {model.collection}
@@ -998,24 +1016,6 @@ export default function CanonicalModelDetails() {
                         <ArrowLeft size={16} aria-hidden="true" />
                         Continuar explorando
                       </Link>
-                      {quoteRequestsEnabled ? (
-                        <aside
-                          aria-label="Oferta Black Friday para este modelo"
-                          className="border border-[hsl(var(--gold-accent)/0.32)] bg-[hsl(var(--gold-accent)/0.06)] p-4"
-                        >
-                          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--gold-accent))]">
-                            Black Friday · todos os modelos
-                          </p>
-                          <p className="mt-2 text-sm font-semibold text-[hsl(0,0%,88%)]">
-                            Até 50% de desconto nesta referência.
-                          </p>
-                          <p className="mt-1 text-xs leading-5 text-[hsl(0,0%,62%)]">
-                            A equipe informa o preço-base, o desconto aplicado e
-                            o total final na resposta ao orçamento, antes de
-                            qualquer pagamento.
-                          </p>
-                        </aside>
-                      ) : null}
                     </div>
                     {quoteRequestsEnabled ? (
                       <details className="border-t border-[hsl(0,0%,15%)] pt-4">
@@ -1073,7 +1073,7 @@ export default function CanonicalModelDetails() {
             </>
           )}
         </div>
-      </main>
+      </div>
     </Page>
   );
 }

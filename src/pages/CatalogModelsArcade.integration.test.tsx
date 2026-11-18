@@ -331,6 +331,24 @@ describe("Tonecos canonical model discovery UI", () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
+  it("offers a clear-filter recovery action when a filtered search is empty", async () => {
+    const calls: URL[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: string) => {
+      const url = new URL(input);
+      calls.push(url);
+      return Response.json({
+        items: url.searchParams.has("q") ? [] : [original],
+        nextCursor: null,
+      });
+    }));
+    await renderCatalog("/modelos?q=escultura");
+    expect(await screen.findByText("Nenhum modelo disponível corresponde aos filtros utilizados. Tente outra busca.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Limpar filtros e ver o acervo" }));
+    expect(await screen.findByRole("link", { name: "Ver detalhes de Escultura original" })).toBeInTheDocument();
+    expect(calls.some((url) => !url.searchParams.has("q"))).toBe(true);
+  });
+
   it("shows six columns on wide screens and gives an obvious next-page action", async () => {
     const { calls } = setupFetch();
     await renderCatalog();
@@ -421,6 +439,33 @@ describe("Tonecos canonical model discovery UI", () => {
     expect(selection).toHaveTextContent("Nenhum orçamento foi enviado.");
   });
 
+  it("keeps advanced filters compact on mobile and applies the drafted search with a category", async () => {
+    const { calls } = setupFetch();
+    await renderCatalog();
+    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+
+    const toggle = screen.getByRole("button", { name: /Filtros/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", "catalog-advanced-filters");
+    fireEvent.click(toggle);
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Pesquisar modelos" }), {
+      target: { value: "escultura" },
+    });
+    fireEvent.focus(screen.getByRole("combobox", { name: "Filtrar por categoria" }));
+    await screen.findByRole("option", { name: "Originais" });
+    fireEvent.change(screen.getByRole("combobox", { name: "Filtrar por categoria" }), {
+      target: { value: "originais" },
+    });
+
+    await waitFor(() => expect(calls.some(({ url }) =>
+      url.pathname.endsWith("/api/catalog") &&
+      url.searchParams.get("q") === "escultura" &&
+      url.searchParams.get("category") === "originais",
+    )).toBe(true));
+    expect(screen.getByRole("textbox", { name: "Pesquisar modelos" })).toHaveValue("escultura");
+  });
+
   it("blocks short searches without a request and fetches categories only after interaction", async () => {
     const { calls } = setupFetch();
     await renderCatalog("/modelos?q=ab");
@@ -429,10 +474,13 @@ describe("Tonecos canonical model discovery UI", () => {
     );
     expect(calls).toHaveLength(0);
 
-    fireEvent.change(screen.getByPlaceholderText("Buscar..."), {
-      target: { value: "escultura" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Pesquisar modelos" }),
+      {
+        target: { value: "escultura" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Buscar modelos" }));
     await screen.findByRole("link", {
       name: "Ver detalhes de Escultura original",
     });
@@ -443,6 +491,7 @@ describe("Tonecos canonical model discovery UI", () => {
       calls.some((call) => call.url.pathname.endsWith("/api/categories")),
     ).toBe(false);
 
+    fireEvent.click(screen.getByRole("button", { name: /Filtros/ }));
     fireEvent.focus(
       screen.getByRole("combobox", { name: "Filtrar por categoria" }),
     );

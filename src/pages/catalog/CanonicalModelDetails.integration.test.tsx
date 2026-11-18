@@ -18,20 +18,21 @@ vi.mock("@/config/canonical-catalog-endpoint", () => ({
 }));
 
 const offerServiceMocks = vi.hoisted(() => ({ list: vi.fn() }));
+const offerCoinPreviewMocks = vi.hoisted(() => ({
+  currentUser: vi.fn(),
+  profile: vi.fn(),
+  balance: vi.fn(),
+}));
 vi.mock("@/services/commercial/tonart-commercial-offers-service", () => ({
   listTonartCommercialOffersForModel: offerServiceMocks.list,
 }));
-
-const accountServiceMocks = vi.hoisted(() => ({ currentUser: vi.fn() }));
-vi.mock("@/services/customer/tonecos-account-service", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("@/services/customer/tonecos-account-service")
-  >();
-  return {
-    ...actual,
-    getTonecosCurrentUser: accountServiceMocks.currentUser,
-  };
-});
+vi.mock("@/services/customer/tonecos-account-service", () => ({
+  getTonecosCurrentUser: offerCoinPreviewMocks.currentUser,
+  getMyTonecosProfile: offerCoinPreviewMocks.profile,
+}));
+vi.mock("@/services/coins/tonecos-coins-service", () => ({
+  getMyTonecosCoinBalance: offerCoinPreviewMocks.balance,
+}));
 
 vi.mock("@/components/layouts/Page", () => ({
   Page: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -93,7 +94,9 @@ afterEach(() => {
 
 beforeEach(() => {
   offerServiceMocks.list.mockReset().mockResolvedValue([]);
-  accountServiceMocks.currentUser.mockReset().mockResolvedValue(null);
+  offerCoinPreviewMocks.currentUser.mockReset().mockResolvedValue(null);
+  offerCoinPreviewMocks.profile.mockReset().mockResolvedValue(null);
+  offerCoinPreviewMocks.balance.mockReset();
 });
 
 function mountGallery(options: {
@@ -438,7 +441,7 @@ describe("published model/gallery identity on the public detail page", () => {
     expect(io).toHaveBeenCalled();
   });
 
-  it("shows the configured offer and requires an account before Coins or checkout", async () => {
+  it("shows configured price, variant and Coins eligibility without assuming a wallet balance", async () => {
     vi.stubEnv("VITE_TONECOS_COMMERCIAL_MVP", "true");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "false");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");

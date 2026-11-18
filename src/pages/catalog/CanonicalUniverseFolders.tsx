@@ -90,7 +90,7 @@ export function CanonicalUniverseFolders({
     return (
       <div role="alert" className="mt-6 border border-[hsl(0,0%,18%)] p-8 text-sm">
         Pasta indisponível ou inválida. Nenhum resultado de outra fonte foi utilizado.
-        <button type="button" onClick={() => void foldersQuery.refetch()} className="ml-3 border border-[hsl(var(--gold-accent)/0.5)] px-3 py-2 text-[hsl(var(--gold-accent))]">
+        <button type="button" onClick={() => void foldersQuery.refetch()} className="mt-3 inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent)/0.5)] px-4 text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] sm:ml-3 sm:mt-0">
           Tentar novamente
         </button>
       </div>
@@ -164,7 +164,7 @@ export function CanonicalUniverseFolders({
       ) : modelsQuery.isError ? (
         <div role="alert" className="mt-5 border border-[hsl(0,0%,18%)] p-6 text-sm">
           Não foi possível consultar as miniaturas publicadas.
-          <button type="button" onClick={() => void modelsQuery.refetch()} className="ml-3 border border-[hsl(var(--gold-accent)/0.5)] px-3 py-2">Tentar novamente</button>
+          <button type="button" onClick={() => void modelsQuery.refetch()} className="mt-3 inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent)/0.5)] px-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] sm:ml-3 sm:mt-0">Tentar novamente</button>
         </div>
       ) : models.length === 0 ? (
         <p role="status" className="mt-5 p-6 text-sm">Nenhum modelo publicado neste recorte.</p>

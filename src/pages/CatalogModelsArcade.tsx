@@ -2,7 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Bookmark, Search, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bookmark,
+  ChevronDown,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { ApprovedModelShowcase } from "./catalog/ApprovedModelShowcase";
 import {
@@ -44,6 +52,32 @@ import {
 
 const PAGE_SIZE = 36;
 const API_BASE = CANONICAL_CATALOG_API_BASE;
+const CATALOG_GRID_CLASS =
+  "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-5 2xl:grid-cols-6 2xl:gap-5";
+
+function CatalogGridSkeleton() {
+  return (
+    <>
+      <p role="status" className="sr-only">
+        Carregando os modelos publicados…
+      </p>
+      <div aria-hidden="true" className={CATALOG_GRID_CLASS}>
+        {Array.from({ length: 6 }, (_, index) => (
+          <div
+            key={index}
+            className="overflow-hidden border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)]"
+          >
+            <div className="aspect-[2/3] animate-pulse bg-gradient-to-br from-[hsl(0,0%,10%)] via-[hsl(0,0%,8%)] to-[hsl(var(--gold-accent)/0.06)] motion-reduce:animate-none" />
+            <div className="space-y-3 p-3 md:p-4">
+              <div className="h-4 w-4/5 animate-pulse bg-[hsl(0,0%,14%)] motion-reduce:animate-none" />
+              <div className="h-3 w-2/3 animate-pulse bg-[hsl(0,0%,11%)] motion-reduce:animate-none" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
 
 function ModelCover({
   model,
@@ -54,11 +88,11 @@ function ModelCover({
 }) {
   const url = mediaUrl(model.coverStorageKey);
   return (
-    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden bg-[hsl(0,0%,9%)]">
+    <div className="relative flex aspect-[2/3] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,hsl(0_0%_13%),hsl(0_0%_7%)_72%)]">
       <CanonicalCatalogImage
         src={url}
         alt={"Imagem de referência: " + model.name}
-        imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+        imageClassName="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none sm:p-3"
       />
     </div>
   );
@@ -74,6 +108,9 @@ export default function CatalogModelsArcade() {
     PUBLIC_ROUTES.quoteRequest +
     (searchParams.get("tipo") === "pre-venda" ? "?tipo=pre-venda" : "");
   const [draft, setDraft] = useState(search);
+  const [filtersExpanded, setFiltersExpanded] = useState(() =>
+    Boolean(category || franchise || folder),
+  );
   // Deep links already contain the selected IDs. In a public image-review
   // build, avoid extra category/franchise reads just to populate closed selects.
   // Opening either filter remains the explicit trigger for its indexed lookup.
@@ -97,6 +134,9 @@ export default function CatalogModelsArcade() {
   const returnCardRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => setDraft(search), [search]);
+  useEffect(() => {
+    if (category || franchise || folder) setFiltersExpanded(true);
+  }, [category, franchise, folder]);
 
   const gateway = useMemo(() => {
     if (!API_BASE) return null;
@@ -232,6 +272,11 @@ export default function CatalogModelsArcade() {
   const hasActiveFilters = Boolean(
     search || (category && category !== "all") || franchise || folder,
   );
+  const activeFacetCount = [
+    category && category !== "all",
+    franchise,
+    folder,
+  ].filter(Boolean).length;
 
   function clearFilters() {
     setDraft("");
@@ -342,13 +387,14 @@ export default function CatalogModelsArcade() {
             <div className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] p-3 sm:p-4">
               <form
                 role="search"
-                className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(9rem,0.38fr)_minmax(9rem,0.38fr)_auto]"
+                aria-label="Buscar modelos no catálogo"
+                className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:gap-3"
                 onSubmit={(event) => {
                   event.preventDefault();
                   changeParams(draft.trim(), category);
                 }}
               >
-                <label className="relative col-start-1 row-start-1 min-w-0 sm:col-span-2 lg:col-span-1">
+                <label className="relative col-start-1 row-start-1 min-w-0">
                   <span className="sr-only">Pesquisar modelos</span>
                   <Search
                     aria-hidden="true"
@@ -356,10 +402,11 @@ export default function CatalogModelsArcade() {
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-[hsl(0,0%,56%)]"
                   />
                   <input
+                    type="text"
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                     maxLength={80}
-                    placeholder="Buscar..."
+                    placeholder="Buscar personagem, modelo ou código"
                     className={`h-12 w-full rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] pl-12 ${draft ? "pr-12" : "pr-3"} text-sm outline-none transition-colors focus-visible:border-[hsl(var(--gold-accent))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)]`}
                   />
                   {draft && (
@@ -376,14 +423,50 @@ export default function CatalogModelsArcade() {
                     </button>
                   )}
                 </label>
-                <label className="col-span-2 col-start-1 row-start-2 min-w-0 sm:col-span-1 lg:col-start-2 lg:row-start-1">
+                <button
+                  type="submit"
+                  className="col-start-2 row-start-1 inline-flex min-h-12 items-center justify-center border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-4 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(0,0%,5%)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] sm:px-6"
+                >
+                  Buscar modelos
+                </button>
+              </form>
+
+              <button
+                type="button"
+                aria-expanded={filtersExpanded}
+                aria-controls="catalog-advanced-filters"
+                onClick={() => setFiltersExpanded((expanded) => !expanded)}
+                className="mt-3 inline-flex min-h-12 w-full items-center justify-between border border-[hsl(0,0%,18%)] px-4 text-left text-sm text-[hsl(0,0%,88%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] md:hidden"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <SlidersHorizontal size={16} aria-hidden="true" />
+                  Filtros
+                  {activeFacetCount > 0 ? (
+                    <span className="inline-flex h-6 min-w-6 items-center justify-center border border-[hsl(var(--gold-accent)/0.5)] px-1 font-mono text-xs text-[hsl(var(--gold-accent))]">
+                      {activeFacetCount}
+                      <span className="sr-only"> filtros ativos</span>
+                    </span>
+                  ) : null}
+                </span>
+                <ChevronDown
+                  size={17}
+                  aria-hidden="true"
+                  className={`transition-transform motion-reduce:transition-none ${filtersExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              <div
+                id="catalog-advanced-filters"
+                className={`${filtersExpanded ? "grid" : "hidden"} mt-3 grid-cols-1 gap-3 border-t border-[hsl(0,0%,15%)] pt-3 sm:grid-cols-2 md:grid lg:grid-cols-4`}
+              >
+                <label className="min-w-0">
                   <span className="sr-only">Filtrar por categoria</span>
                   <select
                     value={category === "all" ? "" : category}
                     onChange={(event) => {
                       setFranchiseDraft("");
                       setFranchiseNeedle("");
-                      changeParams(search, event.target.value, "");
+                      changeParams(draft.trim(), event.target.value, "");
                     }}
                     onFocus={() => setLoadCategories(true)}
                     onPointerDown={() => setLoadCategories(true)}
@@ -391,9 +474,13 @@ export default function CatalogModelsArcade() {
                     disabled={
                       gateway === null || (loadCategories && categories.isError)
                     }
-                    className="h-12 w-full rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)] disabled:opacity-60"
+                    className="h-12 w-full rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 text-sm outline-none focus-visible:border-[hsl(var(--gold-accent))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)] disabled:opacity-60"
                   >
-                    <option value="">Todas as categorias</option>
+                    <option value="">
+                      {categories.isFetching
+                        ? "Carregando categorias…"
+                        : "Todas as categorias"}
+                    </option>
                     {category &&
                       category !== "all" &&
                       !categories.data?.some(
@@ -408,12 +495,12 @@ export default function CatalogModelsArcade() {
                       ))}
                   </select>
                 </label>
-                <label className="col-span-2 min-w-0 sm:col-span-2 sm:col-start-2 sm:row-start-2 lg:col-span-1 lg:col-start-3 lg:row-start-1">
+                <label className="min-w-0">
                   <span className="sr-only">Filtrar por franquia</span>
                   <select
                     value={franchise}
                     onChange={(event) =>
-                      changeParams(search, category, event.target.value)
+                      changeParams(draft.trim(), category, event.target.value)
                     }
                     onFocus={() => setLoadFranchises(true)}
                     onPointerDown={() => setLoadFranchises(true)}
@@ -421,9 +508,13 @@ export default function CatalogModelsArcade() {
                     disabled={
                       gateway === null || (loadFranchises && franchises.isError)
                     }
-                    className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 text-sm text-[hsl(0,0%,94%)] outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)] disabled:opacity-60"
+                    className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 text-sm text-[hsl(0,0%,94%)] outline-none focus-visible:border-[hsl(var(--gold-accent))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)] disabled:opacity-60"
                   >
-                    <option value="">Todas as franquias</option>
+                    <option value="">
+                      {franchises.isFetching
+                        ? "Carregando franquias…"
+                        : "Todas as franquias"}
+                    </option>
                     {franchise &&
                       !franchises.data?.items.some(
                         (item) => item.id === franchise,
@@ -438,80 +529,82 @@ export default function CatalogModelsArcade() {
                     ))}
                   </select>
                 </label>
-                <button
-                  type="submit"
-                  className="col-start-2 row-start-1 h-12 border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-3 font-mono sm:col-start-3 sm:px-6 lg:col-start-4 text-xs font-semibold uppercase tracking-[0.15em] text-[hsl(0,0%,5%)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  Buscar
-                </button>
-              </form>
 
-              {categories.isError && !invalidSearch && !invalidCatalogScope && (
-                <div
-                  role="alert"
-                  className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[hsl(0,0%,56%)]"
-                >
-                  <span>Não foi possível carregar as categorias.</span>
+                <div className="flex min-w-0 flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-4">
+                  <label className="min-w-0 flex-1 basis-44 sm:max-w-sm">
+                    <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(0,0%,56%)]">
+                      Encontrar franquia
+                    </span>
+                    <input
+                      value={franchiseDraft}
+                      onChange={(event) =>
+                        setFranchiseDraft(event.target.value)
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          findFranchises();
+                        }
+                      }}
+                      maxLength={80}
+                      placeholder="Digite 3 letras ou mais"
+                      aria-label="Pesquisar franquias"
+                      aria-describedby="franchise-search-hint"
+                      disabled={gateway === null}
+                      className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 font-mono text-xs text-[hsl(0,0%,94%)] placeholder:text-[hsl(0,0%,42%)] focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))] disabled:opacity-60"
+                    />
+                    <span id="franchise-search-hint" className="sr-only">
+                      Pesquise franquias pelo nome, usando até 80 caracteres.
+                    </span>
+                  </label>
                   <button
                     type="button"
-                    onClick={() => void categories.refetch()}
-                    disabled={categories.isFetching}
-                    className="min-h-11 border border-[hsl(var(--gold-accent)/0.5)] px-3 text-[hsl(var(--gold-accent))] disabled:opacity-40"
+                    onClick={findFranchises}
+                    disabled={
+                      gateway === null ||
+                      (franchiseDraft.trim().length > 0 &&
+                        Array.from(franchiseDraft.trim()).length < 3)
+                    }
+                    aria-label="Buscar franquias"
+                    className="inline-flex min-h-12 items-center justify-center border border-[hsl(var(--gold-accent)/0.5)] px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] disabled:opacity-40"
                   >
-                    Tentar novamente categorias
+                    Buscar franquias
                   </button>
+                  {franchises.data?.truncated ? (
+                    <p
+                      className="max-w-xs text-xs text-[hsl(0,0%,56%)]"
+                      role="status"
+                    >
+                      A lista mostra apenas parte das franquias. Pesquise pelo
+                      nome para refinar.
+                    </p>
+                  ) : null}
                 </div>
-              )}
 
-              <div className="mt-3 flex flex-wrap items-end gap-2 border-t border-[hsl(0,0%,15%)] pt-3">
-                <label className="min-w-0 flex-1 basis-44 sm:max-w-sm">
-                  <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(0,0%,56%)]">
-                    Encontrar franquia
-                  </span>
-                  <input
-                    value={franchiseDraft}
-                    onChange={(event) => setFranchiseDraft(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        findFranchises();
-                      }
-                    }}
-                    maxLength={80}
-                    placeholder="Digite ao menos 3 caracteres"
-                    aria-label="Pesquisar franquias"
-                    disabled={gateway === null}
-                    className="h-11 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-3 font-mono text-xs text-[hsl(0,0%,94%)] placeholder:text-[hsl(0,0%,42%)] focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))] disabled:opacity-60"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={findFranchises}
-                  disabled={
-                    gateway === null ||
-                    (franchiseDraft.trim().length > 0 &&
-                      Array.from(franchiseDraft.trim()).length < 3)
-                  }
-                  aria-label="Buscar franquias"
-                  className="h-11 border border-[hsl(var(--gold-accent)/0.5)] px-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] disabled:opacity-40 sm:px-4"
-                >
-                  <span className="sm:hidden">Buscar</span>
-                  <span className="hidden sm:inline">Buscar franquias</span>
-                </button>
-                {franchises.data?.truncated ? (
-                  <p
-                    className="max-w-xs text-xs text-[hsl(0,0%,56%)]"
-                    role="status"
+                {categories.isError &&
+                !invalidSearch &&
+                !invalidCatalogScope ? (
+                  <div
+                    role="alert"
+                    className="flex flex-wrap items-center gap-3 text-xs text-[hsl(0,0%,56%)] sm:col-span-2 lg:col-span-4"
                   >
-                    A lista mostra apenas parte das franquias. Pesquise pelo
-                    nome para refinar.
-                  </p>
+                    <span>Não foi possível carregar as categorias.</span>
+                    <button
+                      type="button"
+                      onClick={() => void categories.refetch()}
+                      disabled={categories.isFetching}
+                      className="min-h-11 border border-[hsl(var(--gold-accent)/0.5)] px-3 text-[hsl(var(--gold-accent))] disabled:opacity-40"
+                    >
+                      Tentar novamente categorias
+                    </button>
+                  </div>
                 ) : null}
+
                 {franchises.isError &&
                 !invalidSearch &&
                 !invalidCatalogScope ? (
                   <div
-                    className="flex flex-wrap items-center gap-2 text-xs text-[hsl(0,0%,56%)]"
+                    className="flex flex-wrap items-center gap-2 text-xs text-[hsl(0,0%,56%)] sm:col-span-2 lg:col-span-4"
                     role="alert"
                   >
                     <span>Não foi possível consultar as franquias.</span>
@@ -777,12 +870,7 @@ export default function CatalogModelsArcade() {
                   : "Utilize ao menos três caracteres na pesquisa."}
               </p>
             ) : models.isPending ? (
-              <p
-                role="status"
-                className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm"
-              >
-                Carregando os modelos publicados…
-              </p>
+              <CatalogGridSkeleton />
             ) : models.isError ? (
               <div
                 role="alert"
@@ -797,28 +885,42 @@ export default function CatalogModelsArcade() {
                 <button
                   type="button"
                   onClick={() => void models.refetch()}
-                  className="mt-4 rounded-none border border-[hsl(var(--gold-accent))] px-4 py-2 text-sm"
+                  className="mt-4 inline-flex min-h-11 items-center justify-center rounded-none border border-[hsl(var(--gold-accent))] px-4 text-sm hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                 >
                   Tentar novamente
                 </button>
               </div>
             ) : rows.length === 0 ? (
-              <p
+              <div
                 role="status"
-                className="rounded-none bg-[hsl(0,0%,7%)] p-7 text-sm"
+                className="border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] p-6 sm:p-8"
               >
-                {canGoNext
-                  ? "Não há modelos disponíveis nesta página. Continue para ver mais resultados."
-                  : "Nenhum modelo disponível corresponde aos filtros utilizados. Tente outra busca."}
-              </p>
+                <p className="text-sm leading-relaxed text-[hsl(0,0%,75%)]">
+                  {canGoNext
+                    ? "Não há modelos disponíveis nesta página. Continue para ver mais resultados."
+                    : "Nenhum modelo disponível corresponde aos filtros utilizados. Tente outra busca."}
+                </p>
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="mt-4 inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent)/0.6)] px-4 text-sm font-semibold text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
+                  >
+                    Limpar filtros e ver o acervo
+                  </button>
+                ) : null}
+              </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-5 2xl:grid-cols-6 2xl:gap-5">
+              <div className={CATALOG_GRID_CLASS}>
                 {rows.map((model) => {
                   const isSelected = selectedModels.some(
                     (item) => item.id === model.id,
                   );
                   return (
-                    <ArcadeCard key={model.id} className="flex h-full flex-col">
+                    <ArcadeCard
+                      key={model.id}
+                      className={`flex h-full flex-col ${isSelected ? "ring-1 ring-[hsl(var(--gold-accent)/0.28)]" : ""}`}
+                    >
                       <div className="flex h-full flex-col">
                         <Link
                           to={catalogModelDetailsPath(model.slug)}
@@ -840,17 +942,23 @@ export default function CatalogModelsArcade() {
                             mediaUrl={(key) => gateway.mediaUrl(key)}
                           />
                           <div className="space-y-1.5 p-3 md:p-4">
-                            <p className="line-clamp-2 min-h-[2.5em] font-mono text-xs font-semibold uppercase tracking-[0.08em] leading-snug text-[hsl(0,0%,92%)] md:text-sm">
+                            <p className="line-clamp-2 min-h-[2.6em] text-sm font-semibold uppercase leading-snug tracking-wide text-[hsl(0,0%,94%)]">
                               {model.name}
                             </p>
-                            <p className="truncate text-xs text-[hsl(0,0%,56%)]">
-                              {model.variantName || model.franchise}
+                            <p className="truncate text-xs font-medium text-[hsl(0,0%,72%)]">
+                              {model.franchise}
                             </p>
-                            <p className="text-xs text-[hsl(0,0%,56%)]">
+                            {model.variantName ? (
+                              <p className="truncate text-xs text-[hsl(0,0%,56%)]">
+                                {model.variantName}
+                              </p>
+                            ) : null}
+                            <p className="font-mono text-[10px] tracking-[0.08em] text-[hsl(0,0%,48%)]">
                               {model.code}
                             </p>
-                            <p className="pt-1 text-xs font-semibold text-[hsl(var(--gold-accent))]">
+                            <p className="flex items-center justify-between gap-2 pt-1 text-xs font-semibold text-[hsl(var(--gold-accent))]">
                               Ver detalhes
+                              <ArrowRight size={14} aria-hidden="true" />
                             </p>
                           </div>
                         </Link>

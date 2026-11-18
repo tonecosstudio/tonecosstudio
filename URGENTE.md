@@ -36,6 +36,27 @@
 - **GitHub Actions:** run [#44103718463](https://github.com/tonecosstudio/tonecosstudio/actions/runs/44103718463) no SHA `5935e6b6` falhou no job `Catalog Worker offline / no deploy` com `steps=null`; os outros quatro jobs foram pulados. A CI não executou/validou os comandos do repositório e não está aprovada.
 - **Próxima ação:** aguardar staging autorizado e integração completa da PR #31; revisão editorial de candidatos no serviço privado; implementação da projeção v1 e allowlists no owner do Worker/proxy. Só então validar em ambiente autorizado e considerar a configuração do flag. Não repetir scan integral sem mudança das fontes nem habilitar a ficha no site antes da projeção real aprovada.
 
+## CHECKPOINT — 18/11/2026 — MVP comercial/mobile integrado e prévia validada
+
+- **SSOT / integração:** `tonecosstudio/tonecosstudio/main`. PR #34 (admin input values) integrada por squash `e70531433ae9a19ec4ac941653cb605f8e32aa6b`; PR #35 (contato por e-mail de visitantes com seleção, sem cadastro e sem escrita anônima em Supabase) integrada por `5769b99dbe47312779f8d160a85e577ab087bda0`; PR #29 (catálogo e responsividade mobile) integrada por `15c89ab8ac587a72b1173029445daa95f661cb2d`. PRs #26/#31/#33 editoriais não alteradas e **não bloqueiam o MVP comercial**.
+- **Provas:** Quality Gate PR #34 run `44362757641` SUCCESS; PR #35 reconciliada após #34, run `44373977771` SUCCESS; PR #29 reconciliada após #34/#35, run `44375068818` SUCCESS. Os jobs de produção/coverage/audits são pulados em PR por desenho, não afirmar aprovação desses jobs. Na revisão final da #29, `typecheck:app` e ESLint dos nove arquivos alterados aprovaram no Windows. Build Vercel oficial **somente preview**, `dpl_BySMPHVhon1pAdJ1wUPET55B6eZD`, SHA de código `15c89ab8`, READY, 52 testes Node/0 falhas e build Vite; produção não promovida.
+- **HTTP real de preview:** Home=200 após primeira tentativa com timeout, `/modelos`, `/login`, `/recuperar-senha`, `/solicitar-orcamento` e `/admin/orcamentos`=200 como rotas SPA (não evidência de autenticação); proxy categorias=200, consulta inválida `offset=0`=400, `robots.txt`=200 com `Disallow: /`, sitemap=404, `X-Robots-Tag: noindex, nofollow, noarchive`. Não atribuir 200 da rota SPA a autorização de acesso ao admin.
+- **Gates não alterados:** Supabase Auth é autoridade exclusiva de cadastro, `quotes`+RPC+RLS seguem responsáveis por orçamento autenticado; contato `mailto:` depende de envio pelo visitante e não alimenta automaticamente a fila administrativa. Zero publicação SpecialSTL não aprovada; indexação, cadastro aberto, Coins/pagamentos/assinaturas/checkout permanecem independentes e restritos. Nenhuma nova API, D1/R2, tabela, Worker ou backend.
+- **Pendências reais de GO:** E2E com sessões reais cliente/admin e caixa de e-mail controlada, prova do recebimento/atendimento do contato público, QA visual e interação mobile/desktop autenticada, revisão jurídica do operador/Termos/Privacidade/LGPD e direitos/créditos de mídia, verificação dos gates de segurança e autorização expressa antes da indexação/cadastro/cobrança. Preview HTTP+Vitest não certificam essas etapas. A tentativa de captura visual Chrome headless local não gerou screenshots; **QA visual não foi concluído**.
+- **NEXT_ACTION:** realizar homologação real e revisão humana dos gates no projeto existente `tonart-studio-public`, escolher SHA aprovado e preparar promoção manual **sem rebuild desnecessário**, com rollback disponível. **DO_NOT_REPEAT:** não criar terceiro fluxo de cotação, não recriar backlog/editorial, não rerodar build já homologado por docs, não publicar produção ou mudar flags sem GO.
+
+---
+
+## CHECKPOINT — 18/11/2026 — atendimento por e-mail para visitante sem cadastro
+
+- **Base:** main@b82a76a8; **branch:** `fix/commercial-guest-contact-20261118`, HEAD técnico `f2e0904a` antes deste checkpoint.
+- **Entrega:** `TonecosQuoteRequestPage` usa o endereço oficial `CONTACT.CONTACT_EMAIL` e `buildSafeMailtoHref` para oferecer ao visitante sem conta um contato por e-mail com nome/código dos modelos selecionados. O e-mail abre o aplicativo do visitante; o envio exige ação humana e **não** cria cotação no Supabase nem protocolo em `/meus-orcamentos`. Seleções extensas não são truncadas silenciosamente; o visitante recebe instruções de contato direto. Cadastro Auth, RPC `submit_catalog_quote_request`, `quotes`, RLS e painel administrativo permanecem inalterados. Teste de regressão adicionado à suíte comercial.
+- **Verificação:** revisão de fonte e seleção contra o cadastro fechado; tentativa de Vitest local no Windows esgotou inicialização do worker antes de coletar testes (0 executados), portanto **não aprovado**. Formatação histórica preexistente nas duas fontes impede Prettier integral sem diff amplo; não reformate arquivos por inteiro. Verificar CI e repetir teste dirigido somente em runner funcional.
+- **PRs protegidas:** #26, #31, #33 editoriais não tocadas; #29 mobile e #34 admin preservadas. Quality Gate da #34 (#44320097694) alocou runner e instalou dependências, mas falhou em 4 de 384 testes (3 suites: catálogo/modelos, detalhe/Coins e admin Coins), não no formulário de orçamento. #29 (#43995612028) falhou sem steps. Nenhuma PR integrada, nenhuma publicação, migração, cobrança ou indexação liberada nesta etapa.
+- **Próxima ação:** obter CI verde na revisão exata, validar navegação mobile e orçamento com sessão cliente/admin real, reconciliar #29/#34 após suas correções, publicar manualmente SHA aprovado no Vercel existente somente após gates aplicáveis; revisão humana de direitos, LGPD e GO de indexação continuam separadas. **DO_NOT_REPEAT:** não criar outro backend/catálogo/PR editorial, não replicar tabela/RPC, não repetir builds de produção já homologados.
+
+---
+
 ## CHECKPOINT — 16/11/2026 — vitrine comercial sem promoção não autorizada
 
 - **Produção publicada:** `tonart-studio-public` deployment `dpl_8TSit4xbse6JZmET16dRB23H47aL`, `READY`, commit `8c1e59f063480bcfbb8335eeaf115681b4b4ad35`, alias `https://tonartstudio.com.br`. Uma única compilação de produção, com **52 testes Node aprovados**. Não repetir o deploy.
@@ -2227,3 +2248,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisão editorial humana das 96 identidades e 935 relações, com evidência independente por render; em seguida, staging isolado autorizado para homologar export aprovado → D1 local/isolado → gateway/páginas. Pesquisar também os 1.687 modelos restantes.
 
 **DO_NOT_REPEAT:** não tratar rótulo, título, franquia/categoria ou fonte biográfica como prova de que um render representa personagem específico; não usar mocks como homologação Supabase/Cloudflare.
+
+## Rodada 78 — correção do formulário de resposta de orçamento (18/11/2026)
+
+- **Base/HEAD:** `origin/main@b82a76a80cde54b8bef0afa73cfe48ff4a549d3b`; correção em `353ff843` na branch curta `fix/commercial-form-event-state`, enviada à [PR #34](https://github.com/tonecosstudio/tonecosstudio/pull/34), draft.
+- O formulário administrativo lia `event.currentTarget.value` dentro de atualizadores funcionais. Após a finalização do evento, `currentTarget` já é nulo, derrubando a página ao preencher o desconto Black Friday. O handler agora captura o valor sincronamente nos campos de cancelamento, frete, preço, desconto e mensagem.
+- **Validação:** a suíte direcionada inicial executou 17 arquivos: **233/234 testes passaram**, com o caso Black Friday reproduzindo a falha. Após a correção, `TonecosAdminQuotesPage.test.tsx` passou **13/13**; `typecheck:app`, ESLint do arquivo e `git diff --check` passaram. A checagem Prettier do arquivo inteiro já falhava na versão base por formatação histórica, sem ser alterada mecanicamente nesta correção.
+- Nenhuma chamada Supabase remota, migration, alteração de feature gate, cobrança ou deploy foi feita. PRs #27 e #28 já estão integradas à `main`; o comércio permanece fechado pelos flags existentes.
+- **Pendência real:** E2E com sessões Auth reais de admin e cliente e confirmação de build do SHA final ainda não foram executados. A verificação desta rodada ficou local, conforme a restrição vigente.
+
+**NEXT_ACTION:** revisar os checks da PR #34 e manter os gates comerciais fechados até E2E autorizado com sessões reais.
+
+**DO_NOT_REPEAT:** não ler `event.currentTarget` dentro de um updater assíncrono; não usar testes locais como prova de Supabase real; não alterar os flags comerciais ou escrever em produção.
