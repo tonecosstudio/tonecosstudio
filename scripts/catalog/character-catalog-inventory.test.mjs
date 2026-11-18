@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 79);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 836);
-  assert.equal(packet.candidates.length, 79);
-  assert.equal(packet.sources.length, 89);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 83);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 859);
+  assert.equal(packet.candidates.length, 83);
+  assert.equal(packet.sources.length, 94);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 79);
+  assert.equal(packet.policy.preparedIdentityCount, 83);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 836);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 859);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 836);
+  assert.equal(links.length, 859);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -248,6 +248,10 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["Mumm-Ra (1985 ThunderCats profile candidate)", "Mumm-Ra", "ThunderCats", 6],
     ["Cheetara (1985 ThunderCats profile candidate)", "Cheetara", "ThunderCats", 5],
     ["Lunch (Launch catalog localization candidate)", "Launch", "Dragon Ball", 6],
+    ["Mileena (Mortal Kombat 1 roster candidate)", "Mileena", "Mortal Kombat", 5],
+    ["Goro (Mortal Kombat 1 Kameo profile candidate)", "Goro", "Mortal Kombat", 6],
+    ["T-800/Carl (Dark Fate continuity candidate)", "T-800", "Terminator", 7],
+    ["John Wick (film franchise candidate)", "John Wick", "John Wick", 5],
   ];
   for (const [candidateName, catalogLabel, franchise, expectedModels] of newestResearchCandidates) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
@@ -287,6 +291,10 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["Mumm-Ra (1985 ThunderCats profile candidate)", "hbomax-thundercats-1985-series-and-episodes", "biography.fact.mutants_alliance"],
     ["Cheetara (1985 ThunderCats profile candidate)", "hbomax-thundercats-1985-series-and-episodes", "biography.fact.sixth_sense_episode"],
     ["Lunch (Launch catalog localization candidate)", "dragon-ball-lunch-official-character-showcase", "biography.fact.sneeze_personality_change"],
+    ["Mileena (Mortal Kombat 1 roster candidate)", "wb-games-mk1-faq", "biography.fact.mortal_kombat_1_main_roster"],
+    ["Goro (Mortal Kombat 1 Kameo profile candidate)", "netherrealm-mk1-roster", "biography.fact.mortal_kombat_1_kameo_partner"],
+    ["T-800/Carl (Dark Fate continuity candidate)", "paramount-terminator-dark-fate-t800", "biography.fact.dark_fate_t800_carl"],
+    ["John Wick (film franchise candidate)", "peacock-john-wick-franchise-guide", "biography.fact.retired_hitman_and_return"],
   ];
   for (const [candidateName, sourceId, attribute] of newestSourceClaims) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
@@ -312,6 +320,14 @@ test("research preparation references only inventory IDs and remains unapproved"
   assert.ok(launchCandidate.biographySourceIds.includes("dragon-ball-lunch-kame-house"));
   assert.ok(launchCandidate.candidateModelLinks.every((link) =>
     link.independentModelEvidence.length === 0 && link.reviewRequired));
+  const t800 = packet.candidates.find((item) =>
+    item.candidateName === "T-800/Carl (Dark Fate continuity candidate)");
+  const johnWick = packet.candidates.find((item) =>
+    item.candidateName === "John Wick (film franchise candidate)");
+  assert.deepEqual(t800.catalogFranchiseCandidates, ["Exterminador do Futuro"]);
+  assert.deepEqual(johnWick.catalogFranchiseCandidates, ["John Wick (Franquia)"]);
+  assert.ok(t800.ambiguities.some((item) => /Dark Fate/.test(item)));
+  assert.ok(johnWick.ambiguities.some((item) => /qual filme/.test(item)));
   const burter = packet.candidates.find((item) => item.candidateName === "Burter (Namek saga candidate)");
   const shenron = packet.candidates.find((item) =>
     item.candidateName === "Shenron (Earth Dragon Balls; Shenlong label candidate)");

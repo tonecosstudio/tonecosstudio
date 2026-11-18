@@ -2129,3 +2129,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** encaminhar Lunch/Launch, Mumm-Ra e Cheetara à curadoria privada para resolver nomes, versões e relações por inspeção visual.
 
 **DO_NOT_REPEAT:** não usar os títulos dos seis modelos como confirmação de Lunch/Launch ou como evidência do render.
+
+## Rodada 110 — Mileena, Goro, T-800 e John Wick (18/11/2026)
+
+- Preparei quatro candidatos com escopo de continuidade delimitado: elenco principal de *Mortal Kombat 1* para Mileena; Kameo de MK1 para Goro; T-800/Carl de *Dark Fate*; e perfil de John Wick baseado no guia oficial da franquia e na divulgação de *Chapter 4*. Fontes: [FAQ WB Games](https://mortalkombatgamessupport.wbgames.com/hc/en-us/articles/16726930433939-Mortal-Kombat-1-FAQ), [roster oficial MK1](https://www.mortalkombat.com/en-gb/roster), [Paramount](https://www.paramount.com/movies/terminator-dark-fate), [Peacock](https://www.peacocktv.com/blog/your-guide-to-the-john-wick-universe) e [Lionsgate Publicity](https://www.lionsgatepublicity.com/theatrical/john-wick-4).
+- Preparei **23 vínculos** por ID exato da fila. A candidata Mileena inclui um registro candidato não publicado, preservado como tal. T-800 e John Wick mantêm as franquias exibidas no catálogo como candidatos de localização (`Exterminador do Futuro` e `John Wick (Franquia)`). Nenhum vínculo está visualmente confirmado.
+- Totais atuais: **83 candidatos, 94 fontes oficiais únicas e 859 vínculos candidatos**. Revisões/aprovações e evidência independente de render continuam em zero.
+- Próximo gate permanece editorial e externo: curadoria humana na #31, ambiente isolado Supabase/D1, migrations da #31 e 0023/#26 e exportação aprovada. Nenhuma gravação, migration ou publicação foi feita.
+
+**NEXT_ACTION:** encaminhar os dossiês à curadoria privada; revisar especialmente a continuidade das versões, a distinção Goro/KOF e as franquias localizadas antes de aprovar qualquer vínculo.
+
+**DO_NOT_REPEAT:** não converter nome/slug em evidência visual nem expandir fatos de uma versão para todos os modelos de um personagem.
