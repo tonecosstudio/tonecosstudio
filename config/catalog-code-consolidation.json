@@ -340,8 +340,8 @@
     "localOverlays": {
       "config/catalog-schema-contract.json": {
         "sourceBlob": "084ca978a3d2352221a4c9cd606c6376697a8c9d",
-        "localBlob": "d3c8eb1c4d84b2eb74cffda1a642e8044aa67128",
-        "reason": "Add the approved/public editorial projection migration to the staged Worker schema contract; M5 stays offline."
+        "localBlob": "853da5a45d20d556fb237b64d447554753adb222",
+        "reason": "Require the transactional editorial projection cursor and stage table in the staged Worker schema contract; M5 stays offline."
       },
       "config/catalog-production-model-contract.json": {
         "sourceBlob": "e9057d363e51e0f5701311db44429da18a3a7f04",
@@ -370,8 +370,8 @@
       },
       "worker/index.ts": {
         "sourceBlob": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
-        "localBlob": "c9a01a8136b1a6a3c7fef0c564f87a6ca2b41b04",
-        "reason": "Preserve exact private curation evidence kinds in read-only, evidence-checked character and universe projections on the existing staged Worker."
+        "localBlob": "",
+        "reason": "Preserve exact private curation evidence kinds in read-only, evidence-checked character and universe projections, and keep approved-projection synchronization inside the same staged Worker."
       },
       "worker/publicQueryBudget.ts": {
         "sourceBlob": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
@@ -524,6 +524,11 @@
         "path": "migrations/0023_public_editorial_projection.sql",
         "localBlob": "9e320f833ddd0c3ac9a55df11b0ac8df71553b09",
         "reason": "Add only the approved public editorial projection schema with replay-safe FTS backfill; no content is seeded and M5 migration remains disabled."
+      },
+      {
+        "path": "worker/editorialProjection.ts",
+        "localBlob": "78bc12be275e20ed140bd2dbccf9d6a579117e0d",
+        "reason": "Publish only the private approved export through the existing staged Worker with bounded, atomic D1 synchronization."
       }
     ]
   },

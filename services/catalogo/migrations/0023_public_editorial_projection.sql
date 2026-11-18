@@ -73,8 +73,7 @@ CREATE TABLE IF NOT EXISTS editorial_public_characters (
   CHECK ((biography IS NULL AND json_array_length(biography_evidence_ids_json) = 0)
       OR (biography IS NOT NULL AND json_array_length(biography_evidence_ids_json) BETWEEN 1 AND 40)),
   CHECK ((age_value IS NULL AND age_context IS NULL AND json_array_length(age_evidence_ids_json) = 0)
-      OR (age_value IS NOT NULL AND age_context IS NOT NULL
-        AND json_array_length(age_evidence_ids_json) BETWEEN 1 AND 40)),
+      OR (age_context IS NOT NULL AND json_array_length(age_evidence_ids_json) BETWEEN 1 AND 40)),
   CHECK ((origin_work IS NULL AND json_array_length(origin_work_evidence_ids_json) = 0)
       OR (origin_work IS NOT NULL AND json_array_length(origin_work_evidence_ids_json) BETWEEN 1 AND 40)),
   CHECK ((json_array_length(media_types_json) = 0 AND json_array_length(media_type_evidence_ids_json) = 0)
@@ -91,6 +90,42 @@ CREATE TABLE IF NOT EXISTS editorial_public_character_models (
   approval_ref TEXT NOT NULL CHECK (length(trim(approval_ref)) BETWEEN 1 AND 240),
   PRIMARY KEY (character_id, model_id)
 );
+
+-- A single synchronization cursor provides idempotency and compare-and-swap
+-- concurrency for the approved Supabase snapshot. It stores no catalog or
+-- editorial identity data and remains private to the existing Worker binding.
+CREATE TABLE IF NOT EXISTS editorial_publication_sync (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  source_revision TEXT NOT NULL DEFAULT '',
+  snapshot_sha256 TEXT NOT NULL DEFAULT ''
+    CHECK (snapshot_sha256 = '' OR
+      (length(snapshot_sha256) = 64 AND snapshot_sha256 NOT GLOB '*[^0-9a-f]*')),
+  previous_sha256 TEXT NOT NULL DEFAULT '',
+  applied_at TEXT
+);
+
+INSERT OR IGNORE INTO editorial_publication_sync (id)
+VALUES (1);
+
+-- A private transaction buffer keeps large approved exports below D1's bound
+-- parameter limit. It is filled, consumed and emptied inside one D1 batch.
+-- A failed batch rolls the buffer back together with the public projection.
+CREATE TABLE IF NOT EXISTS editorial_publication_staged_model_links (
+  character_id TEXT NOT NULL CHECK (length(trim(character_id)) BETWEEN 1 AND 120),
+  model_id TEXT NOT NULL CHECK (length(trim(model_id)) BETWEEN 1 AND 120),
+  evidence_ids_json TEXT NOT NULL
+    CHECK (json_valid(evidence_ids_json) AND json_type(evidence_ids_json) = 'array'
+      AND json_array_length(evidence_ids_json) BETWEEN 1 AND 40),
+  approval_ref TEXT NOT NULL CHECK (length(trim(approval_ref)) BETWEEN 1 AND 240),
+  PRIMARY KEY (character_id, model_id)
+);
+
+CREATE TRIGGER IF NOT EXISTS trg_editorial_publication_sync_compare_and_swap
+BEFORE UPDATE OF snapshot_sha256 ON editorial_publication_sync
+WHEN NEW.previous_sha256 IS NOT OLD.snapshot_sha256
+BEGIN
+  SELECT RAISE(ABORT, 'editorial_projection_revision_conflict');
+END;
 
 CREATE INDEX IF NOT EXISTS idx_editorial_public_characters_franchise
   ON editorial_public_characters(franchise_id, name COLLATE NOCASE, id);

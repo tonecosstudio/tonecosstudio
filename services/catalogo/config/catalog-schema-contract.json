@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "latestMigration": "0023_public_editorial_projection.sql",
   "requiredMigrations": [
     "0001_catalog.sql",
@@ -35,6 +35,8 @@
       "editorial_public_universes",
       "editorial_public_characters",
       "editorial_public_character_models",
+      "editorial_publication_sync",
+      "editorial_publication_staged_model_links",
       "editorial_public_characters_fts"
     ],
     "indexes": [

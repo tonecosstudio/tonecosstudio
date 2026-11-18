@@ -5,6 +5,7 @@ import { catalogSchemaStatus } from './schemaContract'
 import { configuredPublicOrigins, validateTurnstile } from './turnstile'
 import { RESOLVED_MODEL_BY_SLUG_CTE, resolvePublicModelIds } from './modelAliases'
 import { validatePublicCatalogQuery } from './publicQueryBudget'
+import { applyEditorialProjection } from './editorialProjection'
 
 type D1Statement = {
   bind(...values: unknown[]): D1Statement
@@ -31,6 +32,7 @@ type Env = {
   MEDIA: R2Bucket
   CORS_ORIGINS: string
   TURNSTILE_SECRET_KEY?: string
+  EDITORIAL_SYNC_TOKEN?: string
 }
 
 type CatalogRow = {
@@ -66,7 +68,7 @@ type EditorialEvidence = {
   id: string
   title: string
   url: string
-  kind: 'official' | 'primary' | 'publisher' | 'licensor' | 'institution' | 'reputable_reference' | 'other' | 'catalog'
+  kind: 'official' | 'primary' | 'publisher' | 'licensor' | 'institution' | 'reputable_reference' | 'catalog' | 'other'
 }
 
 type EditorialIdentityRow = Record<string, unknown> & {
@@ -339,7 +341,10 @@ export function editorialEvidence(value: unknown): EditorialEvidence[] {
     if (seen.has(id)) throw new Error('editorial_evidence_duplicate')
     seen.add(id)
     const kind = row.kind
-    if (!['official', 'primary', 'publisher', 'licensor', 'institution', 'reputable_reference', 'other', 'catalog'].includes(kind as string)) {
+    if (![
+      'official', 'primary', 'publisher', 'licensor', 'institution',
+      'reputable_reference', 'catalog', 'other',
+    ].includes(kind as string)) {
       throw new Error('editorial_evidence_kind_invalid')
     }
     const rawUrl = editorialText(row.url, 'editorial_evidence_url_invalid', 2048)
@@ -350,7 +355,7 @@ export function editorialEvidence(value: unknown): EditorialEvidence[] {
     }
     return {
       id,
-      title: editorialText(row.title, 'editorial_evidence_title_invalid', 200),
+      title: editorialText(row.title, 'editorial_evidence_title_invalid', 1000),
       url: url.toString(),
       kind: kind as EditorialEvidence['kind'],
     }
@@ -475,7 +480,7 @@ function editorialUniverseData(row: EditorialUniverseRow, evidence = editorialEv
 function editorialCharacterData(row: EditorialIdentityRow, evidence = editorialEvidence(row.evidence_json)) {
   const ageValue = editorialOptionalText(row.age_value, 'editorial_character_age', 200)
   const ageContext = editorialOptionalText(row.age_context, 'editorial_character_age_context', 500)
-  if (Boolean(ageValue) !== Boolean(ageContext)) throw new Error('editorial_character_age_context_invalid')
+  if (ageValue && !ageContext) throw new Error('editorial_character_age_context_invalid')
   const summary = editorialOptionalText(row.summary, 'editorial_character_summary')
   const biography = editorialOptionalText(row.biography, 'editorial_character_biography', 6000)
   const originWork = editorialOptionalText(row.origin_work, 'editorial_character_origin_work', 240)
@@ -493,7 +498,7 @@ function editorialCharacterData(row: EditorialIdentityRow, evidence = editorialE
     biographyEvidenceIds: biography
       ? editorialEvidenceIds(row.biography_evidence_ids_json, evidence, 'editorial_character_biography_evidence')
       : [],
-    ageContext: ageValue && ageContext
+    ageContext: ageContext
       ? {
           value: ageValue,
           context: ageContext,
@@ -1187,8 +1192,11 @@ async function createQuote(request: Request, env: Env) {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method === 'OPTIONS') return options(request, env)
     const url = new URL(request.url)
+    if (url.pathname === '/api/admin/editorial-projection') {
+      return applyEditorialProjection(request, env)
+    }
+    if (request.method === 'OPTIONS') return options(request, env)
     // Reject cache-busting arguments BEFORE even the D1 schema-readiness check.
     // Quote and shared-collection contracts are intentionally untouched.
     if (request.method === 'GET') {

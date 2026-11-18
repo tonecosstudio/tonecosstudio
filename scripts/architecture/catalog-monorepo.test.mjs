@@ -223,9 +223,10 @@ test('staged files preserve immutable import pins and explicit local overlays, w
     }
   }
   const additions = contract.staging.postImportAdditions ?? [];
-  assert.deepEqual(additions.map(item => item.path), [
+  assert.deepEqual(additions.map(item => item.path).sort(), [
     'migrations/0023_public_editorial_projection.sql',
-  ], 'Only the reviewed additive editorial projection migration may extend the imported snapshot');
+    'worker/editorialProjection.ts',
+  ].sort(), 'Only the approved D1 projection migration and its existing-Worker publisher may extend the imported snapshot');
   assert.equal(contract.migration.phase, 'staged-offline');
   assert.equal(contract.migration.targetD1MigrationEnabled, false);
   for (const addition of additions) {
