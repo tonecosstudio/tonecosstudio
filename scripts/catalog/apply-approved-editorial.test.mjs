@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { resolveApprovedCharacterScopes, planApprovedCharacterProjection, planApprovedCharacterReconciliation } from './resolve-approved-character-scope.mjs';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   planReviewedEditorial, makeAtomicEditorialStatement,
   classifyLiveRows, assertMergedReview,
@@ -436,7 +437,7 @@ test('character scope blocks ambiguous freeform ages until the canonical public 
 test('public Worker evidence decoder preserves canonical source kinds without coercion', async () => {
   const { build } = await import('esbuild');
   const bundle = await build({
-    entryPoints: [new URL('../../services/catalogo/worker/index.ts', import.meta.url).pathname],
+    entryPoints: [fileURLToPath(new URL('../../services/catalogo/worker/index.ts', import.meta.url))],
     bundle: true, platform: 'browser', format: 'esm', target: 'es2022',
     write: false, logLevel: 'silent',
   });
