@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { resolveApprovedCharacterScopes, planApprovedCharacterProjection } from './resolve-approved-character-scope.mjs';
+import { resolveApprovedCharacterScopes, planApprovedCharacterProjection, planApprovedCharacterReconciliation } from './resolve-approved-character-scope.mjs';
 import { readFileSync } from 'node:fs';
 import {
   planReviewedEditorial, makeAtomicEditorialStatement,
@@ -583,4 +583,166 @@ test('approval of a profile never authorizes newer model links or changed link e
     }, snapshot),
     /approved_character_relation_revision_missing/,
   );
+});
+
+function editorialCurrentSnapshot(plan) {
+  return {
+    source: 'canonical-d1-editorial-projection',
+    complete: true,
+    readAt: '2026-11-18T04:01:00Z',
+    universes: plan.universes.map(row => ({ franchise_id: row.franchise_id })),
+    characters: plan.characters.map(row => ({
+      id: row.id, slug: row.slug, franchise_id: row.franchise_id,
+    })),
+    relations: plan.relations.map(row => ({
+      character_id: row.character_id, model_id: row.model_id,
+    })),
+  };
+}
+
+function applyReconciliationOffline(db, plan) {
+  // Test-only application of the proposed operation order. The real writer
+  // has a separate authenticated M5 gate and is NOT called by these tests.
+  const upsert = (table, row, keyFields) => {
+    const fields = Object.keys(row);
+    const sql = 'INSERT INTO ' + table + '(' + fields.join(',') + ') VALUES (' +
+      fields.map(() => '?').join(',') + ')' +
+      ' ON CONFLICT(' + keyFields.join(',') + ') DO UPDATE SET ' +
+      fields.filter(field => !keyFields.includes(field))
+        .map(field => field + '=excluded.' + field).join(',');
+    db.prepare(sql).run(...Object.values(row));
+  };
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const deleteLink = db.prepare(
+      'DELETE FROM editorial_public_character_models WHERE character_id=? AND model_id=?',
+    );
+    for (const row of plan.deleteLinks) deleteLink.run(row.character_id, row.model_id);
+    const deleteCharacter = db.prepare('DELETE FROM editorial_public_characters WHERE id=?');
+    for (const id of plan.deleteCharacters) deleteCharacter.run(id);
+    for (const row of plan.upsertUniverses) {
+      upsert('editorial_public_universes', row, ['franchise_id']);
+    }
+    for (const row of plan.upsertCharacters) {
+      upsert('editorial_public_characters', row, ['id']);
+    }
+    for (const row of plan.upsertLinks) {
+      upsert('editorial_public_character_models', row, ['character_id', 'model_id']);
+    }
+    const deleteUniverse = db.prepare('DELETE FROM editorial_public_universes WHERE franchise_id=?');
+    for (const id of plan.deleteUniverses) deleteUniverse.run(id);
+    assert.equal(db.prepare('PRAGMA foreign_key_check').all().length, 0);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+function openEditorialProjectionFixture() {
+  const db = new DatabaseSync(':memory:');
+  db.exec("PRAGMA foreign_keys=ON; CREATE TABLE franchises(id INTEGER PRIMARY KEY); CREATE TABLE models(id TEXT PRIMARY KEY); INSERT INTO franchises VALUES (121),(190); INSERT INTO models VALUES ('game-model'),('film-model')");
+  db.exec(readFileSync(
+    new URL('../../services/catalogo/migrations/0023_public_editorial_projection.sql', import.meta.url),
+    'utf8',
+  ));
+  return db;
+}
+
+test('reconciliation purges revoked public characters, their links and orphan universes', () => {
+  const payload = approvedCharacterFixture();
+  const d1 = approvedCharacterD1Fixture();
+  const full = planApprovedCharacterProjection(payload, d1);
+  const db = openEditorialProjectionFixture();
+  try {
+    const current = editorialCurrentSnapshot(full);
+    const first = planApprovedCharacterReconciliation(payload, d1, {
+      ...current, universes: [], characters: [], relations: [],
+    });
+    applyReconciliationOffline(db, first);
+    assert.equal(db.prepare('SELECT COUNT(*) AS c FROM editorial_public_characters').get().c, 1);
+    assert.equal(db.prepare('SELECT COUNT(*) AS c FROM editorial_public_character_models').get().c, 1);
+    assert.equal(db.prepare('SELECT COUNT(*) AS c FROM editorial_public_characters_fts').get().c, 1);
+    const revokeAll = planApprovedCharacterReconciliation(
+      { ...payload, characters: [] }, d1, current,
+    );
+    assert.deepEqual(revokeAll.deleteCharacters, [payload.characters[0].identityId]);
+    assert.deepEqual(revokeAll.deleteUniverses, [121]);
+    assert.equal(revokeAll.upsertCharacters.length, 0);
+    applyReconciliationOffline(db, revokeAll);
+    for (const table of [
+      'editorial_public_universes', 'editorial_public_characters',
+      'editorial_public_character_models', 'editorial_public_characters_fts',
+    ]) {
+      assert.equal(db.prepare('SELECT COUNT(*) AS c FROM ' + table).get().c, 0, table);
+    }
+    assert.deepEqual(
+      planApprovedCharacterReconciliation({ ...payload, characters: [] }, d1, {
+        ...current, universes: [], characters: [], relations: [],
+      }).deleteCharacters, [],
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test('reconciliation removes only revoked characters while retaining approved siblings', () => {
+  const payload = approvedCharacterFixture();
+  const d1 = approvedCharacterD1Fixture();
+  const second = {
+    ...payload.characters[0],
+    identityId: 'b263c732-fcf2-4328-ac2e-6b6c04884236',
+    slug: 'verified-sibling',
+    name: 'Another verified character',
+    profile: { ...payload.characters[0].profile, slug: 'verified-sibling' },
+  };
+  const both = { ...payload, characters: [payload.characters[0], second] };
+  const initial = planApprovedCharacterProjection(both, d1);
+  const current = editorialCurrentSnapshot(initial);
+  const plan = planApprovedCharacterReconciliation(payload, d1, current);
+  assert.deepEqual(plan.deleteCharacters, [second.identityId]);
+  assert.deepEqual(plan.deleteLinks, [{
+    character_id: second.identityId, model_id: 'game-model',
+  }]);
+  assert.deepEqual(plan.deleteUniverses, []);
+  const db = openEditorialProjectionFixture();
+  try {
+    const install = planApprovedCharacterReconciliation(both, d1, {
+      ...current, universes: [], characters: [], relations: [],
+    });
+    applyReconciliationOffline(db, install);
+    applyReconciliationOffline(db, plan);
+    assert.deepEqual(
+      db.prepare('SELECT id FROM editorial_public_characters ORDER BY id')
+        .all().map(row => row.id),
+      [payload.characters[0].identityId],
+    );
+    assert.equal(db.prepare('SELECT COUNT(*) AS c FROM editorial_public_universes').get().c, 1);
+    assert.equal(db.prepare('SELECT COUNT(*) AS c FROM editorial_public_characters_fts').get().c, 1);
+    assert.equal(db.prepare('SELECT COUNT(*) AS c FROM editorial_public_character_models').get().c, 1);
+  } finally {
+    db.close();
+  }
+});
+
+test('reconciliation rejects partial or unverifiable D1 snapshots before planning deletions', () => {
+  const payload = approvedCharacterFixture();
+  const d1 = approvedCharacterD1Fixture();
+  const proposed = planApprovedCharacterProjection(payload, d1);
+  const current = editorialCurrentSnapshot(proposed);
+  for (const altered of [
+    { ...current, complete: false },
+    { ...current, source: 'cache-only-rows' },
+    { ...current, readAt: '2026-11-18T03:59:59Z' },
+    { ...current, relations: [{ character_id: 'unknown', model_id: 'game-model' }] },
+    { ...current, characters: [current.characters[0], current.characters[0]] },
+  ]) {
+    assert.throws(
+      () => planApprovedCharacterReconciliation(payload, d1, altered),
+      /d1_editorial_(complete_snapshot_required|relation_snapshot_invalid|character_snapshot_invalid)/,
+    );
+  }
+  assert.throws(() => planApprovedCharacterReconciliation({
+    ...payload, source: 'untrusted-export', characters: [],
+  }, d1, current), /character_export_contract_invalid/);
 });
