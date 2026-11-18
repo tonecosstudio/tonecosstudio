@@ -236,6 +236,9 @@ async function normalizeCharacter(value: unknown) {
     throw new ProjectionInputError('editorial_approval_ref_invalid')
   }
   const approvedAt = date(row.approvedAt, 'editorial_approved_at_invalid')
+  if (Date.parse(approvedAt) < Date.parse(reviewedAt)) {
+    throw new ProjectionInputError('editorial_approval_precedes_review')
+  }
   const profile = record(row.profile, 'editorial_profile_invalid')
   exactKeys(profile, [
     'slug', 'aliases', 'biography', 'biographySources', 'ageContext',
