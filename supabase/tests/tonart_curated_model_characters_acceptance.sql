@@ -544,15 +544,17 @@ BEGIN
     RAISE EXCEPTION 'Initial private page returned incorrect active/archive state';
   END IF;
 
-  -- Idempotent re-approval of an ACTIVE link cannot modify first link proof.
+  -- An idempotent re-review of an ACTIVE link must not downgrade the
+  -- source-backed HTTPS citation already approved above. The original
+  -- manual provenance remains in the relation's existing review_history.
   PERFORM public.admin_verify_catalog_model_identity(
     v_model_a, v_slug_a, v_name_a, v_franchise,
     'manual_admin:acceptance_duplicate', 'Should not overwrite link proof'
   );
   IF (SELECT evidence_origin FROM public.catalog_curation_model_characters
       WHERE catalog_model_id = v_model_a AND character_identity_id = v_id_a)
-       IS DISTINCT FROM 'manual_admin:acceptance_original' THEN
-    RAISE EXCEPTION 'Idempotent review rewrote original link provenance';
+       IS DISTINCT FROM 'https://example.org/model-a/character-a' THEN
+    RAISE EXCEPTION 'Idempotent review downgraded reviewed HTTPS link evidence';
   END IF;
 
   -- Missing explanations and mismatched slugs cannot revoke any relation.
