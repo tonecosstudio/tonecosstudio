@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { resolveApprovedCharacterScopes } from './resolve-approved-character-scope.mjs';
+import { resolveApprovedCharacterScopes, planApprovedCharacterProjection } from './resolve-approved-character-scope.mjs';
 import { readFileSync } from 'node:fs';
 import {
   planReviewedEditorial, makeAtomicEditorialStatement,
@@ -461,5 +461,90 @@ test('public Worker evidence decoder preserves canonical source kinds without co
       { ...rows[0], url: 'http://example.org/source' },
     ])),
     /editorial_evidence_url_invalid/,
+  );
+});
+
+test('plan serializes only approved character fields into canonical D1 tables and FTS', () => {
+  const payload = approvedCharacterFixture();
+  const snapshot = approvedCharacterD1Fixture();
+  const plan = planApprovedCharacterProjection(payload, snapshot);
+  assert.equal(plan.schemaVersion, 1);
+  assert.equal(plan.universes.length, 1);
+  assert.equal(plan.characters.length, 1);
+  assert.equal(plan.relations.length, 1);
+  assert.equal(plan.universes[0].franchise_id, 121);
+  assert.equal(plan.characters[0].franchise_id, 121);
+  assert.equal(plan.characters[0].summary, null);
+  assert.equal(plan.characters[0].age_value, null);
+  assert.equal(plan.characters[0].age_context, null);
+  assert.deepEqual(
+    JSON.parse(plan.characters[0].biography_evidence_ids_json).length, 1,
+  );
+  const publishedSources = JSON.parse(plan.characters[0].evidence_json);
+  assert.ok(publishedSources.some(x => x.kind === 'licensor'));
+  assert.ok(publishedSources.some(x => x.kind === 'institution'));
+  assert.ok(publishedSources.some(x => x.kind === 'reputable_reference'));
+  assert.ok(publishedSources.some(x => x.kind === 'other'));
+  assert.ok(!plan.characters[0].editorial_profile_history);
+
+  const db = new DatabaseSync(':memory:');
+  try {
+    db.exec("PRAGMA foreign_keys = ON; CREATE TABLE franchises(id INTEGER PRIMARY KEY); CREATE TABLE models(id TEXT PRIMARY KEY); INSERT INTO franchises VALUES (121); INSERT INTO models VALUES ('game-model')");
+    db.exec(readFileSync(
+      new URL('../../services/catalogo/migrations/0023_public_editorial_projection.sql', import.meta.url),
+      'utf8',
+    ));
+    const insert = (table, row) => {
+      const fields = Object.keys(row);
+      db.prepare('INSERT INTO ' + table + ' (' + fields.join(',') + ') VALUES (' +
+        fields.map(() => '?').join(',') + ')').run(...Object.values(row));
+    };
+    for (const row of plan.universes) insert('editorial_public_universes', row);
+    for (const row of plan.characters) insert('editorial_public_characters', row);
+    for (const row of plan.relations) insert('editorial_public_character_models', row);
+    assert.equal(db.prepare('SELECT count(*) AS c FROM editorial_public_characters').get().c, 1);
+    assert.equal(db.prepare('SELECT count(*) AS c FROM editorial_public_characters_fts').get().c, 1);
+    assert.equal(db.prepare('SELECT count(*) AS c FROM editorial_public_character_models').get().c, 1);
+    assert.equal(db.prepare('PRAGMA foreign_key_check').all().length, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test('offline projection plans are deterministic, anchored in human approval and never publish empty data', () => {
+  const payload = approvedCharacterFixture();
+  const snapshot = approvedCharacterD1Fixture();
+  const first = planApprovedCharacterProjection(payload, snapshot);
+  const second = planApprovedCharacterProjection(payload, snapshot);
+  assert.deepEqual(first, second);
+  assert.equal(first.universes[0].approval_ref, payload.characters[0].approvalRef);
+  const another = {
+    ...payload.characters[0],
+    identityId: 'b263c732-fcf2-4328-ac2e-6b6c04884236',
+    slug: 'second-character',
+    name: 'Another verified character',
+    profile: { ...payload.characters[0].profile, slug: 'second-character' },
+  };
+  const two = planApprovedCharacterProjection({
+    ...payload, characters: [another, payload.characters[0]],
+  }, snapshot);
+  assert.equal(two.universes.length, 1);
+  assert.equal(two.characters.length, 2);
+  assert.equal(two.relations.length, 2);
+  assert.deepEqual(two, planApprovedCharacterProjection({
+    ...payload, characters: [payload.characters[0], another],
+  }, snapshot));
+  assert.throws(
+    () => planApprovedCharacterProjection({ ...payload, characters: [] }, snapshot),
+    /approved_character_projection_empty/,
+  );
+  assert.throws(
+    () => planApprovedCharacterProjection({
+      ...payload, characters: [
+        payload.characters[0],
+        { ...another, slug: payload.characters[0].slug },
+      ],
+    }, snapshot),
+    /approved_character_scope_invalid/,
   );
 });
