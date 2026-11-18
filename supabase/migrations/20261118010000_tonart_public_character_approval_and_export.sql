@@ -474,6 +474,7 @@ GRANT EXECUTE ON FUNCTION public.admin_verify_catalog_model_identity(text, text,
 CREATE OR REPLACE FUNCTION public.admin_set_catalog_character_publication_approval(
   p_identity_id uuid,
   p_expected_revision integer,
+  p_expected_relation_revision integer,
   p_approved boolean,
   p_approver_id uuid DEFAULT NULL
 )
@@ -491,7 +492,9 @@ DECLARE
 BEGIN
   PERFORM private_api.assert_tonart_curation_service_role();
   IF p_identity_id IS NULL OR p_expected_revision IS NULL
-     OR p_expected_revision < 0 OR p_approved IS NULL
+     OR p_expected_revision < 0
+     OR p_expected_relation_revision IS NULL OR p_expected_relation_revision < 0
+     OR p_approved IS NULL
      OR (p_approved AND p_approver_id IS NULL) THEN
     RAISE EXCEPTION 'Invalid character publication approval request'
       USING ERRCODE = '22023';
@@ -506,6 +509,13 @@ BEGIN
   END IF;
   IF v_identity.editorial_profile_revision <> p_expected_revision THEN
     RAISE EXCEPTION 'Character editorial profile changed; reload before approving'
+      USING ERRCODE = '40001';
+  END IF;
+  -- Compare the exact relation revision the human reviewed, under the same
+  -- canonical identity FOR UPDATE lock used for publication approval. No
+  -- silently approving an unfamiliar add, unlink, relink, slug or evidence.
+  IF v_identity.editorial_relation_revision <> p_expected_relation_revision THEN
+    RAISE EXCEPTION 'Character model relations changed; reload before approving'
       USING ERRCODE = '40001';
   END IF;
 
@@ -593,7 +603,8 @@ BEGIN
     END IF;
 
     IF v_identity.editorial_publication_status = 'approved'
-       AND v_identity.editorial_publication_revision = p_expected_revision THEN
+       AND v_identity.editorial_publication_revision = p_expected_revision
+       AND v_identity.editorial_publication_relation_revision = p_expected_relation_revision THEN
       RETURN jsonb_build_object(
         'identityId', v_identity.id,
         'name', v_identity.character_name,
@@ -628,6 +639,7 @@ BEGIN
               jsonb_build_object(
                 'action', 'approved',
                 'profileRevision', p_expected_revision,
+                'relationRevision', p_expected_relation_revision,
                 'approvalRef', v_approval_ref,
                 'approvedAt', v_approved_at,
                 'approvedBy', p_approver_id
@@ -856,11 +868,11 @@ BEGIN
 END;
 $character_public_projection$;
 
-REVOKE ALL ON FUNCTION public.admin_set_catalog_character_publication_approval(uuid, integer, boolean, uuid)
+REVOKE ALL ON FUNCTION public.admin_set_catalog_character_publication_approval(uuid, integer, integer, boolean, uuid)
   FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_export_approved_catalog_character_projection()
   FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.admin_set_catalog_character_publication_approval(uuid, integer, boolean, uuid)
+GRANT EXECUTE ON FUNCTION public.admin_set_catalog_character_publication_approval(uuid, integer, integer, boolean, uuid)
   TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_export_approved_catalog_character_projection()
   TO service_role;
