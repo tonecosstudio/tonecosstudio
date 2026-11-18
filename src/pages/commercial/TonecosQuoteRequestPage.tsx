@@ -1,6 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
+import { CONTACT } from "@/config/constants";
+import { buildSafeMailtoHref } from "@/lib/security/safe-open";
+import type { PublicCatalogModel } from "@/services/catalog/public-catalog-gateway";
 import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
 import {
   quoteItemsFromSelection,
@@ -32,9 +35,36 @@ function savedQuotePostalCode(profile: CustomerProfile): string {
   return typeof code === "string" && /^[0-9]{8}$/.test(code) ? code : "";
 }
 
+/** Public email contact uses the existing studio inbox, not an anonymous Supabase write. */
+function guestQuoteEmailHref(models: readonly PublicCatalogModel[]): string | null {
+  const recipient = buildSafeMailtoHref(CONTACT.CONTACT_EMAIL);
+  if (!recipient) return null;
+  const references = models.map((model, index) => {
+    const name = model.name.replace(/[\\r\\n]+/g, " ").slice(0, 100);
+    const code = model.code.replace(/[\\r\\n]+/g, " ").slice(0, 80);
+    return `${index + 1}. ${name} — código ${code}`;
+  });
+  const body = [
+    "Olá, TONART! Quero solicitar um orçamento sem cadastro.",
+    "",
+    "Modelos selecionados:",
+    ...(references.length ? references : ["Gostaria de ajuda para escolher os modelos."]),
+    "",
+    "Escala desejada:",
+    "Acabamento:",
+    "CEP para estimativa de entrega:",
+    "Observações:",
+    "",
+    "Podem informar disponibilidade, valor e prazo? Nenhum pagamento está autorizado por este contato.",
+  ].join("\\n");
+  return recipient + "?subject=" + encodeURIComponent("Orçamento TONART — consulta por e-mail") +
+    "&body=" + encodeURIComponent(body);
+}
+
 export default function TonecosQuoteRequestPage() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
   const navigate = useNavigate();
+  const guestEmailHref = guestQuoteEmailHref(selectedModels);
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState<Identity | null | undefined>(undefined);
   const [authError, setAuthError] = useState(false);
@@ -164,6 +194,9 @@ export default function TonecosQuoteRequestPage() {
             >
               Tentar novamente
             </button>
+            <Link className={secondaryClass + " ml-3"} to={PUBLIC_ROUTES.contact}>
+              Contato por e-mail
+            </Link>
           </div>
         ) : user === null && selectedModels.length > 0 ? (
           <div className={panelClass}>
@@ -188,7 +221,18 @@ export default function TonecosQuoteRequestPage() {
                   Criar conta
                 </Link>
               )}
+              {guestEmailHref && (
+                <a className={secondaryClass} href={guestEmailHref}>
+                  Pedir orçamento por e-mail
+                </a>
+              )}
             </div>
+            {guestEmailHref && (
+              <p className="mt-4 text-xs leading-5 text-white/60">
+                Sem conta? O e-mail inclui as referências selecionadas e abre no seu aplicativo de e-mail.
+                Revise e envie a mensagem. A resposta será por e-mail, sem protocolo em Meus Orçamentos.
+              </p>
+            )}
           </div>
         ) : null}
         {selectedModels.length === 0 ? (
