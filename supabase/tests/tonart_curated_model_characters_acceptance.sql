@@ -30,11 +30,23 @@ BEGIN
     OR to_regprocedure('public.admin_save_catalog_character_editorial_profile(uuid,jsonb,text,integer,uuid)') IS NULL
     OR to_regprocedure('public.admin_set_catalog_character_publication_approval(uuid,integer,boolean,uuid)') IS NULL
     OR to_regprocedure('public.admin_export_approved_catalog_character_projection()') IS NULL
-    OR to_regprocedure('private_api.invalidate_tonart_character_publication_after_last_model_unlink()') IS NULL
+    OR to_regprocedure('private_api.bump_tonart_character_relation_revision(uuid,text,text)') IS NULL
+    OR to_regprocedure('private_api.invalidate_tonart_character_publication_on_relation_change()') IS NULL
+    OR NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'catalog_character_identities'
+        AND column_name = 'editorial_relation_revision'
+    )
     OR NOT EXISTS (
       SELECT 1 FROM pg_trigger
       WHERE tgrelid = 'public.catalog_curation_model_characters'::regclass
-        AND tgname = 'trg_catalog_character_publication_invalidated_by_last_model_unlink'
+        AND tgname = 'trg_catalog_character_publication_relation_revision'
+        AND NOT tgisinternal
+    )
+    OR NOT EXISTS (
+      SELECT 1 FROM pg_trigger
+      WHERE tgrelid = 'public.catalog_curation_model_profiles'::regclass
+        AND tgname = 'trg_catalog_character_publication_model_slug_revision'
         AND NOT tgisinternal
     ) THEN
     RAISE EXCEPTION 'TONART character editorial profile migration not installed'
@@ -360,6 +372,9 @@ BEGIN
   );
   IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved'
      OR (v_editorial_result->>'publicationRevision')::integer <> 2
+     OR (v_editorial_result->>'relationRevision')::integer < 2
+     OR (v_editorial_result->>'relationRevision')::integer
+        IS DISTINCT FROM (v_editorial_result->>'approvedRelationRevision')::integer
      OR (v_editorial_result->>'publicationApprovedBy')::uuid IS DISTINCT FROM v_reviewer_id THEN
     RAISE EXCEPTION 'Human approval did not bind to the current reviewed revision';
   END IF;
@@ -369,6 +384,8 @@ BEGIN
      OR jsonb_array_length(v_public_projection->'characters') <> 1
      OR (v_public_projection->'characters'->0->>'identityId')::uuid IS DISTINCT FROM v_id_a
      OR jsonb_array_length(v_public_projection->'characters'->0->'modelLinks') <> 2
+     OR (v_public_projection->'characters'->0->>'relationRevision')::integer
+        IS DISTINCT FROM (v_public_projection->'characters'->0->>'approvedRelationRevision')::integer
      OR v_public_projection->'characters'->0 ? 'history' THEN
     RAISE EXCEPTION 'Public export leaked private history or omitted approved evidence';
   END IF;
@@ -627,45 +644,108 @@ BEGIN
     RAISE EXCEPTION 'Twenty-first verified character was rejected';
   END IF;
 
-  -- Removing one of two relations preserves approval; removing the last one
-  -- invalidates it atomically and records the reason. Restoration stays private.
+  -- The first unlink of two active links MUST invalidate publication,
+  -- not only the final unlink. A stale approval may never authorize a subset.
   v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
   v_editorial_result := public.admin_save_catalog_character_editorial_profile(
-    v_id_a,
-    v_editorial_result->'profile',
-    'reviewed',
-    (v_editorial_result->>'revision')::integer,
-    v_reviewer_id
+    v_id_a, v_editorial_result->'profile', 'reviewed',
+    (v_editorial_result->>'revision')::integer, v_reviewer_id
   );
   v_editorial_result := public.admin_set_catalog_character_publication_approval(
-    v_id_a,
-    (v_editorial_result->>'revision')::integer,
-    true,
-    v_reviewer_id
+    v_id_a, (v_editorial_result->>'revision')::integer, true, v_reviewer_id
   );
+  v_count := (v_editorial_result->>'approvedRelationRevision')::integer;
   PERFORM public.admin_unlink_catalog_model_character(
-    v_model_a, v_slug_a, v_id_a, 'Acceptance: retain second active model relation'
+    v_model_a, v_slug_a, v_id_a, 'Acceptance: partial unlink must revoke approval'
   );
   v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
-  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved' THEN
-    RAISE EXCEPTION 'One remaining model relation incorrectly revoked publication';
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR (v_editorial_result->>'relationRevision')::integer <> v_count + 1
+     OR v_editorial_result->'approvedRelationRevision' <> 'null'::jsonb
+     OR v_editorial_result->'publicationHistory'->-1->>'action'
+        IS DISTINCT FROM 'invalidated_by_model_relation_change' THEN
+    RAISE EXCEPTION 'Partial model unlink failed to revoke the entire approved relation set';
   END IF;
+  v_public_projection := public.admin_export_approved_catalog_character_projection();
+  IF jsonb_array_length(v_public_projection->'characters') <> 0 THEN
+    RAISE EXCEPTION 'Partial unlink exported a stale human approval';
+  END IF;
+
+  -- Reapprove only the exact remaining link; then remove it.
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, (v_editorial_result->>'revision')::integer, true, v_reviewer_id
+  );
   PERFORM public.admin_unlink_catalog_model_character(
-    v_model_b, v_slug_b, v_id_a, 'Acceptance: remove final active model relation'
+    v_model_b, v_slug_b, v_id_a, 'Acceptance: final active model link also revokes'
   );
   v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
   IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
      OR v_editorial_result->'publicationHistory'->-1->>'action'
-       IS DISTINCT FROM 'invalidated_by_last_model_link_unlink' THEN
-    RAISE EXCEPTION 'Removing the last model relation did not revoke publication';
+       IS DISTINCT FROM 'invalidated_by_model_relation_change' THEN
+    RAISE EXCEPTION 'Final model unlink failed to revoke publication';
   END IF;
+
+  -- Restoration stays private; reapproval is a separate explicit decision.
   PERFORM public.admin_verify_catalog_model_identity(
     v_model_b, v_slug_b, v_name_a, v_franchise,
-    'https://example.org/model-b/character-a-restored', 'Private restore after publication invalidation'
+    'https://example.org/model-b/character-a-restored', 'Private restore after invalidation'
   );
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, (v_editorial_result->>'revision')::integer, true, v_reviewer_id
+  );
+  v_count := (v_editorial_result->>'approvedRelationRevision')::integer;
+
+  -- An idempotent writer request changes no approved content or revision.
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_b, v_slug_b, v_name_a, v_franchise,
+    'https://example.org/model-b/character-a-restored', 'Private restore after invalidation'
+  );
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved'
+     OR (v_editorial_result->>'relationRevision')::integer <> v_count THEN
+    RAISE EXCEPTION 'Idempotent relation write invalidated an unchanged approval';
+  END IF;
+
+  -- Replacing citation text is a semantic edit, even with the same model ID.
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_b, v_slug_b, v_name_a, v_franchise,
+    'https://example.org/model-b/new-reviewed-evidence', 'New evidence after approval'
+  );
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR (v_editorial_result->>'relationRevision')::integer <> v_count + 1 THEN
+    RAISE EXCEPTION 'Model evidence replacement did not invalidate old approval';
+  END IF;
+
+  -- Adding a second link after reapproval also invalidates it immediately.
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, (v_editorial_result->>'revision')::integer, true, v_reviewer_id
+  );
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_a, v_slug_a, v_name_a, v_franchise,
+    'https://example.org/model-a/new-link', 'Added model after public approval'
+  );
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved' THEN
+    RAISE EXCEPTION 'New model link remained covered by previous approval';
+  END IF;
+
+  -- A changed canonical model slug alters the published modelLink payload;
+  -- this is not a harmless metadata-only edit.
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, (v_editorial_result->>'revision')::integer, true, v_reviewer_id
+  );
+  UPDATE public.catalog_curation_model_profiles
+    SET catalog_model_slug = catalog_model_slug || '-rev', updated_at = now()
+  WHERE catalog_model_id = v_model_a;
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR v_editorial_result->'approvedRelationRevision' <> 'null'::jsonb THEN
+    RAISE EXCEPTION 'Canonical model slug change failed to invalidate publication';
+  END IF;
   v_public_projection := public.admin_export_approved_catalog_character_projection();
   IF jsonb_array_length(v_public_projection->'characters') <> 0 THEN
-    RAISE EXCEPTION 'Projection retained character after its last public model link was removed';
+    RAISE EXCEPTION 'Unapproved character was exported after model identity mutation';
   END IF;
 
   RAISE NOTICE 'TONART character staging acceptance PASS (transaction rolled back)';
