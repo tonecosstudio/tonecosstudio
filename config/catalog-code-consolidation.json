@@ -522,8 +522,8 @@
     "postImportAdditions": [
       {
         "path": "migrations/0023_public_editorial_projection.sql",
-        "localBlob": "e69d6c74a58c02abb5121f5b1905dc6a1c0edd5b",
-        "reason": "Add only the approved public editorial projection schema; no content is seeded and M5 migration remains disabled."
+        "localBlob": "9e320f833ddd0c3ac9a55df11b0ac8df71553b09",
+        "reason": "Add only the approved public editorial projection schema with replay-safe FTS backfill; no content is seeded and M5 migration remains disabled."
       }
     ]
   },
