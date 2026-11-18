@@ -413,22 +413,58 @@ test('character scope requires reviewed, fully sourced claims; rejects unsupport
   }, d1), /approved_character_aliases_invalid/);
 });
 
-test('character scope blocks ambiguous freeform ages until the canonical public age shape is approved', () => {
+test('approved contextual age is exported with its actual evidence, never a guessed numeric age', () => {
   const payload = approvedCharacterFixture();
   const d1 = approvedCharacterD1Fixture();
+  const ageContext = '21 anos na fase posterior';
+  const ageSource = {
+    title: 'Official chronology',
+    url: 'https://example.org/chronology',
+    kind: 'publisher',
+  };
+  const profile = {
+    ...payload.characters[0].profile,
+    ageContext,
+    ageSources: [ageSource],
+  };
+  const approved = {
+    ...payload,
+    characters: [{ ...payload.characters[0], profile }],
+  };
+  assert.equal(resolveApprovedCharacterScopes(approved, d1).length, 1);
+  const plan = planApprovedCharacterProjection(approved, d1);
+  const projected = plan.characters[0];
+  assert.equal(projected.age_value, null);
+  assert.equal(projected.age_context, ageContext);
+  const ids = JSON.parse(projected.age_evidence_ids_json);
+  assert.equal(ids.length, 1);
+  const source = JSON.parse(projected.evidence_json).find(item => item.id === ids[0]);
+  assert.deepEqual({ title: source.title, url: source.url, kind: source.kind }, ageSource);
   assert.throws(() => resolveApprovedCharacterScopes({
-    ...payload, characters: [{ ...payload.characters[0], profile: {
-      ...payload.characters[0].profile,
-      ageContext: '21 anos na fase posterior',
-      ageSources: [{
-        title: 'Official chronology',
-        url: 'https://example.org/chronology',
-        kind: 'publisher',
-      }],
+    ...payload,
+    characters: [{ ...payload.characters[0], profile: { ...profile, ageSources: [] } }],
+  }, d1), /approved_character_age_sources_invalid/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload,
+    characters: [{ ...payload.characters[0], profile: { ...profile, ageSources: [
+      { ...ageSource, url: 'http://example.org/insecure' },
+    ] } }],
+  }, d1), /approved_character_age_sources_invalid/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload,
+    characters: [{ ...payload.characters[0], profile: {
+      ...profile, ageContext: null,
     } }],
-  }, d1), /approved_character_age_projection_requires_canonical_split/);
+  }, d1), /approved_character_age_sources_without_value/);
   assert.throws(() => resolveApprovedCharacterScopes({
-    ...payload, characters: [{ ...payload.characters[0],
+    ...payload,
+    characters: [{ ...payload.characters[0], profile: {
+      ...profile, ageContext: ' 21 anos na fase posterior ',
+    } }],
+  }, d1), /approved_character_age_invalid/);
+  assert.throws(() => resolveApprovedCharacterScopes({
+    ...payload,
+    characters: [{ ...payload.characters[0],
       approvedAt: '2026-11-18T01:00:00Z',
     }],
   }, d1), /approved_character_approval_order_invalid/);
