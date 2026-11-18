@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 94,
-    "preparedCandidateModelLinkCount": 926
+    "sourceResearchedIdentityCount": 96,
+    "preparedCandidateModelLinkCount": 935
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 94,
+    "preparedIdentityCount": 96,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 926,
+    "preparedCandidateModelLinkCount": 935,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -867,6 +867,30 @@
       "publisher": "Marvel",
       "title": "Spider-Man (Miles Morales) — In Comics",
       "url": "https://www.marvel.com/characters/spider-man-miles-morales/in-comics",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "nickelodeon-donatello-profile",
+      "publisher": "Nickelodeon",
+      "title": "Meet the Brothers: Donatello | Nickelodeon",
+      "url": "https://www.nick.com/info-page/13tfwj/donatello",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-sakura-sfv-en",
+      "publisher": "Capcom",
+      "title": "Enter the Ring! Sakura | CAPCOM: Shadaloo C.R.I.",
+      "url": "https://game.capcom.com/cfn/sfv/promotion/skr?lang=en",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-sakura-guide-ja",
+      "publisher": "Capcom",
+      "title": "Character Guide 074: Sakura Kasugano | CAPCOM: Shadaloo C.R.I.",
+      "url": "https://game.capcom.com/cfn/sfv/column/129953",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -23513,9 +23537,33 @@
             "naruto-official-kakashi-team-seven"
           ],
           "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alias_candidate",
+          "value": "Kakashi",
+          "sourceIds": [
+            "naruto-official-kakashi-team-seven"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.team_leader",
+          "value": "O site oficial identifica Kakashi como líder jōnin do Time 7.",
+          "sourceIds": [
+            "naruto-official-kakashi-team-seven"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.training",
+          "value": "A matéria relata seu talento desde a Academia Ninja e sua rápida promoção a chūnin.",
+          "sourceIds": [
+            "naruto-official-kakashi-team-seven"
+          ],
+          "reviewStatus": "pending_human_review"
         }
       ],
-      "biographyDraft": "Kakashi Hatake é um ninja da Vila da Folha que assume a liderança da Equipe Sete, formada por Naruto, Sasuke e Sakura. Sua trajetória de mentor inclui ensinar o trabalho em equipe e enfrentar missões perigosas usando técnicas como o Sharingan.",
+      "biographyDraft": "Kakashi Hatake é um ninja da Vila da Folha e líder jōnin da Equipe Sete. Materiais oficiais descrevem sua formação desde a Academia e seu papel como mentor de Naruto, Sasuke e Sakura, além de técnicas como o Sharingan e o ensino do Chidori a Sasuke.",
       "biographySourceIds": [
         "naruto-official-kakashi-team-seven"
       ],
@@ -23525,7 +23573,10 @@
       "ambiguities": [
         "O perfil oficial percorre períodos distintos da história; cada traje ou fase de Kakashi representado em render exige conferência da versão.",
         "Os quatro IDs provêm do catálogo, não de laudo visual de identidade de cada escultura.",
-        "Nenhuma idade ou versão específica foi atribuída ao modelo por inferência."
+        "Nenhuma idade ou versão específica foi atribuída ao modelo por inferência.",
+        "Os quatro modelos foram localizados por nome exato na fila, mas não tiveram suas imagens revisadas.",
+        "A matéria cobre uma etapa da trajetória; idade, traje, arco e versão dos modelos não foram atribuídos.",
+        "Nome, franquia e pasta do catálogo são proveniência da linha e não comprovam identidade ou composição do render."
       ],
       "candidateModelLinks": [
         {
@@ -23646,9 +23697,25 @@
             "capcom-re-jill-stories-2024"
           ],
           "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.team_role",
+          "value": "A Capcom identifica Jill como integrante da Alpha Team da S.T.A.R.S.",
+          "sourceIds": [
+            "capcom-re-jill-stories-2024"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.expertise",
+          "value": "A fonte destaca sua habilidade com desativação de explosivos.",
+          "sourceIds": [
+            "capcom-re-jill-stories-2024"
+          ],
+          "reviewStatus": "pending_human_review"
         }
       ],
-      "biographyDraft": "Jill Valentine é uma integrante da unidade especial S.T.A.R.S. em Resident Evil. A história da personagem acompanha sua sobrevivência diante de surtos biológicos e suas ações contra ameaças de bioterrorismo, conforme o retrospecto oficial da Capcom.",
+      "biographyDraft": "Jill Valentine integra a equipe especial S.T.A.R.S. em Resident Evil. O perfil oficial da Capcom também destaca sua atuação na Alpha Team e sua experiência com desativação de explosivos; o retrospecto da personagem aborda sua sobrevivência a ameaças de bioterrorismo.",
       "biographySourceIds": [
         "capcom-re-jill-stories-2024"
       ],
@@ -23658,7 +23725,11 @@
       "ambiguities": [
         "A fonte oficial Capcom foi localizada na busca, mas sua abertura automatizada retornou HTTP 403; uma pessoa deve abrir e conferir integralmente o artigo antes de aprovar.",
         "As quatro estatuetas podem representar diferentes jogos e trajes de Jill; não foram verificadas visualmente.",
-        "Metadados de catálogo não constituem evidência independente de que cada render representa Jill Valentine."
+        "Metadados de catálogo não constituem evidência independente de que cada render representa Jill Valentine.",
+        "Os modelos são candidatos por rótulo exato; nenhum render foi comparado visualmente à personagem.",
+        "A fonte percorre várias fases da série; traje, jogo e continuidade de cada modelo continuam sem confirmação.",
+        "Nome, franquia e pasta do catálogo são proveniência da linha e não comprovam identidade ou composição do render.",
+        "A página oficial da Capcom retornou HTTP 403 na leitura automatizada desta rodada; a revisora deve conferir a fonte diretamente antes de aprovar qualquer claim."
       ],
       "candidateModelLinks": [
         {
@@ -23779,9 +23850,25 @@
             "marvel-miles-morales-in-comics"
           ],
           "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.alternate_reality",
+          "value": "O perfil de quadrinhos situa Miles Morales em uma realidade alternativa.",
+          "sourceIds": [
+            "marvel-miles-morales-in-comics"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.heroic_identity",
+          "value": "A Marvel relata que Miles segue Peter Parker e assume a identidade de Spider-Man.",
+          "sourceIds": [
+            "marvel-miles-morales-in-comics"
+          ],
+          "reviewStatus": "pending_human_review"
         }
       ],
-      "biographyDraft": "Miles Morales é um jovem herói das histórias em quadrinhos da Marvel que assume o papel de Spider-Man em uma realidade alternativa. A trajetória apresentada pela editora parte de um universo que perdeu seu Homem-Aranha anterior e acompanha Miles ao assumir essa responsabilidade.",
+      "biographyDraft": "Miles Morales é um jovem herói dos quadrinhos da Marvel que assume a identidade de Spider-Man em uma realidade alternativa. A apresentação oficial da personagem situa essa escolha após a morte de Peter Parker no universo de origem. A categoria genérica usada pela fila não define sua franquia nem confirma a escultura de cada modelo.",
       "biographySourceIds": [
         "marvel-miles-morales-in-comics"
       ],
@@ -23791,7 +23878,12 @@
       "ambiguities": [
         "A página da Marvel foi encontrada no índice oficial, mas a leitura integral automatizada retornou HTTP 403; conferir a fonte diretamente antes da aprovação.",
         "O agrupamento D1 'Heróis Individuais' é navegação comercial, não franquia Marvel confirmada nem prova do render.",
-        "Os quatro modelos de Miles Morales precisam de checagem visual por ID e variante; o nome Spider-Man também é usado por outros personagens e não deve gerar vínculo automático."
+        "Os quatro modelos de Miles Morales precisam de checagem visual por ID e variante; o nome Spider-Man também é usado por outros personagens e não deve gerar vínculo automático.",
+        "Candidato alternativo pendente de revisão: Spider-Man / Marvel.",
+        "A fila classifica os quatro modelos em “Heróis Individuais”, não em uma franquia editorial confirmada; a escolha entre Spider-Man e Marvel precisa de revisão humana.",
+        "O perfil consultado é de quadrinhos e não confirma a adaptação, o traje ou a escultura de cada modelo.",
+        "Nome, franquia e pasta do catálogo são proveniência da linha e não comprovam identidade ou composição do render.",
+        "A página oficial da Marvel retornou HTTP 403 na leitura automatizada desta rodada; a revisora deve conferir a fonte diretamente antes de aprovar qualquer claim."
       ],
       "candidateModelLinks": [
         {
@@ -23872,6 +23964,312 @@
         }
       ],
       "catalogCandidateModelCount": 4
+    },
+    {
+      "candidateName": "Donatello",
+      "catalogDisplayNameCandidate": "Donatello",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Teenage Mutant Ninja Turtles",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Donatello",
+          "sourceIds": [
+            "nickelodeon-donatello-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alias_candidate",
+          "value": "Donnie",
+          "sourceIds": [
+            "nickelodeon-donatello-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Teenage Mutant Ninja Turtles",
+          "sourceIds": [
+            "nickelodeon-donatello-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.group_role",
+          "value": "A Nickelodeon apresenta Donatello como um dos irmãos da equipe das Tartarugas Ninja.",
+          "sourceIds": [
+            "nickelodeon-donatello-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.characteristics",
+          "value": "A fonte o descreve como brilhante, inventivo e analítico.",
+          "sourceIds": [
+            "nickelodeon-donatello-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.weapon",
+          "value": "O perfil aponta o bastão bo como sua arma de escolha.",
+          "sourceIds": [
+            "nickelodeon-donatello-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "No perfil da Nickelodeon, Donatello — também chamado Donnie — é descrito como inventivo e analítico, integrante do grupo das Tartarugas Ninja e usuário de um bastão bo.",
+      "biographySourceIds": [
+        "nickelodeon-donatello-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "As Tartarugas Ninja"
+      ],
+      "ambiguities": [
+        "A página faz referência a uma adaptação específica; não foi assumido que os modelos mostrem essa versão.",
+        "Quatro modelos foram encontrados pelo rótulo exato, mas nenhum passou por conferência visual individual.",
+        "Nome, franquia e pasta do catálogo são proveniência da linha e não comprovam identidade ou composição do render.",
+        "A página original da Nickelodeon redirecionou para a versão regional durante a leitura automatizada; a revisora deve abrir e conferir o perfil original antes de aprovar qualquer claim."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0f0e419d51705082dd90",
+          "modelSlug": "as-tartarugas-ninja-donatello-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "as-tartarugas-ninja-donatello-02"
+          }
+        },
+        {
+          "modelId": "mdl_92ca8af4a266518eeefd",
+          "modelSlug": "as-tartarugas-ninja-donatello-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "as-tartarugas-ninja-donatello-01"
+          }
+        },
+        {
+          "modelId": "mdl_9e5d6695f64a6a2d6e40",
+          "modelSlug": "as-tartarugas-ninja-donatello-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "as-tartarugas-ninja-donatello-03"
+          }
+        },
+        {
+          "modelId": "mdl_f3a9f0d4ba92ad7142b4",
+          "modelSlug": "as-tartarugas-ninja-donatello-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "as-tartarugas-ninja-donatello-04"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 4
+    },
+    {
+      "candidateName": "Sakura Kasugano (Street Fighter candidate)",
+      "catalogDisplayNameCandidate": "Sakura",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Street Fighter",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Sakura",
+          "sourceIds": [
+            "capcom-sakura-sfv-en",
+            "capcom-sakura-guide-ja"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Street Fighter",
+          "sourceIds": [
+            "capcom-sakura-sfv-en",
+            "capcom-sakura-guide-ja"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.training",
+          "value": "A página em inglês relata que Sakura mantém o treino enquanto trabalha em um fliperama.",
+          "sourceIds": [
+            "capcom-sakura-sfv-en"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.origin",
+          "value": "O guia japonês a descreve como estudante inspirada por Ryu e interessada em lutas de rua.",
+          "sourceIds": [
+            "capcom-sakura-guide-ja"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Nas páginas de Street Fighter V da Capcom, Sakura treina enquanto trabalha em um fliperama e busca compreender sua própria força. O guia japonês da série a descreve como estudante inspirada por Ryu e interessada em combates de rua.",
+      "biographySourceIds": [
+        "capcom-sakura-sfv-en",
+        "capcom-sakura-guide-ja"
+      ],
+      "catalogFranchiseCandidates": [
+        "Street Fighter"
+      ],
+      "ambiguities": [
+        "As fontes descrevem a personagem em Street Fighter V; não confirmam que os cinco modelos reproduzam essa fase.",
+        "Cada vínculo continua sem evidência visual independente.",
+        "Nome, franquia e pasta do catálogo são proveniência da linha e não comprovam identidade ou composição do render.",
+        "As duas páginas oficiais da Capcom retornaram HTTP 403 na leitura automatizada desta rodada; a revisora deve conferir ambas diretamente antes de aprovar qualquer claim."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0e1ba353aa27baf2f421",
+          "modelSlug": "street-fighter-sakura-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-sakura-04"
+          }
+        },
+        {
+          "modelId": "mdl_8715e0f7264bcf0da4a7",
+          "modelSlug": "street-fighter-sakura-chibi",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-sakura-chibi"
+          }
+        },
+        {
+          "modelId": "mdl_ba053a49bc91a224275d",
+          "modelSlug": "street-fighter-sakura",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-sakura"
+          }
+        },
+        {
+          "modelId": "mdl_f2d234a8e4bea1dfc385",
+          "modelSlug": "street-fighter-sakura-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-sakura-02"
+          }
+        },
+        {
+          "modelId": "mdl_ff0c29152bbfa81250bf",
+          "modelSlug": "street-fighter-sakura-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-sakura-03"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
     }
   ]
 }

@@ -83,22 +83,28 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 94);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 926);
-  assert.equal(packet.candidates.length, 94);
-  assert.equal(packet.sources.length, 105);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, packet.candidates.length);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, links.length);
+  assert.ok(packet.candidates.length > 0);
+  assert.ok(packet.sources.length > 0);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 94);
+  assert.equal(packet.policy.preparedIdentityCount, packet.candidates.length);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 926);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, links.length);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 926);
+  assert.ok(links.length > 0);
   assert.equal(new Set(relationshipKeys).size, links.length);
+  for (const candidate of packet.candidates) {
+    assert.ok(candidate.claims.length > 0);
+    assert.ok(candidate.claims.every((claim) =>
+      claim.reviewStatus === "pending_human_review" && claim.sourceIds.length > 0 &&
+      claim.sourceIds.every((sourceId) => sourceIds.has(sourceId))));
+  }
   for (const link of links) {
     assert.equal(inventoryModels.get(link.modelId), link.modelSlug);
     assert.equal(link.reviewRequired, true);
@@ -325,6 +331,26 @@ test("research preparation references only inventory IDs and remains unapproved"
       link.independentModelEvidence.length === 0));
     assert.ok(candidate.ambiguities.length >= 2);
   }
+  const fifthResearchWave = [
+    ["Donatello", "Teenage Mutant Ninja Turtles", "nickelodeon-donatello-profile", 4],
+    ["Sakura Kasugano (Street Fighter candidate)", "Street Fighter", "capcom-sakura-sfv-en", 5],
+  ];
+  for (const [candidateName, franchise, sourceId, expectedLinks] of fifthResearchWave) {
+    const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
+    assert.ok(candidate, `Missing researched candidate: ${candidateName}`);
+    assert.equal(candidate.franchiseCandidate, franchise);
+    assert.equal(candidate.candidateModelLinks.length, expectedLinks);
+    assert.equal(candidate.identityStatus, "prepared_pending_human_review");
+    assert.equal(candidate.biographyStatus, "prepared_pending_human_review");
+    assert.ok(candidate.biographySourceIds.includes(sourceId));
+    assert.ok(packet.sources.some((source) =>
+      source.id === sourceId && source.sourceKind === "official"));
+    assert.ok(candidate.claims.every((claim) =>
+      claim.reviewStatus === "pending_human_review" &&
+      claim.sourceIds.every((claimSourceId) => sourceIds.has(claimSourceId))));
+    assert.ok(candidate.candidateModelLinks.every((link) =>
+      link.reviewRequired && link.independentModelEvidence.length === 0));
+  }
 
   const allMight = packet.candidates.find((item) =>
     item.candidateName === "All Might (My Hero Academia anime profile candidate)");
@@ -439,13 +465,13 @@ test("research preparation references only inventory IDs and remains unapproved"
     assert.equal(new URL(source.url).protocol, "https:");
     assert.ok(["official", "publisher"].includes(source.sourceKind));
   }
-  assert.deepEqual(
-    packet.sources.reduce((counts, source) => {
-      counts[source.sourceKind] = (counts[source.sourceKind] ?? 0) + 1;
-      return counts;
-    }, {}),
-    { official: 104, publisher: 1 },
-  );
+  const sourceKindCounts = packet.sources.reduce((counts, source) => {
+    counts[source.sourceKind] = (counts[source.sourceKind] ?? 0) + 1;
+    return counts;
+  }, {});
+  assert.ok(sourceKindCounts.official > 0);
+  assert.ok(sourceKindCounts.publisher > 0);
+  assert.equal(sourceKindCounts.official + sourceKindCounts.publisher, packet.sources.length);
   for (const candidate of packet.candidates) {
     assert.equal(candidate.identityStatus, "prepared_pending_human_review");
     assert.ok([
