@@ -115,7 +115,7 @@ export async function sendEditorialProjection({
   return result;
 }
 
-async function main(args, env = process.env, fetchImpl = fetch) {
+export async function runApprovedEditorialSync(args, env = process.env, fetchImpl = fetch) {
   requireCondition(args.length <= 1 && (!args.length ||
     ['--dry-run', '--apply', '--rollback-clear'].includes(args[0])),
   'usage: [--dry-run | --apply | --rollback-clear]');
@@ -127,11 +127,21 @@ async function main(args, env = process.env, fetchImpl = fetch) {
     env.TONART_EDITORIAL_SYNC_TOKEN,
     env.TONART_EDITORIAL_ISOLATED_SUPABASE_REF,
   );
-  const payload = await fetchApprovedExport(
-    source,
-    env.TONART_EDITORIAL_SERVICE_ROLE_KEY,
-    fetchImpl,
-  );
+  // Emergency withdrawal must work when the private Supabase export is down.
+  // Retain the explicit local Worker and source-environment gates above, but
+  // never contact Supabase or require its service-role key for rollback-clear.
+  const payload = mode === 'rollback-clear'
+    ? {
+      schemaVersion: 1,
+      source: `public.${EXPORT_RPC}`,
+      generatedAt: new Date().toISOString(),
+      characters: [],
+    }
+    : await fetchApprovedExport(
+      source,
+      env.TONART_EDITORIAL_SERVICE_ROLE_KEY,
+      fetchImpl,
+    );
   if (mode === 'rollback-clear') {
     console.error('Rollback mode clears only the local public D1 projection; Supabase editorial records are untouched.');
   }
@@ -156,7 +166,7 @@ async function main(args, env = process.env, fetchImpl = fetch) {
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
-  main(process.argv.slice(2)).catch(error => {
+  runApprovedEditorialSync(process.argv.slice(2)).catch(error => {
     console.error(error?.message || 'editorial_projection_publish_failed');
     process.exitCode = 1;
   });
