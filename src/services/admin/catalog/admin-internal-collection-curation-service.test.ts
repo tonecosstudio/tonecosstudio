@@ -394,6 +394,53 @@ describe("internal catalog curation service", () => {
     expect(mocks.callAdminRpc).not.toHaveBeenCalled();
   });
 
+  it("allows a reviewed profile without biography only when it has no biography sources", async () => {
+    const profile = {
+      ...verifiedEditorialProfile,
+      biography: "",
+      biographySources: [],
+    };
+    mocks.callAdminRpc.mockResolvedValue({
+      identityId: CHARACTER_ID,
+      name: "Sample Character",
+      franchise: "Sample Universe",
+      profile,
+      status: "reviewed",
+      revision: 1,
+      reviewedAt: "2026-11-18T10:00:00.000Z",
+      reviewedBy: "55555555-5555-4555-8555-555555555555",
+      ...publicationPending,
+    });
+    await expect(
+      saveCatalogCharacterEditorialProfile({
+        identityId: CHARACTER_ID,
+        profile,
+        status: "reviewed",
+        expectedRevision: 0,
+      }),
+    ).resolves.toMatchObject({
+      status: "reviewed",
+      profile: { biography: "", biographySources: [] },
+    });
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_save_catalog_character_editorial_profile",
+      expect.objectContaining({ p_status: "reviewed" }),
+    );
+    mocks.callAdminRpc.mockClear();
+    await expect(
+      saveCatalogCharacterEditorialProfile({
+        identityId: CHARACTER_ID,
+        profile: {
+          ...verifiedEditorialProfile,
+          biography: "",
+        },
+        status: "reviewed",
+        expectedRevision: 0,
+      }),
+    ).rejects.toThrow("catalog_character_editorial_review_evidence_required");
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
   it("rejects invalid profile revisions before calling the database", async () => {
     await expect(
       saveCatalogCharacterEditorialProfile({
