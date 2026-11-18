@@ -108,6 +108,8 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_upsert_collection_curation_models",
   "admin_verify_catalog_model_identity",
   "admin_unlink_catalog_model_character",
+  "admin_get_catalog_character_editorial_profile",
+  "admin_save_catalog_character_editorial_profile",
   "admin_schedule_group_message",
   "admin_schedule_subscription_deliveries",
   "admin_send_chat_group_message",
@@ -212,6 +214,14 @@ function parseRequestBody(value: unknown): {
 }
 
 function mapRpcError(message: string): { status: number; error: string } {
+  if (message.includes("changed; reload before saving")) {
+    return {
+      status: 409,
+      error:
+        "Ficha editorial atualizada por outra pessoa. Recarregue antes de salvar.",
+    };
+  }
+
   if (
     message.includes("Forbidden") ||
     message.includes("FORBIDDEN") ||
@@ -349,7 +359,14 @@ Deno.serve(async (req) => {
     const rpcClient = ADMIN_USER_CONTEXT_RPCS.has(functionName)
       ? admin.client
       : service;
-    const { data, error } = await rpcClient.rpc(functionName, args);
+    // The only database role allowed to reach private curation RPCs is the
+    // service role. Pass the reviewer identity from the already-authenticated
+    // admin context; never trust an ID supplied in the request body.
+    const rpcArgs =
+      functionName === "admin_save_catalog_character_editorial_profile"
+        ? { ...args, p_reviewer_id: admin.userId }
+        : args;
+    const { data, error } = await rpcClient.rpc(functionName, rpcArgs);
 
     if (error) {
       const mapped = mapRpcError(error.message || "");

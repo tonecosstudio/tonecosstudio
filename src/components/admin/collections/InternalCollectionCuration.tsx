@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { CharacterEditorialProfileEditor } from "@/components/admin/collections/CharacterEditorialProfileEditor";
 import {
   addCatalogCurationTagAlias,
   assertCurrentCanonicalCurationModels,
@@ -181,6 +182,15 @@ export function InternalCollectionCuration() {
     enabled: Boolean(collection),
   });
   const page = pageQuery.data;
+  const characterProfileAnchors = useMemo(() => {
+    const anchors = new Map<string, string>();
+    for (const item of page?.items ?? []) {
+      for (const character of item.characters) {
+        if (!anchors.has(character.id)) anchors.set(character.id, item.modelId);
+      }
+    }
+    return anchors;
+  }, [page?.items]);
   const pageSlugs = useMemo(
     () => page?.items.map((item) => item.slug) ?? [],
     [page?.items],
@@ -1039,35 +1049,45 @@ export function InternalCollectionCuration() {
                                 {item.characters.map((character) => (
                                   <div
                                     key={character.id}
-                                    className="flex items-center gap-2"
+                                    className="w-full space-y-2"
                                   >
-                                    <Badge variant="outline">
-                                      {character.name} · {character.franchise}
-                                    </Badge>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      disabled={
-                                        unlinkMutation.isPending ||
-                                        identityMutation.isPending
-                                      }
-                                      aria-label={`Desvincular ${character.name} desta estatueta`}
-                                      onClick={() => {
-                                        setIdentityReview(null);
-                                        setUnlinkReview({
-                                          model: {
-                                            modelId: item.modelId,
-                                            slug: item.slug,
-                                          },
-                                          characterId: character.id,
-                                          characterName: character.name,
-                                          reason: "",
-                                        });
-                                      }}
-                                    >
-                                      Desvincular
-                                    </Button>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <Badge variant="outline">
+                                        {character.name} · {character.franchise}
+                                      </Badge>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        disabled={
+                                          unlinkMutation.isPending ||
+                                          identityMutation.isPending
+                                        }
+                                        aria-label={`Desvincular ${character.name} desta estatueta`}
+                                        onClick={() => {
+                                          setIdentityReview(null);
+                                          setUnlinkReview({
+                                            model: {
+                                              modelId: item.modelId,
+                                              slug: item.slug,
+                                            },
+                                            characterId: character.id,
+                                            characterName: character.name,
+                                            reason: "",
+                                          });
+                                        }}
+                                      >
+                                        Desvincular
+                                      </Button>
+                                    </div>
+                                    {characterProfileAnchors.get(
+                                      character.id,
+                                    ) === item.modelId && (
+                                      <CharacterEditorialProfileEditor
+                                        identityId={character.id}
+                                        characterName={character.name}
+                                      />
+                                    )}
                                   </div>
                                 ))}
                               </div>

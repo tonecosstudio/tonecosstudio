@@ -21,6 +21,16 @@ BEGIN
     RAISE EXCEPTION 'TONART multi-character migration not installed'
       USING ERRCODE = '42P01';
   END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'catalog_character_identities'
+      AND column_name = 'editorial_profile_history'
+  ) OR to_regprocedure('public.admin_get_catalog_character_editorial_profile(uuid)') IS NULL
+    OR to_regprocedure('public.admin_save_catalog_character_editorial_profile(uuid,jsonb,text,integer,uuid)') IS NULL THEN
+    RAISE EXCEPTION 'TONART character editorial profile migration not installed'
+      USING ERRCODE = '42P01';
+  END IF;
   IF EXISTS (
     SELECT 1
     FROM information_schema.columns
@@ -57,6 +67,9 @@ DECLARE
   v_summary jsonb;
   v_member jsonb;
   v_history jsonb;
+  v_editorial_profile jsonb;
+  v_editorial_result jsonb;
+  v_reviewer_id uuid := gen_random_uuid();
   v_expected_failure boolean;
   v_n integer;
 BEGIN
@@ -81,12 +94,23 @@ BEGIN
      OR has_function_privilege('anon',
        'public.admin_unlink_catalog_model_character(text,text,uuid,text)', 'EXECUTE')
      OR has_function_privilege('authenticated',
-       'public.admin_unlink_catalog_model_character(text,text,uuid,text)', 'EXECUTE') THEN
+       'public.admin_unlink_catalog_model_character(text,text,uuid,text)', 'EXECUTE')
+     OR has_function_privilege('anon',
+       'public.admin_save_catalog_character_editorial_profile(uuid,jsonb,text,integer,uuid)', 'EXECUTE')
+     OR has_function_privilege('authenticated',
+       'public.admin_save_catalog_character_editorial_profile(uuid,jsonb,text,integer,uuid)', 'EXECUTE') THEN
     RAISE EXCEPTION 'Curation leaked to public roles' USING ERRCODE = '42501';
   END IF;
   IF NOT has_function_privilege('service_role',
     'public.admin_unlink_catalog_model_character(text,text,uuid,text)', 'EXECUTE') THEN
     RAISE EXCEPTION 'Editorial gateway lost required execute grant'
+      USING ERRCODE = '42501';
+  END IF;
+  IF NOT has_function_privilege('service_role',
+    'public.admin_get_catalog_character_editorial_profile(uuid)', 'EXECUTE')
+     OR NOT has_function_privilege('service_role',
+       'public.admin_save_catalog_character_editorial_profile(uuid,jsonb,text,integer,uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Editorial profile gateway lost required execute grants'
       USING ERRCODE = '42501';
   END IF;
 
@@ -156,6 +180,110 @@ BEGIN
   WHERE catalog_model_id = v_model_a AND unlinked_at IS NULL;
   IF v_count <> 2 OR v_id_a = v_id_b THEN
     RAISE EXCEPTION 'One model failed to accept two distinct characters';
+  END IF;
+
+  -- Private profile evidence is stored once on the canonical character,
+  -- never on either model. These URLs and facts are fictitious test fixtures.
+  v_editorial_profile := jsonb_build_object(
+    'slug', 'tonart-qa-' || substr(v_suffix, 1, 16),
+    'aliases', '[]'::jsonb,
+    'biography', '',
+    'ageContext', NULL,
+    'originWork', '',
+    'characteristics', '[]'::jsonb
+  );
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF (v_editorial_result->>'status') IS DISTINCT FROM 'draft'
+     OR (v_editorial_result->>'revision')::integer <> 0 THEN
+    RAISE EXCEPTION 'New canonical character did not start with a private draft profile';
+  END IF;
+  v_editorial_result := public.admin_save_catalog_character_editorial_profile(
+    v_id_a, v_editorial_profile, 'draft', 0, NULL
+  );
+  IF (v_editorial_result->>'revision')::integer <> 1
+     OR (v_editorial_result->>'status') IS DISTINCT FROM 'draft' THEN
+    RAISE EXCEPTION 'Private editorial draft was not versioned';
+  END IF;
+
+  v_expected_failure := false;
+  BEGIN
+    PERFORM public.admin_save_catalog_character_editorial_profile(
+      v_id_a, v_editorial_profile, 'reviewed', 1, v_reviewer_id
+    );
+  EXCEPTION WHEN SQLSTATE '22023' THEN
+    v_expected_failure := true;
+  END;
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Editorial review accepted a profile without claim evidence';
+  END IF;
+
+  v_editorial_profile := jsonb_build_object(
+    'slug', 'tonart-qa-' || substr(v_suffix, 1, 16),
+    'aliases', jsonb_build_array(jsonb_build_object(
+      'name', 'Acceptance alias', 'sources', jsonb_build_array(jsonb_build_object(
+        'title', 'Official acceptance fixture', 'url', 'https://example.org/alias', 'kind', 'official'
+      ))
+    )),
+    'biography', 'Fictitious staging-only biography.',
+    'biographySources', jsonb_build_array(jsonb_build_object(
+      'title', 'Official acceptance fixture', 'url', 'https://example.org/biography', 'kind', 'official'
+    )),
+    'ageContext', NULL,
+    'ageSources', '[]'::jsonb,
+    'originWork', 'Fictitious staging-only work',
+    'originWorkSources', jsonb_build_array(jsonb_build_object(
+      'title', 'Publisher acceptance fixture', 'url', 'https://example.org/origin', 'kind', 'publisher'
+    )),
+    'characteristics', jsonb_build_array(jsonb_build_object(
+      'name', 'Acceptance-only characteristic', 'sources', jsonb_build_array(jsonb_build_object(
+        'title', 'Official acceptance fixture', 'url', 'https://example.org/trait', 'kind', 'official'
+      ))
+    )),
+    'nameSources', jsonb_build_array(jsonb_build_object(
+      'title', 'Official acceptance fixture', 'url', 'https://example.org/name', 'kind', 'official'
+    )),
+    'franchiseSources', jsonb_build_array(jsonb_build_object(
+      'title', 'Official acceptance fixture', 'url', 'https://example.org/franchise', 'kind', 'official'
+    ))
+  );
+  v_editorial_result := public.admin_save_catalog_character_editorial_profile(
+    v_id_a, v_editorial_profile, 'reviewed', 1, v_reviewer_id
+  );
+  IF (v_editorial_result->>'status') IS DISTINCT FROM 'reviewed'
+     OR (v_editorial_result->>'revision')::integer <> 2
+     OR (v_editorial_result->>'reviewedBy')::uuid IS DISTINCT FROM v_reviewer_id THEN
+    RAISE EXCEPTION 'Evidence-backed character profile did not reach private reviewed state';
+  END IF;
+
+  v_expected_failure := false;
+  BEGIN
+    PERFORM public.admin_save_catalog_character_editorial_profile(
+      v_id_a, v_editorial_profile, 'reviewed', 1, v_reviewer_id
+    );
+  EXCEPTION WHEN SQLSTATE '40001' THEN
+    v_expected_failure := true;
+  END;
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Stale editorial profile revision was accepted';
+  END IF;
+
+  v_expected_failure := false;
+  BEGIN
+    PERFORM public.admin_save_catalog_character_editorial_profile(
+      v_id_b, v_editorial_profile, 'reviewed', 0, v_reviewer_id
+    );
+  EXCEPTION WHEN SQLSTATE '23505' THEN
+    v_expected_failure := true;
+  END;
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Duplicate reviewed character route slug was accepted';
+  END IF;
+
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF (v_editorial_result->'profile'->>'biography') IS DISTINCT FROM
+       'Fictitious staging-only biography.'
+     OR jsonb_array_length(v_editorial_result->'history') <> 1 THEN
+    RAISE EXCEPTION 'Private character profile or revision history was not retained';
   END IF;
 
   -- Exercise the ACTUAL private page and summary contracts, not only raw rows.

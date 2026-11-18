@@ -1744,3 +1744,11 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** iniciar Fase A da especificação, verificar o estado atual após outros agentes e só então avançar em vínculos de identidade/projeção pública e UI existente, com testes proporcionais.
 
 **DO_NOT_REPEAT:** não criar outro catálogo ou fonte de tags, não copiar biografias em cada modelo, não ativar Supabase legado público, não reexecutar migrations já aplicadas, não abrir Workflows/deploy por esta alteração documental.
+
+## CHECKPOINT — 17/11/2026 — perfil editorial privado na PR #31
+
+- **Implementação local na branch da PR #31** (`78f961e2` como HEAD remoto confirmado antes das alterações): a ficha editorial foi anexada à identidade canônica existente; não cria tabela/catálogo de personagens paralelo. A migration nova é aditiva e mantém estado/revisões anteriores, fontes HTTPS por afirmação e controle otimista de versão.
+- O painel administrativo permite rascunho e revisão privada de slug, aliases, biografia original, idade contextual, obra de origem e características. Uma revisão exige fonte para cada informação; exige slug, biografia e obra de origem. O gateway `admin-rpc` autoriza os dois RPCs só no caminho autenticado e injeta o ID do administrador; usuário/cliente não tem chamada direta. Revisão privada **não publica**.
+- **Validação local:** **38/38 Vitest direcionados, TypeScript app, ESLint nos quatro arquivos TS/TSX alterados, Prettier e `git diff --check` aprovados**. Nenhum teste PostgreSQL foi feito nesta rodada; o script de staging existente cobre draft/review, fontes obrigatórias, unicidade do slug, concorrência de versão, privacidade e `ROLLBACK` com fixtures claramente fictícias.
+- **Bloqueios reais:** o ambiente local continua sem PostgreSQL, Docker, Supabase CLI ou PGlite; não há staging isolado autorizado. A migration não foi aplicada. A projeção/endpoints públicos do Worker ainda não estão disponíveis, e o inventário de 2.609 modelos continua sendo fila de candidatos sem pesquisa editorial concluída; nenhum candidato foi promovido.
+- **Segurança/publicação:** nenhuma escrita no Supabase conectado, deploy, publicação de conteúdo, SEO ou abertura de cobrança foi executada. Manter as fichas públicas atrás do contrato de projeção aprovado no Worker e exigir revisão humana das fontes antes de popular o catálogo.

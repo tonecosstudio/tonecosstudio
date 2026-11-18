@@ -16,6 +16,9 @@ import {
   createInternalCollectionTemplate,
   ensureAdminInternalCollection,
   getInternalCollectionCurationPage,
+  getCatalogCharacterEditorialProfile,
+  saveCatalogCharacterEditorialProfile,
+  type CatalogCharacterEditorialProfile,
   INTERNAL_COLLECTION_TEMPLATES,
   removeCatalogCurationTagAlias,
   saveCatalogModelClassifications,
@@ -27,6 +30,67 @@ import {
 const COLLECTION_ID = "11111111-1111-4111-8111-111111111111";
 const MODEL_ID = "22222222-2222-4222-8222-222222222222";
 const TAG_ID = "33333333-3333-4333-8333-333333333301";
+const CHARACTER_ID = "44444444-4444-4444-8444-444444444444";
+
+const verifiedEditorialProfile = {
+  slug: "sample-character",
+  aliases: [
+    {
+      name: "Sample Hero",
+      sources: [
+        {
+          title: "Official profile",
+          url: "https://example.org/hero",
+          kind: "official",
+        },
+      ],
+    },
+  ],
+  biography: "Biografia original sustentada por fonte oficial.",
+  biographySources: [
+    {
+      title: "Official biography",
+      url: "https://example.org/biography",
+      kind: "official",
+    },
+  ],
+  ageContext: null,
+  ageSources: [],
+  originWork: "Sample Origins",
+  originWorkSources: [
+    {
+      title: "Publisher page",
+      url: "https://example.org/origin",
+      kind: "publisher",
+    },
+  ],
+  characteristics: [
+    {
+      name: "Uses a shield",
+      sources: [
+        {
+          title: "Publisher reference",
+          url: "https://example.org/shield",
+          kind: "publisher",
+        },
+      ],
+    },
+  ],
+  nameSources: [
+    {
+      title: "Official profile",
+      url: "https://example.org/name",
+      kind: "official",
+    },
+  ],
+  franchiseSources: [
+    {
+      title: "Official universe",
+      url: "https://example.org/universe",
+      kind: "official",
+    },
+  ],
+} satisfies CatalogCharacterEditorialProfile;
 
 describe("internal catalog curation service", () => {
   beforeEach(() => {
@@ -50,6 +114,8 @@ describe("internal catalog curation service", () => {
 
     const allowed = entries("ADMIN_RPC_ALLOWLIST");
     const userContext = entries("ADMIN_USER_CONTEXT_RPCS");
+    expect(gateway).toContain("p_reviewer_id: admin.userId");
+    expect(gateway).toContain("status: 409");
     expect(new Set(allowed).size).toBe(allowed.length);
     expect(new Set(userContext).size).toBe(userContext.length);
     for (const name of userContext) expect(allowed).toContain(name);
@@ -88,16 +154,19 @@ describe("internal catalog curation service", () => {
       "admin_upsert_collection_curation_models",
       "admin_verify_catalog_model_identity",
       "admin_unlink_catalog_model_character",
+      "admin_get_catalog_character_editorial_profile",
+      "admin_save_catalog_character_editorial_profile",
     ]) {
       expect(allowed).toContain(name);
       expect(userContext).not.toContain(name);
     }
   });
 
-  it("keeps both curation migrations atomic and the vocabulary RPC admin-only", () => {
+  it("keeps curation migrations atomic and character profile RPCs private", () => {
     const paths = [
       "../../../../supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
       "../../../../supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
+      "../../../../supabase/migrations/20261117040000_tonart_character_editorial_profiles.sql",
     ];
     const migrations = paths.map((path) =>
       readFileSync(new URL(path, import.meta.url), "utf8").replace(
@@ -185,6 +254,141 @@ describe("internal catalog curation service", () => {
       "GRANT EXECUTE ON FUNCTION public.admin_create_catalog_curation_tag(text, text, text)",
     );
     expect(migrations[1]).toContain("TO service_role;");
+    expect(migrations[2]).toContain(
+      "ALTER TABLE public.catalog_character_identities",
+    );
+    expect(migrations[2]).toContain(
+      "CREATE OR REPLACE FUNCTION public.admin_get_catalog_character_editorial_profile(",
+    );
+    expect(migrations[2]).toContain(
+      "CREATE OR REPLACE FUNCTION public.admin_save_catalog_character_editorial_profile(",
+    );
+    expect(migrations[2]).toContain("editorial_profile_history");
+    expect(migrations[2]).toContain("p_expected_revision integer");
+    expect(migrations[2]).toContain("changed; reload before saving");
+    expect(migrations[2]).toContain(
+      "private_api.assert_tonart_curation_service_role()",
+    );
+    expect(migrations[2]).toContain("FROM PUBLIC, anon, authenticated;");
+    expect(migrations[2]).toContain("TO service_role;");
+    expect(migrations[2]).not.toContain(
+      "catalog_character_editorial_profiles (",
+    );
+    expect(migrations[2]).not.toContain("api/editorial/v1");
+    const acceptance = readFileSync(
+      "supabase/tests/tonart_curated_model_characters_acceptance.sql",
+      "utf8",
+    );
+    expect(acceptance).toContain(
+      "TONART acceptance requires explicit isolated staging session",
+    );
+    expect(acceptance).toContain("Fictitious staging-only biography.");
+    expect(acceptance).toContain("Stale editorial profile revision was accepted");
+    expect(acceptance).toContain("Duplicate reviewed character route slug was accepted");
+    expect(acceptance.trimEnd().endsWith("ROLLBACK;")).toBe(true);
+  });
+
+  it("loads a private character profile with its evidence and review state", async () => {
+    mocks.callAdminRpc.mockResolvedValue({
+      identityId: CHARACTER_ID,
+      name: "Sample Character",
+      franchise: "Sample Universe",
+      profile: verifiedEditorialProfile,
+      status: "reviewed",
+      revision: 3,
+      reviewedAt: "2026-11-17T10:00:00.000Z",
+      reviewedBy: "55555555-5555-4555-8555-555555555555",
+      history: [],
+    });
+
+    await expect(
+      getCatalogCharacterEditorialProfile(CHARACTER_ID),
+    ).resolves.toMatchObject({
+      identityId: CHARACTER_ID,
+      status: "reviewed",
+      revision: 3,
+      profile: { slug: "sample-character", aliases: [{ name: "Sample Hero" }] },
+    });
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_get_catalog_character_editorial_profile",
+      { p_identity_id: CHARACTER_ID },
+    );
+  });
+
+  it("requires claim-level HTTPS evidence before reviewing a character profile", async () => {
+    await expect(
+      saveCatalogCharacterEditorialProfile({
+        identityId: CHARACTER_ID,
+        profile: { ...verifiedEditorialProfile, biographySources: [] },
+        status: "reviewed",
+        expectedRevision: 0,
+      }),
+    ).rejects.toThrow("catalog_character_editorial_review_evidence_required");
+    await expect(
+      saveCatalogCharacterEditorialProfile({
+        identityId: CHARACTER_ID,
+        profile: {
+          ...verifiedEditorialProfile,
+          biographySources: [
+            {
+              title: "Not HTTPS",
+              url: "http://example.org/biography",
+              kind: "official",
+            },
+          ],
+        },
+        status: "reviewed",
+        expectedRevision: 0,
+      }),
+    ).rejects.toThrow("catalog_character_editorial_profile_invalid");
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid profile revisions before calling the database", async () => {
+    await expect(
+      saveCatalogCharacterEditorialProfile({
+        identityId: CHARACTER_ID,
+        profile: verifiedEditorialProfile,
+        status: "reviewed",
+        expectedRevision: -1,
+      }),
+    ).rejects.toThrow("catalog_character_editorial_profile_invalid");
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+  });
+
+  it("saves reviewed profiles through the existing private admin RPC gateway", async () => {
+    mocks.callAdminRpc.mockResolvedValue({
+      identityId: CHARACTER_ID,
+      name: "Sample Character",
+      franchise: "Sample Universe",
+      profile: verifiedEditorialProfile,
+      status: "reviewed",
+      revision: 1,
+      reviewedAt: "2026-11-17T10:00:00.000Z",
+      reviewedBy: "55555555-5555-4555-8555-555555555555",
+    });
+
+    await expect(
+      saveCatalogCharacterEditorialProfile({
+        identityId: CHARACTER_ID,
+        profile: verifiedEditorialProfile,
+        status: "reviewed",
+        expectedRevision: 0,
+      }),
+    ).resolves.toMatchObject({
+      identityId: CHARACTER_ID,
+      status: "reviewed",
+      revision: 1,
+    });
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_save_catalog_character_editorial_profile",
+      {
+        p_identity_id: CHARACTER_ID,
+        p_profile: verifiedEditorialProfile,
+        p_status: "reviewed",
+        p_expected_revision: 0,
+      },
+    );
   });
 
   it("builds valid custom editorial collections without inventing models", () => {
@@ -1014,7 +1218,9 @@ describe("internal catalog curation service", () => {
     expect(migration).toContain("AND cmc.unlinked_at IS NULL");
     expect(migration).toContain("'inactiveCharacters', COALESCE((");
     expect(migration).toContain("'inactiveCharacterCount', (");
-    expect(migration).toContain("idx_catalog_curation_model_characters_archived");
+    expect(migration).toContain(
+      "idx_catalog_curation_model_characters_archived",
+    );
     expect(migration).toContain("'unlinkReason', archived.unlink_reason");
     expect(migration).toContain(
       "'reviewCount', jsonb_array_length(archived.review_history)",
@@ -1069,9 +1275,7 @@ describe("internal catalog curation service", () => {
     const backfillPosition = migration.indexOf(
       "INSERT INTO public.catalog_curation_model_characters (",
     );
-    const dropPosition = migration.indexOf(
-      "DROP COLUMN character_identity_id",
-    );
+    const dropPosition = migration.indexOf("DROP COLUMN character_identity_id");
     expect(migration).toContain("SET LOCAL lock_timeout = '15s'");
     expect(lockPosition).toBeGreaterThan(0);
     expect(backfillPosition).toBeGreaterThan(lockPosition);
@@ -1098,25 +1302,33 @@ describe("internal catalog curation service", () => {
       "utf8",
     ).replace(/\r\n/g, "\n");
     const declared = new Map(
-      [...migration.matchAll(
-        /CREATE OR REPLACE FUNCTION public\.(\w+)\(([\s\S]*?)\)\s*RETURNS\s/g,
-      )].map((match) => [
+      [
+        ...migration.matchAll(
+          /CREATE OR REPLACE FUNCTION public\.(\w+)\(([\s\S]*?)\)\s*RETURNS\s/g,
+        ),
+      ].map((match) => [
         match[1],
-        match[2].split(",").map((argument) =>
-          argument.trim().split(/\s+/)[1],
-        ).join(","),
+        match[2]
+          .split(",")
+          .map((argument) => argument.trim().split(/\s+/)[1])
+          .join(","),
       ]),
     );
     expect(declared.size).toBe(4);
-    const access = [...migration.matchAll(
-      /(?:GRANT EXECUTE|REVOKE ALL) ON FUNCTION public\.(\w+)\(([^)]*)\)/g,
-    )];
+    const access = [
+      ...migration.matchAll(
+        /(?:GRANT EXECUTE|REVOKE ALL) ON FUNCTION public\.(\w+)\(([^)]*)\)/g,
+      ),
+    ];
     expect(access).toHaveLength(8);
     for (const [, name, signature] of access) {
       expect(declared.has(name)).toBe(true);
-      expect(signature.split(",").map((type) => type.trim()).join(",")).toBe(
-        declared.get(name),
-      );
+      expect(
+        signature
+          .split(",")
+          .map((type) => type.trim())
+          .join(","),
+      ).toBe(declared.get(name));
     }
   });
 
@@ -1137,15 +1349,11 @@ describe("internal catalog curation service", () => {
     expect(acceptance).toContain(
       "public.admin_unlink_catalog_model_character(",
     );
-    expect(acceptance).toContain(
-      "public.admin_ensure_internal_collection(",
-    );
+    expect(acceptance).toContain("public.admin_ensure_internal_collection(");
     expect(acceptance).toContain(
       "public.admin_upsert_collection_curation_models(",
     );
-    expect(acceptance).toContain(
-      "public.admin_get_collection_curation_page(",
-    );
+    expect(acceptance).toContain("public.admin_get_collection_curation_page(");
     expect(acceptance).toContain(
       "public.admin_get_collection_curation_summary(",
     );
@@ -1157,7 +1365,9 @@ describe("internal catalog curation service", () => {
     );
     expect(acceptance).toContain("has_function_privilege('authenticated'");
     expect(acceptance).toContain("Expected 21 active character links");
-    expect(acceptance).toContain("Twenty-first verified character was rejected");
+    expect(acceptance).toContain(
+      "Twenty-first verified character was rejected",
+    );
     expect(acceptance).toContain(
       "Editorial function accepted non-service JWT claims",
     );
