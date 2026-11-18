@@ -5,6 +5,8 @@ BEGIN;
 ALTER TABLE public.catalog_character_identities
   ADD COLUMN editorial_publication_status text NOT NULL DEFAULT 'not_approved',
   ADD COLUMN editorial_publication_revision integer,
+  ADD COLUMN editorial_relation_revision integer NOT NULL DEFAULT 0,
+  ADD COLUMN editorial_publication_relation_revision integer,
   ADD COLUMN editorial_publication_approval_ref text,
   ADD COLUMN editorial_publication_approved_at timestamptz,
   ADD COLUMN editorial_publication_approved_by uuid,
@@ -13,6 +15,9 @@ ALTER TABLE public.catalog_character_identities
     CHECK (editorial_publication_status IN ('not_approved', 'approved')),
   ADD CONSTRAINT catalog_character_publication_revision
     CHECK (editorial_publication_revision IS NULL OR editorial_publication_revision >= 0),
+  ADD CONSTRAINT catalog_character_relation_revision
+    CHECK (editorial_relation_revision >= 0
+      AND (editorial_publication_relation_revision IS NULL OR editorial_publication_relation_revision >= 0)),
   ADD CONSTRAINT catalog_character_publication_history
     CHECK (jsonb_typeof(editorial_publication_history) = 'array'
       AND jsonb_array_length(editorial_publication_history) <= 25),
@@ -20,6 +25,7 @@ ALTER TABLE public.catalog_character_identities
     CHECK (
       (editorial_publication_status = 'not_approved'
         AND editorial_publication_revision IS NULL
+        AND editorial_publication_relation_revision IS NULL
         AND editorial_publication_approval_ref IS NULL
         AND editorial_publication_approved_at IS NULL
         AND editorial_publication_approved_by IS NULL)
@@ -27,6 +33,7 @@ ALTER TABLE public.catalog_character_identities
       (editorial_publication_status = 'approved'
         AND editorial_profile_status = 'reviewed'
         AND editorial_publication_revision = editorial_profile_revision
+        AND editorial_publication_relation_revision = editorial_relation_revision
         AND editorial_publication_approval_ref IS NOT NULL
         AND editorial_publication_approved_at IS NOT NULL
         AND editorial_publication_approved_by IS NOT NULL)
@@ -62,6 +69,7 @@ BEGIN
     ) recent;
     NEW.editorial_publication_status := 'not_approved';
     NEW.editorial_publication_revision := NULL;
+    NEW.editorial_publication_relation_revision := NULL;
     NEW.editorial_publication_approval_ref := NULL;
     NEW.editorial_publication_approved_at := NULL;
     NEW.editorial_publication_approved_by := NULL;
@@ -78,78 +86,144 @@ CREATE TRIGGER trg_catalog_character_publication_invalidated_by_profile_change
 REVOKE ALL ON FUNCTION private_api.invalidate_tonart_character_publication_on_profile_change()
   FROM PUBLIC, anon, authenticated;
 
--- Removing the last verified model relation invalidates public approval. The
--- identity row lock serializes concurrent unlink operations for one character;
--- restoring a relation never restores publication approval automatically.
-CREATE OR REPLACE FUNCTION private_api.invalidate_tonart_character_publication_after_last_model_unlink()
-RETURNS trigger
+-- A character's published approval covers the EXACT active relation set and
+-- its evidence. Revisions live on the existing canonical identity, never in a
+-- shadow catalog or a second publication journal. Triggers update it in the
+-- same transaction as the source mutation.
+CREATE OR REPLACE FUNCTION private_api.bump_tonart_character_relation_revision(
+  p_identity_id uuid,
+  p_change text,
+  p_model_id text
+)
+RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_temp
-AS $last_link_invalidation$
-DECLARE
-  v_identity public.catalog_character_identities%ROWTYPE;
-  v_history jsonb;
+AS $relation_revision$
 BEGIN
-  IF OLD.unlinked_at IS NOT NULL OR NEW.unlinked_at IS NULL THEN
-    RETURN NEW;
-  END IF;
-
-  SELECT * INTO v_identity
-  FROM public.catalog_character_identities
-  WHERE id = NEW.character_identity_id
-  FOR UPDATE;
-  IF NOT FOUND OR v_identity.editorial_publication_status <> 'approved'
-     OR EXISTS (
-       SELECT 1
-       FROM public.catalog_curation_model_characters relation
-       WHERE relation.character_identity_id = NEW.character_identity_id
-         AND relation.unlinked_at IS NULL
-     ) THEN
-    RETURN NEW;
-  END IF;
-
-  SELECT COALESCE(jsonb_agg(recent.value ORDER BY recent.ordinality), '[]'::jsonb)
-  INTO v_history
-  FROM (
-    SELECT history.value, history.ordinality
-    FROM jsonb_array_elements(v_identity.editorial_publication_history || jsonb_build_array(
-      jsonb_build_object(
-        'action', 'invalidated_by_last_model_link_unlink',
-        'approvalRef', v_identity.editorial_publication_approval_ref,
-        'approvedRevision', v_identity.editorial_publication_revision,
-        'approvedAt', v_identity.editorial_publication_approved_at,
-        'approvedBy', v_identity.editorial_publication_approved_by,
-        'modelId', NEW.catalog_model_id,
-        'reason', NEW.unlink_reason,
-        'at', now()
-      )
-    )) WITH ORDINALITY AS history(value, ordinality)
-    ORDER BY history.ordinality DESC
-    LIMIT 25
-  ) recent;
-
-  UPDATE public.catalog_character_identities
-  SET editorial_publication_history = v_history,
+  UPDATE public.catalog_character_identities ci
+  SET editorial_relation_revision = ci.editorial_relation_revision + 1,
+      editorial_publication_history = CASE
+        WHEN ci.editorial_publication_status = 'approved' THEN (
+          SELECT COALESCE(jsonb_agg(recent.value ORDER BY recent.ordinality), '[]'::jsonb)
+          FROM (
+            SELECT history.value, history.ordinality
+            FROM jsonb_array_elements(ci.editorial_publication_history || jsonb_build_array(
+              jsonb_build_object(
+                'action', 'invalidated_by_model_relation_change',
+                'change', p_change,
+                'modelId', p_model_id,
+                'approvalRef', ci.editorial_publication_approval_ref,
+                'approvedRevision', ci.editorial_publication_revision,
+                'approvedRelationRevision', ci.editorial_publication_relation_revision,
+                'approvedAt', ci.editorial_publication_approved_at,
+                'approvedBy', ci.editorial_publication_approved_by,
+                'at', now()
+              )
+            )) WITH ORDINALITY AS history(value, ordinality)
+            ORDER BY history.ordinality DESC
+            LIMIT 25
+          ) recent
+        )
+        ELSE ci.editorial_publication_history
+      END,
       editorial_publication_status = 'not_approved',
       editorial_publication_revision = NULL,
+      editorial_publication_relation_revision = NULL,
       editorial_publication_approval_ref = NULL,
       editorial_publication_approved_at = NULL,
       editorial_publication_approved_by = NULL,
       updated_at = now()
-  WHERE id = NEW.character_identity_id
-    AND editorial_publication_status = 'approved';
+  WHERE ci.id = p_identity_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Canonical character identity missing for relation revision'
+      USING ERRCODE = '23503';
+  END IF;
+END;
+$relation_revision$;
+
+-- INSERT, unlink/relink, any changed source/evidence, and DELETE all mutate
+-- the approved subject matter. A pure UPDATE of updated_at remains idempotent.
+-- Identity and model FK identity cannot be reassigned in-place: unlink/relink
+-- using the existing canonical RPCs instead.
+CREATE OR REPLACE FUNCTION private_api.invalidate_tonart_character_publication_on_relation_change()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_temp
+AS $relation_invalidation$
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    IF OLD.catalog_model_id IS DISTINCT FROM NEW.catalog_model_id OR
+       OLD.character_identity_id IS DISTINCT FROM NEW.character_identity_id THEN
+      RAISE EXCEPTION 'Canonical relation keys are immutable'
+        USING ERRCODE = '23514';
+    END IF;
+    IF OLD.evidence_origin IS NOT DISTINCT FROM NEW.evidence_origin
+       AND OLD.evidence_note IS NOT DISTINCT FROM NEW.evidence_note
+       AND OLD.unlinked_at IS NOT DISTINCT FROM NEW.unlinked_at
+       AND OLD.unlink_reason IS NOT DISTINCT FROM NEW.unlink_reason
+       AND OLD.review_history IS NOT DISTINCT FROM NEW.review_history THEN
+      RETURN NEW;
+    END IF;
+  END IF;
+
+  PERFORM private_api.bump_tonart_character_relation_revision(
+    CASE WHEN TG_OP = 'DELETE' THEN OLD.character_identity_id ELSE NEW.character_identity_id END,
+    lower(TG_OP),
+    CASE WHEN TG_OP = 'DELETE' THEN OLD.catalog_model_id ELSE NEW.catalog_model_id END
+  );
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
   RETURN NEW;
 END;
-$last_link_invalidation$;
+$relation_invalidation$;
 
-CREATE TRIGGER trg_catalog_character_publication_invalidated_by_last_model_unlink
-  AFTER UPDATE OF unlinked_at ON public.catalog_curation_model_characters
+CREATE TRIGGER trg_catalog_character_publication_relation_revision
+  AFTER INSERT OR UPDATE OR DELETE ON public.catalog_curation_model_characters
   FOR EACH ROW
-  WHEN (OLD.unlinked_at IS NULL AND NEW.unlinked_at IS NOT NULL)
-  EXECUTE FUNCTION private_api.invalidate_tonart_character_publication_after_last_model_unlink();
+  EXECUTE FUNCTION private_api.invalidate_tonart_character_publication_on_relation_change();
 
-REVOKE ALL ON FUNCTION private_api.invalidate_tonart_character_publication_after_last_model_unlink()
+-- A model slug belongs to the canonical model reference. Changing it changes
+-- every approved relation payload that points to that model. Revoke each
+-- affected identity in a stable order, with the SAME revision authority.
+CREATE OR REPLACE FUNCTION private_api.invalidate_tonart_character_publication_on_model_slug_change()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_temp
+AS $model_slug_invalidation$
+DECLARE
+  v_identity_id uuid;
+BEGIN
+  IF NEW.catalog_model_slug IS NOT DISTINCT FROM OLD.catalog_model_slug THEN
+    RETURN NEW;
+  END IF;
+  FOR v_identity_id IN
+    SELECT DISTINCT relation.character_identity_id
+    FROM public.catalog_curation_model_characters relation
+    WHERE relation.catalog_model_id = NEW.catalog_model_id
+      AND relation.unlinked_at IS NULL
+    ORDER BY relation.character_identity_id
+  LOOP
+    PERFORM private_api.bump_tonart_character_relation_revision(
+      v_identity_id, 'model_slug_changed', NEW.catalog_model_id
+    );
+  END LOOP;
+  RETURN NEW;
+END;
+$model_slug_invalidation$;
+
+CREATE TRIGGER trg_catalog_character_publication_model_slug_revision
+  AFTER UPDATE OF catalog_model_slug ON public.catalog_curation_model_profiles
+  FOR EACH ROW
+  WHEN (OLD.catalog_model_slug IS DISTINCT FROM NEW.catalog_model_slug)
+  EXECUTE FUNCTION private_api.invalidate_tonart_character_publication_on_model_slug_change();
+
+REVOKE ALL ON FUNCTION private_api.bump_tonart_character_relation_revision(uuid,text,text)
+  FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION private_api.invalidate_tonart_character_publication_on_relation_change()
+  FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION private_api.invalidate_tonart_character_publication_on_model_slug_change()
   FROM PUBLIC, anon, authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION public.admin_get_catalog_character_editorial_profile(
@@ -182,6 +256,8 @@ BEGIN
     'history', v_identity.editorial_profile_history,
     'publicationStatus', v_identity.editorial_publication_status,
     'publicationRevision', v_identity.editorial_publication_revision,
+    'relationRevision', v_identity.editorial_relation_revision,
+    'approvedRelationRevision', v_identity.editorial_publication_relation_revision,
     'publicationApprovalRef', v_identity.editorial_publication_approval_ref,
     'publicationApprovedAt', v_identity.editorial_publication_approved_at,
     'publicationApprovedBy', v_identity.editorial_publication_approved_by,
@@ -279,6 +355,8 @@ BEGIN
     'history', v_identity.editorial_profile_history,
     'publicationStatus', v_identity.editorial_publication_status,
     'publicationRevision', v_identity.editorial_publication_revision,
+    'relationRevision', v_identity.editorial_relation_revision,
+    'approvedRelationRevision', v_identity.editorial_publication_relation_revision,
     'publicationApprovalRef', v_identity.editorial_publication_approval_ref,
     'publicationApprovedAt', v_identity.editorial_publication_approved_at,
     'publicationApprovedBy', v_identity.editorial_publication_approved_by,
@@ -527,6 +605,8 @@ BEGIN
         'reviewedBy', v_identity.editorial_profile_reviewed_by,
         'publicationStatus', v_identity.editorial_publication_status,
         'publicationRevision', v_identity.editorial_publication_revision,
+        'relationRevision', v_identity.editorial_relation_revision,
+        'approvedRelationRevision', v_identity.editorial_publication_relation_revision,
         'publicationApprovalRef', v_identity.editorial_publication_approval_ref,
         'approvedAt', v_identity.editorial_publication_approved_at,
         'approvedBy', v_identity.editorial_publication_approved_by,
@@ -559,6 +639,7 @@ BEGIN
         ),
         editorial_publication_status = 'approved',
         editorial_publication_revision = p_expected_revision,
+        editorial_publication_relation_revision = v_identity.editorial_relation_revision,
         editorial_publication_approval_ref = v_approval_ref,
         editorial_publication_approved_at = v_approved_at,
         editorial_publication_approved_by = p_approver_id,
@@ -578,6 +659,8 @@ BEGIN
         'reviewedBy', v_identity.editorial_profile_reviewed_by,
         'publicationStatus', v_identity.editorial_publication_status,
         'publicationRevision', NULL,
+        'relationRevision', v_identity.editorial_relation_revision,
+        'approvedRelationRevision', NULL,
         'publicationApprovalRef', NULL,
         'publicationApprovedAt', NULL,
         'publicationApprovedBy', NULL,
@@ -606,6 +689,7 @@ BEGIN
         ),
         editorial_publication_status = 'not_approved',
         editorial_publication_revision = NULL,
+        editorial_publication_relation_revision = NULL,
         editorial_publication_approval_ref = NULL,
         editorial_publication_approved_at = NULL,
         editorial_publication_approved_by = NULL,
@@ -625,6 +709,8 @@ BEGIN
     'reviewedBy', v_identity.editorial_profile_reviewed_by,
     'publicationStatus', v_identity.editorial_publication_status,
     'publicationRevision', v_identity.editorial_publication_revision,
+    'relationRevision', v_identity.editorial_relation_revision,
+    'approvedRelationRevision', v_identity.editorial_publication_relation_revision,
     'publicationApprovalRef', v_identity.editorial_publication_approval_ref,
     'publicationApprovedAt', v_identity.editorial_publication_approved_at,
     'publicationApprovedBy', v_identity.editorial_publication_approved_by,
@@ -655,12 +741,15 @@ BEGIN
     SELECT ci.id, ci.character_name, ci.franchise, ci.editorial_profile,
       ci.editorial_profile_revision, ci.editorial_profile_reviewed_at,
       ci.editorial_profile_reviewed_by, ci.editorial_publication_approval_ref,
-      ci.editorial_publication_approved_at, ci.editorial_publication_approved_by
+      ci.editorial_publication_approved_at, ci.editorial_publication_approved_by,
+      ci.editorial_relation_revision, ci.editorial_publication_relation_revision
     FROM public.catalog_character_identities ci
     WHERE ci.editorial_profile_status = 'reviewed'
       AND ci.editorial_publication_status = 'approved'
       AND ci.editorial_publication_revision = ci.editorial_profile_revision
+      AND ci.editorial_publication_relation_revision = ci.editorial_relation_revision
     ORDER BY lower(ci.franchise), lower(ci.character_name), ci.id
+    FOR SHARE OF ci
   LOOP
     v_profile := public.admin_validate_catalog_character_editorial_profile(
       v_identity.editorial_profile, 'reviewed'
@@ -747,6 +836,8 @@ BEGIN
       'slug', v_profile ->> 'slug',
       'profile', v_profile,
       'profileRevision', v_identity.editorial_profile_revision,
+      'relationRevision', v_identity.editorial_relation_revision,
+      'approvedRelationRevision', v_identity.editorial_publication_relation_revision,
       'reviewedAt', v_identity.editorial_profile_reviewed_at,
       'reviewedBy', v_identity.editorial_profile_reviewed_by,
       'approvalRef', v_identity.editorial_publication_approval_ref,
@@ -775,7 +866,7 @@ GRANT EXECUTE ON FUNCTION public.admin_export_approved_catalog_character_project
   TO service_role;
 
 COMMENT ON COLUMN public.catalog_character_identities.editorial_publication_status IS
-  'Separate human approval for public Worker projection. Profile review alone never publishes.';
+  'Human public approval covers the reviewed profile AND the exact revision of active model links. Neither a profile review nor a model link alone authorizes publication.';
 COMMENT ON COLUMN public.catalog_character_identities.editorial_publication_history IS
   'Last 25 public approval, revocation, and invalidation events for the canonical character identity.';
 
