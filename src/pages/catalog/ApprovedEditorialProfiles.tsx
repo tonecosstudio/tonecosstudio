@@ -243,9 +243,10 @@ export function ApprovedCharacterProfile({
                       Idade contextual
                     </dt>
                     <dd className="mt-1">
-                      {character.ageContext.value}{" "}
+                      {character.ageContext.value ? `${character.ageContext.value} ` : null}
                       <span className="text-[hsl(0,0%,58%)]">
-                        · {character.ageContext.context}
+                        {character.ageContext.value ? "· " : null}
+                        {character.ageContext.context}
                       </span>
                     </dd>
                   </div>

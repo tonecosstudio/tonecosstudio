@@ -83,7 +83,15 @@ export type PublicCatalogEditorialEvidence = {
   id: string;
   title: string;
   url: string;
-  kind: "official" | "primary" | "publisher" | "catalog";
+  kind:
+    | "official"
+    | "primary"
+    | "publisher"
+    | "licensor"
+    | "institution"
+    | "reputable_reference"
+    | "other"
+    | "catalog";
 };
 
 export type PublicCatalogEditorialPublication = {
@@ -116,7 +124,7 @@ export type PublicCatalogCharacterProfile = {
     biography: string | null;
     biographyEvidenceIds: string[];
     ageContext: {
-      value: string;
+      value: string | null;
       context: string;
       evidenceIds: string[];
     } | null;
@@ -379,9 +387,10 @@ function decodeEditorialEvidence(
       throw new Error("duplicate_catalog_editorial_evidence_id");
     seen.add(id);
     if (
-      !["official", "primary", "publisher", "catalog"].includes(
-        row.kind as string,
-      )
+      ![
+        "official", "primary", "publisher", "licensor", "institution",
+        "reputable_reference", "other", "catalog",
+      ].includes(row.kind as string)
     ) {
       throw new Error("invalid_catalog_editorial_evidence_kind");
     }
@@ -698,7 +707,9 @@ function decodePublicCharacterProfile(
     }
     const age = character.ageContext as Record<string, unknown>;
     ageContext = {
-      value: requiredText(age.value, "character_age"),
+      value: age.value === null || age.value === undefined
+        ? null
+        : requiredText(age.value, "character_age"),
       context: requiredText(age.context, "character_age_context"),
       evidenceIds: decodeEvidenceIds(
         age.evidenceIds,

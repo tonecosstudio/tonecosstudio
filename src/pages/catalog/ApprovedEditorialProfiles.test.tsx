@@ -147,6 +147,31 @@ describe("approved editorial profile views", () => {
     ).toHaveAttribute("href", "/modelos/mdl_zoro_01");
   });
 
+  it("renders contextual age without inventing a numeric value", () => {
+    const contextOnlyProfile: PublicCatalogCharacterProfile = {
+      ...characterProfile,
+      character: {
+        ...characterProfile.character,
+        ageContext: {
+          value: null,
+          context: "A idade varia entre adaptações.",
+          evidenceIds: [source.id],
+        },
+      },
+    };
+    render(
+      <HelmetProvider>
+        <MemoryRouter>
+          <ApprovedCharacterProfile profile={contextOnlyProfile} gateway={gateway} />
+        </MemoryRouter>
+      </HelmetProvider>,
+    );
+
+    const context = screen.getByText(/A idade varia entre adaptações/);
+    expect(context).toHaveTextContent("A idade varia entre adaptações.");
+    expect(context).not.toHaveTextContent("·");
+  });
+
   it("hides related models with no image eligible through the canonical media gateway", () => {
     const profileWithoutEligibleMedia: PublicCatalogCharacterProfile = {
       ...characterProfile,
