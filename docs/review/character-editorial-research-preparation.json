@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 87,
-    "preparedCandidateModelLinkCount": 903
+    "sourceResearchedIdentityCount": 90,
+    "preparedCandidateModelLinkCount": 910
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 87,
+    "preparedIdentityCount": 90,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 903,
+    "preparedCandidateModelLinkCount": 910,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -804,6 +804,38 @@
       "title": "Weekly ☆ Character Showcase #32: Paragus from Dragon Ball Super: Broly!",
       "url": "https://en.dragon-ball-official.com/news/01_678.html",
       "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "onepiece-official-zoro",
+      "publisher": "ONE PIECE.com",
+      "title": "ロロノア・ゾロ | キャラクター検索",
+      "url": "https://one-piece.com/character/zoro/index.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "onepiece-official-luffy",
+      "publisher": "ONE PIECE.com",
+      "title": "モンキー・D・ルフィ | キャラクター検索",
+      "url": "https://one-piece.com/character/luffy/index.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "onepiece-official-sanji",
+      "publisher": "ONE PIECE.com",
+      "title": "サンジ | キャラクター検索",
+      "url": "https://one-piece.com/character/sanji/index.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "bandai-one-piece-odyssey-crew",
+      "publisher": "Bandai Namco Entertainment America",
+      "title": "ONE PIECE ODYSSEY: Meet the Straw Hat Crew",
+      "url": "https://www.bandainamcoent.com/news/one-piece-odyssey-straw-hat-crew",
+      "sourceKind": "publisher",
       "consultedOn": "2026-11-18"
     }
   ],
@@ -22946,6 +22978,336 @@
         }
       ],
       "catalogCandidateModelCount": 4
+    },
+    {
+      "candidateName": "Monkey D. Luffy",
+      "catalogDisplayNameCandidate": "Luffy",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "One Piece",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Monkey D. Luffy",
+          "sourceIds": [
+            "onepiece-official-luffy",
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alias_candidate",
+          "value": "Luffy",
+          "sourceIds": [
+            "onepiece-official-luffy",
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "One Piece",
+          "sourceIds": [
+            "onepiece-official-luffy",
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.role",
+          "value": "O perfil de ONE PIECE ODYSSEY identifica Luffy como protagonista da história e capitão dos Chapéus de Palha.",
+          "sourceIds": [
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.goal",
+          "value": "O perfil de ONE PIECE ODYSSEY descreve a busca pelo tesouro One Piece e pelo título de Rei dos Piratas como objetivo de Luffy.",
+          "sourceIds": [
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Monkey D. Luffy é apresentado como capitão dos Chapéus de Palha e protagonista de One Piece. Encontrar o tesouro One Piece e tornar-se Rei dos Piratas são as metas que orientam sua jornada. A descrição em inglês usada como referência é específica ao jogo ONE PIECE ODYSSEY.",
+      "biographySourceIds": [
+        "bandai-one-piece-odyssey-crew"
+      ],
+      "catalogFranchiseCandidates": [
+        "One Piece"
+      ],
+      "ambiguities": [
+        "A página oficial consultada está em japonês; a forma romanizada completa “Monkey D. Luffy” e a forma curta “Luffy” devem ser confirmadas pela revisão humana.",
+        "A página de personagem da ONE PIECE.com foi encontrada na busca oficial, mas a abertura automatizada retornou HTTP 403 nesta consulta; a pessoa revisora deve abrir a fonte diretamente antes de aprovar.",
+        "Os modelos têm rótulos e pastas compatíveis com a franquia, mas metadados do catálogo são apenas proveniência do registro e não provam a identidade da escultura.",
+        "O título de um modelo menciona “estátua dupla vista”; isso não confirma mais de uma personagem nem a variante representada. Todos os quatro vínculos permanecem pendentes de verificação visual individual."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_20fc39851cdcad6e46e9",
+          "modelSlug": "one-piece-luffy-gear-5-com-raio",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "one-piece-luffy-gear-5-com-raio"
+          }
+        },
+        {
+          "modelId": "mdl_2695856f9852811d643d",
+          "modelSlug": "one-piece-luffy-dinamico-modelo-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "one-piece-luffy-dinamico-modelo-cinza"
+          }
+        },
+        {
+          "modelId": "mdl_7abf262024c4d36167aa",
+          "modelSlug": "one-piece-luffy-classico-em-pe-sobre-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "one-piece-luffy-classico-em-pe-sobre-base"
+          }
+        },
+        {
+          "modelId": "mdl_d472de14b1fcfa49150d",
+          "modelSlug": "one-piece-luffy-gear-4-estatua-dupla-vista",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "one-piece-luffy-gear-4-estatua-dupla-vista"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 4
+    },
+    {
+      "candidateName": "Roronoa Zoro",
+      "catalogDisplayNameCandidate": "Zoro / Roronoa Zoro 3 Diorama",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "One Piece",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Roronoa Zoro",
+          "sourceIds": [
+            "onepiece-official-zoro",
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alias_candidate",
+          "value": "Zoro",
+          "sourceIds": [
+            "onepiece-official-zoro",
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "One Piece",
+          "sourceIds": [
+            "onepiece-official-zoro",
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.crew_and_style",
+          "value": "O perfil oficial de ONE PIECE ODYSSEY descreve Zoro como combatente dos Chapéus de Palha e especialista em um estilo de três espadas.",
+          "sourceIds": [
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.goal",
+          "value": "O perfil de ONE PIECE ODYSSEY apresenta tornar-se o maior espadachim do mundo como objetivo de Zoro.",
+          "sourceIds": [
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Roronoa Zoro é associado à tripulação dos Chapéus de Palha e ao combate com três espadas. Seu objetivo de se tornar o maior espadachim do mundo aparece como um eixo da personagem. A referência em inglês consultada descreve a versão de ONE PIECE ODYSSEY.",
+      "biographySourceIds": [
+        "bandai-one-piece-odyssey-crew"
+      ],
+      "catalogFranchiseCandidates": [
+        "One Piece"
+      ],
+      "ambiguities": [
+        "A ficha oficial consultada está em japonês; a romanização exibida como “Roronoa Zoro” e o uso de “Zoro” como alias exigem revisão humana.",
+        "A página de personagem da ONE PIECE.com foi encontrada na busca oficial, mas a abertura automatizada retornou HTTP 403 nesta consulta; a pessoa revisora deve abrir a fonte diretamente antes de aprovar.",
+        "Os modelos têm rótulos e pastas compatíveis com a franquia, mas metadados do catálogo são apenas proveniência do registro e não provam a identidade da escultura.",
+        "Os dois vínculos de modelo são candidatos separados; cada escultura e variante exige conferência visual e evidência própria antes de qualquer aprovação."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_ffb07179ff7306cc3b9a",
+          "modelSlug": "one-piece-zoro-com-espadas-e-onda",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "one-piece-zoro-com-espadas-e-onda"
+          }
+        },
+        {
+          "modelId": "mdl_2b753e4d94e3a72b5510",
+          "modelSlug": "one-piece-roronoa-zoro-3-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "one-piece-roronoa-zoro-3-diorama"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 2
+    },
+    {
+      "candidateName": "Sanji",
+      "catalogDisplayNameCandidate": "Sanji",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "One Piece",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Sanji",
+          "sourceIds": [
+            "onepiece-official-sanji",
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "One Piece",
+          "sourceIds": [
+            "onepiece-official-sanji",
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.role_and_style",
+          "value": "O perfil de ONE PIECE ODYSSEY descreve Sanji como cozinheiro dos Chapéus de Palha e lutador que prioriza golpes com as pernas.",
+          "sourceIds": [
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.goal",
+          "value": "O perfil de ONE PIECE ODYSSEY apresenta encontrar o All Blue como o sonho de Sanji.",
+          "sourceIds": [
+            "bandai-one-piece-odyssey-crew"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Sanji é apresentado como cozinheiro dos Chapéus de Palha e lutador que concentra seus golpes nas pernas, preservando as mãos usadas na cozinha. Encontrar o All Blue é o sonho atribuído a ele no perfil de ONE PIECE ODYSSEY.",
+      "biographySourceIds": [
+        "bandai-one-piece-odyssey-crew"
+      ],
+      "catalogFranchiseCandidates": [
+        "One Piece"
+      ],
+      "ambiguities": [
+        "A página de personagem da ONE PIECE.com foi encontrada na busca oficial, mas a abertura automatizada retornou HTTP 403 nesta consulta; a pessoa revisora deve abrir a fonte diretamente antes de aprovar.",
+        "Os modelos têm rótulos e pastas compatíveis com a franquia, mas metadados do catálogo são apenas proveniência do registro e não provam a identidade da escultura.",
+        "A identidade e a variante da estatueta devem ser confirmadas visualmente; o vínculo permanece sem evidência independente específica do modelo."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_3d6dd33df4dc3ea3fd70",
+          "modelSlug": "one-piece-sanji-vinsmoke-chute-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "one-piece-sanji-vinsmoke-chute-em-diorama"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 1
     }
   ]
 }
