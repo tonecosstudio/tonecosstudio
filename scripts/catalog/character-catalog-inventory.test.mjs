@@ -444,7 +444,7 @@ test("research preparation references only inventory IDs and remains unapproved"
       counts[source.sourceKind] = (counts[source.sourceKind] ?? 0) + 1;
       return counts;
     }, {}),
-    { official: 100, publisher: 1 },
+    { official: 104, publisher: 1 },
   );
   for (const candidate of packet.candidates) {
     assert.equal(candidate.identityStatus, "prepared_pending_human_review");
