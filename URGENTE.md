@@ -1790,3 +1790,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** validar no ambiente isolado autorizado o caminho de aprovação e publicação Supabase→D1 e, depois da homologação, ativar os vínculos via configuração aprovada; manter o código local integrado à PR #33 enquanto estes gates não existem.
 
 **DO_NOT_REPEAT:** não usar fixtures como prova de integração, não inferir associação de modelo por nome, não publicar registros `reviewed` sem estado editorial público `approved`, não aplicar migration nem fazer deploy/cutover/indexação.
+
+## Rodada 81 — falha de instalação no Quality Gate (18/11/2026)
+
+- O run `44217722614`, acionado pela PR #33 no SHA `fbb9d4a4`, preparou o runner Ubuntu e falhou em `npm ci`: o `onnxruntime-node@1.17.3` tentou baixar o pacote CUDA Linux x64 e recebeu **404**. Nenhum teste ou typecheck remoto começou; os demais jobs foram ignorados pelas condições atuais do evento PR.
+- Corrigi a causa no job existente `catalog-offline` de `.github/workflows/quality.yml`, definindo `npm_config_onnxruntime_node_install_cuda=skip`. A suíte offline usa CPU e não necessita do provedor CUDA. Não foram criados workflows, alteradas dependências ou habilitado deploy.
+- **Validação local:** executar o instalador `onnxruntime-node` com essa configuração encerrou com sucesso; `git diff --check` passou. O commit acionará o fluxo normal da PR para confirmar a instalação e os jobs; não houve rerun manual.
+- **Pendências:** a PR continua draft; projeção D1 ainda vazia, migration `0023` sem aplicação autorizada e sem exportador aprovado da curadoria. CI só poderá ser considerado validado após o novo run completar os testes do catálogo.
+
+**NEXT_ACTION:** enviar a correção à PR #33 e acompanhar o run novo; manter flag editorial desligada até publicação aprovada e homologação real do Worker/D1.
+
+**DO_NOT_REPEAT:** não baixar nem instalar CUDA na suíte offline, não declarar o run `44217722614` aprovado, não rerun manualmente antes do commit corretivo e não usar fixtures como evidência de dados públicos reais.
