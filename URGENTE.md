@@ -2056,3 +2056,17 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** encaminhar dados à curadoria privada #31 e homologar Supabase→Worker/D1 apenas em ambiente isolado com conteúdo aprovado.
 
 **DO_NOT_REPEAT:** não usar fonte biográfica como evidência de render; não aplicar 0023 ao projeto Supabase produtivo.
+
+
+## Rodada 104 — All Might e Leon na fila editorial (18/11/2026)
+
+- Acrescentei dois dossiês revisáveis com fontes oficiais da série animada *My Hero Academia* e da CAPCOM. Os textos delimitam a continuidade coberta pelas fontes; os dez modelos encontrados na fila permanecem apenas relações candidatas, sem evidência visual independente.
+- O pacote da PR #33 agora contém **70 identidades preparadas, 79 fontes oficiais únicas e 789 relações candidatas**. Permanecem **0 identidades revisadas, 0 aprovadas, 0 relações revisadas/aprovadas e 0 relações de modelo com evidência independente**.
+- Validação desta rodada: `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**. O teste confirma fontes referenciadas por claim, IDs/slugs existentes, status pendente e ausência de evidência independente.
+- Compatibilidade da transferência validada à parte: um teste temporário executado no checkout da #31 importou o pacote atual da #33 e montou um rascunho editorial em memória (**1/1 passou**); o arquivo temporário foi removido e nenhuma persistência foi chamada. Isso não testa a projeção Supabase→Worker/D1.
+- Estado consultado no GitHub: PRs **#26** (`548ae605`), **#31** (`77ecba78`) e **#33** (`98cc66c4`) continuam abertas em draft, sem conflito reportado; **nenhuma destas entregas está integrada à `main`**. A curadoria privada e o import manual estão na #31; a migration de projeção pública 0023 e o consumidor editorial do Worker estão na #26; a interface e a preparação dos candidatos estão na #33. Os testes offline anteriores de #26 e a execução isolada da cadeia SQL em #31 não constituem homologação conjunta Supabase→D1.
+- Bloqueios externos inalterados: não há ambiente Supabase/D1 isolado disponível; as migrations editoriais da #31 e a 0023 da #26 não foram aplicadas; não existe exportação editorial aprovada; a projeção pública continua vazia; publicação do Worker e cutover M5 não foram autorizados. Não houve escrita em Supabase/D1, publicação ou ativação de ficha pública nesta rodada.
+
+**NEXT_ACTION:** encaminhar os novos candidatos à revisão privada da #31. Depois de aprovações humanas, obter ambiente isolado para aplicar migrations e homologar exportação, projeção Worker/D1 e páginas da #33 de ponta a ponta.
+
+**DO_NOT_REPEAT:** não tratar os 789 links candidatos como relações comprovadas; não afirmar integração das três PRs na `main`; não aplicar migrations no Supabase produtivo nem ativar a flag enquanto a projeção estiver vazia.

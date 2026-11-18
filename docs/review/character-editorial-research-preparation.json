@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 68,
-    "preparedCandidateModelLinkCount": 779
+    "sourceResearchedIdentityCount": 70,
+    "preparedCandidateModelLinkCount": 789
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 68,
+    "preparedIdentityCount": 70,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 779,
+    "preparedCandidateModelLinkCount": 789,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -643,6 +643,22 @@
       "publisher": "Marvel",
       "title": "Nightcrawler (X-Men ’97) official character profile",
       "url": "https://cdn.marvel.com/u/prod/marvel/i/pdf/MMRPG_XMen97_20240517.pdf",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "heroaca-all-might-character",
+      "publisher": "My Hero Academia anime official website",
+      "title": "All Might (オールマイト) | CHARACTER — My Hero Academia TV Anime",
+      "url": "https://heroaca.com/character/chara_group04/04-01/",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-leon-resident-evil-portal",
+      "publisher": "CAPCOM",
+      "title": "Leon S. Kennedy: Ass-kicking Agent Extraordinaire",
+      "url": "https://game.capcom.com/residentevil/en/umbrella-20230324110000.html",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -19452,6 +19468,294 @@
         }
       ],
       "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "All Might (My Hero Academia anime profile candidate)",
+      "catalogDisplayNameCandidate": "All Might",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "My Hero Academia",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "All Might",
+          "sourceIds": [
+            "heroaca-all-might-character"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "My Hero Academia",
+          "sourceIds": [
+            "heroaca-all-might-character"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.eighth_successor_and_teacher",
+          "value": "O perfil oficial do anime apresenta All Might como oitavo sucessor do One For All, chamado de símbolo da paz, e descreve sua atuação posterior como professor que orienta Izuku Midoriya.",
+          "sourceIds": [
+            "heroaca-all-might-character"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "O perfil oficial do anime apresenta All Might como oitavo sucessor do One For All e herói conhecido como símbolo da paz. A página também descreve que, após se aposentar como herói, ele passa a atuar como professor e orientar Izuku Midoriya. Este rascunho está limitado ao perfil consultado e não identifica visualmente os modelos candidatos.",
+      "biographySourceIds": [
+        "heroaca-all-might-character"
+      ],
+      "catalogFranchiseCandidates": [
+        "Boku no Hero"
+      ],
+      "ambiguities": [
+        "A fonte é o perfil oficial da série animada; sua continuidade e caracterização devem ser confirmadas pela curadoria antes de aplicar a identidade aos renders.",
+        "Os IDs foram selecionados por rótulo e proveniência da fila; cada vínculo requer inspeção visual e revisão editorial.",
+        "Não há evidência independente por render para nenhum vínculo candidato."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_13592d89ea893db3ce7c",
+          "modelSlug": "boku-no-hero-all-might-modelo-3d-multiplas-vistas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "boku-no-hero-all-might-modelo-3d-multiplas-vistas"
+          }
+        },
+        {
+          "modelId": "mdl_146766d6952df45170f4",
+          "modelSlug": "boku-no-hero-all-might-busto-com-bracos-flexionados",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "boku-no-hero-all-might-busto-com-bracos-flexionados"
+          }
+        },
+        {
+          "modelId": "mdl_90881bd0bd2c0d3b4bc6",
+          "modelSlug": "boku-no-hero-all-might-em-pose-heroica-sobre-fumaca",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "boku-no-hero-all-might-em-pose-heroica-sobre-fumaca"
+          }
+        },
+        {
+          "modelId": "mdl_d60bed0602650dd808c4",
+          "modelSlug": "boku-no-hero-all-might-estatua-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "boku-no-hero-all-might-estatua-em-pe"
+          }
+        },
+        {
+          "modelId": "mdl_f6cc0a71953c7d5593f9",
+          "modelSlug": "boku-no-hero-all-might-formas-heroi-e-magro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "boku-no-hero-all-might-formas-heroi-e-magro"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Leon S. Kennedy (Resident Evil candidate)",
+      "catalogDisplayNameCandidate": "Leon S. Kennedy",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Resident Evil",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Leon S. Kennedy",
+          "sourceIds": [
+            "capcom-leon-resident-evil-portal"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Resident Evil",
+          "sourceIds": [
+            "capcom-leon-resident-evil-portal"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.raccoon_city_and_government_agent",
+          "value": "O artigo oficial da CAPCOM descreve Leon como policial novato envolvido no surto de Raccoon City em seu primeiro dia e, depois, como agente em missões sob comando direto do presidente dos Estados Unidos.",
+          "sourceIds": [
+            "capcom-leon-resident-evil-portal"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A CAPCOM descreve Leon S. Kennedy como policial novato envolvido no surto de Raccoon City em seu primeiro dia e, mais tarde, como agente em missões sob comando direto do presidente dos Estados Unidos. O artigo consultado percorre diferentes jogos e versões; o dossiê não determina a continuidade ou o design de cada modelo candidato.",
+      "biographySourceIds": [
+        "capcom-leon-resident-evil-portal"
+      ],
+      "catalogFranchiseCandidates": [
+        "Resident Evil"
+      ],
+      "ambiguities": [
+        "A fonte oficial resume fatos de diferentes jogos e versões; revisar qual continuidade, roupa e representação se aplicam a cada modelo antes de confirmar os vínculos.",
+        "Os IDs foram selecionados por rótulo e proveniência da fila; cada vínculo requer inspeção visual e revisão editorial.",
+        "Não há evidência independente por render para nenhum vínculo candidato."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_185daf05d5b37311c912",
+          "modelSlug": "resident-evil-leon-s-kennedy-resident-evil-imagem-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-leon-s-kennedy-resident-evil-imagem-01"
+          }
+        },
+        {
+          "modelId": "mdl_300cffe164feab20c551",
+          "modelSlug": "resident-evil-leon-s-kennedy-resident-evil-leon-s-kennedy-stl-6-resident-evil-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-leon-s-kennedy-resident-evil-leon-s-kennedy-stl-6-resident-evil-principal"
+          }
+        },
+        {
+          "modelId": "mdl_502bab0e901695652695",
+          "modelSlug": "resident-evil-leon-s-kennedy-resident-evil-leon-s-kennedy-stl-7-bust-resident-evil-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-leon-s-kennedy-resident-evil-leon-s-kennedy-stl-7-bust-resident-evil-principal"
+          }
+        },
+        {
+          "modelId": "mdl_af1a98c17638291e5326",
+          "modelSlug": "resident-evil-leon-s-kennedy-stl-3-resident-evil-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-leon-s-kennedy-stl-3-resident-evil-principal"
+          }
+        },
+        {
+          "modelId": "mdl_c5616ffab4d46b446302",
+          "modelSlug": "resident-evil-leon-s-kennedy-resident-evil-leon-s-kennedy-stl-5-resident-evil-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-leon-s-kennedy-resident-evil-leon-s-kennedy-stl-5-resident-evil-principal"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
     }
   ]
 }

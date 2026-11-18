@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 68);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 779);
-  assert.equal(packet.candidates.length, 68);
-  assert.equal(packet.sources.length, 77);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 70);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 789);
+  assert.equal(packet.candidates.length, 70);
+  assert.equal(packet.sources.length, 79);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 68);
+  assert.equal(packet.policy.preparedIdentityCount, 70);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 779);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 789);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 779);
+  assert.equal(links.length, 789);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -236,6 +236,32 @@ test("research preparation references only inventory IDs and remains unapproved"
     assert.equal(candidate.identityStatus, "prepared_pending_human_review");
     assert.ok(candidate.ambiguities.length > 0);
   }
+  const newestResearchCandidates = [
+    ["All Might (My Hero Academia anime profile candidate)", "All Might", "My Hero Academia", 5],
+    ["Leon S. Kennedy (Resident Evil candidate)", "Leon S. Kennedy", "Resident Evil", 5],
+  ];
+  for (const [candidateName, catalogLabel, franchise, expectedModels] of newestResearchCandidates) {
+    const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
+    assert.ok(candidate);
+    assert.equal(candidate.catalogDisplayNameCandidate, catalogLabel);
+    assert.equal(candidate.franchiseCandidate, franchise);
+    assert.equal(candidate.candidateModelLinks.length, expectedModels);
+    assert.equal(candidate.identityStatus, "prepared_pending_human_review");
+    assert.ok(candidate.ambiguities.length > 0);
+    assert.ok(candidate.claims.every((claim) => claim.reviewStatus === "pending_human_review"));
+    assert.ok(candidate.candidateModelLinks.every((link) =>
+      link.independentModelEvidence.length === 0 && link.reviewRequired));
+  }
+  const allMight = packet.candidates.find((item) =>
+    item.candidateName === "All Might (My Hero Academia anime profile candidate)");
+  assert.ok(allMight.claims.some((claim) =>
+    claim.attribute === "biography.fact.eighth_successor_and_teacher" &&
+    claim.sourceIds.includes("heroaca-all-might-character")));
+  const leon = packet.candidates.find((item) =>
+    item.candidateName === "Leon S. Kennedy (Resident Evil candidate)");
+  assert.ok(leon.claims.some((claim) =>
+    claim.attribute === "biography.fact.raccoon_city_and_government_agent" &&
+    claim.sourceIds.includes("capcom-leon-resident-evil-portal")));
 
   for (const source of packet.sources) {
     assert.equal(new URL(source.url).protocol, "https:");
