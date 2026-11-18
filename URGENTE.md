@@ -1997,3 +1997,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** enviar esta pesquisa pela PR #33 e encaminhá-la à curadoria privada da #31. Homologação Supabase→D1 depende de ambiente isolado.
 
 **DO_NOT_REPEAT:** não tratar fontes da Marvel/Mattel como prova dos renders; não aplicar 0023 no Supabase produtivo nem liberar projeção vazia.
+
+
+## Rodada 99 — pesquisa Dragon Ball, Street Fighter e TMNT (18/11/2026)
+
+- Preparei três candidatos com fontes oficiais: Zarbon (DRAGON BALL OFFICIAL SITE), Akuma (CAPCOM) e Michelangelo (Nickelodeon). Cada claim de identidade, franquia e biografia referencia uma fonte cadastrada.
+- A fotografia do pacote chega a **58 candidatos, 68 URLs oficiais únicas, 58 rascunhos biográficos e 724 relações candidatas**. Foram acrescentadas 18 relações por ID da fila nesta rodada. Continuam **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local: node --test scripts/catalog/character-catalog-inventory.test.mjs — 11/11 passaram; git diff --check passou. O gate offline no commit anterior 963d8e32 passou (run 44287307874); build, auditorias gerais e cobertura foram pulados pelos filtros do evento.
+- Nenhuma escrita no Supabase/D1, migration ou publicação. A projeção pública segue vazia; falta revisão editorial humana e Supabase/D1 isolados para homologação real.
+
+**NEXT_ACTION:** encaminhar os registros à curadoria da #31; aguardar ambiente isolado para testar exportação Supabase→Worker/D1.
+
+**DO_NOT_REPEAT:** não confundir fonte sobre um personagem com evidência do render; não tratar estado candidato como aprovado nem aplicar migration no projeto produtivo.

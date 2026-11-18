@@ -14,7 +14,7 @@ Para regenerar, forneça o arquivo do contrato candidato desejado:
 node scripts/catalog/character-catalog-inventory.mjs --format csv --candidate-contract <arquivo-do-contrato> --output docs/review/character-catalog-review-queue.csv
 ```
 
-`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 55 candidatos, 55 rascunhos biográficos originais, 65 URLs oficiais únicas e 706 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
+`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 58 candidatos, 58 rascunhos biográficos originais, 68 URLs oficiais únicas e 724 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
 
 Wolverine permanece com franquia ambígua porque seus 30 modelos candidatos estão divididos entre duas franquias D1. Thor foi separado em duas identidades candidatas a partir da proveniência: 17 modelos no contexto de Vingadores/Marvel e um modelo no contexto de God of War Ragnarök. Nenhum vínculo foi confirmado por imagem; a distinção evita misturar personagens homônimos e segue pendente de revisão. Trunks está descrito apenas como adolescente do futuro, conforme uma fonte oficial específica; os oito rótulos genéricos não confirmam idade ou linha temporal. Daredevil usa uma fonte Marvel “On Screen” e Gambit tem múltiplas fases e formas; nenhuma continuidade ou versão visual foi atribuída aos modelos. Os candidatos adicionados por rótulo exato do inventário não passaram por validação visual; formas, dioramas, nomes localizados e cenas com vários personagens continuam ambíguos.
 
@@ -55,3 +55,15 @@ Deadpool preserva como categorias de navegação os rótulos Equipes e Grupos e 
 **NEXT_ACTION:** encaminhar os candidatos a #31 e associar evidência visual independente por modelo antes da revisão e exportação.
 
 **DO_NOT_REPEAT:** não presumir que modelos Cable mostram Nathan adulto ou que modelos He-Man seguem o filme de 2026.
+
+
+## Rodada 99 — Zarbon, Akuma e Michelangelo (18/11/2026)
+
+- Preparei três dossiês a partir do site oficial Dragon Ball, da base de dados oficial da CAPCOM e de material oficial da Nickelodeon. As biografias citam transformações, técnicas e aparência apenas no contexto das fontes.
+- Associei **18 relações candidatas** por IDs da fila: 6 Zarbon, 6 Akuma e 6 Michelangelo. As transformações de Zarbon, as versões de Street Fighter e os designs de TMNT permanecem ambíguos até revisão visual.
+- O lote tem agora **58 candidatos, 68 URLs oficiais únicas, 58 rascunhos e 724 relações candidatas**. Nenhuma relação possui evidência independente por modelo ou aprovação.
+- Validação desta rodada: teste da fila 11/11 e git diff --check passaram.
+
+**NEXT_ACTION:** conduzir revisão humana em #31 e adicionar evidência de cada render antes de publicar qualquer vínculo.
+
+**DO_NOT_REPEAT:** não mapear automaticamente a forma transformada de Zarbon, um design específico de Akuma ou a máscara laranja de uma versão TMNT aos modelos.
