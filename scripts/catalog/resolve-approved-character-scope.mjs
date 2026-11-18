@@ -141,6 +141,7 @@ export function resolveApprovedCharacterScopes(exportPayload, d1Snapshot) {
   return exportPayload.characters.map(character => {
     requireValid(record(character) &&
       validText(character.identityId, 120) &&
+      validText(character.name, 160) &&
       validText(character.slug, 120) && SLUG.test(character.slug) &&
       validText(character.franchiseName) &&
       validText(character.approvalRef) &&
