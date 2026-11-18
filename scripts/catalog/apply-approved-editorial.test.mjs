@@ -256,6 +256,8 @@ function approvedCharacterFixture() {
       franchiseName: 'Resident Evil',
       approvalRef: 'approval-1',
       profileRevision: 4,
+      relationRevision: 7,
+      approvedRelationRevision: 7,
       reviewedAt: '2026-11-18T02:00:00Z',
       approvedAt: '2026-11-18T03:00:00Z',
       profile: {
@@ -547,5 +549,38 @@ test('offline projection plans are deterministic, anchored in human approval and
       ],
     }, snapshot),
     /approved_character_scope_invalid/,
+  );
+});
+
+test('approval of a profile never authorizes newer model links or changed link evidence', () => {
+  const payload = approvedCharacterFixture();
+  const snapshot = approvedCharacterD1Fixture();
+  assert.equal(resolveApprovedCharacterScopes(payload, snapshot).length, 1);
+
+  const approved = payload.characters[0];
+  for (const altered of [
+    { ...approved, relationRevision: approved.relationRevision + 1 },
+    { ...approved, approvedRelationRevision: approved.relationRevision - 1 },
+  ]) {
+    assert.throws(
+      () => planApprovedCharacterProjection({
+        ...payload, characters: [altered],
+      }, snapshot),
+      /approved_character_relation_approval_stale/,
+    );
+  }
+  const { relationRevision: removed, ...withoutRevision } = approved;
+  assert.throws(
+    () => planApprovedCharacterProjection({
+      ...payload, characters: [withoutRevision],
+    }, snapshot),
+    /approved_character_relation_revision_missing/,
+  );
+  const { approvedRelationRevision: removedApproval, ...withoutApproved } = approved;
+  assert.throws(
+    () => planApprovedCharacterProjection({
+      ...payload, characters: [withoutApproved],
+    }, snapshot),
+    /approved_character_relation_revision_missing/,
   );
 });
