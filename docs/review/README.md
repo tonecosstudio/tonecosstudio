@@ -14,7 +14,7 @@ Para regenerar, forneça o arquivo do contrato candidato desejado:
 node scripts/catalog/character-catalog-inventory.mjs --format csv --candidate-contract <arquivo-do-contrato> --output docs/review/character-catalog-review-queue.csv
 ```
 
-`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 64 candidatos, 64 rascunhos biográficos originais, 73 URLs oficiais únicas e 758 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
+`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 68 candidatos, 68 rascunhos biográficos originais, 77 URLs oficiais únicas e 779 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
 
 Wolverine permanece com franquia ambígua porque seus 30 modelos candidatos estão divididos entre duas franquias D1. Thor foi separado em duas identidades candidatas a partir da proveniência: 17 modelos no contexto de Vingadores/Marvel e um modelo no contexto de God of War Ragnarök. Nenhum vínculo foi confirmado por imagem; a distinção evita misturar personagens homônimos e segue pendente de revisão. Trunks está descrito apenas como adolescente do futuro, conforme uma fonte oficial específica; os oito rótulos genéricos não confirmam idade ou linha temporal. Daredevil usa uma fonte Marvel “On Screen” e Gambit tem múltiplas fases e formas; nenhuma continuidade ou versão visual foi atribuída aos modelos. Os candidatos adicionados por rótulo exato do inventário não passaram por validação visual; formas, dioramas, nomes localizados e cenas com vários personagens continuam ambíguos.
 
@@ -103,3 +103,15 @@ Deadpool preserva como categorias de navegação os rótulos Equipes e Grupos e 
 **NEXT_ACTION:** encaminhar as relações para revisão privada e anexar evidência específica por modelo.
 
 **DO_NOT_REPEAT:** não presumir Bi-Han ou Kuai Liang pelo nome Sub-Zero nem escolher uma fase de Lara Croft pelo rótulo do catálogo.
+
+
+## Rodada 103 — personagens Marvel frequentes da fila (18/11/2026)
+
+- Preparei dossiês para **Emma Frost**, **Loki**, **Doctor Doom** e **Nightcrawler/Kurt Wagner**, a partir de páginas e material oficial Marvel.
+- Associei **21 modelos candidatos** por IDs: 5 Emma Frost, 5 Loki, 5 Doctor Doom e 6 Nightcrawler. Nightcrawler é descrito pela fonte X-Men ’97; versões visuais e continuidades não foram atribuídas aos modelos.
+- A preparação soma **68 candidatos, 77 URLs oficiais únicas, 68 rascunhos e 779 relações candidatas**. Todos permanecem pendentes, sem evidência visual independente ou aprovação.
+- Validação local: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou.
+
+**NEXT_ACTION:** revisar cada candidato e relação na curadoria privada #31 antes de qualquer projeção pública.
+
+**DO_NOT_REPEAT:** não generalizar a versão X-Men ’97 para Nightcrawler nem escolher fases de Emma, Loki ou Doom pelo nome do catálogo.

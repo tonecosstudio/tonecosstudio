@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 64,
-    "preparedCandidateModelLinkCount": 758
+    "sourceResearchedIdentityCount": 68,
+    "preparedCandidateModelLinkCount": 779
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 64,
+    "preparedIdentityCount": 68,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 758,
+    "preparedCandidateModelLinkCount": 779,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -611,6 +611,38 @@
       "publisher": "Tomb Raider",
       "title": "Meet Lara Croft",
       "url": "https://www.tombraider.com/lara-croft",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-emma-frost-profile",
+      "publisher": "Marvel",
+      "title": "Emma Frost Powers, Enemies, History",
+      "url": "https://www.marvel.com/characters/emma-frost",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-loki-in-comics-profile",
+      "publisher": "Marvel",
+      "title": "Loki In Comics Powers, Enemies, History",
+      "url": "https://www.marvel.com/characters/loki/in-comics",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-fantastic-four-doom-profile",
+      "publisher": "Marvel",
+      "title": "Fantastic Four In Comics Members, Enemies, Powers",
+      "url": "https://www.marvel.com/teams-and-groups/fantastic-four/in-comics",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-nightcrawler-xmen97-profile",
+      "publisher": "Marvel",
+      "title": "Nightcrawler (X-Men ’97) official character profile",
+      "url": "https://cdn.marvel.com/u/prod/marvel/i/pdf/MMRPG_XMen97_20240517.pdf",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -18806,6 +18838,620 @@
         }
       ],
       "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Emma Frost",
+      "catalogDisplayNameCandidate": "Emma Frost",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Emma Grace Frost",
+          "sourceIds": [
+            "marvel-emma-frost-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-emma-frost-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.hellfire_and_xmen",
+          "value": "A Marvel descreve Emma como ex-vilã do Hellfire Club que mais tarde se une aos X-Men.",
+          "sourceIds": [
+            "marvel-emma-frost-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.telepathy_and_diamond",
+          "value": "A página oficial descreve suas habilidades telepáticas e a forma de diamante orgânico.",
+          "sourceIds": [
+            "marvel-emma-frost-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A Marvel descreve Emma Frost como telepata que já atuou no Hellfire Club e depois se tornou aliada e integrante dos X-Men. A fonte também registra sua forma de diamante. Os seis modelos candidatos não foram associados a uma fase, roupa ou forma específica.",
+      "biographySourceIds": [
+        "marvel-emma-frost-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos"
+      ],
+      "ambiguities": [
+        "A página reúne várias fases e papéis de Emma; não determina a continuidade ou o figurino de cada render.",
+        "Os seis vínculos são candidatos por ID/rótulo, sem evidência visual individual.",
+        "A biografia não é prova de relação com qualquer estátua."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0bf08c10e35899205345",
+          "modelSlug": "equipes-e-grupos-emma-frost-capa-e-traje-de-campo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-emma-frost-capa-e-traje-de-campo"
+          }
+        },
+        {
+          "modelId": "mdl_0feb3edd3cade8ae8d6a",
+          "modelSlug": "equipes-e-grupos-emma-frost-forca-fenix-estatua",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-emma-frost-forca-fenix-estatua"
+          }
+        },
+        {
+          "modelId": "mdl_404edb22ca6967b73b57",
+          "modelSlug": "equipes-e-grupos-emma-frost-traje-branco-com-capa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-emma-frost-traje-branco-com-capa"
+          }
+        },
+        {
+          "modelId": "mdl_9b848bf9a9a8c1da0bab",
+          "modelSlug": "equipes-e-grupos-emma-frost-estatua-modelo-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-emma-frost-estatua-modelo-cinza"
+          }
+        },
+        {
+          "modelId": "mdl_bbe0b39e832530f09731",
+          "modelSlug": "equipes-e-grupos-emma-frost-forca-fenix-dourada",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-emma-frost-forca-fenix-dourada"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Loki (Marvel comics candidate)",
+      "catalogDisplayNameCandidate": "Loki",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Loki Laufeyson",
+          "sourceIds": [
+            "marvel-loki-in-comics-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-loki-in-comics-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.adopted_asgardian_prince",
+          "value": "A Marvel descreve Loki como filho de Laufey, adotado por Odin e criado como príncipe de Asgard.",
+          "sourceIds": [
+            "marvel-loki-in-comics-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.god_of_mischief",
+          "value": "A página oficial o apresenta como Deus da Trapaça e irmão adotivo de Thor.",
+          "sourceIds": [
+            "marvel-loki-in-comics-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "No perfil de quadrinhos da Marvel, Loki é filho de Laufey, adotado por Odin e criado como príncipe de Asgard; suas tramas buscam poder e afetam os reinos. O texto não identifica qual variante, idade ou continuidade aparece nos cinco modelos.",
+      "biographySourceIds": [
+        "marvel-loki-in-comics-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Heróis Individuais",
+        "One Piece",
+        "Loki e Sylvie"
+      ],
+      "ambiguities": [
+        "As histórias e adaptações têm variantes e fases diferentes; o nome não seleciona uma delas.",
+        "Os cinco IDs candidatos não foram conferidos visualmente nem têm evidência independente.",
+        "A relação do catálogo com Marvel não serve como prova de render."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_1db6c29e3902abbe42b2",
+          "modelSlug": "herois-individuais-loki-traje-verde-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-loki-traje-verde-em-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_4c600aed06e0d2465573",
+          "modelSlug": "one-piece-loki-estatua-em-pe-com-capa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "one-piece-loki-estatua-em-pe-com-capa"
+          }
+        },
+        {
+          "modelId": "mdl_77d457b17eb24a690e1d",
+          "modelSlug": "loki-e-sylvie-loki-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "loki-e-sylvie-loki-02"
+          }
+        },
+        {
+          "modelId": "mdl_c65c1e0abec4f37f1f31",
+          "modelSlug": "loki-e-sylvie-loki-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "loki-e-sylvie-loki-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_fe78a0784dd5090ea683",
+          "modelSlug": "loki-e-sylvie-loki-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "loki-e-sylvie-loki-01"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Doctor Doom (Victor von Doom candidate)",
+      "catalogDisplayNameCandidate": "Doutor Destino",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Doctor Doom (Victor von Doom)",
+          "sourceIds": [
+            "marvel-fantastic-four-doom-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-fantastic-four-doom-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.rival_of_fantastic_four",
+          "value": "A Marvel identifica Victor von Doom como Doctor Doom e descreve sua rivalidade com Reed Richards e o Quarteto Fantástico.",
+          "sourceIds": [
+            "marvel-fantastic-four-doom-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A página da Marvel sobre o Quarteto Fantástico identifica Victor von Doom como Doctor Doom e destaca sua rivalidade com Reed Richards. O candidato se limita a essa caracterização oficial e não atribui armadura, época ou versão aos cinco modelos.",
+      "biographySourceIds": [
+        "marvel-fantastic-four-doom-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Vilões",
+        "Equipes e Grupos"
+      ],
+      "ambiguities": [
+        "A fonte confirma a identidade em relação ao Quarteto Fantástico, mas não a aparência ou versão representada em cada render.",
+        "Os cinco vínculos exigem evidência visual individual antes de aprovação.",
+        "Não tratar categoria ou pasta do catálogo como prova da identidade."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_14d33631c9b4e1f18d53",
+          "modelSlug": "viloes-doutor-destino-marvel-imagem-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-doutor-destino-marvel-imagem-01"
+          }
+        },
+        {
+          "modelId": "mdl_9b103a8c42f301075b3d",
+          "modelSlug": "equipes-e-grupos-doutor-destino-busto-dupla-vista",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-doutor-destino-busto-dupla-vista"
+          }
+        },
+        {
+          "modelId": "mdl_aea6bef782ecdb0f46fa",
+          "modelSlug": "equipes-e-grupos-doutor-destino-estatua-colorida-em-pedestal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-doutor-destino-estatua-colorida-em-pedestal"
+          }
+        },
+        {
+          "modelId": "mdl_b6ab78f1028b97eaf479",
+          "modelSlug": "equipes-e-grupos-doutor-destino-no-trono-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-doutor-destino-no-trono-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_ea959f93829fbaf7ffbc",
+          "modelSlug": "equipes-e-grupos-doutor-destino-estatua-cinza-em-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-doutor-destino-estatua-cinza-em-base"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Nightcrawler (Kurt Wagner, X-Men ’97 candidate)",
+      "catalogDisplayNameCandidate": "Noturno",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Nightcrawler (Kurt Wagner)",
+          "sourceIds": [
+            "marvel-nightcrawler-xmen97-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-nightcrawler-xmen97-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.circus_upbringing",
+          "value": "O perfil oficial de X-Men ’97 identifica Kurt Wagner como Nightcrawler e descreve sua criação no circo Wagner após ser adotado.",
+          "sourceIds": [
+            "marvel-nightcrawler-xmen97-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "O material oficial Marvel de X-Men ’97 identifica Kurt Wagner como Nightcrawler e relata que foi adotado e criado no circo Wagner. Este resumo pertence à versão animada consultada; não determina a época, o traje ou o design dos seis modelos candidatos.",
+      "biographySourceIds": [
+        "marvel-nightcrawler-xmen97-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos"
+      ],
+      "ambiguities": [
+        "A fonte é específica de X-Men ’97 e não deve ser aplicada a outras continuidades ou modelos sem revisão.",
+        "Os seis vínculos foram obtidos por rótulo e ID da fila, sem comparação visual.",
+        "Nenhuma relação tem evidência independente por render."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0e2dfbd4ab0f1b730f2e",
+          "modelSlug": "equipes-e-grupos-noturno-traje-vermelho-em-acao",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-noturno-traje-vermelho-em-acao"
+          }
+        },
+        {
+          "modelId": "mdl_2f48c0a41da012d40c99",
+          "modelSlug": "equipes-e-grupos-noturno-estatua-cinza-com-duas-espadas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-noturno-estatua-cinza-com-duas-espadas"
+          }
+        },
+        {
+          "modelId": "mdl_ad99dc68407a1dcff666",
+          "modelSlug": "equipes-e-grupos-noturno-estatua-cinza-com-cauda-e-espada",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-noturno-estatua-cinza-com-cauda-e-espada"
+          }
+        },
+        {
+          "modelId": "mdl_cd914e0eeb182e88344d",
+          "modelSlug": "equipes-e-grupos-noturno-com-duas-espadas-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-noturno-com-duas-espadas-em-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_f37c242bd307490f67d7",
+          "modelSlug": "equipes-e-grupos-noturno-close-e-estatua-promocional",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-noturno-close-e-estatua-promocional"
+          }
+        },
+        {
+          "modelId": "mdl_fa4c25c473d212fa5450",
+          "modelSlug": "equipes-e-grupos-noturno-diorama-com-efeito-de-teleporte",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-noturno-diorama-com-efeito-de-teleporte"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
     }
   ]
 }

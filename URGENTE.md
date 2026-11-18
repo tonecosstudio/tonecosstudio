@@ -2044,3 +2044,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** enviar esta rodada pela PR #33 e encaminhar à curadoria privada da #31; homologar somente com ambiente isolado e conteúdo aprovado.
 
 **DO_NOT_REPEAT:** não presumir portador ou versão pelo nome; não projetar candidatos pendentes nem tocar no projeto Supabase produtivo.
+
+
+## Rodada 103 — novos candidatos Marvel (18/11/2026)
+
+- Preparei quatro dossiês para Emma Frost, Loki, Doctor Doom e Nightcrawler/Kurt Wagner, cada claim apontando a uma fonte oficial Marvel. A ficha Nightcrawler limita-se à versão X-Men ’97 consultada.
+- O lote agora registra **68 candidatos, 77 URLs oficiais únicas, 68 rascunhos biográficos e 779 relações candidatas**. Foram preparados 21 vínculos potenciais nesta rodada. Continuam **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local desta rodada: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou. O job offline do commit anterior 573eb9b1 passou (run 44288999574); auditorias gerais, build e cobertura foram pulados.
+- Não houve escrita em Supabase/D1, migration, deploy ou flag. Projeção real vazia; ambiente Supabase isolado e revisão editorial continuam necessários.
+
+**NEXT_ACTION:** encaminhar dados à curadoria privada #31 e homologar Supabase→Worker/D1 apenas em ambiente isolado com conteúdo aprovado.
+
+**DO_NOT_REPEAT:** não usar fonte biográfica como evidência de render; não aplicar 0023 ao projeto Supabase produtivo.
