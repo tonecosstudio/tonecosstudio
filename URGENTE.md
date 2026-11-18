@@ -1973,3 +1973,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** enviar os dossiês na PR #33; encaminhar para a curadoria privada #31 e solicitar um ambiente Supabase/D1 isolado antes de validar a exportação real.
 
 **DO_NOT_REPEAT:** não contar relações candidatas como vínculos comprovados; não tratar o Quality Gate offline como homologação Supabase→D1; não aplicar 0023 ao projeto produtivo.
+
+
+## Rodada 97 — candidatos CAPCOM, Mortal Kombat, Berserk e The Witcher (18/11/2026)
+
+- Preparei dossiês revisáveis para Ada Wong, Sonya Blade, Guts e Ciri com fontes oficiais da CAPCOM, Warner Bros. Games/NetherRealm, Dark Horse Comics e CD PROJEKT RED.
+- A preparação chega a **53 candidatos, 64 URLs oficiais únicas, 53 biografias originais e 693 relações candidatas**. Esta rodada incluiu 27 relações localizadas pela fila existente. Identidade, franquia, claims e relações permanecem pendentes: **0 identidades aprovadas, 0 relações aprovadas, 0 relações com evidência independente por modelo**.
+- Validação local executada nesta rodada: teste da fila 11/11 e git diff --check passaram. O gate offline do commit anterior 6ccad9dd (run 44285897047) passou; os demais jobs foram pulados pelos filtros do evento.
+- Sem escrita Supabase/D1, migration ou publicação. A revisão humana segue necessária; o projeto Supabase disponível é produtivo e não possui branch isolada, então o caminho real Supabase→D1 não foi homologado.
+
+**NEXT_ACTION:** subir na PR #33 e encaminhar a curadoria para #31. Para homologar, falta ambiente Supabase/D1 isolado e exportação editorial humana aprovada.
+
+**DO_NOT_REPEAT:** não contar modelos candidatos como relações comprovadas; não apresentar o pacote de pesquisa como dados públicos nem aplicar a migration 0023 no projeto produtivo.

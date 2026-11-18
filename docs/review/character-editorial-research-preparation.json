@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 49,
-    "preparedCandidateModelLinkCount": 666
+    "sourceResearchedIdentityCount": 53,
+    "preparedCandidateModelLinkCount": 693
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 49,
+    "preparedIdentityCount": 53,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 666,
+    "preparedCandidateModelLinkCount": 693,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -507,6 +507,38 @@
       "publisher": "Marvel",
       "title": "Mister Sinister Powers, Enemies, History",
       "url": "https://www.marvel.com/characters/mister-sinister",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-ada-resident-evil-profile",
+      "publisher": "CAPCOM",
+      "title": "Ada Wong | RESIDENT EVIL.NET Extra Files",
+      "url": "https://game.capcom.com/residentevil/en/exfile-2-21.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "wb-sonya-mortal-kombat-profile",
+      "publisher": "Warner Bros. Games / NetherRealm Studios",
+      "title": "Sonya Blade | Mortal Kombat 30th Anniversary Characters",
+      "url": "https://mk30.mortalkombat.com/en-gb/roster/sonya-blade",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "darkhorse-guts-berserk-volume-41",
+      "publisher": "Dark Horse Comics",
+      "title": "Berserk Volume 41",
+      "url": "https://digital.darkhorse.com/books/607edc7d7b7e4bbe9bf0463f2c7f86d1/berserk-volume-41",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "cdpr-ciri-witcher3-story",
+      "publisher": "CD PROJEKT RED",
+      "title": "The Witcher 3: Wild Hunt",
+      "url": "https://www.thewitcher.com/us/en/witcher3",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -16132,6 +16164,739 @@
             "sourceStatus": "candidate_and_published",
             "candidateContractPublished": true,
             "publicCatalogSlug": "equipes-e-grupos-fera-close-e-concept-promocional"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "Ada Wong (Resident Evil candidate)",
+      "catalogDisplayNameCandidate": "Ada Wong",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Resident Evil",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Ada Wong",
+          "sourceIds": [
+            "capcom-ada-resident-evil-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Resident Evil",
+          "sourceIds": [
+            "capcom-ada-resident-evil-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.spy_and_recurring_story",
+          "value": "A CAPCOM descreve Ada como espiã que atua nas sombras e cuja trajetória se cruza repetidamente com a de Leon.",
+          "sourceIds": [
+            "capcom-ada-resident-evil-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.costume_variants",
+          "value": "A CAPCOM registra roupas diferentes de Ada em Resident Evil 2, Resident Evil 4 e Resident Evil 6.",
+          "sourceIds": [
+            "capcom-ada-resident-evil-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A CAPCOM descreve Ada Wong como uma espiã de passado pouco conhecido cuja trajetória se cruza repetidamente com a de Leon. A própria fonte registra visuais distintos em Resident Evil 2, 4 e 6; o dossiê não atribui uma dessas versões ou roupas a nenhum modelo.",
+      "biographySourceIds": [
+        "capcom-ada-resident-evil-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Resident Evil"
+      ],
+      "ambiguities": [
+        "A própria CAPCOM ressalta que pouco se sabe do passado de Ada e registra roupas de várias fases; não fixar jogo, figurino ou continuidade para os modelos.",
+        "Os seis vínculos foram selecionados pelo rótulo Ada Wong e exigem conferência visual por ID.",
+        "O nome de catálogo é pista de busca, não evidência independente de representação."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_047cfdf8b0bd87f95577",
+          "modelSlug": "resident-evil-ada-wong-2-047cfdf8b0",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-ada-wong-2-047cfdf8b0"
+          }
+        },
+        {
+          "modelId": "mdl_3c8929959474a04da98a",
+          "modelSlug": "resident-evil-ada-wong-2-3c89299594",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-ada-wong-2-3c89299594"
+          }
+        },
+        {
+          "modelId": "mdl_4178950210474bea1aa9",
+          "modelSlug": "resident-evil-ada-wong-resident-evil-ada-wong-stl-4-nsfw-resident-evil-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-ada-wong-resident-evil-ada-wong-stl-4-nsfw-resident-evil-principal"
+          }
+        },
+        {
+          "modelId": "mdl_6d2d3bb75b8951260dfc",
+          "modelSlug": "resident-evil-ada-wong-2-6d2d3bb75b",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-ada-wong-2-6d2d3bb75b"
+          }
+        },
+        {
+          "modelId": "mdl_9dbdb96d5187bdf66813",
+          "modelSlug": "resident-evil-ada-wong-3",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-ada-wong-3"
+          }
+        },
+        {
+          "modelId": "mdl_a3e008736debaf42c340",
+          "modelSlug": "resident-evil-ada-wong",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-ada-wong"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "Sonya Blade (Mortal Kombat 11 timeline candidate)",
+      "catalogDisplayNameCandidate": "Sonya Blade",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Mortal Kombat",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Sonya Blade",
+          "sourceIds": [
+            "wb-sonya-mortal-kombat-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Mortal Kombat",
+          "sourceIds": [
+            "wb-sonya-mortal-kombat-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.special_forces",
+          "value": "O perfil oficial a descreve como oficial condecorada das Forças Especiais que defende Earthrealm.",
+          "sourceIds": [
+            "wb-sonya-mortal-kombat-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.jax_rescue",
+          "value": "A sinopse oficial registra que Sonya resgatou seu parceiro Jax Briggs.",
+          "sourceIds": [
+            "wb-sonya-mortal-kombat-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "No perfil oficial de Mortal Kombat consultado, Sonya Blade é uma oficial condecorada das Forças Especiais que participou do torneio, defendeu Earthrealm e resgatou Jax Briggs. Essa descrição pertence à linha do tempo exibida na página e não determina a fase representada em cada escultura.",
+      "biographySourceIds": [
+        "wb-sonya-mortal-kombat-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Mortal Kombat"
+      ],
+      "ambiguities": [
+        "A fonte é o perfil oficial de uma linha do tempo de Mortal Kombat; outras fases e designs não devem ser uniformizados.",
+        "Os seis modelos precisam de conferência visual, sobretudo por versões de uniforme e pose.",
+        "A relação com os modelos continua apenas candidata até haver evidência independente por ID."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0393475f4004e28625a5",
+          "modelSlug": "mortal-kombat-sonya-blade-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-sonya-blade-04"
+          }
+        },
+        {
+          "modelId": "mdl_2f384773fdceea23f4fc",
+          "modelSlug": "mortal-kombat-sonya-blade-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-sonya-blade-02"
+          }
+        },
+        {
+          "modelId": "mdl_72232ec245f9cfd7bd95",
+          "modelSlug": "mortal-kombat-sonya-blade-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-sonya-blade-06"
+          }
+        },
+        {
+          "modelId": "mdl_93b74fbbf7bbe24a0222",
+          "modelSlug": "mortal-kombat-sonya-blade-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-sonya-blade-03"
+          }
+        },
+        {
+          "modelId": "mdl_e43b28ba6aa410657ec4",
+          "modelSlug": "mortal-kombat-sonya-blade-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-sonya-blade-05"
+          }
+        },
+        {
+          "modelId": "mdl_fa357f73b4365f31adeb",
+          "modelSlug": "mortal-kombat-sonya-blade",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-sonya-blade"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "Guts (Black Swordsman candidate)",
+      "catalogDisplayNameCandidate": "Guts",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Berserk",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Guts (o Espadachim Negro, conforme o volume 41)",
+          "sourceIds": [
+            "darkhorse-guts-berserk-volume-41"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Berserk",
+          "sourceIds": [
+            "darkhorse-guts-berserk-volume-41"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.quest_for_casca",
+          "value": "A sinopse oficial do volume 41 descreve Guts, o Espadachim Negro, em busca de ajudar Casca a se recuperar.",
+          "sourceIds": [
+            "darkhorse-guts-berserk-volume-41"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A sinopse oficial da Dark Horse para Berserk volume 41 chama Guts de Espadachim Negro e descreve sua busca para ajudar Casca a se recuperar. Esse material corresponde ao volume citado; armaduras, arcos e estado do personagem nos modelos não foram confirmados.",
+      "biographySourceIds": [
+        "darkhorse-guts-berserk-volume-41"
+      ],
+      "catalogFranchiseCandidates": [
+        "Berserk"
+      ],
+      "ambiguities": [
+        "A fonte cobre especificamente o volume 41 e não estabelece armadura, arco ou fase de cada modelo.",
+        "Os nove vínculos são candidatos a partir de rótulos exatos da fila; cada composição precisa de conferência visual.",
+        "Nenhum vínculo foi usado como prova da biografia ou da identidade."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_78caabcb35fcdd985101",
+          "modelSlug": "berserk-guts-estatua-com-capa-laranja",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "berserk-guts-estatua-com-capa-laranja"
+          }
+        },
+        {
+          "modelId": "mdl_8c10865ca7456ca67fba",
+          "modelSlug": "berserk-guts-estatua-vermelha-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "berserk-guts-estatua-vermelha-em-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_97c75af1848b42f8e98f",
+          "modelSlug": "berserk-guts-diorama-com-espada-gigante",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "berserk-guts-diorama-com-espada-gigante"
+          }
+        },
+        {
+          "modelId": "mdl_97f464fc77a69b7f6abf",
+          "modelSlug": "berserk-guts-busto-expressao-furiosa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "berserk-guts-busto-expressao-furiosa"
+          }
+        },
+        {
+          "modelId": "mdl_a3ed8583fd986bf1b7d8",
+          "modelSlug": "berserk-guts-estilizado-com-espada",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "berserk-guts-estilizado-com-espada"
+          }
+        },
+        {
+          "modelId": "mdl_be4e571504a97ee9b85f",
+          "modelSlug": "berserk-guts-estatua-cinza-multiplas-vistas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "berserk-guts-estatua-cinza-multiplas-vistas"
+          }
+        },
+        {
+          "modelId": "mdl_c6adbd00e8827f79a08a",
+          "modelSlug": "berserk-guts-armadura-berserker-estatua",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "berserk-guts-armadura-berserker-estatua"
+          }
+        },
+        {
+          "modelId": "mdl_cb5b95c5bd838bf6a783",
+          "modelSlug": "berserk-guts-armadura-berserker-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "berserk-guts-armadura-berserker-diorama"
+          }
+        },
+        {
+          "modelId": "mdl_f035fcaa73ce0f238c95",
+          "modelSlug": "berserk-guts-armadura-negra-com-espada",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "berserk-guts-armadura-negra-com-espada"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 9
+    },
+    {
+      "candidateName": "Ciri (The Witcher 3 candidate)",
+      "catalogDisplayNameCandidate": "Ciri",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "The Witcher",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Ciri (na história de The Witcher 3)",
+          "sourceIds": [
+            "cdpr-ciri-witcher3-story"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "The Witcher",
+          "sourceIds": [
+            "cdpr-ciri-witcher3-story"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.adopted_daughter",
+          "value": "A CD PROJEKT RED descreve Ciri como filha adotiva de Geralt na história de The Witcher 3.",
+          "sourceIds": [
+            "cdpr-ciri-witcher3-story"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.wild_hunt_pursuit",
+          "value": "A página oficial descreve a busca de Geralt por Ciri, perseguida pela Caçada Selvagem por causa de seu poder.",
+          "sourceIds": [
+            "cdpr-ciri-witcher3-story"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Na página oficial de The Witcher 3, Ciri é apresentada como filha adotiva de Geralt e alvo da Caçada Selvagem por causa de seu poder. O texto se limita à narrativa do jogo citado e não identifica versão, idade, roupa ou modelo específicos.",
+      "biographySourceIds": [
+        "cdpr-ciri-witcher3-story"
+      ],
+      "catalogFranchiseCandidates": [
+        "The Witcher"
+      ],
+      "ambiguities": [
+        "A fonte está vinculada a The Witcher 3; não a generalizar para livros, outros jogos ou épocas da personagem.",
+        "Os seis nomes de catálogo não foram comparados visualmente e não comprovam identidade.",
+        "Toda relação com uma estatueta segue pendente de evidência independente e revisão humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_08ee9341a23fe3dfaab1",
+          "modelSlug": "the-witcher-ciri",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "the-witcher-ciri"
+          }
+        },
+        {
+          "modelId": "mdl_2ae352b47cce78b1993e",
+          "modelSlug": "the-witcher-ciri-the-witcher-3",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "the-witcher-ciri-the-witcher-3"
+          }
+        },
+        {
+          "modelId": "mdl_675884e8ccad3d7e2189",
+          "modelSlug": "the-witcher-ciri-the-witcher-4",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "the-witcher-ciri-the-witcher-4"
+          }
+        },
+        {
+          "modelId": "mdl_b7994db5032d9511b1ca",
+          "modelSlug": "the-witcher-ciri-the-witcher-2",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "the-witcher-ciri-the-witcher-2"
+          }
+        },
+        {
+          "modelId": "mdl_ba55deeb36017a246318",
+          "modelSlug": "the-witcher-ciri-the-witcher-ciri-stl-5-bust-extras-the-witcher-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "the-witcher-ciri-the-witcher-ciri-stl-5-bust-extras-the-witcher-principal"
+          }
+        },
+        {
+          "modelId": "mdl_ce5dea093ce200b85a4d",
+          "modelSlug": "the-witcher-ciri-the-witcher",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "the-witcher-ciri-the-witcher"
           }
         }
       ],

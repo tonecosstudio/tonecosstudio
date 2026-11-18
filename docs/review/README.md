@@ -14,7 +14,7 @@ Para regenerar, forneça o arquivo do contrato candidato desejado:
 node scripts/catalog/character-catalog-inventory.mjs --format csv --candidate-contract <arquivo-do-contrato> --output docs/review/character-catalog-review-queue.csv
 ```
 
-`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 49 candidatos, 49 rascunhos biográficos originais, 60 URLs oficiais únicas e 666 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
+`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 53 candidatos, 53 rascunhos biográficos originais, 64 URLs oficiais únicas e 693 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
 
 Wolverine permanece com franquia ambígua porque seus 30 modelos candidatos estão divididos entre duas franquias D1. Thor foi separado em duas identidades candidatas a partir da proveniência: 17 modelos no contexto de Vingadores/Marvel e um modelo no contexto de God of War Ragnarök. Nenhum vínculo foi confirmado por imagem; a distinção evita misturar personagens homônimos e segue pendente de revisão. Trunks está descrito apenas como adolescente do futuro, conforme uma fonte oficial específica; os oito rótulos genéricos não confirmam idade ou linha temporal. Daredevil usa uma fonte Marvel “On Screen” e Gambit tem múltiplas fases e formas; nenhuma continuidade ou versão visual foi atribuída aos modelos. Os candidatos adicionados por rótulo exato do inventário não passaram por validação visual; formas, dioramas, nomes localizados e cenas com vários personagens continuam ambíguos.
 
@@ -31,3 +31,15 @@ Deadpool preserva como categorias de navegação os rótulos Equipes e Grupos e 
 **NEXT_ACTION:** encaminhar a pesquisa preparada para revisão na curadoria privada da PR #31; registrar evidência independente de cada modelo e aprovação humana antes da exportação autorizada.
 
 **DO_NOT_REPEAT:** não inferir Tony Stark como portador de todo modelo Iron Man; não presumir que “Fera” representa Hank McCoy; não usar uma biografia Marvel como prova de identidade de um render.
+
+
+## Rodada 97 — quatro candidatos de outros universos (18/11/2026)
+
+- Preparei dossiês para **Ada Wong**, **Sonya Blade**, **Guts** e **Ciri**, usando materiais oficiais da CAPCOM, Warner Bros. Games/NetherRealm, Dark Horse Comics e CD PROJEKT RED. As biografias se limitam à fonte e versão consultadas.
+- Associei **27 modelos candidatos** por IDs exatos da fila: 6 Ada Wong, 6 Sonya Blade, 9 Guts e 6 Ciri. As variantes de roupa, timeline e arco continuam explícitas; nenhum modelo foi conferido visualmente.
+- O pacote passa a **53 candidatos, 64 URLs oficiais únicas, 53 rascunhos e 693 relações candidatas**. Todos permanecem pendentes, sem evidência independente por modelo e sem aprovações.
+- Validação: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou.
+
+**NEXT_ACTION:** encaminhar os candidatos à curadoria privada #31 e documentar evidências independentes por render antes de aprovar qualquer relação.
+
+**DO_NOT_REPEAT:** não universalizar a timeline de Sonya, o volume 41 de Berserk ou a fase de The Witcher 3; não tratar nomes ou figurinos do catálogo como prova de correspondência.
