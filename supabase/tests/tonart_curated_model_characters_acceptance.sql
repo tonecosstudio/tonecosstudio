@@ -784,6 +784,32 @@ BEGIN
     RAISE EXCEPTION 'Unapproved character was exported after model identity mutation';
   END IF;
 
+  -- The original character identity and its primary evidence belong to the
+  -- public claim too. A direct authorized SQL correction must invalidate it;
+  -- it is not safe to rely solely on the editable profile revision.
+  UPDATE public.catalog_curation_model_profiles
+  SET catalog_model_slug = v_slug_a, updated_at = now()
+  WHERE catalog_model_id = v_model_a;
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_a, (v_editorial_result->>'revision')::integer,
+    (v_editorial_result->>'relationRevision')::integer, true, v_reviewer_id
+  );
+  UPDATE public.catalog_character_identities
+  SET evidence_note = 'Reviewed identity proof changed after approval',
+      updated_at = now()
+  WHERE id = v_id_a;
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR v_editorial_result->'publicationHistory'->-1->>'action'
+        IS DISTINCT FROM 'invalidated_by_identity_change' THEN
+    RAISE EXCEPTION 'Canonical identity edit retained a stale public approval';
+  END IF;
+  v_public_projection := public.admin_export_approved_catalog_character_projection();
+  IF jsonb_array_length(v_public_projection->'characters') <> 0 THEN
+    RAISE EXCEPTION 'Identity drift leaked into the public projection';
+  END IF;
+
   RAISE NOTICE 'TONART character staging acceptance PASS (transaction rolled back)';
 END;
 $tonart_acceptance$;
