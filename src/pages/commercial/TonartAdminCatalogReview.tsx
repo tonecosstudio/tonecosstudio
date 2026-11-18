@@ -2,7 +2,7 @@
  * Catalog inspection within the original TONART administrative workspace.
  *
  * SSOT: the public, read-only Cloudflare catalog gateway already used by
- * /modelos. No Supabase mirror, no write credential, no second publisher.
+ * /modelos. Authenticated edits submit a Git-reviewed patch to the original contract;\n * no Supabase mirror, second publisher or immediate D1 write.
  *
  * D1-friendly: the first bounded page loads on entry; every later page and
  * search is explicit. No total-count scan, polling, prefetch or image downloads.
@@ -16,6 +16,7 @@ import {
   type TonartCatalogEditorialProposal,
 } from "@/services/catalog/tonart-catalog-review-export";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
+import { submitTonartCatalogEditorialReview } from "@/services/catalog/tonart-catalog-editorial-submit";
 import { catalogModelDetailsPath } from "@/config/routes";
 import {
   createPublicCatalogGateway,
@@ -38,6 +39,9 @@ export default function TonartAdminCatalogReview() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [downloadError, setDownloadError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [reviewReceipt, setReviewReceipt] = useState<string | null>(null);
   // Ephemeral drafts for this already loaded page. Never a second data ledger.
   const [editorialDrafts, setEditorialDrafts] = useState<Map<string, TonartCatalogEditorialProposal>>(
     () => new Map(),
@@ -81,8 +85,8 @@ export default function TonartAdminCatalogReview() {
     nextCursors: Array<string | undefined>,
     nextIndex: number,
   ) {
-    if (editorialDrafts.size > 0) {
-      setError("Baixe a planilha e descarte as propostas locais antes de mudar a página.");
+    if (submitting || editorialDrafts.size > 0) {
+      setError("Envie as propostas para revisão ou descarte-as antes de mudar a página.");
       return;
     }
     if (!gateway) {
@@ -261,10 +265,28 @@ export default function TonartAdminCatalogReview() {
       return next;
     });
     setDownloadError("");
+    setSubmitError("");
+    setReviewReceipt(null);
+  }
+
+  async function submitEditorialChanges() {
+    if (!page || !editorialDrafts.size || busy || submitting || hasInvalidEditorialDraft) return;
+    setSubmitError("");
+    setReviewReceipt(null);
+    setSubmitting(true);
+    try {
+      const receipt = await submitTonartCatalogEditorialReview(page.items, editorialDrafts);
+      setEditorialDrafts(new Map());
+      setReviewReceipt(receipt.receipt);
+    } catch (cause) {
+      setSubmitError(cause instanceof Error ? cause.message : "Não foi possível enviar a revisão.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function downloadCurrentReview() {
-    if (!page || !visible.length || busy) return;
+    if (!page || !visible.length || busy || submitting) return;
     if (hasInvalidEditorialDraft) {
       setDownloadError("Corrija os campos de nome e variante antes de baixar a planilha.");
       return;
@@ -308,7 +330,7 @@ export default function TonartAdminCatalogReview() {
             className="min-h-11 w-full rounded-sm border border-white/25 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[hsl(var(--gold-accent))]"
           />
         </label>
-        <button className={actionClass} type="submit" disabled={busy || gateway === null || editorialDrafts.size > 0}>
+        <button className={actionClass} type="submit" disabled={busy || submitting || gateway === null || editorialDrafts.size > 0}>
           {busy ? "Consultando..." : "Pesquisar"}
         </button>
       </form>
@@ -329,15 +351,15 @@ export default function TonartAdminCatalogReview() {
                 Página {pageIndex + 1} · {page.items.length} modelos publicáveis nesta página
               </p>
               <p className="mt-1 text-xs text-white/55">
-                {activeSearch ? "Busca: " + activeSearch : "Sem filtro de busca"} ·
-                {" "} {withoutCover} sem chave de capa nesta página
+                {activeSearch ? "Busca: " + activeSearch : "Sem filtro de busca"} ·{" "}
+                <span>{withoutCover} sem chave de capa nesta página</span>
               </p>
             </div>
             <label className="flex items-center gap-2 text-xs text-white/75">
               <input
                 type="checkbox"
                 checked={onlyWithoutCover}
-                disabled={editorialDrafts.size > 0}
+                disabled={submitting || editorialDrafts.size > 0}
                 onChange={(event) => setOnlyWithoutCover(event.target.checked)}
                 className="h-4 w-4 accent-[hsl(var(--gold-accent))]"
               />
@@ -456,8 +478,7 @@ export default function TonartAdminCatalogReview() {
               <div className="mt-6 border-t border-white/15 pt-5">
                 <h5 className="text-sm font-semibold">Propor correção editorial</h5>
                 <p className="mt-2 text-xs leading-5 text-white/60">
-                  Preencha somente o que deseja mudar. Esta proposta existe apenas nesta página,
-                  até ser exportada como CSV; não salva alterações no catálogo público.
+                  Preencha somente o que deseja mudar. Enviar para revisão grava a proposta no\n                  contrato original, em uma PR autenticada; a publicação no catálogo público ocorre\n                  somente depois da revisão e dos gates existentes.
                   Nome atual: {selectedModel.name}
                   {selectedModel.variantName ? " · Variante atual: " + selectedModel.variantName : " · Sem variante atual"}.
                 </p>
@@ -468,6 +489,7 @@ export default function TonartAdminCatalogReview() {
                       aria-label={`Novo nome de ${selectedModel.name}`}
                       type="text"
                       maxLength={120}
+                      disabled={submitting}
                       value={editorialDrafts.get(selectedModel.id)?.name ?? ""}
                       placeholder="Manter o nome atual"
                       onChange={(event) => updateEditorialDraft(selectedModel, "name", event.target.value)}
@@ -480,6 +502,7 @@ export default function TonartAdminCatalogReview() {
                       aria-label={`Nova variante de ${selectedModel.name}`}
                       type="text"
                       maxLength={160}
+                      disabled={submitting}
                       value={editorialDrafts.get(selectedModel.id)?.variant ?? ""}
                       placeholder="Manter a variante atual"
                       onChange={(event) => updateEditorialDraft(selectedModel, "variant", event.target.value)}
@@ -640,15 +663,17 @@ export default function TonartAdminCatalogReview() {
             <p className="text-xs text-white/65">
               {editorialDrafts.size} modelo(s) com proposta local nesta página.
               {editorialDrafts.size > 0
-                ? " Baixe a planilha antes de mudar a busca ou a página." : ""}
+                ? " Envie para revisão ou descarte antes de mudar a busca ou a página." : ""}
             </p>
             {editorialDrafts.size > 0 && (
               <button
                 type="button"
                 className={secondaryClass}
+                disabled={submitting}
                 onClick={() => {
                   setEditorialDrafts(new Map());
                   setDownloadError("");
+                  setSubmitError("");
                 }}
               >
                 Descartar todas as propostas locais
@@ -668,8 +693,16 @@ export default function TonartAdminCatalogReview() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
+                className={actionClass}
+                disabled={busy || submitting || editorialDrafts.size === 0 || hasInvalidEditorialDraft}
+                onClick={() => { void submitEditorialChanges(); }}
+              >
+                {submitting ? "Gravando no catálogo original..." : "Enviar alterações para revisão"}
+              </button>
+              <button
+                type="button"
                 className={secondaryClass}
-                disabled={busy || visible.length === 0 || hasInvalidEditorialDraft}
+                disabled={busy || submitting || visible.length === 0 || hasInvalidEditorialDraft}
                 onClick={downloadCurrentReview}
               >
                 Baixar planilha de revisão (CSV)
@@ -677,7 +710,7 @@ export default function TonartAdminCatalogReview() {
               <button
                 type="button"
                 className={secondaryClass}
-                disabled={busy || pageIndex === 0 || editorialDrafts.size > 0}
+                disabled={busy || submitting || pageIndex === 0 || editorialDrafts.size > 0}
                 onClick={() => {
                   const index = pageIndex - 1;
                   if (index < 0) return;
@@ -689,7 +722,7 @@ export default function TonartAdminCatalogReview() {
               <button
                 type="button"
                 className={secondaryClass}
-                disabled={busy || !page.nextCursor || editorialDrafts.size > 0}
+                disabled={busy || submitting || !page.nextCursor || editorialDrafts.size > 0}
                 onClick={() => {
                   if (!page.nextCursor) return;
                   const index = pageIndex + 1;
@@ -702,19 +735,20 @@ export default function TonartAdminCatalogReview() {
           </div>
           <p className="mt-3 text-xs text-white/50">
             A relação inclui apenas {visible.length} modelo(s) desta página{onlyWithoutCover ? " sem chave de capa" : ""}.
-            Preencha apenas “Novo nome” ou “Nova variante” para propor uma correção no contrato
-            original do catálogo. O download não altera o site: a aplicação e a publicação
-            continuam sujeitas à validação e à integração no repositório canônico.
+            Preencha “Novo nome” ou “Nova variante” e envie a revisão autenticada ao contrato\n            original. O recibo confirma o envio ao GitHub, não a publicação no D1. A planilha CSV\n            continua disponível apenas como exportação opcional.
           </p>
           {downloadError && <p role="alert" className="mt-3 text-sm text-amber-200">{downloadError}</p>}
+          {submitError && <p role="alert" className="mt-3 text-sm text-amber-200">{submitError}</p>}
+          {reviewReceipt && <p role="status" className="mt-3 text-sm text-green-200">Revisão gravada no repositório original. O catálogo público ainda não foi alterado.{" "}
+            <a className="underline underline-offset-4" href={reviewReceipt} target="_blank" rel="noopener noreferrer">Abrir revisão no GitHub</a>
+          </p>}
         </>
       )}
       <div className="mt-7 border-t border-white/15 pt-5">
         <p className="text-xs leading-5 text-white/55">
           Esta é uma ferramenta de inspeção do catálogo público. Modelos ocultados pelas regras canônicas
           de revisão, inclusive SpecialSTL, não aparecem aqui. Alterações no acervo, capas ou publicação
-          continuam sob responsabilidade do sistema canônico Cloudflare; a TONART não abre uma segunda
-          rota de escrita nem modifica a base D1.
+          continuam sob responsabilidade do publicador canônico. O painel envia somente metadados\n          editoriais ao contrato original; não modifica diretamente D1 ou R2.
         </p>
         <Link className={secondaryClass + " mt-4"} to="/modelos">
           Abrir catálogo público

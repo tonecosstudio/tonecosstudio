@@ -28,6 +28,10 @@ function approvedContract() {
 }
 const fullState = () => ({
   workflow: { ...workflow }, running: 0, queued: 0, requested: 0, waiting: 0, pending: 0,
+  additionalWriters: original.origin.additionalWriterWorkflows.map(writer => ({
+    id: writer.id, path: writer.path, state: 'disabled_manually',
+    running: 0, queued: 0, requested: 0, waiting: 0, pending: 0,
+  })),
   sourceRepositoryId: original.origin.repositoryId,
   sourceRepositoryName: original.origin.repository,
   targetRepositoryId: original.target.repositoryId,
@@ -37,11 +41,12 @@ const fullState = () => ({
   sourceMainSha: original.origin.observedMainSha,
   sourceFix: {
     number: original.staging.sourceFixPullRequest,
-    state: 'open', draft: true, merged: false,
-    headSha: original.staging.sourceFixHead,
-    baseSha: original.origin.observedMainSha,
+    state: 'closed', draft: false, merged: true,
+    headSha: original.staging.sourceFixMergedHead,
+    mergeCommitSha: original.staging.sourceFixMergeCommit,
     headRepo: original.origin.repository,
   },
+  sourceMediaBlobSha: original.staging.fileBlobs['worker/media.ts'],
   cloudflareAccountId: original.runtime.cloudflareAccountId,
   deployment: structuredClone(deployment), bindings: structuredClone(bindings),
 })
@@ -77,6 +82,22 @@ test('source activity, drift or missing live bindings block the cutover', () => 
 test('a fully verified offline fixture can pass without performing any release', () => {
   const result = assessCutoverReadiness(approvedContract(), fullState())
   assert.deepEqual(result, { ready: true, blockers: [] })
+})
+
+test('all additional D1 and R2 writers must be disabled before M5', () => {
+  const c = approvedContract()
+  const active = fullState()
+  active.additionalWriters[1].state = 'active'
+  assert.ok(assessCutoverReadiness(c, active).blockers.includes('source_additional_writers_active_or_unverified'))
+  const running = fullState()
+  running.additionalWriters[2].pending = 1
+  assert.ok(assessCutoverReadiness(c, running).blockers.includes('source_additional_writers_active_or_unverified'))
+  const missing = fullState()
+  missing.additionalWriters.pop()
+  assert.ok(assessCutoverReadiness(c, missing).blockers.includes('source_additional_writers_active_or_unverified'))
+  const substituted = fullState()
+  substituted.additionalWriters[0].id += 1
+  assert.ok(assessCutoverReadiness(c, substituted).blockers.includes('source_additional_writers_active_or_unverified'))
 })
 
 test('D1 migration enabling remains a blocker even with all other checks passing', () => {
@@ -126,11 +147,15 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
     if (String(url).endsWith('/git/ref/heads/main')) {
       return Response.json({ ref: 'refs/heads/main', object: { sha: original.origin.observedMainSha } })
     }
+    if (String(url).includes('/contents/worker/media.ts?ref=main')) {
+      return Response.json({ sha: original.staging.fileBlobs['worker/media.ts'] })
+    }
     if (String(url).endsWith('/pulls/' + original.staging.sourceFixPullRequest)) {
       return Response.json({
         number: original.staging.sourceFixPullRequest,
-        state: 'open', draft: true, merged: false,
-        head: { sha: original.staging.sourceFixHead, repo: { full_name: original.origin.repository } },
+        state: 'closed', draft: false, merged: true,
+        merge_commit_sha: original.staging.sourceFixMergeCommit,
+        head: { sha: original.staging.sourceFixMergedHead, repo: { full_name: original.origin.repository } },
         base: { sha: original.origin.observedMainSha },
       })
     }
@@ -144,7 +169,11 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
         default_branch: 'main',
       })
     }
-    return Response.json(workflow)
+    const writer = original.origin.additionalWriterWorkflows.find(item =>
+      String(url).endsWith('/workflows/' + item.path.split('/').at(-1)))
+    return Response.json(writer
+      ? { id: writer.id, path: writer.path, state: 'disabled_manually' }
+      : workflow)
   }
   try {
     const state = await inspectLiveReadOnly({})
@@ -155,14 +184,17 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
     assert.equal(state.pending, 0)
     assert.equal(state.deployment, undefined)
     assert.equal(state.cloudflareAccountId, undefined)
-    assert.equal(requests.length, 10)
+    assert.equal(requests.length, 35)
     assert.equal(state.targetRepositoryId, original.target.repositoryId)
     assert.equal(state.targetDefaultBranch, 'main')
     assert.ok(requests.some(url => url.endsWith('/repos/' + original.target.repository)))
-    assert.equal(state.sourceFix.headSha, original.staging.sourceFixHead)
+    assert.equal(state.sourceFix.headSha, original.staging.sourceFixMergedHead)
     assert.ok(requests.some(url => url.endsWith('/pulls/' + original.staging.sourceFixPullRequest)))
+    assert.equal(state.sourceMediaBlobSha, original.staging.fileBlobs['worker/media.ts'])
     assert.equal(state.sourceMainSha, original.origin.observedMainSha)
     assert.equal(state.sourceRepositoryId, original.origin.repositoryId)
+    assert.equal(state.additionalWriters.length, 4)
+    assert.ok(state.additionalWriters.every(w => w.state === 'disabled_manually'))
     assert.ok(requests.some(url => url.endsWith('/git/ref/heads/main')))
     for (const status of ['in_progress', 'queued', 'requested', 'waiting', 'pending']) {
       assert.ok(requests.some(url => url.includes('/runs?status=' + status + '&')))
@@ -180,6 +212,49 @@ test('staged Wrangler and runtime manifest must name the same D1, R2 and Worker'
   const result = assessCutoverReadiness(changed, fullState())
   assert.equal(result.ready, false)
   assert.ok(result.blockers.includes('staged_worker_config_mismatch'))
+})
+
+test('after completed cutover, future releases require only TONART and the existing Cloudflare runtime', () => {
+  const c = approvedContract()
+  c.migration.phase = 'cutover-complete'
+  c.productionObservation.runtimeCutoverPerformed = true
+  const state = fullState()
+  delete state.workflow
+  for (const key of ['sourceRepositoryId', 'sourceRepositoryName', 'sourceMainRef', 'sourceMainSha', 'sourceFix', 'sourceMediaBlobSha', 'running', 'queued', 'requested', 'waiting', 'pending']) {
+    delete state[key]
+  }
+  state.deployment.versions[0].version_id = '11111111-2222-4333-8444-555555555555'
+  assert.deepEqual(assessCutoverReadiness(c, state), { ready: true, blockers: [] })
+  c.productionObservation.runtimeCutoverPerformed = false
+  assert.ok(assessCutoverReadiness(c, state).blockers.includes('completed_target_authority_unverified'))
+  c.productionObservation.runtimeCutoverPerformed = true
+  state.bindings = []
+  assert.ok(assessCutoverReadiness(c, state).blockers.includes('existing_d1_binding_unverified'))
+})
+
+test('completed TONART release preflight never queries Washington', async () => {
+  const c = approvedContract()
+  c.migration.phase = 'cutover-complete'
+  c.productionObservation.runtimeCutoverPerformed = true
+  const previous = globalThis.fetch
+  const calls = []
+  globalThis.fetch = async (url) => {
+    calls.push(String(url))
+    assert.equal(String(url), 'https://api.github.com/repos/' + c.target.repository)
+    return Response.json({
+      id: c.target.repositoryId,
+      full_name: c.target.repository,
+      default_branch: 'main',
+    })
+  }
+  try {
+    const state = await inspectLiveReadOnly({}, c)
+    assert.equal(state.targetRepositoryId, c.target.repositoryId)
+    assert.equal(calls.length, 1)
+    assert.equal(state.sourceRepositoryId, undefined)
+  } finally {
+    globalThis.fetch = previous
+  }
 })
 
 test('the source workflow ID must match the single canonical manifest', () => {
@@ -217,29 +292,32 @@ test('source repository ID and canonical name must match GitHub metadata', () =>
   assert.ok(assessCutoverReadiness(approvedContract(), renamed).blockers.includes('source_repository_identity_unverified'))
 })
 
-test('unmerged source media fix PR must match imported head and original base', () => {
+test('merged source media PR and current media blob are verified', () => {
   const changed = fullState()
   changed.sourceFix.headSha = '0000000000000000000000000000000000000000'
-  assert.ok(assessCutoverReadiness(approvedContract(), changed).blockers.includes('source_media_patch_drift_or_unverified'))
-
-  const retargeted = fullState()
-  retargeted.sourceFix.baseSha = '1111111111111111111111111111111111111111'
-  assert.ok(assessCutoverReadiness(approvedContract(), retargeted).blockers.includes('source_media_patch_drift_or_unverified'))
+  assert.ok(assessCutoverReadiness(approvedContract(), changed).blockers.includes(
+    'source_media_patch_not_merged_or_unverified'))
 
   const missing = fullState()
   delete missing.sourceFix
-  assert.ok(assessCutoverReadiness(approvedContract(), missing).blockers.includes('source_media_patch_drift_or_unverified'))
-})
+  assert.ok(assessCutoverReadiness(approvedContract(), missing).blockers.includes(
+    'source_media_patch_not_merged_or_unverified'))
 
-test('merged, closed, or non-draft source patch requires explicit reconciliation', () => {
+  const replacedMedia = fullState()
+  replacedMedia.sourceMediaBlobSha = '1'.repeat(40)
+  assert.ok(assessCutoverReadiness(approvedContract(), replacedMedia).blockers.includes(
+    'source_media_patch_not_merged_or_unverified'))
+
   for (const mutation of [
-    { state: 'closed' }, { merged: true }, { draft: false },
+    { state: 'open' }, { merged: false }, { draft: true },
     { headRepo: 'someone-else/catalogo' },
+    { mergeCommitSha: 'f'.repeat(40) },
   ]) {
     const observed = fullState()
     Object.assign(observed.sourceFix, mutation)
     assert.ok(
-      assessCutoverReadiness(approvedContract(), observed).blockers.includes('source_media_patch_drift_or_unverified'),
+      assessCutoverReadiness(approvedContract(), observed).blockers.includes(
+        'source_media_patch_not_merged_or_unverified'),
       JSON.stringify(mutation),
     )
   }
@@ -275,21 +353,35 @@ test('a read-only GitHub token is used only for metadata GET requests', async ()
     if (String(url).endsWith('/git/ref/heads/main')) {
       return Response.json({ ref: 'refs/heads/main', object: { sha: original.origin.observedMainSha } })
     }
+    if (String(url).includes('/contents/worker/media.ts?ref=main')) {
+      return Response.json({ sha: original.staging.fileBlobs['worker/media.ts'] })
+    }
     if (String(url).endsWith('/pulls/' + original.staging.sourceFixPullRequest)) {
       return Response.json({
-        number: original.staging.sourceFixPullRequest, state: 'open', draft: true, merged: false,
-        head: { sha: original.staging.sourceFixHead, repo: { full_name: original.origin.repository } },
+        number: original.staging.sourceFixPullRequest, state: 'closed', draft: false, merged: true,
+        merge_commit_sha: original.staging.sourceFixMergeCommit,
+        head: { sha: original.staging.sourceFixMergedHead, repo: { full_name: original.origin.repository } },
         base: { sha: original.origin.observedMainSha },
       })
     }
     if (String(url).includes('/runs?status=')) return Response.json({ total_count: 0 })
-    return Response.json(workflow)
+    const writer = original.origin.additionalWriterWorkflows.find(item =>
+      String(url).endsWith('/workflows/' + item.path.split('/').at(-1)))
+    return Response.json(writer
+      ? { id: writer.id, path: writer.path, state: 'disabled_manually' }
+      : workflow)
   }
   try {
     const state = await inspectLiveReadOnly({ GITHUB_TOKEN: 'test-github-token' })
     assert.equal(state.targetRepositoryId, original.target.repositoryId)
-    assert.equal(requests.length, 10)
-    assert.ok(requests.every(r => r.method === 'GET' && r.token === 'Bearer test-github-token'))
+    assert.equal(requests.length, 35)
+    assert.ok(requests.every(r => r.method === 'GET'))
+    const privateRequests = requests.filter(r => r.url ===
+      'https://api.github.com/repos/' + original.target.repository)
+    assert.equal(privateRequests.length, 1)
+    assert.equal(privateRequests[0].token, 'Bearer test-github-token')
+    assert.ok(requests.filter(r => r.url !== privateRequests[0].url)
+      .every(r => r.token === undefined), 'No installation token may leak to Washington')
     assert.ok(requests.every(r => r.url.startsWith('https://api.github.com/')))
   } finally {
     globalThis.fetch = savedFetch

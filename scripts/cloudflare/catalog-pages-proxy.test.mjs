@@ -25,6 +25,10 @@ test("only same-origin public catalog GET is forwarded", async () => {
     "api/recent?limit=6",
     "api/models/model-one",
     "api/models/model-one/images?limit=6&v=1",
+    "api/editorial/v1/characters/raven",
+    "api/editorial/v1/characters/search?q=raven&limit=12",
+    "api/editorial/v1/universes/comics/titans",
+    "api/editorial/v1/models/mdl_0033cf3a5cb64ab103fd/characters",
   ]) {
     const io = mockFetch();
     const response = await proxyCatalogRequest(
@@ -32,6 +36,28 @@ test("only same-origin public catalog GET is forwarded", async () => {
     );
     assert.equal(response.status, 200);
     assert.equal(io.calls[0].url, WORKER + "/" + path);
+  }
+});
+
+test("editorial proxy rejects missing, oversized and unknown search parameters before Worker reads", async () => {
+  const invalid = [
+    "api/editorial/v1/characters/search",
+    "api/editorial/v1/characters/search?limit=12",
+    "api/editorial/v1/characters/search?q=ra",
+    "api/editorial/v1/characters/search?q=raven&limit=13",
+    "api/editorial/v1/characters/search?q=raven&q=raven",
+    "api/editorial/v1/characters/raven?locale=pt-BR",
+    "api/editorial/v1/universes/comics/titans?cacheBust=1",
+    "api/editorial/v1/models/mdl_0033cf3a5cb64ab103fd/characters?limit=12",
+    "api/editorial/v1/characters/unknown/extra",
+  ];
+  for (const path of invalid) {
+    const io = mockFetch();
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/" + path), io.fetcher,
+    );
+    assert.ok([400, 404].includes(response.status), path);
+    assert.equal(io.calls.length, 0, path);
   }
 });
 

@@ -9,34 +9,35 @@
   "origin": {
     "repository": "washingtonmsdj/catalogo",
     "repositoryId": 1398242143,
-    "observedMainSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "observedMainSha": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
     "openPullRequestsAtAudit": [
       266,
       264,
       263
     ],
     "fileCounts": {
-      "totalTrackedBlobs": 652,
-      "worker": 12,
+      "totalTrackedBlobs": 656,
+      "worker": 13,
       "migrations": 22,
-      "tools": 211,
+      "tools": 214,
       "config": 26,
       "docs": 280,
       "legacySrc": 68
     },
     "workerFiles": {
-      "worker/entry.ts": "a628fce19ce0b84f76760a716eab0152668e2290",
+      "worker/entry.ts": "d24757d5260047fe363f11279dd81a74d7697912",
       "worker/galleryAggregation.ts": "0d52583d6f76e4c01c139c12636e5e593b315271",
       "worker/galleryValidation.ts": "2222446f7a182e611708aa72f7e2a026b8f3681a",
-      "worker/index.ts": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
-      "worker/media.ts": "e6e083f25d5f15a28667976df9b3e9104fbeacba",
+      "worker/index.ts": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
+      "worker/media.ts": "7206038ed5029b39a6e4249f0e772b794eb1b2a7",
       "worker/modelAliases.ts": "b354bc6ab4dad3d12f07ee6b6c43af60aac87d38",
       "worker/quoteAdminAccess.ts": "30c01b4dbbbde77a25daf471fdd89b12b80a846b",
       "worker/quoteAdminApi.ts": "63c663cc63c8bc7096514be6a92518328daf3bcb",
       "worker/quoteWorkflow.ts": "2c95e211e3a5ed7d275258f4f1a503c67f0284ac",
       "worker/schemaContract.ts": "6e9f77269e844849653b9314517c28df7ef3c976",
       "worker/sharedCollections.ts": "bd66879a41798f2e2695273b30d9b562c44dd53a",
-      "worker/turnstile.ts": "6dc1f8f779a9b5ff8b1a5c0d4c11b24c9d5917a3"
+      "worker/turnstile.ts": "6dc1f8f779a9b5ff8b1a5c0d4c11b24c9d5917a3",
+      "worker/publicQueryBudget.ts": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74"
     },
     "migrationFiles": {
       "migrations/0001_catalog.sql": "818d21a4f0ce4de8236208ce42c734bbd0f8c6d2",
@@ -64,7 +65,7 @@
     },
     "staticImportGraph": {
       "entrypoint": "worker/entry.ts",
-      "observedAtSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+      "observedAtSha": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
       "reachableWorkerPaths": [
         "worker/entry.ts",
         "worker/galleryAggregation.ts",
@@ -72,6 +73,7 @@
         "worker/index.ts",
         "worker/media.ts",
         "worker/modelAliases.ts",
+        "worker/publicQueryBudget.ts",
         "worker/schemaContract.ts",
         "worker/sharedCollections.ts",
         "worker/turnstile.ts"
@@ -97,17 +99,17 @@
       "tools/check_public_catalog_hierarchy.mjs": "3b1bbda5b696842abf1762dcb1ba7aee3972f4d0",
       "tools/check_remote_worker_config.mjs": "71673045554c227c071c5741b72fb3824ca9401d",
       "tools/check_staged_worker_version.mjs": "390fc85d827a80122cf1dfa19eec4e4a63056cea",
-      "tools/check_worker_cache_hit.mjs": "28144b9c3f77516829b8a7a1542d4adea02ec046",
+      "tools/check_worker_cache_hit.mjs": "5c26e239fa3be7faac5972521d45fdbbf743bece",
       "tools/check_worker_health.mjs": "857b139069d0917c9fd98d071f1034df788c7c0e",
       "tools/cloudflare_deploy_state.mjs": "8c3bf22fbb3aca9c8fd3491c309e8610f3d5b50f",
       "tools/read_wrangler_d1_id.mjs": "9144e74418b3394efaf58119d8e1b6666c5b4b60",
       "tools/render_wrangler_config.mjs": "f66c69e313a8fd8974e86eb747e4ad6296a1de22",
       "tools/verify_public_catalog.py": "34c1986b9e68602fa60881e6c656355767716b3b",
-      "tools/worker_release_smoke.mjs": "1d1187f78eca424d4f0d8e0c14af9faa9677470b",
+      "tools/worker_release_smoke.mjs": "a16fcc51cc30d5b959df3bc75b00e41f15fc2a5e",
       "tools/wrangler_config_contract.mjs": "59821cfda7350afbf3c8ee5fb3a0c715264d7eac"
     },
     "transitiveApiToolCandidates": {
-      "tools/check_worker_gallery_contract.mjs": "27f17721805afc21c24d017170b19e4fbf678733"
+      "tools/check_worker_gallery_contract.mjs": "0062b570b97c5e8de12deea06d8ff47a367a6d3d"
     },
     "apiBuildConfigBlobs": {
       "wrangler.jsonc": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
@@ -116,7 +118,77 @@
     },
     "apiDeployWorkflowId": 371358484,
     "apiDeployPipeline": ".github/workflows/cloudflare.yml",
-    "toolingAnalysisNote": "18 direct references from API deploy workflow, one additional transitive import from worker_release_smoke. Tooling selection is provisional, not a copied/activated pipeline. Other scripts and tests must still be classified; CORS and Wrangler path relocation must be tested offline."
+    "toolingAnalysisNote": "18 direct references from API deploy workflow, one additional transitive import from worker_release_smoke. Tooling selection is provisional, not a copied/activated pipeline. Other scripts and tests must still be classified; CORS and Wrangler path relocation must be tested offline.",
+    "additionalWriterWorkflows": [
+      {
+        "path": ".github/workflows/external-batch-release.yml",
+        "id": 384544141,
+        "authority": "D1 and R2 production batch"
+      },
+      {
+        "path": ".github/workflows/exact-source-gallery-promotion.yml",
+        "id": 385740730,
+        "authority": "D1 and R2 exact gallery"
+      },
+      {
+        "path": ".github/workflows/existing-gallery-promotion.yml",
+        "id": 385342502,
+        "authority": "D1 and R2 existing gallery"
+      },
+      {
+        "path": ".github/workflows/external-media-staging.yml",
+        "id": 385318875,
+        "authority": "R2 staging objects"
+      }
+    ],
+    "dataWriterToolchainBlobs": {
+      "tools/materialize_external_media_batch.py": "b62a0a151f9216bce1af4488de2875b1a6a91ee5",
+      "tools/ingest_catalog.py": "70b2329befd9d0e738abfda5adec079aa3284dbe",
+      "tools/build_media_bundle.py": "7d9b59c099b7f6cdcd10a1bcae1ce330dc82c5a7",
+      "tools/publish_r2_wrangler.py": "857f88f9aa34a6ba60e3448ce5bf55ab515e61ae",
+      "tools/publish_d1_new_models.py": "e35b5c68687bb96ebbafc9da4236303258e9a367",
+      "tools/verify_external_batch_release.py": "6b91d9c00b9b5cfa523a7672e3522c9dfa9ffa0a",
+      "tools/apply_exact_source_gallery_promotion.py": "3505545f333dfbde9cecedfc981718c79b594950",
+      "tools/apply_existing_gallery_promotion.py": "bdacbbdb0716646223535da9556761637f285a1a",
+      "tools/stage_external_media.py": "6f0558c343e9c542f5f3715ced4e3fa0da7a2b5d",
+      "tools/creator_attribution_release.py": "6ad99c8fe0a887d526f85b8138c05379a1b4c40b",
+      "tools/catalog_scope.py": "02ee2903066478fe102e425ffc2dc61ce5669578",
+      "tools/model_identity.py": "6d659eb6514203ddf90d58a05525e273965b5751",
+      "tools/legacy_gallery_registry.py": "bf816c1a6e7a609a7c0716fee1891cabb3dc3578",
+      "tools/production_model_contract.py": "0577cd1a5c1232011699f1540a85d6f3becd8264",
+      "tools/publish_r2.py": "60ced6476d77fe250f0247da8383bbdc2bf84a79",
+      "tools/publish_d1.py": "92b9c264a8ba93332509b8c60f0361a4cffddbdc",
+      "tools/preflight_existing_gallery_evidence.py": "9f6a680094e41075e5832e14b47ee86ffb2dc341",
+      "tools/preflight_exact_source_gallery_evidence.py": "79d5da90884ab00bf6adecde8ffd8a44a095c094",
+      "tools/staging_checkpoint.py": "4325764893f958d56ae53b7b6ffbb1f4f2d33d3e",
+      "tools/audit_model_identity.py": "eb5aedc6821366b896b9c47f309aeabf98bf9a8a",
+      "tools/build_gallery_promotion_manifest.py": "62bb1cbf01eafa3c30673efef053fa8d446fce5d",
+      "tools/media_quality_policy.py": "7121ebeb1b31e351095b0e7ba587838444196dfc",
+      "tools/plan_gallery_merge.py": "208a4dd28b082f80c37e78772f2d9301641ab2a4",
+      "tools/resolve_gallery_merge.py": "ccb3c5c877d124da959569d1afd94d129a9b6692",
+      "tools/external_identity_contract.py": "397719ccd6ad95a33199aaf4b557419cb7a1db5a",
+      "tools/requirements.txt": "6eabe054811b796deac04af22e500ff87b7bd899",
+      "config/public-catalog-roots.json": "dae1b4d9c70c6728cf641aca105bdb140c39ba78",
+      "config/catalog-view-descriptors.json": "d0f1d1bfb1da7274ea7fe2568b3efb38371ba4f0",
+      "config/catalog-model-identity-aliases.json": "6d061618a2906400896be60433315636d6098ef7",
+      "config/catalog-legacy-gallery-overrides.json": "d43d43ac005edfeffaeb5725d0fc1b1883bf7da7",
+      "config/external-batches/external-source-001-batch-012.json": "d79ee1f5174ffb378dd91efcf11fcbd5b3852df0",
+      "config/external-sources/external-source-001.json": "0e45084398768cb2de9d8edd628659dbfba1efb7",
+      "tools/test_external_batch_release.py": "f913a68824bfad9f6f3bc8ef925e3112f79c0ed0",
+      "tools/test_external_batch_012_contract.py": "b1e7e5e20b404a82d552310c08f12cbe195d95d8",
+      "tools/test_external_release_verifier.py": "ee220e693cb94cae9b4054f0681ff54cb4791208",
+      "tools/test_new_only_released_preflight.py": "c5025e5afde855eac3ee7fe67c9829f0a5070693",
+      "tools/test_apply_existing_gallery_promotion.py": "7b09a97ca03dfddcee519782904407af4e675490",
+      "tools/test_apply_exact_source_gallery_promotion.py": "2d1b0418389c08f18930ec818df5a47022f8a6b3",
+      "tools/test_stage_external_media.py": "56f95c36c9b28dd1a052d272051a4e3cbde1b24e",
+      "tools/test_staging_checkpoint.py": "84d706dd2c80c31ba4f40f9765a879ae325be949",
+      "docs/evidence/external-source-001-malevola-dispatch-gallery-review-2026-10-16.json": "3ac57acfb8572f98a89bdabcf89be82ae2b7aaef",
+      "docs/evidence/external-source-001-malevola-dispatch-creator-attribution-release-2026-10-16.json": "e57613dc22859aff44cc7f06139cc2c7b133e0b4",
+      "docs/evidence/external-source-001-batch-012-media.jsonl": "a36534ae8299d384d135db5da61963e1c5ea3e63",
+      "tools/check_d1_editorial_audit_budget.py": "c7a55151b32d0bb217e69b7781e37159f7bcf170",
+      "tools/audit_external_source_coverage.py": "6734d35901f35d1f8a7793cd11f65ef2d06c66f2",
+      "tools/discover_external_staging_candidates.py": "6acfe0940c022ef4bee2163092e2f67925a09f5d"
+    }
   },
   "runtime": {
     "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
@@ -145,7 +217,7 @@
   "lastVerifiedDate": "2026-11-04",
   "notes": "Snapshot audit only. Revalidate source main and open PRs immediately before copying; this historical SHA is not authority for a future deploy.",
   "staging": {
-    "sourceMain": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "sourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
     "sourceFixPullRequest": 266,
     "sourceFixHead": "59983806acb7a338ae3b9c1ddfd524561ff8a02f",
     "sourceFixStatusAtImport": "open-draft-not-merged",
@@ -176,21 +248,21 @@
       "migrations/0020_gallery_member_explicit_approvals.sql": "449fbb85c45acd4ad641607133943d9e514dfb25",
       "migrations/0021_quote_admin_audit_events.sql": "027af727eb1220f0f9a288d5245e696efc7737b5",
       "migrations/0022_catalog_height_filter_index.sql": "35e91a6533777acd6220fe692a84107456cde09f",
-      "tools/check_worker_gallery_contract.mjs": "27f17721805afc21c24d017170b19e4fbf678733",
+      "tools/check_worker_gallery_contract.mjs": "0062b570b97c5e8de12deea06d8ff47a367a6d3d",
       "tools/test_gallery_aggregation.mjs": "6a3f737d3aba19e9b5127152da7bc77c1d7d0cf5",
       "tools/test_gallery_validation.mjs": "afdd7a23d3264c1a04a22f4c0e11f08c19d059e5",
       "tools/test_model_aliases.mjs": "d4b725448efdcc5c76c85d11f789f732306ba567",
       "tools/test_public_gallery_revision.mjs": "e90df0b47fded4a4755485a5f7ccce3d48fa6444",
       "tools/test_schema_contract.mjs": "fc6335a7c3e2458d8a3d81cecdcc24c4d7a3e34a",
       "tools/test_worker_folder_counts.mjs": "dc3e68ebc5f0cd73132fb55e4173c129c06ecb47",
-      "tools/test_worker_gallery_contract.mjs": "36ff750a7ac3a4e1f05db9b452256af23d8c9c57",
+      "tools/test_worker_gallery_contract.mjs": "fdbde5307d87f05e499b38e6e2bbb93cf791082a",
       "tools/test_worker_media_contract.mjs": "6d57dc241a405ee6743a92d6a25c6f8f5a6f67d0",
       "tools/test_worker_turnstile.mjs": "d71b83ee74f08ae97110eebdf393c93b8bcd26fa",
       "tsconfig.worker.json": "7c5455357b873f9514fa5cfae9f88f9d652140e0",
-      "worker/entry.ts": "a628fce19ce0b84f76760a716eab0152668e2290",
+      "worker/entry.ts": "d24757d5260047fe363f11279dd81a74d7697912",
       "worker/galleryAggregation.ts": "0d52583d6f76e4c01c139c12636e5e593b315271",
       "worker/galleryValidation.ts": "2222446f7a182e611708aa72f7e2a026b8f3681a",
-      "worker/index.ts": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
+      "worker/index.ts": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
       "worker/media.ts": "7206038ed5029b39a6e4249f0e772b794eb1b2a7",
       "worker/modelAliases.ts": "b354bc6ab4dad3d12f07ee6b6c43af60aac87d38",
       "worker/schemaContract.ts": "6e9f77269e844849653b9314517c28df7ef3c976",
@@ -198,18 +270,123 @@
       "worker/turnstile.ts": "6dc1f8f779a9b5ff8b1a5c0d4c11b24c9d5917a3",
       "wrangler.jsonc": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
       "tools/test_worker_catalog_facets.mjs": "bd7ede29ce84a68fb26fb67a5aca02b696f85d0b",
-      "tools/test_worker_catalog_scale_sqlite.mjs": "b4dca481759d53448f31aaaff879b01546c3c74f"
+      "tools/test_worker_catalog_scale_sqlite.mjs": "b4dca481759d53448f31aaaff879b01546c3c74f",
+      "worker/publicQueryBudget.ts": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
+      "tools/test_worker_public_query_budget.mjs": "4354b2b5eaf696d8af440baa1eabb8915de0a9cd",
+      "config/catalog-production-model-contract.json": "e9057d363e51e0f5701311db44429da18a3a7f04",
+      "tools/bounded_retry.mjs": "1c1c8320fcaf4139c18ab3c2533155213893620e",
+      "tools/check_migration_deploy_policy.py": "a1f9de00ea22bd82ff38ed80fb9d0275db670bd5",
+      "tools/check_promoted_worker_version.mjs": "2d92742b39ff08c17e05846e45ce86b605770520",
+      "tools/check_public_catalog_hierarchy.mjs": "3b1bbda5b696842abf1762dcb1ba7aee3972f4d0",
+      "tools/check_remote_worker_config.mjs": "71673045554c227c071c5741b72fb3824ca9401d",
+      "tools/check_staged_worker_version.mjs": "390fc85d827a80122cf1dfa19eec4e4a63056cea",
+      "tools/check_worker_cache_hit.mjs": "5c26e239fa3be7faac5972521d45fdbbf743bece",
+      "tools/check_worker_health.mjs": "857b139069d0917c9fd98d071f1034df788c7c0e",
+      "tools/cloudflare_deploy_state.mjs": "8c3bf22fbb3aca9c8fd3491c309e8610f3d5b50f",
+      "tools/read_wrangler_d1_id.mjs": "9144e74418b3394efaf58119d8e1b6666c5b4b60",
+      "tools/render_wrangler_config.mjs": "f66c69e313a8fd8974e86eb747e4ad6296a1de22",
+      "tools/verify_public_catalog.py": "34c1986b9e68602fa60881e6c656355767716b3b",
+      "tools/worker_release_smoke.mjs": "a16fcc51cc30d5b959df3bc75b00e41f15fc2a5e",
+      "tools/wrangler_config_contract.mjs": "59821cfda7350afbf3c8ee5fb3a0c715264d7eac",
+      "tools/catalog_schema_contract.py": "aedfade4a3bdb7e805669c4300e221ca33f69a9b",
+      "config/migration-deploy-policy.json": "e8f0cc455058e38c9accd98cf7ed67b3e5d79a14",
+      "tools/materialize_external_media_batch.py": "b62a0a151f9216bce1af4488de2875b1a6a91ee5",
+      "tools/ingest_catalog.py": "70b2329befd9d0e738abfda5adec079aa3284dbe",
+      "tools/build_media_bundle.py": "7d9b59c099b7f6cdcd10a1bcae1ce330dc82c5a7",
+      "tools/publish_r2_wrangler.py": "857f88f9aa34a6ba60e3448ce5bf55ab515e61ae",
+      "tools/publish_d1_new_models.py": "e35b5c68687bb96ebbafc9da4236303258e9a367",
+      "tools/verify_external_batch_release.py": "6b91d9c00b9b5cfa523a7672e3522c9dfa9ffa0a",
+      "tools/apply_exact_source_gallery_promotion.py": "3505545f333dfbde9cecedfc981718c79b594950",
+      "tools/apply_existing_gallery_promotion.py": "bdacbbdb0716646223535da9556761637f285a1a",
+      "tools/stage_external_media.py": "6f0558c343e9c542f5f3715ced4e3fa0da7a2b5d",
+      "tools/creator_attribution_release.py": "6ad99c8fe0a887d526f85b8138c05379a1b4c40b",
+      "tools/catalog_scope.py": "02ee2903066478fe102e425ffc2dc61ce5669578",
+      "tools/model_identity.py": "6d659eb6514203ddf90d58a05525e273965b5751",
+      "tools/legacy_gallery_registry.py": "bf816c1a6e7a609a7c0716fee1891cabb3dc3578",
+      "tools/production_model_contract.py": "0577cd1a5c1232011699f1540a85d6f3becd8264",
+      "tools/publish_r2.py": "60ced6476d77fe250f0247da8383bbdc2bf84a79",
+      "tools/publish_d1.py": "92b9c264a8ba93332509b8c60f0361a4cffddbdc",
+      "tools/preflight_existing_gallery_evidence.py": "9f6a680094e41075e5832e14b47ee86ffb2dc341",
+      "tools/preflight_exact_source_gallery_evidence.py": "79d5da90884ab00bf6adecde8ffd8a44a095c094",
+      "tools/staging_checkpoint.py": "4325764893f958d56ae53b7b6ffbb1f4f2d33d3e",
+      "tools/audit_model_identity.py": "eb5aedc6821366b896b9c47f309aeabf98bf9a8a",
+      "tools/build_gallery_promotion_manifest.py": "62bb1cbf01eafa3c30673efef053fa8d446fce5d",
+      "tools/media_quality_policy.py": "7121ebeb1b31e351095b0e7ba587838444196dfc",
+      "tools/plan_gallery_merge.py": "208a4dd28b082f80c37e78772f2d9301641ab2a4",
+      "tools/resolve_gallery_merge.py": "ccb3c5c877d124da959569d1afd94d129a9b6692",
+      "tools/external_identity_contract.py": "397719ccd6ad95a33199aaf4b557419cb7a1db5a",
+      "tools/requirements.txt": "6eabe054811b796deac04af22e500ff87b7bd899",
+      "config/public-catalog-roots.json": "dae1b4d9c70c6728cf641aca105bdb140c39ba78",
+      "config/catalog-view-descriptors.json": "d0f1d1bfb1da7274ea7fe2568b3efb38371ba4f0",
+      "config/catalog-model-identity-aliases.json": "6d061618a2906400896be60433315636d6098ef7",
+      "config/catalog-legacy-gallery-overrides.json": "d43d43ac005edfeffaeb5725d0fc1b1883bf7da7",
+      "config/external-batches/external-source-001-batch-012.json": "d79ee1f5174ffb378dd91efcf11fcbd5b3852df0",
+      "config/external-sources/external-source-001.json": "0e45084398768cb2de9d8edd628659dbfba1efb7",
+      "tools/test_external_batch_release.py": "f913a68824bfad9f6f3bc8ef925e3112f79c0ed0",
+      "tools/test_external_batch_012_contract.py": "b1e7e5e20b404a82d552310c08f12cbe195d95d8",
+      "tools/test_external_release_verifier.py": "ee220e693cb94cae9b4054f0681ff54cb4791208",
+      "tools/test_new_only_released_preflight.py": "c5025e5afde855eac3ee7fe67c9829f0a5070693",
+      "tools/test_apply_existing_gallery_promotion.py": "7b09a97ca03dfddcee519782904407af4e675490",
+      "tools/test_apply_exact_source_gallery_promotion.py": "2d1b0418389c08f18930ec818df5a47022f8a6b3",
+      "tools/test_stage_external_media.py": "56f95c36c9b28dd1a052d272051a4e3cbde1b24e",
+      "tools/test_staging_checkpoint.py": "84d706dd2c80c31ba4f40f9765a879ae325be949",
+      "docs/evidence/external-source-001-malevola-dispatch-gallery-review-2026-10-16.json": "3ac57acfb8572f98a89bdabcf89be82ae2b7aaef",
+      "docs/evidence/external-source-001-malevola-dispatch-creator-attribution-release-2026-10-16.json": "e57613dc22859aff44cc7f06139cc2c7b133e0b4",
+      "docs/evidence/external-source-001-batch-012-media.jsonl": "a36534ae8299d384d135db5da61963e1c5ea3e63",
+      "tools/check_d1_editorial_audit_budget.py": "c7a55151b32d0bb217e69b7781e37159f7bcf170",
+      "tools/audit_external_source_coverage.py": "6734d35901f35d1f8a7793cd11f65ef2d06c66f2",
+      "tools/discover_external_staging_candidates.py": "6acfe0940c022ef4bee2163092e2f67925a09f5d"
     },
     "localOverlays": {
+      "config/catalog-schema-contract.json": {
+        "sourceBlob": "084ca978a3d2352221a4c9cd606c6376697a8c9d",
+        "localBlob": "853da5a45d20d556fb237b64d447554753adb222",
+        "reason": "Require the transactional editorial projection cursor and stage table in the staged Worker schema contract; M5 stays offline."
+      },
+      "config/catalog-production-model-contract.json": {
+        "sourceBlob": "e9057d363e51e0f5701311db44429da18a3a7f04",
+        "localBlob": "0b4b700fa996bfaedfd94d3696dba9680166f703",
+        "reason": "Reconcile the pinned model contract against the canonical D1/public API inventory: retain 34 candidate-only unpublished IDs, add 13 public-only IDs, and correct two stale publication flags without verifying editorial identities."
+      },
+      "config/migration-deploy-policy.json": {
+        "sourceBlob": "e8f0cc455058e38c9accd98cf7ed67b3e5d79a14",
+        "localBlob": "dedf1d2599fefda3f19e00f4815e5d52d133033a",
+        "reason": "Classify the additive public editorial projection migration as expand while keeping production migration disabled."
+      },
+      "tools/test_worker_catalog_scale_sqlite.mjs": {
+        "sourceBlob": "b4dca481759d53448f31aaaff879b01546c3c74f",
+        "localBlob": "99a7508c85fbd8321e75fb807c3cded9196c90a8",
+        "reason": "Cover bounded editorial search, published model relationships and profile projections on the migrated offline SQLite schema."
+      },
       "tools/test_worker_folder_counts.mjs": {
         "sourceBlob": "dc3e68ebc5f0cd73132fb55e4173c129c06ecb47",
         "localBlob": "45303c880cb701457faeb9ac220783f9798f6fa9",
         "reason": "Extended offline SQLite folder regression test in Tonecos; source pin remains immutable"
       },
+      "tools/test_worker_public_query_budget.mjs": {
+        "sourceBlob": "4354b2b5eaf696d8af440baa1eabb8915de0a9cd",
+        "localBlob": "adc376e80e76adf92614713485b4092c5ecc5766",
+        "reason": "Cover bounded editorial search and detail paths before any D1 schema query."
+      },
       "worker/index.ts": {
-        "sourceBlob": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
-        "localBlob": "bca4114e7b7aa61f58b3d2b48b87570a8817feb8",
-        "reason": "Staged Tonecos folder cover lookup plus removal of unused gallery import for full release lint; source blob remains immutable and production Worker stays untouched"
+        "sourceBlob": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
+        "localBlob": "2161d9a98945a314b97eb328df79b0238555b8d6",
+        "reason": "Preserve exact private curation evidence kinds in read-only, evidence-checked character and universe projections, and keep approved-projection synchronization inside the same staged Worker."
+      },
+      "worker/publicQueryBudget.ts": {
+        "sourceBlob": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
+        "localBlob": "3b89328ae758909a246af15f075781eec2d4fc0c",
+        "reason": "Bound editorial search and profile URLs before the existing Worker reads D1."
+      },
+      "wrangler.jsonc": {
+        "sourceBlob": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
+        "localBlob": "b1e6ab6e35be74ca962c5fd7b79d84d99de76b98",
+        "reason": "Add the official TONART production origin to existing exact-match Worker CORS allowlist while preserving all live legacy origins through M5."
+      },
+      "tools/check_migration_deploy_policy.py": {
+        "sourceBlob": "a1f9de00ea22bd82ff38ed80fb9d0275db670bd5",
+        "localBlob": "8923134f13feab4be41533ae9099c965ad316441",
+        "reason": "Restringe uma exceção de manutenção FTS5 à tabela editorial pública e às duas exclusões exatas da linha substituída; mantém os demais bloqueios destrutivos ativos."
       }
     },
     "excludedModules": [
@@ -296,25 +473,82 @@
       "runUrl": "https://github.com/tonecosstudio/tonecosstudio/actions/runs/41789856366",
       "generalJobs": "skipped-on-pull-request",
       "catalogSteps": "all-success"
-    }
+    },
+    "sourceFixStatusAtReconciliation": "merged-in-main",
+    "sourceFixMergedHead": "bc766f75579691d9cbff933fef46dff0af87dee3",
+    "sourceFixMergeCommit": "7444cce0db67c0dca9ec5ec7fd1608d473c0cee2",
+    "lastReconciledAtDate": "2026-11-12",
+    "reconciliation": {
+      "sourceMainSha": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
+      "sourceMediaFixPr": 266,
+      "sourceMediaFixStatus": "merged-in-main",
+      "sourceMediaFixMergeCommit": "7444cce0db67c0dca9ec5ec7fd1608d473c0cee2",
+      "checkedAt": "2026-11-12",
+      "workerBehavior": [
+        "worker/entry.ts",
+        "worker/index.ts",
+        "worker/publicQueryBudget.ts"
+      ],
+      "tests": [
+        "tools/test_worker_gallery_contract.mjs",
+        "tools/test_worker_public_query_budget.mjs",
+        "tools/check_worker_gallery_contract.mjs"
+      ],
+      "editorialContract": "config/catalog-production-model-contract.json",
+      "note": "Current Git blob identities copied; offline and production cutover gates remain required.",
+      "dataWriterToolchainFiles": 46,
+      "dataWriterToolchainSourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7"
+    },
+    "dataWriterToolchain": {
+      "phase": "staged-offline",
+      "fileCount": 46,
+      "sourceMain": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
+      "releaseAuthorized": false,
+      "workflowWriterEnabled": false,
+      "note": "Exact source Python import closure plus required configuration; only staging, no production D1/R2 publisher activated.",
+      "focusedSourceTests": [
+        "test_external_batch_release",
+        "test_external_batch_012_contract",
+        "test_external_release_verifier",
+        "test_new_only_released_preflight",
+        "test_apply_existing_gallery_promotion",
+        "test_apply_exact_source_gallery_promotion",
+        "test_stage_external_media",
+        "test_staging_checkpoint"
+      ],
+      "releaseJobPrepared": true,
+      "cutoverPrerequisite": "cutover-complete"
+    },
+    "postImportAdditions": [
+      {
+        "path": "migrations/0023_public_editorial_projection.sql",
+        "localBlob": "bd1d76a0e3db50820490a80d974827feaf179588",
+        "reason": "Add only the approved public editorial projection schema with replay-safe FTS backfill; no content is seeded and M5 migration remains disabled."
+      },
+      {
+        "path": "worker/editorialProjection.ts",
+        "localBlob": "cf9f752fb7dc0af1665082ce4043940125bb4166",
+        "reason": "Publish only the private approved export through the existing staged Worker with bounded, atomic D1 synchronization."
+      }
+    ]
   },
   "productionObservation": {
-    "observedDate": "2026-11-04",
+    "observedDate": "2026-11-12",
     "worker": "tonecos-catalogo-api",
     "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
-    "currentDeploymentId": "a9f13dd7-537d-4106-bfcf-30510cca388b",
-    "currentVersionId": "a32b09a0-377d-4ff7-b313-4e5a7bf994b6",
-    "currentVersionNumber": 28,
+    "currentDeploymentId": "81898941-bc28-4543-8f34-c20b68fe8a7d",
+    "currentVersionId": "0b6d0d02-58f6-4f99-9a9a-92a605a498ed",
+    "currentVersionNumber": 31,
     "currentTrafficPercent": 100,
-    "currentVersionSourceCommit": "77ff9b0559c911de992ae9c84b78fdaa5e0fed6b",
-    "currentVersionDeployedAt": "2026-11-01T10:35:46.410856Z",
-    "previousVersionId": "3fdef475-a483-4439-a778-bd87f9f76bb1",
-    "previousVersionNumber": 27,
+    "currentVersionSourceCommit": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
+    "currentVersionDeployedAt": "2026-11-12T05:40:39.146575Z",
+    "previousVersionId": "a32b09a0-377d-4ff7-b313-4e5a7bf994b6",
+    "previousVersionNumber": 28,
     "previousVersionMayBeRollbackCandidate": true,
     "rollbackTestedAgainstProduction": false,
-    "observedMainAheadOfProductionByCommits": 21,
+    "observedMainAheadOfProductionByCommits": 0,
     "runtimeFileChangesBetweenProductionSourceAndObservedMain": 0,
-    "observedSourceMainSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "observedSourceMainSha": "cae43a3c0373e0191b14be1ea3ec3dc7f7edf8b7",
     "sourceDeployWorkflow": ".github/workflows/cloudflare.yml",
     "sourceWorkflowTriggers": [
       "push/main with runtime paths",
@@ -332,6 +566,6 @@
     "targetProductionCredentialsVerified": false,
     "runtimeCutoverPerformed": false,
     "observationIsApproval": false,
-    "note": "Read-only metadata and Git compare snapshot. Recheck remote active version, source workflow status, in-progress releases, credential presence and rollback viability immediately before cutover. Do not treat former version as tested rollback."
+    "note": "Read-only verified Cloudflare deployment and Git source on 2026-11-12; no M5 GO, source writer is still active, target deployment not authorized."
   }
 }

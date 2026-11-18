@@ -1,0 +1,595 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import test from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { DatabaseSync } from 'node:sqlite'
+import esbuild from 'esbuild'
+import {
+  buildEditorialProjectionStatements,
+  normalizeApprovedEditorialProjection,
+} from '../worker/editorialProjection.ts'
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const contract = JSON.parse(fs.readFileSync(path.join(root, 'config/catalog-schema-contract.json'), 'utf8'))
+const bundle = await esbuild.build({
+  entryPoints: [path.join(root, 'worker/index.ts')],
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  target: 'node26',
+  write: false,
+})
+const worker = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`)
+
+const TOKEN = 'test-editorial-sync-token-with-at-least-thirty-two-characters'
+const CHARACTER_ID = 'd92e472b-75aa-4f71-8cc4-7f4c9112cc50'
+const REVIEWER_ID = 'f02df991-6cb2-49e9-9a19-45b1682ea984'
+const MODEL_ID = 'mdl_aaaaaaaaaaaaaaaaaaaa'
+
+function source(title, url, kind = 'official') { return { title, url, kind } }
+
+function projection({ generatedAt = new Date().toISOString(), biography = 'Descrição revisada para fixture de teste.' } = {}) {
+  return {
+    schemaVersion: 1,
+    source: 'public.admin_export_approved_catalog_character_projection',
+    generatedAt,
+    characters: [{
+      identityId: CHARACTER_ID,
+      name: 'Personagem de teste',
+      franchiseName: 'Saga Alfa',
+      slug: 'personagem-de-teste',
+      profileRevision: 3,
+      relationRevision: 7,
+      approvedRelationRevision: 7,
+      reviewedAt: '2026-11-18T12:00:00.000Z',
+      reviewedBy: REVIEWER_ID,
+      approvalRef: 'c9f22ef7-c078-4f5a-b215-758721755d61',
+      approvedAt: '2026-11-18T12:01:00.000Z',
+      approvedBy: REVIEWER_ID,
+      profile: {
+        slug: 'personagem-de-teste',
+        aliases: [{ name: 'Alias de teste', sources: [source('Fonte do alias', 'https://example.org/alias')] }],
+        biography,
+        biographySources: [source('Biografia oficial', 'https://example.org/biography')],
+        ageContext: 'A idade varia entre adaptações.',
+        ageSources: [source('Fonte de idade', 'https://example.org/age', 'reputable_reference')],
+        originWork: 'Obra de teste',
+        originWorkSources: [source('Fonte da obra', 'https://example.org/origin', 'publisher')],
+        characteristics: [{ name: 'Armadura de teste', sources: [source('Fonte da característica', 'https://example.org/trait', 'institution')] }],
+        nameSources: [source('Identidade oficial', 'https://example.org/name')],
+        franchiseSources: [source('Universo oficial', 'https://example.org/franchise', 'licensor')],
+      },
+      modelLinks: [{
+        modelId: MODEL_ID,
+        modelSlug: 'estatueta-de-teste',
+        evidenceUrl: 'https://example.org/model-link',
+        evidenceTitle: 'Vínculo validado manualmente',
+      }, {
+        modelId: 'mdl_cccccccccccccccccccc',
+        modelSlug: 'segunda-estatueta-de-teste',
+        evidenceUrl: 'https://example.org/model-link-2',
+        evidenceTitle: 'Segundo vínculo validado manualmente',
+      }],
+    }],
+  }
+}
+
+function createDatabase() {
+  const db = new DatabaseSync(':memory:')
+  db.exec('PRAGMA foreign_keys = ON; CREATE TABLE d1_migrations(name TEXT PRIMARY KEY);')
+  const insertMigration = db.prepare('INSERT INTO d1_migrations(name) VALUES(?)')
+  for (const name of contract.requiredMigrations) {
+    db.exec(fs.readFileSync(path.join(root, 'migrations', name), 'utf8'))
+    insertMigration.run(name)
+  }
+  db.prepare("INSERT INTO categories(id,slug,name) VALUES(1,'universos','Universos')").run()
+  db.prepare("INSERT INTO franchises(id,category_id,slug,name) VALUES(1,1,'saga-alfa','Saga Alfa')").run()
+  db.prepare(`INSERT INTO models(
+    id,franchise_id,slug,code,name,variant_name,collection,material,height_cm,
+    description,image_count,cover_storage_key,gallery_manifest_key,gallery_version,
+    public_gallery_version,published,search_text
+  ) VALUES(?,1,?,'TEST01','Estatueta de teste','',NULL,NULL,NULL,'Fixture somente de teste.',1,
+    NULL,NULL,1,1,1,'estatueta de teste')`).run(MODEL_ID, 'estatueta-de-teste')
+  db.prepare(`INSERT INTO models(
+    id,franchise_id,slug,code,name,variant_name,description,image_count,
+    gallery_version,public_gallery_version,published,search_text
+  ) VALUES('mdl_cccccccccccccccccccc',1,'segunda-estatueta-de-teste','TEST02','Segunda estatueta','',
+    'Fixture somente de teste.',1,1,1,1,'segunda estatueta')`).run()
+  return db
+}
+
+function d1(db) {
+  return {
+    prepare(sql) {
+      const statement = db.prepare(sql)
+      const wrap = (values = []) => ({
+        async all() { return { results: statement.all(...values) } },
+        async first() { return statement.get(...values) ?? null },
+        async run() { return statement.run(...values) },
+      })
+      return {
+        async all() { return { results: statement.all() } },
+        async first() { return statement.get() ?? null },
+        async run() { return statement.run() },
+        bind(...values) { return wrap(values) },
+      }
+    },
+    async batch(statements) {
+      db.exec('BEGIN IMMEDIATE')
+      try {
+        const result = []
+        for (const statement of statements) result.push(await statement.run())
+        db.exec('COMMIT')
+        return result
+      } catch (error) {
+        db.exec('ROLLBACK')
+        throw error
+      }
+    },
+  }
+}
+
+async function callWorker(db, payload, { token = TOKEN, origin, headers = {}, method = 'POST' } = {}) {
+  const requestHeaders = new Headers({ 'content-type': 'application/json', ...headers })
+  if (token) requestHeaders.set('authorization', `Bearer ${token}`)
+  if (origin) requestHeaders.set('origin', origin)
+  const response = await worker.default.fetch(new Request(
+    'https://catalog.example.test/api/admin/editorial-projection',
+    { method, headers: requestHeaders, body: method === 'POST' ? JSON.stringify(payload) : undefined },
+  ), {
+    DB: d1(db),
+    MEDIA: { get: async () => null },
+    CORS_ORIGINS: '',
+    EDITORIAL_SYNC_TOKEN: TOKEN,
+  })
+  return { response, body: await response.json() }
+}
+
+test('approved Supabase export applies atomically to the canonical D1 tables and public routes', async () => {
+  const db = createDatabase()
+  const applied = await callWorker(db, projection())
+  assert.equal(applied.response.status, 200, JSON.stringify(applied.body))
+  assert.equal(applied.body.applied, true)
+  assert.deepEqual(applied.body.counts, { universes: 1, characters: 1, modelLinks: 2 })
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_publication_staged_model_links').get().count, 0)
+
+  const characterResponse = await worker.default.fetch(new Request(
+    'https://catalog.example.test/api/editorial/v1/characters/personagem-de-teste',
+  ), { DB: d1(db), MEDIA: { get: async () => null }, CORS_ORIGINS: '' })
+  assert.equal(characterResponse.status, 200)
+  const characterBody = await characterResponse.json()
+  assert.equal(characterBody.character.biography, 'Descrição revisada para fixture de teste.')
+  assert.deepEqual(characterBody.character.ageContext, {
+    value: null,
+    context: 'A idade varia entre adaptações.',
+    evidenceIds: characterBody.character.ageContext.evidenceIds,
+  })
+  assert.ok(characterBody.sameCharacterModels.some(row => row.modelId === MODEL_ID))
+  assert.equal(characterBody.universe.name, 'Saga Alfa')
+
+  const modelResponse = await worker.default.fetch(new Request(
+    `https://catalog.example.test/api/editorial/v1/models/${MODEL_ID}/characters`,
+  ), { DB: d1(db), MEDIA: { get: async () => null }, CORS_ORIGINS: '' })
+  assert.equal(modelResponse.status, 200)
+  assert.equal((await modelResponse.json()).items[0].character.slug, 'personagem-de-teste')
+
+  const linkRevoked = projection({ generatedAt: new Date(Date.now() + 1000).toISOString() })
+  linkRevoked.characters[0].modelLinks = linkRevoked.characters[0].modelLinks.slice(1)
+  linkRevoked.characters[0].approvalRef = '3da58bec-2daf-48b2-96af-97e2b9164338'
+  const revised = await callWorker(db, linkRevoked)
+  assert.equal(revised.response.status, 200)
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_character_models').get().count, 1)
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_character_models WHERE model_id=?')
+    .get(MODEL_ID).count, 0)
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_publication_staged_model_links').get().count, 0)
+  db.close()
+})
+
+test('partial character revocation keeps a reviewed sibling and rolls back failed deletion atomically', async () => {
+  const db = createDatabase()
+  try {
+    const initial = projection({ generatedAt: new Date(Date.now() - 20_000).toISOString() })
+    const sibling = structuredClone(initial.characters[0])
+    sibling.identityId = 'a516784b-4e1c-4a46-bb4e-23ebf8ee0ab2'
+    sibling.name = 'Personagem coadjuvante'
+    sibling.slug = 'personagem-coadjuvante'
+    sibling.profile.slug = sibling.slug
+    sibling.profile.aliases = [{
+      name: 'Alias coadjuvante',
+      sources: [source('Alias revisado', 'https://example.org/side-character-alias')],
+    }]
+    sibling.approvalRef = 'b23ba807-7a13-444b-ae9c-5124dd3697ae'
+    sibling.modelLinks = sibling.modelLinks.slice(0, 1)
+    initial.characters.push(sibling)
+
+    const installed = await callWorker(db, initial)
+    assert.equal(installed.response.status, 200, JSON.stringify(installed.body))
+    assert.deepEqual(installed.body.counts, { universes: 1, characters: 2, modelLinks: 3 })
+    const cursorBefore = db.prepare('SELECT snapshot_sha256 AS sha FROM editorial_publication_sync WHERE id=1').get().sha
+
+    const revoked = structuredClone(initial)
+    revoked.generatedAt = new Date(Date.parse(initial.generatedAt) + 1000).toISOString()
+    revoked.characters = revoked.characters.filter(item => item.identityId !== sibling.identityId)
+
+    // Simulate a failure AFTER a synchronization cursor/parent upsert has started:
+    // D1 must retain the entire previous public snapshot, not half a withdrawal.
+    db.exec(`CREATE TRIGGER reject_partial_revocation
+      BEFORE DELETE ON editorial_public_characters
+      WHEN OLD.id = '${sibling.identityId}'
+      BEGIN SELECT RAISE(ABORT, 'forced_partial_revocation_failure'); END;`)
+    const aborted = await callWorker(db, revoked)
+    assert.equal(aborted.response.status, 409, JSON.stringify(aborted.body))
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count, 2)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_character_models').get().count, 3)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters_fts').get().count, 2)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_publication_staged_model_links').get().count, 0)
+    assert.equal(db.prepare('SELECT snapshot_sha256 AS sha FROM editorial_publication_sync WHERE id=1').get().sha,
+      cursorBefore)
+    db.exec('DROP TRIGGER reject_partial_revocation')
+
+    const committed = await callWorker(db, revoked)
+    assert.equal(committed.response.status, 200, JSON.stringify(committed.body))
+    assert.deepEqual(committed.body.counts, { universes: 1, characters: 1, modelLinks: 2 })
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count, 1)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_character_models').get().count, 2)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_universes').get().count, 1)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters_fts').get().count, 1)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_publication_staged_model_links').get().count, 0)
+
+    const env = { DB: d1(db), MEDIA: { get: async () => null }, CORS_ORIGINS: '' }
+    const withdrawn = await worker.default.fetch(new Request(
+      'https://catalog.example.test/api/editorial/v1/characters/personagem-coadjuvante',
+    ), env)
+    assert.equal(withdrawn.status, 404)
+    const retained = await worker.default.fetch(new Request(
+      'https://catalog.example.test/api/editorial/v1/characters/personagem-de-teste',
+    ), env)
+    assert.equal(retained.status, 200)
+    const model = await worker.default.fetch(new Request(
+      `https://catalog.example.test/api/editorial/v1/models/${MODEL_ID}/characters`,
+    ), env)
+    assert.equal(model.status, 200)
+    assert.deepEqual((await model.json()).items.map(item => item.character.slug), ['personagem-de-teste'])
+
+    const staleReplay = await callWorker(db, initial)
+    assert.equal(staleReplay.response.status, 409)
+    assert.equal(staleReplay.body.error, 'editorial_projection_stale_source_revision')
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count, 1)
+  } finally {
+    db.close()
+  }
+})
+
+test('private route requires the sync secret and rejects browsers and invalid methods', async () => {
+  const db = createDatabase()
+  const missingSecret = await worker.default.fetch(new Request(
+    'https://catalog.example.test/api/admin/editorial-projection',
+  ), { DB: d1(db), MEDIA: { get: async () => null }, CORS_ORIGINS: '' })
+  assert.equal(missingSecret.status, 404)
+
+  assert.equal((await callWorker(db, projection(), { token: 'wrong-secret' })).response.status, 401)
+  assert.equal((await callWorker(db, projection(), { origin: 'https://tonartstudio.com.br' })).response.status, 403)
+  assert.equal((await callWorker(db, projection(), { method: 'GET' })).response.status, 405)
+  db.close()
+})
+
+test('approval cannot precede human editorial review', async () => {
+  const db = createDatabase()
+  try {
+    const payload = projection()
+    payload.characters[0].approvedAt = '2026-11-18T11:59:59.000Z'
+    const rejected = await callWorker(db, payload, {
+      headers: { 'x-tonart-dry-run': 'true' },
+    })
+    assert.equal(rejected.response.status, 422)
+    assert.equal(rejected.body.error, 'editorial_approval_precedes_review')
+    assert.equal(
+      db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count,
+      0,
+    )
+  } finally {
+    db.close()
+  }
+})
+
+test('updated model links require new transactional human approval before public projection', async () => {
+  const db = createDatabase()
+  try {
+    const approved = projection()
+    const first = await callWorker(db, approved, { headers: { 'x-tonart-dry-run': 'true' } })
+    assert.equal(first.response.status, 200, JSON.stringify(first.body))
+    const changedRelations = structuredClone(approved)
+    changedRelations.characters[0].relationRevision += 1
+    changedRelations.characters[0].modelLinks[0].evidenceTitle = 'Evidência alterada após aprovação'
+    const rejected = await callWorker(db, changedRelations)
+    assert.equal(rejected.response.status, 422)
+    assert.equal(rejected.body.error, 'editorial_relation_approval_stale')
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count, 0)
+    for (const field of ['relationRevision', 'approvedRelationRevision']) {
+      const invalid = structuredClone(approved)
+      invalid.characters[0][field] = '7'
+      const response = await callWorker(db, invalid, {
+        headers: { 'x-tonart-dry-run': 'true' },
+      })
+      assert.equal(response.response.status, 422)
+      assert.equal(response.body.error, 'editorial_relation_revision_missing')
+    }
+    const unversioned = structuredClone(approved)
+    delete unversioned.characters[0].approvedRelationRevision
+    const missing = await callWorker(db, unversioned, {
+      headers: { 'x-tonart-dry-run': 'true' },
+    })
+    assert.equal(missing.response.status, 422)
+  } finally {
+    db.close()
+  }
+})
+
+test('dry-run verifies exact D1 model and franchise identities without writing rows', async () => {
+  const db = createDatabase()
+  const payload = projection()
+  const dryRun = await callWorker(db, payload, { headers: { 'x-tonart-dry-run': 'true' } })
+  assert.equal(dryRun.response.status, 200)
+  assert.equal(dryRun.body.dryRun, true)
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count, 0)
+
+  const badModel = structuredClone(payload)
+  badModel.characters[0].modelLinks[0].modelSlug = 'wrong-catalog-slug'
+  const rejectedModel = await callWorker(db, badModel, { headers: { 'x-tonart-dry-run': 'true' } })
+  assert.equal(rejectedModel.response.status, 422)
+  assert.equal(rejectedModel.body.error, 'editorial_model_reference_invalid')
+
+  const badFranchise = structuredClone(payload)
+  badFranchise.characters[0].franchiseName = 'Universo ausente'
+  badFranchise.characters[0].profile.franchiseSources[0] = source('Fonte', 'https://example.org/missing')
+  const rejectedFranchise = await callWorker(db, badFranchise, { headers: { 'x-tonart-dry-run': 'true' } })
+  assert.equal(rejectedFranchise.response.status, 422)
+  assert.equal(rejectedFranchise.body.error, 'editorial_model_franchise_mismatch')
+
+  const noLinks = structuredClone(payload)
+  noLinks.characters[0].modelLinks = []
+  const rejectedNoLinks = await callWorker(db, noLinks, { headers: { 'x-tonart-dry-run': 'true' } })
+  assert.equal(rejectedNoLinks.response.status, 422)
+  assert.equal(rejectedNoLinks.body.error, 'editorial_model_link_required')
+
+  db.prepare('UPDATE models SET published=0 WHERE id=?').run(MODEL_ID)
+  const unpublished = await callWorker(db, payload, { headers: { 'x-tonart-dry-run': 'true' } })
+  assert.equal(unpublished.response.status, 422)
+  assert.equal(unpublished.body.error, 'editorial_model_reference_invalid')
+  db.prepare('UPDATE models SET published=1 WHERE id=?').run(MODEL_ID)
+
+  db.prepare("INSERT INTO categories(id,slug,name) VALUES(2,'universos-b','Universos B')").run()
+  db.prepare("INSERT INTO franchises(id,category_id,slug,name) VALUES(2,2,'saga-alfa','Saga Alfa')").run()
+  db.prepare(`INSERT INTO models(
+    id,franchise_id,slug,code,name,variant_name,description,image_count,
+    gallery_version,public_gallery_version,published,search_text
+  ) VALUES('mdl_bbbbbbbbbbbbbbbbbbbb',2,'estatueta-duplicada','TEST03','Estatueta duplicada','',
+    'Fixture somente de teste.',1,1,1,1,'estatueta duplicada')`).run()
+  const ambiguous = structuredClone(payload)
+  ambiguous.characters[0].modelLinks.push({
+    modelId: 'mdl_bbbbbbbbbbbbbbbbbbbb',
+    modelSlug: 'estatueta-duplicada',
+    evidenceUrl: 'https://example.org/model-link-2',
+    evidenceTitle: 'Segundo vínculo de teste',
+  })
+  const rejectedAmbiguous = await callWorker(db, ambiguous, { headers: { 'x-tonart-dry-run': 'true' } })
+  assert.equal(rejectedAmbiguous.response.status, 422)
+  assert.equal(rejectedAmbiguous.body.error, 'editorial_character_franchise_ambiguous')
+  db.close()
+})
+
+test('evidence is mandatory for every public fact and relation; empty export is fail-closed', async () => {
+  const optionalBiographyDb = createDatabase()
+  const noBiography = projection({ biography: '' })
+  noBiography.characters[0].profile.biographySources = []
+  const optionalBiography = await callWorker(optionalBiographyDb, noBiography)
+  assert.equal(optionalBiography.response.status, 200, JSON.stringify(optionalBiography.body))
+  assert.equal(optionalBiographyDb.prepare('SELECT biography FROM editorial_public_characters').get().biography, null)
+  const optionalBiographyResponse = await worker.default.fetch(new Request(
+    'https://catalog.example.test/api/editorial/v1/characters/personagem-de-teste',
+  ), { DB: d1(optionalBiographyDb), MEDIA: { get: async () => null }, CORS_ORIGINS: '' })
+  assert.equal(optionalBiographyResponse.status, 200)
+  const optionalBiographyBody = await optionalBiographyResponse.json()
+  assert.equal(optionalBiographyBody.character.biography, null)
+  assert.deepEqual(optionalBiographyBody.character.biographyEvidenceIds, [])
+
+  const orphanedBiographySource = projection({ biography: '' })
+  const rejectedOrphanedSource = await callWorker(optionalBiographyDb, orphanedBiographySource, {
+    headers: { 'x-tonart-dry-run': 'true' },
+  })
+  assert.equal(rejectedOrphanedSource.response.status, 422)
+  assert.equal(rejectedOrphanedSource.body.error, 'editorial_biography_sources_without_value')
+  optionalBiographyDb.close()
+
+  const db = createDatabase()
+  const missingBiographySource = projection()
+  missingBiographySource.characters[0].profile.biographySources = []
+  const rejectedBiography = await callWorker(db, missingBiographySource)
+  assert.equal(rejectedBiography.response.status, 422)
+
+  const catalogOnlyIdentity = projection()
+  catalogOnlyIdentity.characters[0].profile.nameSources = [source('Catálogo', 'https://example.org/catalog', 'catalog')]
+  const rejectedIdentity = await callWorker(db, catalogOnlyIdentity)
+  assert.equal(rejectedIdentity.response.status, 422)
+
+  const empty = { schemaVersion: 1, source: 'public.admin_export_approved_catalog_character_projection',
+    generatedAt: new Date().toISOString(), characters: [] }
+  assert.equal((await callWorker(db, empty)).response.status, 409)
+  const clearDryRun = await callWorker(db, empty, {
+    headers: { 'x-tonart-allow-empty': 'confirm', 'x-tonart-dry-run': 'true' },
+  })
+  assert.equal(clearDryRun.response.status, 200)
+  assert.equal(clearDryRun.body.counts.characters, 0)
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count, 0)
+  db.close()
+})
+
+test('same snapshot is idempotent; a stale revision cannot restore revoked content', async () => {
+  const db = createDatabase()
+  const initial = projection()
+  assert.equal((await callWorker(db, initial)).response.status, 200)
+  const repeated = await callWorker(db, initial)
+  assert.equal(repeated.response.status, 200)
+  assert.equal(repeated.body.idempotent, true)
+
+  const stale = projection({ generatedAt: '2026-11-17T00:00:00.000Z', biography: 'Conteúdo antigo.' })
+  const rejected = await callWorker(db, stale)
+  assert.equal(rejected.response.status, 409)
+  assert.equal(rejected.body.error, 'editorial_projection_stale_source_revision')
+  assert.equal(db.prepare('SELECT biography FROM editorial_public_characters').get().biography,
+    'Descrição revisada para fixture de teste.')
+  db.close()
+})
+
+test('D1 batch rollback and compare-and-swap leave the last approved projection intact on failure', async () => {
+  const db = createDatabase()
+  const firstPayload = projection()
+  const first = await normalizeApprovedEditorialProjection(firstPayload)
+  const db1 = d1(db)
+  const franchises = new Map([['saga alfa', 1]])
+  await db1.batch(buildEditorialProjectionStatements(first, '', new Date().toISOString(), franchises)
+    .map(row => db1.prepare(row.sql).bind(...row.values)))
+
+  const secondPayload = projection({
+    generatedAt: new Date(Date.now() + 1000).toISOString(),
+    biography: 'Biografia atualizada com aprovação nova.',
+  })
+  secondPayload.characters[0].approvalRef = 'a8e708ae-caf4-4858-a66a-1c9f23174f9d'
+  const second = await normalizeApprovedEditorialProjection(secondPayload)
+
+  db.exec(`CREATE TRIGGER fail_projection_test BEFORE UPDATE ON editorial_public_characters
+    BEGIN SELECT RAISE(ABORT, 'forced_transaction_failure'); END;`)
+  const failedApply = await callWorker(db, secondPayload)
+  assert.equal(failedApply.response.status, 409)
+  assert.equal(db.prepare('SELECT biography FROM editorial_public_characters').get().biography,
+    'Descrição revisada para fixture de teste.')
+  db.exec('DROP TRIGGER fail_projection_test')
+
+  // Simulate two publishers that both read the original cursor: the stale CAS
+  // must abort rather than replacing the newer snapshot.
+  await assert.rejects(db1.batch(buildEditorialProjectionStatements(second, '', new Date().toISOString(), franchises)
+    .map(row => db1.prepare(row.sql).bind(...row.values))), /revision_conflict/)
+  assert.equal(db.prepare('SELECT biography FROM editorial_public_characters').get().biography,
+    'Descrição revisada para fixture de teste.')
+  db.close()
+})
+
+
+test('mocked Supabase RPC fixture traverses the publisher and the actual local D1 Worker', async () => {
+  // This is an offline contract test. The Supabase RPC response is a test
+  // fixture; it does not connect to or prove integration with Supabase.
+  const { fetchApprovedExport, sendEditorialProjection } = await import(
+    '../../../scripts/catalog/publish-approved-character-projection.mjs'
+  )
+  assert.ok(contract.requiredMigrations.includes('0023_public_editorial_projection.sql'))
+
+  const db = createDatabase()
+  try {
+    const sourceUrl = new URL('https://fixture-project.supabase.co')
+    const serviceRoleKey = 'test-service-role-key-long-enough-for-contract-validation'
+    const generatedAt = new Date().toISOString()
+    const sourceFixture = projection({ generatedAt })
+    let sourceRequest
+    const approvedExport = await fetchApprovedExport(
+      sourceUrl,
+      serviceRoleKey,
+      async (url, init) => {
+        sourceRequest = { url: String(url), init }
+        return Response.json(sourceFixture)
+      },
+    )
+    assert.equal(
+      new URL(sourceRequest.url).pathname,
+      '/rest/v1/rpc/admin_export_approved_catalog_character_projection',
+    )
+    assert.equal(sourceRequest.init.method, 'POST')
+    assert.equal(sourceRequest.init.headers.authorization, 'Bearer ' + serviceRoleKey)
+
+    const workerFetch = async (input, init) => worker.default.fetch(
+      new Request(input, init),
+      {
+        DB: d1(db),
+        MEDIA: { get: async () => null },
+        CORS_ORIGINS: '',
+        EDITORIAL_SYNC_TOKEN: TOKEN,
+      },
+    )
+    const workerUrl = new URL('http://127.0.0.1:8787')
+    const dryRun = await sendEditorialProjection({
+      payload: approvedExport,
+      worker: workerUrl,
+      token: TOKEN,
+      mode: 'dry-run',
+      fetchImpl: workerFetch,
+    })
+    assert.equal(dryRun.dryRun, true)
+    assert.deepEqual(dryRun.counts, { universes: 1, characters: 1, modelLinks: 2 })
+    assert.equal(
+      db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count,
+      0,
+      'dry-run must not mutate the D1 projection',
+    )
+
+    const applied = await sendEditorialProjection({
+      payload: approvedExport,
+      worker: workerUrl,
+      token: TOKEN,
+      mode: 'apply',
+      fetchImpl: workerFetch,
+    })
+    assert.equal(applied.applied, true)
+    assert.equal(
+      db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count,
+      1,
+    )
+    const repeated = await sendEditorialProjection({
+      payload: approvedExport,
+      worker: workerUrl,
+      token: TOKEN,
+      mode: 'apply',
+      fetchImpl: workerFetch,
+    })
+    assert.equal(repeated.idempotent, true)
+
+    const characterResponse = await worker.default.fetch(new Request(
+      'https://catalog.example.test/api/editorial/v1/characters/personagem-de-teste',
+    ), { DB: d1(db), MEDIA: { get: async () => null }, CORS_ORIGINS: '' })
+    assert.equal(characterResponse.status, 200)
+    const characterBody = await characterResponse.json()
+    assert.equal(characterBody.character.biography, 'Descrição revisada para fixture de teste.')
+    assert.deepEqual(
+      [...new Set(characterBody.sameCharacterModels.map(model => model.modelId))].sort(),
+      ['mdl_aaaaaaaaaaaaaaaaaaaa', 'mdl_cccccccccccccccccccc'],
+    )
+
+    const universeResponse = await worker.default.fetch(new Request(
+      'https://catalog.example.test/api/editorial/v1/universes/universos/saga-alfa',
+    ), { DB: d1(db), MEDIA: { get: async () => null }, CORS_ORIGINS: '' })
+    assert.equal(universeResponse.status, 200)
+    assert.equal((await universeResponse.json()).universe.name, 'Saga Alfa')
+
+    const nextExport = structuredClone(approvedExport)
+    nextExport.generatedAt = new Date(Date.parse(generatedAt) + 1000).toISOString()
+    const rollback = await sendEditorialProjection({
+      payload: nextExport,
+      worker: workerUrl,
+      token: TOKEN,
+      mode: 'rollback-clear',
+      fetchImpl: workerFetch,
+    })
+    assert.equal(rollback.applied, true)
+    assert.equal(rollback.counts.characters, 0)
+    assert.equal(
+      db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count,
+      0,
+      'explicit rollback-clear must atomically withdraw the public projection',
+    )
+    const withdrawn = await worker.default.fetch(new Request(
+      'https://catalog.example.test/api/editorial/v1/characters/personagem-de-teste',
+    ), { DB: d1(db), MEDIA: { get: async () => null }, CORS_ORIGINS: '' })
+    assert.equal(withdrawn.status, 404)
+  } finally {
+    db.close()
+  }
+})

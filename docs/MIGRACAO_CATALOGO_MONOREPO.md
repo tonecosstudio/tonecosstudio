@@ -1,5 +1,23 @@
 # MIGRAÇÃO DO CATÁLOGO — REPOSITÓRIO ÚNICO TONECOS
 
+> **Estado canônico em 12/11/2026 — PR #26.** O contrato editorial com 2.596
+> modelos e o código runtime/ferramentas do Worker existente foram reconciliados
+> em `tonecosstudio/tonecosstudio/services/catalogo`. PRs de origem #266–#269
+> estão integradas. O manifesto `config/catalog-code-consolidation.json` é o
+> registro atual da fase; snapshots abaixo datados de 04/11 são históricos.
+> **M5 ainda não executada em produção:** o publicador Washington continua
+> ativo; não existem provas das credenciais alvo, do disable original e do
+> rollback de produção. `staged-offline` permanece fail-closed.
+>
+> **Após M5:** a validação de releases usa exclusivamente TONART e o Worker
+> Cloudflare existente, sem consultar Washington, e o controle de importação
+> deixa de impedir evoluções legítimas no novo owner. O workflow de release
+> é serial, não cancelável por push, e não aplica migrações D1 no corte.
+> A edição no painel propõe PR versionada no repo TONART; até a GitHub App
+> ser instalada no repo alvo e as credenciais privadas serem validadas na
+> Vercel, o endpoint não pode gravar e responde 503. Sem segundo Worker/D1/R2.
+>
+
 > **Retificação operacional em 12/11/2026:** este documento preserva o plano M0–M6 e evidências antigas, **não** o estado atual de PRs/SHAs/deploy. A PR de integração **#4 já foi integrada à main** do site. As PRs do Worker **#266, #267, #268 e #269 também foram integradas** no repositório origem `washingtonmsdj/catalogo`, que **continua sendo o único publicador** do Worker `tonecos-catalogo-api`. A versão Cloudflare observada após o release de #269 é `0b6d0d02-58f6-4f99-9a9a-92a605a498ed` (100%); o site oficial está na Vercel, com Pages apenas para preview protegido. A cópia `services/catalogo/` permanece `staged-offline`, com `releaseAuthorized=false`; **M5/cutover NÃO foi autorizado**. Instruções abaixo que mencionem PR #4 Draft, branch única `integration/...`, PR #266 pendente, Pages como único frontend público, ou versões antigas são **históricas/superadas** e não autorizam ações. Ver [README](../README.md), [AGENTS](../AGENTS.md), [URGENTE](../URGENTE.md) e o manifesto `config/catalog-code-consolidation.json` antes de iniciar migração. Não criar segundo writer ou acionar migração D1 por leitura deste plano.
 
 > **Documento canônico de execução e checkpoint.** Decisão do proprietário: o código do frontend e da API ficará exclusivamente no repositório tonecosstudio/tonecosstudio. NÃO criar tonecosstudio/catalogo, fork nem monorepo paralelo. Atualizado em 04/11/2026. **Plano aprovado; código Worker importado apenas como candidato inativo, SEM cutover nem release de produção.**
