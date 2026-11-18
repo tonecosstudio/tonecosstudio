@@ -1985,3 +1985,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** subir na PR #33 e encaminhar a curadoria para #31. Para homologar, falta ambiente Supabase/D1 isolado e exportação editorial humana aprovada.
 
 **DO_NOT_REPEAT:** não contar modelos candidatos como relações comprovadas; não apresentar o pacote de pesquisa como dados públicos nem aplicar a migration 0023 no projeto produtivo.
+
+
+## Rodada 98 — candidatos Cable e He-Man (18/11/2026)
+
+- Preparei dois dossiês, reutilizando a fonte Marvel de Cable já cadastrada e adicionando uma página oficial da Mattel para He-Man. Os textos e os dois candidatos de franquia continuam pendentes de revisão humana.
+- Conjunto atualizado: **55 candidatos, 65 fontes oficiais únicas, 55 rascunhos biográficos e 706 relações candidatas**. Esta rodada acrescentou 13 relações por ID da fila. Permanecem **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local: teste da fila 11/11 e git diff --check passaram. O job offline da PR #33 no commit anterior b73c8742 passou (run 44286840321); jobs gerais, build e cobertura foram ignorados pelos filtros.
+- Sem escrita no Supabase/D1, aplicação da 0023, publicação ou ativação da flag. A projeção real permanece vazia; falta revisão editorial privada e ambiente isolado Supabase/D1 para homologar o fluxo.
+
+**NEXT_ACTION:** enviar esta pesquisa pela PR #33 e encaminhá-la à curadoria privada da #31. Homologação Supabase→D1 depende de ambiente isolado.
+
+**DO_NOT_REPEAT:** não tratar fontes da Marvel/Mattel como prova dos renders; não aplicar 0023 no Supabase produtivo nem liberar projeção vazia.

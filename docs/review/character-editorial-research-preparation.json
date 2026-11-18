@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 53,
-    "preparedCandidateModelLinkCount": 693
+    "sourceResearchedIdentityCount": 55,
+    "preparedCandidateModelLinkCount": 706
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 53,
+    "preparedIdentityCount": 55,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 693,
+    "preparedCandidateModelLinkCount": 706,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -539,6 +539,14 @@
       "publisher": "CD PROJEKT RED",
       "title": "The Witcher 3: Wild Hunt",
       "url": "https://www.thewitcher.com/us/en/witcher3",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "mattel-he-man-motu-film-profile",
+      "publisher": "Mattel Creations",
+      "title": "Explore Masters of the Universe: Meet Our Heroes — He-Man",
+      "url": "https://au.creations.mattel.com/pages/explore-masters-of-the-universe",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -16901,6 +16909,368 @@
         }
       ],
       "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "Cable (Nathan Summers candidate)",
+      "catalogDisplayNameCandidate": "Cable",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Cable (Nathan Summers)",
+          "sourceIds": [
+            "marvel-apocalypse-cable-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-apocalypse-cable-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.future_mutant_soldier",
+          "value": "A Marvel descreve Cable como o mutante Nathan Summers, vindo de um futuro distópico, com aprimoramentos cibernéticos e ligação com os X-Men.",
+          "sourceIds": [
+            "marvel-apocalypse-cable-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.techno_organic_infection",
+          "value": "O perfil Marvel relata que a infecção tecno-orgânica motivou parte de seus implantes e poderes.",
+          "sourceIds": [
+            "marvel-apocalypse-cable-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A Marvel identifica Cable como Nathan Summers, um mutante vindo de um futuro distópico cuja infecção tecno-orgânica levou a implantes cibernéticos. Sua história inclui diferentes épocas e versões; nenhum período ou conjunto de implantes foi associado aos seis modelos candidatos.",
+      "biographySourceIds": [
+        "marvel-apocalypse-cable-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos",
+        "Heróis Individuais"
+      ],
+      "ambiguities": [
+        "A fonte é um perfil dos quadrinhos, com diferentes épocas, idades e variantes de Nathan Summers; não fixa a versão de cada escultura.",
+        "Os seis vínculos partem do rótulo Cable e aguardam conferência de imagem por ID.",
+        "A categoria do catálogo é proveniência, não prova da identidade visual."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_069ff7ae88ed68324323",
+          "modelSlug": "equipes-e-grupos-cable-em-pe-com-rifle-grande",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-cable-em-pe-com-rifle-grande"
+          }
+        },
+        {
+          "modelId": "mdl_473bd05bc85c1bf85258",
+          "modelSlug": "equipes-e-grupos-cable-diorama-com-explosao",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-cable-diorama-com-explosao"
+          }
+        },
+        {
+          "modelId": "mdl_6206e796f5e853d395e3",
+          "modelSlug": "equipes-e-grupos-cable-sobre-armamento-pesado",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-cable-sobre-armamento-pesado"
+          }
+        },
+        {
+          "modelId": "mdl_6b70ddd787a7e4145c46",
+          "modelSlug": "equipes-e-grupos-cable-traje-azul-com-rifle-no-ombro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-cable-traje-azul-com-rifle-no-ombro"
+          }
+        },
+        {
+          "modelId": "mdl_a09411a787a8e07a45ec",
+          "modelSlug": "equipes-e-grupos-cable-close-e-diorama-com-explosao",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-cable-close-e-diorama-com-explosao"
+          }
+        },
+        {
+          "modelId": "mdl_ac2b7f773900551345e2",
+          "modelSlug": "herois-individuais-cable-com-armamento-duplo-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-cable-com-armamento-duplo-em-diorama"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 6
+    },
+    {
+      "candidateName": "He-Man (Prince Adam candidate)",
+      "catalogDisplayNameCandidate": "He-Man",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Masters of the Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "He-Man (identidade de Prince Adam na fonte consultada)",
+          "sourceIds": [
+            "mattel-he-man-motu-film-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Masters of the Universe",
+          "sourceIds": [
+            "mattel-he-man-motu-film-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.prince_adam_transform",
+          "value": "A Mattel descreve Prince Adam se transformando em He-Man ao erguer a Power Sword e invocar o Poder de Grayskull.",
+          "sourceIds": [
+            "mattel-he-man-motu-film-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.defender_of_grayskull",
+          "value": "A página oficial da Mattel apresenta He-Man como defensor dos segredos de Castle Grayskull.",
+          "sourceIds": [
+            "mattel-he-man-motu-film-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A página oficial da Mattel para Masters of the Universe apresenta He-Man como Prince Adam transformado pelo Poder de Grayskull e defensor dos segredos do castelo. A página trata da adaptação cinematográfica atual; ela não comprova que qualquer um dos sete modelos represente essa versão.",
+      "biographySourceIds": [
+        "mattel-he-man-motu-film-profile"
+      ],
+      "catalogFranchiseCandidates": [
+        "He-Man (Franquia)"
+      ],
+      "ambiguities": [
+        "A fonte consultada é a página da Mattel sobre o filme de 2026; a franquia tem versões anteriores e designs distintos.",
+        "Os sete vínculos foram obtidos pelos nomes da fila e não por conferência das imagens.",
+        "Não atribuir ao modelo a roupa, ator ou continuidade descritos nessa fonte sem evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_03cce6b4c6a13a86b444",
+          "modelSlug": "he-man-franquia-he-man-07",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "he-man-franquia-he-man-07"
+          }
+        },
+        {
+          "modelId": "mdl_19447ccaa3203f1423ca",
+          "modelSlug": "he-man-franquia-he-man-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "he-man-franquia-he-man-01"
+          }
+        },
+        {
+          "modelId": "mdl_2a6291a60243ec713e2a",
+          "modelSlug": "he-man-franquia-he-man-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "he-man-franquia-he-man-02"
+          }
+        },
+        {
+          "modelId": "mdl_320db2d2eb4ec1be9181",
+          "modelSlug": "he-man-franquia-he-man-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "he-man-franquia-he-man-06"
+          }
+        },
+        {
+          "modelId": "mdl_a3cb30e42dab7f3c2bd0",
+          "modelSlug": "he-man-franquia-he-man-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "he-man-franquia-he-man-04"
+          }
+        },
+        {
+          "modelId": "mdl_c519143cc049712393aa",
+          "modelSlug": "he-man-franquia-he-man-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "he-man-franquia-he-man-03"
+          }
+        },
+        {
+          "modelId": "mdl_f6e5bf47beb0e1c749ab",
+          "modelSlug": "he-man-franquia-he-man-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "he-man-franquia-he-man-05"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 7
     }
   ]
 }

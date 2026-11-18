@@ -14,7 +14,7 @@ Para regenerar, forneça o arquivo do contrato candidato desejado:
 node scripts/catalog/character-catalog-inventory.mjs --format csv --candidate-contract <arquivo-do-contrato> --output docs/review/character-catalog-review-queue.csv
 ```
 
-`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 53 candidatos, 53 rascunhos biográficos originais, 64 URLs oficiais únicas e 693 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
+`character-editorial-research-preparation.json` é um lote separado de pesquisa, ligado aos modelos somente por IDs da fila. Na fotografia de 18/11/2026, prepara 55 candidatos, 55 rascunhos biográficos originais, 65 URLs oficiais únicas e 706 possíveis relações de modelo. Cada afirmação tem fontes registradas e segue pendente de revisão humana. Os vínculos preservam o estado de origem/publicação do catálogo, mas têm evidência independente vazia e exigem revisão visual/editorial; nenhum conta como relação comprovada.
 
 Wolverine permanece com franquia ambígua porque seus 30 modelos candidatos estão divididos entre duas franquias D1. Thor foi separado em duas identidades candidatas a partir da proveniência: 17 modelos no contexto de Vingadores/Marvel e um modelo no contexto de God of War Ragnarök. Nenhum vínculo foi confirmado por imagem; a distinção evita misturar personagens homônimos e segue pendente de revisão. Trunks está descrito apenas como adolescente do futuro, conforme uma fonte oficial específica; os oito rótulos genéricos não confirmam idade ou linha temporal. Daredevil usa uma fonte Marvel “On Screen” e Gambit tem múltiplas fases e formas; nenhuma continuidade ou versão visual foi atribuída aos modelos. Os candidatos adicionados por rótulo exato do inventário não passaram por validação visual; formas, dioramas, nomes localizados e cenas com vários personagens continuam ambíguos.
 
@@ -43,3 +43,15 @@ Deadpool preserva como categorias de navegação os rótulos Equipes e Grupos e 
 **NEXT_ACTION:** encaminhar os candidatos à curadoria privada #31 e documentar evidências independentes por render antes de aprovar qualquer relação.
 
 **DO_NOT_REPEAT:** não universalizar a timeline de Sonya, o volume 41 de Berserk ou a fase de The Witcher 3; não tratar nomes ou figurinos do catálogo como prova de correspondência.
+
+
+## Rodada 98 — Cable e He-Man com fontes oficiais (18/11/2026)
+
+- Preparei dossiês para **Cable (Nathan Summers)** e **He-Man (Prince Adam)**. Reutilizei a fonte Marvel de Cable já registrada para Apocalypse, evitando URL duplicada; acrescentei uma fonte oficial da Mattel Creations para He-Man.
+- Associei **13 modelos candidatos** por IDs da fila: 6 Cable e 7 He-Man. O perfil Marvel de Cable tem variantes de época e idade; a página Mattel consultada trata do filme de 2026. Nenhuma dessas versões foi atribuída a um modelo sem revisão visual.
+- O pacote chega a **55 candidatos, 65 URLs oficiais únicas, 55 rascunhos e 706 relações candidatas**, todos sem revisão ou aprovação.
+- Validação desta rodada: teste da fila 11/11 e git diff --check passaram.
+
+**NEXT_ACTION:** encaminhar os candidatos a #31 e associar evidência visual independente por modelo antes da revisão e exportação.
+
+**DO_NOT_REPEAT:** não presumir que modelos Cable mostram Nathan adulto ou que modelos He-Man seguem o filme de 2026.
