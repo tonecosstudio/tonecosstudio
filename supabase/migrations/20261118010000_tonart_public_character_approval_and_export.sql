@@ -47,15 +47,30 @@ LANGUAGE plpgsql
 SET search_path = pg_temp
 AS $publication_invalidation$
 BEGIN
-  IF NEW.editorial_profile_revision IS DISTINCT FROM OLD.editorial_profile_revision
-     AND OLD.editorial_publication_status = 'approved' THEN
+  IF OLD.editorial_publication_status = 'approved'
+     AND (
+       NEW.editorial_profile_revision IS DISTINCT FROM OLD.editorial_profile_revision
+       OR NEW.editorial_profile IS DISTINCT FROM OLD.editorial_profile
+       OR NEW.editorial_profile_status IS DISTINCT FROM OLD.editorial_profile_status
+       OR NEW.editorial_profile_reviewed_at IS DISTINCT FROM OLD.editorial_profile_reviewed_at
+       OR NEW.editorial_profile_reviewed_by IS DISTINCT FROM OLD.editorial_profile_reviewed_by
+       OR NEW.identity_key IS DISTINCT FROM OLD.identity_key
+       OR NEW.character_name IS DISTINCT FROM OLD.character_name
+       OR NEW.franchise IS DISTINCT FROM OLD.franchise
+       OR NEW.evidence_origin IS DISTINCT FROM OLD.evidence_origin
+       OR NEW.evidence_note IS DISTINCT FROM OLD.evidence_note
+     ) THEN
     SELECT COALESCE(jsonb_agg(recent.value ORDER BY recent.ordinality), '[]'::jsonb)
     INTO NEW.editorial_publication_history
     FROM (
       SELECT history.value, history.ordinality
       FROM jsonb_array_elements(OLD.editorial_publication_history || jsonb_build_array(
         jsonb_build_object(
-          'action', 'invalidated_by_profile_change',
+          'action', CASE
+            WHEN NEW.editorial_profile_revision IS DISTINCT FROM OLD.editorial_profile_revision
+              THEN 'invalidated_by_profile_change'
+            ELSE 'invalidated_by_identity_change'
+          END,
           'approvalRef', OLD.editorial_publication_approval_ref,
           'approvedRevision', OLD.editorial_publication_revision,
           'approvedAt', OLD.editorial_publication_approved_at,
@@ -79,7 +94,10 @@ END;
 $publication_invalidation$;
 
 CREATE TRIGGER trg_catalog_character_publication_invalidated_by_profile_change
-  BEFORE UPDATE OF editorial_profile_revision ON public.catalog_character_identities
+  BEFORE UPDATE OF editorial_profile_revision, editorial_profile,
+    editorial_profile_status, editorial_profile_reviewed_at, editorial_profile_reviewed_by,
+    identity_key, character_name, franchise, evidence_origin, evidence_note
+  ON public.catalog_character_identities
   FOR EACH ROW
   EXECUTE FUNCTION private_api.invalidate_tonart_character_publication_on_profile_change();
 
