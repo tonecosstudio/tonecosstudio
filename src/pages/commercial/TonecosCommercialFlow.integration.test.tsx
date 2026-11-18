@@ -24,6 +24,7 @@ const USER = "11111111-1111-4111-8111-111111111111";
 const QUOTE = "22222222-2222-4222-8222-222222222222";
 const mocks = vi.hoisted(() => {
   vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
+  vi.stubEnv("VITE_CONTACT_EMAIL", "atendimento@example.com");
   vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:54321");
   vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "local-test-publishable-key");
   return {
