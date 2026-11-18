@@ -120,7 +120,7 @@ BEGIN
       'https://example.org:443/bio',
       'https://user:password@example.org/bio',
       'https://%31%32%37.0.0.1/source'
-    ] AS bad(url)
+    ]) AS bad(url)
     WHERE private_api.tonart_public_https_evidence_url(bad.url)
   ) THEN
     RAISE EXCEPTION 'Private or malformed editorial evidence URL was accepted';
