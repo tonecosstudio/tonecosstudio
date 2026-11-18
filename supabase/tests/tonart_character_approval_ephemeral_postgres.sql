@@ -343,3 +343,11 @@ BEGIN
 END;
 $ephemeral_acceptance$;
 ROLLBACK;
+
+-- Run the pre-existing comprehensive SQL acceptance suite against this same
+-- isolated PostgreSQL instance, after real canonical cutover/backfill.
+-- The acceptance SQL requires an explicit staging session and independently
+-- wraps its test fixtures in BEGIN/ROLLBACK. It never runs on production.
+SET SESSION tonart.curation_acceptance_stage = 'staging';
+\ir tonart_curated_model_characters_acceptance.sql
+RESET tonart.curation_acceptance_stage;
