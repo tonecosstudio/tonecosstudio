@@ -26,12 +26,16 @@ function EditorialSources({
   sources: PublicCatalogEditorialEvidence[];
 }) {
   if (sources.length === 0) return null;
-  const sourceKindLabel = {
+  const sourceKindLabel: Record<PublicCatalogEditorialEvidence["kind"], string> = {
     official: "Oficial",
     primary: "Primária",
     publisher: "Editora",
+    licensor: "Licenciante",
+    institution: "Instituição",
+    reputable_reference: "Referência confiável",
+    other: "Outra fonte",
     catalog: "Catálogo",
-  } as const;
+  };
   return (
     <details className="border-t border-[hsl(0,0%,18%)] pt-4">
       <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-[hsl(0,0%,74%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">

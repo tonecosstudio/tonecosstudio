@@ -147,6 +147,42 @@ describe("approved editorial profile views", () => {
     ).toHaveAttribute("href", "/modelos/mdl_zoro_01");
   });
 
+  it("labels every supported public evidence kind", () => {
+    const kinds = [
+      ["official", "Oficial"],
+      ["primary", "Primária"],
+      ["publisher", "Editora"],
+      ["licensor", "Licenciante"],
+      ["institution", "Instituição"],
+      ["reputable_reference", "Referência confiável"],
+      ["other", "Outra fonte"],
+      ["catalog", "Catálogo"],
+    ] as const;
+    const profileWithAllKinds: PublicCatalogCharacterProfile = {
+      ...characterProfile,
+      evidence: kinds.map(([kind], index) => ({
+        ...source,
+        id: `evidence-${index}`,
+        kind,
+      })),
+    };
+
+    render(
+      <HelmetProvider>
+        <MemoryRouter>
+          <ApprovedCharacterProfile
+            profile={profileWithAllKinds}
+            gateway={gateway}
+          />
+        </MemoryRouter>
+      </HelmetProvider>,
+    );
+
+    for (const [, label] of kinds) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+  });
+
   it("renders contextual age without inventing a numeric value", () => {
     const contextOnlyProfile: PublicCatalogCharacterProfile = {
       ...characterProfile,
