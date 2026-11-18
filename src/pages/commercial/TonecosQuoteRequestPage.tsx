@@ -36,7 +36,9 @@ function savedQuotePostalCode(profile: CustomerProfile): string {
 }
 
 /** Public email contact uses the existing studio inbox, not an anonymous Supabase write. */
-function guestQuoteEmailHref(models: readonly PublicCatalogModel[]): string | null {
+function guestQuoteEmailHref(
+  models: readonly PublicCatalogModel[],
+): string | null {
   const recipient = buildSafeMailtoHref(CONTACT.CONTACT_EMAIL);
   if (!recipient) return null;
   const references = models.map((model, index) => {
@@ -48,7 +50,9 @@ function guestQuoteEmailHref(models: readonly PublicCatalogModel[]): string | nu
     "Olá, TONART! Quero solicitar um orçamento sem cadastro.",
     "",
     "Modelos selecionados:",
-    ...(references.length ? references : ["Gostaria de ajuda para escolher os modelos."]),
+    ...(references.length
+      ? references
+      : ["Gostaria de ajuda para escolher os modelos."]),
     "",
     "Escala desejada:",
     "Acabamento:",
@@ -57,8 +61,14 @@ function guestQuoteEmailHref(models: readonly PublicCatalogModel[]): string | nu
     "",
     "Podem informar disponibilidade, valor e prazo? Nenhum pagamento está autorizado por este contato.",
   ].join("\n");
-  return recipient + "?subject=" + encodeURIComponent("Orçamento TONART — consulta por e-mail") +
-    "&body=" + encodeURIComponent(body);
+  const href =
+    recipient +
+    "?subject=" +
+    encodeURIComponent("Orçamento TONART — consulta por e-mail") +
+    "&body=" +
+    encodeURIComponent(body);
+  // Long mailto URLs fail silently in some email clients. Never omit models.
+  return href.length <= 7000 ? href : null;
 }
 
 export default function TonecosQuoteRequestPage() {
@@ -227,6 +237,12 @@ export default function TonecosQuoteRequestPage() {
                 </a>
               )}
             </div>
+            {!guestEmailHref && selectedModels.length > 0 ? (
+              <p className="mt-4 text-xs leading-5 text-white/60">
+                Seleção extensa para e-mail automático. Reduza os modelos selecionados ou
+                <Link className="ml-1 underline" to={PUBLIC_ROUTES.contact}>entre em contato diretamente</Link>.
+              </p>
+            ) : null}
             {guestEmailHref && (
               <p className="mt-4 text-xs leading-5 text-white/60">
                 Sem conta? O e-mail inclui as referências selecionadas e abre no seu aplicativo de e-mail.
