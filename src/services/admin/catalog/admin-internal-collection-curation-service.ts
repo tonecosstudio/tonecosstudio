@@ -123,6 +123,12 @@ export type AdminCatalogCharacterEditorialProfile = {
   name: string;
   franchise: string;
   profile: CatalogCharacterEditorialProfile;
+  activeModelLinks: Array<{
+    modelId: string;
+    modelSlug: string;
+    evidenceUrl: string;
+    evidenceTitle: string | null;
+  }>;
   status: "draft" | "reviewed";
   revision: number;
   reviewedAt: string | null;
@@ -453,6 +459,38 @@ function parseAdminCharacterEditorialProfile(
     row.franchise,
     "catalog_character_editorial_profile_invalid",
   );
+  const rawLinks = row.activeModelLinks;
+  if (!Array.isArray(rawLinks) || rawLinks.length > 10000) {
+    throw new Error("catalog_character_editorial_links_invalid");
+  }
+  const seenModels = new Set<string>();
+  const activeModelLinks = rawLinks.map((rawLink) => {
+    const link = asRecord(rawLink, "catalog_character_editorial_links_invalid");
+    if (Object.keys(link).some((key) => ![
+      "modelId", "modelSlug", "evidenceUrl", "evidenceTitle",
+    ].includes(key))) {
+      throw new Error("catalog_character_editorial_links_invalid");
+    }
+    const modelId = parseEditorialText(
+      link.modelId, 160, "catalog_character_editorial_links_invalid", true,
+    );
+    const modelSlug = parseEditorialText(
+      link.modelSlug, 240, "catalog_character_editorial_links_invalid", true,
+    );
+    const evidenceUrl = parseEditorialText(
+      link.evidenceUrl, 240, "catalog_character_editorial_links_invalid", true,
+    );
+    const evidenceTitle = link.evidenceTitle === null
+      ? null
+      : parseEditorialText(
+          link.evidenceTitle, 1000, "catalog_character_editorial_links_invalid", true,
+        );
+    if (seenModels.has(modelId)) {
+      throw new Error("catalog_character_editorial_links_invalid");
+    }
+    seenModels.add(modelId);
+    return { modelId, modelSlug, evidenceUrl, evidenceTitle };
+  });
   const status = row.status;
   const revision = asNonNegativeInteger(
     row.revision,
@@ -544,6 +582,7 @@ function parseAdminCharacterEditorialProfile(
     name,
     franchise,
     profile,
+    activeModelLinks,
     status,
     revision,
     reviewedAt,
