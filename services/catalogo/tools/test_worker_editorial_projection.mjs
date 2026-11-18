@@ -399,3 +399,122 @@ test('D1 batch rollback and compare-and-swap leave the last approved projection 
     'Descrição revisada para fixture de teste.')
   db.close()
 })
+
+
+test('mocked Supabase RPC fixture traverses the publisher and the actual local D1 Worker', async () => {
+  // This is an offline contract test. The Supabase RPC response is a test
+  // fixture; it does not connect to or prove integration with Supabase.
+  const { fetchApprovedExport, sendEditorialProjection } = await import(
+    '../../../scripts/catalog/publish-approved-character-projection.mjs'
+  )
+  assert.ok(contract.requiredMigrations.includes('0023_public_editorial_projection.sql'))
+
+  const db = createDatabase()
+  try {
+    const sourceUrl = new URL('https://fixture-project.supabase.co')
+    const serviceRoleKey = 'test-service-role-key-long-enough-for-contract-validation'
+    const generatedAt = new Date().toISOString()
+    const sourceFixture = projection({ generatedAt })
+    let sourceRequest
+    const approvedExport = await fetchApprovedExport(
+      sourceUrl,
+      serviceRoleKey,
+      async (url, init) => {
+        sourceRequest = { url: String(url), init }
+        return Response.json(sourceFixture)
+      },
+    )
+    assert.equal(
+      new URL(sourceRequest.url).pathname,
+      '/rest/v1/rpc/admin_export_approved_catalog_character_projection',
+    )
+    assert.equal(sourceRequest.init.method, 'POST')
+    assert.equal(sourceRequest.init.headers.authorization, 'Bearer ' + serviceRoleKey)
+
+    const workerFetch = async (input, init) => worker.default.fetch(
+      new Request(input, init),
+      {
+        DB: d1(db),
+        MEDIA: { get: async () => null },
+        CORS_ORIGINS: '',
+        EDITORIAL_SYNC_TOKEN: TOKEN,
+      },
+    )
+    const workerUrl = new URL('http://127.0.0.1:8787')
+    const dryRun = await sendEditorialProjection({
+      payload: approvedExport,
+      worker: workerUrl,
+      token: TOKEN,
+      mode: 'dry-run',
+      fetchImpl: workerFetch,
+    })
+    assert.equal(dryRun.dryRun, true)
+    assert.deepEqual(dryRun.counts, { universes: 1, characters: 1, modelLinks: 2 })
+    assert.equal(
+      db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count,
+      0,
+      'dry-run must not mutate the D1 projection',
+    )
+
+    const applied = await sendEditorialProjection({
+      payload: approvedExport,
+      worker: workerUrl,
+      token: TOKEN,
+      mode: 'apply',
+      fetchImpl: workerFetch,
+    })
+    assert.equal(applied.applied, true)
+    assert.equal(
+      db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count,
+      1,
+    )
+    const repeated = await sendEditorialProjection({
+      payload: approvedExport,
+      worker: workerUrl,
+      token: TOKEN,
+      mode: 'apply',
+      fetchImpl: workerFetch,
+    })
+    assert.equal(repeated.idempotent, true)
+
+    const characterResponse = await worker.default.fetch(new Request(
+      'https://catalog.example.test/api/editorial/v1/characters/personagem-de-teste',
+    ), { DB: d1(db), MEDIA: { get: async () => null }, CORS_ORIGINS: '' })
+    assert.equal(characterResponse.status, 200)
+    const characterBody = await characterResponse.json()
+    assert.equal(characterBody.character.biography, 'Descrição revisada para fixture de teste.')
+    assert.deepEqual(
+      [...new Set(characterBody.sameCharacterModels.map(model => model.modelId))].sort(),
+      ['mdl_aaaaaaaaaaaaaaaaaaaa', 'mdl_cccccccccccccccccccc'],
+    )
+
+    const universeResponse = await worker.default.fetch(new Request(
+      'https://catalog.example.test/api/editorial/v1/universes/universos/saga-alfa',
+    ), { DB: d1(db), MEDIA: { get: async () => null }, CORS_ORIGINS: '' })
+    assert.equal(universeResponse.status, 200)
+    assert.equal((await universeResponse.json()).universe.name, 'Saga Alfa')
+
+    const nextExport = structuredClone(approvedExport)
+    nextExport.generatedAt = new Date(Date.parse(generatedAt) + 1000).toISOString()
+    const rollback = await sendEditorialProjection({
+      payload: nextExport,
+      worker: workerUrl,
+      token: TOKEN,
+      mode: 'rollback-clear',
+      fetchImpl: workerFetch,
+    })
+    assert.equal(rollback.applied, true)
+    assert.equal(rollback.counts.characters, 0)
+    assert.equal(
+      db.prepare('SELECT COUNT(*) AS count FROM editorial_public_characters').get().count,
+      0,
+      'explicit rollback-clear must atomically withdraw the public projection',
+    )
+    const withdrawn = await worker.default.fetch(new Request(
+      'https://catalog.example.test/api/editorial/v1/characters/personagem-de-teste',
+    ), { DB: d1(db), MEDIA: { get: async () => null }, CORS_ORIGINS: '' })
+    assert.equal(withdrawn.status, 404)
+  } finally {
+    db.close()
+  }
+})
