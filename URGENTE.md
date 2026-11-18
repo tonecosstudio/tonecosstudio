@@ -1893,3 +1893,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** revisar os candidatos e conferir visualmente cada ID na curadoria privada; disponibilizar staging isolado para a homologação Supabase→D1.
 
 **DO_NOT_REPEAT:** não aplicar biografia da fase nórdica de Kratos a esculturas de outra era; não presumir versão de Street Fighter a partir do nome ou do título comercial.
+
+## Rodada 90 — mais candidatos Marvel com fontes únicas (18/11/2026)
+
+- Preparei dossiês para **Capitão América, Hulk, Ciclope e Magneto**, com 4 novas URLs oficiais da Marvel; fontes iguais são reutilizadas por ID em vez de duplicadas. As biografias mantêm ambiguidades de manto, variante, fase e continuidade.
+- Foram selecionados **17 modelos Capitão América, 16 Hulk, 18 Ciclope e 12 Magneto** por ID e rótulo exato. O nome Capitão América não determina se o titular é Steve Rogers ou Sam Wilson; nenhuma versão foi atribuída às esculturas.
+- O pacote passa a **30 identidades pesquisadas, 38 URLs oficiais únicas, 30 rascunhos originais e 502 vínculos candidatos**. Todos seguem `pending_human_review`; permanecem **0 identidades aprovadas, 0 relações aprovadas e 0 vínculos com evidência independente**.
+- **Validação:** teste da fila passou **11/11**, `git diff --check` passou. Verificação confirmou fontes únicas, claims com referências existentes, sem pares duplicados e sem relações aprovadas. Não houve escrita Supabase/D1, migration, publicação ou ativação da flag.
+
+**NEXT_ACTION:** continuar a pesquisa dos próximos grupos de maior volume; revisar identidade, franquia, cada claim e cada vínculo na curadoria privada antes de qualquer exportação.
+
+**DO_NOT_REPEAT:** não tratar o manto Capitão América como identidade de uma pessoa específica; não usar categoria, uniforme ou nome do catálogo como prova visual de render.
