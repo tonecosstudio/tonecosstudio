@@ -1950,3 +1950,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** subir a atualização validada na PR #33; encaminhar candidatos e vínculos ao fluxo de revisão humana privado da PR #31.
 
 **DO_NOT_REPEAT:** não inferir época/forma de Trunks nem continuidade de Dante a partir de título; não promover fontes biográficas como evidência de que um render específico representa o personagem.
+
+## Rodada 95 — candidatos Marvel de Demolidor e Gambit (18/11/2026)
+
+- Preparei os dossiês de **Daredevil (Demolidor)** e **Gambit**, com perfis oficiais da Marvel, texto biográfico original e claims ligados às fontes. A fonte de Daredevil é explicitamente do perfil audiovisual; Gambit preserva as fases distintas e o alter ego Death como ambiguidades.
+- Foram selecionados **7 modelos Demolidor e 7 Gambit** por ID e rótulo. “Heróis Individuais” e “Equipes e Grupos” continuam como proveniência de navegação, sem promover categoria a universo ou franquia.
+- O lote chega a **45 candidatos, 55 URLs oficiais únicas, 45 rascunhos e 639 vínculos**. Todos seguem pendentes de revisão, sem evidência independente por modelo e sem aprovações.
+- **Validação desta rodada:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**; `git diff --check` passou. Integridade confirmou 45 candidatos, 55 URLs únicas, 639 vínculos, 0 claims sem fonte, 0 pares duplicados, 0 links fora do estado pendente, 0 aprovações e 0 vínculos com evidência independente.
+
+**NEXT_ACTION:** subir o lote validado na PR #33 e deixar a fila para revisão humana em #31.
+
+**DO_NOT_REPEAT:** não tratar a categoria de catálogo como franquia; não universalizar o perfil audiovisual de Daredevil nem atribuir uma forma específica de Gambit aos renders pelo nome.
