@@ -1,3 +1,11 @@
+## HOMOLOGAÇÃO — 18/11/2026 — bloqueio anônimo do administrativo verificado
+
+- Prévia Vercel já existente `dpl_3zoXJ1uYCB6FupTixTBCqLGQb5hS` (código do candidato `fdaba5a5`): navegador Edge via Chrome DevTools Protocol, perfil anônimo novo, viewport real **390×844**, acesso direto a `/admin/orcamentos`. A aplicação redirecionou para `/login?next=%2Fadmin%2Forcamentos`, exibiu somente a interface de login, sem controles administrativos visíveis. `innerWidth=clientWidth=scrollWidth=390`; sem overflow horizontal. Prova da guarda de navegação **apenas**; não prova autorização de administração por JWT real.
+- Release canônico **ainda não aprovado**: os 43 testes dirigidos e o Quality Gate #1838 da PR #39 estão verdes, mas `npm run release:verify` completo em todos os 331 arquivos não foi concluído na rodada anterior. A presente atualização solicita a execução do **workflow Quality Gate já existente** na `main` (CI completo por push sem `[skip ci]`) como aceite do candidato final, sem criar workflow, projeto ou backend paralelo.
+- GATES preservados: Vercel produção não promovida; indexação, cadastro público, pagamentos e exceções SpecialSTL continuam fechados. Atendimento com cliente/admin reais, caixa postal de contato, direitos de imagem e revisão jurídica requerem evidência/decisão humana, independentemente das PRs editoriais #26/#30/#31/#33.
+
+---
+
 ## CHECKPOINT — 18/11/2026 — Quality Gate de release e testes regressivos (#39)
 
 - **SSOT:** PR #39 integrada na `main` pelo squash `229d6d2134434e7e8d82b5d237caa87bdc97319c`. **Quality Gate #1838 SUCCESS**, 43/43 testes dirigidos em três suítes (etiquetas, Coins e navegação), ESLint dos cinco arquivos e `typecheck:app` aprovados no Desktop Windows. PRs editoriais #26/#31/#33 **não alteradas**; #31 já tinha solução equivalente para os dois avisos fatais de lint e deverá reconciliar quando seu owner atualizar a branch.
