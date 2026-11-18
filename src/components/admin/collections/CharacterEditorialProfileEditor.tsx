@@ -287,6 +287,7 @@ export function CharacterEditorialProfileEditor({
       return setCatalogCharacterPublicationApproval({
         identityId,
         expectedRevision: current.revision,
+        expectedRelationRevision: current.relationRevision,
         approved,
       });
     },
@@ -368,8 +369,10 @@ export function CharacterEditorialProfileEditor({
               Publicação:{" "}
               {profileQuery.data.publicationStatus === "approved" &&
               profileQuery.data.publicationRevision ===
-                profileQuery.data.revision
-                ? `aprovada para exportação · revisão ${profileQuery.data.publicationRevision}`
+                profileQuery.data.revision &&
+              profileQuery.data.publicationRelationRevision ===
+                profileQuery.data.relationRevision
+                ? `aprovada para exportação · perfil ${profileQuery.data.publicationRevision} · vínculos ${profileQuery.data.publicationRelationRevision}`
                 : "sem aprovação para a revisão atual"}
               {profileQuery.data.publicationApprovedAt
                 ? ` · aprovada em ${new Date(profileQuery.data.publicationApprovedAt).toLocaleString("pt-BR")}`
@@ -539,7 +542,9 @@ export function CharacterEditorialProfileEditor({
             {profileQuery.data.status === "reviewed" &&
               (profileQuery.data.publicationStatus === "approved" &&
               profileQuery.data.publicationRevision ===
-                profileQuery.data.revision ? (
+                profileQuery.data.revision &&
+              profileQuery.data.publicationRelationRevision ===
+                profileQuery.data.relationRevision ? (
                 <Button
                   type="button"
                   variant="outline"

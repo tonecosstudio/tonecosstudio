@@ -28,13 +28,13 @@ BEGIN
       AND column_name = 'editorial_profile_history'
   ) OR to_regprocedure('public.admin_get_catalog_character_editorial_profile(uuid)') IS NULL
     OR to_regprocedure('public.admin_save_catalog_character_editorial_profile(uuid,jsonb,text,integer,uuid)') IS NULL
-    OR to_regprocedure('public.admin_set_catalog_character_publication_approval(uuid,integer,boolean,uuid)') IS NULL
+    OR to_regprocedure('public.admin_set_catalog_character_publication_approval(uuid,integer,integer,boolean,uuid)') IS NULL
     OR to_regprocedure('public.admin_export_approved_catalog_character_projection()') IS NULL
-    OR to_regprocedure('private_api.invalidate_tonart_character_publication_after_last_model_unlink()') IS NULL
+    OR to_regprocedure('private_api.bump_tonart_character_relation_revision()') IS NULL
     OR NOT EXISTS (
       SELECT 1 FROM pg_trigger
       WHERE tgrelid = 'public.catalog_curation_model_characters'::regclass
-        AND tgname = 'trg_catalog_character_publication_invalidated_by_last_model_unlink'
+        AND tgname = 'trg_catalog_character_relation_revision'
         AND NOT tgisinternal
     ) THEN
     RAISE EXCEPTION 'TONART character editorial profile migration not installed'
@@ -81,6 +81,7 @@ DECLARE
   v_editorial_result jsonb;
   v_public_projection jsonb;
   v_approval_ref text;
+  v_relation_revision integer;
   v_reviewer_id uuid := gen_random_uuid();
   v_expected_failure boolean;
   v_n integer;
@@ -126,7 +127,7 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
   IF NOT has_function_privilege('service_role',
-       'public.admin_set_catalog_character_publication_approval(uuid,integer,boolean,uuid)', 'EXECUTE')
+       'public.admin_set_catalog_character_publication_approval(uuid,integer,integer,boolean,uuid)', 'EXECUTE')
      OR NOT has_function_privilege('service_role',
        'public.admin_export_approved_catalog_character_projection()', 'EXECUTE')
      OR has_function_privilege('anon',
@@ -322,7 +323,9 @@ BEGIN
   v_expected_failure := false;
   BEGIN
     PERFORM public.admin_set_catalog_character_publication_approval(
-      v_id_b, 1, true, v_reviewer_id
+      v_id_b, 1,
+      (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_b),
+      true, v_reviewer_id
     );
   EXCEPTION WHEN SQLSTATE '22023' THEN
     v_expected_failure := SQLERRM =
@@ -341,7 +344,9 @@ BEGIN
   v_expected_failure := false;
   BEGIN
     PERFORM public.admin_set_catalog_character_publication_approval(
-      v_id_a, 2, true, v_reviewer_id
+      v_id_a, 2,
+      (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
+      true, v_reviewer_id
     );
   EXCEPTION WHEN SQLSTATE '22023' THEN
     v_expected_failure := true;
@@ -358,7 +363,9 @@ BEGIN
     'https://example.org/model-b/character-a', 'Acceptance model B character citation'
   );
   v_editorial_result := public.admin_set_catalog_character_publication_approval(
-    v_id_a, 2, true, v_reviewer_id
+    v_id_a, 2,
+    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
+    true, v_reviewer_id
   );
   IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved'
      OR (v_editorial_result->>'publicationRevision')::integer <> 2
@@ -375,7 +382,9 @@ BEGIN
     RAISE EXCEPTION 'Public export leaked private history or omitted approved evidence';
   END IF;
   v_editorial_result := public.admin_set_catalog_character_publication_approval(
-    v_id_b, 1, true, v_reviewer_id
+    v_id_b, 1,
+    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_b),
+    true, v_reviewer_id
   );
   v_public_projection := public.admin_export_approved_catalog_character_projection();
   IF (v_editorial_result->>'publicationStatus') IS DISTINCT FROM 'approved'
@@ -389,25 +398,67 @@ BEGIN
      ) THEN
     RAISE EXCEPTION 'Optional biography was not exported without invented evidence';
   END IF;
+  SELECT editorial_relation_revision INTO v_relation_revision
+  FROM public.catalog_character_identities WHERE id = v_id_b;
+  PERFORM public.admin_verify_catalog_model_identity(
+    v_model_a, v_slug_a, v_name_b, v_franchise,
+    'https://example.org/model-a/character-b-reviewed',
+    'Acceptance proof updated after publication approval'
+  );
+  v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_b);
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
+     OR v_editorial_result->'publicationHistory'->-1->>'action'
+       IS DISTINCT FROM 'invalidated_by_model_relation_change'
+     OR (v_editorial_result->>'relationRevision')::integer <= v_relation_revision THEN
+    RAISE EXCEPTION 'Model evidence change did not invalidate the matching publication revision';
+  END IF;
+  v_expected_failure := false;
+  BEGIN
+    PERFORM public.admin_set_catalog_character_publication_approval(
+      v_id_b, 1, v_relation_revision, true, v_reviewer_id
+    );
+  EXCEPTION WHEN SQLSTATE '40001' THEN
+    v_expected_failure := true;
+  END;
+  IF NOT v_expected_failure THEN
+    RAISE EXCEPTION 'Stale model-link revision was approved for publication';
+  END IF;
+  SELECT editorial_relation_revision INTO v_relation_revision
+  FROM public.catalog_character_identities WHERE id = v_id_b;
+  v_editorial_result := public.admin_set_catalog_character_publication_approval(
+    v_id_b, 1, v_relation_revision, true, v_reviewer_id
+  );
+  IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'approved'
+     OR (v_editorial_result->>'publicationRelationRevision')::integer <> v_relation_revision THEN
+    RAISE EXCEPTION 'Reviewed model-link revision could not be approved';
+  END IF;
   PERFORM public.admin_set_catalog_character_publication_approval(
-    v_id_b, 1, false, NULL
+    v_id_b, 1,
+    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_b),
+    false, NULL
   );
   v_editorial_result := public.admin_set_catalog_character_publication_approval(
-    v_id_a, 2, true, v_reviewer_id
+    v_id_a, 2,
+    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
+    true, v_reviewer_id
   );
   IF v_editorial_result->>'publicationApprovalRef' IS DISTINCT FROM v_approval_ref
      OR jsonb_array_length(v_editorial_result->'publicationHistory') <> 1 THEN
     RAISE EXCEPTION 'Repeated approval was not idempotent';
   END IF;
   v_editorial_result := public.admin_set_catalog_character_publication_approval(
-    v_id_a, 2, false, NULL
+    v_id_a, 2,
+    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
+    false, NULL
   );
   IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
      OR v_editorial_result->'publicationHistory'->1->>'action' IS DISTINCT FROM 'revoked' THEN
     RAISE EXCEPTION 'Publication revocation did not retain its audit event';
   END IF;
   PERFORM public.admin_set_catalog_character_publication_approval(
-    v_id_a, 2, true, v_reviewer_id
+    v_id_a, 2,
+    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
+    true, v_reviewer_id
   );
   v_editorial_result := public.admin_save_catalog_character_editorial_profile(
     v_id_a, v_editorial_profile, 'draft', 2, NULL
@@ -660,6 +711,7 @@ BEGIN
   v_editorial_result := public.admin_set_catalog_character_publication_approval(
     v_id_a,
     (v_editorial_result->>'revision')::integer,
+    (SELECT editorial_relation_revision FROM public.catalog_character_identities WHERE id = v_id_a),
     true,
     v_reviewer_id
   );
@@ -676,7 +728,7 @@ BEGIN
   v_editorial_result := public.admin_get_catalog_character_editorial_profile(v_id_a);
   IF v_editorial_result->>'publicationStatus' IS DISTINCT FROM 'not_approved'
      OR v_editorial_result->'publicationHistory'->-1->>'action'
-       IS DISTINCT FROM 'invalidated_by_last_model_link_unlink' THEN
+       IS DISTINCT FROM 'invalidated_by_model_relation_change' THEN
     RAISE EXCEPTION 'Removing the last model relation did not revoke publication';
   END IF;
   PERFORM public.admin_verify_catalog_model_identity(

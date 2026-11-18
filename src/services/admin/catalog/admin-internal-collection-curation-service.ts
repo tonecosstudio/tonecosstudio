@@ -127,8 +127,10 @@ export type AdminCatalogCharacterEditorialProfile = {
   revision: number;
   reviewedAt: string | null;
   reviewedBy: string | null;
+  relationRevision: number;
   publicationStatus: "not_approved" | "approved";
   publicationRevision: number | null;
+  publicationRelationRevision: number | null;
   publicationApprovalRef: string | null;
   publicationApprovedAt: string | null;
   publicationApprovedBy: string | null;
@@ -464,12 +466,23 @@ function parseAdminCharacterEditorialProfile(
     row.reviewedBy,
     "catalog_character_editorial_profile_invalid",
   );
+  const relationRevision = asNonNegativeInteger(
+    row.relationRevision,
+    "catalog_character_editorial_profile_invalid",
+  );
   const publicationStatus = row.publicationStatus;
   const publicationRevision =
     row.publicationRevision === null
       ? null
       : asNonNegativeInteger(
           row.publicationRevision,
+          "catalog_character_editorial_profile_invalid",
+        );
+  const publicationRelationRevision =
+    row.publicationRelationRevision === null
+      ? null
+      : asNonNegativeInteger(
+          row.publicationRelationRevision,
           "catalog_character_editorial_profile_invalid",
         );
   const publicationApprovalRef = asOptionalString(
@@ -510,12 +523,14 @@ function parseAdminCharacterEditorialProfile(
     publicationHistory.length > 25 ||
     (publicationStatus === "approved" &&
       (publicationRevision !== revision ||
+        publicationRelationRevision !== relationRevision ||
         !publicationApprovalRef ||
         !publicationApprovedAt ||
         !publicationApprovedBy ||
         status !== "reviewed")) ||
     (publicationStatus === "not_approved" &&
       (publicationRevision !== null ||
+        publicationRelationRevision !== null ||
         publicationApprovalRef !== null ||
         publicationApprovedAt !== null ||
         publicationApprovedBy !== null))
@@ -533,8 +548,10 @@ function parseAdminCharacterEditorialProfile(
     revision,
     reviewedAt,
     reviewedBy,
+    relationRevision,
     publicationStatus,
     publicationRevision,
+    publicationRelationRevision,
     publicationApprovalRef,
     publicationApprovedAt,
     publicationApprovedBy,
@@ -1265,13 +1282,16 @@ export async function saveCatalogCharacterEditorialProfile(input: {
 export async function setCatalogCharacterPublicationApproval(input: {
   identityId: string;
   expectedRevision: number;
+  expectedRelationRevision: number;
   approved: boolean;
 }): Promise<AdminCatalogCharacterEditorialProfile> {
   if (
     !UUID_PATTERN.test(input.identityId) ||
     typeof input.approved !== "boolean" ||
     !Number.isSafeInteger(input.expectedRevision) ||
-    input.expectedRevision < 0
+    input.expectedRevision < 0 ||
+    !Number.isSafeInteger(input.expectedRelationRevision) ||
+    input.expectedRelationRevision < 0
   ) {
     throw new Error("catalog_character_publication_approval_invalid");
   }
@@ -1280,6 +1300,7 @@ export async function setCatalogCharacterPublicationApproval(input: {
     {
       p_identity_id: input.identityId,
       p_expected_revision: input.expectedRevision,
+      p_expected_relation_revision: input.expectedRelationRevision,
       p_approved: input.approved,
     },
   );

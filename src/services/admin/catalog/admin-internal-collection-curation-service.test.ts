@@ -33,8 +33,10 @@ const MODEL_ID = "22222222-2222-4222-8222-222222222222";
 const TAG_ID = "33333333-3333-4333-8333-333333333301";
 const CHARACTER_ID = "44444444-4444-4444-8444-444444444444";
 const publicationPending = {
+  relationRevision: 0,
   publicationStatus: "not_approved",
   publicationRevision: null,
+  publicationRelationRevision: null,
   publicationApprovalRef: null,
   publicationApprovedAt: null,
   publicationApprovedBy: null,
@@ -290,7 +292,7 @@ describe("internal catalog curation service", () => {
     expect(migrations[3]).toContain("editorial_publication_status");
     expect(migrations[3]).toContain("invalidated_by_profile_change");
     expect(migrations[3]).toContain(
-      "admin_set_catalog_character_publication_approval(uuid, integer, boolean, uuid)",
+      "admin_set_catalog_character_publication_approval(uuid, integer, integer, boolean, uuid)",
     );
     expect(migrations[3]).toContain(
       "admin_export_approved_catalog_character_projection()",
@@ -302,7 +304,13 @@ describe("internal catalog curation service", () => {
       "Every approved character needs at least one active model link",
     );
     expect(migrations[3]).toContain(
-      "invalidated_by_last_model_link_unlink",
+      "invalidated_by_model_relation_change",
+    );
+    expect(migrations[3]).toContain(
+      "CREATE TRIGGER trg_catalog_character_relation_revision",
+    );
+    expect(migrations[3]).toContain(
+      "editorial_publication_relation_revision = editorial_relation_revision",
     );
     expect(migrations[3]).toContain(
       "Approved character has no active model link",
@@ -321,6 +329,12 @@ describe("internal catalog curation service", () => {
     expect(acceptance).toContain("Fictitious staging-only biography.");
     expect(acceptance).toContain(
       "Stale editorial profile revision was accepted",
+    );
+    expect(acceptance).toContain(
+      "Stale model-link revision was approved for publication",
+    );
+    expect(acceptance).toContain(
+      "invalidated_by_model_relation_change",
     );
     expect(acceptance).toContain(
       "Duplicate reviewed character route slug was accepted",
@@ -450,8 +464,10 @@ describe("internal catalog curation service", () => {
       revision: 3,
       reviewedAt: "2026-11-17T10:00:00.000Z",
       reviewedBy: "55555555-5555-4555-8555-555555555555",
+      relationRevision: 7,
       publicationStatus: "approved",
       publicationRevision: 3,
+      publicationRelationRevision: 7,
       publicationApprovalRef: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       publicationApprovedAt: "2026-11-18T10:00:00.000Z",
       publicationApprovedBy: "66666666-6666-4666-8666-666666666666",
@@ -461,17 +477,20 @@ describe("internal catalog curation service", () => {
       setCatalogCharacterPublicationApproval({
         identityId: CHARACTER_ID,
         expectedRevision: 3,
+        expectedRelationRevision: 7,
         approved: true,
       }),
     ).resolves.toMatchObject({
       publicationStatus: "approved",
       publicationRevision: 3,
+      publicationRelationRevision: 7,
     });
     expect(mocks.callAdminRpc).toHaveBeenCalledWith(
       "admin_set_catalog_character_publication_approval",
       {
         p_identity_id: CHARACTER_ID,
         p_expected_revision: 3,
+        p_expected_relation_revision: 7,
         p_approved: true,
       },
     );
@@ -482,6 +501,7 @@ describe("internal catalog curation service", () => {
       setCatalogCharacterPublicationApproval({
         identityId: CHARACTER_ID,
         expectedRevision: -1,
+        expectedRelationRevision: 7,
         approved: true,
       }),
     ).rejects.toThrow("catalog_character_publication_approval_invalid");
@@ -494,12 +514,14 @@ describe("internal catalog curation service", () => {
       revision: 3,
       reviewedAt: "2026-11-17T10:00:00.000Z",
       reviewedBy: "55555555-5555-4555-8555-555555555555",
+      relationRevision: 7,
       ...publicationPending,
     });
     await expect(
       setCatalogCharacterPublicationApproval({
         identityId: CHARACTER_ID,
         expectedRevision: 3,
+        expectedRelationRevision: 7,
         approved: true,
       }),
     ).rejects.toThrow("catalog_character_publication_approval_result_invalid");
