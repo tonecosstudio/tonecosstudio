@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   requireAuthenticatedUserId: vi.fn(),
   assertCurrentUserId: vi.fn(),
+  getTonecosCurrentUser: vi.fn(),
+  getMyTonecosCoinBalance: vi.fn(),
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -26,22 +28,19 @@ vi.mock("@/services/auth/current-user", () => ({
   assertCurrentUserId: mocks.assertCurrentUserId,
 }));
 
+vi.mock("@/services/customer/tonecos-account-service", () => ({
+  getTonecosCurrentUser: mocks.getTonecosCurrentUser,
+}));
+
+vi.mock("./tonecos-coins-service", () => ({
+  getMyTonecosCoinBalance: mocks.getMyTonecosCoinBalance,
+}));
+
 type QueryResult = {
   data: unknown;
   error: { message: string } | null;
   count?: number | null;
 };
-
-function createBalanceQuery(result: QueryResult) {
-  const query = {
-    select: vi.fn(),
-    eq: vi.fn(),
-    maybeSingle: vi.fn().mockResolvedValue(result),
-  };
-  query.select.mockReturnValue(query);
-  query.eq.mockReturnValue(query);
-  return query;
-}
 
 function createListQuery(result: QueryResult) {
   const query = {
@@ -120,20 +119,17 @@ describe("coins balance service", () => {
     vi.clearAllMocks();
     mocks.requireAuthenticatedUserId.mockResolvedValue(USER_ID);
     mocks.assertCurrentUserId.mockResolvedValue(undefined);
+    mocks.getTonecosCurrentUser.mockResolvedValue({ id: USER_ID });
+    mocks.getMyTonecosCoinBalance.mockResolvedValue({
+      balance: 250,
+      totalEarned: 400,
+      totalSpent: 150,
+      entryCount: 2,
+      updatedAt: "2026-09-17T12:00:00.000Z",
+    });
   });
 
-  it("reads the authenticated user's persisted balance", async () => {
-    const query = createBalanceQuery({
-      data: {
-        balance: 250,
-        total_earned: 400,
-        total_spent: 150,
-        updated_at: "2026-09-17T12:00:00.000Z",
-      },
-      error: null,
-    });
-    mocks.from.mockReturnValue(query);
-
+  it("reads the authenticated user's persisted balance from the canonical ledger adapter", async () => {
     await expect(fetchCoinsBalance()).resolves.toEqual({
       user_id: USER_ID,
       balance: 250,
@@ -142,47 +138,45 @@ describe("coins balance service", () => {
       last_updated: "2026-09-17T12:00:00.000Z",
       updated_at: "2026-09-17T12:00:00.000Z",
     });
-    expect(mocks.requireAuthenticatedUserId).toHaveBeenCalledTimes(1);
-    expect(query.eq).toHaveBeenCalledWith("user_id", USER_ID);
+    expect(mocks.getTonecosCurrentUser).toHaveBeenCalledExactlyOnceWith();
+    expect(mocks.getMyTonecosCoinBalance).toHaveBeenCalledExactlyOnceWith();
+    expect(mocks.from).not.toHaveBeenCalled();
   });
 
-  it("validates an explicitly supplied user id", async () => {
-    mocks.from.mockReturnValue(
-      createBalanceQuery({
-        data: {
-          balance: 1,
-          total_earned: 1,
-          total_spent: 0,
-          updated_at: "2026-09-17T12:00:00.000Z",
-        },
-        error: null,
-      }),
-    );
-
+  it("validates an explicitly supplied user id before reading the canonical ledger", async () => {
     await fetchCoinsBalance(USER_ID);
-    expect(mocks.assertCurrentUserId).toHaveBeenCalledWith(USER_ID);
+    expect(mocks.assertCurrentUserId).toHaveBeenCalledExactlyOnceWith(USER_ID);
     expect(mocks.requireAuthenticatedUserId).not.toHaveBeenCalled();
+    expect(mocks.getMyTonecosCoinBalance).toHaveBeenCalledOnce();
   });
 
-  it("returns a zero balance when the user has no ledger row", async () => {
-    mocks.from.mockReturnValue(createBalanceQuery({ data: null, error: null }));
-    const result = await fetchCoinsBalance();
-
-    expect(result.user_id).toBe(USER_ID);
-    expect(result.balance).toBe(0);
-    expect(result.total_earned).toBe(0);
-    expect(result.total_spent).toBe(0);
-    expect(new Date(result.updated_at).toString()).not.toBe("Invalid Date");
-    expect(result.last_updated).toBe(result.updated_at);
+  it("returns zero only when the authoritative ledger reports zero", async () => {
+    mocks.getMyTonecosCoinBalance.mockResolvedValue({
+      balance: 0,
+      totalEarned: 0,
+      totalSpent: 0,
+      entryCount: 0,
+      updatedAt: null,
+    });
+    await expect(fetchCoinsBalance()).resolves.toEqual({
+      user_id: USER_ID,
+      balance: 0,
+      total_earned: 0,
+      total_spent: 0,
+      last_updated: null,
+      updated_at: null,
+    });
   });
 
-  it("wraps balance query failures with the domain error", async () => {
-    mocks.from.mockReturnValue(
-      createBalanceQuery({ data: null, error: { message: "database unavailable" } }),
-    );
-    await expect(fetchCoinsBalance()).rejects.toThrow(
-      "Erro ao buscar saldo de coins: database unavailable",
-    );
+  it("propagates authoritative ledger read failures without fabricating a zero balance", async () => {
+    mocks.getMyTonecosCoinBalance.mockRejectedValueOnce(new Error("database unavailable"));
+    await expect(fetchCoinsBalance()).rejects.toThrow("database unavailable");
+  });
+
+  it("rejects guests before requesting a balance from the ledger", async () => {
+    mocks.getTonecosCurrentUser.mockResolvedValueOnce(null);
+    await expect(fetchCoinsBalance()).rejects.toThrow("tonecos_login_required");
+    expect(mocks.getMyTonecosCoinBalance).not.toHaveBeenCalled();
   });
 });
 
