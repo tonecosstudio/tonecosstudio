@@ -353,3 +353,107 @@ export function planApprovedCharacterProjection(exportPayload, d1Snapshot) {
     relations,
   };
 }
+
+/**
+ * Offline diff of the COMPLETE existing D1 editorial projection against the
+ * complete approved export. In particular, a legitimate empty approved export
+ * must REVOKE all formerly public editorial records, not silently skip sync.
+ *
+ * This function deliberately does NOT write to D1. The existing M5 writer is
+ * the only authority that may acquire the production lock, obtain a fresh
+ * complete snapshot, revalidate a fresh service-role export and apply these
+ * changes in one transaction. The snapshot marker here is an API precondition,
+ * not an attestation that a network caller or file can be trusted.
+ *
+ * Required D1 read-only snapshot:
+ * {
+ *   source: 'canonical-d1-editorial-projection', complete: true, readAt: ISO,
+ *   universes: [{franchise_id}],
+ *   characters: [{id,slug,franchise_id}],
+ *   relations: [{character_id,model_id}]
+ * }
+ */
+export function planApprovedCharacterReconciliation(exportPayload, d1Snapshot, liveEditorial) {
+  // Always validate the authoritative full export even when zero characters
+  // remain approved; do not interpret missing/invalid payload as revocation.
+  resolveApprovedCharacterScopes(exportPayload, d1Snapshot);
+  requireValid(record(liveEditorial) &&
+    liveEditorial.source === 'canonical-d1-editorial-projection' &&
+    liveEditorial.complete === true &&
+    validDate(liveEditorial.readAt) &&
+    Date.parse(liveEditorial.readAt) >= Date.parse(exportPayload.generatedAt) &&
+    Array.isArray(liveEditorial.universes) &&
+    Array.isArray(liveEditorial.characters) &&
+    Array.isArray(liveEditorial.relations) &&
+    liveEditorial.universes.length <= 10000 &&
+    liveEditorial.characters.length <= 20000 &&
+    liveEditorial.relations.length <= 100000,
+  'd1_editorial_complete_snapshot_required');
+
+  const currentUniverses = distinctRows(liveEditorial.universes, row =>
+    Number.isSafeInteger(row.franchise_id) && row.franchise_id > 0
+      ? row.franchise_id : null,
+  'd1_editorial_universe_snapshot_invalid');
+  const currentCharacters = distinctRows(liveEditorial.characters, row =>
+    validText(row.id, 120) && validText(row.slug, 240) &&
+    SLUG.test(row.slug) && Number.isSafeInteger(row.franchise_id) &&
+    currentUniverses.has(row.franchise_id) ? row.id : null,
+  'd1_editorial_character_snapshot_invalid');
+  const currentLinks = distinctRows(liveEditorial.relations, row =>
+    validText(row.character_id, 120) && validText(row.model_id, 160) &&
+    currentCharacters.has(row.character_id)
+      ? JSON.stringify([row.character_id, row.model_id]) : null,
+  'd1_editorial_relation_snapshot_invalid');
+
+  const target = exportPayload.characters.length > 0
+    ? planApprovedCharacterProjection(exportPayload, d1Snapshot)
+    : {
+      schemaVersion: 1,
+      source: 'approved-character-projection-offline-plan',
+      generatedAt: exportPayload.generatedAt,
+      universes: [],
+      characters: [],
+      relations: [],
+    };
+
+  const approvedUniverses = new Set(target.universes.map(row => row.franchise_id));
+  const approvedCharacters = new Map(target.characters.map(row => [row.id, row]));
+  const approvedLinks = new Set(target.relations.map(row =>
+    JSON.stringify([row.character_id, row.model_id])));
+  // Moving a public slug between two *retained* IDs needs a separate explicit
+  // migration; do not rely on fragile UNIQUE ordering in SQLite upserts.
+  const existingSlugOwner = new Map([...currentCharacters.values()].map(
+    row => [row.slug, row.id]));
+  for (const character of target.characters) {
+    const previousOwner = existingSlugOwner.get(character.slug);
+    requireValid(!previousOwner || previousOwner === character.id ||
+      !approvedCharacters.has(previousOwner),
+    'approved_character_public_slug_transfer_conflict');
+  }
+
+  const deleteLinks = [...currentLinks.values()]
+    .filter(row => !approvedLinks.has(JSON.stringify([row.character_id, row.model_id])))
+    .map(row => ({ character_id: row.character_id, model_id: row.model_id }))
+    .sort((a,b) => (a.character_id + '\u0000' + a.model_id)
+      .localeCompare(b.character_id + '\u0000' + b.model_id));
+  const deleteCharacters = [...currentCharacters.keys()]
+    .filter(id => !approvedCharacters.has(id)).sort();
+  const deleteUniverses = [...currentUniverses.keys()]
+    .filter(id => !approvedUniverses.has(id)).sort((a,b) => a-b);
+
+  return {
+    schemaVersion: 1,
+    source: 'approved-character-reconciliation-offline-plan',
+    generatedAt: exportPayload.generatedAt,
+    readAt: liveEditorial.readAt,
+    // The canonical publisher must apply atomically, in this dependency order:
+    // deleteLinks; deleteCharacters; upsertUniverses; upsertCharacters;
+    // upsertLinks; deleteUniverses. The plan does not provide executable SQL.
+    deleteLinks,
+    deleteCharacters,
+    upsertUniverses: target.universes,
+    upsertCharacters: target.characters,
+    upsertLinks: target.relations,
+    deleteUniverses,
+  };
+}
