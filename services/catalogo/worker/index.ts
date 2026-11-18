@@ -730,6 +730,82 @@ async function getPublicCharacter(request: Request, env: Env, slug: string) {
   })
 }
 
+async function getPublicModelCharacters(request: Request, env: Env, modelId: string) {
+  return editorialRead(request, env, async () => {
+    const model = await env.DB.prepare(`SELECT id FROM models
+      WHERE id=? AND published=1 LIMIT 1`).bind(modelId).first<{ id: string }>()
+    if (!model) throw new Error('editorial_public_not_found')
+
+    const rows = await env.DB.prepare(`SELECT c.*,
+        f.slug AS universe_slug, f.name AS universe_name,
+        category.slug AS category_slug,
+        u.revision AS universe_revision, u.reviewed_at AS universe_reviewed_at,
+        u.approval_ref AS universe_approval_ref,
+        u.media_types_json, u.summary AS universe_summary,
+        u.summary_evidence_ids_json AS universe_summary_evidence_ids_json,
+        u.overview AS universe_overview,
+        u.overview_evidence_ids_json AS universe_overview_evidence_ids_json,
+        u.identity_evidence_ids_json AS universe_identity_evidence_ids_json,
+        u.evidence_json AS universe_evidence_json,
+        link.evidence_ids_json AS relation_evidence_ids_json,
+        link.approval_ref AS relation_approval_ref
+      FROM editorial_public_character_models link
+      JOIN editorial_public_characters c ON c.id=link.character_id
+      JOIN editorial_public_universes u ON u.franchise_id=c.franchise_id
+      JOIN franchises f ON f.id=c.franchise_id
+      JOIN categories category ON category.id=f.category_id
+      WHERE link.model_id=?
+      ORDER BY c.name COLLATE NOCASE,c.id LIMIT 31`).bind(model.id)
+      .all<Record<string, unknown>>()
+
+    const truncated = rows.results.length > 30
+    const items = rows.results.slice(0, 30).map((raw) => {
+      const { character: characterRow, universe: universeRow } = splitEditorialCharacterRow(raw)
+      const evidence = editorialEvidence(characterRow.evidence_json)
+      const identityEvidenceIds = editorialEvidenceIds(
+        characterRow.identity_evidence_ids_json,
+        evidence,
+        'editorial_character_identity_evidence',
+      )
+      const relationEvidenceIds = editorialEvidenceIds(
+        raw.relation_evidence_ids_json,
+        evidence,
+        'editorial_model_character_relation_evidence',
+      )
+      editorialText(raw.relation_approval_ref, 'editorial_model_character_approval_ref_invalid', 240)
+      const independentIdentityEvidenceId = identityEvidenceIds.find((id) =>
+        evidence.some((item) => item.id === id && item.kind !== 'catalog'),
+      )
+      const independentRelationEvidenceId = relationEvidenceIds.find((id) =>
+        evidence.some((item) => item.id === id && item.kind !== 'catalog'),
+      )
+      if (!independentIdentityEvidenceId || !independentRelationEvidenceId) {
+        throw new Error('editorial_model_character_evidence')
+      }
+      const responseEvidenceIds = new Set([
+        independentIdentityEvidenceId,
+        independentRelationEvidenceId,
+      ])
+      return {
+        publication: editorialPublication(characterRow),
+        character: {
+          id: editorialText(characterRow.id, 'editorial_character_id_invalid', 120),
+          slug: editorialSlug(characterRow.slug),
+          name: editorialText(characterRow.name, 'editorial_character_name_invalid', 240),
+          evidenceIds: [independentIdentityEvidenceId],
+        },
+        universe: {
+          slug: editorialSlug(universeRow.universe_slug),
+          categorySlug: editorialSlug(universeRow.category_slug),
+        },
+        relationEvidenceIds: [independentRelationEvidenceId],
+        evidence: evidence.filter((item) => responseEvidenceIds.has(item.id)),
+      }
+    })
+    return { items, truncated }
+  })
+}
+
 async function getPublicUniverse(request: Request, env: Env, categorySlug: string, franchiseSlug: string) {
   return editorialRead(request, env, async () => {
     const raw = await env.DB.prepare(`SELECT u.*, f.slug AS universe_slug, f.name AS universe_name,
@@ -1145,6 +1221,10 @@ export default {
     const publicCharacterMatch = url.pathname.match(/^\/api\/editorial\/v1\/characters\/([a-z0-9][a-z0-9-]{0,239})$/)
     if (request.method === 'GET' && publicCharacterMatch) {
       return getPublicCharacter(request, env, publicCharacterMatch[1])
+    }
+    const publicModelCharactersMatch = url.pathname.match(/^\/api\/editorial\/v1\/models\/([A-Za-z0-9_-]{1,120})\/characters$/)
+    if (request.method === 'GET' && publicModelCharactersMatch) {
+      return getPublicModelCharacters(request, env, publicModelCharactersMatch[1])
     }
     const publicUniverseMatch = url.pathname.match(/^\/api\/editorial\/v1\/universes\/([a-z0-9][a-z0-9-]{0,239})\/([a-z0-9][a-z0-9-]{0,239})$/)
     if (request.method === 'GET' && publicUniverseMatch) {

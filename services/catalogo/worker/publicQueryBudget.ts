@@ -12,6 +12,7 @@ const MODEL_GALLERY = new RegExp("^/api/models/" + MODEL_SLUG + "/images$")
 const EDITORIAL_CHARACTER = new RegExp("^/api/editorial/v1/characters/" + MODEL_SLUG + "$")
 const EDITORIAL_UNIVERSE = new RegExp("^/api/editorial/v1/universes/" + MODEL_SLUG + "/" + MODEL_SLUG + "$")
 const EDITORIAL_CHARACTER_SEARCH = "/api/editorial/v1/characters/search"
+const EDITORIAL_MODEL_CHARACTERS = /^\/api\/editorial\/v1\/models\/[A-Za-z0-9_-]{1,120}\/characters$/
 
 /**
  * Returns null when outside the public read budget, true for an accepted
@@ -30,13 +31,14 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
   const editorialCharacter = EDITORIAL_CHARACTER.test(path)
   const editorialUniverse = EDITORIAL_UNIVERSE.test(path)
   const editorialCharacterSearch = path === EDITORIAL_CHARACTER_SEARCH
+  const editorialModelCharacters = EDITORIAL_MODEL_CHARACTERS.test(path)
   if (editorialCharacterSearch && !url.searchParams.has("q")) return false
 
   const readRoute = path === "/api/catalog" || path === "/api/recent" ||
     path === "/api/categories" || path === "/api/franchises" ||
     path === "/api/folders" || path === "/api/health" ||
     path.startsWith("/api/models/") || editorialCharacter || editorialUniverse ||
-    editorialCharacterSearch
+    editorialCharacterSearch || editorialModelCharacters
   if (!readRoute) return path.startsWith("/api/editorial/") ? false : null
 
   if (url.search.length > 2048) return false
@@ -57,6 +59,8 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
     allowed = ["limit", "cursor", "v"]
   } else if (path === "/api/categories" || path === "/api/health" ||
              MODEL_DETAIL.test(path) || editorialCharacter || editorialUniverse) {
+    allowed = []
+  } else if (editorialModelCharacters) {
     allowed = []
   } else {
     // Unknown model subroutes must not invoke the schema check.

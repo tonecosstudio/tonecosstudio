@@ -286,6 +286,25 @@ test('public character and universe profiles resolve only approved relations to 
   assert.deepEqual(universe.body.characters.map(item => item.slug), ['monkey-d-luffy', 'roronoa-zoro'])
   assert.deepEqual(universe.body.models.map(item => item.modelId), ['model-00003', 'model-00001'])
 
+  db.prepare(`INSERT INTO editorial_public_character_models(character_id,model_id,evidence_ids_json,approval_ref)
+    VALUES(?,?,?,?)`).run(
+    'character-luffy', 'model-00001', JSON.stringify(['official-luffy']), 'editorial-pr-2',
+  )
+  const modelCharacters = await requestWorker(database, '/api/editorial/v1/models/model-00001/characters')
+  assert.equal(modelCharacters.response.status, 200)
+  assert.deepEqual(modelCharacters.body.items.map(item => item.character.slug), [
+    'monkey-d-luffy', 'roronoa-zoro',
+  ])
+  assert.ok(modelCharacters.body.items.every(item =>
+    item.publication.editorialStatus === 'approved' &&
+    item.character.evidenceIds.length > 0 && item.relationEvidenceIds.length > 0,
+  ))
+  assert.ok(modelCharacters.body.items.every(item =>
+    item.evidence.every(source => source.kind !== 'catalog'),
+  ))
+  const unpublishedModelCharacters = await requestWorker(database, '/api/editorial/v1/models/model-00002/characters')
+  assert.equal(unpublishedModelCharacters.response.status, 404)
+
   const absent = await requestWorker(database, '/api/editorial/v1/characters/not-published')
   assert.equal(absent.response.status, 404)
   const write = await requestWorker(database, '/api/editorial/v1/characters/roronoa-zoro', 'POST')

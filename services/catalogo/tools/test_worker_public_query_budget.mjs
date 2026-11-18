@@ -69,6 +69,8 @@ test('public editorial reads are bounded and reject unknown or cache-busting par
     '/api/editorial/v1/characters/search?q=zoro&limit=8',
     '/api/editorial/v1/characters/roronoa-zoro',
     '/api/editorial/v1/universes/anime/one-piece',
+    '/api/editorial/v1/models/model-00001/characters',
+    '/api/editorial/v1/models/mdl_zoro_01/characters',
   ]) assert.equal(query(path), true, path)
 
   for (const path of [
@@ -79,6 +81,8 @@ test('public editorial reads are bounded and reject unknown or cache-busting par
     '/api/editorial/v1/universes/anime/one-piece?offset=0',
     '/api/editorial/v1/characters/invalid%2Fslug',
     '/api/editorial/v1/characters/search/extra?q=zoro',
+    '/api/editorial/v1/models/model-00001/characters?limit=12',
+    '/api/editorial/v1/models/invalid%2Fid/characters',
   ]) assert.equal(query(path), false, path)
 
   assert.deepEqual(query('/api/editorial/v1/characters/search?q=ab'), {

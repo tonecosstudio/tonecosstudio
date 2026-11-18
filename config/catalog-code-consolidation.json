@@ -355,7 +355,7 @@
       },
       "tools/test_worker_catalog_scale_sqlite.mjs": {
         "sourceBlob": "b4dca481759d53448f31aaaff879b01546c3c74f",
-        "localBlob": "c3548740b0a95988174ba91aff2f910f932b905e",
+        "localBlob": "99a7508c85fbd8321e75fb807c3cded9196c90a8",
         "reason": "Cover bounded editorial search, published model relationships and profile projections on the migrated offline SQLite schema."
       },
       "tools/test_worker_folder_counts.mjs": {
@@ -365,17 +365,17 @@
       },
       "tools/test_worker_public_query_budget.mjs": {
         "sourceBlob": "4354b2b5eaf696d8af440baa1eabb8915de0a9cd",
-        "localBlob": "1d4cda033c40c957bc9777f9ffa5657e1c4885c3",
+        "localBlob": "adc376e80e76adf92614713485b4092c5ecc5766",
         "reason": "Cover bounded editorial search and detail paths before any D1 schema query."
       },
       "worker/index.ts": {
         "sourceBlob": "81f6e2ab594b7d731aac3fa2723e3bbe25355b26",
-        "localBlob": "56fb15c0824f2dd26cff721aac6f6dda14ffe9f9",
+        "localBlob": "7e55ade3a0e2ce8d7508b8596496e84c3998c488",
         "reason": "Add read-only, evidence-checked character and universe projections to the existing staged Worker."
       },
       "worker/publicQueryBudget.ts": {
         "sourceBlob": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
-        "localBlob": "4baf15d2d0105b4caa881dfe68efb01ba1a11801",
+        "localBlob": "3b89328ae758909a246af15f075781eec2d4fc0c",
         "reason": "Bound editorial search and profile URLs before the existing Worker reads D1."
       },
       "wrangler.jsonc": {
