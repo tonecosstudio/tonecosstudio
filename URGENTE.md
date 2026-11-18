@@ -1871,3 +1871,25 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** continuar a triagem dos grupos restantes com fontes primárias e, em separado, revisar visualmente os 337 possíveis vínculos na curadoria privada canônica.
 
 **DO_NOT_REPEAT:** não inferir que todos os rótulos “Gogeta” representam a versão GT/Super Saiyajin 4; não converter “Mestre Kame” ou “Jackie Chun” em aliases verificados sem decisão editorial.
+
+## Rodada 88 — expansão de candidatos com fontes oficiais (18/11/2026)
+
+- Preparei dossiês para **Thanos, Scorpion, Darth Vader e Deadpool**, com 5 fontes oficiais, biografias originais e afirmações de identidade, franquia e atributos ligadas às respectivas fontes. Os valores de franquia do catálogo que são categorias (“Vilões”, “Equipes e Grupos”, “Heróis Individuais”) foram mantidos como proveniência e não usados como prova de franquia.
+- Os vínculos candidatos foram reconciliados por ID e nome exato: **8 Thanos, 8 Scorpion, 8 Darth Vader e 11 Deadpool**. Os dois dioramas “Cable e Deadpool” e “Wolverine e Deadpool” ficaram fora desse vínculo individual; versões, cenas com múltiplos personagens, dioramas e renders estilizados permanecem ambíguos e exigem revisão visual por modelo.
+- O pacote passa a **23 identidades pesquisadas**, **28 URLs oficiais**, **23 rascunhos biográficos** e **372 relações candidatas**. Todas permanecem pendentes de revisão humana; **0 identidades revisadas/aprovadas, 0 relações revisadas/aprovadas e 0 vínculos com evidência independente**.
+- **Validação desta rodada:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**; `git diff --check` passou. Checagem do pacote confirmou 23 candidatos, 28 fontes, 372 vínculos, zero pares duplicados e nenhuma evidência independente por modelo. Nenhum dado foi gravado no Supabase ou na projeção D1. Migration `0023`, exportação aprovada, homologação Supabase→D1, flag pública e M5 continuam bloqueados por ausência de staging isolado e revisão editorial humana.
+
+**NEXT_ACTION:** submeter os 23 dossiês e 372 vínculos à revisão visual/editorial na curadoria privada da PR #31; homologar a exportação e a sincronização somente em staging Supabase e D1 isolados.
+
+**DO_NOT_REPEAT:** não considerar o título exato do modelo como prova do render; não converter categorias de navegação em franquias; não promover rascunhos ou candidatos para a projeção pública.
+
+## Rodada 89 — candidatos de God of War e Street Fighter (18/11/2026)
+
+- Preparei candidatos para **Kratos, Chun-Li e Cammy**, usando duas páginas oficiais da PlayStation e quatro páginas oficiais da Capcom. As afirmações biográficas têm fontes; todos os textos são rascunhos originais pendentes de revisão humana.
+- Foram selecionados por nome exato **24 modelos Kratos, 22 Chun-Li e 21 Cammy**. A pesquisa de Kratos se restringe à fase nórdica descrita nas fontes; não foi aplicada automaticamente a estátuas da fase grega. As bios de Chun-Li e Cammy refletem os guias consultados, sem uniformizar versões ou renders.
+- O pacote passa a **26 identidades pesquisadas**, **34 URLs oficiais**, **26 rascunhos biográficos** e **439 vínculos candidatos**. Os vínculos continuam sem evidência independente por modelo; permanecem **0 identidades revisadas/aprovadas, 0 relações revisadas/aprovadas e 0 vínculos com evidência independente**.
+- **Validação:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**; `git diff --check` passou. Integridade do pacote confirmou 26 identidades, 34 fontes, 439 vínculos, claims sem fonte: 0, pares duplicados: 0, evidências independentes: 0 e aprovações: 0. Sem escrita em Supabase/D1, migration, publicação ou ativação da flag pública.
+
+**NEXT_ACTION:** revisar os candidatos e conferir visualmente cada ID na curadoria privada; disponibilizar staging isolado para a homologação Supabase→D1.
+
+**DO_NOT_REPEAT:** não aplicar biografia da fase nórdica de Kratos a esculturas de outra era; não presumir versão de Street Fighter a partir do nome ou do título comercial.

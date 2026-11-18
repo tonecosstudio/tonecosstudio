@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 19,
-    "preparedCandidateModelLinkCount": 337
+    "sourceResearchedIdentityCount": 26,
+    "preparedCandidateModelLinkCount": 439
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 19,
+    "preparedIdentityCount": 26,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 337,
+    "preparedCandidateModelLinkCount": 439,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -211,6 +211,94 @@
       "publisher": "Dragon Ball Official Site",
       "title": "Weekly ☆ Character Showcase #200: Gogeta (Super Saiyan 4) from Dragon Ball GT!",
       "url": "https://en.dragon-ball-official.com/news/01_3311.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-thanos",
+      "publisher": "Marvel",
+      "title": "Thanos (The Mad Titan) | Characters | Marvel",
+      "url": "https://www.marvel.com/characters/Thanos",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "mk30-scorpion",
+      "publisher": "Warner Bros. Games / NetherRealm Studios",
+      "title": "Mortal Kombat 30th Anniversary — Scorpion character profile",
+      "url": "https://mk30.mortalkombat.com/en-us/roster/scorpion",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "starwars-darth-vader",
+      "publisher": "Lucasfilm / StarWars.com",
+      "title": "Darth Vader | StarWars.com Databank",
+      "url": "https://www.starwars.com/databank/darth-vader",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-deadpool-rpg-profile",
+      "publisher": "Marvel",
+      "title": "Marvel Multiverse Role-Playing Game Character Profiles (official PDF)",
+      "url": "https://cdn.marvel.com/u/prod/marvel/i/pdf/MMRPG_CharacterProfiles_20240717.pdf",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-deadpool-feature",
+      "publisher": "Marvel",
+      "title": "Deadpool Invades Fortnite | Marvel",
+      "url": "https://www.marvel.com/articles/games/deadpool-arrives-in-fortnite",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "playstation-god-of-war-kratos",
+      "publisher": "Sony Interactive Entertainment / PlayStation",
+      "title": "Discover God of War | PlayStation",
+      "url": "https://www.playstation.com/en-us/god-of-war/",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "playstation-kratos-evolution",
+      "publisher": "Sony Interactive Entertainment / PlayStation Blog",
+      "title": "God of War: The Evolution of Kratos",
+      "url": "https://blog.playstation.com/2018/04/16/god-of-war-the-evolution-of-kratos/",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-chun-li-guide",
+      "publisher": "Capcom",
+      "title": "Character Guide 104: Chun-Li",
+      "url": "https://game.capcom.com/cfn/sfv/column/130435",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-chun-li-data",
+      "publisher": "Capcom",
+      "title": "Chun-Li | Character Data | CAPCOM:Shadaloo C.R.I.",
+      "url": "https://game.capcom.com/cfn/sfv/character/chun-li?lang=en",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-cammy-guide",
+      "publisher": "Capcom",
+      "title": "Character Guide 125: Cammy",
+      "url": "https://game.capcom.com/cfn/sfv/column/130984?lang=en",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-cammy-data",
+      "publisher": "Capcom",
+      "title": "Cammy | Character Data | CAPCOM:Shadaloo C.R.I.",
+      "url": "https://game.capcom.com/cfn/sfv/character/cammy?lang=en",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -7806,6 +7894,2372 @@
         }
       ],
       "catalogCandidateModelCount": 10
+    },
+    {
+      "candidateName": "Thanos",
+      "catalogDisplayNameCandidate": "Thanos",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Thanos",
+          "sourceIds": [
+            "marvel-thanos"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-thanos"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.infinity_stones",
+          "value": "Thanos busca as Joias do Infinito e pretende usar seu poder em escala universal.",
+          "sourceIds": [
+            "marvel-thanos"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Conhecido como o Titã Louco, Thanos percorre o universo em busca das Joias do Infinito. Ele pretende usar esse poder para impor sua própria visão sobre o destino da vida em escala cósmica.",
+      "biographySourceIds": [
+        "marvel-thanos"
+      ],
+      "catalogFranchiseCandidates": [
+        "Vilões"
+      ],
+      "ambiguities": [
+        "Os 8 registros foram selecionados pelo nome exato Thanos na fila, sem conferência visual; bustos, poses, versões e esculturas ainda precisam ser distinguidos.",
+        "A franquia do catálogo, Vilões, é uma categoria de navegação e não serve como evidência de franquia. A coleção Thanos e Ordem Negra também não prova que todas as cenas sejam individuais.",
+        "As fontes oficiais sustentam a identidade e os fatos biográficos, mas nenhuma confirma individualmente os 8 renders; cada relação permanece sem evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_2ee0be18a42ef97c650c",
+          "modelSlug": "viloes-thanos-estatua-sobre-base-espacial",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-thanos-estatua-sobre-base-espacial"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3a096fbb5d1eaf882522",
+          "modelSlug": "viloes-thanos-endgame-dupla-vista",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-thanos-endgame-dupla-vista"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5d6d1ad6663c03acd07d",
+          "modelSlug": "viloes-thanos-busto-fisico-fotografado",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-thanos-busto-fisico-fotografado"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6118c3157c6f7141191e",
+          "modelSlug": "viloes-thanos-busto-cinza-frontal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-thanos-busto-cinza-frontal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9bc57cd1890ec1d0f645",
+          "modelSlug": "viloes-thanos-com-espada-dupla-estatua",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-thanos-com-espada-dupla-estatua"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a6e19ccef69c33ae802c",
+          "modelSlug": "viloes-thanos-infinito-em-acao-vista-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-thanos-infinito-em-acao-vista-02"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d667d155f450b240ddf4",
+          "modelSlug": "viloes-thanos-em-acao-estatua-promocional",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-thanos-em-acao-estatua-promocional"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_eef05d8cf15480dab97d",
+          "modelSlug": "viloes-thanos-infinito-em-acao-vista-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "viloes-thanos-infinito-em-acao-vista-01"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 8
+    },
+    {
+      "candidateName": "Scorpion",
+      "catalogDisplayNameCandidate": "Scorpion",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Mortal Kombat",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Scorpion",
+          "sourceIds": [
+            "mk30-scorpion"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alternate_name_candidate",
+          "value": "Hanzo Hasashi",
+          "sourceIds": [
+            "mk30-scorpion"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Mortal Kombat",
+          "sourceIds": [
+            "mk30-scorpion"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.identity_and_clan",
+          "value": "O perfil oficial identifica Scorpion como Hanzo Hasashi e o liga ao Shirai Ryu.",
+          "sourceIds": [
+            "mk30-scorpion"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.motivation",
+          "value": "A fonte descreve sua busca por vingança após a morte de sua família e clã.",
+          "sourceIds": [
+            "mk30-scorpion"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Scorpion é a identidade pela qual Hanzo Hasashi é conhecido. A morte de sua família e de seu clã alimenta sua busca por Quan Chi; no perfil oficial consultado, ele também lidera a reconstrução do Shirai Ryu.",
+      "biographySourceIds": [
+        "mk30-scorpion"
+      ],
+      "catalogFranchiseCandidates": [
+        "Mortal Kombat"
+      ],
+      "ambiguities": [
+        "Os 8 modelos de nome exato Scorpion vieram de Mortal Kombat; versões, continuidade e aparência precisam de revisão individual, inclusive o modelo chibi.",
+        "O perfil consultado descreve uma versão específica do personagem; não generalizar seus detalhes biográficos a toda versão dos modelos.",
+        "A página oficial confirma o personagem, não os renders do catálogo; nenhum dos 8 vínculos tem evidência independente por modelo."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_1b5f49a8017960bdf209",
+          "modelSlug": "mortal-kombat-scorpion-chibi",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-scorpion-chibi"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_23e27946d34ea5954dd6",
+          "modelSlug": "mortal-kombat-scorpion-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-scorpion-04"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_65298ddf371996dba902",
+          "modelSlug": "mortal-kombat-scorpion-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-scorpion-06"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7d57e37ba3b8ab3d2397",
+          "modelSlug": "mortal-kombat-scorpion-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-scorpion-02"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9ba90f84e07e0fc9ade5",
+          "modelSlug": "mortal-kombat-scorpion-07",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-scorpion-07"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a6adc348e93c3cd36418",
+          "modelSlug": "mortal-kombat-scorpion-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-scorpion-03"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c4afeecb61a3f7a17afa",
+          "modelSlug": "mortal-kombat-scorpion-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-scorpion-05"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_dab5687ce812240e8fc6",
+          "modelSlug": "mortal-kombat-scorpion-09",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "mortal-kombat-scorpion-09"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 8
+    },
+    {
+      "candidateName": "Darth Vader",
+      "catalogDisplayNameCandidate": "Darth Vader",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Star Wars",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Darth Vader",
+          "sourceIds": [
+            "starwars-darth-vader"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alternate_name_candidate",
+          "value": "Anakin Skywalker",
+          "sourceIds": [
+            "starwars-darth-vader"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Star Wars",
+          "sourceIds": [
+            "starwars-darth-vader"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.former_identity",
+          "value": "Darth Vader era Anakin Skywalker, Cavaleiro Jedi que passou ao lado sombrio.",
+          "sourceIds": [
+            "starwars-darth-vader"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.sith_and_empire",
+          "value": "Vader tornou-se lorde Sith e serviu ao Império Galáctico.",
+          "sourceIds": [
+            "starwars-darth-vader"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Darth Vader foi Anakin Skywalker, um Cavaleiro Jedi que cedeu ao lado sombrio e se tornou lorde Sith. Após ser gravemente ferido em Mustafar, sobreviveu com suporte cibernético e serviu ao Império; sua trajetória termina no conflito entre essa lealdade e o vínculo com seu filho.",
+      "biographySourceIds": [
+        "starwars-darth-vader"
+      ],
+      "catalogFranchiseCandidates": [
+        "Star Wars"
+      ],
+      "ambiguities": [
+        "Os 8 modelos de nome exato Darth Vader foram ligados só como candidatos. Variantes samurai e tanuki não demonstram, por si, qual versão ou tratamento editorial deve constar na ficha.",
+        "A página oficial cobre a história canônica geral, mas não resolve se cada render representa uma continuidade, traje ou adaptação específica.",
+        "Nenhum vínculo possui evidência independente por modelo; é obrigatória a conferência visual antes de associar o ID à identidade."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_2d973f323033d3ad3695",
+          "modelSlug": "star-wars-darth-vader-07",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "star-wars-darth-vader-07"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_63afa9d4fb9f8b5fbe48",
+          "modelSlug": "star-wars-darth-vader-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "star-wars-darth-vader-04"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6ea471e2f0e1f8b0f0b9",
+          "modelSlug": "star-wars-darth-vader",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "star-wars-darth-vader"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_90087903c32f1fef1581",
+          "modelSlug": "star-wars-darth-vader-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "star-wars-darth-vader-06"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9a122155fad38ca4b220",
+          "modelSlug": "star-wars-darth-vader-tanuki",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "star-wars-darth-vader-tanuki"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c312aa21fea442646916",
+          "modelSlug": "star-wars-darth-vader-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "star-wars-darth-vader-05"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d5649df10f351cc90b21",
+          "modelSlug": "star-wars-darth-vader-08",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "star-wars-darth-vader-08"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f0d99136e6edac16ab49",
+          "modelSlug": "star-wars-darth-vader-samurai",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "star-wars-darth-vader-samurai"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 8
+    },
+    {
+      "candidateName": "Deadpool",
+      "catalogDisplayNameCandidate": "Deadpool",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Deadpool",
+          "sourceIds": [
+            "marvel-deadpool-rpg-profile",
+            "marvel-deadpool-feature"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alternate_name_candidate",
+          "value": "Wade Wilson",
+          "sourceIds": [
+            "marvel-deadpool-rpg-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Universe",
+          "sourceIds": [
+            "marvel-deadpool-rpg-profile",
+            "marvel-deadpool-feature"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.weapon_x_and_healing",
+          "value": "O perfil oficial atribui a Wilson um fator de cura após uma experiência relacionada ao Weapon X.",
+          "sourceIds": [
+            "marvel-deadpool-rpg-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.occupations",
+          "value": "A fonte apresenta Deadpool em diferentes períodos como mercenário, aventureiro e herói.",
+          "sourceIds": [
+            "marvel-deadpool-rpg-profile"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Deadpool é a identidade de atuação de Wade Wilson. Uma intervenção experimental ligada ao programa Weapon X lhe concedeu fator de cura e deixou sequelas físicas; depois, ele passou por papéis de mercenário, aventureiro e herói.",
+      "biographySourceIds": [
+        "marvel-deadpool-rpg-profile",
+        "marvel-deadpool-feature"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos",
+        "Heróis Individuais"
+      ],
+      "ambiguities": [
+        "Os 11 modelos com nome exato Deadpool foram selecionados apesar de pertencerem a categorias do catálogo diferentes; Equipes e Grupos e Heróis Individuais são rótulos de navegação, não franquias.",
+        "Dioramas podem incluir outros personagens; título, coleção e pasta não comprovam composição visual. Os registros Cable e Deadpool e Wolverine e Deadpool não foram associados automaticamente a uma única identidade.",
+        "Variantes e interpretações não foram harmonizadas. As fontes oficiais sustentam o dossiê, mas não os 11 renders; cada relação segue sem evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_21f9ab8a9b5318a4d3fb",
+          "modelSlug": "equipes-e-grupos-deadpool-sentado-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-deadpool-sentado-em-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_29cffd7561426a065549",
+          "modelSlug": "herois-individuais-deadpool-com-unicornio-e-martelo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-deadpool-com-unicornio-e-martelo"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2ddbfeda8e5ddf74f914",
+          "modelSlug": "equipes-e-grupos-deadpool-busto-fisico-fotografado",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-deadpool-busto-fisico-fotografado"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_39e7e37ae991965efc61",
+          "modelSlug": "equipes-e-grupos-deadpool-diorama-com-multiplas-armas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-deadpool-diorama-com-multiplas-armas"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_570b3486982cbe957f4c",
+          "modelSlug": "herois-individuais-deadpool-agachado-com-katanas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-deadpool-agachado-com-katanas"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6c0e9e5971d9623626d3",
+          "modelSlug": "herois-individuais-deadpool-diorama-dinamico-com-katanas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-deadpool-diorama-dinamico-com-katanas"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6e3b7887f73f98fa1717",
+          "modelSlug": "equipes-e-grupos-deadpool-busto-estilizado",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-deadpool-busto-estilizado"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_76a7515255a3163b30c1",
+          "modelSlug": "equipes-e-grupos-deadpool-diorama-de-combate",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-deadpool-diorama-de-combate"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_962fb16e3069caaeedb4",
+          "modelSlug": "equipes-e-grupos-deadpool-no-trono-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-deadpool-no-trono-estatua-cinza"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b4d1b184fef6d84fc1f9",
+          "modelSlug": "equipes-e-grupos-deadpool-diorama-colorido-em-acao",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-deadpool-diorama-colorido-em-acao"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b8c573b84931c7301197",
+          "modelSlug": "equipes-e-grupos-deadpool-diorama-estilizado",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-deadpool-diorama-estilizado"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 11
+    },
+    {
+      "candidateName": "Kratos",
+      "catalogDisplayNameCandidate": "Kratos",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "God of War",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Kratos",
+          "sourceIds": [
+            "playstation-god-of-war-kratos",
+            "playstation-kratos-evolution"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "God of War",
+          "sourceIds": [
+            "playstation-god-of-war-kratos"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.norse_era",
+          "value": "A PlayStation situa God of War (2018) e Ragnarök em uma jornada de Kratos pelo mundo nórdico.",
+          "sourceIds": [
+            "playstation-god-of-war-kratos"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.fatherhood",
+          "value": "A fonte descreve a relação de Kratos e Atreus como pai e filho e seu esforço de reaprender a ser pai.",
+          "sourceIds": [
+            "playstation-god-of-war-kratos",
+            "playstation-kratos-evolution"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Na fase nórdica de God of War, Kratos deixa para trás o mundo grego e busca recomeçar com o filho, Atreus. A jornada coloca sua antiga fúria em tensão com o papel de mentor e protetor, enquanto pai e filho atravessam terras perigosas.",
+      "biographySourceIds": [
+        "playstation-god-of-war-kratos",
+        "playstation-kratos-evolution"
+      ],
+      "catalogFranchiseCandidates": [
+        "God of War"
+      ],
+      "ambiguities": [
+        "As fontes biográficas usadas tratam da fase nórdica de God of War; não devem ser usadas para caracterizar sem revisão esculturas da fase grega ou outras adaptações.",
+        "Os 24 modelos de nome exato Kratos foram selecionados sem revisão visual. Cada ID precisa ser classificado por era, jogo, traje, cena e presença de Atreus.",
+        "A documentação oficial confirma o personagem e a franquia, mas não demonstra que cada render represente a fase nórdica nem prova nenhum dos vínculos."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_17f2ce2faa8c0c2d0cdc",
+          "modelSlug": "god-of-war-kratos-15",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-15"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2008706cbcb2532db493",
+          "modelSlug": "god-of-war-kratos-18",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-18"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3a8a5d8cce46d5d4c327",
+          "modelSlug": "god-of-war-kratos-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-04"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_40441cb72417692b5816",
+          "modelSlug": "god-of-war-kratos-god-of-war-kratos-stl-12-bust-god-of-war-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-god-of-war-kratos-stl-12-bust-god-of-war-principal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_490bf2bc1520c034f6e0",
+          "modelSlug": "god-of-war-kratos-08",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-08"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5b070acd4ed9d5686692",
+          "modelSlug": "god-of-war-kratos-19",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-19"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_64140c00d156cd7b7255",
+          "modelSlug": "god-of-war-kratos-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-05"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_714fc32587eab6874fea",
+          "modelSlug": "god-of-war-kratos-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-01"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8a962c832e5b51b834cc",
+          "modelSlug": "god-of-war-kratos-god-of-war-imagem-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-god-of-war-imagem-01"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8c4ba756ed768f5f26b0",
+          "modelSlug": "god-of-war-kratos-07",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-07"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9381ded6658dd9561555",
+          "modelSlug": "god-of-war-kratos-14",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-14"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_95987711bef00f3cf9cc",
+          "modelSlug": "god-of-war-kratos-17",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-17"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a2e23c165c143f82c26b",
+          "modelSlug": "god-of-war-kratos-god-of-war-kratos-stl-11-bust-god-of-war-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-god-of-war-kratos-stl-11-bust-god-of-war-principal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a31a41dae1eafdd34e20",
+          "modelSlug": "god-of-war-kratos-god-of-war-kratos-stl-10-god-of-war-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-god-of-war-kratos-stl-10-god-of-war-principal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_abc61f7d0fb324eb726a",
+          "modelSlug": "god-of-war-kratos-12",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-12"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b710ed63f3dd42f7ce38",
+          "modelSlug": "god-of-war-kratos-13",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-13"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_be729ed0299424a18e58",
+          "modelSlug": "god-of-war-kratos-20",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-20"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_befc02b351c2833bc1bf",
+          "modelSlug": "god-of-war-kratos-09",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-09"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c70bc9580eef656ca847",
+          "modelSlug": "god-of-war-kratos-10",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-10"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d18b73e0b76e972111ba",
+          "modelSlug": "god-of-war-kratos-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-02"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_df616569d18d0205616a",
+          "modelSlug": "god-of-war-kratos-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-03"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e8c36ab11d489a0af322",
+          "modelSlug": "god-of-war-kratos-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-06"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e8ff9c440d11ae81de95",
+          "modelSlug": "god-of-war-kratos-11",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-11"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f13092499f7825060e02",
+          "modelSlug": "god-of-war-kratos-16",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "god-of-war-kratos-16"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 24
+    },
+    {
+      "candidateName": "Chun-Li",
+      "catalogDisplayNameCandidate": "Chun-Li",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Street Fighter",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Chun-Li",
+          "sourceIds": [
+            "capcom-chun-li-guide",
+            "capcom-chun-li-data"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Street Fighter",
+          "sourceIds": [
+            "capcom-chun-li-guide",
+            "capcom-chun-li-data"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.icpo_and_fighting_style",
+          "value": "A Capcom descreve Chun-Li como agente do ICPO e praticante de kung fu chinês.",
+          "sourceIds": [
+            "capcom-chun-li-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.motivation",
+          "value": "A fonte relaciona sua busca por Bison e Shadaloo à morte de seu pai.",
+          "sourceIds": [
+            "capcom-chun-li-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Chun-Li é uma agente do ICPO e praticante de kung fu. A morte de seu pai por Bison a conduz ao confronto com a Shadaloo; sua investigação e suas habilidades marciais fazem dela uma figura central no combate à organização.",
+      "biographySourceIds": [
+        "capcom-chun-li-guide",
+        "capcom-chun-li-data"
+      ],
+      "catalogFranchiseCandidates": [
+        "Street Fighter"
+      ],
+      "ambiguities": [
+        "A biografia consultada é associada ao material de Street Fighter V; detalhes de arco ou continuidade não devem ser presumidos para todos os modelos.",
+        "Os 22 registros com nome exato Chun-Li não passaram por conferência visual. Roupas, poses, versões e peças com personagens adicionais exigem revisão individual.",
+        "As fontes confirmam a identidade e elementos biográficos, mas não demonstram que cada item de catálogo representa a personagem."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0261313938c8e3a91672",
+          "modelSlug": "street-fighter-chun-li-18",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-18"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_04cab2f1d86edbdd5416",
+          "modelSlug": "street-fighter-chun-li-07",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-07"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1bc8c86299b7cc0e406f",
+          "modelSlug": "street-fighter-chun-li-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-05"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3ed9ae5d9f29642e9eb5",
+          "modelSlug": "street-fighter-chun-li-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-04"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_414572f7313a5de48aa4",
+          "modelSlug": "street-fighter-chun-li-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-06"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_4cf2fad20aad17444be3",
+          "modelSlug": "street-fighter-chun-li-13",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-13"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5594facb10e4b02d1438",
+          "modelSlug": "street-fighter-chun-li-08",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-08"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5c76c5b4915f6995f4bb",
+          "modelSlug": "street-fighter-chun-li-street-fighter-chun-li-stl-6-street-fighter-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-street-fighter-chun-li-stl-6-street-fighter-principal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6136c1b7ad970209b9a6",
+          "modelSlug": "street-fighter-chun-li-09",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-09"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_64ec3385d5404a422074",
+          "modelSlug": "street-fighter-chun-li-20",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-20"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6c14d75f999df399818b",
+          "modelSlug": "street-fighter-chun-li-17",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-17"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7190a5575cc04b065459",
+          "modelSlug": "street-fighter-chun-li-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-03"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7551a0f2634729c1f148",
+          "modelSlug": "street-fighter-chun-li-19",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-19"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7defd637cfc7b6663f16",
+          "modelSlug": "street-fighter-chun-li-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-02"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_86dc98c78947c7c0ef2f",
+          "modelSlug": "street-fighter-chun-li-11",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-11"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8adcb1efcfc2a695beb4",
+          "modelSlug": "street-fighter-chun-li-21",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-21"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8c390f3bb04ed92b7615",
+          "modelSlug": "street-fighter-chun-li-10",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-10"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a8b9185fdc1ee0b247e5",
+          "modelSlug": "street-fighter-chun-li-15",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-15"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b7505e129cb36c27a242",
+          "modelSlug": "street-fighter-chun-li-12",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-12"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e6a2d2cc142098e4d02e",
+          "modelSlug": "street-fighter-chun-li-stl-5-street-fighter",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-stl-5-street-fighter"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e74af8bc92aa5c94e721",
+          "modelSlug": "street-fighter-chun-li-14",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-14"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_eac42d07bad0e7f83a20",
+          "modelSlug": "street-fighter-chun-li-16",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-chun-li-16"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 22
+    },
+    {
+      "candidateName": "Cammy",
+      "catalogDisplayNameCandidate": "Cammy",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Street Fighter",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Cammy",
+          "sourceIds": [
+            "capcom-cammy-guide",
+            "capcom-cammy-data"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Street Fighter",
+          "sourceIds": [
+            "capcom-cammy-guide",
+            "capcom-cammy-data"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.shadaloo_and_delta_red",
+          "value": "A fonte da Capcom diz que experimentos da Shadaloo alteraram seu corpo e que ela foi resgatada pela Delta Red britânica.",
+          "sourceIds": [
+            "capcom-cammy-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.new_life",
+          "value": "O perfil apresenta Cammy como membro da Delta Red que passa a combater novamente a Shadaloo.",
+          "sourceIds": [
+            "capcom-cammy-guide"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Cammy foi transformada em combatente por experimentos da Shadaloo, antes de ser resgatada e recrutada pela unidade britânica Delta Red. Depois de iniciar uma nova vida, ela volta a enfrentar a organização e algumas de suas antigas companheiras.",
+      "biographySourceIds": [
+        "capcom-cammy-guide",
+        "capcom-cammy-data"
+      ],
+      "catalogFranchiseCandidates": [
+        "Street Fighter"
+      ],
+      "ambiguities": [
+        "A biografia consultada é associada ao material de Street Fighter V; detalhes de arco ou continuidade não devem ser presumidos para todos os modelos.",
+        "Os 21 registros com nome exato Cammy não passaram por conferência visual. Roupas, variantes e versões precisam de revisão por ID.",
+        "As fontes confirmam identidade e elementos biográficos, mas não comprovam nenhum render específico."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0314006de384c319bf99",
+          "modelSlug": "street-fighter-cammy-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-04"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_034637ad7b46fbbc0ea6",
+          "modelSlug": "street-fighter-cammy-15",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-15"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_12958c5f11e11c3ee81e",
+          "modelSlug": "street-fighter-cammy-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-02"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2f0f5af4db462c17aa78",
+          "modelSlug": "street-fighter-cammy-14",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-14"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_40faaa1caefe3b42ca74",
+          "modelSlug": "street-fighter-cammy-11",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-11"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_45d3d7d0a898176d3bb3",
+          "modelSlug": "street-fighter-cammy-white-stl-3-street-fighter-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-white-stl-3-street-fighter-principal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_4e2e01998c46fa959ea2",
+          "modelSlug": "street-fighter-cammy-09",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-09"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_52fbd5e0d6d154127b8e",
+          "modelSlug": "street-fighter-cammy-street-fighter-cammy-stl-4-street-fighter-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-street-fighter-cammy-stl-4-street-fighter-principal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5375685a1f131282880a",
+          "modelSlug": "street-fighter-cammy-07",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-07"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_84dc576fc2a50d2acdbf",
+          "modelSlug": "street-fighter-cammy-17",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-17"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_92b4575553ceaf34233b",
+          "modelSlug": "street-fighter-cammy-12",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-12"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9811361c6910a6aeea8d",
+          "modelSlug": "street-fighter-cammy-10",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-10"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a223603fde4b9d795a92",
+          "modelSlug": "street-fighter-cammy-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-06"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c8e9d9af0989a1955031",
+          "modelSlug": "street-fighter-cammy",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c9bcb2e8eb1915f22e4d",
+          "modelSlug": "street-fighter-cammy-13",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-13"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ccd115cee3323bcd5770",
+          "modelSlug": "street-fighter-cammy-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-03"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_dc75a8c0af5b0d852743",
+          "modelSlug": "street-fighter-cammy-street-fighter-cammy-stl-5-street-wear-bust-nsfw-principal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-street-fighter-cammy-stl-5-street-wear-bust-nsfw-principal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ea88a8f0f49efaebba3c",
+          "modelSlug": "street-fighter-cammy-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-05"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ec917d691e0405a7b9d6",
+          "modelSlug": "street-fighter-cammy-16",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-16"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f415703fe1778b6dc2d8",
+          "modelSlug": "street-fighter-cammy-08",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-08"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f736bea2bc25ccbe7e83",
+          "modelSlug": "street-fighter-cammy-18",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-cammy-18"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 21
     }
   ]
 }

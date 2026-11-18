@@ -83,20 +83,20 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 19);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 337);
-  assert.equal(packet.candidates.length, 19);
-  assert.equal(packet.sources.length, 23);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 26);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 439);
+  assert.equal(packet.candidates.length, 26);
+  assert.equal(packet.sources.length, 34);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 19);
+  assert.equal(packet.policy.preparedIdentityCount, 26);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 337);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 439);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 337);
+  assert.equal(links.length, 439);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   for (const source of packet.sources) {
