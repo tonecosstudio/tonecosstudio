@@ -527,7 +527,7 @@
       },
       {
         "path": "worker/editorialProjection.ts",
-        "localBlob": "0a38991c9fa68f14e108b9bad5399fba1af76fb0",
+        "localBlob": "cf9f752fb7dc0af1665082ce4043940125bb4166",
         "reason": "Publish only the private approved export through the existing staged Worker with bounded, atomic D1 synchronization."
       }
     ]
