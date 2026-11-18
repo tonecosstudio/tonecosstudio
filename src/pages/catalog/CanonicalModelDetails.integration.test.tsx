@@ -373,10 +373,10 @@ describe("published model/gallery identity on the public detail page", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Escala 1/10 · Pintado")).toBeInTheDocument();
     expect(screen.getByText(/R\$\s*237,50/)).toBeInTheDocument();
-    expect(screen.getByText(/até 237,50 Coins/)).toBeInTheDocument();
+    expect(screen.getByText(/Elegível para Coins no valor da peça/)).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Esta ficha não cria pedido, confirma disponibilidade nem realiza pagamento/,
+        /Esta ficha não reserva a peça nem realiza pagamento/,
       ),
     ).toBeInTheDocument();
     expect(offerServiceMocks.list).toHaveBeenCalledWith("animal-original");
