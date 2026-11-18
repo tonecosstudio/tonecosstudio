@@ -66,7 +66,7 @@ type EditorialEvidence = {
   id: string
   title: string
   url: string
-  kind: 'official' | 'primary' | 'publisher' | 'catalog'
+  kind: 'official' | 'primary' | 'publisher' | 'licensor' | 'institution' | 'reputable_reference' | 'other' | 'catalog'
 }
 
 type EditorialIdentityRow = Record<string, unknown> & {
@@ -339,7 +339,7 @@ function editorialEvidence(value: unknown): EditorialEvidence[] {
     if (seen.has(id)) throw new Error('editorial_evidence_duplicate')
     seen.add(id)
     const kind = row.kind
-    if (!['official', 'primary', 'publisher', 'catalog'].includes(kind as string)) {
+    if (!['official', 'primary', 'publisher', 'licensor', 'institution', 'reputable_reference', 'other', 'catalog'].includes(kind as string)) {
       throw new Error('editorial_evidence_kind_invalid')
     }
     const rawUrl = editorialText(row.url, 'editorial_evidence_url_invalid', 2048)
