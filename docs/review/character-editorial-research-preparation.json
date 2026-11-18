@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 90,
-    "preparedCandidateModelLinkCount": 910
+    "sourceResearchedIdentityCount": 94,
+    "preparedCandidateModelLinkCount": 926
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 90,
+    "preparedIdentityCount": 94,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 910,
+    "preparedCandidateModelLinkCount": 926,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -836,6 +836,38 @@
       "title": "ONE PIECE ODYSSEY: Meet the Straw Hat Crew",
       "url": "https://www.bandainamcoent.com/news/one-piece-odyssey-straw-hat-crew",
       "sourceKind": "publisher",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dragonball-official-super-broly-217",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly Character Showcase #217 — Broly from Dragon Ball Super",
+      "url": "https://en.dragon-ball-official.com/news/01_3551.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "naruto-official-kakashi-team-seven",
+      "publisher": "NARUTO Official Site",
+      "title": "Kakashi birthday column, Part 1 — Team Seven and the teacher",
+      "url": "https://naruto-official.com/en/news/01_1903",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "capcom-re-jill-stories-2024",
+      "publisher": "Capcom",
+      "title": "Jill Valentine: Famed Operator, Storied Survivor",
+      "url": "https://game.capcom.com/residentevil/en/umbrella-20240607180000.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-miles-morales-in-comics",
+      "publisher": "Marvel",
+      "title": "Spider-Man (Miles Morales) — In Comics",
+      "url": "https://www.marvel.com/characters/spider-man-miles-morales/in-comics",
+      "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
   ],
@@ -23308,6 +23340,538 @@
         }
       ],
       "catalogCandidateModelCount": 1
+    },
+    {
+      "candidateName": "Broly (Dragon Ball Super manga candidate)",
+      "catalogDisplayNameCandidate": "Broly",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Broly",
+          "sourceIds": [
+            "dragonball-official-super-broly-217"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball Super (manga continuity)",
+          "sourceIds": [
+            "dragonball-official-super-broly-217"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.saiyan_potential",
+          "value": "O perfil oficial apresenta Broly como um dos saiyajins sobreviventes, com grande potencial latente.",
+          "sourceIds": [
+            "dragonball-official-super-broly-217"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.training",
+          "value": "Na fase do mangá Dragon Ball Super citada pela fonte, Broly treina no planeta de Beerus para controlar sua força.",
+          "sourceIds": [
+            "dragonball-official-super-broly-217"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Broly é um saiyajin de potencial extraordinário. Em uma fase do mangá Dragon Ball Super, após enfrentar Goku e Vegeta, ele passa a treinar no planeta de Beerus para aprender a controlar o próprio poder.",
+      "biographySourceIds": [
+        "dragonball-official-super-broly-217"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "O rótulo Broly também aparece em produções com continuidades diferentes; a fonte consultada descreve a fase do mangá Dragon Ball Super, não comprova que cada render corresponde a ela.",
+        "As quatro estatuetas possuem rótulos e variantes de Broly, mas nenhuma foi identificada visualmente por uma evidência independente.",
+        "Confirmação de forma/armadura, continuidade e relação exata com o modelo é decisão de revisão humana, não decorrência automática do nome."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0d679cb87c66d4e3aaaf",
+          "modelSlug": "dragon-ball-broly-white-armor-render-101961",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-broly-white-armor-render-101961"
+          }
+        },
+        {
+          "modelId": "mdl_13c7c6b7b5f67e5f1ebd",
+          "modelSlug": "dragon-ball-broly-green-energy-diorama-77603",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-broly-green-energy-diorama-77603"
+          }
+        },
+        {
+          "modelId": "mdl_3b93f251aa3825c878dd",
+          "modelSlug": "dragon-ball-broly-green-outfit-figure-119820",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-broly-green-outfit-figure-119820"
+          }
+        },
+        {
+          "modelId": "mdl_440bdb7d20964bb8dc40",
+          "modelSlug": "dragon-ball-broly-ssj-lendario",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-broly-ssj-lendario"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 4
+    },
+    {
+      "candidateName": "Kakashi Hatake (Naruto manga profile candidate)",
+      "catalogDisplayNameCandidate": "Kakashi",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Naruto",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Kakashi Hatake",
+          "sourceIds": [
+            "naruto-official-kakashi-team-seven"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Naruto",
+          "sourceIds": [
+            "naruto-official-kakashi-team-seven"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.team_seven",
+          "value": "A fonte oficial apresenta Kakashi como o ninja responsável por orientar Naruto, Sasuke e Sakura na Equipe Sete.",
+          "sourceIds": [
+            "naruto-official-kakashi-team-seven"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.skills",
+          "value": "O texto oficial descreve o uso do Sharingan e o ensino do Chidori a Sasuke.",
+          "sourceIds": [
+            "naruto-official-kakashi-team-seven"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Kakashi Hatake é um ninja da Vila da Folha que assume a liderança da Equipe Sete, formada por Naruto, Sasuke e Sakura. Sua trajetória de mentor inclui ensinar o trabalho em equipe e enfrentar missões perigosas usando técnicas como o Sharingan.",
+      "biographySourceIds": [
+        "naruto-official-kakashi-team-seven"
+      ],
+      "catalogFranchiseCandidates": [
+        "Naruto"
+      ],
+      "ambiguities": [
+        "O perfil oficial percorre períodos distintos da história; cada traje ou fase de Kakashi representado em render exige conferência da versão.",
+        "Os quatro IDs provêm do catálogo, não de laudo visual de identidade de cada escultura.",
+        "Nenhuma idade ou versão específica foi atribuída ao modelo por inferência."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_010a1452c455d861e625",
+          "modelSlug": "naruto-kakashi-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "naruto-kakashi-03"
+          }
+        },
+        {
+          "modelId": "mdl_7a5668fff0e4261004f6",
+          "modelSlug": "naruto-kakashi-06",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "naruto-kakashi-06"
+          }
+        },
+        {
+          "modelId": "mdl_9d093466f3c5e0d40faa",
+          "modelSlug": "naruto-kakashi-hatake-stl-naruto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "naruto-kakashi-hatake-stl-naruto"
+          }
+        },
+        {
+          "modelId": "mdl_bd5d97acbf0c42140197",
+          "modelSlug": "naruto-kakashi-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "naruto-kakashi-04"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 4
+    },
+    {
+      "candidateName": "Jill Valentine (Resident Evil games candidate)",
+      "catalogDisplayNameCandidate": "Jill Valentine",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Resident Evil",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Jill Valentine",
+          "sourceIds": [
+            "capcom-re-jill-stories-2024"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Resident Evil",
+          "sourceIds": [
+            "capcom-re-jill-stories-2024"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.stars_role",
+          "value": "A Capcom identifica Jill como integrante da equipe policial especial S.T.A.R.S. no início de Resident Evil.",
+          "sourceIds": [
+            "capcom-re-jill-stories-2024"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.survival",
+          "value": "O retrospecto oficial de Jill aborda sua resistência a ameaças bioterroristas ao longo da franquia.",
+          "sourceIds": [
+            "capcom-re-jill-stories-2024"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Jill Valentine é uma integrante da unidade especial S.T.A.R.S. em Resident Evil. A história da personagem acompanha sua sobrevivência diante de surtos biológicos e suas ações contra ameaças de bioterrorismo, conforme o retrospecto oficial da Capcom.",
+      "biographySourceIds": [
+        "capcom-re-jill-stories-2024"
+      ],
+      "catalogFranchiseCandidates": [
+        "Resident Evil"
+      ],
+      "ambiguities": [
+        "A fonte oficial Capcom foi localizada na busca, mas sua abertura automatizada retornou HTTP 403; uma pessoa deve abrir e conferir integralmente o artigo antes de aprovar.",
+        "As quatro estatuetas podem representar diferentes jogos e trajes de Jill; não foram verificadas visualmente.",
+        "Metadados de catálogo não constituem evidência independente de que cada render representa Jill Valentine."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_278989a41cc8390c18a3",
+          "modelSlug": "resident-evil-jill-valentine",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-jill-valentine"
+          }
+        },
+        {
+          "modelId": "mdl_4893b3685c6b295a236d",
+          "modelSlug": "resident-evil-jill-valentine-3",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-jill-valentine-3"
+          }
+        },
+        {
+          "modelId": "mdl_78638f75a7ce3d55a556",
+          "modelSlug": "resident-evil-jill-valentine-4",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-jill-valentine-4"
+          }
+        },
+        {
+          "modelId": "mdl_fcd9d6e7c5524aa597b2",
+          "modelSlug": "resident-evil-jill-valentine-v5",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "resident-evil-jill-valentine-v5"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 4
+    },
+    {
+      "candidateName": "Miles Morales (Marvel Comics Spider-Man candidate)",
+      "catalogDisplayNameCandidate": "Miles Morales",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel Universe",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Miles Morales",
+          "sourceIds": [
+            "marvel-miles-morales-in-comics"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel Comics (Spider-Man)",
+          "sourceIds": [
+            "marvel-miles-morales-in-comics"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.spider_man_identity",
+          "value": "A fonte Marvel apresenta Miles Morales como um jovem que assume a identidade de Spider-Man em uma realidade alternativa.",
+          "sourceIds": [
+            "marvel-miles-morales-in-comics"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.legacy",
+          "value": "A descrição da Marvel situa sua escolha de assumir o papel após a morte de Peter Parker no universo de origem.",
+          "sourceIds": [
+            "marvel-miles-morales-in-comics"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Miles Morales é um jovem herói das histórias em quadrinhos da Marvel que assume o papel de Spider-Man em uma realidade alternativa. A trajetória apresentada pela editora parte de um universo que perdeu seu Homem-Aranha anterior e acompanha Miles ao assumir essa responsabilidade.",
+      "biographySourceIds": [
+        "marvel-miles-morales-in-comics"
+      ],
+      "catalogFranchiseCandidates": [
+        "Heróis Individuais"
+      ],
+      "ambiguities": [
+        "A página da Marvel foi encontrada no índice oficial, mas a leitura integral automatizada retornou HTTP 403; conferir a fonte diretamente antes da aprovação.",
+        "O agrupamento D1 'Heróis Individuais' é navegação comercial, não franquia Marvel confirmada nem prova do render.",
+        "Os quatro modelos de Miles Morales precisam de checagem visual por ID e variante; o nome Spider-Man também é usado por outros personagens e não deve gerar vínculo automático."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_12754a2eca19c23236b6",
+          "modelSlug": "herois-individuais-miles-morales-diorama-em-estrutura-urbana",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-miles-morales-diorama-em-estrutura-urbana"
+          }
+        },
+        {
+          "modelId": "mdl_5d066d25618bd40b1997",
+          "modelSlug": "herois-individuais-miles-morales-agachado-sobre-veiculo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-miles-morales-agachado-sobre-veiculo"
+          }
+        },
+        {
+          "modelId": "mdl_72704edb22dd42b016e7",
+          "modelSlug": "herois-individuais-miles-morales-em-pose-dinamica-sobre-chamas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-miles-morales-em-pose-dinamica-sobre-chamas"
+          }
+        },
+        {
+          "modelId": "mdl_b285509e8decc2f58c31",
+          "modelSlug": "herois-individuais-miles-morales-com-gato-em-estatua",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-miles-morales-com-gato-em-estatua"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 4
     }
   ]
 }
