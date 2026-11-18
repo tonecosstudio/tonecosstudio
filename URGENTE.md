@@ -2140,3 +2140,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** encaminhar os dossiês à curadoria privada; revisar especialmente a continuidade das versões, a distinção Goro/KOF e as franquias localizadas antes de aprovar qualquer vínculo.
 
 **DO_NOT_REPEAT:** não converter nome/slug em evidência visual nem expandir fatos de uma versão para todos os modelos de um personagem.
+
+## Rodada 111 — Viúva Negra e Surfista Prateado (18/11/2026)
+
+- Preparei candidatos a partir dos perfis de quadrinhos oficiais da [Marvel para Black Widow](https://www.marvel.com/characters/black-widow-natasha-romanova/in-comics) e de sua [história de Norrin Radd/Silver Surfer](https://www.marvel.com/teams-and-groups/heralds-of-galactus).
+- Acrescentei cinco IDs para cada ficha. O catálogo agrupa os dez registros em “Equipes e Grupos”; registrei esse rótulo em `catalogFranchiseCandidates` e a franquia Marvel como candidata da fonte, sem reclassificar os modelos. Mantive em aberto portadoras, fases, uniformes e correspondência visual.
+- Totais atuais: **85 candidatos, 96 fontes oficiais únicas e 869 vínculos candidatos**. Nenhuma identidade ou relação foi revisada/aprovada e nenhum render tem evidência independente anexada.
+- Nenhuma gravação, migration ou publicação ocorreu. A curadoria humana, o staging Supabase/D1 e as migrations #31/0023 seguem como pré-requisitos à homologação real.
+
+**NEXT_ACTION:** levar os candidatos à revisão privada e decidir manualmente se o agrupamento genérico “Equipes e Grupos” deve ser reconciliado com Marvel para cada modelo.
+
+**DO_NOT_REPEAT:** não converter a categoria de agrupamento em franquia canônica nem tratar as páginas biográficas como prova das imagens TONART.

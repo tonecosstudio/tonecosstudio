@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 83);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 859);
-  assert.equal(packet.candidates.length, 83);
-  assert.equal(packet.sources.length, 94);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 85);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 869);
+  assert.equal(packet.candidates.length, 85);
+  assert.equal(packet.sources.length, 96);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 83);
+  assert.equal(packet.policy.preparedIdentityCount, 85);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 859);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 869);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 859);
+  assert.equal(links.length, 869);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -252,6 +252,8 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["Goro (Mortal Kombat 1 Kameo profile candidate)", "Goro", "Mortal Kombat", 6],
     ["T-800/Carl (Dark Fate continuity candidate)", "T-800", "Terminator", 7],
     ["John Wick (film franchise candidate)", "John Wick", "John Wick", 5],
+    ["Natasha Romanoff/Romanova (Black Widow comics candidate)", "Viúva Negra", "Marvel Universe", 5],
+    ["Norrin Radd (Silver Surfer comics candidate)", "Surfista Prateado", "Marvel Universe", 5],
   ];
   for (const [candidateName, catalogLabel, franchise, expectedModels] of newestResearchCandidates) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
@@ -295,6 +297,8 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["Goro (Mortal Kombat 1 Kameo profile candidate)", "netherrealm-mk1-roster", "biography.fact.mortal_kombat_1_kameo_partner"],
     ["T-800/Carl (Dark Fate continuity candidate)", "paramount-terminator-dark-fate-t800", "biography.fact.dark_fate_t800_carl"],
     ["John Wick (film franchise candidate)", "peacock-john-wick-franchise-guide", "biography.fact.retired_hitman_and_return"],
+    ["Natasha Romanoff/Romanova (Black Widow comics candidate)", "marvel-black-widow-comics-profile", "biography.fact.red_room_and_defection"],
+    ["Norrin Radd (Silver Surfer comics candidate)", "marvel-silver-surfer-heralds-galactus", "biography.fact.norrin_radd_becomes_herald"],
   ];
   for (const [candidateName, sourceId, attribute] of newestSourceClaims) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
@@ -328,6 +332,14 @@ test("research preparation references only inventory IDs and remains unapproved"
   assert.deepEqual(johnWick.catalogFranchiseCandidates, ["John Wick (Franquia)"]);
   assert.ok(t800.ambiguities.some((item) => /Dark Fate/.test(item)));
   assert.ok(johnWick.ambiguities.some((item) => /qual filme/.test(item)));
+  const blackWidow = packet.candidates.find((item) =>
+    item.candidateName === "Natasha Romanoff/Romanova (Black Widow comics candidate)");
+  const silverSurfer = packet.candidates.find((item) =>
+    item.candidateName === "Norrin Radd (Silver Surfer comics candidate)");
+  assert.deepEqual(blackWidow.catalogFranchiseCandidates, ["Equipes e Grupos"]);
+  assert.deepEqual(silverSurfer.catalogFranchiseCandidates, ["Equipes e Grupos"]);
+  assert.ok(blackWidow.ambiguities.some((item) => /portadoras|uniformes/.test(item)));
+  assert.ok(silverSurfer.ambiguities.some((item) => /fase, uniforme ou continuidade/.test(item)));
   const burter = packet.candidates.find((item) => item.candidateName === "Burter (Namek saga candidate)");
   const shenron = packet.candidates.find((item) =>
     item.candidateName === "Shenron (Earth Dragon Balls; Shenlong label candidate)");
