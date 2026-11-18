@@ -24,6 +24,7 @@ const USER = "11111111-1111-4111-8111-111111111111";
 const QUOTE = "22222222-2222-4222-8222-222222222222";
 const mocks = vi.hoisted(() => {
   vi.stubEnv("VITE_CATALOG_QUOTES_ENABLED", "true");
+  vi.stubEnv("VITE_CONTACT_EMAIL", "atendimento@example.com");
   vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:54321");
   vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "local-test-publishable-key");
   return {
@@ -296,6 +297,26 @@ describe("TONART commercial screens: account → request → history → respons
     expect(
       screen.queryByRole("button", { name: "Enviar solicitação" }),
     ).not.toBeInTheDocument();
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
+  it("offers a selected-model email quote while public signup stays closed", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    mocks.signupAvailability.mockReturnValue("disabled");
+    renderApp("/solicitar-orcamento", true);
+
+    const contact = await screen.findByRole("link", {
+      name: "Pedir orçamento por e-mail",
+    });
+    const href = contact.getAttribute("href") ?? "";
+    expect(href).toMatch(/^mailto:/);
+    const message = decodeURIComponent(href);
+    expect(message).toContain("Naruto");
+    expect(message).toContain("TC-NARUTO");
+    expect(message).toContain("CEP para estimativa de entrega:");
+    expect(screen.getByText(/sem protocolo em Meus Orçamentos/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Criar conta" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Enviar solicitação" })).not.toBeInTheDocument();
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
